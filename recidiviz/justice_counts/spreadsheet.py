@@ -56,6 +56,7 @@ from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
+    UploadMethod,
 )
 from recidiviz.justice_counts.utils.datapoint_utils import get_dimension_id
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -244,6 +245,7 @@ class SpreadsheetInterface:
         metric_definitions: List[MetricDefinition],
         agency: schema.Agency,
         filename: Optional[str],
+        upload_method: UploadMethod,
         upload_filetype: BulkUploadFileType,
         auth0_user_id: Optional[str] = None,
     ) -> Tuple[
@@ -292,6 +294,7 @@ class SpreadsheetInterface:
             xls=xls,
             metric_definitions=metric_definitions,
             filename=filename,
+            upload_method=upload_method,
             upload_filetype=upload_filetype,
         )
         is_ingest_successful = all(
@@ -510,6 +513,7 @@ class SpreadsheetInterface:
         agency: schema.Agency,
         filename: str,
         metric_definitions: List[MetricDefinition],
+        upload_method: UploadMethod,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -563,6 +567,7 @@ class SpreadsheetInterface:
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             metric_definitions=metric_definitions,
             filename=filename,
+            upload_method=upload_method,
             upload_filetype=upload_filetype,
         )
 

@@ -32,7 +32,10 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
+from recidiviz.justice_counts.utils.constants import (
+    REPORTING_FREQUENCY_CONTEXT_KEY,
+    UploadMethod,
+)
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -106,6 +109,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=monthly_report,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             datapoints = session.query(schema.Datapoint).all()
@@ -604,6 +608,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
@@ -638,6 +643,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     include_contexts=False,
                 ),
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 1)
@@ -664,6 +670,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=incomplete_report,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
@@ -702,6 +709,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
@@ -749,6 +757,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=report,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
@@ -830,6 +839,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=report,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 2)
@@ -849,6 +859,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=report,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             queried_datapoints_no_op = (
                 session.query(schema.Datapoint)
@@ -869,6 +880,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
@@ -916,6 +928,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=new_report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             datapoints_with_value = (
@@ -958,6 +971,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 6)
@@ -980,6 +994,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     nullify_contexts_and_disaggregations=True
                 ),
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             queried_datapoints = (
                 session.query(schema.Datapoint)
@@ -1102,6 +1117,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=report,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             metrics = ReportInterface.get_metrics_by_report(
                 report=report, session=session
@@ -1199,6 +1215,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # First update
@@ -1210,6 +1227,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # Second update
@@ -1221,6 +1239,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # Third update
@@ -1232,6 +1251,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             datapoint_history = (
@@ -1260,6 +1280,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             datapoints_with_value = (
@@ -1291,6 +1312,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -1314,6 +1336,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             datapoints_with_value = (
                 session.query(schema.Datapoint)

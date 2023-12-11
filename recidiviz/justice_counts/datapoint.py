@@ -43,6 +43,7 @@ from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
     REPORTING_FREQUENCY_CONTEXT_KEY,
+    UploadMethod,
 )
 from recidiviz.justice_counts.utils.datapoint_utils import (
     filter_deprecated_datapoints,
@@ -334,6 +335,7 @@ class DatapointInterface:
         value: Any,
         metric_definition_key: str,
         current_time: datetime.datetime,
+        upload_method: UploadMethod,
         context_key: Optional[ContextKey] = None,
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
@@ -410,6 +412,7 @@ class DatapointInterface:
             else None,
             source_id=report.source_id,
             is_report_datapoint=True,
+            upload_method=upload_method.value,
         )
 
         # Store the new datapoint in this dict, so that it can be

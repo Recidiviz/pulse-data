@@ -41,6 +41,7 @@ from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+    UploadMethod,
 )
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -79,6 +80,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 value="123abc",
                 metric_definition_key=law_enforcement.funding.key,
                 current_time=created_datetime,
+                upload_method=UploadMethod.MANUAL_ENTRY,
             )
             session.commit()
             session.refresh(monthly_report)
@@ -94,6 +96,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 value="456def",
                 metric_definition_key=law_enforcement.funding.key,
                 current_time=created_datetime + datetime.timedelta(days=2),
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -102,6 +105,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(len(datapoints), 1)
             self.assertEqual(datapoints[0].value, "456def")
+            self.assertEqual(datapoints[0].upload_method, "BULK_UPLOAD")
             self.assertEqual(
                 datapoints[0].created_at,
                 created_datetime,
@@ -573,6 +577,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     user_account=user,
                     metric_definition_key=law_enforcement.funding.key,
                     current_time=current_time,
+                    upload_method=UploadMethod.BULK_UPLOAD,
                 )
                 assert True
             except ValueError:
@@ -597,6 +602,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     user_account=user,
                     metric_definition_key=law_enforcement.funding.key,
                     current_time=current_time,
+                    upload_method=UploadMethod.BULK_UPLOAD,
                 )
 
     def test_get_disaggregated_by_supervision_subsystems_agency_metric(self) -> None:
@@ -681,6 +687,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key=law_enforcement.calls_for_service.key,
                 current_time=current_time,
                 agency=monthly_report.source,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             report_ids = [
@@ -732,6 +739,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
                 metric_definition_key=law_enforcement.calls_for_service.key,
                 current_time=current_time,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             report_ids = [
@@ -790,6 +798,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 value=100,
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=current_time,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -799,6 +808,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=current_time,
                 dimension=DailyPopulationType["ACTIVE"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -808,6 +818,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=current_time,
                 dimension=DailyPopulationType["ADMINISTRATIVE"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -817,6 +828,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=current_time,
                 dimension=DailyPopulationType["ABSCONDED"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # Make sure datapoints are there
@@ -847,6 +859,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 value=90,
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -856,6 +869,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time,
                 dimension=DailyPopulationType["ACTIVE"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -865,6 +879,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time,
                 dimension=DailyPopulationType["ADMINISTRATIVE"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -874,6 +889,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time,
                 dimension=DailyPopulationType["ABSCONDED"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # Make sure values and last_updated have changed
@@ -907,6 +923,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 value=90,
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time_2,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -916,6 +933,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time_2,
                 dimension=DailyPopulationType["ACTIVE"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -925,6 +943,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time_2,
                 dimension=DailyPopulationType["ADMINISTRATIVE"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             DatapointInterface.add_datapoint(
                 session=session,
@@ -934,6 +953,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key="SUPERVISION_POPULATION",
                 current_time=updated_time_2,
                 dimension=DailyPopulationType["ABSCONDED"],
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # Since new values are the same as old values, last_updated should not have

@@ -719,6 +719,8 @@ class Datapoint(JusticeCountsBase):
     # Metrics that have not been set/touched by the agency will have a value of None (default).
     enabled = Column(BOOLEAN, nullable=True)
 
+    upload_method = Column(String, nullable=True)
+
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),

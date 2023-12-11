@@ -57,6 +57,7 @@ from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -374,6 +375,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             report=monthly_report_1,
             report_metric=report_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
 
@@ -856,12 +858,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             report=report_unpublished,
             report_metric=report_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
             report=report_published,
             report_metric=report_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
 
@@ -986,24 +990,28 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             report=report_published,
             report_metric=reported_admissions_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
             report=report_published,
             report_metric=arrests_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
             report=report_2_published,
             report_metric=reported_admissions_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
             report=report_2_published,
             report_metric=arrests_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
 
@@ -2365,6 +2373,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             report=report,
             report_metric=report_metric,
             user_account=user_A,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
 
@@ -2587,6 +2596,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metric_definitions=METRICS_BY_SYSTEM[schema.System.LAW_ENFORCEMENT.value],
             filename=law_enforcement_excel,
             upload_filetype=BulkUploadFileType.XLSX,
+            upload_method=UploadMethod.BULK_UPLOAD,
         )
         self.session.commit()
 
@@ -2647,6 +2657,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             xls=pd.ExcelFile(law_enforcement_excel),
             metric_definitions=METRICS_BY_SYSTEM[schema.System.LAW_ENFORCEMENT.value],
             filename=law_enforcement_excel,
+            upload_method=UploadMethod.BULK_UPLOAD,
             upload_filetype=BulkUploadFileType.XLSX,
         )
         self.session.commit()

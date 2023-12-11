@@ -39,6 +39,7 @@ from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -80,6 +81,7 @@ class TimeRangeUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         metric_key: str,
+        upload_method: UploadMethod,
         existing_report: Optional[List[schema.Report]] = None,
     ) -> Tuple[schema.Report, List[DatapointJson]]:
         """Uploads rows for a certain time period and saves them in the JC database."""
@@ -118,6 +120,7 @@ class TimeRangeUploader:
             uploaded_via_breakdown_sheet=self.metricfile.disaggregation is not None,
             existing_datapoints_dict=self.existing_datapoints_dict,
             agency=self.agency,
+            upload_method=upload_method,
         )
 
         if existing_report is None:
