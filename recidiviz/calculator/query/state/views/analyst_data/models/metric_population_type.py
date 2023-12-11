@@ -83,6 +83,7 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
                     StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION.value,
                     StateSupervisionPeriodSupervisionType.PAROLE.value,
                     StateSupervisionPeriodSupervisionType.PROBATION.value,
+                    StateSupervisionPeriodSupervisionType.WARRANT_STATUS.value,
                 ],
             },
         ),
