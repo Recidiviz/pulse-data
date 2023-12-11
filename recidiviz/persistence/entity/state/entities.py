@@ -69,6 +69,9 @@ from recidiviz.common.constants.state.state_person import (
     StateRace,
     StateResidencyStatus,
 )
+from recidiviz.common.constants.state.state_person_address_period import (
+    StatePersonAddressType,
+)
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -148,6 +151,68 @@ PeriodType = TypeVar(
 # we have written this entity to the persistence layer
 
 # Cross-entity relationships
+
+
+@attr.s(eq=False, kw_only=True)
+class StatePersonAddressPeriod(EnumEntity, BuildableAttr, DefaultableAttr):
+    """Models an address associated with a particular StatePerson."""
+
+    # State Code
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    address_line_1: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_line_2: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_city: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_zip: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_county: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_start_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    address_end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    address_is_verified: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
+    address_type: StatePersonAddressType = attr.ib(
+        default=None, validator=attr.validators.instance_of(StatePersonAddressType)
+    )
+
+    address_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    address_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    person_address_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)
@@ -359,6 +424,9 @@ class StatePerson(
         factory=list, validator=attr_validators.is_list
     )
     employment_periods: List["StateEmploymentPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    address_periods: List["StatePersonAddressPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
 

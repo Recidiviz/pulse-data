@@ -238,6 +238,11 @@ state_incarceration_period_release_reason_transfer_to_other_jurisdiction = (
 )
 state_incarceration_period_release_reason_vacated = "VACATED"
 
+# state_person_address_period.py
+state_person_address_type_physical_residence = "PHYSICAL_RESIDENCE"
+state_person_address_type_physical_other = "PHYSICAL_OTHER"
+state_person_address_type_mailing_only = "MAILING_ONLY"
+
 # state_person_alias.py
 state_person_alias_alias_type_affiliation_name = "AFFILIATION_NAME"
 state_person_alias_alias_type_alias = "ALIAS"
