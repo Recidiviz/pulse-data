@@ -314,6 +314,9 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
             f"failure_description for validation_result_status {validation_result_status} not set"
         )
 
+    def is_better(self, other: "SamenessPerViewValidationResultDetails") -> bool:
+        return self.error_rate < other.error_rate
+
 
 @attr.s(frozen=True, kw_only=True)
 class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
@@ -421,6 +424,11 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
             f"failure_description for validation_result_status {validation_result_status} not set"
         )
 
+    def is_better(self, other: "SamenessPerRowValidationResultDetails") -> bool:
+        return self.highest_error < other.highest_error or len(self.failed_rows) < len(
+            other.failed_rows
+        )
+
 
 class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
     """
@@ -499,7 +507,8 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
         cls, validation_check: SamenessDataValidationCheck
     ) -> str:
         """Creates a query that adds the error rate between the comparison columns for each row of data.
-        It takes into account region code soft max allowed error overrides and only returns rows that exceed the max."""
+        It takes into account region code soft max allowed error overrides and only returns rows that exceed the max.
+        """
 
         comparison_str = ", ".join(validation_check.comparison_columns)
 

@@ -26,6 +26,7 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils.types import ClsT
 from recidiviz.validation.validation_config import ValidationRegionConfig
 
 
@@ -200,6 +201,10 @@ class DataValidationJobResultDetails(abc.ABC):
     @abc.abstractmethod
     def failure_description(self) -> Optional[str]:
         """Description of failure, if there was a failure"""
+
+    @abc.abstractmethod
+    def is_better(self: ClsT, other: ClsT) -> bool:
+        """Returns whether this result is better than the other result"""
 
 
 @attr.s(frozen=True, kw_only=True)
