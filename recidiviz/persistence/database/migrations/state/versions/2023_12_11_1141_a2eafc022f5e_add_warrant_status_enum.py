@@ -2,7 +2,7 @@
 """add_warrant_status_enum
 
 Revision ID: a2eafc022f5e
-Revises: 7f28f8767137
+Revises: ac7c4dcfa0a8
 Create Date: 2023-12-11 11:41:15.855812
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a2eafc022f5e"
-down_revision = "7f28f8767137"
+down_revision = "ac7c4dcfa0a8"
 branch_labels = None
 depends_on = None
 
