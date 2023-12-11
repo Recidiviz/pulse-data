@@ -687,7 +687,11 @@ def create_workflows_api_blueprint() -> Blueprint:
                 data = WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema().dump(
                     g.api_data
                 )
-                interface.update_early_termination_date(**data)
+                interface.update_early_termination_date(
+                    user_email=data["user_email"],
+                    early_termination_date=data["early_termination_date"],
+                    justification_reasons=data["justification_reasons"],
+                )
             except Exception:
                 interface.set_firestore_early_termination_status(
                     ExternalSystemRequestStatus.FAILURE,
@@ -761,9 +765,12 @@ def create_workflows_api_blueprint() -> Blueprint:
             data = load_api_schema(
                 WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema, cloud_task_body
             )
-            # Dump to remove load_only fields from body
             data = WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema().dump(data)
-            interface.update_early_termination_date(**data)
+            interface.update_early_termination_date(
+                user_email=data["user_email"],
+                early_termination_date=data["early_termination_date"],
+                justification_reasons=data["justification_reasons"],
+            )
         except Exception as e:
             logging.error("Write to DOCSTARS failed due to error: %s", e)
             interface.set_firestore_early_termination_status(
