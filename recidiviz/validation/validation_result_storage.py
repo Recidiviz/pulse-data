@@ -18,6 +18,7 @@
 import datetime
 import json
 import logging
+from ast import literal_eval
 from typing import Any, Dict, List, Optional, cast
 
 import attr
@@ -32,6 +33,11 @@ from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.common import serialization
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment
+from recidiviz.validation.checks.existence_check import ExistenceValidationResultDetails
+from recidiviz.validation.checks.sameness_check import (
+    SamenessPerRowValidationResultDetails,
+    SamenessPerViewValidationResultDetails,
+)
 from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
@@ -166,6 +172,40 @@ class ValidationResultForStorage:
             unstructured["exception_log"] = repr(exception_log)
 
         return unstructured
+
+    @staticmethod
+    def _load_from_json_str(json_str: str) -> DataValidationJobResultDetails:
+        """Loads the result_details field from a JSON string."""
+        attrs = json.loads(json_str)
+        for cls in [
+            ExistenceValidationResultDetails,
+            SamenessPerRowValidationResultDetails,
+            SamenessPerViewValidationResultDetails,
+        ]:
+            if set(attrs.keys()) == {
+                attr.name for attr in list(cls.__dict__["__attrs_attrs__"])
+            }:
+                return cls(**attrs)
+        raise ValueError(
+            f"Could not deserialize DataValidationJobResultDetails from JSON string: {json_str}"
+        )
+
+    @classmethod
+    def from_serializable(
+        cls, serialized: Dict[str, Any]
+    ) -> "ValidationResultForStorage":
+        """Loads a ValidationResultForStorage from a Pandas Series."""
+        converter = cattr.Converter()
+        converter.register_structure_hook(datetime.date, lambda d, _: d)
+        converter.register_structure_hook(datetime.datetime, lambda d, _: d)
+        converter.register_structure_hook(
+            Exception, lambda d, _: literal_eval(d) if d is not None else None
+        )
+        converter.register_structure_hook(
+            DataValidationJobResultDetails, lambda d, _: cls._load_from_json_str(d)
+        )
+        structured = converter.structure(serialized, ValidationResultForStorage)
+        return structured
 
 
 VALIDATION_RESULTS_DATASET_ID = "validation_results"

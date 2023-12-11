@@ -169,6 +169,9 @@ class ExistenceValidationResultDetails(DataValidationJobResultDetails):
             f"failure_description for validation_result_status {validation_result_status} not set"
         )
 
+    def is_better(self, other: "ExistenceValidationResultDetails") -> bool:
+        return self.num_invalid_rows < other.num_invalid_rows
+
 
 class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]):
     """Performs the validation check for existence check types."""

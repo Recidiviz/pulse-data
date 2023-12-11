@@ -178,6 +178,9 @@ class FakeValidationResultDetails(DataValidationJobResultDetails):
             f"failure_description for validation_result_status {validation_result_status} not set"
         )
 
+    def is_better(self, other: "FakeValidationResultDetails") -> bool:
+        return self.error_amount < other.error_amount
+
 
 class TestExecuteValidationRequest(TestCase):
     """Tests for execute_validation_request."""
