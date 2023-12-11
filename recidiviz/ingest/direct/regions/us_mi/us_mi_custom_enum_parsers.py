@@ -293,6 +293,8 @@ high_levels = [
 unsupervised_levels = [
     "13457",  # Unavailable For Supervision
     "2285",  # Unsupervised Probation
+    "2292",  # Parole Minimum Administrative
+    "3624",  # Probation Minimum Administrative
 ]
 
 warrant_levels = [
@@ -307,9 +309,8 @@ absconcion_levels = [
 
 in_custody_levels = [
     "7405",  # Paroled in Custody
-    "2292",  # Parole Minimum Administrative
-    "3624",  # Probation Minimum Administrative
     "20007",  # Parole MPVU/PRF Placement
+    "7481",  # CRP - Custody Administrative
 ]
 
 
