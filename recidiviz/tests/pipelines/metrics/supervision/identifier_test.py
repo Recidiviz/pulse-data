@@ -1899,10 +1899,10 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_events_placeholders(self) -> None:
+    def test_find_supervision_events_drops_periods_with_no_external_ids(self) -> None:
         """Tests the find_supervision_events function
-        when there are placeholder supervision periods that should be dropped
-        from the calculations."""
+        when there are supervision periods that should be dropped
+        from the calculations due to no external ID."""
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,

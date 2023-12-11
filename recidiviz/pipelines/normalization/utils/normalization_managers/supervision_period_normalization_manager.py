@@ -32,7 +32,6 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     deep_entity_update,
-    is_placeholder,
 )
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
@@ -195,14 +194,11 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             # Make a deep copy of the original supervision periods to preprocess
             periods_for_normalization = deepcopy(self._supervision_periods)
 
-            # Drop placeholder periods
-            mid_processing_periods = self._drop_placeholder_periods(
-                periods_for_normalization
-            )
-
             # Drop SPs that are fuzzy matched, as we are not yet confident in their
             # placement of a person's entire journey within the system
-            mid_processing_periods = drop_fuzzy_matched_periods(mid_processing_periods)
+            mid_processing_periods = drop_fuzzy_matched_periods(
+                periods_for_normalization
+            )
 
             # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
             #  periods with dates of 9999-12-31.
@@ -253,17 +249,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 ),
             )
         return self._normalized_supervision_periods_and_additional_attributes
-
-    def _drop_placeholder_periods(
-        self,
-        supervision_periods: List[StateSupervisionPeriod],
-    ) -> List[StateSupervisionPeriod]:
-        """Drops all placeholder supervision periods."""
-        return [
-            period
-            for period in supervision_periods
-            if not is_placeholder(period, self.field_index)
-        ]
 
     def _drop_missing_date_periods(
         self, supervision_periods: List[StateSupervisionPeriod]

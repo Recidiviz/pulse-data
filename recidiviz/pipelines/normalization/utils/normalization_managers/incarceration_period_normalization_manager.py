@@ -39,7 +39,6 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     deep_entity_update,
-    is_placeholder,
 )
 from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
@@ -340,14 +339,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             # Make a deep copy of the original incarceration periods
             periods_for_normalization = deepcopy(self._original_incarceration_periods)
 
-            # Drop placeholder IPs with no information on them
-            mid_processing_periods = self._drop_placeholder_periods(
-                periods_for_normalization
-            )
-
             # Drop placeholder IPs with no start and no end dates
             mid_processing_periods = self._drop_missing_date_periods(
-                mid_processing_periods
+                periods_for_normalization
             )
 
             # Drop IPs that are fuzzy matched, as we are not yet confident in their
@@ -442,18 +436,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             )
 
         return self._normalized_incarceration_periods_and_additional_attributes
-
-    def _drop_placeholder_periods(
-        self,
-        incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> List[StateIncarcerationPeriod]:
-        """Removes any incarceration periods that are placeholders."""
-        filtered_periods = [
-            ip
-            for ip in incarceration_periods
-            if not is_placeholder(ip, self.field_index)
-        ]
-        return filtered_periods
 
     def _drop_missing_date_periods(
         self, incarceration_periods: List[StateIncarcerationPeriod]

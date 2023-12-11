@@ -508,7 +508,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
 
             self.assertCountEqual(one(buckets), ingested_persons)
 
-    def test_bucket_two_people_one_placeholder(self) -> None:
+    def test_bucket_two_people_one_missing_external_id(self) -> None:
         ingested_persons = [
             make_person(
                 incarceration_incidents=[
@@ -527,7 +527,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
         ):
             _ = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_persons)
 
-    def test_bucket_two_placeholder_people(self) -> None:
+    def test_bucket_two_people_missing_external_ids(self) -> None:
         ingested_persons = [
             make_person(
                 incarceration_incidents=[

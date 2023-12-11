@@ -19,6 +19,7 @@ different enum values as well as NULL vs non-NULL values for the state_person ta
 
 Its results are split by state and by whether it is a placeholder object.
 """
+# TODO(#26022): Remove placeholder references in admin panel state table views
 from typing import List
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker

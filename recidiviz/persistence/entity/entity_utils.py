@@ -490,32 +490,6 @@ class CoreEntityFieldIndex:
         )
 
 
-def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> bool:
-    """Determines if the provided entity is a placeholder. Conceptually, a
-    placeholder is an object that we have no information about, but have
-    inferred its existence based on other objects we do have information about.
-    Generally, an entity is a placeholder if all of the optional flat fields are
-    empty or set to a default value.
-    """
-
-    # Although these are not flat fields, they represent characteristics of a
-    # person. If present, we do have information about the provided person, and
-    # therefore it is not a placeholder.
-    if isinstance(entity, (state_schema.StatePerson, state_entities.StatePerson)):
-        if any([entity.external_ids, entity.races, entity.aliases, entity.ethnicities]):
-            return False
-
-    if isinstance(entity, (state_schema.StateStaff, state_entities.StateStaff)):
-        if entity.external_ids:
-            return False
-        raise ValueError(f"Placeholder entities are deprecated. {entity=}")
-
-    if not get_explicitly_set_flat_fields(entity, field_index):
-        raise ValueError(f"Placeholder entities are deprecated. {entity=}")
-
-    return False
-
-
 def is_reference_only_entity(
     entity: CoreEntity, field_index: CoreEntityFieldIndex
 ) -> bool:

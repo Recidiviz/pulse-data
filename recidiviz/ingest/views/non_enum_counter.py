@@ -24,6 +24,7 @@ NB: In the future, this functionality should be separated out based on the seman
 of the column. E.g. date counters should count non-nulls but also report min and
 max dates in their ranges. Enums have already been split accordingly.
 """
+# TODO(#26022): Remove placeholder references in admin panel state table views
 from typing import List
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker

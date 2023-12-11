@@ -80,7 +80,6 @@ from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
     get_all_entities_from_tree,
     get_many_to_many_relationships,
-    is_placeholder,
     is_reference_only_entity,
     set_backedges,
 )
@@ -359,130 +358,6 @@ class TestCoreEntityFieldIndex(TestCase):
                 schema.StatePerson, EntityFieldType.FORWARD_EDGE
             )
 
-
-PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateAssessment: [schema.StateAssessment(state_code=StateCode.US_XX.value)],
-    schema.StateCharge: [
-        schema.StateCharge(
-            state_code=StateCode.US_XX.value,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
-        )
-    ],
-    schema.StateDrugScreen: [schema.StateDrugScreen(state_code=StateCode.US_XX.value)],
-    schema.StateEmploymentPeriod: [
-        schema.StateEmploymentPeriod(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateEarlyDischarge: [
-        schema.StateEarlyDischarge(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationIncident: [
-        schema.StateIncarcerationIncident(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationIncidentOutcome: [
-        schema.StateIncarcerationIncidentOutcome(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationPeriod: [
-        schema.StateIncarcerationPeriod(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateIncarcerationSentence: [
-        schema.StateIncarcerationSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-        )
-    ],
-    schema.StatePerson: [
-        schema.StatePerson(state_code=StateCode.US_XX.value),
-        schema.StatePerson(
-            state_code=StateCode.US_XX.value,
-            assessments=[
-                schema.StateAssessment(
-                    state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-                )
-            ],
-        ),
-    ],
-    schema.StatePersonAddressPeriod: [
-        schema.StatePersonAddressPeriod(state_code=StateCode.US_XX)
-    ],
-    schema.StatePersonAlias: [
-        schema.StatePersonAlias(state_code=StateCode.US_XX.value)
-    ],
-    schema.StatePersonEthnicity: [
-        schema.StatePersonEthnicity(state_code=StateCode.US_XX.value)
-    ],
-    schema.StatePersonExternalId: [],
-    schema.StatePersonRace: [schema.StatePersonRace(state_code=StateCode.US_XX.value)],
-    schema.StateProgramAssignment: [
-        schema.StateProgramAssignment(
-            state_code=StateCode.US_XX.value,
-            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
-        )
-    ],
-    schema.StateStaff: [schema.StateStaff(state_code=StateCode.US_XX.value)],
-    schema.StateStaffExternalId: [],
-    schema.StateStaffCaseloadTypePeriod: [
-        # StateStaffCaseloadTypePeriod cannot be placeholders - must always have an
-        # external_id and start_date.
-    ],
-    schema.StateStaffLocationPeriod: [
-        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
-        # external_id and start_date.
-    ],
-    schema.StateStaffRolePeriod: [
-        # StateStaffRolePeriod cannot be placeholders - must always have an external_id
-        # and start_date.
-    ],
-    schema.StateStaffSupervisorPeriod: [
-        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
-        # external_id and start_date.
-    ],
-    schema.StateSupervisionCaseTypeEntry: [
-        schema.StateSupervisionCaseTypeEntry(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionContact: [
-        schema.StateSupervisionContact(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionPeriod: [
-        schema.StateSupervisionPeriod(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionSentence: [
-        schema.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-        ),
-        schema.StateSupervisionSentence(
-            state_code=StateCode.US_XX.value,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            charges=[
-                schema.StateCharge(
-                    state_code=StateCode.US_XX.value,
-                    external_id=_EXTERNAL_ID,
-                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
-                )
-            ],
-        ),
-    ],
-    schema.StateSupervisionViolatedConditionEntry: [
-        schema.StateSupervisionViolatedConditionEntry(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionViolation: [
-        schema.StateSupervisionViolation(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionViolationResponse: [
-        schema.StateSupervisionViolationResponse(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateSupervisionViolationResponseDecisionEntry: [
-        schema.StateSupervisionViolationResponseDecisionEntry(
-            state_code=StateCode.US_XX.value
-        )
-    ],
-    schema.StateSupervisionViolationTypeEntry: [
-        schema.StateSupervisionViolationTypeEntry(state_code=StateCode.US_XX.value)
-    ],
-    schema.StateTaskDeadline: [
-        schema.StateTaskDeadline(state_code=StateCode.US_XX.value)
-    ],
-}
 
 REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
     schema.StateAssessment: [
@@ -1062,45 +937,9 @@ class TestEntityUtils(TestCase):
             )
         )
 
-    def test_is_placeholder(self) -> None:
-        field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_state_database_entities():
-            if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
-                self.fail(
-                    f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"
-                )
-            for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
-                self.assertIsInstance(entity, db_entity_cls)
-                with self.assertRaises(ValueError):
-                    is_placeholder(entity, field_index)
-
-            if db_entity_cls not in REFERENCE_ENTITY_EXAMPLES:
-                self.fail(
-                    f"Expected to find [{db_entity_cls}] in REFERENCE_ENTITY_EXAMPLES"
-                )
-            for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
-                self.assertIsInstance(entity, db_entity_cls)
-                self.assertFalse(is_placeholder(entity, field_index))
-
-            if db_entity_cls not in HAS_MEANINGFUL_DATA_ENTITIES:
-                self.fail(
-                    f"Expected to find [{db_entity_cls}] in NON_REFERENCE_ENTITY_EXAMPLES"
-                )
-            for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
-                self.assertIsInstance(entity, db_entity_cls)
-                self.assertFalse(is_placeholder(entity, field_index))
-
     def test_is_reference_only_entity(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
-            if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
-                self.fail(
-                    f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"
-                )
-            for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
-                self.assertIsInstance(entity, db_entity_cls)
-                self.assertFalse(is_reference_only_entity(entity, field_index))
-
             if db_entity_cls not in REFERENCE_ENTITY_EXAMPLES:
                 self.fail(
                     f"Expected to find [{db_entity_cls}] in REFERENCE_ENTITY_EXAMPLES"

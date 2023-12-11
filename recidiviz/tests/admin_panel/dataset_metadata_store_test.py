@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+# TODO(#26022): Remove placeholder references in admin panel state table views
 """Implements tests for the DatasetMetadataCountsStore class."""
 import os
 from collections import defaultdict

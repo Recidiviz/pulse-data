@@ -285,12 +285,20 @@ class MultipleStateTestMixin:
 
     def test_insertRootEntities_succeeds(self):
         # Arrange
-        # Write initial placeholder person to database
-        placeholder_person = state_schema.StatePerson(
-            person_id=0, state_code=STATE_CODE
-        )
+        # Write initial person to database
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(placeholder_person)
+            initial_person = state_schema.StatePerson(
+                person_id=0,
+                state_code=STATE_CODE,
+                external_ids=[
+                    state_schema.StatePersonExternalId(
+                        state_code=STATE_CODE,
+                        external_id="INITIAL",
+                        id_type=FAKE_PERSON_ID_TYPE,
+                    )
+                ],
+            )
+            session.add(initial_person)
 
         # Act
         self.run_transactions(
@@ -324,12 +332,20 @@ class MultipleStateTestMixin:
 
     def test_insertOverlappingTypes_succeeds(self):
         # Arrange
-        # Write initial placeholder person to database
+        # Write initial person to database
         with SessionFactory.using_database(self.database_key) as session:
-            placeholder_person = state_schema.StatePerson(
-                person_id=0, state_code=STATE_CODE
+            initial_person = state_schema.StatePerson(
+                person_id=0,
+                state_code=STATE_CODE,
+                external_ids=[
+                    state_schema.StatePersonExternalId(
+                        state_code=STATE_CODE,
+                        external_id="INITIAL",
+                        id_type=FAKE_PERSON_ID_TYPE,
+                    )
+                ],
             )
-            session.add(placeholder_person)
+            session.add(initial_person)
 
         # Write root entities to be updated
         self.write_entities(
@@ -401,14 +417,14 @@ class MultipleStateTestMixin:
         assert len(people_result) == 3
         assert people_result[0].full_name is None
         assert (
-            people_result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        )
-        assert len(people_result[2].assessments) == 1
-        assert (
-            people_result[1].full_name
-            == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         )
         assert len(people_result[1].assessments) == 1
+        assert (
+            people_result[2].full_name
+            == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        )
+        assert len(people_result[2].assessments) == 1
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2
@@ -424,10 +440,20 @@ class MultipleStateTestMixin:
 
     def test_insertNonOverlappingTypes_succeeds(self):
         # Arrange
-        # Write initial placeholder person to database
+        # Write initial person to database
         with SessionFactory.using_database(self.database_key) as session:
-            placeholder_person = state_schema.StatePerson(state_code=STATE_CODE)
-            session.add(placeholder_person)
+            initial_person = state_schema.StatePerson(
+                person_id=0,
+                state_code=STATE_CODE,
+                external_ids=[
+                    state_schema.StatePersonExternalId(
+                        state_code=STATE_CODE,
+                        external_id="INITIAL",
+                        id_type=FAKE_PERSON_ID_TYPE,
+                    )
+                ],
+            )
+            session.add(initial_person)
 
         # Write persons to be updated
         self.write_entities(
@@ -499,14 +525,14 @@ class MultipleStateTestMixin:
         assert len(people_result) == 3
         assert people_result[0].full_name is None
         assert (
-            people_result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         )
-        assert len(people_result[2].assessments) == 1
+        assert len(people_result[1].assessments) == 1
         assert (
-            people_result[1].full_name
+            people_result[2].full_name
             == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         )
-        assert len(people_result[1].program_assignments) == 1
+        assert len(people_result[2].program_assignments) == 1
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2
@@ -522,12 +548,20 @@ class MultipleStateTestMixin:
 
     def test_updateOverlappingTypes_succeeds(self):
         # Arrange
-        # Write initial placeholder person to database
+        # Write initial person to database
         with SessionFactory.using_database(self.database_key) as session:
-            placeholder_person = state_schema.StatePerson(
-                person_id=0, state_code=STATE_CODE
+            initial_person = state_schema.StatePerson(
+                person_id=0,
+                state_code=STATE_CODE,
+                external_ids=[
+                    state_schema.StatePersonExternalId(
+                        state_code=STATE_CODE,
+                        external_id="INITIAL",
+                        id_type=FAKE_PERSON_ID_TYPE,
+                    )
+                ],
             )
-            session.add(placeholder_person)
+            session.add(initial_person)
 
         # Write persons to be updated
         self.write_entities(
@@ -569,13 +603,13 @@ class MultipleStateTestMixin:
         result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
         assert result[0].full_name is None
-        assert result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        assert len(result[2].incarceration_sentences) == 1
-        assert result[2].incarceration_sentences[0].status == "COMPLETED"
-        assert result[1].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         assert len(result[1].incarceration_sentences) == 1
-
         assert result[1].incarceration_sentences[0].status == "COMPLETED"
+        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert len(result[2].incarceration_sentences) == 1
+
+        assert result[2].incarceration_sentences[0].status == "COMPLETED"
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2
@@ -593,12 +627,20 @@ class MultipleStateTestMixin:
 
     def test_updateNonOverlappingTypes_succeeds(self):
         # Arrange
-        # Write initial placeholder person to database
+        # Write initial person to database
         with SessionFactory.using_database(self.database_key) as session:
-            placeholder_person = state_schema.StatePerson(
-                person_id=0, state_code=STATE_CODE
+            initial_person = state_schema.StatePerson(
+                person_id=0,
+                state_code=STATE_CODE,
+                external_ids=[
+                    state_schema.StatePersonExternalId(
+                        state_code=STATE_CODE,
+                        external_id="INITIAL",
+                        id_type=FAKE_PERSON_ID_TYPE,
+                    )
+                ],
             )
-            session.add(placeholder_person)
+            session.add(initial_person)
 
         # Write persons to be updated
         self.write_entities(
@@ -642,16 +684,16 @@ class MultipleStateTestMixin:
         assert len(people_result) == 3
         assert people_result[0].full_name is None
         assert (
-            people_result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         )
-        assert len(people_result[2].races) == 1
-        assert people_result[2].races[0].race == "WHITE"
+        assert len(people_result[1].races) == 1
+        assert people_result[1].races[0].race == "WHITE"
         assert (
-            people_result[1].full_name
+            people_result[2].full_name
             == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         )
-        assert len(people_result[1].incarceration_sentences) == 1
-        assert people_result[1].incarceration_sentences[0].status == "COMPLETED"
+        assert len(people_result[2].incarceration_sentences) == 1
+        assert people_result[2].incarceration_sentences[0].status == "COMPLETED"
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2
