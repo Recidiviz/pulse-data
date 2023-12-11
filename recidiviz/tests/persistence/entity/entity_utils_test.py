@@ -41,6 +41,9 @@ from recidiviz.common.constants.state.state_person import (
     StateGender,
     StateRace,
 )
+from recidiviz.common.constants.state.state_person_address_period import (
+    StatePersonAddressType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -398,6 +401,9 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
             ],
         ),
     ],
+    schema.StatePersonAddressPeriod: [
+        schema.StatePersonAddressPeriod(state_code=StateCode.US_XX)
+    ],
     schema.StatePersonAlias: [
         schema.StatePersonAlias(state_code=StateCode.US_XX.value)
     ],
@@ -555,6 +561,7 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
             ],
         ),
     ],
+    schema.StatePersonAddressPeriod: [],
     schema.StatePersonAlias: [],
     schema.StatePersonEthnicity: [],
     schema.StatePersonExternalId: [],
@@ -785,6 +792,12 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         schema.StatePerson(
             state_code=StateCode.US_XX.value,
             gender=StateGender.MALE,
+        ),
+    ],
+    schema.StatePersonAddressPeriod: [
+        schema.StatePersonAddressPeriod(
+            state_code=StateCode.US_XX.value,
+            address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
         ),
     ],
     schema.StatePersonAlias: [

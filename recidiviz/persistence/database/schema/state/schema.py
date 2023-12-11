@@ -215,6 +215,15 @@ state_incarceration_type = Enum(
     name="state_incarceration_type",
 )
 
+state_person_address_type = Enum(
+    state_enum_strings.state_person_address_type_physical_residence,
+    state_enum_strings.state_person_address_type_physical_other,
+    state_enum_strings.state_person_address_type_mailing_only,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_person_address_type",
+)
+
 state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_affiliation_name,
     state_enum_strings.state_person_alias_alias_type_alias,
@@ -483,7 +492,6 @@ state_supervision_violated_condition_type = Enum(
     name="state_supervision_violated_condition_type",
 )
 
-
 state_supervision_violation_response_type = Enum(
     state_enum_strings.state_supervision_violation_response_type_citation,
     state_enum_strings.state_supervision_violation_response_type_violation_report,
@@ -641,7 +649,6 @@ state_supervision_contact_method = Enum(
     name="state_supervision_contact_method",
 )
 
-
 state_employment_period_employment_status = Enum(
     state_enum_strings.state_employment_period_employment_status_alternate_income_source,
     state_enum_strings.state_employment_period_employment_status_employed,
@@ -755,7 +762,6 @@ state_staff_caseload_type = Enum(
     name="state_staff_caseload_type",
 )
 
-
 # Join tables
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
@@ -843,6 +849,87 @@ class _ReferencesStatePersonSharedColumns:
                 FOREIGN_KEY_COMMENT_TEMPLATE, object_name="person"
             ),
         )
+
+
+class StatePersonAddressPeriod(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StatePersonAddressPeriod in the SQL schema"""
+
+    __tablename__ = "state_person_address_period"
+    __table_args__ = {
+        "comment": "The StatePersonAddressPeriod object represents "
+        "information about a person’s address during a particular period of time."
+        " This object can be used to identify a person’s physical residence over "
+        "time or their contact information for receiving mail."
+    }
+
+    person_address_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person address period"
+        ),
+    )
+
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+
+    address_line_1 = Column(
+        String(255),
+        comment="The first line of the address, used to display street number and name.",
+    )
+
+    address_line_2 = Column(
+        String(255),
+        comment="The second line of the address, should denote apt. number or PO box number",
+    )
+
+    address_city = Column(
+        String(255),
+        comment="The city name of the address",
+    )
+
+    address_zip = Column(
+        String(255),
+        comment="The 5 digit zipcode of the address",
+    )
+
+    address_county = Column(
+        String(255),
+        comment="The county name of the address",
+    )
+
+    address_start_date = Column(
+        Date,
+        comment="Date on which a person’s address changed or was registered for the first time",
+    )
+
+    address_end_date = Column(
+        Date,
+        comment="Date on which a person’s address ended",
+    )
+
+    address_is_verified = Column(
+        Boolean,
+        comment="Boolean to determine whether the person’s address has been verified",
+    )
+
+    address_type = Column(
+        state_person_address_type, nullable=False, comment="Indicates the address type"
+    )
+
+    address_type_raw_text = Column(
+        String(255),
+        comment="Text used to infer address_type",
+    )
+
+    address_metadata = Column(
+        String(255),
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of a particular address",
+    )
 
 
 class StatePersonExternalId(StateBase, _ReferencesStatePersonSharedColumns):
@@ -1095,6 +1182,9 @@ class StatePerson(StateBase):
     drug_screens = relationship("StateDrugScreen", backref="person", lazy="selectin")
     task_deadlines = relationship(
         "StateTaskDeadline", backref="person", lazy="selectin"
+    )
+    address_periods = relationship(
+        "StatePersonAddressPeriod", backref="person", lazy="selectin"
     )
 
 

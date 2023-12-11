@@ -33,6 +33,19 @@ from recidiviz.persistence.entity.entity_deserialize import (
 from recidiviz.persistence.entity.state import entities
 
 
+class StatePersonAddressPeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StatePersonAddressPeriod:
+        return entity_deserialize(
+            cls=entities.StatePersonAddressPeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
 class StatePersonExternalIdFactory(EntityFactory):
     @staticmethod
     def deserialize(
