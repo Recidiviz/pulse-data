@@ -43,6 +43,7 @@ SUPERVISION_TYPE_ORDERED_PRIORITY = [
     StateSupervisionPeriodSupervisionType.PROBATION,
     StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+    StateSupervisionPeriodSupervisionType.WARRANT_STATUS,
     StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
     StateSupervisionPeriodSupervisionType.ABSCONSION,
     StateSupervisionPeriodSupervisionType.INVESTIGATION,

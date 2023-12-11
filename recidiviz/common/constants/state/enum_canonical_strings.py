@@ -310,7 +310,10 @@ state_supervision_period_supervision_type_dual = "DUAL"
 state_supervision_period_supervision_type_community_confinement = (
     "COMMUNITY_CONFINEMENT"
 )
+# TODO(#26027): Rename BENCH_WARRANT to something more descriptive to differentiate
+# it from WARRANT_STATUS
 state_supervision_period_supervision_type_bench_warrant = "BENCH_WARRANT"
+state_supervision_period_supervision_type_warrant_status = "WARRANT_STATUS"
 
 state_supervision_period_admission_reason_absconsion = "ABSCONSION"
 state_supervision_period_admission_reason_release_from_incarceration = (

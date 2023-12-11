@@ -29,6 +29,8 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     time."""
 
     ABSCONSION = state_enum_strings.state_supervision_period_supervision_type_absconsion
+    # TODO(#26027): Rename BENCH_WARRANT to something more descriptive to differentiate
+    # it from WARRANT_STATUS
     BENCH_WARRANT = (
         state_enum_strings.state_supervision_period_supervision_type_bench_warrant
     )
@@ -46,6 +48,9 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     )
     PAROLE = state_enum_strings.state_supervision_period_supervision_type_parole
     PROBATION = state_enum_strings.state_supervision_period_supervision_type_probation
+    WARRANT_STATUS = (
+        state_enum_strings.state_supervision_period_supervision_type_warrant_status
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -65,7 +70,8 @@ _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_VALUE_DESCRIPTIONS: Dict[
     "absconding (when the person on supervision has stopped reporting to their "
     "supervising officer, and the officer cannot contact or locate them).",
     StateSupervisionPeriodSupervisionType.BENCH_WARRANT: "Used when a judge has issued "
-    "a warrant for the arrest of a person on supervision. A judge can issue a bench "
+    "a warrant for the arrest of a person on supervision, such that the person is not "
+    "on active supervision (similar to absconsion status). A judge can issue a bench "
     "warrant when an individual on supervision violates the rules of the court, most "
     "often when they fail to show up to court. The police can treat this similar to "
     "an open arrest warrant and use it to bring an individual back in front of the "
@@ -108,6 +114,8 @@ _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_VALUE_DESCRIPTIONS: Dict[
     "supervision - often in lieu of being sentenced to incarceration. Individuals "
     "on probation report to a supervision officer, and must follow the conditions of "
     "their supervision as determined by the judge and person’s supervision officer.",
+    StateSupervisionPeriodSupervisionType.WARRANT_STATUS: "Used when a person has been "
+    "issued a warrant in response to some behavior, but is still on active supervision.",
 }
 
 
@@ -499,6 +507,8 @@ def get_most_relevant_supervision_type(
         return StateSupervisionPeriodSupervisionType.INVESTIGATION
     if StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION in supervision_types:
         return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+    if StateSupervisionPeriodSupervisionType.WARRANT_STATUS in supervision_types:
+        return StateSupervisionPeriodSupervisionType.WARRANT_STATUS
     if StateSupervisionPeriodSupervisionType.BENCH_WARRANT in supervision_types:
         return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
     if StateSupervisionPeriodSupervisionType.ABSCONSION in supervision_types:

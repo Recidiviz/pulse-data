@@ -428,6 +428,7 @@ state_supervision_period_supervision_type = Enum(
     state_enum_strings.state_supervision_period_supervision_type_dual,
     state_enum_strings.state_supervision_period_supervision_type_community_confinement,
     state_enum_strings.state_supervision_period_supervision_type_bench_warrant,
+    state_enum_strings.state_supervision_period_supervision_type_warrant_status,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_supervision_period_supervision_type",

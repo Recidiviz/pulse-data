@@ -136,6 +136,7 @@ def filter_out_supervision_period_types_excluded_from_pre_admission_search(
     not_included_in_search: List[StateSupervisionPeriodSupervisionType] = [
         StateSupervisionPeriodSupervisionType.ABSCONSION,
         StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
+        StateSupervisionPeriodSupervisionType.WARRANT_STATUS,
         StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
         StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
     ]

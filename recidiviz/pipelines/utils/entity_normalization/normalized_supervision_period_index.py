@@ -217,6 +217,7 @@ def _transfer_from_supervision_type_is_official_admission(
         StateSupervisionPeriodSupervisionType.PROBATION,
         StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
         StateSupervisionPeriodSupervisionType.ABSCONSION,
+        StateSupervisionPeriodSupervisionType.WARRANT_STATUS,
     ]
 
     if supervision_type in official_start_supervision_types:
