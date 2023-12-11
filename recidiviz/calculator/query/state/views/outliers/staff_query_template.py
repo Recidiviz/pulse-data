@@ -36,7 +36,7 @@ def staff_query_template(role: str) -> str:
     if role == "SUPERVISION_OFFICER":
         source_tbl = f"""
         -- A supervision officer in the Outliers product is anyone that has open person assignment periods
-         and metrics calculated, in which case we can assume they have an active caseload. 
+        -- and metrics calculated, in which case we can assume they have an active caseload. 
         SELECT DISTINCT
             state_code,
             officer_id AS external_id
