@@ -27,6 +27,8 @@ from urllib.parse import unquote
 import attr
 from google.cloud import storage
 
+ZIP_FILE_EXTENSION = "zip"
+
 
 def strip_forward_slash(string: str) -> str:
     if string.startswith("/"):
@@ -185,6 +187,15 @@ class GcsfsFilePath(GcsfsPath):
     @property
     def file_name(self) -> str:
         return os.path.basename(self.blob_name)
+
+    @property
+    def extension(self) -> str:
+        _, ext = os.path.splitext(self.file_name)
+        return ext.lstrip(".")
+
+    @property
+    def has_zip_extension(self) -> bool:
+        return self.extension == ZIP_FILE_EXTENSION
 
     def abs_path(self) -> str:
         return os.path.join(self.bucket_name, self.blob_name)
