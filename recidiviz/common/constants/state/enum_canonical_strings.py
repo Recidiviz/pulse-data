@@ -243,6 +243,14 @@ state_person_address_type_physical_residence = "PHYSICAL_RESIDENCE"
 state_person_address_type_physical_other = "PHYSICAL_OTHER"
 state_person_address_type_mailing_only = "MAILING_ONLY"
 
+# state_person_housing_status_period.py
+state_person_housing_status_type_unhoused = "UNHOUSED"
+state_person_housing_status_type_temporary_or_supportive_housing = (
+    "TEMPORARY_OR_SUPPORTIVE_HOUSING"
+)
+state_person_housing_status_type_permanent_residence = "PERMANENT_RESIDENCE"
+state_person_housing_status_type_facility = "FACILITY"
+
 # state_person_alias.py
 state_person_alias_alias_type_affiliation_name = "AFFILIATION_NAME"
 state_person_alias_alias_type_alias = "ALIAS"

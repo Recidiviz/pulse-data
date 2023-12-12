@@ -73,6 +73,9 @@ from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
+from recidiviz.common.constants.state.state_person_housing_status_period import (
+    StatePersonHousingStatusType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -208,6 +211,41 @@ class StatePersonAddressPeriod(EnumEntity, BuildableAttr, DefaultableAttr):
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     person_address_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StatePersonHousingStatusPeriod(EnumEntity, BuildableAttr, DefaultableAttr):
+    """Models a housing status period associated with a particular StatePerson."""
+
+    # State Code
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    housing_status_start_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    housing_status_end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    housing_status_type: StatePersonHousingStatusType = attr.ib(
+        default=None,
+        validator=attr.validators.instance_of(StatePersonHousingStatusType),
+    )
+
+    housing_status_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    person_housing_status_period_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 
@@ -427,6 +465,9 @@ class StatePerson(
         factory=list, validator=attr_validators.is_list
     )
     address_periods: List["StatePersonAddressPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    housing_status_periods: List["StatePersonHousingStatusPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
 

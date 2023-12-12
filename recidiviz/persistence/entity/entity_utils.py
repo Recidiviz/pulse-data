@@ -69,6 +69,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StatePerson.__name__,
     state_entities.StatePersonExternalId.__name__,
     state_entities.StatePersonAddressPeriod.__name__,
+    state_entities.StatePersonHousingStatusPeriod.__name__,
     state_entities.StatePersonAlias.__name__,
     state_entities.StatePersonRace.__name__,
     state_entities.StatePersonEthnicity.__name__,

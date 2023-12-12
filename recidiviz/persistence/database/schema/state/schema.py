@@ -224,6 +224,16 @@ state_person_address_type = Enum(
     name="state_person_address_type",
 )
 
+state_person_housing_status_type = Enum(
+    state_enum_strings.state_person_housing_status_type_unhoused,
+    state_enum_strings.state_person_housing_status_type_temporary_or_supportive_housing,
+    state_enum_strings.state_person_housing_status_type_permanent_residence,
+    state_enum_strings.state_person_housing_status_type_facility,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_person_housing_status_type",
+)
+
 state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_affiliation_name,
     state_enum_strings.state_person_alias_alias_type_alias,
@@ -933,6 +943,55 @@ class StatePersonAddressPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     )
 
 
+class StatePersonHousingStatusPeriod(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StatePersonHousingStatusPeriod in the SQL schema"""
+
+    __tablename__ = "state_person_housing_status_period"
+    __table_args__ = {
+        "comment": "The StatePersonHousingStatusPeriod object represents "
+        "information about a person’s housing status during a particular "
+        "period of time. This object can be used to identify when a person"
+        " is currently, or has been previously, unhoused or living "
+        "in temporary housing"
+    }
+
+    person_housing_status_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="person address period"
+        ),
+    )
+
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+
+    housing_status_start_date = Column(
+        Date,
+        comment="Date on which a person’s housing status changed or was registered for the first time",
+    )
+
+    housing_status_end_date = Column(
+        Date,
+        comment="Date on which a person’s housing status ended ",
+    )
+
+    housing_status_type = Column(
+        state_person_housing_status_type,
+        nullable=False,
+        comment="Indicates the housing status type",
+    )
+
+    housing_status_type_raw_text = Column(
+        String(255),
+        comment="Text used to infer housing_status_type",
+    )
+
+
 class StatePersonExternalId(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StatePersonExternalId in the SQL schema"""
 
@@ -1186,6 +1245,9 @@ class StatePerson(StateBase):
     )
     address_periods = relationship(
         "StatePersonAddressPeriod", backref="person", lazy="selectin"
+    )
+    housing_status_periods = relationship(
+        "StatePersonHousingStatusPeriod", backref="person", lazy="selectin"
     )
 
 
