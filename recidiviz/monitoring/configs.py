@@ -121,7 +121,7 @@ class CounterInstrumentConfig(InstrumentConfig):
     instrument_key: CounterInstrumentKey = attr.ib()
 
     def create_instrument(self, meter: Meter) -> Counter:
-        return meter.create_counter(self.common_kwargs)
+        return meter.create_counter(**self.common_kwargs)
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -147,7 +147,7 @@ class ObservableGaugeInstrumentConfig(InstrumentConfig):
     def create_instrument(self, meter: Meter) -> ObservableGauge:
         callbacks = []
         for callback in self.callbacks:
-            module_name, method_name = callback.rsplit(".")
+            module_name, method_name = callback.rsplit(".", maxsplit=1)
             callbacks.append(getattr(importlib.import_module(module_name), method_name))
 
         return meter.create_observable_gauge(

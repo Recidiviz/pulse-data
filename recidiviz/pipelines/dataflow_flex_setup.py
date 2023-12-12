@@ -51,9 +51,18 @@ REQUIRED_PACKAGES = [
     "jsonschema",
     "more-itertools",
     "oauth2client",
-    "opencensus",
-    "opencensus-correlation",
-    "opencensus-ext-stackdriver",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-gcp-monitoring",
+    "opentelemetry-exporter-gcp-trace",
+    "opentelemetry-resourcedetector-gcp",
+    "opentelemetry-instrumentation-flask",
+    "opentelemetry-instrumentation-grpc",
+    "opentelemetry-instrumentation-redis",
+    "opentelemetry-instrumentation-requests",
+    # TODO(open-telemetry/opentelemetry-python-contrib#2085): Unpin once 0.43b0 is released
+    "opentelemetry-instrumentation-sqlalchemy==0.41b0",
+    "opentelemetry-semantic-conventions==0.41b0",
     # Must stay up-to-date with latest protobuf version in the Pipfile
     "protobuf==3.20.3",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
