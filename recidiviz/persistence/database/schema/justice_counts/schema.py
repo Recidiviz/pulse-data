@@ -847,6 +847,8 @@ class DatapointHistory(JusticeCountsBase):
     timestamp = Column(DateTime, nullable=False)
     old_value = Column(String, nullable=True)
     new_value = Column(String, nullable=True)
+    old_upload_method = Column(String, nullable=True)
+    new_upload_method = Column(String, nullable=True)
 
     __table_args__ = tuple(
         [

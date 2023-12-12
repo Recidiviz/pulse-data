@@ -111,6 +111,49 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 created_datetime,
             )
 
+    def test_record_change_history_for_report_datapoints(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            monthly_report = self.test_schema_objects.test_report_monthly
+            created_datetime = datetime.datetime.now()
+
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=monthly_report,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
+                value="123abc",
+                metric_definition_key=law_enforcement.funding.key,
+                current_time=created_datetime,
+                upload_method=UploadMethod.MANUAL_ENTRY,
+            )
+            session.commit()
+            session.refresh(monthly_report)
+
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            # Update datapoint with new value
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=monthly_report,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
+                value="456def",
+                metric_definition_key=law_enforcement.funding.key,
+                current_time=created_datetime + datetime.timedelta(days=2),
+                upload_method=UploadMethod.BULK_UPLOAD,
+            )
+
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 1)
+            datapoint = datapoint_histories[0]
+            self.assertEqual(datapoint.old_value, "123abc")
+            self.assertEqual(datapoint.new_value, "456def")
+            self.assertEqual(datapoint.old_upload_method, "MANUAL_ENTRY")
+            self.assertEqual(datapoint.new_upload_method, "BULK_UPLOAD")
+
     def test_save_agency_datapoints_turnoff_whole_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A

@@ -431,8 +431,6 @@ class DatapointInterface:
             new_datapoint.last_updated = current_time
             session.add(new_datapoint)
         else:
-            # Save existing datapoint value before it gets overwritten in merge
-            existing_datapoint_value = existing_datapoint.value
             # Compare values using `get_value` so e.g. 3 == 3.0
             equal_to_existing = get_value(datapoint=new_datapoint) == get_value(
                 datapoint=existing_datapoint
@@ -442,6 +440,9 @@ class DatapointInterface:
                 new_datapoint.last_updated = existing_datapoint.last_updated
             else:
                 new_datapoint.last_updated = current_time
+            # Save existing datapoint values before overwritting it in merge.
+            existing_datapoint_value = existing_datapoint.value
+            old_upload_method = existing_datapoint.upload_method
             new_datapoint = session.merge(new_datapoint)
             if not equal_to_existing:
                 session.add(
@@ -453,6 +454,8 @@ class DatapointInterface:
                         timestamp=current_time,
                         old_value=existing_datapoint_value,
                         new_value=str(value) if value is not None else value,
+                        old_upload_method=old_upload_method,
+                        new_upload_method=upload_method.value,
                     )
                 )
 
