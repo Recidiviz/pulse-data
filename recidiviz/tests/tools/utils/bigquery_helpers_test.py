@@ -30,7 +30,8 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.tools.utils.bigquery_helpers import (
     dataset_id_to_filter_regex,
     dataset_prefix_to_filter_regex,
-    run_operation_for_tables,
+    run_operation_for_given_tables,
+    run_operation_for_tables_in_datasets,
 )
 
 
@@ -107,14 +108,14 @@ class RunOperationForTablesTest(unittest.TestCase):
 
         self.mock_bq_client.list_tables.side_effect = mock_list_tables
 
-    def test_run_operation_for_tables(self) -> None:
+    def test_run_operation_for_datasets(self) -> None:
         # pylint:disable=unused-argument
         def return_address(
             client: BigQueryClient, address: ProjectSpecificBigQueryAddress
         ) -> ProjectSpecificBigQueryAddress:
             return address
 
-        result = run_operation_for_tables(
+        result = run_operation_for_tables_in_datasets(
             client=self.mock_bq_client,
             operation=return_address,
             prompt=None,
@@ -157,7 +158,7 @@ class RunOperationForTablesTest(unittest.TestCase):
         ) -> str:
             return address.table_id
 
-        result_2 = run_operation_for_tables(
+        result_2 = run_operation_for_tables_in_datasets(
             client=self.mock_bq_client,
             prompt=None,
             operation=return_table_id,
@@ -176,14 +177,14 @@ class RunOperationForTablesTest(unittest.TestCase):
             sorted(result_2.values()),
         )
 
-    def test_run_operation_for_tables_filtered(self) -> None:
+    def test_run_operation_for_datasets_filtered(self) -> None:
         # pylint:disable=unused-argument
         def return_address(
             client: BigQueryClient, address: ProjectSpecificBigQueryAddress
         ) -> ProjectSpecificBigQueryAddress:
             return address
 
-        result = run_operation_for_tables(
+        result = run_operation_for_tables_in_datasets(
             client=self.mock_bq_client,
             prompt=None,
             operation=return_address,
@@ -205,7 +206,7 @@ class RunOperationForTablesTest(unittest.TestCase):
             set(result.values()),
         )
 
-        result = run_operation_for_tables(
+        result = run_operation_for_tables_in_datasets(
             client=self.mock_bq_client,
             prompt=None,
             operation=return_address,
@@ -229,7 +230,7 @@ class RunOperationForTablesTest(unittest.TestCase):
         )
 
     @patch("recidiviz.tools.utils.bigquery_helpers.prompt_for_confirmation")
-    def test_run_operation_for_tables_with_prompt_exit(
+    def test_run_operation_for_datasets_with_prompt_exit(
         self, mock_prompt: MagicMock
     ) -> None:
         # pylint:disable=unused-argument
@@ -243,7 +244,7 @@ class RunOperationForTablesTest(unittest.TestCase):
 
         mock_prompt.side_effect = fail_prompt_for_confirmation
         with self.assertRaises(SystemExit):
-            run_operation_for_tables(
+            run_operation_for_tables_in_datasets(
                 client=self.mock_bq_client,
                 prompt="Continue",
                 operation=failing_action,
@@ -255,7 +256,7 @@ class RunOperationForTablesTest(unittest.TestCase):
         self.mock_bq_client.list_tables.assert_not_called()
 
     @patch("recidiviz.tools.utils.bigquery_helpers.prompt_for_confirmation")
-    def test_run_operation_for_tables_with_prompt_continue(
+    def test_run_operation_for_datasets_with_prompt_continue(
         self, mock_prompt: MagicMock
     ) -> None:
         # pylint:disable=unused-argument
@@ -270,7 +271,7 @@ class RunOperationForTablesTest(unittest.TestCase):
             return True
 
         mock_prompt.side_effect = succeed_prompt_for_confirmation
-        result = run_operation_for_tables(
+        result = run_operation_for_tables_in_datasets(
             client=self.mock_bq_client,
             prompt="Continue",
             operation=return_address,
@@ -293,4 +294,99 @@ class RunOperationForTablesTest(unittest.TestCase):
                 ),
             },
             set(result.values()),
+        )
+
+    def test_run_operation_for_tables(self) -> None:
+        # pylint:disable=unused-argument
+        def return_address(
+            client: BigQueryClient, address: ProjectSpecificBigQueryAddress
+        ) -> ProjectSpecificBigQueryAddress:
+            return address
+
+        test_tables = [
+            ProjectSpecificBigQueryAddress(
+                project_id="recidiviz-456",
+                dataset_id="my_dataset",
+                table_id="table_1",
+            ),
+            ProjectSpecificBigQueryAddress(
+                project_id="recidiviz-456",
+                dataset_id="my_dataset",
+                table_id="table_2",
+            ),
+            ProjectSpecificBigQueryAddress(
+                project_id="recidiviz-456",
+                dataset_id="my_dataset_2",
+                table_id="table_3",
+            ),
+            ProjectSpecificBigQueryAddress(
+                project_id="recidiviz-456",
+                dataset_id="my_prefix_my_dataset",
+                table_id="table_1",
+            ),
+            ProjectSpecificBigQueryAddress(
+                project_id="recidiviz-456",
+                dataset_id="my_prefix_my_dataset",
+                table_id="table_2",
+            ),
+        ]
+
+        result = run_operation_for_given_tables(
+            client=self.mock_bq_client,
+            operation=return_address,
+            tables=test_tables,
+        )
+
+        self.assertEqual(
+            {
+                ProjectSpecificBigQueryAddress(
+                    project_id="recidiviz-456",
+                    dataset_id="my_dataset",
+                    table_id="table_1",
+                ),
+                ProjectSpecificBigQueryAddress(
+                    project_id="recidiviz-456",
+                    dataset_id="my_dataset",
+                    table_id="table_2",
+                ),
+                ProjectSpecificBigQueryAddress(
+                    project_id="recidiviz-456",
+                    dataset_id="my_dataset_2",
+                    table_id="table_3",
+                ),
+                ProjectSpecificBigQueryAddress(
+                    project_id="recidiviz-456",
+                    dataset_id="my_prefix_my_dataset",
+                    table_id="table_1",
+                ),
+                ProjectSpecificBigQueryAddress(
+                    project_id="recidiviz-456",
+                    dataset_id="my_prefix_my_dataset",
+                    table_id="table_2",
+                ),
+            },
+            set(result.values()),
+        )
+
+        def return_table_id(
+            client: BigQueryClient, address: ProjectSpecificBigQueryAddress
+        ) -> str:
+            return address.table_id
+
+        result_2 = run_operation_for_given_tables(
+            client=self.mock_bq_client,
+            operation=return_table_id,
+            tables=test_tables,
+        )
+
+        self.assertEqual(
+            [
+                "table_1",
+                # Duplicates are from the sandbox dataset
+                "table_1",
+                "table_2",
+                "table_2",
+                "table_3",
+            ],
+            sorted(result_2.values()),
         )
