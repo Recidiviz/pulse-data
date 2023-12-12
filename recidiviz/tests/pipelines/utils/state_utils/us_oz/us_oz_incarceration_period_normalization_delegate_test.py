@@ -47,14 +47,20 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
             ),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         )
-        lotr_period_with_admission_reason = StateIncarcerationPeriod.new_with_defaults(
+        self.assertEqual(
+            self.delegate.incarceration_admission_reason_override(
+                lotr_period_no_admission_reason, None
+            ),
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        )
+        sm_period_with_admission_reason = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
-            external_id="LOTR-42",
+            external_id="SM-1",
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
         self.assertEqual(
             self.delegate.incarceration_admission_reason_override(
-                lotr_period_with_admission_reason, None
+                sm_period_with_admission_reason, None
             ),
             StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         )

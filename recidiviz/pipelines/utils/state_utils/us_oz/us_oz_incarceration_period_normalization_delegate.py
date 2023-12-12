@@ -64,9 +64,9 @@ class UsOzIncarcerationNormalizationDelegate(
         """Overrides admission reason for individuals in the LOTR data system.
         All other data systems return the existing admission reason attached to the incarceration period.
         """
-        if (
-            incarceration_period.external_id
-            and incarceration_period.external_id.upper().startswith("LOTR")
+        if incarceration_period.external_id and (
+            incarceration_period.external_id.upper().startswith("LOTR")
+            or incarceration_period.external_id.upper().startswith("SM")
         ):
             return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
         return incarceration_period.admission_reason
