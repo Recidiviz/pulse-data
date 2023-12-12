@@ -44,7 +44,9 @@ output:
                 StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
                 StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: P
                 StateRace.WHITE: W
-                StateRace.EXTERNAL_UNKNOWN: U
+                StateRace.EXTERNAL_UNKNOWN:
+                  - U
+                  - "2" # erroneous value sent by OR
               $ignore: [H]
     ethnicities:
       - StatePersonEthnicity:
@@ -60,3 +62,4 @@ output:
                 - W
                 - P
                 - U
+                - "2"
