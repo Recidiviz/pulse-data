@@ -29,6 +29,7 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
+from recidiviz.monitoring.instruments import reset_instrument_cache
 from recidiviz.monitoring.keys import InstrumentEnum
 
 
@@ -56,6 +57,10 @@ class OTLMock:
     metric_reader: InMemoryMetricReader
 
     def set_up(self) -> None:
+        # Reset monitoring instrument cache to clear any Proxy instruments that may have been created outside
+        # of working with the OTL mock
+        reset_instrument_cache()
+
         self.span_export_capture = SpanExportCapture()
         self.tracer_provider = TracerProvider(
             sampler=TraceIdRatioBased(rate=100 / 100), shutdown_on_exit=True
@@ -80,6 +85,8 @@ class OTLMock:
     def tear_down(self) -> None:
         self._get_meter_provider_patcher.stop()
         self._get_tracer_provider_patcher.stop()
+        # Clear state for good measure
+        reset_instrument_cache()
 
     def get_latest_span(self) -> ReadableSpan:
         assert len(self.span_export_capture.latest_spans) > 0

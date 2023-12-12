@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Function + typing overloads for getting an instrument"""
-from typing import overload
+from typing import Any, overload
 
 from opentelemetry.metrics import Counter, Histogram, ObservableGauge
 
@@ -31,6 +31,13 @@ from recidiviz.monitoring.keys import (
     ObservableGaugeInstrumentKey,
 )
 from recidiviz.monitoring.providers import get_global_meter_provider
+
+_instrument_cache: dict[str, Any] = {}
+
+
+def reset_instrument_cache() -> None:
+    global _instrument_cache
+    _instrument_cache = {}
 
 
 @overload
@@ -53,6 +60,9 @@ def get_monitoring_instrument(key: InstrumentEnum) -> RecidivizSupportedOTLInstr
     monitoring_config = MonitoringConfig.build()
     instrument_config = monitoring_config.get_instrument_config(key)
 
-    return instrument_config.create_instrument(
-        meter=get_global_meter_provider().get_meter(RECIDIVIZ_METER_NAME)
-    )
+    if key.value not in _instrument_cache:
+        _instrument_cache[key.value] = instrument_config.create_instrument(
+            meter=get_global_meter_provider().get_meter(RECIDIVIZ_METER_NAME)
+        )
+
+    return _instrument_cache[key.value]
