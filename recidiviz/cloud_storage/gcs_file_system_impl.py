@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """An implementation of the GCSFileSystem built on top of a real GCSFileSystem."""
+import io
 import logging
 import os
 import tempfile
@@ -22,12 +23,14 @@ import uuid
 from contextlib import contextmanager
 from io import TextIOWrapper
 from typing import Any, Dict, Iterator, List, Optional, TextIO, Union
+from zipfile import ZipFile, is_zipfile
 
 from google.api_core import retry
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
 from recidiviz.cloud_storage.gcs_file_system import (
+    BYTES_CONTENT_TYPE,
     GCSBlobDoesNotExistError,
     GCSFileSystem,
 )
@@ -40,6 +43,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
 from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.common.retry_predicate import google_api_retry_predicate
 
 
@@ -48,6 +52,45 @@ def generate_random_temp_path(filename: Optional[str] = None) -> str:
     os.makedirs(temp_dir, exist_ok=True)
 
     return os.path.join(temp_dir, filename if filename else str(uuid.uuid4()))
+
+
+def unzip(
+    fs: GCSFileSystem, zip_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+) -> List[GcsfsFilePath]:
+    """Uses the provided fs to unzip the zip file at the provided |zip_file_path| and
+    write all internal files into the provided |destination_dir|. Returns the list of
+    unzipped paths generated.
+    """
+    logging.info("Downloading zip file [%s] as bytes", zip_file_path.uri())
+    downloaded_bytes = fs.download_as_bytes(zip_file_path)
+    logging.info("Finished downloading zip file [%s] as bytes", zip_file_path.uri())
+    zipbytes = io.BytesIO(downloaded_bytes)
+    if not is_zipfile(zipbytes):
+        raise ValueError(
+            f"Path [{zip_file_path.uri()}] is not a zip file. Cannot unzip."
+        )
+
+    new_paths = []
+    with ZipFile(zipbytes, "r") as z:
+        for i, content_filename in enumerate(z.namelist()):
+            new_path = GcsfsFilePath.from_directory_and_file_name(
+                destination_dir, content_filename
+            )
+            logging.info(
+                "[%s of %s] Uploading unzipped file %s to %s",
+                i,
+                len(z.namelist()),
+                content_filename,
+                new_path.uri(),
+            )
+            fs.upload_from_contents_handle_stream(
+                path=new_path,
+                contents_handle=ZipFileContentsHandle(content_filename, z),
+                content_type=BYTES_CONTENT_TYPE,
+            )
+            new_paths.append(new_path)
+    logging.info("Finished uploading unzipped files")
+    return new_paths
 
 
 class GCSFileSystemImpl(GCSFileSystem):
@@ -337,3 +380,11 @@ class GCSFileSystemImpl(GCSFileSystem):
             return
 
         logging.info("Blob [%s] renamed to [%s]", blob.name, new_path.abs_path())
+
+    @retry.Retry(predicate=google_api_retry_predicate)
+    def unzip(
+        self: GCSFileSystem,
+        zip_file_path: GcsfsFilePath,
+        destination_dir: GcsfsDirectoryPath,
+    ) -> List[GcsfsFilePath]:
+        return unzip(self, zip_file_path, destination_dir)
