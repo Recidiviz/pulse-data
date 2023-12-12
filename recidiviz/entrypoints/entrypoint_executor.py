@@ -17,7 +17,6 @@
 """Contains functions for executing entrypoints"""
 import argparse
 import atexit
-import json
 import logging
 import os
 import sys
@@ -111,7 +110,7 @@ def execute_entrypoint(entrypoint: str, entrypoint_argv: List[str]) -> None:
 
     with tracer.start_as_current_span(entrypoint) as current_span:
         for key, arg in vars(entrypoint_args).items():
-            current_span.set_attribute(key, json.dumps(arg))
+            current_span.set_attribute(key, str(arg))
 
         entrypoint_cls.run_entrypoint(args=entrypoint_args)
 
