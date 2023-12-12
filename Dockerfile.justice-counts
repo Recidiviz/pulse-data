@@ -35,6 +35,7 @@ COPY ./recidiviz/tools/postgres/ tools/postgres/
 COPY ./recidiviz/tools/utils/ tools/utils/
 COPY ./recidiviz/utils/ utils/
 COPY ./recidiviz/reporting/sendgrid_client_wrapper.py reporting/sendgrid_client_wrapper.py 
+COPY ./recidiviz/monitoring/ monitoring/
 
 WORKDIR /app
 
