@@ -23,8 +23,10 @@ from google.cloud.storage import Blob, Bucket
 from mock import create_autospec
 from mock.mock import call, patch
 
-from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
+from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl, unzip
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest import fixtures
 
 
 def no_retries_predicate(_exception: Exception) -> bool:
@@ -145,3 +147,79 @@ class TestGcsFileSystem(TestCase):
         )
         # Assert we tried to clean up the destination file
         mock_dst_blob.delete.assert_called()
+
+    def test_unzip_zip_with_single_file(self) -> None:
+        # Arrange
+        file_system = FakeGCSFileSystem()
+        zip_file_name = "example_file_structure_commas.zip"
+        local_zip_path = fixtures.as_filepath(zip_file_name)
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+
+        expected_contents_path = fixtures.as_filepath(
+            "example_file_structure_commas.csv"
+        )
+        with open(expected_contents_path, mode="rb") as fixture_file:
+            expected_contents = fixture_file.read()
+        expected_destination_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "example_file_structure_commas.csv"
+        )
+
+        src_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, zip_file_name
+        )
+        file_system.test_add_path(src_path, local_zip_path)
+
+        # Act
+        output_paths = unzip(
+            file_system, zip_file_path=src_path, destination_dir=bucket_path
+        )
+
+        # Assert
+        self.assertEqual([expected_destination_path], output_paths)
+
+        unzipped_contents = file_system.download_as_bytes(expected_destination_path)
+        self.assertEqual(expected_contents, unzipped_contents)
+
+    def test_unzip_zip_with_multiple_files(self) -> None:
+        # Arrange
+        file_system = FakeGCSFileSystem()
+        zip_file_name = "encoded_latin_1_and_encoded_utf_8.zip"
+        local_zip_path = fixtures.as_filepath(zip_file_name)
+        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+
+        expected_contents_path_1 = fixtures.as_filepath("encoded_utf_8.csv")
+        with open(expected_contents_path_1, mode="rb") as fixture_file:
+            expected_contents_1 = fixture_file.read()
+
+        expected_destination_path_1 = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "encoded_utf_8.csv"
+        )
+
+        expected_contents_path_2 = fixtures.as_filepath("encoded_latin_1.csv")
+        with open(expected_contents_path_2, mode="rb") as fixture_file:
+            expected_contents_2 = fixture_file.read()
+
+        expected_destination_path_2 = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, "encoded_latin_1.csv"
+        )
+
+        src_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket_path, zip_file_name
+        )
+        file_system.test_add_path(src_path, local_zip_path)
+
+        # Act
+        output_paths = unzip(
+            file_system, zip_file_path=src_path, destination_dir=bucket_path
+        )
+
+        # Assert
+        self.assertCountEqual(
+            [expected_destination_path_1, expected_destination_path_2], output_paths
+        )
+
+        unzipped_contents_1 = file_system.download_as_bytes(expected_destination_path_1)
+        self.assertEqual(expected_contents_1, unzipped_contents_1)
+
+        unzipped_contents_2 = file_system.download_as_bytes(expected_destination_path_2)
+        self.assertEqual(expected_contents_2, unzipped_contents_2)

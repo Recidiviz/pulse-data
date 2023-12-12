@@ -30,7 +30,10 @@ from recidiviz.cloud_storage.gcs_file_system import (
     GCSBlobDoesNotExistError,
     GCSFileSystem,
 )
-from recidiviz.cloud_storage.gcs_file_system_impl import generate_random_temp_path
+from recidiviz.cloud_storage.gcs_file_system_impl import (
+    generate_random_temp_path,
+    unzip,
+)
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
@@ -42,6 +45,7 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 
 
 class FakeGCSFileSystemDelegate:
@@ -214,11 +218,16 @@ class FakeGCSFileSystem(GCSFileSystem):
             contents_path = contents_handle.file_storage.filename or ""
         elif isinstance(contents_handle, LocalFileContentsHandle):
             contents_path = contents_handle.local_file_path
+        elif isinstance(contents_handle, ZipFileContentsHandle):
+            contents_path = None
+            with contents_handle.open() as zip_contents:
+                with open(temp_path, mode="wb") as temp_file:
+                    temp_file.write(zip_contents.read())
         else:
             raise ValueError(
                 f"Unsupported contents handle type: [{type(contents_handle)}]"
             )
-        if os.path.exists(contents_path):
+        if contents_path and os.path.exists(contents_path):
             shutil.copyfile(contents_path, temp_path)
         self._add_entry(FakeGCSFileSystemEntry(path, temp_path, content_type))
         self.uploaded_paths.add(path)
@@ -300,3 +309,8 @@ class FakeGCSFileSystem(GCSFileSystem):
 
     def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:
         return None
+
+    def unzip(
+        self, zip_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+    ) -> List[GcsfsFilePath]:
+        return unzip(self, zip_file_path, destination_dir)

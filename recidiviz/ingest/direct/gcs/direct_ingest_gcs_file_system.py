@@ -371,8 +371,9 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def mv_raw_file_to_storage(
         self, path: GcsfsFilePath, storage_directory_path: GcsfsDirectoryPath
     ) -> None:
-        """Moves a normalized path to it's appropriate storage location based on the date and file type information
-        embedded in the file name."""
+        """Moves a normalized path to it's appropriate storage location based on the
+        date and file type information embedded in the file name.
+        """
         storage_path = self._raw_file_storage_path(storage_directory_path, path)
 
         logging.info(
@@ -381,6 +382,11 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             storage_path.abs_path(),
         )
         self.mv(path, storage_path)
+
+    def unzip(
+        self, zip_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+    ) -> List[GcsfsFilePath]:
+        return self.gcs_file_system.unzip(zip_file_path, destination_dir)
 
     class _FilterType(Enum):
         NO_FILTER = "NO_FILTER"

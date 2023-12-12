@@ -15,76 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Utilities for working with fixture data in ingest unit testing."""
-
-import json
-import os
-from typing import Any, Dict
-from xml.etree import ElementTree
-
-import html5lib
-from lxml import html
+"""Utilities for working with fixture data in unit testing."""
 
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
-
-
-def as_string(region_directory: str, filename: str) -> str:
-    """Returns the contents of the given fixture file as a string.
-
-    Assumes the fixture file has the given name (with extension included), and
-    is located in /recidiviz/tests/ingest/{region_directory}/fixtures.
-
-    Args:
-        region_directory: (string) the region's directory
-        filename: (string) the name of the file, including extension
-
-    Returns:
-        The contents of the fixture file as a string
-    """
-    subdir = "scrape/regions"
-    if any(d in region_directory for d in ("aggregate", "extractor", "direct")):
-        subdir = ""
-
-    relative_path = os.path.join(subdir, region_directory, "fixtures", filename)
-
-    return as_string_from_relative_path(relative_path)
-
-
-def file_path_from_relative_path(relative_path: str) -> str:
-    return os.path.join(os.path.dirname(__file__), relative_path)
-
-
-def as_string_from_relative_path(relative_path: str) -> str:
-    """Returns the contents of the given fixture file as a string.
-
-    Args:
-        relative_path: (string) Path of the fixture file relative to the
-            /recidiviz/tests/ingest directory.
-
-    """
-    with open(
-        file_path_from_relative_path(relative_path), encoding="utf-8"
-    ) as fixture_file:
-        string = fixture_file.read()
-    return string
-
-
-def as_dict(region_directory: str, filename: str) -> Dict[str, Any]:
-    """Returns the contents of the given fixture file as a dictionary.
-
-    Assumes the fixture file has the given name (with extension included), and
-    that the file is json, and is located in
-    /recidiviz/tests/ingest/{region_directory}/fixtures.
-
-    Args:
-        region_directory: (string) the region's directory
-        filename: (string) the name of the file, including extension
-
-    Returns:
-        The contents of the fixture file as a dict deserialized from json
-    """
-    contents = as_string(region_directory, filename)
-    return json.loads(contents)
 
 
 def as_filepath(filename: str, subdir: str = "fixtures") -> str:
@@ -94,19 +27,3 @@ def as_filepath(filename: str, subdir: str = "fixtures") -> str:
     caller's directory.
     """
     return filepath_relative_to_caller(filename, subdir, caller_depth=2)
-
-
-def as_html(
-    region_directory: str, filename: str
-) -> Any:  # No types defined out of lxml library
-    content_string = as_string(region_directory, filename)
-    return html.fromstring(content_string)
-
-
-def as_html5(
-    region_directory: str, filename: str
-) -> Any:  # No types defined out of lxml library
-    content_string = as_string(region_directory, filename)
-    html5_etree = html5lib.parse(content_string)
-    html5_string = ElementTree.tostring(html5_etree)
-    return html.fromstring(html5_string)

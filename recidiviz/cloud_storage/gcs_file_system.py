@@ -171,3 +171,12 @@ class GCSFileSystem:
     @abc.abstractmethod
     def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:
         """Renames the blob on the GCS File System"""
+
+    @abc.abstractmethod
+    def unzip(
+        self, zip_file_path: GcsfsFilePath, destination_dir: GcsfsDirectoryPath
+    ) -> List[GcsfsFilePath]:
+        """Unzips the zip file at the provided |zip_file_path| and writes all internal
+        files into the provided |destination_dir|. Returns the list of unzipped paths
+        generated.
+        """
