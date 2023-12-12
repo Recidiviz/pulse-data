@@ -64,6 +64,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 )
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
+    gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
@@ -279,6 +280,17 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         return gcsfs_direct_ingest_storage_directory_path_for_state(
             region_code=self.region_code(),
             ingest_instance=self._raw_data_source_instance,
+        )
+
+    def raw_data_deprecated_storage_directory_path(
+        self, deprecated_on_date: datetime.date
+    ) -> GcsfsDirectoryPath:
+        if not self._raw_data_source_instance:
+            raise ValueError("Expected nonnull raw data source instance.")
+        return gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
+            region_code=self.region_code(),
+            ingest_instance=self._raw_data_source_instance,
+            deprecated_on_date=deprecated_on_date,
         )
 
     def on_ingest_instance_status_change(
@@ -962,8 +974,24 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         )
 
         for path in unnormalized_paths:
-            logging.info("File [%s] is not yet seen, normalizing.", path.abs_path())
-            self.fs.mv_raw_file_to_normalized_path(path)
+            if path.has_zip_extension:
+                logging.info("File [%s] is a zip file, unzipping...", path.abs_path())
+                paths_to_normalize = self.fs.unzip(
+                    path, destination_dir=self.raw_data_bucket_path
+                )
+                # Move the zip file to deprecated storage once we have unzipped it
+                self.fs.mv(
+                    src_path=path,
+                    dst_path=self.raw_data_deprecated_storage_directory_path(
+                        deprecated_on_date=datetime.date.today()
+                    ),
+                )
+            else:
+                paths_to_normalize = [path]
+
+            for p in paths_to_normalize:
+                logging.info("File [%s] is not yet seen, normalizing.", p.abs_path())
+                self.fs.mv_raw_file_to_normalized_path(p)
 
         if unnormalized_paths:
             logging.info(
