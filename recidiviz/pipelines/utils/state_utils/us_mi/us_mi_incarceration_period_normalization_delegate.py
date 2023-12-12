@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -96,6 +97,45 @@ class UsMiIncarcerationNormalizationDelegate(
 
         new_incarceration_periods: List[StateIncarcerationPeriod] = []
 
+        # Infer a temporary custody period if there is a supervision period but
+        # supervision level is NULL or supervision level is IN_CUSTODY
+        if supervision_period_index:
+            for sp in supervision_period_index.sorted_supervision_periods:
+                if (
+                    sp.supervision_level_raw_text is None
+                    and sp.supervision_level is None
+                ) or (sp.supervision_level == StateSupervisionLevel.IN_CUSTODY):
+
+                    if sp.supervision_level == StateSupervisionLevel.IN_CUSTODY:
+                        inference_reason = "IN-CUSTODY"
+                    else:
+                        inference_reason = "MISSING-SUP-LEVEL"
+
+                    # NOTE: this won't be hydrating admisson_reason_raw_text so this period will
+                    #       have a null admission reason violation type and will instead rely on
+                    #       sessions logic for that information
+                    new_incarceration_period = StateIncarcerationPeriod(
+                        state_code=StateCode.US_MI.value,
+                        external_id=f"{sp.external_id}-{inference_reason}",
+                        admission_date=sp.start_date,
+                        release_date=sp.termination_date,
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                        custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+                        custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
+                        incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
+                    )
+
+                    # Add a unique id to the new IP
+                    update_normalized_entity_with_globally_unique_id(
+                        person_id=person_id,
+                        entity=new_incarceration_period,
+                    )
+
+                    new_incarceration_periods.append(new_incarceration_period)
+
+                    continue
+
         supervision_periods: List[NormalizedStateSupervisionPeriod] = []
 
         if supervision_period_index:
@@ -110,6 +150,7 @@ class UsMiIncarcerationNormalizationDelegate(
                     StateSupervisionPeriodSupervisionType.DUAL,
                     StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
                     StateSupervisionPeriodSupervisionType.ABSCONSION,
+                    StateSupervisionPeriodSupervisionType.WARRANT_STATUS,
                 )
             ]
 
@@ -178,7 +219,7 @@ class UsMiIncarcerationNormalizationDelegate(
                     )
                 )
 
-                # identify the most recent incarceration period
+                # identify the most recent incarceration period before this current incarceration period
                 most_recent_incarceration_period = (
                     incarceration_periods[index - 1] if index > 0 else None
                 )
@@ -231,51 +272,53 @@ class UsMiIncarcerationNormalizationDelegate(
                         continue
 
                     # If the most recent SP ended because of a REVOCATION or ADMITTED_TO_INCARCERATION
-                    # and this is first IP since the most recent SP ended
                     if most_recent_supervision_period.termination_reason in (
                         StateSupervisionPeriodTerminationReason.REVOCATION,
                         StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-                    ) and (
-                        most_recent_incarceration_period is None
-                        or (
+                    ):
+                        # there is no previous incarceration period, or
+                        if most_recent_incarceration_period is None or (
+                            # the previous incarceration period ended on or before the most recent supervision period ended, and
                             most_recent_incarceration_period.release_date
-                            and most_recent_supervision_period.start_date
                             and most_recent_incarceration_period.release_date
                             <= most_recent_supervision_period.termination_date
-                        )
-                    ):
-                        # Set the admission reason raw text for the inferred period so violation type can be added later if needed
-                        admission_reason_raw_text = (
-                            most_recent_supervision_period.termination_reason_raw_text
-                            if most_recent_supervision_period.termination_reason_raw_text
-                            in self._REASON_RAW_TEXT_TO_INCARCERATION_ADMISSION_VIOLATION_TYPE_MAP
-                            else None
-                        )
+                            # the previous incarceration period started before the most recent supervision period started
+                            and most_recent_incarceration_period.admission_date
+                            and most_recent_incarceration_period.admission_date
+                            < most_recent_supervision_period.termination_date
+                        ):
+                            # Set the admission reason raw text for the inferred period so violation type can be added later if needed
+                            admission_reason_raw_text = (
+                                most_recent_supervision_period.termination_reason_raw_text
+                                if most_recent_supervision_period.termination_reason_raw_text
+                                in self._REASON_RAW_TEXT_TO_INCARCERATION_ADMISSION_VIOLATION_TYPE_MAP
+                                else None
+                            )
 
-                        # create a new incarceration period that starts when that supervision period ended and ends when the next IP starts
-                        new_incarceration_period = StateIncarcerationPeriod(
-                            state_code=StateCode.US_MI.value,
-                            external_id=f"{incarceration_period.external_id}-0-INFERRED",
-                            admission_date=most_recent_supervision_period.termination_date,
-                            release_date=incarceration_period.admission_date,
-                            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                            admission_reason_raw_text=admission_reason_raw_text,
-                            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-                            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
-                            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-                            custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
-                            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-                        )
+                            # create a new incarceration period that starts when that supervision period ended and ends when the next IP starts
+                            new_incarceration_period = StateIncarcerationPeriod(
+                                state_code=StateCode.US_MI.value,
+                                external_id=f"{incarceration_period.external_id}-0-INFERRED",
+                                admission_date=most_recent_supervision_period.termination_date,
+                                release_date=incarceration_period.admission_date,
+                                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                                admission_reason_raw_text=admission_reason_raw_text,
+                                release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                                custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+                                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+                                custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
+                                incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
+                            )
 
-                        # Add a unique id to the new IP
-                        update_normalized_entity_with_globally_unique_id(
-                            person_id=person_id,
-                            entity=new_incarceration_period,
-                        )
+                            # Add a unique id to the new IP
+                            update_normalized_entity_with_globally_unique_id(
+                                person_id=person_id,
+                                entity=new_incarceration_period,
+                            )
 
-                        new_incarceration_periods.append(new_incarceration_period)
+                            new_incarceration_periods.append(new_incarceration_period)
 
-                        continue
+                            continue
 
         return new_incarceration_periods
 
