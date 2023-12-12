@@ -44,6 +44,9 @@ from recidiviz.common.constants.state.state_person import (
 from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
 )
+from recidiviz.common.constants.state.state_person_housing_status_period import (
+    StatePersonHousingStatusType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -359,6 +362,133 @@ class TestCoreEntityFieldIndex(TestCase):
             )
 
 
+PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateAssessment: [schema.StateAssessment(state_code=StateCode.US_XX.value)],
+    schema.StateCharge: [
+        schema.StateCharge(
+            state_code=StateCode.US_XX.value,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StateDrugScreen: [schema.StateDrugScreen(state_code=StateCode.US_XX.value)],
+    schema.StateEmploymentPeriod: [
+        schema.StateEmploymentPeriod(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateEarlyDischarge: [
+        schema.StateEarlyDischarge(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationIncident: [
+        schema.StateIncarcerationIncident(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationIncidentOutcome: [
+        schema.StateIncarcerationIncidentOutcome(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationPeriod: [
+        schema.StateIncarcerationPeriod(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateIncarcerationSentence: [
+        schema.StateIncarcerationSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StatePerson: [
+        schema.StatePerson(state_code=StateCode.US_XX.value),
+        schema.StatePerson(
+            state_code=StateCode.US_XX.value,
+            assessments=[
+                schema.StateAssessment(
+                    state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+                )
+            ],
+        ),
+    ],
+    schema.StatePersonAddressPeriod: [
+        schema.StatePersonAddressPeriod(state_code=StateCode.US_XX)
+    ],
+    schema.StatePersonHousingStatusPeriod: [
+        schema.StatePersonHousingStatusPeriod(state_code=StateCode.US_XX)
+    ],
+    schema.StatePersonAlias: [
+        schema.StatePersonAlias(state_code=StateCode.US_XX.value)
+    ],
+    schema.StatePersonEthnicity: [
+        schema.StatePersonEthnicity(state_code=StateCode.US_XX.value)
+    ],
+    schema.StatePersonExternalId: [],
+    schema.StatePersonRace: [schema.StatePersonRace(state_code=StateCode.US_XX.value)],
+    schema.StateProgramAssignment: [
+        schema.StateProgramAssignment(
+            state_code=StateCode.US_XX.value,
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
+        )
+    ],
+    schema.StateStaff: [schema.StateStaff(state_code=StateCode.US_XX.value)],
+    schema.StateStaffExternalId: [],
+    schema.StateStaffCaseloadTypePeriod: [
+        # StateStaffCaseloadTypePeriod cannot be placeholders - must always have an
+        # external_id and start_date.
+    ],
+    schema.StateStaffLocationPeriod: [
+        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
+        # external_id and start_date.
+    ],
+    schema.StateStaffRolePeriod: [
+        # StateStaffRolePeriod cannot be placeholders - must always have an external_id
+        # and start_date.
+    ],
+    schema.StateStaffSupervisorPeriod: [
+        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
+        # external_id and start_date.
+    ],
+    schema.StateSupervisionCaseTypeEntry: [
+        schema.StateSupervisionCaseTypeEntry(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionContact: [
+        schema.StateSupervisionContact(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionPeriod: [
+        schema.StateSupervisionPeriod(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionSentence: [
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+        ),
+        schema.StateSupervisionSentence(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            charges=[
+                schema.StateCharge(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+                )
+            ],
+        ),
+    ],
+    schema.StateSupervisionViolatedConditionEntry: [
+        schema.StateSupervisionViolatedConditionEntry(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionViolation: [
+        schema.StateSupervisionViolation(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionViolationResponse: [
+        schema.StateSupervisionViolationResponse(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateSupervisionViolationResponseDecisionEntry: [
+        schema.StateSupervisionViolationResponseDecisionEntry(
+            state_code=StateCode.US_XX.value
+        )
+    ],
+    schema.StateSupervisionViolationTypeEntry: [
+        schema.StateSupervisionViolationTypeEntry(state_code=StateCode.US_XX.value)
+    ],
+    schema.StateTaskDeadline: [
+        schema.StateTaskDeadline(state_code=StateCode.US_XX.value)
+    ],
+}
+
 REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
     schema.StateAssessment: [
         schema.StateAssessment(
@@ -437,6 +567,7 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
         ),
     ],
     schema.StatePersonAddressPeriod: [],
+    schema.StatePersonHousingStatusPeriod: [],
     schema.StatePersonAlias: [],
     schema.StatePersonEthnicity: [],
     schema.StatePersonExternalId: [],
@@ -673,6 +804,12 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         schema.StatePersonAddressPeriod(
             state_code=StateCode.US_XX.value,
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        ),
+    ],
+    schema.StatePersonHousingStatusPeriod: [
+        schema.StatePersonHousingStatusPeriod(
+            state_code=StateCode.US_XX.value,
+            housing_status_type=StatePersonHousingStatusType.PERMANENT_RESIDENCE,
         ),
     ],
     schema.StatePersonAlias: [

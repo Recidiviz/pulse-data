@@ -46,6 +46,19 @@ class StatePersonAddressPeriodFactory(EntityFactory):
         )
 
 
+class StatePersonHousingStatusPeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StatePersonHousingStatusPeriod:
+        return entity_deserialize(
+            cls=entities.StatePersonHousingStatusPeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
 class StatePersonExternalIdFactory(EntityFactory):
     @staticmethod
     def deserialize(

@@ -62,6 +62,9 @@ from recidiviz.common.constants.state.state_person_address_period import (
     StatePersonAddressType,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
+from recidiviz.common.constants.state.state_person_housing_status_period import (
+    StatePersonHousingStatusType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -201,6 +204,24 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             address_zip="10000",
             address_county="GLACIER COUNTY",
             address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StatePersonHousingStatusPeriod(self) -> None:
+        result = deserialize_entity_factories.StatePersonHousingStatusPeriodFactory.deserialize(
+            state_code="US_XX",
+            housing_status_start_date=date(year=2006, month=7, day=2),
+            housing_status_end_date=date(year=2007, month=7, day=2),
+            housing_status_type=StatePersonHousingStatusType.PERMANENT_RESIDENCE,
+        )
+
+        # Assert
+        expected_result = entities.StatePersonHousingStatusPeriod.new_with_defaults(
+            state_code="US_XX",
+            housing_status_start_date=date(year=2006, month=7, day=2),
+            housing_status_end_date=date(year=2007, month=7, day=2),
+            housing_status_type=StatePersonHousingStatusType.PERMANENT_RESIDENCE,
         )
 
         self.assertEqual(expected_result, result)
