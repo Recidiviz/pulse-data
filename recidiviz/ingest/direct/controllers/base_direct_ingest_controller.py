@@ -109,12 +109,13 @@ from recidiviz.ingest.direct.types.instance_database_key import database_key_for
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.monitoring import trace
 from recidiviz.persistence.database.schema.operations.dao import (
     stale_secondary_raw_data,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import environment, trace
+from recidiviz.utils import environment
 
 
 class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):

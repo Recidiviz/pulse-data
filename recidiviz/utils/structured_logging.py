@@ -18,20 +18,31 @@
 
 import logging
 import sys
+from functools import wraps
 from types import TracebackType
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 from google.cloud.logging import Client, Resource, handlers
 from google.cloud.logging_v2.handlers._monitored_resources import detect_resource
-from opencensus.common.runtime_context import RuntimeContext
-from opencensus.trace import execution_context
+from opentelemetry import context
+from opentelemetry.baggage import get_baggage
 
-from recidiviz.utils import environment, metadata, monitoring
+from recidiviz.monitoring.context import get_current_trace_id
+from recidiviz.monitoring.keys import AttributeKey
+from recidiviz.utils import environment, metadata
 
-# TODO(#3043): Once census-instrumentation/opencensus-python#442 is fixed we can
-# use OpenCensus threading integration which will copy this for us. Until then
-# we can just copy it manually.
-with_context = RuntimeContext.with_current_context
+
+def with_context(func: Callable) -> Callable:
+    current_context = context.get_current()
+
+    @wraps(func)
+    def _wrapper(*args: Any, **kwargs: Any) -> Any:
+        token = context.attach(current_context)
+        result = func(*args, **kwargs)
+        context.detach(token)
+        return result
+
+    return _wrapper
 
 
 class ContextualLogRecord(logging.LogRecord):
@@ -72,12 +83,13 @@ class ContextualLogRecord(logging.LogRecord):
             # Skip kwargs, they are unused and mypy complains.
         )
 
-        tags = monitoring.context_tags()
-        self.region = tags.map.get(monitoring.TagKey.REGION)
-        self.ingest_instance = tags.map.get(monitoring.TagKey.INGEST_INSTANCE)
+        self.region = str(get_baggage(AttributeKey.REGION))
+        self.ingest_instance = str(get_baggage(AttributeKey.INGEST_INSTANCE))
 
-        context = execution_context.get_opencensus_tracer().span_context
-        self.traceId = context.trace_id
+        try:
+            self.traceId = get_current_trace_id()
+        except KeyError:
+            self.traceId = ""
 
 
 RECIDIVIZ_BEFORE_REQUEST_LOG = "before_request_log"

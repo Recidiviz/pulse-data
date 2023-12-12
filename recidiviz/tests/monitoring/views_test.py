@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for utils/monitoring.py"""
-from typing import Generator
+""" Tests for building views"""
+import unittest
 
-import pytest
-
-from recidiviz.tests.utils.monitoring_test_utils import OTLMock
+from recidiviz.monitoring.views import build_monitoring_views
 
 
-# pylint: disable=redefined-outer-name
-@pytest.fixture
-def otl_mock() -> Generator[OTLMock, None, None]:
-    otl_mock = OTLMock()
-    otl_mock.set_up()
-    yield otl_mock
-    otl_mock.tear_down()
+class MonitoringViewsTest(unittest.TestCase):
+    """Tests for building views"""
+
+    def test_build_monitoring_views(self) -> None:
+        self.assertIsNotNone(build_monitoring_views())

@@ -15,7 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Configures gunicorn"""
+import logging
 import multiprocessing
+
+from gunicorn.arbiter import Arbiter
+from gunicorn.workers.base import Worker
 
 import gevent_config
 
@@ -40,3 +44,11 @@ loglevel = "debug"
 accesslog = "gunicorn-access.log"
 errorlog = "gunicorn-error.log"
 keepalive = 650
+
+
+def post_worker_init(worker: gevent_config.CustomGeventWorker) -> None:
+    logging.info("Running post_worker_init for worker %s", worker)
+    flask_app = worker.app.callable
+    # attribute is expected to be defined in `server.py`
+    if hasattr(flask_app, "initialize_worker_process"):
+        flask_app.initialize_worker_process()

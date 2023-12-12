@@ -19,9 +19,6 @@ import datetime
 import logging
 from typing import Dict, List, Optional, Sequence
 
-from opencensus.stats import aggregation, measure
-from opencensus.stats import view as opencensus_view
-
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_export_validator import (
@@ -62,42 +59,11 @@ from recidiviz.metrics.export.products.product_configs import (
 from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
     WithMetadataQueryBigQueryViewExporter,
 )
-from recidiviz.utils import monitoring
+from recidiviz.monitoring.instruments import get_monitoring_instrument
+from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
 from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
-)
-
-m_failed_metric_export_validation = measure.MeasureInt(
-    "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
-    "Counted every time a set of exported metric views fails validation",
-    "1",
-)
-
-failed_metric_export_validation_view = opencensus_view.View(
-    "bigquery/metric_view_export_manager/num_metric_view_export_validation_failure",
-    "The sum of times a set of exported metric views fails validation",
-    [monitoring.TagKey.REGION, monitoring.TagKey.METRIC_VIEW_EXPORT_NAME],
-    m_failed_metric_export_validation,
-    aggregation.SumAggregation(),
-)
-
-m_failed_metric_export_job = measure.MeasureInt(
-    "bigquery/metric_view_export_manager/metric_view_export_job_failure",
-    "Counted every time a set of exported metric views fails for non-validation reasons",
-    "1",
-)
-
-failed_metric_export_view = opencensus_view.View(
-    "bigquery/metric_view_export_manager/num_metric_view_export_job_failure",
-    "The sum of times a set of exported metric views fails to export for non-validation reasons",
-    [monitoring.TagKey.REGION, monitoring.TagKey.METRIC_VIEW_EXPORT_NAME],
-    m_failed_metric_export_job,
-    aggregation.SumAggregation(),
-)
-
-monitoring.register_views(
-    [failed_metric_export_validation_view, failed_metric_export_view]
 )
 
 
@@ -238,6 +204,13 @@ def do_metric_export_for_configs(
         gcsfs_client, export_name, view_export_configs, override_view_exporter
     )
 
+    monitoring_attributes = {
+        AttributeKey.METRIC_VIEW_EXPORT_NAME: export_name,
+    }
+
+    if state_code_filter:
+        monitoring_attributes[AttributeKey.REGION] = state_code_filter
+
     try:
         export_views_with_exporters(
             gcsfs_client, view_export_configs, delegate_export_map
@@ -249,23 +222,20 @@ def do_metric_export_for_configs(
             warning_message += f" for state: {state_code_filter}"
 
         logging.warning("%s\n%s", warning_message, str(e))
-        with monitoring.measurements(
-            {
-                monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
-                monitoring.TagKey.REGION: state_code_filter,
-            }
-        ) as measurements:
-            measurements.measure_int_put(m_failed_metric_export_validation, 1)
+
+        get_monitoring_instrument(
+            CounterInstrumentKey.VIEW_EXPORT_VALIDATION_FAILURE
+        ).add(
+            amount=1,
+            attributes=monitoring_attributes,
+        )
 
         raise e
     except Exception as e:
-        with monitoring.measurements(
-            {
-                monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
-                monitoring.TagKey.REGION: state_code_filter,
-            }
-        ) as measurements:
-            measurements.measure_int_put(m_failed_metric_export_job, 1)
+        get_monitoring_instrument(CounterInstrumentKey.VIEW_EXPORT_JOB_FAILURE).add(
+            amount=1,
+            attributes=monitoring_attributes,
+        )
         raise e
 
 

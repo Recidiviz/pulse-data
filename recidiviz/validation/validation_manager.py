@@ -25,13 +25,15 @@ from itertools import groupby
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
-from opencensus.stats import aggregation, measure, view
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import metadata, monitoring, structured_logging, trace
+from recidiviz.monitoring import trace
+from recidiviz.monitoring.instruments import get_monitoring_instrument
+from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
+from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import gcp_only, get_environment_for_project
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.validation.configured_validations import (
@@ -54,41 +56,32 @@ from recidiviz.view_registry.address_overrides_factory import (
 )
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
-m_failed_to_run_validations = measure.MeasureInt(
-    "validation/num_fail_to_run",
-    "The number of validations that failed to run entirely",
-    "1",
-)
 
-failed_to_run_validations_view = view.View(
-    "recidiviz/validation/num_fail_to_run",
-    "The sum of validations that failed to run",
-    [
-        monitoring.TagKey.REGION,
-        monitoring.TagKey.VALIDATION_CHECK_TYPE,
-        monitoring.TagKey.VALIDATION_VIEW_ID,
-    ],
-    m_failed_to_run_validations,
-    aggregation.SumAggregation(),
-)
+def attributes_for_job(job: DataValidationJob) -> Dict[str, Any]:
+    return {
+        AttributeKey.REGION: job.region_code,
+        AttributeKey.VALIDATION_CHECK_TYPE: job.validation.validation_type,
+        AttributeKey.VALIDATION_VIEW_ID: job.validation.validation_name,
+    }
 
-m_failed_validations = measure.MeasureInt(
-    "validation/num_failures", "The number of failed validations", "1"
-)
 
-failed_validations_view = view.View(
-    "recidiviz/validation/num_failures",
-    "The sum of failed validations",
-    [
-        monitoring.TagKey.REGION,
-        monitoring.TagKey.VALIDATION_CHECK_TYPE,
-        monitoring.TagKey.VALIDATION_VIEW_ID,
-    ],
-    m_failed_validations,
-    aggregation.SumAggregation(),
-)
+def capture_metrics(
+    failed_to_run_validations: List[DataValidationJob],
+    failed_hard_validations: List[DataValidationJobResult],
+) -> None:
+    for validation_job in failed_to_run_validations:
+        get_monitoring_instrument(CounterInstrumentKey.VALIDATION_FAILURE_TO_RUN).add(
+            amount=1,
+            attributes=attributes_for_job(validation_job),
+        )
 
-monitoring.register_views([failed_validations_view, failed_to_run_validations_view])
+    for result in failed_hard_validations:
+        # Skip dev mode failures when emitting metrics
+        if not result.result_details.is_dev_mode:
+            get_monitoring_instrument(CounterInstrumentKey.VALIDATION_FAILURE).add(
+                amount=1,
+                attributes=attributes_for_job(result.validation_job),
+            )
 
 
 @gcp_only
@@ -214,17 +207,9 @@ def execute_validation(
                 failed_to_run_validations.append(job)
 
     store_validation_results_in_big_query(results_to_store)
-    if failed_to_run_validations or failed_hard_validations:
-        # Emit metrics for all hard and total failures
-        _emit_opencensus_failure_events(
-            failed_to_run_validations,
-            # Skip dev mode failures when emitting metrics
-            [
-                result
-                for result in failed_hard_validations
-                if not result.result_details.is_dev_mode
-            ],
-        )
+
+    capture_metrics(failed_to_run_validations, failed_hard_validations)
+
     # Log results to console
     _log_results(
         failed_to_run_validations=failed_to_run_validations,
@@ -353,28 +338,6 @@ def _fetch_validation_jobs_to_perform(
             )
 
     return validation_jobs
-
-
-def _emit_opencensus_failure_events(
-    failed_to_run_validations: List[DataValidationJob],
-    failed_hard_validations: List[DataValidationJobResult],
-) -> None:
-    def tags_for_job(job: DataValidationJob) -> Dict[str, Any]:
-        return {
-            monitoring.TagKey.REGION: job.region_code,
-            monitoring.TagKey.VALIDATION_CHECK_TYPE: job.validation.validation_type,
-            monitoring.TagKey.VALIDATION_VIEW_ID: job.validation.validation_name,
-        }
-
-    for validation_job in failed_to_run_validations:
-        monitoring_tags = tags_for_job(validation_job)
-        with monitoring.measurements(monitoring_tags) as measurements:
-            measurements.measure_int_put(m_failed_to_run_validations, 1)
-
-    for result in failed_hard_validations:
-        monitoring_tags = tags_for_job(result.validation_job)
-        with monitoring.measurements(monitoring_tags) as measurements:
-            measurements.measure_int_put(m_failed_validations, 1)
 
 
 def _file_tickets_for_failing_validations(

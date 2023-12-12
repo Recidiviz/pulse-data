@@ -1,0 +1,89 @@
+# This configuration file defines the metrics that we capture, the attributes associated with them, and any options
+# related to their aggregation
+# This is destructured into various recidiviz.monitoring.configs classes, see implementations for more details
+# The general layout of the file is as follows:
+# scope: org.recidiviz
+# # The instruments key contains a list of objects that will be converted to one of
+# # CounterInstrumentConfig, HistogramInstrumentConfig, ObservableGaugeInstrumentConfig
+# # depending on which enum the instrument key resides in (see recidiviz.monitoring.keys)
+# instruments:
+#   # instrument_keys must follow semantic naming conventions:
+#   # https://opentelemetry.io/docs/specs/semconv/general/metrics/
+#   - instrument_key: my_instrument
+#     description: this instruments an event
+#     # The views key contains a list of objects that will be converted to ViewConfig
+#     views:
+#        - aggregation:
+#            kind: SumAggregation
+#            options: ...
+#          # List of AttributeKey keys. Only these attributes will be allowed to be exported to metric readings
+#          attributes:
+#            - REGION
+
+scope: org.recidiviz
+instruments:
+  - instrument_key: bigquery.view_update_manager.num_view_update_failure
+    description: Counted when times a view fails to update
+
+  - instrument_key: bigquery.metric_view_export_manager.num_metric_view_export_validation_failure
+    description: Counted when times a set of exported metric views fails validation
+    views:
+      - attributes:
+          - REGION
+          - METRIC_VIEW_EXPORT_NAME
+
+  - instrument_key: bigquery.metric_view_export_manager.num_metric_view_export_job_failure
+    description: Counted when times a metric views fails to export for non-validation reasons
+    views:
+      - attributes:
+          - REGION
+          - METRIC_VIEW_EXPORT_NAME
+
+  - instrument_key: validation.num_fail_to_run
+    description: Counted when validations that failed to run
+    views:
+      - attributes:
+          - REGION
+          - VALIDATION_CHECK_TYPE
+          - VALIDATION_VIEW_ID
+
+  - instrument_key: validation.num_failure
+    description: Counted when validations that failed assertions
+    views:
+      - attributes:
+          - REGION
+          - VALIDATION_CHECK_TYPE
+          - VALIDATION_VIEW_ID
+
+  - instrument_key: persistence.database.sqlalchemy_engine_initialization_failure
+    description: Sum of all engine initialization failures
+    views:
+      - attributes:
+          - SCHEMA_TYPE
+          - DATABASE_NAME
+
+  - instrument_key: bigquery.metric_view_export_manager.export_file_age
+    description: The creation timestamp of an exported file
+    callbacks:
+      - recidiviz.monitoring.export_timeliness.get_export_timeliness_metrics
+    views:
+      - attributes:
+          - REGION
+          - METRIC_VIEW_EXPORT_NAME
+          - EXPORT_VALUE
+
+  - instrument_key: function_duration
+    description: The distribution of function durations
+    unit: s
+    views:
+      - aggregation:
+          kind: ExplicitBucketHistogramAggregation
+          options:
+            start: 0.1
+            factor: 5
+            count: 10
+        attributes:
+          - REGION
+          - MODULE
+          - FUNCTION
+          - RECURSION_DEPTH

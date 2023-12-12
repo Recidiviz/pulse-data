@@ -28,6 +28,7 @@ import sqlalchemy
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
 
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.monitoring import trace
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database_invariant_validator import (
@@ -40,7 +41,7 @@ from recidiviz.persistence.persistence_utils import (
     SchemaRootEntityT,
     should_persist,
 )
-from recidiviz.utils import metadata, trace
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 OVERALL_THRESHOLD = "overall_threshold"

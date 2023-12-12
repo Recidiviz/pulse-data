@@ -19,6 +19,7 @@
 from typing import List, Type
 
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.monitoring import trace
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.legacy.entity_matching_types import (
     MatchedEntities,
@@ -30,7 +31,6 @@ from recidiviz.persistence.entity_matching.legacy.state.state_specific_entity_ma
     StateSpecificEntityMatchingDelegateFactory,
 )
 from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
-from recidiviz.utils import trace
 
 
 @trace.span

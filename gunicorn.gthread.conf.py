@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Configures gunicorn"""
+import logging
 import multiprocessing
+
+from gunicorn.workers.base import Worker
 
 # Note: if we adjust the number of gunicorn workers per cpu upwards,
 # we may have to adjust the number of max connections in our postgres instances.
@@ -32,3 +35,11 @@ loglevel = "debug"
 accesslog = "gunicorn-access.log"
 errorlog = "gunicorn-error.log"
 keepalive = 650
+
+
+def post_worker_init(worker: Worker) -> None:
+    logging.info("Running post_worker_init for worker %s", worker)
+    flask_app = worker.app.callable
+    # attribute is expected to be defined in `server.py`
+    if hasattr(flask_app, "initialize_worker_process"):
+        flask_app.initialize_worker_process()

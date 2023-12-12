@@ -20,9 +20,10 @@ import os
 from typing import Any, Dict, List, Optional
 
 import sqlalchemy
-from opencensus.stats import aggregation, measure, view
 from sqlalchemy.engine import URL, Engine, create_engine
 
+from recidiviz.monitoring.instruments import get_monitoring_instrument
+from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
 from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
@@ -32,24 +33,7 @@ from recidiviz.persistence.database.constants import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import environment, monitoring, secrets
-
-m_failed_engine_initialization = measure.MeasureInt(
-    "persistence/database/sqlalchemy_engine_initialization_failures",
-    "Counts the number of engine initialization failures",
-    "1",
-)
-
-failed_engine_initialization_view = view.View(
-    "recidiviz/persistence/database/sqlalchemy_engine_initialization_failures",
-    "Sum of all engine initialization failures",
-    [monitoring.TagKey.SCHEMA_TYPE, monitoring.TagKey.DATABASE_NAME],
-    m_failed_engine_initialization,
-    aggregation.SumAggregation(),
-)
-
-monitoring.register_views([failed_engine_initialization_view])
-
+from recidiviz.utils import environment, secrets
 
 CLOUDSQL_PROXY_HOST = "127.0.0.1"
 CLOUDSQL_PROXY_MIGRATION_PORT = 5440
@@ -117,13 +101,17 @@ class SQLAlchemyEngineManager:
                 database_key,
                 str(e),
             )
-            with monitoring.measurements(
-                {
-                    monitoring.TagKey.SCHEMA_TYPE: database_key.schema_type.value,
-                    monitoring.TagKey.DATABASE_NAME: database_key.db_name,
-                }
-            ) as measurements:
-                measurements.measure_int_put(m_failed_engine_initialization, 1)
+
+            get_monitoring_instrument(
+                CounterInstrumentKey.ENGINE_INITIALIZATION_FAILURE
+            ).add(
+                amount=1,
+                attributes={
+                    AttributeKey.SCHEMA_TYPE: database_key.schema_type.value,
+                    AttributeKey.DATABASE_NAME: database_key.db_name,
+                },
+            )
+
             raise e
         cls._engine_for_database[database_key] = engine
         return engine

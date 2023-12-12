@@ -18,26 +18,39 @@
 import datetime
 import logging
 from http import HTTPStatus
-from typing import Tuple
+from typing import Optional, Tuple
 
 from flask import Flask, redirect
 from flask_smorest import Api
+from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
+from opentelemetry.trace import set_tracer_provider
 from werkzeug import Response
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import users_blueprint
+from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
+from recidiviz.monitoring.providers import (
+    create_monitoring_meter_provider,
+    create_monitoring_tracer_provider,
+)
+from recidiviz.monitoring.trace import CompositeSampler
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
 from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
+from recidiviz.utils.environment import in_gunicorn
 
 structured_logging.setup()
 
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
+
+# Set up instrumentation libraries prior to initializing our various clients (i.e. gRPC, SQLAlchemy, etc)
+instrument_flask_app(app=app)
 
 requires_authorization = build_compute_engine_auth_decorator(
     backend_service_id_secret_name="iap_admin_panel_load_balancer_service_id"  # nosec
@@ -81,6 +94,37 @@ elif environment.in_gcp():
     initialize_scoped_sessions(app)
     initialize_engines(schema_types=set(SchemaType))
 
+
+# OpenTelemetry's MeterProvider and `CloudMonitoringMetricsExporter` are compatible with gunicorn's
+# forking mechanism and can be instantiated pre-fork.
+meter_provider = create_monitoring_meter_provider()
+set_meter_provider(meter_provider)
+
+
+def initialize_worker_process() -> None:
+    """OpenTelemetry's BatchSpanProcessor is not compatible with gunicorn's forking mechanism,
+     so our providers must be instantiated per-worker after the worker has been forked. For more information see:
+    https://opentelemetry-python.readthedocs.io/en/latest/examples/fork-process-model/README.html
+    """
+    sampler: Optional[Sampler] = None
+    if environment.in_gcp():
+        sampler = CompositeSampler(
+            {},
+            # For other requests, trace 1 in 20.
+            default_sampler=TraceIdRatioBased(rate=1 / 20),
+        )
+
+    tracer_provider = create_monitoring_tracer_provider(sampler=sampler)
+
+    set_tracer_provider(tracer_provider)
+
+
+# Called by the configured hook in `gunicorn.conf.py` and `gunicorn.gthread.conf.py`
+app.initialize_worker_process = initialize_worker_process  # type: ignore
+
+# Call manually running via the `flask` command and not `gunicorn`
+if not in_gunicorn():
+    initialize_worker_process()
 
 if environment.in_development() or environment.in_gcp():
     # Initialize datastores for the admin panel and trigger a data refresh. This call

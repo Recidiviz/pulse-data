@@ -17,15 +17,22 @@
 """Tests the trace various utilities"""
 
 import unittest
-from typing import List
+from concurrent import futures
+from typing import List, cast
 
 import pytest
 from flask import Flask
-from mock import ANY, Mock, call, patch
-from opencensus.trace import span_context
+from mock import Mock, patch
+from more_itertools import one
+from opentelemetry.baggage import get_baggage
+from opentelemetry.sdk.metrics.export import Histogram, HistogramDataPoint
 from parameterized import parameterized
 
-from recidiviz.utils import trace
+from recidiviz.monitoring import trace
+from recidiviz.monitoring.context import push_region_context
+from recidiviz.monitoring.keys import AttributeKey, HistogramInstrumentKey
+from recidiviz.tests.utils.monitoring_test_utils import OTLMock
+from recidiviz.utils.structured_logging import with_context
 
 
 @trace.span
@@ -40,96 +47,127 @@ class SomeClass:
             self.recursive(depth - 1)
 
 
+class TestWithContext(unittest.TestCase):
+    def setUp(self) -> None:
+        self.otl_mock = OTLMock()
+        self.otl_mock.set_up()
+
+    def tearDown(self) -> None:
+        self.otl_mock.tear_down()
+
+    def test_with_context_works_correctly(self) -> None:
+        def job() -> str:
+            return str(get_baggage(AttributeKey.REGION))
+
+        tracer = self.otl_mock.tracer_provider.get_tracer("test_tracer")
+
+        with tracer.start_span(name="root span"):
+            with push_region_context("us_xx", "PRIMARY"):
+                results = []
+                with futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    job_futures = [executor.submit(with_context(job))]
+                    for f in futures.as_completed(job_futures):
+                        results.append(f.result())
+
+        self.assertEqual(results, ["us_xx"])
+
+
 class TestSpan(unittest.TestCase):
     """Tests trace span functionality"""
 
-    @patch("opencensus.trace.execution_context.get_opencensus_tracer")
-    def test_call_createsSpan(self, mock_get_tracer: Mock) -> None:
-        # Arrange
-        mock_tracer = mock_get_tracer.return_value
-        mock_span = mock_tracer.span.return_value.__enter__.return_value
+    def setUp(self) -> None:
+        self.otl_mock = OTLMock()
+        self.otl_mock.set_up()
 
+    def tearDown(self) -> None:
+        self.otl_mock.tear_down()
+
+    def test_call_createsSpan(self) -> None:
         # Act
         res = some_method(2, arg2=["1", "2"])
 
         # Assert
         self.assertEqual(["1", "2", "1", "2"], res)
-        mock_tracer.span.assert_called_with(name="some_method")
-        mock_span.add_attribute.assert_has_calls(
-            [
-                call("recidiviz.function.module", "recidiviz.tests.utils.trace_test"),
-                call("recidiviz.function.args", "(2,)"),
-                call("recidiviz.function.kwargs", "{'arg2': ['1', '2']}"),
-            ]
+
+        span = self.otl_mock.get_latest_span()
+
+        self.assertEqual(span.name, "some_method")
+        self.assertEqual(
+            span.attributes,
+            {
+                AttributeKey.MODULE: "recidiviz.tests.utils.trace_test",
+                AttributeKey.ARGS: "(2,)",
+                AttributeKey.KWARGS: "{'arg2': ['1', '2']}",
+            },
         )
 
-    @patch("recidiviz.utils.monitoring.measurements")
     @patch("time.perf_counter")
-    def test_call_recordsTime(
-        self, mock_time: Mock, mock_measurements_method: Mock
-    ) -> None:
+    def test_call_recordsTime(self, mock_time: Mock) -> None:
         # Arrange
         mock_time.side_effect = [2.1, 2.25]
-        mock_measurements = mock_measurements_method.return_value.__enter__.return_value
 
-        # Act
+        # Actr
         res = some_method(2, arg2=["1", "2"])
 
         # Assert
         self.assertEqual(["1", "2", "1", "2"], res)
-        mock_measurements_method.assert_called_with(
-            {
-                "module": "recidiviz.tests.utils.trace_test",
-                "function": "some_method",
-                "recursion_depth": 0,
-            }
-        )
-        self.assertEqual(
-            [call(ANY, pytest.approx(0.15))],
-            mock_measurements.measure_float_put.mock_calls,
+
+        metric = cast(
+            Histogram,
+            self.otl_mock.get_metric_data(
+                metric_name=HistogramInstrumentKey.FUNCTION_DURATION
+            ),
         )
 
-    @patch("recidiviz.utils.monitoring.measurements")
-    def test_recursive_countsDepth(self, mock_measurements_method: Mock) -> None:
+        data_point: HistogramDataPoint = one(metric.data_points)
+
+        self.assertEqual(
+            data_point.attributes,
+            {
+                AttributeKey.MODULE: "recidiviz.tests.utils.trace_test",
+                AttributeKey.FUNCTION: "some_method",
+                AttributeKey.RECURSION_DEPTH: 1,
+            },
+        )
+
+        self.assertEqual(data_point.sum, pytest.approx(0.15))
+
+    def test_recursive_countsDepth(self) -> None:
         # Act
         SomeClass().recursive(3)
 
+        histogram = cast(
+            Histogram,
+            self.otl_mock.get_metric_data(
+                metric_name=HistogramInstrumentKey.FUNCTION_DURATION
+            ),
+        )
+
         # Assert
-        mock_measurements_method.assert_has_calls(
+        self.assertEqual(
+            [data_point.attributes for data_point in reversed(histogram.data_points)],
             [
-                call(
-                    {
-                        "module": "recidiviz.tests.utils.trace_test",
-                        "function": "SomeClass.recursive",
-                        "recursion_depth": 0,
-                    }
-                ),
-                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
-                call(
-                    {
-                        "module": "recidiviz.tests.utils.trace_test",
-                        "function": "SomeClass.recursive",
-                        "recursion_depth": 1,
-                    }
-                ),
-                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
-                call(
-                    {
-                        "module": "recidiviz.tests.utils.trace_test",
-                        "function": "SomeClass.recursive",
-                        "recursion_depth": 2,
-                    }
-                ),
-                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
-                call(
-                    {
-                        "module": "recidiviz.tests.utils.trace_test",
-                        "function": "SomeClass.recursive",
-                        "recursion_depth": 3,
-                    }
-                ),
-                call().__enter__(),  # pylint: disable=unnecessary-dunder-call
-            ]
+                {
+                    AttributeKey.MODULE: "recidiviz.tests.utils.trace_test",
+                    AttributeKey.FUNCTION: "SomeClass.recursive",
+                    AttributeKey.RECURSION_DEPTH: 1,
+                },
+                {
+                    AttributeKey.MODULE: "recidiviz.tests.utils.trace_test",
+                    AttributeKey.FUNCTION: "SomeClass.recursive",
+                    AttributeKey.RECURSION_DEPTH: 2,
+                },
+                {
+                    AttributeKey.MODULE: "recidiviz.tests.utils.trace_test",
+                    AttributeKey.FUNCTION: "SomeClass.recursive",
+                    AttributeKey.RECURSION_DEPTH: 3,
+                },
+                {
+                    AttributeKey.MODULE: "recidiviz.tests.utils.trace_test",
+                    AttributeKey.FUNCTION: "SomeClass.recursive",
+                    AttributeKey.RECURSION_DEPTH: 4,
+                },
+            ],
         )
 
 
@@ -169,5 +207,8 @@ class TestCompositeSampler(unittest.TestCase):
 
             # Act / Assert
             self.assertEqual(
-                composite.should_sample(span_context.SpanContext()), expected
+                composite.should_sample(
+                    parent_context=None, trace_id=123, name="route"
+                ),
+                expected,
             )

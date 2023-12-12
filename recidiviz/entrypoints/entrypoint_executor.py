@@ -17,13 +17,16 @@
 """Contains functions for executing entrypoints"""
 import argparse
 import atexit
+import json
 import logging
 import os
 import sys
 from typing import List, Set, Tuple, Type
 
 import requests
-from opencensus.ext.stackdriver.stats_exporter import GLOBAL_RESOURCE_TYPE, Options
+from opentelemetry import trace
+from opentelemetry.metrics import set_meter_provider
+from opentelemetry.trace import set_tracer_provider
 
 from recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh import (
     BigQueryRefreshEntrypoint,
@@ -52,7 +55,15 @@ from recidiviz.entrypoints.validation.validate import ValidationEntrypoint
 from recidiviz.entrypoints.view_update.update_all_managed_views import (
     UpdateAllManagedViewsEntrypoint,
 )
-from recidiviz.utils import metadata, monitoring
+from recidiviz.monitoring.context import get_current_trace_id
+from recidiviz.monitoring.flask_insrumentation import instrument_common_libraries
+from recidiviz.monitoring.providers import (
+    create_monitoring_meter_provider,
+    create_monitoring_tracer_provider,
+)
+from recidiviz.monitoring.trace import TRACER_NAME
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
+from recidiviz.utils.metadata import set_development_project_id_override
 
 ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     BigQueryRefreshEntrypoint,
@@ -93,18 +104,21 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 
 
 def execute_entrypoint(entrypoint: str, entrypoint_argv: List[str]) -> None:
-    monitoring.register_stackdriver_exporter(
-        # We register the Stackdriver using the resource type of `global`.
-        # The exporter would automatically detect that we are running in a `k8s_container` resource,
-        # but we do not want these metrics associated with that resource type.
-        # More information can be found here- https://cloud.google.com/monitoring/api/resources
-        options=Options(project_id=metadata.project_id(), resource=GLOBAL_RESOURCE_TYPE)
-    )
+    tracer = trace.get_tracer(TRACER_NAME)
     entrypoint_cls = ENTRYPOINTS_BY_NAME[entrypoint]
     entrypoint_parser = entrypoint_cls.get_parser()
-    entrypoint_cls.run_entrypoint(args=entrypoint_parser.parse_args(entrypoint_argv))
+    entrypoint_args = entrypoint_parser.parse_args(entrypoint_argv)
 
-    monitoring.wait_for_stackdriver_export()
+    with tracer.start_as_current_span(entrypoint) as current_span:
+        for key, arg in vars(entrypoint_args).items():
+            current_span.set_attribute(key, json.dumps(arg))
+
+        entrypoint_cls.run_entrypoint(args=entrypoint_args)
+
+        logging.info(
+            "Cloud Trace profile can be found with the following trace id: %s",
+            get_current_trace_id(),
+        )
 
 
 def quit_kubernetes_cloud_sql_proxy() -> None:
@@ -123,6 +137,14 @@ def quit_kubernetes_cloud_sql_proxy() -> None:
 
 
 if __name__ == "__main__":
+    if in_development():
+        set_development_project_id_override(GCP_PROJECT_STAGING)
+
+    set_meter_provider(create_monitoring_meter_provider())
+    set_tracer_provider(create_monitoring_tracer_provider())
+
+    instrument_common_libraries()
+
     logging.basicConfig(level=logging.INFO)
     atexit.register(quit_kubernetes_cloud_sql_proxy)
 
