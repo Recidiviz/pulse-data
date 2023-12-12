@@ -1,13 +1,12 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
+launch_env:
+  $env: is_dataflow_pipeline
 input_columns:
   - SID
   - EARLY_TERMINATION_DATE
   - RecDate
 unused_columns: []
-launch_env:
-  $not:
-    $env: is_dataflow_pipeline
 output:
   StatePerson:
     external_ids:
