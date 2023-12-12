@@ -82,12 +82,12 @@ output:
                           - $literal("WARRANT-supervision_level")
                           - supervision_level_id
                     $mappings:
-                      StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
+                      StateSupervisionPeriodSupervisionType.WARRANT_STATUS:
                         - "WARRANT-supervision_level-2286" # Warrant Status
-                        - "WARRANT-supervision_level-2394" # Absconder Warrant Status
                       StateSupervisionPeriodSupervisionType.ABSCONSION:
                         - "WARRANT-supervision_level-7483" # Probation Absconder Warrant Status
                         - "WARRANT-supervision_level-7482" # Parole Absconder Warrant Status
+                        - "WARRANT-supervision_level-2394" # Absconder Warrant Status
               # If the movements data indicate that the individual has absconded, then we're going to mark supervision type as ABSCONSION
               - $else_if:
                   $in:
