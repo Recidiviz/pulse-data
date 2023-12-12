@@ -299,10 +299,10 @@ unsupervised_levels = [
 
 warrant_levels = [
     "2286",  # Warrant Status
-    "2394",  # Absconder Warrant Status
 ]
 
 absconcion_levels = [
+    "2394",  # Absconder Warrant Status
     "7483",  # Probation Absconder Warrant Status
     "7482",  # Parole Absconder Warrant Status
 ]
