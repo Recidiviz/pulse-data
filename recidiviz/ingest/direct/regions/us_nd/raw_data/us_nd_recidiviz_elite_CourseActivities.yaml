@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: elite_courseactivities
+file_tag: recidiviz_elite_CourseActivities
 file_description: |-
   Contains one row for each course or activity engaged in within the ND DOCR. This includes
   work assignments, assessments, assignments to administrative segregation, and programming/courses,

@@ -1,10 +1,10 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: elite_offenderprogramprofiles
+file_tag: elite_OffenderProgramProfiles
 file_description: |-
   Table that links people by their OFFENDER_BOOK_ID to the programs and courses they have 
   participated in, have been referred to, or have been rejected from or waitlisted for.
   Also tracks movements in and out of administrative segregation resulting from disciplinary
-  or intervention needs assessments. Connects to elite_programservices and elite_courseactivities 
+  or intervention needs assessments. Connects to elite_programservices and recidiviz_elite_CourseActivities 
   tables using PROGRAM_ID and CRS_ACTY_ID keys, respectively, for detail on institutional 
   activities.
 
@@ -79,7 +79,7 @@ columns:
       TODO(#18645): Fill in with answer from ND
   - name: CRS_ACTY_ID
     description: |-
-      Can be used to join to elite_courseactivities. Unique ID of this particular course.
+      Can be used to join to recidiviz_elite_CourseActivities. Unique ID of this particular course.
   - name: EARLY_END_REASON
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -134,6 +134,15 @@ columns:
     description: |-
       Misnamed field, always empty. 
       TODO(#18645): Clarify with ND
+  - name: OFFENDER_END_REASON
+    description: |-
+      The reason the person finished this program/activity.
+  - name: OFFENDER_ID
+    description: |-
+      External id for a unique person from the Elite system.
+  - name: OFFENDER_PRG_OBLIGATION_ID
+    description: |-
+      TODO(#18645): Fill in with answer from ND
   - name: OFFENDER_PROGRAM_STATUS
     description: |-
       Possibly the status of a person's enrollment in a given course or program.
@@ -241,11 +250,11 @@ columns:
         description: # TODO(#18645): Fill in with answer from ND
 always_historical_export: False
 table_relationships:
-  - foreign_table: elite_programservices
+  - foreign_table: elite_ProgramServices
     join_logic:
-      - elite_programservices.PROGRAM_ID = elite_offenderprogramprofiles.PROGRAM_ID
+      - elite_ProgramServices.PROGRAM_ID = elite_OffenderProgramProfiles.PROGRAM_ID
     cardinality: ONE_TO_MANY
-  - foreign_table: elite_courseactivities
+  - foreign_table: recidiviz_elite_CourseActivities
     join_logic:
-      - elite_courseactivities.CRS_ACTY_ID = elite_offenderprogramprofiles.CRS_ACTY_ID
+      - recidiviz_elite_CourseActivities.CRS_ACTY_ID = elite_OffenderProgramProfiles.CRS_ACTY_ID
     cardinality: ONE_TO_MANY
