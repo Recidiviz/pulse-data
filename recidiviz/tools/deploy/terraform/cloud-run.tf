@@ -118,7 +118,9 @@ resource "google_project_iam_member" "asset_generation_iam" {
 resource "google_project_iam_member" "admin_panel_iam" {
   for_each = toset(concat(local.cloud_run_common_roles, [
     "roles/cloudtasks.viewer",
-    "roles/dataflow.viewer"
+    "roles/dataflow.viewer",
+    "roles/bigquery.dataViewer",
+    "roles/bigquery.jobUser"
   ]))
   project = var.project_id
   role    = each.key
