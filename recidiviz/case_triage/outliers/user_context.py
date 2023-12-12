@@ -27,5 +27,5 @@ class UserContext:
     # Use string to allow storing "CSG" as a value
     state_code_str: str
     user_external_id: str
-    role: str
     pseudonymized_id: Optional[str]
+    can_access_all_supervisors: bool

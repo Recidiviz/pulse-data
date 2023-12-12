@@ -108,9 +108,8 @@ def create_outliers_api_blueprint() -> Blueprint:
     def supervisors(state: str) -> Response:
         state_code = StateCode(state.upper())
         user_context: UserContext = g.user_context
-        user_role = user_context.role
 
-        if user_role in ["leadership_role", "supervision_leadership"]:
+        if user_context.can_access_all_supervisors:
             supervisor_entities = OutliersQuerier(
                 state_code
             ).get_supervision_officer_supervisor_entities()
@@ -128,7 +127,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             )
 
         return jsonify_response(
-            f"Non-leadership user {user_context.user_external_id} is not authorized to access the /supervisors endpoint",
+            f"User {user_context.pseudonymized_id} is not authorized to access the /supervisors endpoint",
             HTTPStatus.UNAUTHORIZED,
         )
 
@@ -278,14 +277,13 @@ def create_outliers_api_blueprint() -> Blueprint:
             user_context.user_external_id
         )
 
-        # If the current user is identified as a supervisor, ensure that they supervise the requested officer.
-        # If the user is not a supervisor, we can assume that the user is leadership or Recidiviz and can thus view any officer.
-        if (
-            supervisor
-            and officer_entity.supervisor_external_id != supervisor.external_id
+        # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
+        if not user_context.can_access_all_supervisors and (
+            not supervisor
+            or officer_entity.supervisor_external_id != supervisor.external_id
         ):
             return jsonify_response(
-                "User is a supervisor, but does not supervise the requested officer.",
+                "User cannot access all supervisors and does not supervise the requested officer.",
                 HTTPStatus.UNAUTHORIZED,
             )
 
@@ -353,7 +351,6 @@ def create_outliers_api_blueprint() -> Blueprint:
 
     @api.get("/<state>/officer/<pseudonymized_officer_id>")
     def officer(state: str, pseudonymized_officer_id: str) -> Response:
-
         state_code = StateCode(state.upper())
 
         try:
@@ -390,14 +387,13 @@ def create_outliers_api_blueprint() -> Blueprint:
             user_context.user_external_id
         )
 
-        # If the current user is identified as a supervisor, ensure that they supervise the requested officer.
-        # If the user is not a supervisor, we can assume that the user is leadership or Recidiviz and can thus view any officer.
-        if (
-            supervisor
-            and officer_entity.supervisor_external_id != supervisor.external_id
+        # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
+        if not user_context.can_access_all_supervisors and (
+            not supervisor
+            or officer_entity.supervisor_external_id != supervisor.external_id
         ):
             return jsonify_response(
-                "User is supervisor, but does not supervise the requested officer.",
+                "User cannot access all supervisors and does not supervise the requested officer.",
                 HTTPStatus.UNAUTHORIZED,
             )
 
@@ -428,7 +424,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             # Return an unauthorized error if the requesting user is requesting information about someone else
             # and the requesting user is not a Recidiviz user
             return jsonify_response(
-                f"Non-recidiviz user {user_external_id} with pseudonymized_id {user_pseudonymized_id} is requesting user-info about a user that isn't themselves: {pseudonymized_id}",
+                f"Non-recidiviz user with pseudonymized_id {user_pseudonymized_id} is requesting user-info about a user that isn't themselves: {pseudonymized_id}",
                 HTTPStatus.UNAUTHORIZED,
             )
 
