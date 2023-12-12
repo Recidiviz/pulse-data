@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers related to building bucket/directory paths for use in ingest."""
+import datetime
+import os
 from typing import Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
@@ -70,6 +72,31 @@ def gcsfs_direct_ingest_storage_directory_path_for_state(
     storage_bucket = GcsfsBucketPath(bucket_name)
 
     return GcsfsDirectoryPath.from_dir_and_subdir(storage_bucket, region_code.lower())
+
+
+def gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
+    *,
+    region_code: str,
+    ingest_instance: DirectIngestInstance,
+    deprecated_on_date: datetime.date,
+    project_id: Optional[str] = None,
+) -> GcsfsDirectoryPath:
+    """Returns the raw data storage directory path for the given region where raw data
+    files that have been fully deprecated should be stored.
+    """
+    storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_state(
+        region_code=region_code,
+        ingest_instance=ingest_instance,
+        project_id=project_id,
+    )
+
+    return GcsfsDirectoryPath.from_dir_and_subdir(
+        storage_dir_path,
+        os.path.join(
+            "deprecated",
+            f"deprecated_on_{deprecated_on_date}",
+        ),
+    )
 
 
 def gcsfs_direct_ingest_bucket_for_state(

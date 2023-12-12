@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for directory_path_utils.py."""
+import datetime
 from unittest import TestCase
 
 from mock import Mock, patch
@@ -22,6 +23,7 @@ from mock import Mock, patch
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
+    gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
     gcsfs_sftp_download_bucket_path_for_state,
 )
@@ -86,4 +88,19 @@ class TestDirectoryPathUtils(TestCase):
         self.assertEqual(
             gcsfs_sftp_download_bucket_path_for_state("us_nd"),
             GcsfsBucketPath("recidiviz-staging-direct-ingest-state-us-nd-sftp"),
+        )
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
+    )
+    def test_gcsfs_direct_ingest_deprecated_storage_directory_path_for_region(
+        self,
+    ) -> None:
+        self.assertEqual(
+            gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
+                region_code="us_nd",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                deprecated_on_date=datetime.date(2020, 1, 1),
+            ).abs_path(),
+            "recidiviz-staging-direct-ingest-state-storage/us_nd/deprecated/deprecated_on_2020-01-01/",
         )

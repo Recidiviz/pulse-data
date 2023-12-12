@@ -38,12 +38,11 @@ python -m recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
 """
 import argparse
 import logging
-import os
 from datetime import date
 from typing import List, Optional
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -92,12 +91,11 @@ class MoveFilesToDeprecatedController:
         )
 
         self.deprecated_region_storage_dir_path = (
-            GcsfsDirectoryPath.from_dir_and_subdir(
-                self.region_storage_dir_path,
-                os.path.join(
-                    "deprecated",
-                    f"deprecated_on_{date.today()}",
-                ),
+            gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
+                region_code=region_code,
+                ingest_instance=ingest_instance,
+                deprecated_on_date=date.today(),
+                project_id=self.project_id,
             )
         )
 
