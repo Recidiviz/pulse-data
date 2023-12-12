@@ -113,6 +113,7 @@ output:
                         - movement_reason_id
                         - $literal("2") # Intake
                     - $is_null: order_type_id_list
+                    - $is_null: supervision_level_id
                 $then:
                   $enum_mapping:
                     $raw_text: $literal("INVESTIGATION-movement_reason_id-2")
