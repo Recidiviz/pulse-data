@@ -90,7 +90,7 @@ INGEST_VIEW_ORDER_EXEMPTIONS: Dict[StateCode, List[str]] = {
         "docstars_ftr_episode",
         "docstars_lsi_chronology",
         "docstars_contacts_v2",
-        "docstars_offenders_early_term",
+        "docstars_offenders_early_term_v2",
         "docstars_staff",
         "docstars_staff_location_periods",
         "docstars_staff_role_periods",
