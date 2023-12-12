@@ -47,15 +47,12 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
 
             with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
                 for line in setup_file:
-                    if dependency in line.lower():
+                    line = line.lower().strip()
+                    if line.startswith(f'"{dependency}'):
                         dependency_found = True
                         # Remove whitespace, quotation marks, and commas
                         dependency_with_version = (
-                            line.lower()
-                            .strip()
-                            .replace('"', "")
-                            .replace("'", "")
-                            .replace(",", "")
+                            line.replace('"', "").replace("'", "").replace(",", "")
                         )
 
                         if dependency_with_version.startswith("#"):
