@@ -18,7 +18,7 @@
 import re
 import threading
 from concurrent import futures
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional
 
 from tqdm import tqdm
 
@@ -42,7 +42,7 @@ def dataset_id_to_filter_regex(dataset_id: str) -> str:
     return f"^{dataset_id}$"
 
 
-def run_operation_for_tables(
+def run_operation_for_tables_in_datasets(
     client: BigQueryClient,
     operation: Callable[[BigQueryClient, ProjectSpecificBigQueryAddress], T],
     prompt: Optional[str],
@@ -132,6 +132,50 @@ def run_operation_for_tables(
                         dataset_progress_lock=dataset_progress_lock,
                     )
                 ] = table_address
+
+        for f in futures.as_completed(operation_futures):
+            table_address = operation_futures[f]
+            results[table_address] = f.result()
+
+        overall_progress.close()
+
+    return results
+
+
+def run_operation_for_given_tables(
+    client: BigQueryClient,
+    operation: Callable[[BigQueryClient, ProjectSpecificBigQueryAddress], T],
+    tables: List[ProjectSpecificBigQueryAddress],
+) -> Dict[ProjectSpecificBigQueryAddress, T]:
+    """
+    Helper to run the provided function against given tables.
+    """
+    print(f"Updating {len(tables)} tables...")
+    results = {}
+    with futures.ThreadPoolExecutor(
+        # Conservatively allow only half as many workers as allowed connections.
+        # Lower this number if we see "urllib3.connectionpool:Connection pool is
+        # full, discarding connection" errors.
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        overall_progress = tqdm(desc="Updated tables", total=len(tables))
+
+        def _run_operation(
+            specific_table_address: ProjectSpecificBigQueryAddress,
+        ) -> T:
+            result = operation(client, specific_table_address)
+            overall_progress.update()
+            return result
+
+        operation_futures = {}
+
+        for table_address in tables:
+            operation_futures[
+                executor.submit(
+                    _run_operation,
+                    specific_table_address=table_address,
+                )
+            ] = table_address
 
         for f in futures.as_completed(operation_futures):
             table_address = operation_futures[f]

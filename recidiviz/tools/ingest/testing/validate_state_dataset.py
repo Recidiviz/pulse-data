@@ -70,7 +70,7 @@ from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
 )
 from recidiviz.tools.utils.bigquery_helpers import (
     dataset_id_to_filter_regex,
-    run_operation_for_tables,
+    run_operation_for_tables_in_datasets,
 )
 from recidiviz.tools.utils.compare_tables_helper import (
     STATS_NEW_ERROR_RATE_COL,
@@ -648,7 +648,7 @@ USING({associated_entity_2_pk})
             )
 
         print("Outputting table-specific validation results...")
-        results = run_operation_for_tables(
+        results = run_operation_for_tables_in_datasets(
             client=BigQueryClientImpl(project_id=self.output_project_id),
             prompt=None,
             operation=self._generate_table_specific_comparison_result,
