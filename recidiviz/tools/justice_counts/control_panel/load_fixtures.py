@@ -23,7 +23,7 @@ This script should be run only after `docker-compose up` has been run.
 This will delete everything from the tables and then re-add them from the
 fixture files.
 Usage against default development database (docker-compose v1):
-docker exec pulse-data_control_panel_backend_1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
+docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 
 Usage against default development database (docker-compose v2):
 docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
