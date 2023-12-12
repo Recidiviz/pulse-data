@@ -40,9 +40,36 @@ WITH {col}_{entity}_counts AS (
         state_code as region_code,
         COUNT(*) AS {col}_count,
     FROM `{{project_id}}.{{normalized_state_dataset}}.{entity}`
+    WHERE DATE_TRUNC({col}, MONTH) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 12 MONTH)
     GROUP BY 1,2
-)
-
+),
+last_12_month_dates AS (
+    SELECT DATE_TRUNC(date, MONTH) AS month,
+    FROM UNNEST(
+    GENERATE_DATE_ARRAY(
+        DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 12 MONTH), 
+        CURRENT_DATE('US/Eastern'), 
+        INTERVAL 1 MONTH)
+        ) AS date
+),
+cross_joined AS (
+    SELECT * 
+    FROM last_12_month_dates
+    CROSS JOIN (
+        SELECT distinct region_code 
+        FROM {col}_{entity}_counts
+        )
+),
+all_months_filled_zeroes AS (
+    SELECT 
+        cross_joined.month AS month, 
+        cross_joined.region_code AS region_code, 
+        COALESCE({col}_count, 0) AS {col}_count
+    FROM {col}_{entity}_counts 
+    FULL JOIN cross_joined on {col}_{entity}_counts.month = cross_joined.month 
+        and {col}_{entity}_counts.region_code = cross_joined.region_code 
+    )
+    
 SELECT * FROM (
     SELECT * FROM (
         SELECT 
@@ -50,14 +77,14 @@ SELECT * FROM (
             region_code, 
             {col}_count, 
             LAG({col}_count) OVER (PARTITION BY region_code ORDER BY month) AS previous_month_{col}_count, 
-        FROM {col}_{entity}_counts
+        FROM all_months_filled_zeroes
         -- select where the month < first of the current month
-        WHERE DATE_ADD(month, INTERVAL 1 MONTH) <= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 7 DAY)
+        WHERE month <= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 7 DAY)
     )
     -- Limit to most recent {validation_window_months} months
     -- We apply this filter here after the LAG caluclation has been done so we do not
     -- compare the first month of the validation to previous month that has been filtered out 
-    WHERE month >= DATE_SUB(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL EXTRACT( DAY FROM CURRENT_DATE('US/Eastern')) DAY), INTERVAL {validation_window_months} MONTH)
+    WHERE month > DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 12 MONTH)
 )
 WHERE {exemptions}
 """
