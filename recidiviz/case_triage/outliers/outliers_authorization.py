@@ -55,61 +55,63 @@ def on_successful_authorization(
 
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     user_state_code = app_metadata["stateCode"].upper()
+    is_recidiviz_or_csg = user_state_code in ("RECIDIVIZ", "CSG")
 
     user_external_id = (
-        user_state_code
-        if user_state_code in ("RECIDIVIZ", "CSG")
-        else app_metadata["externalId"]
-    )
-    user_role = (
-        "leadership_role" if user_state_code == "RECIDIVIZ" else app_metadata["role"]
+        user_state_code if is_recidiviz_or_csg else app_metadata["externalId"]
     )
     user_pseudonymized_id = app_metadata.get("pseudonymizedId", None)
+    routes = app_metadata.get("routes", {})
 
     g.user_context = UserContext(
         state_code_str=user_state_code,
         user_external_id=user_external_id,
-        role=user_role,
         pseudonymized_id=user_pseudonymized_id,
+        can_access_all_supervisors=is_recidiviz_or_csg
+        # TODO(Recidiviz/recidiviz-dashboards#4520): don't hard-code this string
+        or routes.get("insights_supervision_supervisors-list", False),
     )
 
     # If the user is a recidiviz user, skip endpoint checks
     if user_state_code == "RECIDIVIZ":
         return
 
-    if not app_metadata.get("routes", {}).get("insights", False):
+    if not routes.get("insights", False):
         raise AuthorizationError(code="not_authorized", description="Access denied")
 
 
 def grant_endpoint_access(querier: OutliersQuerier, user_context: UserContext) -> None:
     """
     No-ops if:
-    1. The user is not a supervision_staff user, i.e. leadership or recidiviz user
-    2. The user is a supervisor who has outliers.
+    1. The user has access to all supervisors
+    2. The user is a supervisor who has outliers
     Otherwises, raises an exception.
     """
-    if user_context.role == "supervision_staff":
-        if user_context.pseudonymized_id is None:
-            raise FlaskException(
-                code="no_pseudonymized_id",
-                description="Supervision staff user should have a pseudonymized id.",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
+    if user_context.can_access_all_supervisors:
+        # Users who can access all supervisors can access all endpoints
+        return
 
-        supervisor_entity = querier.get_supervisor_entity_from_pseudonymized_id(
-            user_context.pseudonymized_id
+    if user_context.pseudonymized_id is None:
+        raise FlaskException(
+            code="no_pseudonymized_id",
+            description="Supervision staff user should have a pseudonymized id.",
+            status_code=HTTPStatus.BAD_REQUEST,
         )
 
-        if supervisor_entity is None:
-            raise FlaskException(
-                code="supervisor_not_found",
-                description="Cannot find information on the requested user for the latest period",
-                status_code=HTTPStatus.NOT_FOUND,
-            )
+    supervisor_entity = querier.get_supervisor_entity_from_pseudonymized_id(
+        user_context.pseudonymized_id
+    )
 
-        if not supervisor_entity.has_outliers:
-            raise FlaskException(
-                code="supervisor_has_no_outliers",
-                description=f"Supervisors must have outliers in the latest period to access this endpoint. User {user_context.pseudonymized_id} does not have outliers.",
-                status_code=HTTPStatus.UNAUTHORIZED,
-            )
+    if supervisor_entity is None:
+        raise FlaskException(
+            code="supervisor_not_found",
+            description="Cannot find information on the requested user for the latest period",
+            status_code=HTTPStatus.NOT_FOUND,
+        )
+
+    if not supervisor_entity.has_outliers:
+        raise FlaskException(
+            code="supervisor_has_no_outliers",
+            description=f"Supervisors must have outliers in the latest period to access this endpoint. User {user_context.pseudonymized_id} does not have outliers.",
+            status_code=HTTPStatus.UNAUTHORIZED,
+        )
