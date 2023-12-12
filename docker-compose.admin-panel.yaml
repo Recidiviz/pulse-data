@@ -23,7 +23,7 @@ services:
       - "5050:5000"
     command: pipenv run flask run -h 0.0.0.0
     environment:
-      - FLASK_APP=/app/recidiviz/server.py
+      - FLASK_APP=/app/recidiviz/admin_panel/server.py
       - FLASK_ENV=development
       # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
       # They can safely be excluded from the stat reloader for a performance boost
@@ -38,6 +38,10 @@ services:
     volumes:
       - "./recidiviz:/app/recidiviz/"
       - "~/.config:/root/.config"
+      - case_triage_db_socket:/cloudsql/case_triage
+      - justice_counts_db_socket:/cloudsql/justice_counts
+      - operations_db_socket:/cloudsql/operations
+      - outliers_db_socket:/cloudsql/outliers
     depends_on:
       - case_triage_db
       - justice_counts_db

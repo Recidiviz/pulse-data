@@ -23,15 +23,13 @@ from http import HTTPStatus
 from typing import Optional, Tuple
 
 import zope.event.classhandler
-from flask import Flask, request
+from flask import Flask, Response, redirect, request
 from flask_smorest import Api
 from gevent import events
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
 from opentelemetry.trace import set_tracer_provider
 
-from recidiviz.admin_panel.admin_stores import initialize_admin_stores
-from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
 from recidiviz.monitoring.providers import (
@@ -47,7 +45,7 @@ from recidiviz.server_blueprint_registry import (
 from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
 from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import in_gunicorn
+from recidiviz.utils.environment import GCPEnvironment, in_gunicorn
 
 structured_logging.setup()
 
@@ -113,36 +111,21 @@ if not in_gunicorn():
     initialize_worker_process()
 
 
-# TODO(#24741): Remove once admin panel migration is completed
-@admin_panel_blueprint.before_request
 @auth_endpoint_blueprint.before_request
 @requires_gae_auth
 def authorization_middleware() -> None:
     pass
 
 
-# TODO(#24741): Remove in_development initializers once admin panel migration is completed
 if environment.in_development():
     # We set the project to recidiviz-staging
     metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)
 
     initialize_scoped_sessions(app)
-    initialize_engines(
-        schema_types=[
-            SchemaType.JUSTICE_COUNTS,
-            SchemaType.OPERATIONS,
-        ]
-    )
+    initialize_engines(schema_types=[SchemaType.OPERATIONS])
 elif environment.in_gcp():
     initialize_scoped_sessions(app)
     initialize_engines(schema_types=set(SchemaType))
-
-
-if environment.in_development() or environment.in_gcp():
-    # Initialize datastores for the admin panel and trigger a data refresh. This call
-    # will crash unless the project_id is set globally, which is not the case when
-    # running in CI.
-    initialize_admin_stores()
 
 
 @app.route("/health")
@@ -150,6 +133,23 @@ def health() -> Tuple[str, HTTPStatus]:
     """This just returns 200, and is used by Docker and GCP uptime checks to verify that the flask workers are
     up and serving requests."""
     return "", HTTPStatus.OK
+
+
+@app.route("/admin", defaults={"path": ""})
+@app.route("/admin/<path:path>")
+def fallback(path: Optional[str] = None) -> Response:
+    gcp_env = environment.get_gcp_environment()
+
+    if gcp_env == GCPEnvironment.STAGING:
+        new_host = "admin-panel-staging.recidiviz.org"
+    elif gcp_env == GCPEnvironment.PRODUCTION:
+        new_host = "admin-panel-prod.recidiviz.org"
+    else:
+        raise RuntimeError("Admin Panel no longer lives in this app")
+
+    return redirect(
+        f"https://{new_host}/admin/{path}", code=HTTPStatus.MOVED_PERMANENTLY.value
+    )
 
 
 @zope.event.classhandler.handler(events.MemoryUsageThresholdExceeded)
