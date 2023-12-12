@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: elite_offender_assessments
+file_tag: recidiviz_elite_OffenderAssessments
 file_description: |-
   Includes one row per assessment taken by an individual. Assessments include classifications,
   institutional history, work performance reviews, mental health screens, and many more.
@@ -173,13 +173,13 @@ always_historical_export: False
 table_relationships:
   - foreign_table: elite_assessment_results
     join_logic:
-      - elite_offender_assessments.ASSESSMENT_TYPE_ID = elite_assessment_results.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_assessment_results.ASSESSMENT_ID
   - foreign_table: elite_assessment_supervisors
     join_logic:
-      - elite_offender_assessments.ASSESSMENT_TYPE_ID = elite_assessment_supervisors.ASSESSMENT_ID
-  - foreign_table: elite_offenderassessmentitems
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_assessment_supervisors.ASSESSMENT_ID
+  - foreign_table: elite_OffenderAssessmentItems
     join_logic:
-      - elite_offender_assessments.ASSESSMENT_TYPE_ID = elite_offenderassessmentitems.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_OffenderAssessmentItems.ASSESSMENT_ID
   - foreign_table: elite_assessments
     join_logic:
-      - elite_offender_assessments.ASSESSMENT_TYPE_ID = elite_assessments.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_assessments.ASSESSMENT_ID

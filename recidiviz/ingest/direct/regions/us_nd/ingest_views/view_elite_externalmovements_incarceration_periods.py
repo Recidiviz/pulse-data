@@ -49,7 +49,7 @@ VIEW_QUERY_TEMPLATE = """
     CAST(NULL AS STRING) AS facility,
     IF(REVIEW_SUP_LEVEL_TYPE='',CALC_SUP_LEVEL_TYPE, REVIEW_SUP_LEVEL_TYPE) AS custody_level,
     COALESCE(ASSESS_COMMENT_TEXT, OVERRIDE_REASON) AS override_reason
-  FROM {elite_offender_assessments}
+  FROM {recidiviz_elite_OffenderAssessments}
   WHERE ASSESSMENT_TYPE_ID IN (
     '1,008.00', -- INITIAL ASSESSMENT	
     '1,009.00,', -- RECLASSIFICATION

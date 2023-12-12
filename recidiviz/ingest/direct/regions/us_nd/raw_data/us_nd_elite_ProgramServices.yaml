@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: elite_programservices
+file_tag: elite_ProgramServices
 file_description: |-
   Contains one row for each program or service provided by the DOCR. "Programs" and "services"
   can include job assignments and classes or other programming. 

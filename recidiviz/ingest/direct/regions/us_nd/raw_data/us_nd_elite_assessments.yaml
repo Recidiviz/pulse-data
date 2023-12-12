@@ -141,6 +141,6 @@ table_relationships:
   - foreign_table: elite_assessment_supervisors
     join_logic:
       - elite_assessments.ASSESSMENT_ID = elite_assessment_supervisors.ASSESSMENT_ID
-  - foreign_table: elite_offenderassessmentitems
+  - foreign_table: elite_OffenderAssessmentItems
     join_logic:
-      - elite_assessments.ASSESSMENT_ID = elite_offenderassessmentitems.ASSESSMENT_ID
+      - elite_assessments.ASSESSMENT_ID = elite_OffenderAssessmentItems.ASSESSMENT_ID
