@@ -37,10 +37,10 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.monitoring import context
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskQueueManager,
 )
-from recidiviz.utils import monitoring
 from recidiviz.utils.single_thread_task_queue import SingleThreadTaskQueue
 
 
@@ -48,7 +48,7 @@ def with_monitoring(
     region_code: str, ingest_instance: DirectIngestInstance, fn: Callable
 ) -> Callable:
     def wrapped_fn(*args: Any, **kwargs: Any) -> None:
-        with monitoring.push_region_tag(region_code, ingest_instance.value):
+        with context.push_region_context(region_code, ingest_instance.value):
             fn(*args, **kwargs)
 
     return wrapped_fn

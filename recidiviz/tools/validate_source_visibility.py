@@ -279,6 +279,7 @@ def main() -> int:
                     "recidiviz.view_registry",
                     "recidiviz.aggregated_metrics",
                     "recidiviz.datasets",
+                    "recidiviz.monitoring",
                     "recidiviz.validation",
                 }
             )
@@ -376,6 +377,7 @@ def main() -> int:
                 "recidiviz.firestore",
                 "recidiviz.ingest",
                 "recidiviz.justice_counts",
+                "recidiviz.monitoring",
                 "recidiviz.metrics",
                 "recidiviz.outliers",
                 "recidiviz.persistence",
@@ -414,6 +416,7 @@ def main() -> int:
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
                 "recidiviz.firestore",
+                "recidiviz.monitoring",
                 "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.tools.utils.fixture_helpers",
@@ -432,6 +435,7 @@ def main() -> int:
                 "recidiviz.utils",
                 "recidiviz.auth",
                 "recidiviz.cloud_storage",
+                "recidiviz.monitoring",
                 "recidiviz.reporting",
             }
         ),
@@ -487,6 +491,7 @@ def main() -> int:
                 "recidiviz.ingest",
                 "recidiviz.justice_counts",
                 "recidiviz.metrics",
+                "recidiviz.monitoring",
                 "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.reporting",

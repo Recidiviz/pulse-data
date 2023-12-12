@@ -20,35 +20,43 @@ import datetime
 import gc
 import logging
 from http import HTTPStatus
-from typing import Tuple
+from typing import Optional, Tuple
 
 import zope.event.classhandler
 from flask import Flask, request
 from flask_smorest import Api
 from gevent import events
-from opencensus.common.transports.async_ import AsyncTransport
-from opencensus.ext.flask.flask_middleware import FlaskMiddleware
-from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
-from opencensus.trace import base_exporter, config_integration, file_exporter, samplers
-from opencensus.trace.propagation import google_cloud_format
+from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
+from opentelemetry.trace import set_tracer_provider
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
+from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
+from recidiviz.monitoring.providers import (
+    create_monitoring_meter_provider,
+    create_monitoring_tracer_provider,
+)
+from recidiviz.monitoring.trace import CompositeSampler
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.server_blueprint_registry import (
     default_blueprints_with_url_prefixes,
     flask_smorest_api_blueprints_with_url_prefixes,
 )
 from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
-from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
+from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import in_gunicorn
 
 structured_logging.setup()
 
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
+
+# Set up instrumentation libraries prior to initializing our various clients (i.e. gRPC, SQLAlchemy, etc)
+instrument_flask_app(app=app)
 
 # TODO(#24741): Remove once admin panel migration is completed
 api = Api(
@@ -72,6 +80,39 @@ else:
     raise ValueError(f"Unsupported service type: {service_type}")
 
 
+# OpenTelemetry's MeterProvider and `CloudMonitoringMetricsExporter` are compatible with gunicorn's
+# forking mechanism and can be instantiated pre-fork.
+meter_provider = create_monitoring_meter_provider()
+set_meter_provider(meter_provider)
+
+
+def initialize_worker_process() -> None:
+    """OpenTelemetry's BatchSpanProcessor is not compatible with gunicorn's forking mechanism,
+     so our providers must be instantiated per-worker in post_fork. For more information see:
+    https://opentelemetry-python.readthedocs.io/en/latest/examples/fork-process-model/README.html
+    """
+    sampler: Optional[Sampler] = None
+    if environment.in_gcp():
+        sampler = CompositeSampler(
+            {
+                "/direct/extract_and_merge": TraceIdRatioBased(rate=100 / 100),
+            },
+            # For other requests, trace 1 in 20.
+            default_sampler=TraceIdRatioBased(rate=1 / 20),
+        )
+
+    tracer_provider = create_monitoring_tracer_provider(sampler=sampler)
+    set_tracer_provider(tracer_provider)
+
+
+# Called by the configured hook in `gunicorn.conf.py` and `gunicorn.gthread.conf.py`
+app.initialize_worker_process = initialize_worker_process  # type: ignore
+
+# Call manually running via the `flask` command and not `gunicorn`
+if not in_gunicorn():
+    initialize_worker_process()
+
+
 # TODO(#24741): Remove once admin panel migration is completed
 @admin_panel_blueprint.before_request
 @auth_endpoint_blueprint.before_request
@@ -79,38 +120,6 @@ else:
 def authorization_middleware() -> None:
     pass
 
-
-# Export traces and metrics to stackdriver if running in GCP
-if environment.in_gcp():
-    monitoring.register_stackdriver_exporter()
-    trace_exporter: base_exporter.Exporter = stackdriver_trace.StackdriverExporter(
-        project_id=metadata.project_id(), transport=AsyncTransport
-    )
-    trace_sampler: samplers.Sampler = trace.CompositeSampler(
-        {
-            "/direct/extract_and_merge": samplers.AlwaysOnSampler(),
-        },
-        # For other requests, trace 1 in 20.
-        default_sampler=samplers.ProbabilitySampler(rate=0.05),
-    )
-else:
-    trace_exporter = file_exporter.FileExporter(file_name="traces")
-    trace_sampler = samplers.AlwaysOnSampler()
-
-middleware = FlaskMiddleware(
-    app,
-    excludelist_paths=["metadata", "computeMetadata"],  # Don't trace metadata requests
-    sampler=trace_sampler,
-    exporter=trace_exporter,
-    propagator=google_cloud_format.GoogleCloudFormatPropagator(),
-)
-config_integration.trace_integrations(
-    [
-        "google_cloud_clientlibs",
-        "requests",
-        "sqlalchemy",
-    ]
-)
 
 # TODO(#24741): Remove in_development initializers once admin panel migration is completed
 if environment.in_development():

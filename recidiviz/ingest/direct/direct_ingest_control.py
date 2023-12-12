@@ -59,9 +59,8 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
 )
-from recidiviz.utils import monitoring
+from recidiviz.monitoring import context
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_bool_param_value, get_str_param_value
 from recidiviz.utils.pubsub_helper import (
     BUCKET_ID,
@@ -163,7 +162,7 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
 
     ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(bucket_path)
 
-    with monitoring.push_region_tag(
+    with context.push_region_context(
         region_code,
         ingest_instance=ingest_instance.value,
     ):
@@ -215,7 +214,7 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(
+    with context.push_region_context(
         region_code,
         ingest_instance=ingest_instance.value,
     ):
@@ -258,7 +257,7 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
     for state_code in supported_states:
         logging.info("Ensuring paths normalized for region [%s]", state_code.value)
         for ingest_instance in DirectIngestInstance:
-            with monitoring.push_region_tag(
+            with context.push_region_context(
                 state_code.value, ingest_instance=ingest_instance.value
             ):
                 try:
@@ -304,7 +303,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
     ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
         gcsfs_path.bucket_path
     )
-    with monitoring.push_region_tag(
+    with context.push_region_context(
         region_code,
         ingest_instance=ingest_instance.value,
     ):
@@ -331,26 +330,23 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        with monitoring.push_tags(
-            {TagKey.RAW_DATA_IMPORT_TAG: data_import_args.task_id_tag()}
-        ):
-            try:
-                controller = DirectIngestControllerFactory.build(
-                    region_code=region_code,
-                    ingest_instance=ingest_instance,
-                    allow_unlaunched=False,
-                )
-            except DirectIngestError as e:
-                if e.is_bad_request():
-                    logging.error(str(e))
-                    return str(e), HTTPStatus.BAD_REQUEST
-                raise e
+        try:
+            controller = DirectIngestControllerFactory.build(
+                region_code=region_code,
+                ingest_instance=ingest_instance,
+                allow_unlaunched=False,
+            )
+        except DirectIngestError as e:
+            if e.is_bad_request():
+                logging.error(str(e))
+                return str(e), HTTPStatus.BAD_REQUEST
+            raise e
 
-            try:
-                controller.do_raw_data_import(data_import_args)
-            except GCSPseudoLockAlreadyExists as e:
-                logging.warning(str(e))
-                return str(e), HTTPStatus.CONFLICT
+        try:
+            controller.do_raw_data_import(data_import_args)
+        except GCSPseudoLockAlreadyExists as e:
+            logging.warning(str(e))
+            return str(e), HTTPStatus.CONFLICT
 
     return "", HTTPStatus.OK
 
@@ -383,7 +379,9 @@ def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code, ingest_instance=ingest_instance.value):
+    with context.push_region_context(
+        region_code, ingest_instance=ingest_instance.value
+    ):
         json_data = request.get_data(as_text=True)
         args = _parse_cloud_task_args(json_data)
 
@@ -415,22 +413,19 @@ def materialize_ingest_view() -> Tuple[str, HTTPStatus]:
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        with monitoring.push_tags(
-            {TagKey.INGEST_VIEW_MATERIALIZATION_TAG: args.task_id_tag()}
-        ):
-            try:
-                controller = DirectIngestControllerFactory.build(
-                    region_code=region_code,
-                    ingest_instance=ingest_instance,
-                    allow_unlaunched=False,
-                )
-            except DirectIngestError as e:
-                if e.is_bad_request():
-                    logging.error(str(e))
-                    return str(e), HTTPStatus.BAD_REQUEST
-                raise e
+        try:
+            controller = DirectIngestControllerFactory.build(
+                region_code=region_code,
+                ingest_instance=ingest_instance,
+                allow_unlaunched=False,
+            )
+        except DirectIngestError as e:
+            if e.is_bad_request():
+                logging.error(str(e))
+                return str(e), HTTPStatus.BAD_REQUEST
+            raise e
 
-            controller.do_ingest_view_materialization(args)
+        controller.do_ingest_view_materialization(args)
     return "", HTTPStatus.OK
 
 
@@ -460,7 +455,7 @@ def extract_and_merge() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(
+    with context.push_region_context(
         region_code,
         ingest_instance=ingest_instance.value,
     ):
@@ -495,26 +490,25 @@ def extract_and_merge() -> Tuple[str, HTTPStatus]:
             logging.error(response)
             return response, HTTPStatus.BAD_REQUEST
 
-        with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
-            try:
-                controller = DirectIngestControllerFactory.build(
-                    region_code=region_code,
-                    ingest_instance=ingest_instance,
-                    allow_unlaunched=False,
-                )
-            except DirectIngestError as e:
-                if e.is_bad_request():
-                    logging.error(str(e))
-                    return str(e), HTTPStatus.BAD_REQUEST
-                raise e
+        try:
+            controller = DirectIngestControllerFactory.build(
+                region_code=region_code,
+                ingest_instance=ingest_instance,
+                allow_unlaunched=False,
+            )
+        except DirectIngestError as e:
+            if e.is_bad_request():
+                logging.error(str(e))
+                return str(e), HTTPStatus.BAD_REQUEST
+            raise e
 
-            try:
-                controller.run_extract_and_merge_job_and_kick_scheduler_on_completion(
-                    ingest_args
-                )
-            except GCSPseudoLockAlreadyExists as e:
-                logging.warning(str(e))
-                return str(e), HTTPStatus.CONFLICT
+        try:
+            controller.run_extract_and_merge_job_and_kick_scheduler_on_completion(
+                ingest_args
+            )
+        except GCSPseudoLockAlreadyExists as e:
+            logging.warning(str(e))
+            return str(e), HTTPStatus.CONFLICT
     return "", HTTPStatus.OK
 
 
@@ -543,7 +537,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(
+    with context.push_region_context(
         region_code,
         ingest_instance=ingest_instance.value,
     ):
@@ -584,7 +578,7 @@ def kick_all_schedulers() -> None:
         if not region.is_ingest_launched_in_env():
             continue
         for ingest_instance in DirectIngestInstance:
-            with monitoring.push_region_tag(
+            with context.push_region_context(
                 state_code.value, ingest_instance=ingest_instance.value
             ):
                 controller = DirectIngestControllerFactory.build(

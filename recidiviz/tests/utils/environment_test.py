@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for utils/environment.py."""
+import os
 import sys
 from http import HTTPStatus
 from typing import Tuple
@@ -92,8 +93,8 @@ def test_test_in_test() -> None:
     assert environment.in_test()
 
 
+@patch.dict(os.environ, {"CI": "true"})
 def test_test_in_ci() -> None:
-    """This test will fail when run locally."""
     assert environment.in_ci()
 
 

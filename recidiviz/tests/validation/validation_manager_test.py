@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Tests for validation/validation_manager.py."""
+import logging
 from typing import List, Optional, Set
 from unittest import TestCase
 from unittest.mock import call
@@ -30,6 +31,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.utils.matchers import UnorderedCollection
+from recidiviz.tests.utils.monitoring_test_utils import OTLMock
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -185,6 +187,8 @@ class FakeValidationResultDetails(DataValidationJobResultDetails):
 class TestExecuteValidationRequest(TestCase):
     """Tests for execute_validation_request."""
 
+    otl_mock: OTLMock
+
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
@@ -200,18 +204,26 @@ class TestExecuteValidationRequest(TestCase):
         self.environment_for_project_patcher.start().return_value = (
             GCPEnvironment.STAGING
         )
+        self.trace_patcher = mock.patch(
+            "recidiviz.validation.validation_result_storage.get_current_trace_id"
+        )
+        self.trace_patcher.start().return_value = "trace-id"
 
+        self.otl_mock = OTLMock()
+        self.otl_mock.set_up()
         self._TEST_VALIDATIONS = get_test_validations()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         self.environment_patcher.stop()
         self.environment_for_project_patcher.stop()
+        self.trace_patcher.stop()
+        self.otl_mock.tear_down()
 
     @patch(
         "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
     )
-    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     @patch(
@@ -226,7 +238,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
-        mock_emit_opencensus_failure_events: MagicMock,
+        mock_capture_metrics: MagicMock,
         mock_file_tickets_for_failing_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
@@ -246,7 +258,7 @@ class TestExecuteValidationRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
-        mock_emit_opencensus_failure_events.assert_not_called()
+        mock_capture_metrics.assert_called_with([], [])
         mock_file_tickets_for_failing_validations.assert_not_called()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
@@ -263,7 +275,7 @@ class TestExecuteValidationRequest(TestCase):
     @patch(
         "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
     )
-    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     @patch(
@@ -278,7 +290,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
-        mock_emit_opencensus_failure_events: MagicMock,
+        mock_capture_metrics: MagicMock,
         mock_file_tickets_for_failing_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
@@ -299,7 +311,7 @@ class TestExecuteValidationRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
-        mock_emit_opencensus_failure_events.assert_not_called()
+        mock_capture_metrics.assert_called_with([], [])
         mock_file_tickets_for_failing_validations.assert_not_called()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
@@ -326,7 +338,7 @@ class TestExecuteValidationRequest(TestCase):
             )
 
     @patch("recidiviz.validation.validation_manager.github_helperbot_client")
-    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     @patch(
@@ -341,7 +353,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
-        mock_emit_opencensus_failure_events: MagicMock,
+        mock_capture_metrics: MagicMock,
         mock_github_client: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
@@ -385,6 +397,7 @@ class TestExecuteValidationRequest(TestCase):
             third_failure,
             ValueError("Job failed to run!"),
         ]
+        logging.basicConfig(level=logging.DEBUG)
 
         execute_validation_request(
             state_code=StateCode.US_XX,
@@ -394,10 +407,9 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(len(self._TEST_VALIDATIONS), mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
-
-        mock_emit_opencensus_failure_events.assert_called_with(
+        mock_capture_metrics.assert_called_with(
             UnorderedCollection([self._TEST_VALIDATIONS[4]]),
-            UnorderedCollection([first_failure, second_failure]),
+            UnorderedCollection([first_failure, second_failure, third_failure]),
         )
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
@@ -429,7 +441,7 @@ class TestExecuteValidationRequest(TestCase):
         )
 
     @patch("recidiviz.validation.validation_manager.github_helperbot_client")
-    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     @patch(
@@ -444,7 +456,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
-        mock_emit_opencensus_failure_events: MagicMock,
+        mock_capture_metrics: MagicMock,
         mock_github_client: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
@@ -504,8 +516,8 @@ class TestExecuteValidationRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
-        mock_emit_opencensus_failure_events.assert_called_with(
-            [], UnorderedCollection([first_failure, second_failure])
+        mock_capture_metrics.assert_called_with(
+            [], UnorderedCollection([first_failure, second_failure, third_failure])
         )
         mock_store_validation_results.assert_called_once()
         self.assertEqual(1, len(mock_store_validation_results.call_args[0]))
@@ -537,7 +549,7 @@ class TestExecuteValidationRequest(TestCase):
             mock_github_repo.create_issue.call_args_list, expected_calls
         )
 
-    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     @patch(
@@ -552,7 +564,7 @@ class TestExecuteValidationRequest(TestCase):
         mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
-        mock_emit_opencensus_failure_events: MagicMock,
+        mock_capture_metrics: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = []
 
@@ -562,7 +574,7 @@ class TestExecuteValidationRequest(TestCase):
         )
 
         mock_run_job.assert_not_called()
-        mock_emit_opencensus_failure_events.assert_not_called()
+        mock_capture_metrics.assert_called_with([], [])
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(0, len(results))
@@ -578,7 +590,7 @@ class TestExecuteValidationRequest(TestCase):
     @patch(
         "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
     )
-    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     @patch(
@@ -593,7 +605,7 @@ class TestExecuteValidationRequest(TestCase):
         _mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
-        _mock_emit_opencensus_failure_events: MagicMock,
+        _mock_capture_metrics: MagicMock,
         mock_file_tickets_for_failing_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
@@ -636,7 +648,7 @@ class TestExecuteValidationRequest(TestCase):
     @patch(
         "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
     )
-    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager.capture_metrics")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     @patch(
@@ -651,7 +663,7 @@ class TestExecuteValidationRequest(TestCase):
         _mock_store_validation_results: MagicMock,
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
-        _mock_emit_opencensus_failure_events: MagicMock,
+        _mock_capture_metrics: MagicMock,
         mock_file_tickets_for_failing_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS

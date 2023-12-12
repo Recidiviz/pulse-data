@@ -45,7 +45,8 @@ import attr
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.utils import environment, structured_logging, trace
+from recidiviz.monitoring import trace
+from recidiviz.utils import environment, structured_logging
 
 ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]

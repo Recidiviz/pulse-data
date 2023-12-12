@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,29 +19,18 @@
 import time
 from contextvars import ContextVar
 from functools import wraps
-from typing import Callable, Dict, List, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 
 from flask import request
-from opencensus.stats import aggregation, measure, view
-from opencensus.trace import execution_context, samplers
-from opencensus.trace import span_context as span_ctx
-from opencensus.trace import tracer as tracer_module
+from opentelemetry.baggage import get_baggage
+from opentelemetry.sdk.trace.sampling import Sampler, SamplingResult
 from typing_extensions import ParamSpec
 
-from recidiviz.utils import monitoring
+from recidiviz.monitoring.instruments import get_monitoring_instrument
+from recidiviz.monitoring.keys import AttributeKey, HistogramInstrumentKey
+from recidiviz.monitoring.providers import get_global_tracer_provider
 
-m_duration_s = measure.MeasureFloat(
-    "function_duration", "The time it took for this function to run", "s"
-)
-
-duration_distribution_view = view.View(
-    "recidiviz/function_durations",
-    "The distribution of the function durations",
-    [monitoring.TagKey.REGION, monitoring.TagKey.FUNCTION],
-    m_duration_s,
-    aggregation.DistributionAggregation(monitoring.exponential_buckets(0.1, 5, 10)),
-)
-monitoring.register_views([duration_distribution_view])
+TRACER_NAME = "org.recidiviz"
 
 # Contains a list of all the addresses of all of the functions in our stack that are currently being timed. Used to
 # detect recursion.
@@ -71,50 +60,58 @@ def span(func: Callable[P, T]) -> Callable[P, T]:
     """Creates a new span for this function in the trace.
 
     This allows us to visualize how much of the processing time of a given request is spent inside of this function
-    without relying on log entries. Additionally the duration of the function call is recorded as a metric.
+    without relying on log entries. Additionally, the duration of the function call is recorded as a metric.
     """
 
     @wraps(func)
     def run_inside_new_span(*args: P.args, **kwargs: P.kwargs) -> T:
-        tracer: tracer_module.Tracer = execution_context.get_opencensus_tracer()
-        with tracer.span(name=func.__qualname__) as new_span:
-            new_span.add_attribute("recidiviz.function.module", func.__module__)
-            new_span.add_attribute("recidiviz.function.args", str(args))
-            new_span.add_attribute("recidiviz.function.kwargs", str(kwargs))
+        tracer = get_global_tracer_provider().get_tracer(TRACER_NAME)
+        with tracer.start_span(name=func.__qualname__) as new_span:
+            new_span.set_attribute(AttributeKey.MODULE, func.__module__)
+            new_span.set_attribute(AttributeKey.ARGS, str(args))
+            new_span.set_attribute(AttributeKey.KWARGS, str(kwargs))
 
-            with monitoring.measurements(
-                {
-                    monitoring.TagKey.MODULE: func.__module__,
-                    monitoring.TagKey.FUNCTION: func.__qualname__,
-                    monitoring.TagKey.RECURSION_DEPTH: stack.get().count(id(func)),
+            stack_token = stack.set(stack.get() + [id(func)])
+            start = time.perf_counter()
+
+            try:
+                return func(*args, **kwargs)
+            finally:
+                monitoring_attributes: dict[str, Union[str, int]] = {
+                    AttributeKey.MODULE: func.__module__,
+                    AttributeKey.FUNCTION: func.__qualname__,
+                    AttributeKey.RECURSION_DEPTH: int(stack.get().count(id(func))),
                 }
-            ) as measurements:
-                stack_token = stack.set(stack.get() + [id(func)])
-                start = time.perf_counter()
+                if region := get_baggage(AttributeKey.REGION):
+                    monitoring_attributes[AttributeKey.REGION] = str(region)
 
-                try:
-                    return func(*args, **kwargs)
-                finally:
-                    measurements.measure_float_put(
-                        m_duration_s, time.perf_counter() - start
-                    )
-                    stack.reset(stack_token)
+                duration = time.perf_counter() - start
+                get_monitoring_instrument(
+                    HistogramInstrumentKey.FUNCTION_DURATION
+                ).record(
+                    amount=duration,
+                    attributes=monitoring_attributes,
+                )
+                stack.reset(stack_token)
 
     return run_inside_new_span
 
 
-class CompositeSampler(samplers.Sampler):
+class CompositeSampler(Sampler):
     """Dispatches to a sampler based on the path of the currently active flask request, if any."""
+
+    def get_description(self) -> str:
+        return "Dispatches to a sampler based on the path of the currently active flask request, if any."
 
     def __init__(
         self,
-        path_prefix_to_sampler: Dict[str, samplers.Sampler],
-        default_sampler: samplers.Sampler,
+        path_prefix_to_sampler: Dict[str, Sampler],
+        default_sampler: Sampler,
     ) -> None:
         self.path_prefix_to_sampler = path_prefix_to_sampler
         self.default_sampler = default_sampler
 
-    def should_sample(self, span_context: span_ctx.SpanContext) -> bool:
+    def should_sample(self, *args: Any, **kwargs: Any) -> SamplingResult:
         sampler_to_use = self.default_sampler
 
         if request is not None:
@@ -123,4 +120,4 @@ class CompositeSampler(samplers.Sampler):
                 if request.path.startswith(path_prefix):
                     sampler_to_use = sampler
 
-        return sampler_to_use.should_sample(span_context)
+        return sampler_to_use.should_sample(*args, **kwargs)

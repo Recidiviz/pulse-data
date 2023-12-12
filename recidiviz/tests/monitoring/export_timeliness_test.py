@@ -21,22 +21,27 @@ from datetime import datetime, timezone
 from unittest.mock import PropertyMock, patch
 
 import mock
+from opentelemetry.metrics import Observation
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
+from recidiviz.metrics.export.export_config import (
+    VIEW_COLLECTION_EXPORT_INDEX,
+    ExportViewCollectionConfig,
+)
 from recidiviz.metrics.export.products.product_configs import (
     ProductConfig,
     ProductConfigs,
-    ProductStateConfig,
 )
 from recidiviz.monitoring.export_timeliness import (
     MISSING_FILE_CREATION_TIMESTAMP,
     UTC_EPOCH,
     build_blob_recent_reading_query,
     generate_expected_file_uris,
-    produce_export_timeliness_metrics,
+    get_export_timeliness_metrics,
     seconds_since_epoch,
 )
+from recidiviz.monitoring.keys import AttributeKey
+from recidiviz.tests.utils.monitoring_test_utils import OTLMock
 
 product_configs_fixture = ProductConfigs(
     products=[
@@ -47,7 +52,8 @@ product_configs_fixture = ProductConfigs(
                 "TEST_EXPORT",
             ],
             environment=None,
-            states=[ProductStateConfig(state_code="US_XX", environment="prod")],
+            is_state_agnostic=True,
+            states=None,
         )
     ]
 )
@@ -111,6 +117,9 @@ class TestExportTimeliness(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "test-project"
 
+        self.otl_mock = OTLMock()
+        self.otl_mock.set_up()
+
         self.recent_blob_readings_by_query = {
             build_blob_recent_reading_query(blob_uris["test_view"]): [1],
             build_blob_recent_reading_query(blob_uris["other_test_view"]): [1],
@@ -121,9 +130,28 @@ class TestExportTimeliness(unittest.TestCase):
             lambda request: self.recent_blob_readings_by_query[request.query]
         )
 
+        self.gcs_patcher = patch("recidiviz.monitoring.export_timeliness.Client")
+        gcs_client_mock = self.gcs_patcher.start()
+        gcs_client_mock.return_value.list_blobs.return_value = [mock_test_view_blob]
+
+        self.products_patcher = patch(
+            "recidiviz.monitoring.export_timeliness.ProductConfigs.from_file"
+        )
+        self.products_patcher.start().return_value = product_configs_fixture
+
+        self.view_collection_patcher = patch.dict(
+            VIEW_COLLECTION_EXPORT_INDEX,
+            {TEST_EXPORT_CONFIG.export_name: TEST_EXPORT_CONFIG},
+        )
+        self.view_collection_patcher.start()
+
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         self.client_patcher.stop()
+        self.gcs_patcher.stop()
+        self.products_patcher.stop()
+        self.view_collection_patcher.stop()
+        self.otl_mock.tear_down()
 
     def test_generate_expected_file_uris(self) -> None:
         result = generate_expected_file_uris(TEST_EXPORT_CONFIG)
@@ -140,16 +168,25 @@ class TestExportTimeliness(unittest.TestCase):
     def test_seconds_since_epoch(self) -> None:
         self.assertEqual(seconds_since_epoch(UTC_EPOCH.replace(second=3)), 3)
 
-    def test_produce_export_timeliness_metrics(self) -> None:
-        results = produce_export_timeliness_metrics(
-            set(blob_uris.values()),
-            [mock_test_view_blob],
-        )
+    def test_get_export_timeliness_metrics(self) -> None:
+        results = list(get_export_timeliness_metrics())
 
         self.assertCountEqual(
             results,
             [
-                (blob_uris["test_view"], 86400),
-                (blob_uris["other_test_view"], MISSING_FILE_CREATION_TIMESTAMP),
+                Observation(
+                    value=86400,
+                    attributes={
+                        AttributeKey.METRIC_VIEW_EXPORT_NAME: TEST_EXPORT_CONFIG.export_name,
+                        AttributeKey.EXPORT_FILE: blob_uris["test_view"],
+                    },
+                ),
+                Observation(
+                    value=MISSING_FILE_CREATION_TIMESTAMP,
+                    attributes={
+                        AttributeKey.METRIC_VIEW_EXPORT_NAME: TEST_EXPORT_CONFIG.export_name,
+                        AttributeKey.EXPORT_FILE: blob_uris["other_test_view"],
+                    },
+                ),
             ],
         )

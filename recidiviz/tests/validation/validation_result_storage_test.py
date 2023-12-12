@@ -17,6 +17,7 @@
 """Tests for validation_result_storage"""
 import datetime
 import unittest
+from unittest import mock
 from unittest.mock import create_autospec
 
 import pytz
@@ -60,6 +61,14 @@ class TestValidationResultStorage(unittest.TestCase):
         # Reset client caching
         # pylint: disable=protected-access
         big_query_client._clients_by_project_id_by_region.clear()
+
+        self.trace_patcher = mock.patch(
+            "recidiviz.validation.validation_result_storage.get_current_trace_id"
+        )
+        self.trace_patcher.start().return_value = "trace-id"
+
+    def tearDown(self) -> None:
+        self.trace_patcher.stop()
 
     def test_from_successful_result_per_row(self) -> None:
         # Arrange

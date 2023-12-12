@@ -18,13 +18,13 @@ bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 # If this version is bumped then the beam version in recidiviz/pipelines/Dockerfile.pipelines must be as well.
-apache-beam = {extras = ["gcp", "test"],version = "==2.50.0"}
+apache-beam = { extras = ["gcp", "test"], version = "==2.50.0" }
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
 jupyter = "*"
 # TODO(#20615): Unpin orjson dependency when the installation failure is debugged.
-orjson="==3.8.10"
+orjson = "==3.8.10"
 pytest-alembic = "*"
 pipenv = "*"
 pygit2 = "*"
@@ -36,7 +36,7 @@ google-cloud-orchestration-airflow = "*"
 gspread = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
-black = {extras = ["jupyter"],version = "==22.3.0"}
+black = { extras = ["jupyter"], version = "==22.3.0" }
 pre-commit = "*"
 proto-plus = "*"
 pygtrie = "*"
@@ -70,7 +70,7 @@ shellcheck-py = "*"
 # otherwise it will be dropped from the lock file since we do our locking on a Linux 
 # machine and appnope is Mac specific.
 # TODO(#24261): Remove pin after pipenv sync issue with appnope=* is fixed
-appnope = {version = "0.1.3", markers="sys_platform == 'darwin'"}
+appnope = { version = "0.1.3", markers = "sys_platform == 'darwin'" }
 # the following packages are ported over from the recidiviz-research pipfile and
 # imported in at least one file in that repo and do *not* exist elsewhere here
 censusdata = "*"
@@ -120,17 +120,18 @@ dateparser = "*"
 pandas = "<2.0.0"
 more-itertools = "*"
 lxml = "*"
-opencensus = ">=0.7.0"
-opencensus-context = "*"
-opencensus-correlation = "*"
-opencensus-ext-flask = "*"
-opencensus-ext-google-cloud-clientlibs = "*"
-opencensus-ext-grpc = "*"
-opencensus-ext-requests = "*"
-# TODO(#9593): Version 0.1.3 introduced a constraint on sqlalchemy requiring versions
-#  sqlalchemy<1.3.24, however we use features from sqlalchemy>=1.4, so cannot downgrade.
-opencensus-ext-sqlalchemy = "<0.1.3"
-opencensus-ext-stackdriver = "*"
+opentelemetry-api = "*"
+opentelemetry-sdk = "*"
+opentelemetry-exporter-gcp-monitoring = "*"
+opentelemetry-exporter-gcp-trace = "*"
+opentelemetry-resourcedetector-gcp = "*"
+opentelemetry-instrumentation-flask = "*"
+opentelemetry-instrumentation-grpc = "*"
+opentelemetry-instrumentation-redis = "*"
+opentelemetry-instrumentation-requests = "*"
+# TODO(open-telemetry/opentelemetry-python-contrib#2085): Unpin once 0.43b0 is released
+opentelemetry-instrumentation-sqlalchemy = "==0.41b0"
+opentelemetry-semantic-conventions = "==0.41b0"
 # TODO(#9157): Unpin alembic -- blocked by sqlalchemy/alembic#900 and sqlalchemy/alembic#903
 alembic = "==1.6.5"
 # TODO(#18145): Remove the <2.0.0 pin
@@ -186,11 +187,11 @@ deepdiff = "*"
 "mmh3" = "*"
 yq = "*"
 oauth2client = "*" #TODO(#2922): Remove deprecated oauth2client dependency
-progress="*"
+progress = "*"
 pandas-gbq = "*"
 guppy3 = "*"
 sendgrid = "*"
-zope = {event = "*"}
+zope = { event = "*" }
 psutil = "*"
 psycogreen = "*"
 marshmallow = "*"
@@ -210,7 +211,7 @@ astroid = "2.15.7"
 redis = "<4.6.0"
 pyarrow = "*"
 auth0-python = "*"
-sentry-sdk = {extras = ["flask"], version = "*"}
+sentry-sdk = { extras = ["flask"], version = "*" }
 blinker = "*"
 beautifulsoup4 = "*"
 paramiko = "*"
@@ -231,7 +232,7 @@ werkzeug = "<2.1.0"
 pysftp = "*"
 nbconvert = ">=6.5.1"
 PyGithub = "*"
-xlsxwriter="*"
+xlsxwriter = "*"
 pytablewriter = "*"
 # TODO(#25939): Unpin once Jupyter installation issue has been fixed
 traitlets = "5.9.0"
@@ -239,13 +240,13 @@ twilio = "*"
 twilio-stubs = "*"
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-xlrd="*"
+xlrd = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
 python_version = "3.9"
 
-[scripts] 
+[scripts]
 # Run via `pipenv run <name>`
 pylint = "./recidiviz/tools/lint/run_pylint.sh"
 docker-build = "docker build . -f Dockerfile --target recidiviz-app -t us.gcr.io/recidiviz-staging/appengine/default:latest --platform=linux/amd64"
@@ -270,6 +271,6 @@ migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --data
 #   1. Create a new PAT at https://github.com/settings/tokens, ensure it has read:packages set.
 #   2. Run this command with your PAT and github username as filled in: 
 #      `echo $PAT | docker login ghcr.io -u $USERNAME --password-stdin`
-pull-bq-emulator="docker pull ghcr.io/recidiviz/bigquery-emulator:0.2.15-recidiviz.3"
+pull-bq-emulator = "docker pull ghcr.io/recidiviz/bigquery-emulator:0.2.15-recidiviz.3"
 # Run this script to launch the BQ emulator locally
-start-bq-emulator="docker run -p 9050:9050 --rm ghcr.io/recidiviz/bigquery-emulator:0.2.15-recidiviz.3 /bin/bigquery-emulator --project=recidiviz-bq-emulator-project --log-level=info"
+start-bq-emulator = "docker run -p 9050:9050 --rm ghcr.io/recidiviz/bigquery-emulator:0.2.15-recidiviz.3 /bin/bigquery-emulator --project=recidiviz-bq-emulator-project --log-level=info"

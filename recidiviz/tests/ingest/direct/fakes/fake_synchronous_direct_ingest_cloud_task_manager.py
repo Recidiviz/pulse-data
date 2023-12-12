@@ -39,10 +39,10 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.monitoring import context
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskQueueManager,
 )
-from recidiviz.utils import monitoring
 
 
 class FakeSynchronousDirectIngestCloudTaskManager(
@@ -244,7 +244,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
 
         task = self.extract_and_merge_tasks[ingest_instance][0]
 
-        with monitoring.push_region_tag(
+        with context.push_region_context(
             controller.region.region_code,
             controller.ingest_instance.value,
         ):
@@ -274,7 +274,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         task_name = task[0]
         _, task_id = os.path.split(task_name)
 
-        with monitoring.push_region_tag(
+        with context.push_region_context(
             controller.region.region_code,
             controller.ingest_instance.value,
         ):
@@ -332,7 +332,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
 
         _task_id, args = self.raw_data_import_tasks[ingest_instance][0]
 
-        with monitoring.push_region_tag(
+        with context.push_region_context(
             controller.region.region_code,
             controller.ingest_instance.value,
         ):
@@ -360,7 +360,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
 
         _task_id, args = self.ingest_view_materialization_tasks[ingest_instance][0]
 
-        with monitoring.push_region_tag(
+        with context.push_region_context(
             controller.region.region_code,
             controller.ingest_instance.value,
         ):

@@ -297,6 +297,10 @@ def in_offline_mode() -> bool:
     return os.environ.get("IS_OFFLINE_MODE") == "true"
 
 
+def in_gunicorn() -> bool:
+    return "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+
+
 def get_app_engine_version() -> str:
     return os.getenv("GAE_VERSION", "")
 

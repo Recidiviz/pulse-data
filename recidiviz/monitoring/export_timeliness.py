@@ -17,13 +17,12 @@
 """Export timeliness monitoring"""
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Iterable, Optional
 
 # TODO(python/mypy#10360): Direct imports are used to workaround mypy issue
 import google.cloud.monitoring_v3 as monitoring_v3  # pylint: disable=consider-using-from-import
 from google.cloud.storage import Blob, Client
-from opencensus.stats import aggregation, measure
-from opencensus.stats import view as opencensus_view
+from opentelemetry.metrics import Observation
 
 from recidiviz.big_query.export.export_query_config import (
     EXPORT_OUTPUT_FORMAT_TYPE_TO_EXTENSION,
@@ -34,28 +33,13 @@ from recidiviz.metrics.export.export_config import (
     ExportViewCollectionConfig,
 )
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
-from recidiviz.utils import metadata, monitoring
+from recidiviz.monitoring.instruments import get_monitoring_instrument
+from recidiviz.monitoring.keys import AttributeKey, ObservableGaugeInstrumentKey
+from recidiviz.monitoring.providers import monitoring_metric_url
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import gcp_only
-from recidiviz.utils.monitoring import monitoring_metric_url
 
-m_export_file_age = measure.MeasureInt(
-    "bigquery/metric_view_export_manager/export_file_age",
-    "Creation time of an export file in seconds since epoch",
-    "s",
-)
-
-export_file_age_view = opencensus_view.View(
-    "bigquery/metric_view_export_manager/export_file_age",
-    "The age of an exported file",
-    [
-        monitoring.TagKey.REGION,
-        monitoring.TagKey.METRIC_VIEW_EXPORT_NAME,
-        monitoring.TagKey.EXPORT_FILE,
-    ],
-    m_export_file_age,
-    aggregation.LastValueAggregation(),
-)
-
+DEPRECATED_FILE_TIMESTAMP = -1
 MISSING_FILE_CREATION_TIMESTAMP = 0
 NEWLY_ADDED_EXPORT_GRACE_PERIOD = timedelta(hours=24)
 UTC_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
@@ -87,9 +71,9 @@ def build_blob_recent_reading_query(
 ) -> str:
     return f"""
     fetch global
-      | metric "{monitoring_metric_url(export_file_age_view)}"
+      | metric "{monitoring_metric_url(ObservableGaugeInstrumentKey.EXPORT_FILE_AGE)}"
       | filter eq(resource.project_id, "{metadata.project_id()}")
-      | filter metric.{monitoring.TagKey.EXPORT_FILE} = "{blob_uri}"
+      | filter metric.{AttributeKey.EXPORT_FILE} = "{blob_uri}"
       | filter val() != {MISSING_FILE_CREATION_TIMESTAMP}
       | within {int(lookback.total_seconds())}s
     """
@@ -136,11 +120,8 @@ def produce_export_timeliness_metrics(
     return metrics
 
 
-@gcp_only
-def report_export_timeliness_metrics() -> None:
+def get_export_timeliness_metrics() -> Iterable[Observation]:
     """Collects file age from the GCS buckets used in exports and creates measurements"""
-    monitoring.register_views([export_file_age_view])
-
     product_configs = ProductConfigs.from_file()
 
     storage_client = Client()
@@ -164,11 +145,20 @@ def report_export_timeliness_metrics() -> None:
 
         for blob_uri, creation_timestamp in produced_metrics:
             logging.info("Metric file age: %s %s", blob_uri, creation_timestamp)
-            with monitoring.measurements(
-                {
-                    monitoring.TagKey.REGION: region_code,
-                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_job_name,
-                    monitoring.TagKey.EXPORT_FILE: blob_uri,
-                }
-            ) as measurements:
-                measurements.measure_int_put(m_export_file_age, creation_timestamp)
+
+            attributes = {
+                AttributeKey.METRIC_VIEW_EXPORT_NAME: export_job_name,
+                AttributeKey.EXPORT_FILE: blob_uri,
+            }
+
+            if region_code:
+                attributes.update({AttributeKey.REGION: region_code})
+
+            yield Observation(value=creation_timestamp, attributes=attributes)
+
+
+@gcp_only
+def report_export_timeliness_metrics() -> None:
+    """Collects file age from the GCS buckets used in exports and creates measurements"""
+    # Load the instrument
+    get_monitoring_instrument(ObservableGaugeInstrumentKey.EXPORT_FILE_AGE)

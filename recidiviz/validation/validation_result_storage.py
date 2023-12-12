@@ -25,13 +25,13 @@ import attr
 import cattr
 import pytz
 from google.cloud import bigquery
-from opencensus.trace import execution_context
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.common import serialization
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.monitoring.context import get_current_trace_id
 from recidiviz.utils import environment
 from recidiviz.validation.checks.existence_check import ExistenceValidationResultDetails
 from recidiviz.validation.checks.sameness_check import (
@@ -82,7 +82,7 @@ class ValidationResultForStorage:
 
     @trace_id.default
     def _trace_id_factory(self) -> str:
-        return execution_context.get_opencensus_tracer().span_context.trace_id
+        return get_current_trace_id()
 
     def __attrs_post_init__(self) -> None:
         if self.run_date != self.run_datetime.date():

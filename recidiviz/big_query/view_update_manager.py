@@ -23,8 +23,6 @@ from enum import Enum
 from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 from google.cloud import exceptions
-from opencensus.stats import aggregation, measure
-from opencensus.stats import view as opencensus_view
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -47,7 +45,9 @@ from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
-from recidiviz.utils import monitoring, structured_logging
+from recidiviz.monitoring.instruments import get_monitoring_instrument
+from recidiviz.monitoring.keys import CounterInstrumentKey
+from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
@@ -57,22 +57,6 @@ from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
     deployed_view_builders,
 )
-
-m_failed_view_update = measure.MeasureInt(
-    "bigquery/view_update_manager/view_update_all_failure",
-    "Counted every time updating all views fails",
-    "1",
-)
-
-failed_view_updates_view = opencensus_view.View(
-    "bigquery/view_update_manager/num_view_update_failure",
-    "The sum of times all views fail to update",
-    [monitoring.TagKey.CREATE_UPDATE_VIEWS_NAMESPACE],
-    m_failed_view_update,
-    aggregation.SumAggregation(),
-)
-
-monitoring.register_views([failed_view_updates_view])
 
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
@@ -199,8 +183,10 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             allow_slow_views=allow_slow_views,
         )
     except Exception as e:
-        with monitoring.measurements() as measurements:
-            measurements.measure_int_put(m_failed_view_update, 1)
+        get_monitoring_instrument(CounterInstrumentKey.VIEW_UPDATE_FAILURE).add(
+            amount=1
+        )
+
         raise e
 
 

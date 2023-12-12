@@ -60,6 +60,8 @@ locals {
     google_project_iam_custom_role.gcs-object-and-bucket-viewer.name,
     "roles/logging.logWriter",
     "roles/cloudtasks.enqueuer",
+    "roles/monitoring.metricWriter",
+    "roles/cloudtrace.agent"
   ]
   application_import_roles = concat(local.cloud_run_common_roles, [
     # Use role_id to get a value known at plan-time so Terraform can calculate the length of
@@ -146,7 +148,10 @@ resource "google_cloud_run_service" "case-triage" {
       containers {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
-        args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.case_triage.server:app"]
+        args = [
+          "run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT",
+          "recidiviz.case_triage.server:app"
+        ]
 
         env {
           name  = "RECIDIVIZ_ENV"
@@ -228,7 +233,10 @@ resource "google_cloud_run_service" "application-data-import" {
       containers {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
-        args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.application_data_import.server:app"]
+        args = [
+          "run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT",
+          "recidiviz.application_data_import.server:app"
+        ]
 
         env {
           name  = "RECIDIVIZ_ENV"
@@ -385,10 +393,12 @@ module "unified-product-load-balancer" {
   name    = "unified-product-lb"
   project = var.project_id
 
-  ssl                             = true
-  ssl_policy                      = google_compute_ssl_policy.restricted-ssl-policy.name
-  managed_ssl_certificate_domains = local.is_production ? ["app-prod.recidiviz.org", "app.recidiviz.org"] : ["app-staging.recidiviz.org"]
-  https_redirect                  = true
+  ssl        = true
+  ssl_policy = google_compute_ssl_policy.restricted-ssl-policy.name
+  managed_ssl_certificate_domains = local.is_production ? ["app-prod.recidiviz.org", "app.recidiviz.org"] : [
+    "app-staging.recidiviz.org"
+  ]
+  https_redirect = true
 
   backends = {
     default = {
