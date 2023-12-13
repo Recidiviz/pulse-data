@@ -211,6 +211,7 @@ def _transfer_from_supervision_type_is_official_admission(
 
     non_official_start_supervision_types = [
         StateSupervisionPeriodSupervisionType.DUAL,
+        StateSupervisionPeriodSupervisionType.DEPORTED,
         StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
         StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
         StateSupervisionPeriodSupervisionType.PAROLE,

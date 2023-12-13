@@ -40,6 +40,7 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
         state_enum_strings.state_supervision_period_supervision_type_community_confinement
     )
     DUAL = state_enum_strings.state_supervision_period_supervision_type_dual
+    DEPORTED = state_enum_strings.state_supervision_period_supervision_type_deported
     INFORMAL_PROBATION = (
         state_enum_strings.state_supervision_period_supervision_type_informal_probation
     )
@@ -93,6 +94,8 @@ _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_VALUE_DESCRIPTIONS: Dict[
     "supervision period if the person is reporting to a single supervising officer. "
     "When this happens, `DUAL` is used to describe the fact that the person is "
     "simultaneously on probation and parole.",
+    StateSupervisionPeriodSupervisionType.DEPORTED: "Describes when a person is deported "
+    "while on supervision.",
     StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION: "A type of supervision "
     "where the person is not formally supervised and does not have to regularly "
     "report to a supervision officer. The person does have certain conditions "
@@ -511,6 +514,8 @@ def get_most_relevant_supervision_type(
         return StateSupervisionPeriodSupervisionType.WARRANT_STATUS
     if StateSupervisionPeriodSupervisionType.BENCH_WARRANT in supervision_types:
         return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
+    if StateSupervisionPeriodSupervisionType.DEPORTED in supervision_types:
+        return StateSupervisionPeriodSupervisionType.DEPORTED
     if StateSupervisionPeriodSupervisionType.ABSCONSION in supervision_types:
         return StateSupervisionPeriodSupervisionType.ABSCONSION
     if StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
