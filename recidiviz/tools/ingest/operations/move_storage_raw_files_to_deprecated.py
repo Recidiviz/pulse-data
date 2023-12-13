@@ -24,6 +24,7 @@ gs://recidiviz-123-direct-ingest-state-storage/us_nd/deprecated/deprecated_on_20
 unprocessed_2019-08-12T00:00:00:000000_raw_docstars_contacts.csv
 
 When run in dry-run mode (the default), will log the move of each file, but will not execute them.
+You can use EITHER --file-tag-filters OR --file-tag-regex, but NOT BOTH.
 
 Example usage (run from `pipenv shell`):
 
@@ -33,7 +34,8 @@ python -m recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
     --ingest-instance PRIMARY \
     --dry-run True \
     --skip-prompts False \
-    [--file-tag-filters docstars_contacts elite_offenders]
+    [--file-tag-filters docstars_contacts elite_offenders] \
+    [--file-tag-regex COMS_]
 
 """
 import argparse
@@ -72,6 +74,7 @@ class MoveFilesToDeprecatedController:
         dry_run: bool,
         project_id: str,
         file_tag_filters: List[str],
+        file_tag_regex: Optional[str],
         skip_prompts: bool,
     ):
         self.region_code = region_code
@@ -79,6 +82,7 @@ class MoveFilesToDeprecatedController:
         self.end_date_bound = end_date_bound
         self.dry_run = dry_run
         self.file_tag_filters = file_tag_filters
+        self.file_tag_regex = file_tag_regex
         self.project_id = project_id
         self.skip_prompts = skip_prompts
 
@@ -137,12 +141,13 @@ class MoveFilesToDeprecatedController:
             start_date_bound=self.start_date_bound,
             end_date_bound=self.end_date_bound,
             file_tag_filters=self.file_tag_filters,
+            file_tag_regex=self.file_tag_regex,
             dry_run=self.dry_run,
         ).run()
 
 
 def parse_arguments() -> argparse.Namespace:
-    """Runs the move_state_files_to_deprecated script."""
+    """Parses and validates the arguments for the move_storage_raw_files_to_deprecated script."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -188,6 +193,13 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--file-tag-regex",
+        required=False,
+        default=None,
+        help="A single pattern to match against file tags. If not set, will move all files.",
+    )
+
+    parser.add_argument(
         "--skip-prompts",
         default=False,
         type=str_to_bool,
@@ -195,14 +207,22 @@ def parse_arguments() -> argparse.Namespace:
         "context of a flashing checklist.",
     )
 
-    return parser.parse_args()
+    parser.add_argument(
+        "--debug", default=False, type=str_to_bool, help="Sets log level to DEBUG."
+    )
+
+    args = parser.parse_args()
+    if args.file_tag_filters and args.file_tag_regex:
+        raise ValueError(
+            "MUST USE EITHER --file-tag-filter OR --file-tag-regex, NOT BOTH"
+        )
+    return args
 
 
 def main() -> None:
     """Runs the move_state_files_to_deprecated script."""
-    logging.getLogger().setLevel(logging.INFO)
-
     args = parse_arguments()
+    logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
 
     MoveFilesToDeprecatedController(
         region_code=args.region,
@@ -212,6 +232,7 @@ def main() -> None:
         project_id=args.project_id,
         dry_run=args.dry_run,
         file_tag_filters=args.file_tag_filters,
+        file_tag_regex=args.file_tag_regex,
         skip_prompts=args.skip_prompts,
     ).run()
 
