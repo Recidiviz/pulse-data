@@ -45,6 +45,7 @@ SUPERVISION_TYPE_ORDERED_PRIORITY = [
     StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
     StateSupervisionPeriodSupervisionType.WARRANT_STATUS,
     StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
+    StateSupervisionPeriodSupervisionType.DEPORTED,
     StateSupervisionPeriodSupervisionType.ABSCONSION,
     StateSupervisionPeriodSupervisionType.INVESTIGATION,
     StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,

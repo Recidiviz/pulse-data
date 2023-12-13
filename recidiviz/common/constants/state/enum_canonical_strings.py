@@ -322,6 +322,7 @@ state_supervision_period_supervision_type_community_confinement = (
 # it from WARRANT_STATUS
 state_supervision_period_supervision_type_bench_warrant = "BENCH_WARRANT"
 state_supervision_period_supervision_type_warrant_status = "WARRANT_STATUS"
+state_supervision_period_supervision_type_deported = "DEPORTED"
 
 state_supervision_period_admission_reason_absconsion = "ABSCONSION"
 state_supervision_period_admission_reason_release_from_incarceration = (
