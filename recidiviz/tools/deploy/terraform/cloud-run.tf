@@ -118,9 +118,11 @@ resource "google_project_iam_member" "asset_generation_iam" {
 resource "google_project_iam_member" "admin_panel_iam" {
   for_each = toset(concat(local.cloud_run_common_roles, [
     "roles/cloudtasks.viewer",
+    "roles/cloudtasks.queueAdmin",
     "roles/dataflow.viewer",
     "roles/bigquery.dataViewer",
-    "roles/bigquery.jobUser"
+    "roles/bigquery.jobUser",
+    "roles/storage.objectCreator",
   ]))
   project = var.project_id
   role    = each.key
@@ -301,7 +303,7 @@ resource "google_cloud_run_service" "asset-generation" {
 
         env {
           name  = "GAE_SERVICE_ACCOUNT"
-          value = data.google_app_engine_default_service_account.default.email
+          value = google_service_account.admin_panel_cloud_run.email
         }
 
         env {
