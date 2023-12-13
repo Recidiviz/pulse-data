@@ -359,6 +359,8 @@ output:
                   # These started appearing in Feb 2022 and appear to be new codes
                   - PAFA-PTVOS # Parole to facility - TODO(#11765) Add in description
                   - PRFA-PTVOS # Probation to facility
+                  #Parole to Facility with something medical related
+                  - PAFA-MEDFR # TODO(#26025): Add definition once we learn more about MEDFR.
           release_reason:
             $conditional:
               - $if:
