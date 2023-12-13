@@ -25,9 +25,9 @@ from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
     IngestViewName,
+    PrimaryKey,
     UpperBoundDate,
 )
-from recidiviz.pipelines.utils.entities.generate_primary_key import PrimaryKey
 from recidiviz.utils.types import assert_type_list
 
 PRIMARY_KEYS = "primary_keys"

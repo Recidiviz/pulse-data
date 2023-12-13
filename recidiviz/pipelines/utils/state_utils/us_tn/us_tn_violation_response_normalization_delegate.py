@@ -22,7 +22,6 @@ from typing import List, Optional
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.normalized_entities_utils import (
     update_normalized_entity_with_globally_unique_id,
 )
@@ -71,6 +70,7 @@ class UsTnViolationResponseNormalizationDelegate(
 
         # First, we check to only continue inference for INFERRED violations
         if is_inferred_violation:
+
             if not sorted_violation_responses:
                 return []
 
@@ -94,6 +94,7 @@ class UsTnViolationResponseNormalizationDelegate(
             )
 
             for incarceration_period in sorted_incarceration_periods:
+
                 if (
                     incarceration_period.admission_date
                     and incarceration_period.admission_reason_raw_text
@@ -111,6 +112,7 @@ class UsTnViolationResponseNormalizationDelegate(
 
                     # for IPs with VIOLT movement reasons that follow a violation, add violation type of TECHNICAL
                     if incarceration_period.admission_reason_raw_text.endswith("VIOLT"):
+
                         technical_entry = StateSupervisionViolationTypeEntry(
                             state_code=response.state_code,
                             violation_type=StateSupervisionViolationType.TECHNICAL,
@@ -119,13 +121,14 @@ class UsTnViolationResponseNormalizationDelegate(
 
                         # Add a unique id value to the new violation type entry
                         update_normalized_entity_with_globally_unique_id(
-                            person_id, technical_entry, StateCode(response.state_code)
+                            person_id, technical_entry
                         )
 
                         return [technical_entry]
 
                     # for IPs with VIOLW movement reasons that follow a violation, add violation type of LAW
                     if incarceration_period.admission_reason_raw_text.endswith("VIOLW"):
+
                         law_entry = StateSupervisionViolationTypeEntry(
                             state_code=response.state_code,
                             violation_type=StateSupervisionViolationType.LAW,
@@ -134,7 +137,7 @@ class UsTnViolationResponseNormalizationDelegate(
 
                         # Add a unique id value to the new violation type entry
                         update_normalized_entity_with_globally_unique_id(
-                            person_id, law_entry, StateCode(response.state_code)
+                            person_id, law_entry
                         )
 
                         return [law_entry]

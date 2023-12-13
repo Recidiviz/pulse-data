@@ -28,10 +28,10 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
+    generate_primary_key,
     generate_primary_keys_for_root_entity_tree,
     string_representation,
 )
-from recidiviz.pipelines.utils.entities.generate_primary_key import generate_primary_key
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,

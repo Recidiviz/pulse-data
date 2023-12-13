@@ -263,8 +263,6 @@ def main() -> int:
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",
                     "recidiviz.persistence",
-                    "recidiviz.ingest",
-                    "recidiviz.pipelines",
                 }
             )
         if "ingest" in pipeline.__name__:
@@ -394,6 +392,9 @@ def main() -> int:
                 "recidiviz.view_registry",
             }
         ),
+        # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
+        #  isolated the Dataflow pipeline code completely
+        explicitly_invalid_package_dependencies=["apache_beam"],
     )
 
     success &= check_dependencies_for_entrypoint(
@@ -466,6 +467,9 @@ def main() -> int:
                 "recidiviz.outliers",
             }
         ),
+        # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
+        #  isolated the Dataflow pipeline code completely
+        explicitly_invalid_package_dependencies=["apache_beam"],
     )
 
     success &= check_dependencies_for_entrypoint(
