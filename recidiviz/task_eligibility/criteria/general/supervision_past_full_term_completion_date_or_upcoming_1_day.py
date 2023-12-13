@@ -18,12 +18,11 @@
 someone is past their supervision full term completion date (projected max completion
 date) or within 1 day of their full term completion date.
 """
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    is_past_full_term_completion_date,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    is_past_completion_date_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,16 +33,11 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 someone is past their supervision full term completion date (projected max completion
 date) or within 1 day of their full term completion date"""
 
-_QUERY_TEMPLATE = f"""
-{is_past_full_term_completion_date(meets_criteria_leading_window_days=1)}
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    is_past_completion_date_criteria_builder(
+        meets_criteria_leading_window_time=1,
         criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

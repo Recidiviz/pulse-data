@@ -17,16 +17,13 @@
 """Defines a criteria span view that shows spans of time during which there
 is no convictions within 6 months on supervision
 """
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-)
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
     VIOLATIONS_FOUND_WHERE_CLAUSE,
-    violations_within_time_interval_cte,
+    violations_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,42 +33,14 @@ _CRITERIA_NAME = "NO_CONVICTION_WITHIN_6_MONTHS"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which there
 is no convictions within 6 months on supervision."""
 
-_QUERY_TEMPLATE = f"""
-WITH supervision_violations AS (
-    /*
-    This CTE identifies relevant violations and sets a 6 month 
-    window where meets_criteria is TRUE.
-
-    Relevant violations in this context refers to those that weren't dismissed, 
-    graduated, withdrawn, not approved or dismissed and includes the following types:
-        - MISDEMEANORs
-        - FELONY
-        - LAW
-    */
-    {violations_within_time_interval_cte(
-        date_interval = 6, 
-        violation_type = "AND vt.violation_type IN ('MISDEMEANOR', 'FELONY', 'LAW')",
-        where_clause = VIOLATIONS_FOUND_WHERE_CLAUSE)}
-    ),
-{create_sub_sessions_with_attributes('supervision_violations')}
-SELECT 
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    LOGICAL_AND(meets_criteria) AS meets_criteria,
-    TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS latest_convictions)) AS reason,
-FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4
-"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
+        date_interval=6,
+        violation_type="AND vt.violation_type IN ('MISDEMEANOR', 'FELONY', 'LAW')",
+        where_clause=VIOLATIONS_FOUND_WHERE_CLAUSE,
     )
 )
 

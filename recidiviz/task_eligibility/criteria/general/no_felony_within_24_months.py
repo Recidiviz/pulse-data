@@ -17,15 +17,12 @@
 """Defines a criteria span view that shows spans of time during which there
 is no felony within 24 months on supervision
 """
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-)
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    violations_within_time_interval_cte,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    violations_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,36 +32,15 @@ _CRITERIA_NAME = "NO_FELONY_WITHIN_24_MONTHS"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 there is no felony within 24 months on supervision."""
 
-_QUERY_TEMPLATE = f"""
-WITH supervision_violations AS (
-    /*This CTE identifies felony violations and sets a 24 month 
-    window where felony_violation is TRUE*/
-    {violations_within_time_interval_cte(
-        bool_column='TRUE AS felony_violation', 
-        violation_type = "AND vt.violation_type = 'FELONY'", 
-        date_interval = 24)}
-),
-{create_sub_sessions_with_attributes('supervision_violations')}
-SELECT 
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    NOT felony_violation AS meets_criteria,
-    TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS latest_felony_convictions)) AS reason,
-FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4,5
-"""
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
+        violation_type="AND vt.violation_type = 'FELONY'",
+        date_interval=24,
+        violation_date_name_in_reason_blob="latest_felony_convictions",
     )
 )
-
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

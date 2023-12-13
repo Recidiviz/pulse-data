@@ -28,11 +28,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 
-VIOLATIONS_FOUND_WHERE_CLAUSE = """WHERE (v.state_code != 'US_ME' OR
-       # In ME, convictions are only relevant if their outcome is VIOLATION FOUND
-       response_type IN ("VIOLATION_REPORT", "PERMANENT_DECISION"))
-"""
-
 
 def task_deadline_critical_date_update_datetimes_cte(
     task_type: StateTaskType, critical_date_column: str
@@ -54,65 +49,15 @@ def task_deadline_critical_date_update_datetimes_cte(
     )"""
 
 
-def violations_within_time_interval_cte(
-    violation_type: str = "",
-    where_clause: str = "",
-    bool_column: str = "False AS meets_criteria,",
-    date_interval: int = 12,
-    date_part: str = "MONTH",
-) -> str:
-    """
-    Args:
-        violation_type (str, optional): Specifies the violation types that should be
-            counted towards the criteria. Should only include values inside of the
-            StateSupervisionViolationType enum. Example: "AND vt.violation_type = 'FELONY' "
-            Defaults to ''.
-        where_clause (str, optional): _description_. Defaults to ''.
-        bool_column (str, optional): _description_. Defaults to "False AS meets_criteria,".
-        date_interval (int, optional): Number of <date_part> when the violation
-            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
-
-    Returns:
-        f-string: CTE query that shows the spans of time where the violations that meet
-            certain conditions set by the user (<violaiton_type> and <where clause>).
-            The span of time for the validity of each violation starts at violation_date
-            and ends after a period specified by the user (in <date_interval> and <date_part>)
-    """
-
-    violation_type_join = f"""
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_type_entry` vt
-        ON vr.supervision_violation_id = vt.supervision_violation_id
-        AND vr.person_id = vt.person_id
-        AND vr.state_code = vt.state_code
-        {violation_type}
-    """
-
-    return f"""
-    SELECT
-        vr.state_code,
-        vr.person_id,
-        COALESCE(v.violation_date, vr.response_date) AS start_date,
-        DATE_ADD(COALESCE(v.violation_date, vr.response_date), INTERVAL {date_interval} {date_part}) AS end_date,
-        COALESCE(v.violation_date, vr.response_date) AS violation_date,
-        {bool_column}
-    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_response` vr
-    {violation_type_join if violation_type else ""}
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation` v
-        ON vr.supervision_violation_id = v.supervision_violation_id
-        AND vr.person_id = v.person_id
-        AND vr.state_code = v.state_code
-    {where_clause}
-    """
-
-
 def has_at_least_x_incarceration_incidents_in_time_interval(
     number_of_incidents: int = 1,
     date_interval: int = 12,
     date_part: str = "MONTH",
 ) -> str:
     """
+    Determines if individuals have at least a specified number of incarceration incidents
+    within a given time interval.
+
     Args:
         number_of_incidents: Number of incidents tests needed within time interval
         date_interval (int, optional): Number of <date_part> when the negative drug screen
