@@ -21,7 +21,7 @@ from contextvars import ContextVar
 from functools import wraps
 from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 
-from flask import request
+from flask import has_request_context, request
 from opentelemetry.baggage import get_baggage
 from opentelemetry.sdk.trace.sampling import Sampler, SamplingResult
 from typing_extensions import ParamSpec
@@ -114,7 +114,7 @@ class CompositeSampler(Sampler):
     def should_sample(self, *args: Any, **kwargs: Any) -> SamplingResult:
         sampler_to_use = self.default_sampler
 
-        if request is not None:
+        if has_request_context():
             # Just uses the last entry that matches
             for path_prefix, sampler in self.path_prefix_to_sampler.items():
                 if request.path.startswith(path_prefix):
