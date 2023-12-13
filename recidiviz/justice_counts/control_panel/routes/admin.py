@@ -30,6 +30,7 @@ from recidiviz.justice_counts.agency_user_account_association import (
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import VALID_SYSTEMS
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.types import assert_type
 
@@ -189,7 +190,7 @@ def get_admin_blueprint(
                 "agencies": agency_jsons,
                 # also send list of possible systems to use in the dropdown
                 # when users can assign a system role to an agency.
-                "systems": [enum.value for enum in schema.System],
+                "systems": [enum.value for enum in VALID_SYSTEMS],
             }
         )
 

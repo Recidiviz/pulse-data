@@ -18,6 +18,8 @@
 import enum
 import re
 
+from recidiviz.persistence.database.schema.justice_counts import schema
+
 REPORTING_FREQUENCY_CONTEXT_KEY = "REPORTING_FREQUENCY"
 
 DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS = "DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS"
@@ -209,3 +211,17 @@ AGENCIES_TO_EXCLUDE = {
     1463: "Supervision [DEMO]",
     1464: "Department of Corrections",
 }
+
+VALID_SYSTEMS = [
+    schema.System.LAW_ENFORCEMENT,
+    schema.System.PROSECUTION,
+    schema.System.DEFENSE,
+    schema.System.COURTS_AND_PRETRIAL,
+    schema.System.JAILS,
+    schema.System.PRISONS,
+    schema.System.SUPERVISION,
+    schema.System.PAROLE,
+    schema.System.PROBATION,
+    schema.System.PRETRIAL_SUPERVISION,
+    schema.System.OTHER_SUPERVISION,
+]
