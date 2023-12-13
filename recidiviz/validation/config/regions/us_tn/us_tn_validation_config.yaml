@@ -18,6 +18,10 @@ max_allowed_error_overrides:
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.01
     override_reason: TODO(#15351) Needs investigation. There is one ID not accounted for over a span of 5 days in September 2022.
+  - validation_name: state_supervision_violation_by_violation_date_stable_counts
+    hard_max_allowed_error_override: 0.26
+    override_reason: >-
+      Last month (November 2023), edged just over the .25 threshold. We bump this slightly to see if this is normal variation or if we have more issues to investigate in January 2024.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 20000
@@ -65,3 +69,11 @@ num_allowed_rows_overrides:
       officer, but their actual location is a not a supervision office. We confirmed with the supervisor staff rosters that
       these people are not located in any of the supervision districts, and therefore it is okay to bump this threshold for
       any known person in the Staff tables that is not an active supervision officer in a district.
+  - validation_name: unidentified_supervision_officer_supervisors
+    hard_num_allowed_rows_override: 5
+    override_reason:
+      Since we manually get the supervisior roster information from TN approx once a quarter, there will be
+      situations where a supervisor no longer has active roles periods because the are no longer an active employee, but
+      still show up as a supervisor in open supervisor periods for the officers they used to supervise. We bump this threshold
+      here as a running list of the supervisors who have gone inactive and therefore we need to make sure to check in with
+      TN staff the next time we ask them for manual rosters. There is currently 1 failing row as of 12/12/2023.
