@@ -18,19 +18,35 @@
 can be parameterized.
 """
 from typing import List, Optional
-
+from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
     join_sentence_spans_to_compartment_sessions,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+
+
+def raise_error_if_invalid_compartment_level_1_filter(
+    compartment_level_1_filter: str,
+) -> None:
+    """Raises a ValueError if the compartment_level_1_filter is not valid"""
+
+    compartment_level_1 = compartment_level_1_filter.lower()
+
+    if compartment_level_1 not in ("supervision", "incarceration"):
+        raise ValueError(
+            "'compartment_level_1_filter` only accepts values of `SUPERVISION` or `INCARCERATION`"
+        )
 
 
 def get_ineligible_offense_type_criteria(
@@ -336,3 +352,162 @@ def custody_level_compared_to_recommended(
         ON recommended_custody_level = recommended_cl.custody_level
     WHERE start_date <= CURRENT_DATE('US/Pacific')
     """
+
+
+VIOLATIONS_FOUND_WHERE_CLAUSE = """WHERE (v.state_code != 'US_ME' OR
+       # In ME, convictions are only relevant if their outcome is VIOLATION FOUND
+       response_type IN ("VIOLATION_REPORT", "PERMANENT_DECISION"))
+"""
+
+
+def violations_within_time_interval_criteria_builder(
+    criteria_name: str,
+    description: str,
+    violation_type: str = "",
+    where_clause: str = "",
+    bool_column: str = "False AS meets_criteria,",
+    date_interval: int = 12,
+    date_part: str = "MONTH",
+    violation_date_name_in_reason_blob: str = "latest_convictions",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query that has spans of time where the violations that meet
+    certain conditions set by the user (<violaiton_type> and <where clause>) occured.
+    Args:
+        criteria_name (str): Name of the criteria
+        description (str): Description of the criteria
+        violation_type (str, optional): Specifies the violation types that should be
+            counted towards the criteria. Should only include values inside of the
+            StateSupervisionViolationType enum. Example: "AND vt.violation_type = 'FELONY' "
+            Defaults to ''.
+        where_clause (str, optional): _description_. Defaults to ''.
+        bool_column (str, optional): _description_. Defaults to "False AS meets_criteria,".
+        date_interval (int, optional): Number of <date_part> when the violation
+            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        violation_date_name_in_reason_blob (str, optional): Name of the violation_date
+            field in the reason blob. Defaults to "latest_convictions".
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: CTE query that shows the spans of
+            time where the violations that meet certain conditions set by the user
+            (<violaiton_type> and <where clause>) occured. The span of time for the validity of
+            each violation starts at violation_date and ends after a period specified by
+            the user (in <date_interval> and <date_part>)
+    """
+
+    violation_type_join = f"""
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_type_entry` vt
+        ON vr.supervision_violation_id = vt.supervision_violation_id
+        AND vr.person_id = vt.person_id
+        AND vr.state_code = vt.state_code
+        {violation_type}
+    """
+
+    criteria_query = f"""WITH supervision_violations AS (
+        SELECT
+            vr.state_code,
+            vr.person_id,
+            COALESCE(v.violation_date, vr.response_date) AS start_date,
+            DATE_ADD(COALESCE(v.violation_date, vr.response_date), INTERVAL {date_interval} {date_part}) AS end_date,
+            COALESCE(v.violation_date, vr.response_date) AS violation_date,
+            {bool_column}
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_response` vr
+        {violation_type_join if violation_type else ""}
+        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation` v
+            ON vr.supervision_violation_id = v.supervision_violation_id
+            AND vr.person_id = v.person_id
+            AND vr.state_code = v.state_code
+        {where_clause}
+    ), 
+    {create_sub_sessions_with_attributes('supervision_violations')}
+    
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LOGICAL_AND(meets_criteria) AS meets_criteria,
+        TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS {violation_date_name_in_reason_blob})) AS reason,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
+    )
+
+
+def is_past_completion_date_criteria_builder(
+    criteria_name: str,
+    description: str,
+    meets_criteria_leading_window_time: int = 0,
+    compartment_level_1_filter: str = "SUPERVISION",
+    date_part: str = "DAY",
+    critical_date_name_in_reason: str = "eligible_date",
+    critical_date_column: str = "projected_completion_date_max",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Returns a criteria query that has spans of time when the projected completion date
+    has passed or is coming up while someone is on supervision or incarceration. This is
+    a standalone function that can be called when creating criteria queries.
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        meets_criteria_leading_window_time (int, optional): Modifier to move the start_date
+            by a constant value to account, for example, for time before the critical date
+            where some criteria is met. Defaults to 0. This is passed to the
+            `critical_date_has_passed_spans_cte` function.
+        compartment_level_1_filter (str, optional): Either 'SUPERVISION' OR
+            'INCARCERATION'. Defaults to "SUPERVISION".
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        critical_date_name_in_reason (str, optional): The name of the critical date in
+            the reason column. Defaults to "eligible_date".
+        critical_date_column (str, optional): The name of the column that contains the
+            critical date. Defaults to "projected_completion_date_max".
+    Raises:
+        ValueError: if compartment_level_1_filter is different from "supervision" or
+            "incarceration".
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: criteria query that has spans of
+            time when the projected completion date has passed or is coming up while
+            someone is on supervision or incarceration
+    """
+    raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
+
+    # Transform compartment_level_1_filter to a string to be used in the query
+    compartment_level_1 = compartment_level_1_filter.lower()
+
+    criteria_query = f"""
+    WITH critical_date_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            {revert_nonnull_end_date_clause(critical_date_column)} AS critical_date
+        FROM `{{project_id}}.{{sessions_dataset}}.{compartment_level_1}_projected_completion_date_spans_materialized`
+    ),
+    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time = meets_criteria_leading_window_time,
+                                        date_part=date_part)}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        critical_date_has_passed AS meets_criteria,
+        TO_JSON(STRUCT(critical_date AS {critical_date_name_in_reason})) AS reason,
+    FROM critical_date_has_passed_spans
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=criteria_query,
+        description=description,
+        sessions_dataset=SESSIONS_DATASET,
+    )

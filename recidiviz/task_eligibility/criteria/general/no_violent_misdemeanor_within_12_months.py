@@ -17,15 +17,11 @@
 """Defines a criteria span view that shows spans of time during which there
 is no violent misdemeanor within 12 months on supervision
 """
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-)
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    violations_within_time_interval_cte,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    violations_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,33 +31,14 @@ _CRITERIA_NAME = "NO_VIOLENT_MISDEMEANOR_WITHIN_12_MONTHS"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which there
 is no violent misdemeanor within 12 months on supervision."""
 
-_QUERY_TEMPLATE = f"""
-WITH supervision_violations AS (
-    /*This CTE identifies violent misdemeanor violations and sets a 12 month 
-    window where felony_violation is TRUE*/
-    {violations_within_time_interval_cte(
-        where_clause = 'WHERE v.is_violent', 
-        violation_type = "AND vt.violation_type = 'MISDEMEANOR'", 
-        bool_column = "TRUE AS violent_misdemeanor_violation")}
-),
-{create_sub_sessions_with_attributes('supervision_violations')}
-SELECT 
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    NOT violent_misdemeanor_violation AS meets_criteria,
-    TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS latest_violent_convictions)) AS reason,
-FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4,5
-"""
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
+        date_interval=12,
+        where_clause="WHERE v.is_violent",
+        violation_type="AND vt.violation_type = 'MISDEMEANOR'",
+        violation_date_name_in_reason_blob="latest_violent_convictions",
     )
 )
 
