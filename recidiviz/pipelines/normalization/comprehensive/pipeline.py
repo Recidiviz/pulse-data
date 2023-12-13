@@ -35,6 +35,7 @@ import apache_beam as beam
 from apache_beam import Pipeline
 from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
 from apache_beam.typehints import with_input_types, with_output_types
+from more_itertools import one
 
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
@@ -113,6 +114,7 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
+from recidiviz.utils.types import assert_type
 
 
 # TODO(#21376) Properly refactor once strategy for separate normalization is defined.
@@ -358,14 +360,24 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 ]
                 bq_schema = beam_bigquery.TableSchema(fields=beam_schema_fields)
 
-                _ = getattr(writable_entities, entity_class_name) | (
-                    f"Write Normalized{entity_class_name} to BQ table: "
-                    f"{self.pipeline_parameters.output}.{table_id}"
-                ) >> WriteToBigQuery(
-                    output_table=table_id,
-                    output_dataset=self.pipeline_parameters.output,
-                    write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-                    schema=bq_schema,
+                _ = (
+                    getattr(writable_entities, entity_class_name)
+                    | f"Map Normalized{entity_class_name} to its primary key"
+                    >> beam.Map(
+                        self.get_primary_key_from_entity_dict,
+                        entity_primary_key_name=normalized_entity_type.get_class_id_name(),  # type: ignore
+                    )
+                    | f"Group Normalized{entity_class_name} by primary key"
+                    >> beam.GroupByKey()
+                    | f"Check if primary keys are unique for {entity_class_name}"
+                    >> beam.MapTuple(lambda _id, entities: one(entities))
+                    | f"Write Normalized{entity_class_name} to BQ table: {self.pipeline_parameters.output}.{table_id}"
+                    >> WriteToBigQuery(
+                        output_table=table_id,
+                        output_dataset=self.pipeline_parameters.output,
+                        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+                        schema=bq_schema,
+                    )
                 )
 
             for entity_association in normalized_entity_associations:
@@ -382,6 +394,12 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                     output_dataset=self.pipeline_parameters.output,
                     write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
                 )
+
+    def get_primary_key_from_entity_dict(
+        self, entity_dict: Dict[str, Any], entity_primary_key_name: str
+    ) -> Tuple[int, Dict[str, Any]]:
+        """Returns the primary key of the entity_dict."""
+        return assert_type(entity_dict.get(entity_primary_key_name), int), entity_dict
 
 
 @with_input_types(

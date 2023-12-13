@@ -123,7 +123,9 @@ class UsPaSupervisionNormalizationDelegate(
                 )
                 # Add a unique id to the new SP
                 update_normalized_entity_with_globally_unique_id(
-                    person_id=person_id, entity=new_supervision_period
+                    person_id=person_id,
+                    entity=new_supervision_period,
+                    state_code=StateCode.US_PA,
                 )
                 new_supervision_periods.append(new_supervision_period)
         return new_supervision_periods

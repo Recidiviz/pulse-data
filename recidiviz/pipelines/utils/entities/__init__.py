@@ -14,25 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Constants for the ingest pipeline."""
-from typing import Optional, Set, Tuple
-
-from recidiviz.pipelines.utils.entities.generate_primary_key import PrimaryKey
-
-# Beam does not have a standard datetime coder that it uses to decode/encode between steps
-# for datetime objects, therefore we will use UTC timestamps for any keys that require
-# datetime objects.
-UpperBoundDate = float
-
-IngestViewName = str
-
-ExternalId = str
-ExternalIdType = str
-ExternalIdKey = Tuple[str, str]
-ExternalIdClusterEdge = Tuple[ExternalIdKey, Optional[ExternalIdKey]]
-ExternalIdCluster = Tuple[ExternalIdKey, Set[ExternalIdKey]]
-
-EntityClassName = str
-EntityKey = Tuple[PrimaryKey, EntityClassName]
-Error = str
-UniqueConstraintName = str
