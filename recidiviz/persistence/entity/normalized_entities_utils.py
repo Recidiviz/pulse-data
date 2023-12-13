@@ -16,6 +16,7 @@
 # =============================================================================
 """Utils for working with NormalizedStateEntity objects.
 """
+import json
 from collections import defaultdict
 from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar, Union
@@ -24,10 +25,13 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.common.attr_mixins import BuildableAttrFieldType
-from recidiviz.common.constants.states import MAX_FIPS_CODE
+from recidiviz.common.constants.states import MAX_FIPS_CODE, StateCode
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 # All entity classes that have Normalized versions
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateCharge,
@@ -48,6 +52,8 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationTypeEntry,
     SequencedEntityMixin,
 )
+from recidiviz.pipelines.utils.entities.generate_primary_key import generate_primary_key
+from recidiviz.pipelines.utils.entities.serialization import serialize_entity_into_json
 from recidiviz.utils import environment
 
 NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
@@ -267,28 +273,45 @@ def _fixed_length_object_id_for_entity(entity: Entity) -> int:
     return entity_object_id
 
 
-def _unique_object_id_for_entity(person_id: int, entity: Entity) -> int:
+def _unique_object_id_for_entity(
+    person_id: int,
+    entity: Entity,
+    state_code: StateCode,
+    field_index: CoreEntityFieldIndex,
+) -> int:
     """Returns an object id value that is globally unique for all entities of this
     type for this person_id."""
-    if person_id - (10**12 * MAX_FIPS_CODE) >= 10**12:
-        raise ValueError(
-            "Our database person_id values have gotten too large and are clobbering "
-            "the FIPS code values in the id mask used to write to BigQuery. Must fix "
-            "person_id values before running more normalization pipelines."
+    if is_ingest_in_dataflow_enabled(state_code, DirectIngestInstance.PRIMARY):
+        entity_object_id = generate_primary_key(
+            json.dumps(
+                serialize_entity_into_json(entity, field_index),
+                sort_keys=True,
+            ),
+            state_code,
+        )
+    else:
+        # TODO(#209230) Remove this code once all of the ingest pipelines have been launched.
+        # Get a shortened version of the id() of the entity
+        if person_id - (10**12 * MAX_FIPS_CODE) >= 10**12:
+            raise ValueError(
+                "Our database person_id values have gotten too large and are clobbering "
+                "the FIPS code values in the id mask used to write to BigQuery. Must fix "
+                "person_id values before running more normalization pipelines."
+            )
+
+        entity_object_id = _fixed_length_object_id_for_entity(entity=entity)
+
+        existing_entity_object_ids = _get_entity_id_index_for_person_id_entity(
+            person_id=person_id, entity_name=entity.__class__.__name__
         )
 
-    # Get a shortened version of the id() of the entity
-    entity_object_id = _fixed_length_object_id_for_entity(entity=entity)
-
-    existing_entity_object_ids = _get_entity_id_index_for_person_id_entity(
-        person_id=person_id, entity_name=entity.__class__.__name__
-    )
-
-    while entity_object_id in existing_entity_object_ids:
-        # Increment until we've found a unique entity ID for this entity/person
-        entity_object_id += 1
-        # Make sure id stays under the max digit length
-        entity_object_id = entity_object_id % (10**MAX_LEN_SHORTENED_ENTITY_OBJECT_ID)
+        while entity_object_id in existing_entity_object_ids:
+            # Increment until we've found a unique entity ID for this entity/person
+            entity_object_id += 1
+            # Make sure id stays under the max digit length
+            entity_object_id = entity_object_id % (
+                10**MAX_LEN_SHORTENED_ENTITY_OBJECT_ID
+            )
 
     # Add the ID to the cache of entity IDs for this person
     _add_entity_id_to_cache(
@@ -301,7 +324,10 @@ def _unique_object_id_for_entity(person_id: int, entity: Entity) -> int:
 
 
 def update_normalized_entity_with_globally_unique_id(
-    person_id: int, entity: Entity
+    person_id: int,
+    entity: Entity,
+    state_code: StateCode,
+    field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
 ) -> None:
     """Returns an ID value that will be unique across all entities of the
     entity type normalized for a state in a given pipeline.
@@ -327,10 +353,16 @@ def update_normalized_entity_with_globally_unique_id(
     entity_object_id = _unique_object_id_for_entity(
         person_id=person_id,
         entity=entity,
+        state_code=state_code,
+        field_index=field_index,
     )
 
     # Add person_id to the front of the id
-    new_entity_id = int(f"{person_id}{entity_object_id}")
+    new_entity_id = (
+        int(f"{person_id}{entity_object_id}")
+        if not is_ingest_in_dataflow_enabled(state_code, DirectIngestInstance.PRIMARY)
+        else entity_object_id
+    )
 
     if new_entity_id > MAX_BQ_INT:
         raise ValueError(
@@ -348,7 +380,7 @@ def update_normalized_entity_with_globally_unique_id(
 
 
 def copy_entities_and_add_unique_ids(
-    person_id: int, entities: List[EntityT]
+    person_id: int, entities: List[EntityT], state_code: StateCode
 ) -> List[EntityT]:
     """Creates new copies of each of the provided |entities| and adds unique id
     values to the new copies."""
@@ -356,7 +388,7 @@ def copy_entities_and_add_unique_ids(
     for entity in entities:
         entity_copy = copy(entity)
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_copy
+            person_id=person_id, entity=entity_copy, state_code=state_code
         )
 
         new_entities.append(entity_copy)
