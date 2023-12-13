@@ -21,7 +21,7 @@ from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     spans_within_x_and_y_months_of_end_date,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

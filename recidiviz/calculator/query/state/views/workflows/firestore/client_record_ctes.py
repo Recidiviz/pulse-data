@@ -33,7 +33,7 @@ from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
     us_tn_fines_fees_info,
     us_tn_supervision_type,
 )
-from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
 )
 

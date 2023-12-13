@@ -618,3 +618,46 @@ def no_violations_for_x_time(
                        {revert_nonnull_end_date_clause('eligible_date')} AS eligible_date)) AS reason
     FROM no_dup_subsessions_cte
     """
+
+
+def compartment_level_1_super_sessions_without_me_sccp() -> str:
+    """
+    Compartment level 1 super sessions after partitioning with ME SCCP sesssions.
+    """
+
+    return f"""cl1_super_sessions_wsccp AS (
+        SELECT 
+            state_code, 
+            person_id,
+            start_date, 
+            end_date_exclusive AS end_date,
+            compartment_level_1,
+            NULL AS compartment_level_2,
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
+
+        UNION ALL
+
+        SELECT 
+            state_code, 
+            person_id,
+            start_date, 
+            end_date_exclusive AS end_date,
+            compartment_level_1,
+            compartment_level_2,
+            FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+        WHERE state_code = 'US_ME'
+            AND compartment_level_2 = 'COMMUNITY_CONFINEMENT'
+            AND compartment_level_1 = 'SUPERVISION'
+    ),
+
+    {create_sub_sessions_with_attributes('cl1_super_sessions_wsccp')},
+
+    partitioning_compartment_l1_ss_with_sccp AS (
+        SELECT 
+            *,
+            DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date_exclusive
+        FROM sub_sessions_with_attributes
+        # For repeated subsessions, keep only the one with a value compartment_level_2
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date ORDER BY compartment_level_2 DESC) = 1
+    )
+    """

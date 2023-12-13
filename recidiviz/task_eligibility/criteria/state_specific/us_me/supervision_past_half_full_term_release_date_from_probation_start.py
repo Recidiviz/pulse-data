@@ -34,7 +34,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
-from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
