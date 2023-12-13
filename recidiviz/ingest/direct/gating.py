@@ -62,8 +62,4 @@ def ingest_pipeline_can_run_in_dag(
         return True
     if environment.in_gcp_production():
         return False
-    staging_disabled_states = [
-        # TODO(#25638) Remove this once entity matching issues are resolved for US_ND
-        StateCode.US_ND,
-    ]
-    return state_code not in staging_disabled_states
+    return True
