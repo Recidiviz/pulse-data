@@ -32,7 +32,10 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
+from recidiviz.justice_counts.utils.constants import (
+    REPORTING_FREQUENCY_CONTEXT_KEY,
+    VALID_SYSTEMS,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     AgencyUserAccountAssociation,
@@ -266,7 +269,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
         self.assertEqual(
-            response_json["systems"], [enum.value for enum in schema.System]
+            response_json["systems"], [enum.value for enum in VALID_SYSTEMS]
         )
         agency_json_list = response_json["agencies"]
         self.assertEqual(len(agency_json_list), 3)
