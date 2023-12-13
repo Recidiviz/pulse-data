@@ -222,6 +222,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                         "name": "Jane Smith Doe",
                         "email": "email1@test.com",
                         "agency_ids": [agency_B_id],
+                        "user_account_id": user.id,
                     },
                     {
                         "name": "John Doe",
