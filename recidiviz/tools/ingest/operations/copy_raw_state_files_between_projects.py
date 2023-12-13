@@ -127,6 +127,7 @@ def main() -> None:
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         file_tag_filters=[],
+        file_tag_regex=None,
         dry_run=args.dry_run,
     ).run()
 

@@ -58,6 +58,7 @@ class OperateOnStorageRawFilesController:
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         file_tag_filters: List[str],
+        file_tag_regex: Optional[str],
         dry_run: bool,
     ):
         """Creates a controller responsible for copying or moving ingest files from
@@ -84,7 +85,11 @@ class OperateOnStorageRawFilesController:
         self.dry_run = dry_run
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
+        assert not (
+            file_tag_regex and file_tag_filters
+        ), "Cannot have both file_tag_regex and file_tag_filters"
         self.file_tag_filters = file_tag_filters
+        self.file_tag_regex = file_tag_regex
 
         self.log_output_path = make_log_output_path(
             operation_name=f"{self.operation_type.value.lower()}_storage_raw_files",
@@ -154,6 +159,7 @@ class OperateOnStorageRawFilesController:
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
             file_tag_filters=self.file_tag_filters,
+            file_tag_regex=self.file_tag_regex,
         )
 
     def _write_copies_to_log_file(self) -> None:
@@ -174,11 +180,13 @@ class OperateOnStorageRawFilesController:
         to_path = operation_paths[1]
         # If we're filtering for certain tags, it's expected that we might find some
         # directories with no results.
-        allow_empty = bool(self.file_tag_filters)
+        allow_empty = bool(self.file_tag_filters or self.file_tag_regex)
         if not self.dry_run:
             if self.operation_type == IngestFilesOperationType.COPY:
+                logging.debug("COPYING FROM %s TO %s", from_path, to_path)
                 gsutil_cp(from_path=from_path, to_path=to_path, allow_empty=allow_empty)
             elif self.operation_type == IngestFilesOperationType.MOVE:
+                logging.debug("MOVING FROM %s TO %s", from_path, to_path)
                 gsutil_mv(from_path=from_path, to_path=to_path, allow_empty=allow_empty)
             else:
                 raise ValueError(f"Unexpected operation type [{self.operation_type}] ")
@@ -203,14 +211,16 @@ class OperateOnStorageRawFilesController:
             relative_to_source,
         ).uri()
 
-        if not self.file_tag_filters:
+        if not (self.file_tag_filters or self.file_tag_regex):
             return [(from_path, to_path)]
+
+        if self.file_tag_regex:
+            return [(from_path.rstrip("*") + f"*{self.file_tag_regex}*", to_path)]
 
         operations = []
         for file_tag in self.file_tag_filters:
             # In all other files, the split file is followed by the extension.
             tag_filter = f"*_{file_tag}[.]*"
-
             operations.append(
                 (
                     from_path.rstrip("*") + tag_filter,
@@ -226,6 +236,7 @@ class OperateOnStorageRawFilesController:
         )
 
         all_operations = list(itertools.chain(*operations_lists))
+        logging.debug("ALL OPERATIONS: %s", all_operations)
         dry_run_str = "[DRY_RUN] " if self.dry_run else ""
         self.file_operation_progress = Bar(
             f"{dry_run_str}{self.operation_type.gerund().capitalize()} files from subdirectories...",

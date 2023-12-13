@@ -23,6 +23,10 @@ import sys
 from typing import Any, Callable, Dict, Generator, List, Optional
 
 
+class RunCommandUnsuccessful(RuntimeError):
+    """Raise this when a running a command fails."""
+
+
 def prompt_for_confirmation(
     input_text: str,
     accepted_response_override: Optional[str] = None,
@@ -140,10 +144,12 @@ def run_command(
         except subprocess.TimeoutExpired as e:
             proc.kill()
             out, err = proc.communicate()
-            raise RuntimeError(f"Command timed out: `{command}`\n{err}\n{out}") from e
+            raise RunCommandUnsuccessful(
+                f"Command timed out: `{command}`\n{err}\n{out}"
+            ) from e
 
         if assert_success and proc.returncode != 0:
-            raise RuntimeError(f"Command failed: `{command}`\n{err}\n{out}")
+            raise RunCommandUnsuccessful(f"Command failed: `{command}`\n{err}\n{out}")
         return out
 
 
@@ -200,4 +206,6 @@ def run_command_streaming(
         proc.stdout.close()
         proc.stderr.close()
         if assert_success and return_code != 0:
-            raise RuntimeError(f"Command failed: `{command}`\n### STDERR:\n{err}\n###")
+            raise RunCommandUnsuccessful(
+                f"Command failed: `{command}`\n### STDERR:\n{err}\n###"
+            )
