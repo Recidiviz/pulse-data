@@ -26,6 +26,7 @@ from mock import Mock, patch
 from more_itertools import one
 from opentelemetry.baggage import get_baggage
 from opentelemetry.sdk.metrics.export import Histogram, HistogramDataPoint
+from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 from parameterized import parameterized
 
 from recidiviz.monitoring import trace
@@ -212,3 +213,11 @@ class TestCompositeSampler(unittest.TestCase):
                 ),
                 expected,
             )
+
+    def test_outside_request_context(self) -> None:
+        # Calling outside the request context should not raise RuntimeError: Working outside of request context.
+        sampler = trace.CompositeSampler(
+            path_prefix_to_sampler={"/a/": TraceIdRatioBased(rate=100 / 100)},
+            default_sampler=TraceIdRatioBased(rate=100 / 100),
+        )
+        sampler.should_sample(parent_context=None, trace_id=123, name="route")
