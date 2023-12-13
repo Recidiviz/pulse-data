@@ -23,12 +23,13 @@ from http import HTTPStatus
 from typing import Optional, Tuple
 
 import zope.event.classhandler
-from flask import Flask, Response, redirect, request
+from flask import Flask, redirect, request
 from flask_smorest import Api
 from gevent import events
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
 from opentelemetry.trace import set_tracer_provider
+from werkzeug import Response
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
@@ -140,9 +141,9 @@ def health() -> Tuple[str, HTTPStatus]:
 def fallback(path: Optional[str] = None) -> Response:
     gcp_env = environment.get_gcp_environment()
 
-    if gcp_env == GCPEnvironment.STAGING:
+    if gcp_env == GCPEnvironment.STAGING.value:
         new_host = "admin-panel-staging.recidiviz.org"
-    elif gcp_env == GCPEnvironment.PRODUCTION:
+    elif gcp_env == GCPEnvironment.PRODUCTION.value:
         new_host = "admin-panel-prod.recidiviz.org"
     else:
         raise RuntimeError("Admin Panel no longer lives in this app")
