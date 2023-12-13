@@ -30,6 +30,7 @@ from recidiviz.justice_counts.metrics import (
     superagency,
     supervision,
 )
+from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 # All official Justice Counts metrics (i.e. all instances of MetricDefinition)
@@ -153,3 +154,16 @@ for supervision_subsystem in schema.System.supervision_subsystems():
 METRIC_KEY_TO_METRIC = {
     metric.key: metric for metric in itertools.chain(*METRICS_BY_SYSTEM.values())
 }
+
+
+def get_supervision_subsystem_metric_definition(
+    subsystem: str, supervision_metric_definition: MetricDefinition
+) -> MetricDefinition:
+    """
+    Given a supervision metric and a subsystem, returns the
+    metric definition for the subsystem.
+    """
+    metric_definition_key = supervision_metric_definition.key.replace(
+        schema.System.SUPERVISION.value, subsystem, 1
+    )
+    return METRIC_KEY_TO_METRIC[metric_definition_key]
