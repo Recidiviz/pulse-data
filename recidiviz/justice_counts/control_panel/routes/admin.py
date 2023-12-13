@@ -29,6 +29,7 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import VALID_SYSTEMS
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -99,10 +100,22 @@ def get_admin_blueprint(
         for user_request in user_request_list:
             name = assert_type(user_request.get("name"), str)
             email = assert_type(user_request.get("email"), str)
+
+            # If a user is being updated, user_account_id WILL NOT be None.
+            # If the user is being created, user_account_id WILL be None.
+            user_account_id = user_request.get("user_account_id")
             agency_ids = assert_type(user_request.get("agency_ids"), list)
+
             user = UserAccountInterface.get_user_by_email(
                 session=current_session, email=email
             )
+
+            if user_account_id is None and user is not None:
+                raise JusticeCountsServerError(
+                    code="user_already_exists",
+                    description=f"User with email '{email}' already exists",
+                )
+
             auth0_user_id = user.auth0_user_id if user is not None else None
 
             if user is None:
@@ -230,7 +243,7 @@ def get_admin_blueprint(
         agency = AgencyInterface.create_or_update_agency(
             session=current_session,
             name=name,
-            agency_id=request_json["agency_id"],
+            agency_id=request_json.get("agency_id"),
             systems=[schema.System[system] for system in systems],
             state_code=state_code,
             fips_county_code=request_json.get("fips_county_code"),
