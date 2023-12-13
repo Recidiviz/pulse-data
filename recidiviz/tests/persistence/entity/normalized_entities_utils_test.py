@@ -476,7 +476,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
+            person_id=person_id, entity=entity
         )
 
         expected_id_value = 99000001234588888
@@ -506,7 +506,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
+            person_id=person_id, entity=entity
         )
 
         expected_id_value = 99000001234588890
@@ -537,7 +537,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
+            person_id=person_id, entity=entity
         )
 
         expected_id_value = 9900000123450
@@ -562,7 +562,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
+            person_id=person_id, entity=entity
         )
 
         expected_id_value = 99000001234588888
@@ -588,7 +588,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity, state_code=StateCode.US_XX
+            person_id=person_id, entity=entity
         )
 
         expected_id_value = 99000001234588888
@@ -603,7 +603,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_2, state_code=StateCode.US_XX
+            person_id=person_id, entity=entity_2
         )
 
         expected_id_value_2 = 99000001234588889
@@ -617,7 +617,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_3, state_code=StateCode.US_XX
+            person_id=person_id, entity=entity_3
         )
 
         expected_id_value_3 = 99000001234588888
@@ -640,7 +640,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
 
         with self.assertRaises(ValueError) as e:
             update_normalized_entity_with_globally_unique_id(
-                person_id=person_id, entity=entity, state_code=StateCode.US_XX
+                person_id=person_id, entity=entity
             )
 
         self.assertEqual(
@@ -687,7 +687,7 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
         )
 
         updated_entities = copy_entities_and_add_unique_ids(
-            person_id=person_id, entities=[entity_1, entity_2], state_code=state_code
+            person_id=person_id, entities=[entity_1, entity_2]
         )
 
         expected_entities = [
@@ -706,6 +706,4 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
         person_id = 990000012345
 
         # Assert no error
-        _ = copy_entities_and_add_unique_ids(
-            person_id=person_id, entities=[], state_code=StateCode.US_XX
-        )
+        _ = copy_entities_and_add_unique_ids(person_id=person_id, entities=[])

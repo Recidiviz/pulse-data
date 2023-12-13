@@ -62,13 +62,17 @@ from recidiviz.pipelines.ingest.state.cluster_root_external_ids import (
 from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
     IngestViewName,
+    PrimaryKey,
     UpperBoundDate,
 )
 from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
-from recidiviz.pipelines.ingest.state.generate_primary_keys import string_representation
+from recidiviz.pipelines.ingest.state.generate_primary_keys import (
+    generate_primary_key,
+    string_representation,
+)
 from recidiviz.pipelines.ingest.state.get_root_external_ids import (
     GetRootExternalIdClusterEdges,
 )
@@ -81,10 +85,6 @@ from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
-from recidiviz.pipelines.utils.entities.generate_primary_key import (
-    PrimaryKey,
-    generate_primary_key,
-)
 
 
 def materialization_method_for_ingest_view(

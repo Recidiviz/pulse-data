@@ -299,9 +299,7 @@ class UsMoSupervisionNormalizationDelegate(
 
             if relevant_period:
                 case_type_entries = copy_entities_and_add_unique_ids(
-                    person_id=person_id,
-                    entities=relevant_period.case_type_entries,
-                    state_code=StateCode.US_MO,
+                    person_id=person_id, entities=relevant_period.case_type_entries
                 )
 
             new_supervision_period = StateSupervisionPeriod(
@@ -323,7 +321,7 @@ class UsMoSupervisionNormalizationDelegate(
 
             # Add a unique id to the new SP
             update_normalized_entity_with_globally_unique_id(
-                person_id, new_supervision_period, state_code=StateCode.US_MO
+                person_id, new_supervision_period
             )
 
             new_supervision_period = deep_entity_update(
@@ -340,6 +338,7 @@ class UsMoSupervisionNormalizationDelegate(
         supervision_period_list_index: int,
         sorted_supervision_periods: List[StateSupervisionPeriod],
     ) -> Optional[StateSupervisionLevel]:
+
         if self._infer_absconsion_for_existing_period(
             supervision_period_list_index, sorted_supervision_periods
         ):
@@ -353,6 +352,7 @@ class UsMoSupervisionNormalizationDelegate(
         supervision_period_list_index: int,
         sorted_supervision_periods: List[StateSupervisionPeriod],
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
+
         if self._infer_absconsion_for_existing_period(
             supervision_period_list_index, sorted_supervision_periods
         ):

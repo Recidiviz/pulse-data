@@ -24,7 +24,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.normalized_entities_utils import (
     update_normalized_entity_with_globally_unique_id,
 )
@@ -76,7 +75,7 @@ class UsMoViolationResponseNormalizationDelegate(
 
                 # Add a unique id value to the new violation type entry
                 update_normalized_entity_with_globally_unique_id(
-                    person_id, technical_entry, StateCode(response.state_code)
+                    person_id, technical_entry
                 )
 
                 return [technical_entry]
