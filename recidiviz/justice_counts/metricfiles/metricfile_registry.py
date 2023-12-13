@@ -32,7 +32,9 @@ from recidiviz.justice_counts.metricfiles.prisons import PRISON_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.prosecution import PROSECUTION_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.superagency import SUPERAGENCY_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.supervision import SUPERVISION_METRIC_FILES
-from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.metrics.metric_registry import (
+    get_supervision_subsystem_metric_definition,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 SYSTEM_TO_METRICFILES = {
@@ -52,12 +54,10 @@ for supervision_subsystem in schema.System.supervision_subsystems():
     SYSTEM_TO_METRICFILES[supervision_subsystem] = [
         attr.evolve(
             metricfile,
-            definition=METRIC_KEY_TO_METRIC[
-                # change the key from e.g. SUPERVISION_TOTAL_STAFF to PROBATION_TOTAL_STAFF
-                metricfile.definition.key.replace(
-                    "SUPERVISION", supervision_subsystem.value, 1
-                )
-            ],
+            definition=get_supervision_subsystem_metric_definition(
+                subsystem=supervision_subsystem.value,
+                supervision_metric_definition=metricfile.definition,
+            ),
         )
         for metricfile in SYSTEM_TO_METRICFILES[schema.System.SUPERVISION]
     ]

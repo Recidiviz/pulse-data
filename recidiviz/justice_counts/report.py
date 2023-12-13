@@ -20,6 +20,7 @@ import json
 from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
+from sqlalchemy import and_, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session, joinedload, lazyload
 
@@ -727,4 +728,52 @@ class ReportInterface:
             user_account_id=user_account_id,
             year=date.year - 1,
             frequency=schema.ReportingFrequency.ANNUAL.value,
+        )
+
+    @staticmethod
+    def get_latest_monthly_report_by_agency_id(
+        session: Session, agency_id: int
+    ) -> schema.Report:
+        today = datetime.date.today()
+        starting_month = today.month - 1 if today.month != 1 else 12
+        starting_year = today.year if today.month != 1 else today.year - 1
+        return (
+            session.query(schema.Report)
+            .filter(
+                func.extract("month", schema.Report.date_range_start) == starting_month,
+                func.extract("year", schema.Report.date_range_start) == starting_year,
+                schema.Report.type == schema.ReportingFrequency.MONTHLY.value,
+                schema.Report.source_id == agency_id,
+            )
+            .one_or_none()
+        )
+
+    @staticmethod
+    def get_latest_annual_reports_by_agency_id(
+        session: Session, agency_id: int
+    ) -> List[schema.Report]:
+        today = datetime.date.today()
+        return (
+            session.query(schema.Report)
+            .filter(
+                or_(
+                    and_(
+                        # Query for latest fiscal-year report
+                        func.extract("month", schema.Report.date_range_start) != 1,
+                        func.extract("year", schema.Report.date_range_start)
+                        == today.year - 2,
+                        schema.Report.type == "ANNUAL",
+                        schema.Report.source_id == agency_id,
+                    ),
+                    and_(
+                        # Query for latest calendar-year report
+                        func.extract("month", schema.Report.date_range_start) == 1,
+                        func.extract("year", schema.Report.date_range_start)
+                        == today.year - 1,
+                        schema.Report.type == "ANNUAL",
+                        schema.Report.source_id == agency_id,
+                    ),
+                )
+            )
+            .all()
         )

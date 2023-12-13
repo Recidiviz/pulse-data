@@ -40,6 +40,7 @@ from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
 from recidiviz.justice_counts.metrics.metric_registry import (
     METRIC_KEY_TO_METRIC,
     METRICS_BY_SYSTEM,
+    get_supervision_subsystem_metric_definition,
 )
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import DatapointGetRequestEntryPoint
@@ -309,11 +310,10 @@ class MetricInterface:
                 # Later, these copies will be turned on/off depending on whether the
                 # user has specified "disaggregated_by_supervision_subsystems.""
                 for metric in supervision_metrics:
-                    subsystem_metric = METRIC_KEY_TO_METRIC[
-                        # Change the key from e.g. SUPERVISION_TOTAL_STAFF
-                        # to PAROLE_TOTAL_STAFF.
-                        metric.key.replace("SUPERVISION", system.value, 1)
-                    ]
+                    subsystem_metric = get_supervision_subsystem_metric_definition(
+                        subsystem=system.value,
+                        supervision_metric_definition=metric,
+                    )
                     metrics.append(subsystem_metric)
             else:
                 metrics += METRICS_BY_SYSTEM[system.value]

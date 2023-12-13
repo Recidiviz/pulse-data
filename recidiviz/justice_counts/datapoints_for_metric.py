@@ -383,3 +383,19 @@ class DatapointsForMetric:
                 metric_definitions.append(metric)
 
         return metric_definitions
+
+    @staticmethod
+    def are_disaggregated_metrics_reported(
+        datapoints_for_metric: DatapointsForMetricT,
+    ) -> bool:
+        """
+        Returns True if there are dissagregated metrics reported for the given report metric.
+        """
+
+        for (
+            report_datapoints
+        ) in datapoints_for_metric.dimension_id_to_report_datapoints.values():
+            for report_datapoint in report_datapoints:
+                if report_datapoint.value is not None:
+                    return True
+        return False
