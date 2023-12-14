@@ -75,10 +75,10 @@ class ViewConfig:
     The name can match an instrument key's name to modify its output, or can be written to a separate metric
     """
 
+    attributes: set[str] = attr.ib(factory=set)
     description: Optional[str] = attr.ib(default=None)
     aggregation: Optional[AggregationConfig] = attr.ib(default=None)
     name: Optional[str] = attr.ib(default=None)
-    attribute_keys: Optional[set[str]] = attr.ib(factory=set)
 
 
 @attr.define
@@ -217,6 +217,8 @@ class MonitoringConfig:
 
             instruments: list[InstrumentConfig] = []
 
+            strict_converter = cattrs.Converter(forbid_extra_keys=True)
+
             for instrument in monitoring_yaml["instruments"]:
                 instrument_config_cls = (
                     InstrumentConfig.get_config_constructor_for_instrument_name(
@@ -224,7 +226,9 @@ class MonitoringConfig:
                     )
                 )
 
-                instruments.append(cattrs.structure(instrument, instrument_config_cls))
+                instruments.append(
+                    strict_converter.structure(instrument, instrument_config_cls)
+                )
 
             return cls(
                 scope=monitoring_yaml["scope"],

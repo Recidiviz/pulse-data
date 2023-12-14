@@ -31,6 +31,7 @@ from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
 from recidiviz.monitoring.instruments import reset_instrument_cache
 from recidiviz.monitoring.keys import InstrumentEnum
+from recidiviz.monitoring.views import build_monitoring_views
 
 
 class SpanExportCapture(SpanExporter):
@@ -75,7 +76,10 @@ class OTLMock:
         self._get_tracer_provider_patcher.start()
 
         self.metric_reader = InMemoryMetricReader()
-        self.meter_provider = MeterProvider(metric_readers=[self.metric_reader])
+        self.meter_provider = MeterProvider(
+            metric_readers=[self.metric_reader],
+            views=build_monitoring_views(),
+        )
         self._get_meter_provider_patcher = patch(
             "recidiviz.monitoring.instruments.get_global_meter_provider",
             return_value=self.meter_provider,
