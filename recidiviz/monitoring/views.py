@@ -21,6 +21,7 @@ import opentelemetry.sdk.metrics.view as opentelemetry_view
 from opentelemetry.sdk.metrics.view import View
 
 from recidiviz.monitoring.configs import AggregationConfig, MonitoringConfig
+from recidiviz.monitoring.keys import AttributeKey
 
 
 def build_monitoring_views() -> Sequence[View]:
@@ -39,7 +40,10 @@ def build_monitoring_views() -> Sequence[View]:
                 View(
                     instrument_name=instrument.instrument_key.value,
                     name=view_config.name,
-                    attribute_keys=view_config.attribute_keys,
+                    attribute_keys={
+                        getattr(AttributeKey, key)
+                        for key in list(view_config.attributes)
+                    },
                     aggregation=aggregation,
                 )
             )

@@ -70,7 +70,7 @@ instruments:
       - attributes:
           - REGION
           - METRIC_VIEW_EXPORT_NAME
-          - EXPORT_VALUE
+          - EXPORT_FILE
 
   - instrument_key: function_duration
     description: The distribution of function durations
