@@ -41,8 +41,8 @@ def supervision_type_from_fields(
     if sup_level in ("9AB", "NIA", "ZAB", "ZAC", "ZAP") or sup_type == "ABS":
         return StateSupervisionPeriodSupervisionType.ABSCONSION
     if sup_level in ("9WR", "WRT", "ZWS"):
-        return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
-    if sup_level not in ("9AB", "ZAB", "ZAC", "ZAP", "9WR", "NIA", "WRT", "ZWS",) and (
+        return StateSupervisionPeriodSupervisionType.WARRANT_STATUS
+    if sup_level not in ("9AB", "ZAB", "ZAC", "ZAP", "9WR", "NIA", "WRT", "ZWS") and (
         sup_type in ("UNP", "DET", "SAI", "DIV", "INA", "MIS", "INT", "PPO")
         or (sup_type in ("COM", "ISC") and assign_type == "PRO")
     ):
