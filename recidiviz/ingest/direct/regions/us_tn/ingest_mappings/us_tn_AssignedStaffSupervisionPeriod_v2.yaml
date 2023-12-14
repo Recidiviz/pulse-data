@@ -236,6 +236,11 @@ output:
                         - ZAP # ABSCONDER PAROLE
                         - NIA # WARRANT FILED; NOT SERVED
 
+                      StateSupervisionLevel.WARRANT:
+                        - 9WR # ADM - WARRANT
+                        - WRT # WARRANT STATUS OFFENDER
+                        - ZWS # WARRANT STATUS
+
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.INTERNAL_UNKNOWN:
                         - 5T1 # TREATMENT ORIENTED PHASE1 - New as of 4/1/2023
@@ -249,7 +254,6 @@ output:
                         - 4P3 # STANDARD - PSU PHASE THREE
                         - 9DP # ADM - DEPORTED
                         - 9RT # ADM - RES. TREATMNT PLCMT
-                        - 9WR # ADM - WARRANT
                         - DET # DETAINER STATUS OFFENDER
                         - IOT # INTERACTIVE OFFENDER TRAC
                         - ISC # ISC TRANSFER OUT OF STATE
@@ -257,7 +261,6 @@ output:
                         - MSD # MISDEMEANOR OFFENDER
                         - RTP # RESIDENT TREATMT PLACEMNT
                         - WRB # WARRANT ON BOND
-                        - WRT # WARRANT STATUS OFFENDER
                         - Z1C # INTENSIVE PHASE 1
                         - Z1E # INTENSIVE ELECTRONIC 1
                         - Z2C # INTENSIVE PHASE 2
@@ -277,5 +280,4 @@ output:
                         - ZSS # SUSPENDED SUPV PAROLE
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
-                        - ZWS # WARRANT STATUS
 
