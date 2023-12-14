@@ -41,3 +41,10 @@ class MonitoringKeysTest(unittest.TestCase):
                 member_attrs(a, "value").isdisjoint(member_attrs(b, "value")),
                 f"{a} and {b} contain overlapping member values",
             )
+
+    def test_length(self) -> None:
+        for enum in InstrumentEnum.__subclasses__():
+            for member in enum:
+                self.assertLessEqual(
+                    len(member.value), 64, f"{member.value} is too long"
+                )

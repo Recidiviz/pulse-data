@@ -22,24 +22,24 @@
 
 scope: org.recidiviz
 instruments:
-  - instrument_key: bigquery.view_update_manager.num_view_update_failure
+  - instrument_key: view_update_manager.view_update_failure
     description: Counted when times a view fails to update
 
-  - instrument_key: bigquery.metric_view_export_manager.num_metric_view_export_validation_failure
+  - instrument_key: metric_view_export_manager.export_validation_failure
     description: Counted when times a set of exported metric views fails validation
     views:
       - attributes:
           - REGION
           - METRIC_VIEW_EXPORT_NAME
 
-  - instrument_key: bigquery.metric_view_export_manager.num_metric_view_export_job_failure
+  - instrument_key: metric_view_export_manager.export_job_failure
     description: Counted when times a metric views fails to export for non-validation reasons
     views:
       - attributes:
           - REGION
           - METRIC_VIEW_EXPORT_NAME
 
-  - instrument_key: validation.num_fail_to_run
+  - instrument_key: validation.fail_to_run
     description: Counted when validations that failed to run
     views:
       - attributes:
@@ -47,7 +47,7 @@ instruments:
           - VALIDATION_CHECK_TYPE
           - VALIDATION_VIEW_ID
 
-  - instrument_key: validation.num_failure
+  - instrument_key: validation.failure
     description: Counted when validations that failed assertions
     views:
       - attributes:
@@ -62,7 +62,7 @@ instruments:
           - SCHEMA_TYPE
           - DATABASE_NAME
 
-  - instrument_key: bigquery.metric_view_export_manager.export_file_age
+  - instrument_key: metric_view_export_manager.export_file_age
     description: The creation timestamp of an exported file
     callbacks:
       - recidiviz.monitoring.export_timeliness.get_export_timeliness_metrics
