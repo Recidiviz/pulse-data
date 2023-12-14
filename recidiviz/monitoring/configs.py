@@ -19,6 +19,7 @@ import importlib
 import os
 from abc import abstractmethod
 from functools import cached_property, lru_cache
+from inspect import signature
 from typing import Dict, List, Literal, Optional, Union
 
 import attr
@@ -148,7 +149,16 @@ class ObservableGaugeInstrumentConfig(InstrumentConfig):
         callbacks = []
         for callback in self.callbacks:
             module_name, method_name = callback.rsplit(".", maxsplit=1)
-            callbacks.append(getattr(importlib.import_module(module_name), method_name))
+            callback_func = getattr(importlib.import_module(module_name), method_name)
+            callback_signature = signature(callback_func)
+            if (
+                len(callback_signature.parameters) != 1
+                or "callback_options" not in callback_signature.parameters
+            ):
+                raise ValueError(
+                    "Cannot create callback with incorrect signature; must accept one callback_options arg"
+                )
+            callbacks.append(callback_func)
 
         return meter.create_observable_gauge(
             **self.common_kwargs,

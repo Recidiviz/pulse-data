@@ -27,7 +27,7 @@ class ObservableGaugeInstrumentKey(InstrumentEnum):
     and use the `LastValueAggregation` by default
     See: https://opentelemetry-python.readthedocs.io/en/latest/sdk/metrics.view.html"""
 
-    EXPORT_FILE_AGE = "bigquery.metric_view_export_manager.export_file_age"
+    EXPORT_FILE_AGE = "metric_view_export_manager.export_file_age"
 
 
 class HistogramInstrumentKey(InstrumentEnum):
@@ -43,15 +43,13 @@ class CounterInstrumentKey(InstrumentEnum):
     and use the `SumAggregation` by default
     See: https://opentelemetry-python.readthedocs.io/en/latest/sdk/metrics.view.html"""
 
-    VIEW_UPDATE_FAILURE = "bigquery.view_update_manager.num_view_update_failure"
+    VIEW_UPDATE_FAILURE = "view_update_manager.view_update_failure"
     VIEW_EXPORT_VALIDATION_FAILURE = (
-        "bigquery.metric_view_export_manager.num_metric_view_export_validation_failure"
+        "metric_view_export_manager.export_validation_failure"
     )
-    VIEW_EXPORT_JOB_FAILURE = (
-        "bigquery.metric_view_export_manager.num_metric_view_export_job_failure"
-    )
-    VALIDATION_FAILURE_TO_RUN = "validation.num_fail_to_run"
-    VALIDATION_FAILURE = "validation.num_failure"
+    VIEW_EXPORT_JOB_FAILURE = "metric_view_export_manager.export_job_failure"
+    VALIDATION_FAILURE_TO_RUN = "validation.fail_to_run"
+    VALIDATION_FAILURE = "validation.failure"
 
     ENGINE_INITIALIZATION_FAILURE = (
         "persistence.database.sqlalchemy_engine_initialization_failure"

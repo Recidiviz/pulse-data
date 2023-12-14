@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from unittest.mock import PropertyMock, patch
 
 import mock
-from opentelemetry.metrics import Observation
+from opentelemetry.metrics import CallbackOptions, Observation
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.metrics.export.export_config import (
@@ -169,7 +169,7 @@ class TestExportTimeliness(unittest.TestCase):
         self.assertEqual(seconds_since_epoch(UTC_EPOCH.replace(second=3)), 3)
 
     def test_get_export_timeliness_metrics(self) -> None:
-        results = list(get_export_timeliness_metrics())
+        results = list(get_export_timeliness_metrics(CallbackOptions()))
 
         self.assertCountEqual(
             results,

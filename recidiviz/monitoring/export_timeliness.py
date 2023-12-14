@@ -22,7 +22,7 @@ from typing import Iterable, Optional
 # TODO(python/mypy#10360): Direct imports are used to workaround mypy issue
 import google.cloud.monitoring_v3 as monitoring_v3  # pylint: disable=consider-using-from-import
 from google.cloud.storage import Blob, Client
-from opentelemetry.metrics import Observation
+from opentelemetry.metrics import CallbackOptions, Observation
 
 from recidiviz.big_query.export.export_query_config import (
     EXPORT_OUTPUT_FORMAT_TYPE_TO_EXTENSION,
@@ -120,8 +120,11 @@ def produce_export_timeliness_metrics(
     return metrics
 
 
-def get_export_timeliness_metrics() -> Iterable[Observation]:
+def get_export_timeliness_metrics(
+    callback_options: CallbackOptions,
+) -> Iterable[Observation]:
     """Collects file age from the GCS buckets used in exports and creates measurements"""
+    logging.info("Getting export timeliness metrics with options: %s", callback_options)
     product_configs = ProductConfigs.from_file()
 
     storage_client = Client()
