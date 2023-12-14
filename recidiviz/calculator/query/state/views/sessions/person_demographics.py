@@ -68,8 +68,8 @@ SELECT
     state_code,
     person_id,
     birthdate,
-    gender,
-    COALESCE(prioritized_race_or_ethnicity, "EXTERNAL_UNKNOWN") AS prioritized_race_or_ethnicity,
+    COALESCE(gender, "PRESENT_WITHOUT_INFO") AS gender,
+    COALESCE(prioritized_race_or_ethnicity, "PRESENT_WITHOUT_INFO") AS prioritized_race_or_ethnicity,
 FROM
     `{project_id}.{normalized_state_dataset}.state_person`
 FULL OUTER JOIN 
