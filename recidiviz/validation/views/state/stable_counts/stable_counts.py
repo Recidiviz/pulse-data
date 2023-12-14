@@ -87,8 +87,12 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 8, 1)
                     ],  # TODO(#23918): Remove once OR sends data
                     StateCode.US_ND: [
-                        date(2023, 4, 1)
-                    ],  # Not sure why there was these fluctuations for 4/2023, but it's only 29.5% so I think it's part of normal fluctuations
+                        date(
+                            2023, 4, 1
+                        ),  # Not sure why there was these fluctuations for 4/2023, but it's only 29.5% so I think it's part of normal fluctuations
+                        date(2023, 11, 1),  # Stale data in staging, no issue in prod
+                        date(2023, 12, 1),  # Stale data in staging, no issue in prod
+                    ],
                 },
             ),
             DateCol(
@@ -109,6 +113,10 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_OR: [
                         date(2023, 8, 1)
                     ],  # TODO(#23918): Remove once OR sends data
+                    StateCode.US_ND: [
+                        date(2023, 11, 1),  # Stale data in staging, no issue in prod
+                        date(2023, 12, 1),  # Stale data in staging, no issue in prod
+                    ],
                 },
             ),
         ],
@@ -137,6 +145,8 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_ND: [
                         date(2023, 2, 1),
                         date(2023, 3, 1),
+                        date(2023, 11, 1),  # Stale data in staging, no issue in prod
+                        date(2023, 12, 1),  # Stale data in staging, no issue in prod
                     ],  # Unknown fluctuations in the month of 2/2023, but returned back to the normal rate 3/23 and has been stable since then.
                     StateCode.US_TN: [
                         date(2023, 1, 1),
@@ -208,6 +218,10 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         # And so the number of supervision terminations in 10/2023 is actually closer to the usual, and it's only failing cause 9/2023 had crept up so high
                         date(2023, 10, 1),
                     ],
+                    StateCode.US_ND: [
+                        date(2023, 11, 1),  # Stale data in staging, no issue in prod
+                        date(2023, 12, 1),  # Stale data in staging, no issue in prod
+                    ],
                 },
             ),
         ]
@@ -230,6 +244,10 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 8, 1),
                         date(2023, 9, 1),
                     ],  # This is probably because we haven't ingested decision responses from COMS yet.  Check this again when we have TODO(#23960)
+                    StateCode.US_ND: [
+                        date(2023, 11, 1),  # Stale data in staging, no issue in prod
+                        date(2023, 12, 1),  # Stale data in staging, no issue in prod
+                    ],
                 },
             )
         ]
