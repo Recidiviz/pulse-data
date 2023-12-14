@@ -23,12 +23,12 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
 )
+from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
-    generate_primary_key,
     generate_primary_keys_for_root_entity_tree,
     string_representation,
 )

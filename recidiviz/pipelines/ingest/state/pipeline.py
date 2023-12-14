@@ -46,6 +46,10 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.generate_primary_key import (
+    PrimaryKey,
+    generate_primary_key,
+)
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.pipeline_parameters import (
     IngestPipelineParameters,
@@ -62,17 +66,13 @@ from recidiviz.pipelines.ingest.state.cluster_root_external_ids import (
 from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
     IngestViewName,
-    PrimaryKey,
     UpperBoundDate,
 )
 from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
-from recidiviz.pipelines.ingest.state.generate_primary_keys import (
-    generate_primary_key,
-    string_representation,
-)
+from recidiviz.pipelines.ingest.state.generate_primary_keys import string_representation
 from recidiviz.pipelines.ingest.state.get_root_external_ids import (
     GetRootExternalIdClusterEdges,
 )
@@ -91,7 +91,6 @@ def materialization_method_for_ingest_view(
     ingest_view_manifest: IngestViewManifest,
     default_materialization_method: MaterializationMethod,
 ) -> MaterializationMethod:
-
     return (
         MaterializationMethod.ORIGINAL
         if INGEST_VIEW_RESULTS_UPDATE_DATETIME

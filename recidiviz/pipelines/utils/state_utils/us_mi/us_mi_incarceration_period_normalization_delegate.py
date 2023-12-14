@@ -105,7 +105,6 @@ class UsMiIncarcerationNormalizationDelegate(
                     sp.supervision_level_raw_text is None
                     and sp.supervision_level is None
                 ) or (sp.supervision_level == StateSupervisionLevel.IN_CUSTODY):
-
                     if sp.supervision_level == StateSupervisionLevel.IN_CUSTODY:
                         inference_reason = "IN-CUSTODY"
                     else:
@@ -130,6 +129,7 @@ class UsMiIncarcerationNormalizationDelegate(
                     update_normalized_entity_with_globally_unique_id(
                         person_id=person_id,
                         entity=new_incarceration_period,
+                        state_code=StateCode.US_MI,
                     )
 
                     new_incarceration_periods.append(new_incarceration_period)
@@ -203,6 +203,7 @@ class UsMiIncarcerationNormalizationDelegate(
                     update_normalized_entity_with_globally_unique_id(
                         person_id=person_id,
                         entity=new_incarceration_period,
+                        state_code=StateCode.US_MI,
                     )
 
                     new_incarceration_periods.append(new_incarceration_period)
@@ -265,6 +266,7 @@ class UsMiIncarcerationNormalizationDelegate(
                         update_normalized_entity_with_globally_unique_id(
                             person_id=person_id,
                             entity=new_incarceration_period,
+                            state_code=StateCode.US_MI,
                         )
 
                         new_incarceration_periods.append(new_incarceration_period)
@@ -314,6 +316,7 @@ class UsMiIncarcerationNormalizationDelegate(
                             update_normalized_entity_with_globally_unique_id(
                                 person_id=person_id,
                                 entity=new_incarceration_period,
+                                state_code=StateCode.US_MI,
                             )
 
                             new_incarceration_periods.append(new_incarceration_period)

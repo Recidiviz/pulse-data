@@ -40,6 +40,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.pipelines.base_pipeline import BasePipeline
@@ -56,10 +57,7 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
     RecidivizMetricType,
     json_serializable_list_value_handler,
 )
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
-    WriteToBigQuery,
-    json_serializable_dict,
-)
+from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
     ExtractDataForPipeline,
     ImportTable,
