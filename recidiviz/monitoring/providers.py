@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Methods for creating OTL Providers. Providers are then entrypoint into the OpenTelemetry APIs"""
-
+import logging
 from typing import Optional, cast
 
 from opentelemetry.exporter.cloud_monitoring import CloudMonitoringMetricsExporter
@@ -42,7 +42,7 @@ from opentelemetry.trace import get_tracer_provider
 
 from recidiviz.monitoring.keys import InstrumentEnum
 from recidiviz.monitoring.views import build_monitoring_views
-from recidiviz.utils.environment import in_development, in_gcp
+from recidiviz.utils.environment import in_development, in_gcp, in_test
 
 CUSTOM_METRIC_NAMESPACE = "custom.googleapis.com/opencensus"
 
@@ -110,17 +110,20 @@ def create_monitoring_meter_provider(
             ),
             export_interval_millis=60000,
         )
-    elif in_development():
+
+        resource = detect_resource()
+    else:
+        if in_test():
+            logging.warning(
+                "This tracer provider configuration is not suited for tests; Use OTLMock"
+            )
+
         # In development, we still exercise the OTL code paths but push metrics them to an in-process memory store
         metric_reader = InMemoryMetricReader()
-    else:
-        raise RuntimeError(
-            "Cannot create a tracer provider outside of gcp/dev; In test use OTLMock"
-        )
 
     return MeterProvider(
         metric_readers=[metric_reader],
-        resource=resource or detect_resource(),
+        resource=resource or Resource.get_empty(),
         views=build_monitoring_views(),
         # Flush metrics when process exits
         shutdown_on_exit=True,
@@ -142,16 +145,17 @@ def create_monitoring_tracer_provider(
     span_exporter: SpanExporter
     if in_gcp():
         span_exporter = CloudTraceSpanExporter()
-    elif in_development():
-        span_exporter = ConsoleSpanExporter()
     else:
-        raise RuntimeError(
-            "Cannot create a tracer provider outside of gcp/dev; In test use OTLMock"
-        )
+        if in_test():
+            logging.warning(
+                "This meter provider configuration is not suited for tests; Use OTLMock"
+            )
+
+        span_exporter = ConsoleSpanExporter()
 
     tracer_provider = TracerProvider(
         sampler=sampler or TraceIdRatioBased(rate=100 / 100),
-        resource=resource or detect_resource(),
+        resource=resource or Resource.get_empty(),
         # Flush traces when process exits
         shutdown_on_exit=True,
     )
