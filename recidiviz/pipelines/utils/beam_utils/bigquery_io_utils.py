@@ -16,9 +16,7 @@
 # =============================================================================
 """Utils for beam calculations."""
 # pylint: disable=abstract-method,redefined-builtin
-import datetime
-from enum import Enum
-from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar
+from typing import Any, Dict, Iterable, Optional, TypeVar
 
 import apache_beam as beam
 from apache_beam.io.gcp.internal.clients import bigquery
@@ -108,39 +106,3 @@ class WriteToBigQuery(beam.io.WriteToBigQuery):
             method=beam.io.WriteToBigQuery.Method.FILE_LOADS,
             schema=schema,
         )
-
-
-def json_serializable_dict(
-    element: Dict[str, Any],
-    list_serializer: Optional[Callable[[str, List[Any]], str]] = None,
-) -> Dict[str, Any]:
-    """Converts a dictionary into a format that is JSON serializable.
-
-    For values that are of type Enum, converts to their raw values. For values
-    that are dates, converts to a string representation.
-
-    If any of the fields are list types, must provide a |list_serializer| which will
-    handle serializing list values to a serializable string value.
-    """
-    serializable_dict: Dict[str, Any] = {}
-
-    for key, v in element.items():
-        if isinstance(v, Enum):
-            serializable_dict[key] = v.value
-        elif isinstance(v, (datetime.date, datetime.datetime)):
-            # By using isoformat, we are guaranteed a string in the form YYYY-MM-DD,
-            # padded with leading zeros if necessary. For datetime values, the format
-            # will be YYYY-MM-DDTHH:MM:SS, with an optional milliseconds component if
-            # relevant.
-            serializable_dict[key] = v.isoformat()
-        elif isinstance(v, list):
-            if not list_serializer:
-                raise ValueError(
-                    "Must provide list_serializer if there are list "
-                    f"values in dict. Found list in key: [{key}]."
-                )
-
-            serializable_dict[key] = list_serializer(key, v)
-        else:
-            serializable_dict[key] = v
-    return serializable_dict

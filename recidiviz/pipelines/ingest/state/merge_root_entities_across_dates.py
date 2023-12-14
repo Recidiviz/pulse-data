@@ -26,14 +26,11 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     set_backedges,
 )
+from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
-from recidiviz.pipelines.ingest.state.constants import (
-    IngestViewName,
-    PrimaryKey,
-    UpperBoundDate,
-)
+from recidiviz.pipelines.ingest.state.constants import IngestViewName, UpperBoundDate
 from recidiviz.pipelines.ingest.state.exemptions import INGEST_VIEW_ORDER_EXEMPTIONS
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,

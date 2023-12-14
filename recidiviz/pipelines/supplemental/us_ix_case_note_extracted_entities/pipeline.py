@@ -29,6 +29,7 @@ from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info imp
     US_IX_CASE_UPDATE_INFO_VIEW_NAME,
 )
 from recidiviz.common.text_analysis import TextAnalyzer
+from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
@@ -40,10 +41,7 @@ from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_n
     NOTE_TITLE_TEXT_ANALYZER,
     UsIxNoteTitleTextEntity,
 )
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
-    WriteToBigQuery,
-    json_serializable_dict,
-)
+from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import ImportTable
 from recidiviz.pipelines.utils.execution_utils import TableRow
 

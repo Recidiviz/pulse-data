@@ -22,10 +22,10 @@ import apache_beam as beam
 from more_itertools import one
 
 from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
 from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
     IngestViewName,
-    PrimaryKey,
     UpperBoundDate,
 )
 from recidiviz.utils.types import assert_type_list

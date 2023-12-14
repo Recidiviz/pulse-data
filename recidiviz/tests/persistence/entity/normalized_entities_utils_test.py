@@ -22,7 +22,6 @@ from typing import Optional
 import attr
 import mock
 
-from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
@@ -476,7 +475,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity
+            person_id=person_id, entity=entity, state_code=StateCode.US_XX
         )
 
         expected_id_value = 99000001234588888
@@ -506,7 +505,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity
+            person_id=person_id, entity=entity, state_code=StateCode.US_XX
         )
 
         expected_id_value = 99000001234588890
@@ -537,7 +536,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity
+            person_id=person_id, entity=entity, state_code=StateCode.US_XX
         )
 
         expected_id_value = 9900000123450
@@ -562,7 +561,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity
+            person_id=person_id, entity=entity, state_code=StateCode.US_XX
         )
 
         expected_id_value = 99000001234588888
@@ -588,7 +587,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity
+            person_id=person_id, entity=entity, state_code=StateCode.US_XX
         )
 
         expected_id_value = 99000001234588888
@@ -603,7 +602,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_2
+            person_id=person_id, entity=entity_2, state_code=StateCode.US_XX
         )
 
         expected_id_value_2 = 99000001234588889
@@ -617,40 +616,11 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         )
 
         update_normalized_entity_with_globally_unique_id(
-            person_id=person_id, entity=entity_3
+            person_id=person_id, entity=entity_3, state_code=StateCode.US_XX
         )
 
         expected_id_value_3 = 99000001234588888
         self.assertEqual(expected_id_value_3, entity_3.get_id())
-
-    def test_update_normalized_entity_with_globally_unique_id_max_int(self) -> None:
-        """Tests that we raise an error if the person_id value is already the size of
-        the maximum integer value in BigQuery."""
-        state_code = StateCode.US_XX
-        self.mock_safe_object_id_patcher.stop()
-
-        entity = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
-            supervision_violation_type_entry_id=789,
-            state_code=state_code.value,
-            violation_type=entities.StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="TECHNICAL",
-        )
-
-        person_id = MAX_BQ_INT
-
-        with self.assertRaises(ValueError) as e:
-            update_normalized_entity_with_globally_unique_id(
-                person_id=person_id, entity=entity
-            )
-
-        self.assertEqual(
-            "Our database person_id values have gotten too large and are clobbering "
-            "the FIPS code values in the id mask used to write to BigQuery. Must fix "
-            "person_id values before running more normalization pipelines.",
-            e.exception.args[0],
-        )
-
-        self.mock_safe_object_id_patcher.start()
 
 
 class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
@@ -687,7 +657,7 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
         )
 
         updated_entities = copy_entities_and_add_unique_ids(
-            person_id=person_id, entities=[entity_1, entity_2]
+            person_id=person_id, entities=[entity_1, entity_2], state_code=state_code
         )
 
         expected_entities = [
@@ -706,4 +676,6 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
         person_id = 990000012345
 
         # Assert no error
-        _ = copy_entities_and_add_unique_ids(person_id=person_id, entities=[])
+        _ = copy_entities_and_add_unique_ids(
+            person_id=person_id, entities=[], state_code=StateCode.US_XX
+        )

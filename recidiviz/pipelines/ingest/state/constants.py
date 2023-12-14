@@ -17,6 +17,8 @@
 """Constants for the ingest pipeline."""
 from typing import Optional, Set, Tuple
 
+from recidiviz.persistence.entity.generate_primary_key import PrimaryKey
+
 # Beam does not have a standard datetime coder that it uses to decode/encode between steps
 # for datetime objects, therefore we will use UTC timestamps for any keys that require
 # datetime objects.
@@ -29,8 +31,6 @@ ExternalIdType = str
 ExternalIdKey = Tuple[str, str]
 ExternalIdClusterEdge = Tuple[ExternalIdKey, Optional[ExternalIdKey]]
 ExternalIdCluster = Tuple[ExternalIdKey, Set[ExternalIdKey]]
-
-PrimaryKey = int
 
 EntityClassName = str
 EntityKey = Tuple[PrimaryKey, EntityClassName]
