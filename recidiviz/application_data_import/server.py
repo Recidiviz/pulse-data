@@ -39,6 +39,7 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
     get_outliers_enabled_states,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
+    OUTLIERS_ARCHIVE_VIEW_BUILDERS,
     OUTLIERS_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
@@ -324,6 +325,13 @@ def _import_outliers(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
             f"Invalid filename {filename}, must match a Outliers view",
             HTTPStatus.BAD_REQUEST,
         )
+
+    if view_builder in OUTLIERS_ARCHIVE_VIEW_BUILDERS:
+        return (
+            "",
+            HTTPStatus.OK,
+        )
+
     if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
         return (
             f"Unexpected view builder delegate found when importing {filename}",

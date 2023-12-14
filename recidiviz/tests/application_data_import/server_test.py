@@ -546,6 +546,22 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    def test_import_outliers_successful_skip(
+        self,
+        mock_import_csv: MagicMock,
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/outliers/{self.state_code}/supervision_officers_archive.csv",
+            )
+            mock_import_csv.assert_not_called()
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
     def test_import_outliers_invalid_state(self) -> None:
         with self.app.test_request_context():
             response = self.client.post(
