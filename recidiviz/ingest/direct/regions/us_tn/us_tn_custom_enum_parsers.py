@@ -38,9 +38,9 @@ def supervision_type_from_fields(
     sup_level, assign_type, sup_type = raw_text.split("-")
     if sup_level in ("9DP"):
         return StateSupervisionPeriodSupervisionType.DEPORTED
-    if sup_level in ("9AB", "ZAB", "ZAC", "ZAP") or sup_type == "ABS":
+    if sup_level in ("9AB", "NIA", "ZAB", "ZAC", "ZAP") or sup_type == "ABS":
         return StateSupervisionPeriodSupervisionType.ABSCONSION
-    if sup_level in ("9WR", "NIA", "WRT", "ZWS"):
+    if sup_level in ("9WR", "WRT", "ZWS"):
         return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
     if sup_level not in ("9AB", "ZAB", "ZAC", "ZAP", "9WR", "NIA", "WRT", "ZWS",) and (
         sup_type in ("UNP", "DET", "SAI", "DIV", "INA", "MIS", "INT", "PPO")

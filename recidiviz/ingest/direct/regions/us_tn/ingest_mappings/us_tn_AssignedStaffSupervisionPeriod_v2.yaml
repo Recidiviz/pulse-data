@@ -228,6 +228,14 @@ output:
                       StateSupervisionLevel.INTERSTATE_COMPACT:
                         - 9IS # ADM - ISC OUTGOING
 
+                      StateSupervisionLevel.ABSCONSION:
+                        - 9AB # ADM - ABSCONDED OFFENDER
+                        - ABS # ABSCONDED OFFENDER
+                        - ZAB # ABSCONDER PROBATION
+                        - ZAC # ABSCONDER COMM. CORR.
+                        - ZAP # ABSCONDER PAROLE
+                        - NIA # WARRANT FILED; NOT SERVED
+
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.INTERNAL_UNKNOWN:
                         - 5T1 # TREATMENT ORIENTED PHASE1 - New as of 4/1/2023
@@ -239,17 +247,14 @@ output:
                         - 3P2 # ELEVATED - PSU PHASE TWO
                         - 3RE # ELEVATED - RESISTIVE
                         - 4P3 # STANDARD - PSU PHASE THREE
-                        - 9AB # ADM - ABSCONDED OFFENDER
                         - 9DP # ADM - DEPORTED
                         - 9RT # ADM - RES. TREATMNT PLCMT
                         - 9WR # ADM - WARRANT
-                        - ABS # ABSCONDED OFFENDER
                         - DET # DETAINER STATUS OFFENDER
                         - IOT # INTERACTIVE OFFENDER TRAC
                         - ISC # ISC TRANSFER OUT OF STATE
                         - JSS # JUDICIAL SUSPENSION SUPVN
                         - MSD # MISDEMEANOR OFFENDER
-                        - NIA # WARRANT FILED; NOT SERVED
                         - RTP # RESIDENT TREATMT PLACEMNT
                         - WRB # WARRANT ON BOND
                         - WRT # WARRANT STATUS OFFENDER
@@ -261,9 +266,6 @@ output:
                         - Z3C # INTENSIVE PHASE 3
                         - Z3E # INTENSIVE ELECTRONIC 3
                         - Z4A # PHASE 2 INTENSIVE
-                        - ZAB # ABSCONDER PROBATION
-                        - ZAC # ABSCONDER COMM. CORR.
-                        - ZAP # ABSCONDER PAROLE
                         - ZDE # DETAINER PAROLE
                         - ZIS # ISC TRANSFER IN
                         - ZIT # INTERSTATE TRANSFER OUTST
