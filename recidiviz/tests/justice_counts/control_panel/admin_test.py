@@ -78,6 +78,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             DB_URL=local_postgres_helpers.on_disk_postgres_db_url(),
             WTF_CSRF_ENABLED=False,
             AUTH_DECORATOR=passthrough_authorization_decorator(),
+            AUTH_DECORATOR_ADMIN_PANEL=passthrough_authorization_decorator(),
             AUTH0_CONFIGURATION=get_test_auth0_config(),
             AUTH0_CLIENT=self.test_auth0_client,
             SEGMENT_KEY="fake_segment_key",

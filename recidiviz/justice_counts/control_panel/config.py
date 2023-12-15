@@ -32,12 +32,16 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.utils import environment
 from recidiviz.utils.auth.auth0 import (
+    JUSTICE_COUNTS_ADMIN_CLAIM,
+    ROLES_CLAIMS,
     Auth0Config,
+    TokenClaims,
     build_auth0_authorization_decorator,
     passthrough_authorization_decorator,
 )
 from recidiviz.utils.environment import in_ci, in_gcp_staging
 from recidiviz.utils.secrets import get_secret
+from recidiviz.utils.types import assert_type
 
 
 @attr.define
@@ -54,6 +58,7 @@ class Config:
     DB_URL: str = attr.field()
     AUTH0_CONFIGURATION: Auth0Config = attr.field()
     AUTH_DECORATOR: Callable = attr.field()
+    AUTH_DECORATOR_ADMIN_PANEL: Callable = attr.field()
     AUTH0_CLIENT: Auth0Client = attr.field()
     SEGMENT_KEY: Optional[str] = attr.field()
 
@@ -80,6 +85,29 @@ class Config:
 
         return build_auth0_authorization_decorator(
             self.AUTH0_CONFIGURATION, on_successful_authorization
+        )
+
+    @AUTH_DECORATOR_ADMIN_PANEL.default
+    def _admin_panel_auth_decorator_factory(self) -> Callable:
+        if in_ci():
+            return passthrough_authorization_decorator()
+
+        def on_successful_authorization_justice_counts_admin_only(
+            jwt_claims: TokenClaims,
+        ) -> None:
+            on_successful_authorization(jwt_claims=jwt_claims)
+
+            roles = assert_type(jwt_claims.get(ROLES_CLAIMS, []), list)
+
+            if roles is not None and JUSTICE_COUNTS_ADMIN_CLAIM not in set(roles):
+                raise JusticeCountsServerError(
+                    code="no_justice_counts_access",
+                    description="You are not authorized to access this application.",
+                )
+
+        return build_auth0_authorization_decorator(
+            self.AUTH0_CONFIGURATION,
+            on_successful_authorization_justice_counts_admin_only,
         )
 
     @AUTH0_CONFIGURATION.default

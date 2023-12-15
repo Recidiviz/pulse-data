@@ -36,6 +36,9 @@ TokenClaims = Dict[str, Union[str, int]]
 
 EMAIL_ADDRESS_CLAIM = "https://dashboard.recidiviz.org/email_address"
 
+ROLES_CLAIMS = "https://dashboard.recidiviz.org/roles"
+JUSTICE_COUNTS_ADMIN_CLAIM = "justice-counts-admin"
+
 
 def get_jwt_claim(claim: str, claims: TokenClaims) -> Union[str, int]:
     if claim not in claims:
