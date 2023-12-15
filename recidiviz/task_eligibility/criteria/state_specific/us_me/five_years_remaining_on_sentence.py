@@ -39,7 +39,7 @@ Defines a criteria view that shows spans of time for
 which clients are 5 years away from expected release date.
 """
 
-_QUERY_TEMPLATE = x_years_remaining_on_sentence(5)
+_QUERY_TEMPLATE = x_years_remaining_on_sentence(5, True)
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(

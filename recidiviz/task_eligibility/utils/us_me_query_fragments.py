@@ -446,8 +446,14 @@ def cis_900_employee_to_supervisor_match() -> str:
     GROUP BY 1,2,3,4,5"""
 
 
-def x_years_remaining_on_sentence(x: int) -> str:
+def x_years_remaining_on_sentence(x: int, negate_boolean: bool = False) -> str:
     """
+    Args:
+        x: How many years remaining on sentence to cut off
+        negate_boolean: this boolean is True if we want the span to be true for at least x years remaining, False
+            if we want the span to be True for x years or less
+            (i.e. for someone with a sentence ending in 2030, (2, False) would mean their span is  False until 2028
+            and True from 2028-2030 and vice versa for (2, True))
     Returns:
         str: Query that surfaces spans of time for which clients are x years away from expected release date.
     """
@@ -494,7 +500,7 @@ def x_years_remaining_on_sentence(x: int) -> str:
                 AND (critical_date_has_passed),
             NULL,
             end_date) AS end_date,
-        critical_date_has_passed AS meets_criteria,
+        {"NOT" if negate_boolean else ''} critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
     FROM critical_date_has_passed_spans cd
     """
