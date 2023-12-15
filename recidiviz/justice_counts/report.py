@@ -20,7 +20,7 @@ import json
 from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
-from sqlalchemy import and_, func, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session, joinedload, lazyload
 
@@ -752,28 +752,36 @@ class ReportInterface:
     def get_latest_annual_reports_by_agency_id(
         session: Session, agency_id: int
     ) -> List[schema.Report]:
+        """Returns the latest calendar-year and fiscal-year reports for an agency."""
         today = datetime.date.today()
-        return (
+        reports = (
             session.query(schema.Report)
             .filter(
-                or_(
-                    and_(
-                        # Query for latest fiscal-year report
-                        func.extract("month", schema.Report.date_range_start) != 1,
-                        func.extract("year", schema.Report.date_range_start)
-                        == today.year - 2,
-                        schema.Report.type == "ANNUAL",
-                        schema.Report.source_id == agency_id,
-                    ),
-                    and_(
-                        # Query for latest calendar-year report
-                        func.extract("month", schema.Report.date_range_start) == 1,
-                        func.extract("year", schema.Report.date_range_start)
-                        == today.year - 1,
-                        schema.Report.type == "ANNUAL",
-                        schema.Report.source_id == agency_id,
-                    ),
-                )
+                # Any annual reports that have end dates that have passed in
+                # the current year should be included
+                func.extract("month", schema.Report.date_range_start) <= today.month,
+                func.extract("year", schema.Report.date_range_end) == today.year,
+                schema.Report.type == "ANNUAL",
+                schema.Report.source_id == agency_id,
             )
             .all()
         )
+
+        if any({report.date_range_start.month != 1 for report in reports}) is True:
+            return reports
+
+        # If no fiscal report was caught in the first query, check if there
+        # is one for the previous time period.
+
+        fiscal_reports_from_previous_year = (
+            session.query(schema.Report)
+            .filter(
+                func.extract("month", schema.Report.date_range_start) != 1,
+                func.extract("year", schema.Report.date_range_end) == today.year - 1,
+                schema.Report.type == "ANNUAL",
+                schema.Report.source_id == agency_id,
+            )
+            .all()
+        )
+
+        return reports + fiscal_reports_from_previous_year
