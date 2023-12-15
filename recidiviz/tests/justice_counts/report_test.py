@@ -1452,3 +1452,61 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 )
                 # 15 total reports: 5 for the current year (January 2020 - May 2020), 10 for the previous year (Mar 2019 - December 2019)
                 self.assertEqual(len(monthly_reports), 15)
+
+    def test_query_for_latest_annual_reports(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            with freeze_time(datetime.date(2023, 8, 1)):
+                today = datetime.date.today()
+                agency = self.test_schema_objects.test_agency_A
+                calendar_year_report = schema.Report(
+                    source=agency,
+                    type="ANNUAL",
+                    instance="Test Annual Calendar-Year Report",
+                    status=schema.ReportStatus.NOT_STARTED,
+                    acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+                    project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+                    date_range_start=datetime.date(month=1, year=today.year - 1, day=1),
+                    date_range_end=datetime.date(month=1, year=today.year, day=1),
+                )
+
+                fiscal_year_2022_report = schema.Report(
+                    source=agency,
+                    type="ANNUAL",
+                    instance="Test Annual Fiscal-Year Report 2023",
+                    status=schema.ReportStatus.NOT_STARTED,
+                    acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+                    project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+                    date_range_start=datetime.date(month=7, year=today.year - 1, day=1),
+                    date_range_end=datetime.date(month=7, year=today.year, day=1),
+                )
+
+                fiscal_year_2021_report = schema.Report(
+                    source=agency,
+                    type="ANNUAL",
+                    instance="Test Annual Fiscal-Year Report 2022",
+                    status=schema.ReportStatus.NOT_STARTED,
+                    acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+                    project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+                    date_range_start=datetime.date(month=7, year=today.year - 2, day=1),
+                    date_range_end=datetime.date(month=7, year=today.year - 1, day=1),
+                )
+
+                session.add_all(
+                    [
+                        calendar_year_report,
+                        fiscal_year_2022_report,
+                        fiscal_year_2021_report,
+                        agency,
+                    ]
+                )
+                session.commit()
+                reports = ReportInterface.get_latest_annual_reports_by_agency_id(
+                    session=session, agency_id=agency.id
+                )
+                self.assertEqual(len(reports), 2)
+                self.assertEqual(
+                    reports[0].instance, "Test Annual Calendar-Year Report"
+                )
+                self.assertEqual(
+                    reports[1].instance, "Test Annual Fiscal-Year Report 2023"
+                )
