@@ -136,15 +136,15 @@ def get_missing_metrics(
     agency: schema.Agency, session: Session
 ) -> Tuple[
     Dict[schema.System, List[MetricDefinition]],
-    Dict[schema.System, Dict[int, List[MetricDefinition]]],
+    Dict[int, Dict[schema.System, List[MetricDefinition]]],
 ]:
     """
     Retrieves the missing monthly and annual metrics for the agency. Returns a tuple:
-    (system_to_missing_monthly_metrics, system_to_starting_month_to_missing_annual_metrics).
+    (system_to_missing_monthly_metrics, starting_month_to_system_to_missing_annual_metrics).
 
     system_to_missing_monthly_metrics: missing monthly metrics grouped by system
-    system_to_starting_month_to_missing_annual_metrics: missing annual metrics, grouped by system
-    and starting month of the report.
+    starting_month_to_system_to_missing_annual_metrics: missing annual metrics, grouped by
+    starting month of the report and system of the metric
 
     Args:
         agency (schema.Agency): The agency to fetch the missing metrics for.
@@ -183,14 +183,14 @@ def get_missing_metrics(
 
     (
         system_to_missing_monthly_metrics,
-        system_to_starting_month_to_missing_annual_metrics,
+        starting_month_to_system_to_missing_annual_metrics,
     ) = _get_missing_metrics_by_system(
         metric_key_to_datapoints=metric_key_to_datapoints, agency=agency
     )
 
     return (
         system_to_missing_monthly_metrics,
-        system_to_starting_month_to_missing_annual_metrics,
+        starting_month_to_system_to_missing_annual_metrics,
     )
 
 
@@ -198,7 +198,7 @@ def _get_missing_metrics_by_system(
     metric_key_to_datapoints: Dict[str, DatapointsForMetric], agency: schema.Agency
 ) -> Tuple[
     Dict[schema.System, List[MetricDefinition]],
-    Dict[schema.System, Dict[int, List[MetricDefinition]]],
+    Dict[int, Dict[schema.System, List[MetricDefinition]]],
 ]:
     """
     Provided the metric setting datapoints and the report datapoints of the most recent
@@ -216,8 +216,8 @@ def _get_missing_metrics_by_system(
     system_to_missing_monthly_metrics: Dict[
         schema.System, List[MetricDefinition]
     ] = defaultdict(list)
-    system_to_starting_month_to_missing_annual_metrics: Dict[
-        schema.System, Dict[int, List[MetricDefinition]]
+    starting_month_to_system_to_missing_annual_metrics: Dict[
+        int, Dict[schema.System, List[MetricDefinition]]
     ] = defaultdict(lambda: defaultdict(list))
 
     for metric_key, datapoints_for_metric in metric_key_to_datapoints.items():
@@ -270,20 +270,20 @@ def _get_missing_metrics_by_system(
                 # If this metric is NOT disaggeregated by supervision subsystem,
                 # add it's metric definition to
                 # system_to_starting_month_to_missing_annual_metrics as is
-                system_to_starting_month_to_missing_annual_metrics[
+                starting_month_to_system_to_missing_annual_metrics[starting_month][
                     metric_definition.system
-                ][starting_month].append(metric_definition)
+                ].append(metric_definition)
             else:
                 _add_disaggregated_supervision_metrics(
                     agency=agency,
                     metric_definition=metric_definition,
-                    system_to_starting_month_to_missing_annual_metrics=system_to_starting_month_to_missing_annual_metrics,
+                    starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
                     starting_month=starting_month,
                 )
 
     return (
         system_to_missing_monthly_metrics,
-        system_to_starting_month_to_missing_annual_metrics,
+        starting_month_to_system_to_missing_annual_metrics,
     )
 
 
@@ -293,8 +293,8 @@ def _add_disaggregated_supervision_metrics(
     system_to_missing_monthly_metrics: Optional[
         Dict[schema.System, List[MetricDefinition]]
     ] = None,
-    system_to_starting_month_to_missing_annual_metrics: Optional[
-        Dict[schema.System, Dict[int, List[MetricDefinition]]]
+    starting_month_to_system_to_missing_annual_metrics: Optional[
+        Dict[int, Dict[schema.System, List[MetricDefinition]]]
     ] = None,
     starting_month: Optional[int] = None,
 ) -> None:
@@ -313,8 +313,8 @@ def _add_disaggregated_supervision_metrics(
         system_to_missing_monthly_metrics(Optional[Dict[schema.System, List[MetricDefinition]]]):
         Missing metric dictionary for the monthly report
 
-        system_to_starting_month_to_missing_annual_metrics (Optional[
-        Dict[schema.System, Dict[int, List[MetricDefinition]]]): Missing metric
+        starting_month_to_system_to_missing_annual_metrics (Optional[
+        Dict[int, Dict[schema.System, List[MetricDefinition]]]): Missing metric
         dictionary for annual metrics
 
         starting_month (Optional[int]): Starting month of the annual report
@@ -341,8 +341,8 @@ def _add_disaggregated_supervision_metrics(
             )
         if (
             starting_month is not None
-            and system_to_starting_month_to_missing_annual_metrics is not None
+            and starting_month_to_system_to_missing_annual_metrics is not None
         ):
-            system_to_starting_month_to_missing_annual_metrics[schema.System[system]][
-                starting_month
+            starting_month_to_system_to_missing_annual_metrics[starting_month][
+                schema.System[system]
             ].append(supervision_subsystem_metric_definition)

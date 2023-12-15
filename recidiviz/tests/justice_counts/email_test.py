@@ -132,8 +132,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
     def _test_missing_metrics_functionality_law_enforcement_and_prison_agency(
         self,
         system_to_missing_monthly_metrics: Dict[schema.System, List[MetricDefinition]],
-        system_to_starting_month_to_missing_annual_metrics: Dict[
-            schema.System, Dict[int, List[MetricDefinition]]
+        starting_month_to_system_to_missing_annual_metrics: Dict[
+            int, Dict[schema.System, List[MetricDefinition]]
         ],
         agency: schema.Agency,
     ) -> None:
@@ -147,21 +147,10 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             {schema.System.LAW_ENFORCEMENT, schema.System.PRISONS},
         )
         self.assertEqual(
-            set(system_to_starting_month_to_missing_annual_metrics.keys()),
-            {schema.System.LAW_ENFORCEMENT, schema.System.PRISONS},
+            set(starting_month_to_system_to_missing_annual_metrics.keys()), {1, 7}
         )
 
         for system in agency.systems:
-            # Missing fiscal-year metrics and missing calendar-year metrics are represented in
-            # system_to_starting_month_to_missing_annual_metrics
-            self.assertEqual(
-                set(
-                    system_to_starting_month_to_missing_annual_metrics[
-                        schema.System[system]
-                    ].keys()
-                ),
-                {1, 7},
-            )
             # All metrics are missing from the monthly report
             self.assertEqual(
                 {
@@ -177,15 +166,16 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                     == schema.ReportingFrequency.MONTHLY
                 },
             )
+
             # All annual metrics (except expenses, that is reported fiscally) is
             # missing from the calendar-year report
             self.assertEqual(
                 {
                     definition.key
-                    for definition in system_to_starting_month_to_missing_annual_metrics[
-                        schema.System[system]
-                    ][
+                    for definition in starting_month_to_system_to_missing_annual_metrics[
                         1
+                    ][
+                        schema.System[system]
                     ]
                 },
                 {
@@ -196,14 +186,15 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                     if "EXPENSES" not in metric_definition.key
                 },
             )
+
             # The expense metric is missing from the fiscal-year report.
             self.assertEqual(
                 {
                     definition.key
-                    for definition in system_to_starting_month_to_missing_annual_metrics[
-                        schema.System[system]
-                    ][
+                    for definition in starting_month_to_system_to_missing_annual_metrics[
                         7
+                    ][
+                        schema.System[system]
                     ]
                 },
                 {
@@ -215,11 +206,23 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 },
             )
 
+        for starting_month in [1, 7]:
+            # Missing fiscal-year metrics and missing calendar-year metrics are represented in
+            # starting_month_to_system_to_missing_annual_metrics
+            self.assertEqual(
+                set(
+                    starting_month_to_system_to_missing_annual_metrics[
+                        starting_month
+                    ].keys()
+                ),
+                {schema.System.LAW_ENFORCEMENT, schema.System.PRISONS},
+            )
+
     def _test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
         self,
         system_to_missing_monthly_metrics: Dict[schema.System, List[MetricDefinition]],
-        system_to_starting_month_to_missing_annual_metrics: Dict[
-            schema.System, Dict[int, List[MetricDefinition]]
+        starting_month_to_system_to_missing_annual_metrics: Dict[
+            int, Dict[schema.System, List[MetricDefinition]]
         ],
         agency: schema.Agency,
     ) -> None:
@@ -248,10 +251,10 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 {
                     definition.key
-                    for definition in system_to_starting_month_to_missing_annual_metrics[
-                        schema.System[system]
-                    ][
+                    for definition in starting_month_to_system_to_missing_annual_metrics[
                         1
+                    ][
+                        schema.System[system]
                     ]
                 },
                 {
@@ -308,12 +311,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             (
                 system_to_missing_monthly_metrics,
-                system_to_starting_month_to_missing_annual_metrics,
+                starting_month_to_system_to_missing_annual_metrics,
             ) = get_missing_metrics(agency=agency, session=session)
 
             self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
                 system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-                system_to_starting_month_to_missing_annual_metrics=system_to_starting_month_to_missing_annual_metrics,
+                starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
                 agency=agency,
             )
 
@@ -337,13 +340,13 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
         (
             system_to_missing_monthly_metrics,
-            system_to_starting_month_to_missing_annual_metrics,
+            starting_month_to_system_to_missing_annual_metrics,
         ) = get_missing_metrics(agency=agency, session=session)
 
         self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
             agency=agency,
             system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-            system_to_starting_month_to_missing_annual_metrics=system_to_starting_month_to_missing_annual_metrics,
+            starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
         )
 
     def test_get_missing_metrics_non_existing_reports(self) -> None:
@@ -373,12 +376,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             session.commit()
             (
                 system_to_missing_monthly_metrics,
-                system_to_starting_month_to_missing_annual_metrics,
+                starting_month_to_system_to_missing_annual_metrics,
             ) = get_missing_metrics(agency=agency, session=session)
 
             self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
                 system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-                system_to_starting_month_to_missing_annual_metrics=system_to_starting_month_to_missing_annual_metrics,
+                starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
                 agency=agency,
             )
 
@@ -402,13 +405,13 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
         (
             system_to_missing_monthly_metrics,
-            system_to_starting_month_to_missing_annual_metrics,
+            starting_month_to_system_to_missing_annual_metrics,
         ) = get_missing_metrics(agency=agency, session=session)
 
         self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
             agency=agency,
             system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-            system_to_starting_month_to_missing_annual_metrics=system_to_starting_month_to_missing_annual_metrics,
+            starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
         )
 
     def test_get_missing_metrics_partially_filled_reports(self) -> None:
@@ -447,7 +450,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             (
                 system_to_missing_monthly_metrics,
-                system_to_starting_month_to_missing_annual_metrics,
+                starting_month_to_system_to_missing_annual_metrics,
             ) = get_missing_metrics(agency=agency, session=session)
 
             # No monthly metrics are enabled, so no monthly metrics are missing
@@ -457,25 +460,21 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             self.assertEqual(
-                set(system_to_starting_month_to_missing_annual_metrics.keys()),
-                {schema.System.LAW_ENFORCEMENT},
+                set(starting_month_to_system_to_missing_annual_metrics.keys()),
+                {1},
             )
             self.assertEqual(
-                set(
-                    system_to_starting_month_to_missing_annual_metrics[
-                        schema.System.LAW_ENFORCEMENT
-                    ].keys()
-                ),
-                {1},
+                set(starting_month_to_system_to_missing_annual_metrics[1].keys()),
+                {schema.System.LAW_ENFORCEMENT},
             )
             # Only funding is missing because it's the only enabled metric without data
             self.assertEqual(
                 {
                     definition.key
-                    for definition in system_to_starting_month_to_missing_annual_metrics[
-                        schema.System.LAW_ENFORCEMENT
-                    ][
+                    for definition in starting_month_to_system_to_missing_annual_metrics[
                         1
+                    ][
+                        schema.System.LAW_ENFORCEMENT
                     ]
                 },
                 {law_enforcement.funding.key},
@@ -562,7 +561,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             (
                 system_to_missing_monthly_metrics,
-                system_to_starting_month_to_missing_annual_metrics,
+                starting_month_to_system_to_missing_annual_metrics,
             ) = get_missing_metrics(agency=agency, session=session)
 
             # No monthly metrics are enabled
@@ -572,7 +571,11 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             self.assertEqual(
-                set(system_to_starting_month_to_missing_annual_metrics.keys()),
+                set(starting_month_to_system_to_missing_annual_metrics.keys()), {1}
+            )
+
+            self.assertEqual(
+                set(starting_month_to_system_to_missing_annual_metrics[1].keys()),
                 {
                     schema.System.SUPERVISION,
                     schema.System.PAROLE,
@@ -580,24 +583,14 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 },
             )
 
-            for system in agency.systems:
-                self.assertEqual(
-                    set(
-                        system_to_starting_month_to_missing_annual_metrics[
-                            schema.System[system]
-                        ].keys()
-                    ),
-                    {1},
-                )
-
             # Missing funding metric for supervision
             self.assertEqual(
                 set(
                     metric_definition.key
-                    for metric_definition in system_to_starting_month_to_missing_annual_metrics[
-                        schema.System.SUPERVISION
-                    ][
+                    for metric_definition in starting_month_to_system_to_missing_annual_metrics[
                         1
+                    ][
+                        schema.System.SUPERVISION
                     ]
                 ),
                 {supervision.expenses.key},
@@ -607,10 +600,10 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 set(
                     metric_definition.key
-                    for metric_definition in system_to_starting_month_to_missing_annual_metrics[
-                        schema.System.PAROLE
-                    ][
+                    for metric_definition in starting_month_to_system_to_missing_annual_metrics[
                         1
+                    ][
+                        schema.System.PAROLE
                     ]
                 ),
                 {METRIC_KEY_TO_METRIC["PAROLE_FUNDING"].key},
@@ -618,10 +611,10 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 set(
                     metric_definition.key
-                    for metric_definition in system_to_starting_month_to_missing_annual_metrics[
-                        schema.System.PROBATION
-                    ][
+                    for metric_definition in starting_month_to_system_to_missing_annual_metrics[
                         1
+                    ][
+                        schema.System.PROBATION
                     ]
                 ),
                 {METRIC_KEY_TO_METRIC["PROBATION_FUNDING"].key},
