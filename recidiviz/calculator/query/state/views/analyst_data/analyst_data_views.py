@@ -18,9 +18,6 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.views.analyst_data.agent_supervisor_preprocessed import (
-    AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.consecutive_payments_preprocessed import (
     CONSECUTIVE_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -204,9 +201,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_half
 from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_statute_eligible import (
     US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_agent_supervisor_preprocessed import (
-    US_PA_AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 )
@@ -386,8 +380,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
     US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
     SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
-    US_PA_AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
-    AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
     US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
