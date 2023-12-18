@@ -43,6 +43,9 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: .28
     override_reason: This is standard deviation for this validation.
+  - validation_name: client_and_resident_record_percent_change_in_eligibility_exceeded
+    hard_max_allowed_error_override: 1.0
+    override_reason: TODO(#26306) - staff IDs got out of sync due to normalization failures. Should resolve after week of 12/18.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 550
@@ -101,3 +104,14 @@ num_allowed_rows_overrides:
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 1
     override_reason: TODO(#26250) - Needs investigation
+  - validation_name: opportunites_without_person_records
+    hard_num_allowed_rows_override: 1
+    override_reason: TODO(#26306) - staff IDs got out of sync due to normalization failures. Should resolve after week of 12/18.
+  - validation_name: current_impact_funnel_status_no_opportunity_records
+    hard_num_allowed_rows_override: 1
+    override_reason: TODO(#26306) - staff IDs got out of sync due to normalization failures. Should resolve after week of 12/18.
+  - validation_name: current_supervision_staff_missing_district
+    hard_num_allowed_rows_override: 110
+    override_reason: |-
+      TODO(#26306) - state staff rerun and normalization failures introduced issues in staging.
+      Should resolve after week of 12/18.
