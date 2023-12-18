@@ -29,6 +29,7 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
+    StateChargeV2Status,
 )
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
@@ -68,7 +69,10 @@ from recidiviz.common.constants.state.state_person_housing_status_period import 
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
@@ -1074,4 +1078,65 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             caseload_type_raw_text="ADMINSTRATIVE",
         )
 
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateSentence(self) -> None:
+        result = deserialize_entity_factories.StateSentenceFactory.deserialize(
+            state_code="us_xx",
+            sentence_type=StateSentenceType.STATE_PRISON,
+            external_id="123A",
+            imposed_date="2022-05-08",
+        )
+
+        # Assert
+        expected_result = entities.StateSentence(
+            state_code="US_XX",
+            sentence_type=StateSentenceType.STATE_PRISON,
+            external_id="123A",
+            imposed_date=datetime.date(2022, 5, 8),
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateSentenceServingPeriod(self):
+        result = (
+            deserialize_entity_factories.StateSentenceServingPeriodFactory.deserialize(
+                sentence_serving_period_id=1,
+                state_code="US_XX",
+                external_id="SP-001",
+                serving_start_date="2023-05-04",
+                serving_end_date=None,
+            )
+        )
+        expected_result = entities.StateSentenceServingPeriod(
+            sentence_serving_period_id=1,
+            state_code="US_XX",
+            external_id="SP-001",
+            serving_start_date=datetime.date(2023, 5, 4),
+            serving_end_date=None,
+        )
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateChargeV2(self):
+        # TODO(#26240): Replace StateChargeFactory with this one
+        result = deserialize_entity_factories.StateChargeV2Factory.deserialize(
+            charge_v2_id=1,
+            external_id="CHARGE-EXTERNAL-ID",
+            state_code="US_XX",
+            status=StateChargeV2Status.CONVICTED,
+            offense_date="2023-01-01",
+            date_charged="2023-02-12",
+            ncic_code="NCIC-CODE",
+            statute="THE STATUTE",
+        )
+        expected_result = entities.StateChargeV2(
+            charge_v2_id=1,
+            external_id="CHARGE-EXTERNAL-ID",
+            state_code="US_XX",
+            status=StateChargeV2Status.CONVICTED,
+            offense_date=datetime.date(2023, 1, 1),
+            date_charged=datetime.date(2023, 2, 12),
+            ncic_code="NCIC-CODE",
+            statute="THE STATUTE",
+        )
         self.assertEqual(expected_result, result)

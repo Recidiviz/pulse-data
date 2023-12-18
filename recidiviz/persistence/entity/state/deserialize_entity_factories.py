@@ -487,3 +487,43 @@ class StateStaffCaseloadTypePeriodFactory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StateSentenceFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateSentence:
+        return entity_deserialize(
+            cls=entities.StateSentence,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
+class StateSentenceServingPeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateSentenceServingPeriod:
+        return entity_deserialize(
+            cls=entities.StateSentenceServingPeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
+# TODO(#26240): Replace StateChargeFactory with this one
+class StateChargeV2Factory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateChargeV2:
+        return entity_deserialize(
+            cls=entities.StateChargeV2,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

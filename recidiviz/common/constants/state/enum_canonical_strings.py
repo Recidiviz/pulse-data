@@ -111,6 +111,18 @@ state_charge_status_dropped = "DROPPED"
 state_charge_status_pending = "PENDING"
 state_charge_status_transferred_away = "TRANSFERRED_AWAY"
 
+# TODO(#26240): Replace state_charge strings with these
+state_charge_v2_classification_type_civil = "CIVIL"
+state_charge_v2_classification_type_felony = "FELONY"
+state_charge_v2_classification_type_misdemeanor = "MISDEMEANOR"
+
+state_charge_v2_status_acquitted = "ACQUITTED"
+state_charge_v2_status_adjudicated = "ADJUDICATED"
+state_charge_v2_status_convicted = "CONVICTED"
+state_charge_v2_status_dropped = "DROPPED"
+state_charge_v2_status_pending = "PENDING"
+state_charge_v2_status_transferred_away = "TRANSFERRED_AWAY"
+
 # state_court_case.py
 
 # state_incarceration.py
@@ -290,6 +302,18 @@ state_sentence_status_sanctioned = "SANCTIONED"
 state_sentence_status_serving = "SERVING"
 state_sentence_status_suspended = "SUSPENDED"
 state_sentence_status_vacated = "VACATED"
+
+state_sentence_type_county_jail = "COUNTY_JAIL"
+state_sentence_type_federal_prison = "FEDERAL_PRISON"
+state_sentence_type_state_prison = "STATE_PRISON"
+state_sentence_type_parole = "PAROLE"
+state_sentence_type_probation = "PROBATION"
+state_sentence_type_community_corrections = "COMMUNITY_CORRECTIONS"
+state_sentence_type_community_service = "COMMUNITY_SERVICE"
+state_sentence_type_fines_restitution = "FINES_RESTITUTION"
+state_sentence_type_split = "SPLIT"
+state_sentence_type_treatment = "TREATMENT"
+
 
 # state_staff_role_period.py
 state_staff_role_type_supervision_officer = "SUPERVISION_OFFICER"

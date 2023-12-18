@@ -25,6 +25,8 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 @unique
 class StateSentenceStatus(StateEntityEnum):
+    """State Sentence Status used in v1 of sentencing schema (State Incarceration/Supervision Sentence)."""
+
     AMENDED = state_enum_strings.state_sentence_status_amended
     COMMUTED = state_enum_strings.state_sentence_status_commuted
     COMPLETED = state_enum_strings.state_sentence_status_completed
@@ -86,4 +88,82 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "vacated, there is immediate release from any active form of incarceration or "
     "supervision related to the vacated conviction. This is distinct from `PARDONED`, "
     "because the sentence was cleared as a result of it being deemed legally void.",
+}
+
+
+@unique
+class StateSentenceType(StateEntityEnum):
+    """State Sentence Types used in v2 of sentencing schema (StateSentence)."""
+
+    # Incarceration Types
+    COUNTY_JAIL = state_enum_strings.state_sentence_type_county_jail
+    FEDERAL_PRISON = state_enum_strings.state_sentence_type_federal_prison
+    STATE_PRISON = state_enum_strings.state_sentence_type_state_prison
+
+    # Supervision Types
+    PAROLE = state_enum_strings.state_sentence_type_parole
+    PROBATION = state_enum_strings.state_sentence_type_probation
+    COMMUNITY_CORRECTIONS = state_enum_strings.state_sentence_type_community_corrections
+
+    # Non-time Types
+    COMMUNITY_SERVICE = state_enum_strings.state_sentence_type_community_service
+    FINES_RESTITUTION = state_enum_strings.state_sentence_type_fines_restitution
+
+    # Other Types
+    SPLIT = state_enum_strings.state_sentence_type_split
+    TREATMENT = state_enum_strings.state_sentence_type_treatment
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The type of a state sentence for incarceration, supervision, and non-time sentencing."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SENTENCE_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_SENTENCE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSentenceType.COUNTY_JAIL: (
+        "Used when a person has been sentenced by the court to serve incarceration in a county jail."
+    ),
+    StateSentenceType.FEDERAL_PRISON: (
+        "Used when a person has been sentenced by the court to serve incarceration in a federal prison."
+    ),
+    StateSentenceType.STATE_PRISON: (
+        "Used when a person has been sentenced by the court to serve incarceration in a state prison."
+    ),
+    StateSentenceType.PAROLE: (
+        "Used when a person is serving the remaining portion of an incarceration "
+        "sentence in the community. The person’s release from prison is conditional on "
+        "following certain supervision requirements as determined by the parole "
+        "board and the person’s supervision officer. All periods of time spent on parole "
+        "are legally associated with a sentence to incarceration."
+    ),
+    StateSentenceType.PROBATION: (
+        "Used when a person has been "
+        "sentenced by the court to a period of supervision - often in lieu of being "
+        "sentenced to incarceration. Individuals on probation report to a supervision "
+        "officer, and must follow the conditions of their supervision as determined by "
+        "the judge and person’s supervision officer."
+    ),
+    StateSentenceType.COMMUNITY_CORRECTIONS: (
+        "Used when a person has been sentenced by the court to community-based supervision and/or treatment services."
+    ),
+    StateSentenceType.COMMUNITY_SERVICE: (
+        "Used when a person has been sentenced by the court to community-based supervision and/or treatment services."
+    ),
+    StateSentenceType.FINES_RESTITUTION: (
+        "At sentencing, the judge enters an 'Order for Restitution,' directing the person to reimburse "
+        "some or all of the offense-related financial losses. Compliance with the Order of Restitution automatically "
+        "becomes a condition of the person's probation or supervised release. However, even before the person is "
+        "released from prison, he or she is encouraged to begin repaying restitution by participating in the "
+        "Inmate Financial Responsibility Program. Through this program, a percentage of the person's prison wages "
+        "is applied to his or her restitution obligations."
+    ),
+    StateSentenceType.SPLIT: "Used when a person has been sentenced by the court with a split sentence.",
+    StateSentenceType.TREATMENT: "Used when a person has been sentenced by the court to a treatment program.",
+    StateSentenceType.INTERNAL_UNKNOWN: "Used when the type of sentence is unknown to us, Recidiviz.",
+    StateSentenceType.EXTERNAL_UNKNOWN: "Used when the type of sentence is unknown to the state.",
 }

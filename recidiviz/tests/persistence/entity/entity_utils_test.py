@@ -50,7 +50,10 @@ from recidiviz.common.constants.state.state_person_housing_status_period import 
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
 )
@@ -489,7 +492,27 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
     ],
 }
 
+# Entities in this dict should not contain any meaningful information.
+# Instead, they only identify the entity for referencing.
+# Concretely, this means the object has an external_id but no other set fields.
 REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateChargeV2: [
+        schema.StateChargeV2(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+        )
+    ],
+    schema.StateSentenceServingPeriod: [
+        schema.StateSentenceServingPeriod(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
+        )
+    ],
+    schema.StateSentence: [
+        schema.StateSentence(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+        ),
+    ],
     schema.StateAssessment: [
         schema.StateAssessment(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
@@ -655,6 +678,31 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
 }
 
 HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateChargeV2: [
+        schema.StateChargeV2(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
+            date_charged=datetime.date(2022, 1, 1),
+        )
+    ],
+    schema.StateSentenceServingPeriod: [
+        schema.StateSentenceServingPeriod(
+            state_code=StateCode.US_XX.value,
+            person_id=1,
+            external_id=_EXTERNAL_ID,
+            serving_start_date=datetime.date(2021, 1, 1),
+        ),
+    ],
+    schema.StateSentence: [
+        schema.StateSentence(
+            state_code=StateCode.US_XX.value,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            external_id=_EXTERNAL_ID,
+            person_id=42,
+            imposed_date=datetime.date(2022, 1, 1),
+        ),
+    ],
     schema.StateAssessment: [
         schema.StateAssessment(
             state_code=StateCode.US_XX.value,

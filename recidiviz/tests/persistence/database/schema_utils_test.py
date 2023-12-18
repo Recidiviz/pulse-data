@@ -85,6 +85,9 @@ class TestSchemaUtils(unittest.TestCase):
             "StateSupervisionViolationResponse",
             "StateSupervisionViolationResponseDecisionEntry",
             "StateTaskDeadline",
+            "StateSentence",
+            "StateSentenceServingPeriod",
+            "StateChargeV2",
         ]
         operations_database_entity_names = [
             "DirectIngestViewMaterializationMetadata",
@@ -194,6 +197,10 @@ class TestSchemaUtils(unittest.TestCase):
             "state_task_deadline",
             "state_charge_incarceration_sentence_association",
             "state_charge_supervision_sentence_association",
+            "state_sentence",
+            "state_sentence_serving_period",
+            "state_charge_v2",
+            "state_charge_v2_state_sentence_association",
         ]
         operations_table_names = [
             "direct_ingest_view_materialization_metadata",
@@ -282,6 +289,9 @@ class TestSchemaUtils(unittest.TestCase):
             "StateSupervisionViolationResponse",
             "StateSupervisionViolationResponseDecisionEntry",
             "StateTaskDeadline",
+            "StateSentence",
+            "StateSentenceServingPeriod",
+            "StateChargeV2",
         ]
 
         expected_database_entity_names = _prefix_module_name(
