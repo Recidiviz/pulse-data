@@ -65,7 +65,8 @@ def staff_query_template(role: str) -> str:
         attrs.staff_id,
         attrs.state_code,
         staff.full_name,
-        -- Note that the below hash will be different from the hash id for the user in the product_rosters view
+        -- This pseudonymized_id will match the one for the user in the auth0 roster. Hashed
+        -- attributes must be kept in sync with recidiviz.auth.helpers.generate_pseudonymized_id.
         {get_pseudonymized_id_query_str("attrs.state_code || attrs.officer_id")} AS pseudonymized_id,
         staff.email,
         COALESCE(attrs.supervision_district_name,attrs.supervision_district_name_inferred) AS supervision_district,

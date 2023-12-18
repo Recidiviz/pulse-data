@@ -43,7 +43,11 @@ from recidiviz.auth.auth_api_schemas import (
     UserSchema,
 )
 from recidiviz.auth.auth_endpoint import _create_user_override, _upsert_roster_rows
-from recidiviz.auth.helpers import generate_user_hash, log_reason
+from recidiviz.auth.helpers import (
+    generate_pseudonymized_id,
+    generate_user_hash,
+    log_reason,
+)
 from recidiviz.persistence.database.schema.case_triage.schema import (
     PermissionsOverride,
     Roster,
@@ -87,7 +91,10 @@ def get_users_query(session: Session) -> Query:
                 UserOverride.user_hash,
                 Roster.user_hash,
             ).label("user_hash"),
-            Roster.pseudonymized_id,
+            func.coalesce(
+                UserOverride.pseudonymized_id,
+                Roster.pseudonymized_id,
+            ).label("pseudonymized_id"),
         )
         .select_from(Roster)
         .join(
@@ -145,6 +152,9 @@ class UsersAPI(MethodView):
         """
         try:
             user_dict["user_hash"] = generate_user_hash(user_dict["email_address"])
+            user_dict["pseudonymized_id"] = generate_pseudonymized_id(
+                user_dict["state_code"], user_dict.get("external_id", None)
+            )
             if (
                 current_session.query(Roster)
                 .filter(Roster.email_address == user_dict["email_address"])

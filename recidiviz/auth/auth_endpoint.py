@@ -35,7 +35,11 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
 
-from recidiviz.auth.helpers import generate_user_hash, log_reason
+from recidiviz.auth.helpers import (
+    generate_pseudonymized_id,
+    generate_user_hash,
+    log_reason,
+)
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
@@ -130,6 +134,10 @@ def _upsert_roster_rows(
         row["email_address"] = email
         if row.get("external_id") is not None:
             row["external_id"] = row["external_id"].upper()
+            if row.get("pseudonymized_id") is None:
+                row["pseudonymized_id"] = generate_pseudonymized_id(
+                    row["state_code"], row["external_id"]
+                )
         row["role"] = row["role"].lower()
         row["user_hash"] = generate_user_hash(row["email_address"])
 
@@ -455,6 +463,9 @@ def delete_state_role(
 
 
 def _create_user_override(session: Session, user_dict: Dict[str, Any]) -> UserOverride:
+    """Creates a UserOverride object based on the existing UserOverride for the user represented
+    in user_dict (if it exists) and any updates in user_dict."""
+
     if "state_code" not in user_dict:
         raise ValueError("Must provide a state_code when updating a user")
 
@@ -467,6 +478,15 @@ def _create_user_override(session: Session, user_dict: Dict[str, Any]) -> UserOv
 
     user_dict["email_address"] = email
     log_reason(user_dict, f"updating user {user_dict['email_address']}")
+
+    if "external_id" in user_dict:
+        # If the user was added entirely, they won't have a pseudo id yet so create one for them.
+        # Otherwise, if they were modified and external_id is present in the modification,
+        # generate a new pseudo id based on their new external_id.
+        user_dict["pseudonymized_id"] = generate_pseudonymized_id(
+            user_dict["state_code"], user_dict["external_id"]
+        )
+
     existing = (
         session.query(UserOverride).filter(UserOverride.user_hash == user_hash).first()
     )
@@ -507,6 +527,7 @@ def update_user(user_hash: str) -> Union[tuple[Response, int], tuple[str, int]]:
                         "firstName": updated_user.first_name,
                         "lastName": updated_user.last_name,
                         "userHash": updated_user.user_hash,
+                        "pseudonymizedId": updated_user.pseudonymized_id,
                     }
                 ),
                 HTTPStatus.OK,

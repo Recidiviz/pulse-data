@@ -40,6 +40,20 @@ def generate_user_hash(email: str) -> str:
     return replace_char_0_slash(user_hash)
 
 
+def generate_pseudonymized_id(
+    state_code: str, external_id: Optional[str]
+) -> Optional[str]:
+    if not external_id:
+        return None
+    # urlsafe_b64encode ubstitutes - for + and _ for /
+    # https://docs.python.org/3/library/base64.html#base64.urlsafe_b64encode
+    # Needs to be kept in sync with recidiviz.calculator.query.bq_utils.get_pseudonymized_id_query_str
+    # and any uses of it for pseudonymizing staff ids.
+    return base64.urlsafe_b64encode(
+        hashlib.sha256(f"{state_code}{external_id}".encode("utf-8")).digest()
+    ).decode("utf-8")[:16]
+
+
 def format_user_info(user: Any) -> dict[str, str]:
     return {
         "emailAddress": user.email_address,

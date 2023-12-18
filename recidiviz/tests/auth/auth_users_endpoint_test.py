@@ -20,7 +20,7 @@ import json
 import os
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
 import flask
@@ -103,6 +103,22 @@ class AuthUsersEndpointTestCase(TestCase):
         engine = setup_scoped_sessions(self.app, SchemaType.CASE_TRIAGE, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
+        def mock_generate_pseudonymized_id(
+            _state_code: str, external_id: str
+        ) -> Optional[str]:
+            return f"pseudo-{external_id}" if external_id else None
+
+        self.generate_pseudonymized_ids_auth_endpoint_patcher = mock.patch(
+            "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+            new=mock_generate_pseudonymized_id,
+        )
+        self.generate_pseudonymized_ids_auth_endpoint_patcher.start()
+        self.generate_pseudonymized_ids_auth_users_endpoint_patcher = mock.patch(
+            "recidiviz.auth.auth_users_endpoint.generate_pseudonymized_id",
+            new=mock_generate_pseudonymized_id,
+        )
+        self.generate_pseudonymized_ids_auth_users_endpoint_patcher.start()
+
         with self.app.test_request_context():
             self.users = lambda state_code=None: flask.url_for(
                 "users.UsersAPI", state_code=state_code
@@ -117,6 +133,8 @@ class AuthUsersEndpointTestCase(TestCase):
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.database_key
         )
+        self.generate_pseudonymized_ids_auth_endpoint_patcher.stop()
+        self.generate_pseudonymized_ids_auth_users_endpoint_patcher.stop()
 
     def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
         self.assertIn(
@@ -153,6 +171,7 @@ class AuthUsersEndpointTestCase(TestCase):
             external_id="user_1_override.external_id",
             role="user_1_override.role",
             blocked=True,
+            pseudonymized_id="hashed-user_1_override",
         )
         default_1 = generate_fake_default_permissions(
             state="US_ND",
@@ -201,7 +220,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 "routes": {"overridden route": True},
                 "featureVariants": {"C": True, "new variant": False},
                 "userHash": _LEADERSHIP_USER_HASH,
-                "pseudonymizedId": None,
+                "pseudonymizedId": "hashed-user_1_override",
             },
             {
                 "allowedSupervisionLocationIds": "",
@@ -568,6 +587,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 "role": "leadership_role",
                 "stateCode": "US_ID",
                 "userHash": _PARAMETER_USER_HASH,
+                "pseudonymizedId": "pseudo-XYZ",
             }
             self.assertEqual(
                 HTTPStatus.OK, user_override_user.status_code, user_override_user.data
@@ -679,7 +699,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True},
                     "featureVariants": {},
                     "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": None,
+                    "pseudonymizedId": "pseudo-3975",
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -695,7 +715,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"B": True},
                     "featureVariants": {},
                     "userHash": _SUPERVISION_STAFF_HASH,
-                    "pseudonymizedId": None,
+                    "pseudonymizedId": "pseudo-3706",
                 },
             ]
             response = self.client.get(
@@ -930,7 +950,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True},
                     "featureVariants": {},
                     "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": None,
+                    "pseudonymizedId": "pseudo-3975",
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -1024,7 +1044,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True},
                     "featureVariants": {},
                     "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": None,
+                    "pseudonymizedId": "pseudo-3975",
                 },
             ]
             response = self.client.get(

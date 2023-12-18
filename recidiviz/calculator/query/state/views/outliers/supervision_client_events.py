@@ -138,6 +138,8 @@ supervision_client_events AS (
         c.compartment_level_2 AS supervision_type, 
         e.attributes,
         {get_pseudonymized_id_query_str("e.state_code || pid.external_id")} AS pseudonymized_client_id,
+        -- This pseudonymized_id will match the one for the user in the auth0 roster. Hashed
+        -- attributes must be kept in sync with recidiviz.auth.helpers.generate_pseudonymized_id.
         {get_pseudonymized_id_query_str("e.state_code || a.officer_id")} AS pseudonymized_officer_id,
     FROM 
         `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` a
