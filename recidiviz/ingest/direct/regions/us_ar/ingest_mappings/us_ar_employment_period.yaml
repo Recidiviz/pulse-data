@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_employment_period` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - EMPSTARTDATE
+  - EMPLENDDATE
+  - VERIFIEDDATE
+  - NATUREOFJOB
+  - REASONFORLEAVING
+  - OFFNISUNEMPLOYED
+  - OFFNISDISABLED
+  - OCCUPATIONCODE
+  - EMPLOYERNAME
+  - STREETNUMBER
+  - STREETNAME
+  - STREETTYPE
+  - SUITENUMBER
+  - APARTMENTNUM
+  - POBOX
+  - CITY
+  - STATE
+  - ZIPCODE
+  - SEQ
+unused_columns: []
+variables:
+  - alt_employment_category:
+      $custom:
+        $function: us_ar_custom_parsers.parse_employment_category
+        $args:
+          disabled: OFFNISDISABLED
+          unemployed: OFFNISUNEMPLOYED
+          occupation: OCCUPATIONCODE
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - SEQ
+          start_date: EMPSTARTDATE
+          end_date: EMPLENDDATE
+          last_verified_date: VERIFIEDDATE
+          employer_address:
+            $custom:
+              $function: us_ar_custom_parsers.parse_address_pieces
+              $args:
+                stnum: STREETNUMBER
+                stname: STREETNAME
+                sttype: STREETTYPE
+                suite: SUITENUMBER
+                apt: APARTMENTNUM
+                po: POBOX
+                city: CITY
+                st: STATE
+                zipcode: ZIPCODE
+          job_title:
+            $conditional:
+              - $if:
+                  $is_null: $variable(alt_employment_category)
+                $then: OCCUPATIONCODE
+          employer_name:
+            $conditional:
+              - $if:
+                  $is_null: $variable(alt_employment_category)
+                $then: EMPLOYERNAME
+          employment_status:
+            $conditional:
+              - $if:
+                  $is_null: $variable(alt_employment_category)
+                $then:
+                  $enum_mapping:
+                    $raw_text: NATUREOFJOB
+                    $mappings:
+                      StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME:
+                        - F # Full Time Employment (>= 30 hrs/wk)
+                      StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME:
+                        - P # Part Time Employment (< 30 hrs/wk)
+                      StateEmploymentPeriodEmploymentStatus.EMPLOYED:
+                        - S # Seasonal
+                        - W # Work Release
+                      StateEmploymentPeriodEmploymentStatus.EXTERNAL_UNKNOWN:
+                        - U # Unknown
+              - $else:
+                  $enum_mapping:
+                    $raw_text: $variable(alt_employment_category)
+                    $mappings:
+                      StateEmploymentPeriodEmploymentStatus.STUDENT:
+                        - STUDENT # Identified using OCCUPATIONCODE
+                      StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
+                        - UNEMPLOYED # Identified using OFFNISUNEMPLOYED
+                      StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE:
+                        - SSI_DISABLED # Identified using OFFNISDISABLED
+          end_reason:
+            $enum_mapping:
+              $raw_text: REASONFORLEAVING
+              $mappings:
+                StateEmploymentPeriodEndReason.FIRED:
+                  - F # Fired
+                StateEmploymentPeriodEndReason.INCARCERATED:
+                  - A # Arrested
+                StateEmploymentPeriodEndReason.LAID_OFF:
+                  - L # Laid Off
+                StateEmploymentPeriodEndReason.MEDICAL:
+                  - I # Injury/Illness
+                  - P # Permanently Disabled
+                StateEmploymentPeriodEndReason.NEW_JOB:
+                  - O # Found Other Employment
+                StateEmploymentPeriodEndReason.QUIT:
+                  - Q # Quit
+                StateEmploymentPeriodEndReason.RETIRED:
+                  - R # Retired
+                StateEmploymentPeriodEndReason.EXTERNAL_UNKNOWN:
+                  - U # Unknown (conversion)
+                StateEmploymentPeriodEndReason.INTERNAL_UNKNOWN:
+                  - T # Temp Job

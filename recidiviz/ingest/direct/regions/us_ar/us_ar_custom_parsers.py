@@ -31,6 +31,24 @@ from recidiviz.common.date import calendar_unit_date_diff
 from recidiviz.common.str_field_utils import safe_parse_days_from_duration_pieces
 
 
+def parse_employment_category(
+    disabled: str,
+    unemployed: str,
+    occupation: str,
+) -> Optional[str]:
+    """Determines what special employment category an individual belongs to, if any.
+    Options are 'STUDENT', 'UNEMPLOYED', 'DISABLED', or None (returned if the individual
+    is employed normally).
+    """
+    if occupation == "STU":
+        return "STUDENT"
+    if disabled == "Y":
+        return "SSI_DISABLED"
+    if unemployed == "Y":
+        return "UNEMPLOYED"
+    return None
+
+
 def parse_address_pieces(
     stnum: str,
     stname: str,
@@ -42,9 +60,8 @@ def parse_address_pieces(
     st: str,
     zipcode: str,
 ) -> Optional[str]:
-    """Takes in a MO raw county code and returns
-    a Recidiviz-normalized county code in US_XX_YYYYY format.
-    """
+    """Concatenates address components into a single string."""
+
     if not any([stnum, stname, suite, apt, po, city, st, zipcode]):
         return None
     constructed_address = ""
