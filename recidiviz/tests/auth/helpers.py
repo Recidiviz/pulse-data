@@ -86,6 +86,7 @@ def generate_fake_user_overrides(
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
     blocked: bool = False,
+    pseudonymized_id: Optional[str] = None,
 ) -> UserOverride:
     return UserOverride(
         state_code=region_code,
@@ -97,6 +98,7 @@ def generate_fake_user_overrides(
         last_name=last_name,
         blocked=blocked,
         user_hash=generate_user_hash(email.lower()),
+        pseudonymized_id=pseudonymized_id,
     )
 
 

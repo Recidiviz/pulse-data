@@ -589,6 +589,7 @@ class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     last_name = Column(String(255), nullable=True)
     blocked = Column(Boolean, nullable=True, default=False)
     user_hash = Column(String(255), nullable=False)
+    pseudonymized_id = Column(String(255), nullable=True)
 
 
 class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):

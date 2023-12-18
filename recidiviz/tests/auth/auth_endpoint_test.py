@@ -234,7 +234,14 @@ class AuthEndpointTests(TestCase):
                 log.output, "updating user parameter@domain.org with reason: test"
             )
 
-    def test_update_user_in_user_override(self) -> None:
+    @patch(
+        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+    )
+    def test_update_user_in_user_override(
+        self,
+        mock_generate_pseudonymized_id: MagicMock,
+    ) -> None:
+        mock_generate_pseudonymized_id.return_value = "hashed-updated"
         user = generate_fake_user_overrides(
             email="parameter@domain.org",
             region_code="US_TN",
@@ -242,6 +249,7 @@ class AuthEndpointTests(TestCase):
             role="leadership_role",
             first_name="Original",
             last_name="Name",
+            pseudonymized_id="hashed-Original",
         )
         add_entity_to_database_session(self.database_key, [user])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -271,7 +279,7 @@ class AuthEndpointTests(TestCase):
                     "routes": {},
                     "featureVariants": {},
                     "userHash": _PARAMETER_USER_HASH,
-                    "pseudonymizedId": None,
+                    "pseudonymizedId": "hashed-updated",
                 }
             ]
             response = self.client.get(
@@ -1170,7 +1178,17 @@ class AuthEndpointTests(TestCase):
 
             mock_task_manager.return_value.create_task.assert_not_called()
 
-    def test_import_ingested_users_successful(self) -> None:
+    @patch(
+        "recidiviz.auth.auth_endpoint.generate_pseudonymized_id",
+    )
+    def test_import_ingested_users_successful(
+        self, mock_generate_pseudonymized_id: MagicMock
+    ) -> None:
+        mock_generate_pseudonymized_id.side_effect = (
+            lambda state_code, external_id: f"hashed-{external_id}"
+            if external_id
+            else None
+        )
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
             contents_handle=LocalFileContentsHandle(
@@ -1264,6 +1282,22 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {},
                     "userHash": _SUPERVISION_STAFF_HASH,
                     "pseudonymizedId": "pseudo-3706",
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "D2",
+                    "emailAddress": "user@domain.org",
+                    "externalId": "98725",
+                    "firstName": "supervision2",
+                    "lastName": "user2",
+                    "role": "supervision_staff",
+                    "stateCode": "US_XX",
+                    "routes": {},
+                    "featureVariants": {},
+                    "userHash": _USER_HASH,
+                    "pseudonymizedId": "hashed-98725",
                 },
             ]
             response = self.client.get(

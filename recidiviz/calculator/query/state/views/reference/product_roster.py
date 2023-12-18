@@ -58,6 +58,7 @@ ROSTER_COLUMNS = [
     "role",
     "district",
     "user_hash",
+    "pseudonymized_id",
     "first_name",
     "last_name",
 ]

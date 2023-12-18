@@ -394,6 +394,7 @@ def date_diff_in_full_months(
 def get_pseudonymized_id_query_str(hash_value_query_str: str) -> str:
     """
     Returns a string fragment for the pseudonymized_id in the product.
+    Note: this must be kept in sync with recidiviz.auth.helpers.generate_pseudonymized_id
     """
     return f"""SUBSTRING(
         # hashing external ID to base64url
