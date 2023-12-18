@@ -89,17 +89,15 @@ from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 from recidiviz.utils.types import assert_type
 
+NOW_TIME = datetime.datetime(2022, 2, 15, 0, 0, 0, 0, datetime.timezone.utc)
+
 
 @pytest.mark.uses_db
+@freeze_time(NOW_TIME)
 class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     """Implements tests for the Justice Counts Control Panel backend API."""
 
     def setUp(self) -> None:
-        self.now_time = datetime.datetime(
-            2022, 2, 15, 0, 0, 0, 0, datetime.timezone.utc
-        )
-        self.freezer = freeze_time(self.now_time)
-        self.freezer.start()
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         mock_project_id_fn = self.project_id_patcher.start()
         mock_project_id_fn.return_value = "justice-counts"
@@ -1449,9 +1447,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(response.status_code, 200)
             report = self.session.query(Report).one_or_none()
             self.assertEqual(report.status, ReportStatus.DRAFT)
-            self.assertEqual(
-                report.last_modified_at.timestamp(), self.now_time.timestamp()
-            )
+            self.assertEqual(report.last_modified_at.timestamp(), NOW_TIME.timestamp())
             self.assertEqual(get_value(report.datapoints[0]), value)
             self.assertEqual(
                 report.modified_by,
@@ -2071,7 +2067,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 spreadsheet.ingested_at.timestamp(),
-                self.now_time.timestamp(),
+                NOW_TIME.timestamp(),
             )
             self.assertEqual(
                 spreadsheet.original_name, "test_upload_and_ingest_spreadsheet.xlsx"
@@ -2169,7 +2165,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 probation_spreadsheet.get("uploaded_at"),
-                self.now_time.timestamp() * 1000,
+                NOW_TIME.timestamp() * 1000,
             )
             self.assertEqual(
                 probation_spreadsheet.get("uploaded_by_v2"),
@@ -2178,7 +2174,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
             self.assertEqual(
                 probation_spreadsheet.get("ingested_at"),
-                (self.now_time + (datetime.timedelta(50))).timestamp() * 1000,
+                (NOW_TIME + (datetime.timedelta(50))).timestamp() * 1000,
             )
             self.assertEqual(probation_spreadsheet.get("status"), "INGESTED")
             self.assertEqual(probation_spreadsheet.get("system"), "PROBATION")
@@ -2187,7 +2183,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
             self.assertEqual(
                 parole_spreadsheet.get("uploaded_at"),
-                (self.now_time + (datetime.timedelta(25))).timestamp() * 1000,
+                (NOW_TIME + (datetime.timedelta(25))).timestamp() * 1000,
             )
             self.assertEqual(parole_spreadsheet.get("ingested_at"), None)
             self.assertEqual(parole_spreadsheet.get("status"), "UPLOADED")
@@ -2199,7 +2195,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 supervision_spreadsheet.get("uploaded_at"),
-                self.now_time.timestamp() * 1000,
+                NOW_TIME.timestamp() * 1000,
             )
             self.assertEqual(supervision_spreadsheet.get("ingested_at"), None)
             self.assertEqual(supervision_spreadsheet.get("status"), "UPLOADED")
@@ -2308,7 +2304,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             db_spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(db_spreadsheet.ingested_by, user.auth0_user_id)
             self.assertEqual(
-                db_spreadsheet.ingested_at.timestamp(), self.now_time.timestamp()
+                db_spreadsheet.ingested_at.timestamp(), NOW_TIME.timestamp()
             )
 
     def test_delete_spreadsheet(self) -> None:
@@ -2346,7 +2342,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(db_spreadsheet, None)
             path = GcsfsFilePath(
                 bucket_name="justice-counts-staging-publisher-uploads",
-                blob_name=f"{str(agency.id)}:{System.LAW_ENFORCEMENT.value}:{self.now_time.timestamp()}.xlsx",
+                blob_name=f"{str(agency.id)}:{System.LAW_ENFORCEMENT.value}:{NOW_TIME.timestamp()}.xlsx",
             )
             self.assertEqual(
                 self.fs.exists(path),
@@ -3011,3 +3007,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             association.last_visit, datetime.datetime.now(tz=datetime.timezone.utc)
         )
+
+
+def test_frozen_now_is_not_global_now() -> None:
+    """Tests that the use of @freeze_time(NOW_TIME) is local to the wrapped tests."""
+    assert datetime.date.today() > NOW_TIME.date()
