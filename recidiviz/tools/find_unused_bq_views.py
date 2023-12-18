@@ -47,9 +47,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.clients_referral_completed import (
-    CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
@@ -72,9 +69,7 @@ from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_
 # List of views that are definitely not referenced in Looker (as of 11/29/23). This list
 # is # incomplete and you should add to this list / update the date in this comment as
 # you work with this script.
-CONFIRMED_NOT_IN_LOOKER_ADDRESSES = {
-    CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER.address,
-}
+CONFIRMED_NOT_IN_LOOKER_ADDRESSES: set[BigQueryAddress] = set()
 
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
 # incomplete and you should add to this list / update the date in this comment as you

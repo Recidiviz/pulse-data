@@ -36,9 +36,6 @@ from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snooze
 from recidiviz.calculator.query.state.views.workflows.clients_profile_viewed import (
     CLIENTS_PROFILE_VIEWED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.clients_referral_completed import (
-    CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.clients_referral_form_copied import (
     CLIENTS_REFERRAL_FORM_COPIED_VIEW_BUILDER,
 )
@@ -106,7 +103,6 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
     CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER,
     CLIENTS_LATEST_REFERRAL_STATUS_EXTENDED_VIEW_BUILDER,
-    CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
     CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
     REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
     CLIENTS_PROFILE_VIEWED_VIEW_BUILDER,
