@@ -228,7 +228,7 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
         ORDER BY most_recent_date_of_supervision DESC
     )
 
-    SELECT
+    SELECT DISTINCT
         vitals_metrics.state_code,
         most_recent_date_of_supervision,
         CASE
