@@ -33,9 +33,6 @@ from recidiviz.calculator.query.state.views.shared_metric.event_based_supervisio
 from recidiviz.calculator.query.state.views.shared_metric.officer_supervision_district_association import (
     OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.shared_metric.overdue_discharge_outcomes import (
-    OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.shared_metric.revocations_matrix_by_person import (
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
 )
@@ -78,7 +75,6 @@ SHARED_METRIC_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
     OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER,
-    OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER,
     SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
     SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER,
     SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER,
