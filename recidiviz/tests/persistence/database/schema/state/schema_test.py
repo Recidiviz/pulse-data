@@ -153,6 +153,9 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_violation_response_decision": state_supervision_violation_response.StateSupervisionViolationResponseDecision,
             "state_supervision_violation_response_deciding_body_type": state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,
             "state_task_type": state_task_deadline.StateTaskType,
+            "state_sentence_type": state_sentence.StateSentenceType,
+            "state_charge_v2_classification_type": state_charge.StateChargeV2ClassificationType,
+            "state_charge_v2_status": state_charge.StateChargeV2Status,
         }
 
         self.check_persistence_and_schema_enums_match(state_enums_mapping, schema)

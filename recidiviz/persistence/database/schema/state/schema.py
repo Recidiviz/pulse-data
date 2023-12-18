@@ -85,6 +85,44 @@ CUSTODIAL_AUTHORITY_COMMENT = (
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between tables / columns if necessary.
+state_charge_v2_classification_type = Enum(
+    # TODO(#26240): Replace state_charge usage with this
+    state_enum_strings.state_charge_classification_type_civil,
+    state_enum_strings.state_charge_classification_type_felony,
+    state_enum_strings.state_charge_classification_type_misdemeanor,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_charge_v2_classification_type",
+)
+state_charge_v2_status = Enum(
+    # TODO(#26240): Replace state_charge usage with this
+    state_enum_strings.state_charge_status_acquitted,
+    state_enum_strings.state_charge_status_adjudicated,
+    state_enum_strings.state_charge_status_convicted,
+    state_enum_strings.state_charge_status_dropped,
+    state_enum_strings.state_charge_status_pending,
+    state_enum_strings.state_charge_status_transferred_away,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    state_enum_strings.present_without_info,
+    name="state_charge_v2_status",
+)
+state_sentence_type = Enum(
+    state_enum_strings.state_sentence_type_county_jail,
+    state_enum_strings.state_sentence_type_federal_prison,
+    state_enum_strings.state_sentence_type_state_prison,
+    state_enum_strings.state_sentence_type_parole,
+    state_enum_strings.state_sentence_type_probation,
+    state_enum_strings.state_sentence_type_community_corrections,
+    state_enum_strings.state_sentence_type_community_service,
+    state_enum_strings.state_sentence_type_fines_restitution,
+    state_enum_strings.state_sentence_type_split,
+    state_enum_strings.state_sentence_type_treatment,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_sentence_type",
+)
+
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_risk,
     state_enum_strings.state_assessment_class_sex_offense,
@@ -774,7 +812,37 @@ state_staff_caseload_type = Enum(
     name="state_staff_caseload_type",
 )
 
-# Join tables
+# Association tables for many-to-many relationships.
+# See different examples of your use case with our version of SQLAlchemy here:
+# https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html#many-to-many
+state_charge_v2_state_sentence_association_table = Table(
+    "state_charge_v2_state_sentence_association",
+    StateBase.metadata,
+    Column(
+        "charge_v2_id",
+        Integer,
+        ForeignKey("state_charge_v2.charge_v2_id"),
+        index=True,
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state_charge_v2"
+        ),
+    ),
+    Column(
+        "sentence_id",
+        Integer,
+        ForeignKey("state_sentence.sentence_id"),
+        index=True,
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state_sentence"
+        ),
+    ),
+    comment=StrictStringFormatter().format(
+        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
+        first_object_name_plural="charges",
+        second_object_name_plural="sentences",
+    ),
+)
+# TODO(#26240): Update usage of state_charge with state_charge_v2
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
     StateBase.metadata,
@@ -1213,6 +1281,7 @@ class StatePerson(StateBase):
         "StatePersonEthnicity", backref="person", lazy="selectin"
     )
     assessments = relationship("StateAssessment", backref="person", lazy="selectin")
+    sentences = relationship("StateSentence", backref="person", lazy="selectin")
     incarceration_sentences = relationship(
         "StateIncarcerationSentence", backref="person", lazy="selectin"
     )
@@ -3594,4 +3663,359 @@ class StateStaffCaseloadTypePeriod(StateBase, _ReferencesStateStaffSharedColumns
     end_date = Column(
         Date,
         comment=("The end of the period where this officer had this type of caseload."),
+    )
+
+
+class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateSentence in the SQL schema"""
+
+    __tablename__ = "state_sentence"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="sentence_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": (
+                "A sentence represents a formal judgement imposed by the court that details the punishment"
+                "(in the form of time served) in response to a set of charges for which someone was convicted."
+                "This table will have one row for each sentence, and will contain all attributes we can "
+                "observe about that sentence at the time of sentence imposition."
+                "The attributes in this table will remain static over the course of the sentence being served."
+            )
+        },
+    )
+    sentence_id = Column(
+        Integer, primary_key=True, comment=("Unique internal ID for a state sentence.")
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSentence"
+        ),
+    )
+
+    sentence_group_external_id = Column(
+        String,
+        nullable=True,
+        comment=(
+            "An ID for the sentence group given to us by the state for this sentence."
+        ),
+    )
+
+    imposed_date = Column(
+        Date,
+        nullable=False,
+        comment="The date this sentence was imposed, e.g. the date of actual sentencing, but not necessarily "
+        "the date the person started serving the sentence.",
+    )
+
+    initial_time_served_days = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "The amount of any time already served (in days) at time of sentence imposition"
+            " to possibly be credited against the overall sentence duration."
+        ),
+    )
+
+    sentence_type = Column(
+        state_sentence_type,
+        nullable=False,
+        comment="The type of sentence (INCARCERATION, PROBATION, etc.)",
+    )
+
+    sentence_type_raw_text = Column(
+        String,
+        nullable=True,
+        comment="Raw text indicating whether a sentence is supervision/incarceration/etc",
+    )
+
+    is_life = Column(
+        String, nullable=True, comment="True if this is sentence is a life sentence."
+    )
+
+    is_capital_punishment = Column(
+        String,
+        nullable=True,
+        comment="True if this is sentence is for the death penalty",
+    )
+
+    parole_possible = Column(
+        Boolean,
+        nullable=True,
+        comment=(
+            "True if the person may be released to parole under the terms of this sentence "
+            "(only relevant to INCARCERATION sentence type)"
+        ),
+    )
+
+    county_code = Column(
+        String,
+        nullable=True,
+        comment="The code of the county under whose jurisdiction the sentence was imposed",
+    )
+
+    parent_sentence_external_id_array = Column(
+        String,
+        nullable=True,
+        comment=(
+            "Identifier of the sentences to which this sentence is consecutive (external_id), "
+            "formatted as a string of comma-separated id’s. For instance, if sentence C has a "
+            "consecutive_sentence_id_array of [A, B], then both A and B must be completed before C can be served. "
+            "String must be parseable as a comma-separated list."
+        ),
+    )
+
+    conditions = Column(
+        String,
+        nullable=True,
+        comment=(
+            "A comma-separated list of conditions of this sentence which the person must follow to avoid a disciplinary "
+            "response. If this field is empty, there may still be applicable conditions that apply to someone's current term "
+            "of supervision/incarceration - either inherited from another ongoing sentence or the current supervision term. "
+            "(See conditions on StateSupervisionPeriod)."
+        ),
+    )
+
+    sentence_metadata = Column(
+        String,
+        nullable=True,
+        comment=("Additional metadata field with additional sentence attributes"),
+    )
+
+    # Cross-entity relationships
+    charges = relationship(
+        "StateChargeV2",
+        secondary=state_charge_v2_state_sentence_association_table,
+        # This argument is the name of the attr in the other SQLAlchemy model,
+        # so the "sentences" attr in the StateChargeV2 model
+        back_populates="sentences",
+        lazy="selectin",
+    )
+
+
+class StateSentenceServingPeriod(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateSentenceServingPeriod in the SQL schema"""
+
+    __tablename__ = "state_sentence_serving_period"
+    __table_args__ = (
+        # TODO(#26249) investigate more constraints
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="state_sentence_serving_period_external_id_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "Represents the periods of time over which someone was actively serving a given sentence."
+        },
+    )
+    sentence_serving_period_id = Column(
+        Integer, primary_key=True, comment="Unique ID for a sentence serving period."
+    )
+    sentence_id = Column(
+        "sentence_id",
+        Integer,
+        ForeignKey("state_sentence.sentence_id"),
+        comment=StrictStringFormatter().format(
+            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state_sentence"
+        ),
+    )
+    serving_start_date = Column(
+        Date,
+        comment=(
+            "The date on which a person effectively begins serving a sentence, "
+            "including any pre-trial jail detention time if applicable."
+        ),
+    )
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSentenceServingPeriod"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    serving_end_date = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The date on which a person finishes serving a given sentence. "
+            "This field can be null if the date has not been observed yet. "
+            "This should only be hydrated once we have actually observed the completion date of the sentence. "
+            "E.g., if a sentence record has a completion date on 2024-01-01, this sentence would have a NULL "
+            "completion_date until 2024-01-01, after which the completion date would reflect that date. "
+            "We expect that this date will not change after it has been hydrated, "
+            "except in cases where the data override is fixing an error."
+        ),
+    )
+
+    # Cross-entity relationships
+    person = relationship("StatePerson", uselist=False)
+    sentence = relationship("StateSentence", uselist=False)
+
+
+class StateChargeV2(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateCharge in the SQL schema"""
+
+    # TODO(#26240): Replace StateCharge with this model
+
+    __tablename__ = "state_charge_v2"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="charge_v2_external_ids_unique_within_state",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": "A formal allegation of an offense with information about the context for how that allegation was brought forth."
+            "A single StateChargeV2 can reference multiple StateSentences (e.g. multiple "
+            "concurrent sentences served due to an overlapping set of charges) and a multiple charges can "
+            "reference a single StateSentence (e.g. one sentence resulting from multiple "
+            "charges). Thus, the relationship between StateCharge and each distinct Sentence is many:many."
+        },
+    )
+
+    charge_v2_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="charge"
+        ),
+    )
+
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateCharge"
+        ),
+    )
+    status = Column(
+        state_charge_v2_status, nullable=False, comment="The status of the charge."
+    )
+    status_raw_text = Column(
+        String(255), comment="The raw text value of the status of the charge."
+    )
+    offense_date = Column(
+        Date, comment="The date of the alleged offense that led to this charge."
+    )
+    date_charged = Column(
+        Date, comment="The date the person was charged with the alleged offense."
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    county_code = Column(
+        String(255),
+        index=True,
+        comment="The code of the county under whose jurisdiction the charge was brought.",
+    )
+    ncic_code = Column(
+        String(255),
+        comment="The standardized NCIC (National Crime Information Center) code for "
+        "the charged offense. NCIC codes are a set of nationally recognized "
+        "codes for certain types of crimes.",
+    )
+    statute = Column(
+        String(255),
+        comment="The identifier of the charge in the state or federal code.",
+    )
+    description = Column(Text, comment="A text description of the charge.")
+    attempted = Column(
+        Boolean,
+        comment="Whether this charge was an attempt or not (e.g. attempted murder).",
+    )
+    classification_type = Column(
+        state_charge_v2_classification_type, comment="Charge classification."
+    )
+    classification_type_raw_text = Column(
+        String(255), comment="The raw text value of the charge classification."
+    )
+    classification_subtype = Column(
+        String(255),
+        comment="The sub-classification of the charge, such as a degree "
+        "(e.g. 1st Degree, 2nd Degree, etc.) or a class (e.g. Class A,"
+        " Class B, etc.).",
+    )
+    offense_type = Column(
+        String(255), comment="The type of offense associated with the charge."
+    )
+    is_violent = Column(
+        Boolean, comment="Whether this charge was for a violent crime or not."
+    )
+    is_sex_offense = Column(
+        Boolean, comment="Whether or not the violation involved a sex offense."
+    )
+    is_drug = Column(
+        Boolean, comment="Whether this charge was for a drug-related crime or not."
+    )
+    counts = Column(
+        Integer,
+        comment="The number of counts of this charge which are being brought against the person.",
+    )
+    charge_notes = Column(
+        Text, comment="Free text containing other information about a charge."
+    )
+    charging_entity = Column(
+        String(255),
+        comment="The entity that brought this charge (e.g., Boston Police"
+        " Department, Southern District of New York).",
+    )
+    is_controlling = Column(
+        Boolean,
+        comment='Whether or not this is the "controlling" charge in a set of related '
+        "charges. A controlling charge is the one which is responsible for the "
+        "longest possible sentence duration in the set.",
+    )
+    judge_full_name = Column(
+        String(255),
+        comment="The full name of the judge presiding over the court case associated with"
+        " this charge.",
+    )
+    judge_external_id = Column(
+        String(255),
+        comment="The unique identifier for the presiding judge, unique within the scope "
+        "of the source data system.",
+    )
+    judicial_district_code = Column(
+        String(255),
+        comment="The code of the judicial district under whose jurisdiction the case was"
+        " tried.",
+    )
+
+    # Cross-entity relationships
+    person = relationship("StatePerson", uselist=False)
+    sentences = relationship(
+        "StateSentence",
+        secondary=state_charge_v2_state_sentence_association_table,
+        # This argument is the name of the attr in the other SQLAlchemy model,
+        # so the "charges" attr in the StateSentence model.
+        back_populates="charges",
+        lazy="selectin",
     )

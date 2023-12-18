@@ -93,6 +93,10 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateEmploymentPeriod.__name__,
     state_entities.StateDrugScreen.__name__,
     state_entities.StateTaskDeadline.__name__,
+    state_entities.StateSentence.__name__,
+    state_entities.StateSentenceServingPeriod.__name__,
+    # TODO(#26240): Replace StateCharge with this entity
+    state_entities.StateChargeV2.__name__,
     # StateStaff hierarchy
     state_entities.StateStaff.__name__,
     state_entities.StateStaffExternalId.__name__,

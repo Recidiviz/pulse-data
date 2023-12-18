@@ -37,6 +37,8 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
+    StateChargeV2ClassificationType,
+    StateChargeV2Status,
 )
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
@@ -79,7 +81,10 @@ from recidiviz.common.constants.state.state_person_housing_status_period import 
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
@@ -429,6 +434,9 @@ class StatePerson(
         factory=list, validator=attr_validators.is_list
     )
     assessments: List["StateAssessment"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    sentences: List["StateSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
@@ -2268,3 +2276,261 @@ class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, Defaultab
 
     # Cross-entity relationships
     staff: Optional["StateStaff"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Represents a formal judgement imposed by the court that details the form of time served
+    in response to the set of charges for which someone was convicted.
+    This table contains all the attributes we can observe about the sentence at the time of sentence imposition,
+    all of which will remain static over the course of the sentence being served.
+    """
+
+    # State code of the state providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Unique external identifier for a sentence
+    external_id: str = attr.ib(default=None, validator=attr_validators.is_str)
+
+    # Unique internal identifier for a sentence
+    # Primary key - Only optional when hydrated in the parsing layer,
+    # before we have written this entity to the persistence layer
+    sentence_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    sentence_group_external_id: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # The date this sentence was imposed, e.g. the date of actual sentencing,
+    # but not necessarily the date the person started serving the sentence.
+    imposed_date: datetime.date = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    # The amount of any time already served (in days) at time of sentence imposition,
+    # to possibly be credited against the overall sentence duration.
+    initial_time_served_days: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # The type of sentence INCARCERATION, PROBATION, etc.
+    sentence_type: StateSentenceType = attr.ib(
+        validator=attr.validators.instance_of(StateSentenceType),
+    )
+
+    # Raw text indicating whether a sentence is supervision/incarceration/etc
+    sentence_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # True if this is sentence is for a life sentence
+    is_life: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
+    # True if this is sentence is for the death penalty
+    is_capital_punishment: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
+    # True if the person may be released to parole under the terms of this sentence
+    # (only relevant to :INCARCERATION: sentence type)
+    parole_possible: Optional[bool] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_bool,
+    )
+
+    # The code of the county under whose jurisdiction the sentence was imposed
+    county_code: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Identifier of the sentences to which this sentence is consecutive (external_id),
+    # formatted as a string of comma-separated id’s. For instance, if sentence C has a
+    # consecutive_sentence_id_array of [A, B], then both A and B must be completed before C can be served.
+    # String must be parseable as a comma-separated list.
+    parent_sentence_external_id_array: Optional[str] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_str,
+    )
+
+    # A comma-separated list of conditions of this sentence which the person must follow to avoid a disciplinary
+    # response. If this field is empty, there may still be applicable conditions that apply to someone's current term
+    # of supervision/incarceration - either inherited from another ongoing sentence or the current supervision term.
+    # (See conditions on StateSupervisionPeriod).
+    conditions: Optional[str] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt_str,
+    )
+
+    # Additional metadata field with additional sentence attributes
+    sentence_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="sentence_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            ),
+        ]
+
+
+@attr.s(eq=False, kw_only=True)
+class StateSentenceServingPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Represents the periods of time over which someone was actively serving a given sentence."""
+
+    # Primary key that is optional before hydration
+    sentence_serving_period_id: Optional[int] = attr.ib(
+        validator=attr_validators.is_opt_int
+    )
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # The date on which a person effectively begins serving a sentence,
+    # including any pre-trial jail detention time if applicable.
+    serving_start_date: datetime.date = attr.ib(validator=attr_validators.is_date)
+
+    # The date on which a person finishes serving a given sentence.
+    # This field can be null if the date has not been observed yet.
+    # This should only be hydrated once we have actually observed the completion date of the sentence.
+    # E.g., if a sentence record has a completion date on 2024-01-01, this sentence would have a NULL
+    # completion_date until 2024-01-01, after which the completion date would reflect that date.
+    # We expect that this date will not change after it has been hydrated,
+    # except in cases where the data override is fixing an error.
+    serving_end_date: Optional[datetime.date] = attr.ib(
+        validator=attr_validators.is_opt_date
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+    sentence: Optional["StateSentence"] = attr.ib(default=None)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        # TODO(#26249) investigate more constraints
+        return [
+            UniqueConstraint(
+                name="state_sentence_serving_period_external_id_unique_within_state",
+                fields=["state_code", "external_id"],
+            ),
+        ]
+
+
+@attr.s(eq=False, kw_only=True)
+class StateChargeV2(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """A formal allegation of an offense with information about the context for how that allegation was brought forth.
+    `date_charged` can be null for charges that have statuses like “DROPPED”
+    `offense_date` can be null because of erroneous data from states
+
+    TODO(#26240): Replace StateCharge with this entity
+    """
+
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    status: StateChargeV2Status = attr.ib(
+        validator=attr.validators.instance_of(StateChargeV2Status)
+    )
+    status_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Attributes
+    #   - When
+    offense_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    date_charged: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    #   - Where
+    county_code: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    #   - What
+    ncic_code: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # A code corresponding to actual sentencing terms within a jurisdiction
+    statute: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    description: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    attempted: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    classification_type: Optional[StateChargeV2ClassificationType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateChargeV2ClassificationType)
+    )
+    classification_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    # E.g. 'A' for Class A, '1' for Level 1, etc
+    classification_subtype: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    offense_type: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    is_violent: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    is_sex_offense: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+    is_drug: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
+    counts: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    charge_notes: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    is_controlling: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
+
+    #   - Who
+    charging_entity: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    judge_full_name: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    judge_external_id: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    judicial_district_code: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    charge_v2_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+    sentences: List["StateSentence"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="charge_v2_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
