@@ -120,7 +120,7 @@ resource "google_project_iam_member" "admin_panel_iam" {
     "roles/cloudtasks.viewer",
     "roles/cloudtasks.queueAdmin",
     "roles/dataflow.viewer",
-    "roles/bigquery.dataViewer",
+    "roles/bigquery.dataEditor",
     "roles/bigquery.jobUser",
     "roles/storage.objectCreator",
   ]))
