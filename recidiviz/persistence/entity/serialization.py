@@ -32,9 +32,17 @@ from recidiviz.persistence.entity.state import entities as state_entities
 
 
 def serialize_entity_into_json(
-    entity: CoreEntity, field_index: CoreEntityFieldIndex
+    entity: CoreEntity,
+    field_index: CoreEntityFieldIndex,
+    back_edge_values: Optional[Dict[str, int]] = None,
 ) -> Dict[str, Any]:
-    """Generate a JSON string of an entity's serialized flat field and backedge values."""
+    """Generate a JSON string of an entity's serialized flat field and backedge values.
+
+    If |back_edge_values| is given, this means that the entity itself may not have its backedges
+    populated, but that we have values for its backedges to be filled in at a later time.
+    This is only used for serialization of new entities that are generated at normalization
+    time.
+    """
     flat_fields = field_index.get_all_core_entity_fields(
         entity.__class__, EntityFieldType.FLAT_FIELD
     )
@@ -64,11 +72,13 @@ def serialize_entity_into_json(
                 entity.__class__, field_name
             ),
         ).get_class_id_name()
-        entity_field_dict[id_field] = (
-            getattr(entity, field_name).get_id()
-            if getattr(entity, field_name)
-            else None
-        )
+
+        if getattr(entity, field_name):
+            entity_field_dict[id_field] = getattr(entity, field_name).get_id()
+        elif back_edge_values and field_name in back_edge_values:
+            entity_field_dict[id_field] = back_edge_values[field_name]
+        else:
+            entity_field_dict[id_field] = None
 
     return json_serializable_dict(entity_field_dict)
 
