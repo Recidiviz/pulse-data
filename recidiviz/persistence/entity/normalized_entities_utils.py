@@ -282,9 +282,7 @@ def _unique_object_id_for_entity(
     if person_id >= state_code.get_state_fips_mask(places=17):
         entity_object_id = generate_primary_key(
             json.dumps(
-                serialize_entity_into_json(
-                    entity, field_index, {"person_id": person_id}
-                ),
+                serialize_entity_into_json(entity, field_index, {"person": person_id}),
                 sort_keys=True,
             ),
             state_code,
