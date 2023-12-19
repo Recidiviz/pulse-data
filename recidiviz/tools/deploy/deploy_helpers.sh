@@ -205,9 +205,9 @@ function check_python_version {
   PYTHON_VERSION=$(python -V | grep "Python " | cut -d ' ' -f 2)
   # Fetch the required Python version from the Pipfile
   PYTHON_SCRIPT=$(cat << EOM
-import tomli
+import tomllib
 with open("Pipfile", "r", encoding="utf-8") as f:
-  config = tomli.loads(f.read())
+  config = tomllib.loads(f.read())
   print(config['requires']['python_version'])
 EOM
 )
