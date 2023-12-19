@@ -87,3 +87,4 @@ TASK_COMPLETIONS_FULL_TERM_DISCHARGE = OutliersMetric(
 # Lantern Events
 VIOLATIONS = OutliersClientEvent(aggregated_metric=metric_config.VIOLATIONS)
 VIOLATION_RESPONSES = OutliersClientEvent(metric_config.VIOLATION_RESPONSES)
+TREATMENT_REFERRALS = OutliersClientEvent(metric_config.TREATMENT_REFERRALS)
