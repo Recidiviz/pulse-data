@@ -108,34 +108,44 @@ violations AS (
 
     UNION ALL
 
-    -- TODO(#24489): Add real query
     SELECT
         "US_TN" AS state_code,
         "{VIOLATIONS.name}" AS metric_id,
-        DATE(9999, 12, 31) AS event_date,
-        0 AS person_id,
-        TO_JSON_STRING(
+        violation_date as event_date,
+        sv.person_id,
+        TO_JSON_STRING( 
             STRUCT(
-                "TEST" AS code,
-                "TEST" AS description
-            )
-        ) AS attributes
+                UPPER(type.violation_type_raw_text)  as code,
+                UPPER(tct.Decode)  as description
+            )) AS attributes
+        FROM `{{project_id}}.normalized_state.state_supervision_violation` sv
+        INNER JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` type
+            USING(supervision_violation_id, state_code)
+        INNER JOIN `{{project_id}}.us_tn_raw_data_up_to_date_views.TOMIS_CODESTABLE_latest` tct ON type.violation_type_raw_text = tct.Code AND CodesTable = 'TDCD050'
+        WHERE
+            sv.state_code = 'US_TN'
+            AND violation_date IS NOT NULL 
+            AND violation_type_raw_text != "INFERRED"
     
 ),
 sanctions AS (
-    -- TODO(#24708): Add in sanction data from COMS once we receive it
-    -- TODO(#24490): Add real query
+-- TODO(#24708): Add in MI sanction data from COMS once we receive it
+
     SELECT
         "US_TN" AS state_code,
         "{VIOLATION_RESPONSES.name}" AS metric_id,
-        DATE(9999, 12, 31) AS event_date,
-        0 AS person_id,
-        TO_JSON_STRING(
+        response_date as event_date,
+        person_id,
+        TO_JSON_STRING( 
             STRUCT(
-                "TEST" AS code,
-                "TEST" AS description
-            )
-        ) AS attributes
+                IFNULL(resp.response_type_raw_text, 'No Proposed Sanction')  as code,
+                IFNULL(tct.Decode, JSON_VALUE(violation_response_metadata, '$.SanctionStatus'))  as description
+            )) AS attributes
+        FROM `{{project_id}}.normalized_state.state_supervision_violation_response` resp
+        LEFT JOIN `{{project_id}}.us_tn_raw_data_up_to_date_views.TOMIS_CODESTABLE_latest` tct ON resp.response_type_raw_text = tct.Code AND CodesTable = 'TDCD340'
+        WHERE
+            state_code = 'US_TN'
+            AND response_date IS NOT NULL
     
 ),
 treatment_referrals AS (
@@ -162,18 +172,37 @@ treatment_referrals AS (
     
     UNION ALL
 
-    -- TODO(#24492): Add real query
-    SELECT
-        "US_TN" AS state_code,
-        "{TREATMENT_REFERRALS.name}" AS metric_id,
-        DATE(9999, 12, 31) AS event_date,
-        0 AS person_id,
-        TO_JSON_STRING(
-            STRUCT(
-                "TEST" AS code,
-                "TEST" AS description
-            )
-        ) AS attributes
+    SELECT *
+    FROM 
+        (SELECT 
+            "US_TN" AS state_code,
+            "{TREATMENT_REFERRALS.name}" AS metric_id,
+            CAST(StartDate AS DATETIME) as event_date,
+            pid.person_id,
+            TO_JSON_STRING(
+                STRUCT(
+                    NULL as code,
+                    Program as description
+                )
+            ) AS attributes
+        FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.OffenderTreatment_latest` ot
+        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid ON pid.external_id = ot.OffenderID
+        
+        UNION ALL
+        
+        SELECT 
+            "US_TN" AS state_code,
+            "{TREATMENT_REFERRALS.name}" AS metric_id,
+            CAST(vpr.RecommendationDate AS DATETIME) as event_date,
+            pid.person_id,
+            TO_JSON_STRING(
+                STRUCT(
+                    NULL as code,
+                    Recommendation as description
+                )
+            ) AS attributes
+        FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.VantagePointRecommendations_latest` vpr
+        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid ON pid.external_id = vpr.OffenderID)
 ),
 all_events AS (
     SELECT * FROM events_with_metric_id
