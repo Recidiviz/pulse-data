@@ -511,7 +511,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         )
 
     def test_trigger_metric_view_data_operator_state_code(self) -> None:
-
         """Tests the trigger_metric_view_data_operator triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import (
             trigger_metric_view_data_operator,

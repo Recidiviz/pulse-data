@@ -27,9 +27,9 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-def get_ingest_pipeline_enabled_state_and_instance_pairs() -> List[
-    Tuple[StateCode, DirectIngestInstance]
-]:
+def get_ingest_pipeline_enabled_state_and_instance_pairs() -> (
+    List[Tuple[StateCode, DirectIngestInstance]]
+):
     """
     Returns a list of all state and ingest instance pairs that the ingest pipeline should be run for.
     """

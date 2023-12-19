@@ -181,7 +181,6 @@ def main(
     tables: List[SQLAlchemyModelType],
     gcs_bucket: str,
 ) -> None:
-
     create_dbs(state_codes, SchemaType.PATHWAYS)
 
     for state in state_codes:

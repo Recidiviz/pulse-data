@@ -208,7 +208,6 @@ class TestCompartmentTransitions(unittest.TestCase):
         self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0, 0, 0, 0, 0])
 
     def test_retroactive_policy(self) -> None:
-
         # After 5 years, half of people go to the moon and half go to mars.
         default_test_data = pd.DataFrame(
             {

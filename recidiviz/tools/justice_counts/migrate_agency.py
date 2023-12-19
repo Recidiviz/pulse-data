@@ -103,7 +103,7 @@ def migrate_agency_data(
     file (i.e agency_name_to_metric_settings).
     """
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-    with local_project_id_override(args.destination):
+    with local_project_id_override(destination_project_name):
         with cloudsql_proxy_control.connection(
             schema_type=schema_type,
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,

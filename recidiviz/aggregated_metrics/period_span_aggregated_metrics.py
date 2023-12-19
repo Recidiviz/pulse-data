@@ -86,7 +86,6 @@ def generate_period_span_aggregated_metrics_view_builder(
             unit_of_observation,
             metrics_for_unit_of_observation,
         ) in metrics_by_unit_of_observation.items():
-
             shared_columns_string = list_to_query_string(
                 sorted(
                     {

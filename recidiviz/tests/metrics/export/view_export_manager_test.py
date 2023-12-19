@@ -17,12 +17,16 @@
 
 """Tests for view_export_manager.py."""
 import unittest
+from typing import Sequence
 from unittest import mock
 from unittest.mock import MagicMock, Mock, patch
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.export.big_query_view_exporter import ViewExportValidationError
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
@@ -108,7 +112,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             dimensions=tuple(),
         )
 
-        self.view_builders_for_dataset = [
+        self.view_builders_for_dataset: list[BigQueryViewBuilder] = [
             self.mock_view_builder,
             self.mock_metric_view_builder,
         ]
@@ -365,7 +369,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         view = self.mock_view_builder.build()
         metric_view = self.mock_metric_view_builder.build()
 
-        view_export_configs = [
+        view_export_configs: list[ExportBigQueryViewConfig] = [
             ExportBigQueryViewConfig(
                 view=view,
                 view_filter_clause=None,
@@ -455,7 +459,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         # actually gives no ability to create configurations with different export types per config
         # except by not setting export_output_formats_and_validations at all, which sets it to a
         # correctly-configured default.
-        view_export_configs = [
+        view_export_configs: Sequence[ExportBigQueryViewConfig] = [
             ExportBigQueryViewConfig(
                 view=self.mock_view_builder.build(),
                 intermediate_table_name=f"{self.mock_view_builder.view_id}_intermediate",

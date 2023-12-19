@@ -845,7 +845,6 @@ SEX_OFFENSE_CASE_TYPES = [
 
 
 def parse_case_types(raw_text: str) -> Optional[StateSupervisionCaseType]:
-
     case_types = sorted_list_from_str(raw_text)
 
     for case_type in case_types:

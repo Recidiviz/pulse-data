@@ -69,7 +69,6 @@ def keep_contact_codes(
     output_name: str = "output",
     keep_last: bool = False,
 ) -> str:
-
     """
     Helper function to join on contact codes with comments, filter to specific codes, and either keep all codes of a
     specific type or the latest one. Useful for TEPE form and side-bar

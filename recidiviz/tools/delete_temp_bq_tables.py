@@ -72,7 +72,9 @@ def main(dry_run: bool) -> None:
                 logging.info("[Dry-run] Would delete %s", dataset.dataset_id)
             else:
                 logging.info("Deleting %s...", dataset.dataset_id)
-                client.delete_dataset(dataset, delete_contents=True, not_found_ok=True)
+                client.delete_dataset(
+                    dataset.reference, delete_contents=True, not_found_ok=True
+                )
         else:
             logging.info(
                 "Skipping %s because it was created too recently.", dataset.dataset_id

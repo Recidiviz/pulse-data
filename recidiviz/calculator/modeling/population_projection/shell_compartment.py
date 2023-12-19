@@ -43,7 +43,6 @@ class ShellCompartment(SparkCompartment):
         policy_list: List[SparkPolicy],
         constant_admissions: bool,
     ) -> None:
-
         super().__init__(outflows_data, starting_time_step, tag)
 
         self.policy_list = policy_list

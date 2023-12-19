@@ -37,11 +37,9 @@ class UsMiSupervisionNormalizationDelegate(
     def drop_bad_periods(
         self, sorted_supervision_periods: List[StateSupervisionPeriod]
     ) -> List[StateSupervisionPeriod]:
-
         periods_to_keep = []
 
         for idx, sp in enumerate(sorted_supervision_periods):
-
             # If supervision type = INVESTIGATION, let's drop
             if (
                 sp.supervision_type
@@ -57,7 +55,6 @@ class UsMiSupervisionNormalizationDelegate(
                 int((sp.external_id).split("-")[1]) == len(sorted_supervision_periods)
                 and len(sorted_supervision_periods) > 1
             ):
-
                 previous_sp = sorted_supervision_periods[idx - 1]
 
                 if (

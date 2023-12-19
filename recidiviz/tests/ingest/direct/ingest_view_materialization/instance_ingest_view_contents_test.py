@@ -39,7 +39,6 @@ class InstanceIngestViewContentsTest(unittest.TestCase):
     """Tests for InstanceIngestViewContents."""
 
     def setUp(self) -> None:
-
         self.region_code = "us_xx"
         self.ingest_view_name = "my_ingest_view_name"
         self.ingest_view_name_2 = "some_other_view"

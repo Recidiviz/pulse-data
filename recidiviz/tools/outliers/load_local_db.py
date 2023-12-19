@@ -147,7 +147,6 @@ def main(
     tables: List[SQLAlchemyModelType],
     gcs_bucket: str,
 ) -> None:
-
     create_dbs(state_codes, SchemaType.OUTLIERS)
 
     for state in state_codes:

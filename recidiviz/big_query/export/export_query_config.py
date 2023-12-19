@@ -76,7 +76,7 @@ class ExportQueryConfig:
     output_uri: str = attr.ib()
 
     # The desired format of the output file
-    output_format: bigquery.DestinationFormat = attr.ib()
+    output_format: str = attr.ib()
 
     @classmethod
     def from_view_query(
@@ -85,7 +85,7 @@ class ExportQueryConfig:
         view_filter_clause: str,
         intermediate_table_name: str,
         output_uri: str,
-        output_format: bigquery.DestinationFormat,
+        output_format: str,
     ) -> "ExportQueryConfig":
         query = f"{view.select_query} {view_filter_clause}"
         return ExportQueryConfig(
@@ -177,9 +177,7 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
 
         return query
 
-    def as_export_query_config(
-        self, output_format: bigquery.DestinationFormat
-    ) -> ExportQueryConfig:
+    def as_export_query_config(self, output_format: str) -> ExportQueryConfig:
         if output_format == bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON:
             extension = "json"
         elif output_format == bigquery.DestinationFormat.CSV:

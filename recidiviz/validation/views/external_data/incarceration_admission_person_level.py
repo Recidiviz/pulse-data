@@ -65,7 +65,10 @@ FROM (
 VIEW_ID = "incarceration_admission_person_level"
 
 
-def get_incarceration_admission_person_level_view_builder() -> SimpleBigQueryViewBuilder:
+def get_incarceration_admission_person_level_view_builder() -> (
+    SimpleBigQueryViewBuilder
+):
+    """Builds the person-level view builder for incarceration admissions"""
     region_views = BigQueryViewCollector.collect_view_builders_in_module(
         builder_type=SimpleBigQueryViewBuilder,
         view_dir_module=external_data_regions,

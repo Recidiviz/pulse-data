@@ -83,7 +83,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> ExtractAndMergeCloudTaskQueueInfo:
-
         return ExtractAndMergeCloudTaskQueueInfo(
             queue_name=self.queue_name_for_type(
                 DirectIngestQueueType.EXTRACT_AND_MERGE, ingest_instance

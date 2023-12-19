@@ -34,7 +34,6 @@ from recidiviz.workflows.etl.workflows_etl_delegate import (
 
 
 class TestETLDelegate(WorkflowsFirestoreETLDelegate):
-
     COLLECTION_BY_FILENAME = {"test_export.json": "testOpportunity"}
 
     def get_supported_files(self) -> List[str]:

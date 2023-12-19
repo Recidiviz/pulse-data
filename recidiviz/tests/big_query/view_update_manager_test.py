@@ -728,7 +728,7 @@ class ViewManagerTest(unittest.TestCase):
             },
         }
 
-        def mock_list_tables(dataset_id: str) -> bigquery.table.TableListItem:
+        def mock_list_tables(dataset_id: str) -> list[bigquery.table.TableListItem]:
             if dataset_id == dataset.dataset_id:
                 return [
                     bigquery.table.TableListItem(mock_table_resource_ds_1_table),

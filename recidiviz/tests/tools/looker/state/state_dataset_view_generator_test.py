@@ -53,6 +53,7 @@ class StateViewGenerator(unittest.TestCase):
         result with the fixtures directory, filtering by names ending with
         "view.lkml"
         """
+
         # We need to make an exception in _is_database_entity_subclass for FakeBase
         def is_database_entity_subclass_for_testing(member: Any) -> bool:
             return (

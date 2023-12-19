@@ -80,10 +80,8 @@ for (
     destination_dataset_id,
     allowed_states,
 ) in PARTNER_SHARED_SESSIONS_CONFIG:
-
     # second, iterate over Sessions tables
     for view_builder in SESSIONS_SOURCE_VIEW_BUILDERS:
-
         # ensure view_builder has a defined materialized address
         if view_builder.materialized_address is None:
             raise ValueError(

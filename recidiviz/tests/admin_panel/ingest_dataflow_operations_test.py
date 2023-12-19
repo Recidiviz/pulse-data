@@ -283,7 +283,6 @@ class IngestDataflowOperations(TestCase):
             self.assertEqual(expected, get_all_latest_ingest_jobs())
 
     def test_get_stale_raw_data_watermarks_for_latest_run_simple(self) -> None:
-
         # most recent job
         most_recent_job_id = "2020-10-01_00_00_00"
         self.job_manager.add_job(

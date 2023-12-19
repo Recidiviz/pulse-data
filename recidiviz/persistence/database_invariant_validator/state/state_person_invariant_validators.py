@@ -156,9 +156,9 @@ LIMIT 1;"""
     return True
 
 
-def get_state_person_database_invariant_validators() -> List[
-    Callable[[Session, str, List[schema.StatePerson]], bool]
-]:
+def get_state_person_database_invariant_validators() -> (
+    List[Callable[[Session, str, List[schema.StatePerson]], bool]]
+):
     return [
         check_people_do_not_have_multiple_ids_same_type,
         check_all_people_have_an_external_id,

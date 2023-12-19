@@ -155,7 +155,7 @@ class SpreadsheetGenerator:
 
         create_excel_file(
             file_name=file_name,
-            system=system_enum,
+            system=self.system,
             metric_key_to_subsystems=error_to_sheet_name.get(
                 "metric_key_to_subsystems"
             ),

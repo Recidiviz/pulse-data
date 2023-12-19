@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Stores recent validation results to serve to the admin panel"""
-
+# TODO(protocolbuffers/protobuf#10372): Remove pylint no-name-in-module check
+# pylint: disable=no-name-in-module
 import json
 from enum import Enum
 from typing import List, Optional, Type, TypeVar, Union, cast
@@ -268,7 +269,6 @@ def _convert_result_details(
 
 @attr.s
 class ResultDetailsOneof:
-
     details: Optional[
         Union[
             ExistenceValidationResultDetails_pb2,

@@ -11,20 +11,18 @@ pytest = "*"
 # TODO(#23317): pytest-xdist changed its parallelization method after this result
 # This resulted in our ModuleCollectorMixin encountering a condition where some modules were collected twice
 pytest-xdist = "< 3.0"
-pylint = "*"
 pytest-cov = "*"
 mypy = "*"
 bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 # If this version is bumped then the beam version in recidiviz/pipelines/Dockerfile.pipelines must be as well.
-apache-beam = { extras = ["gcp", "test"], version = "==2.50.0" }
+apache-beam = { extras = ["gcp", "test"], version = "==2.52.0" }
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
 jupyter = "*"
-# TODO(#20615): Unpin orjson dependency when the installation failure is debugged.
-orjson = "==3.8.10"
+orjson = "*"
 pytest-alembic = "*"
 pipenv = "*"
 pygit2 = "*"
@@ -151,13 +149,10 @@ cssselect = "*"
 grpcio = "*"
 gunicorn = "*"
 gevent = ">=20.5.1"
-google-api-core = ">=2.12.0"
-google-cloud-core = ">=2.3.0"
-# TODO(#4287): Versions >= 3.0.0 create namespace conflicts with other cloud libraries
-#  (and resulting mypy errors). We should revisit upgrade when we've updated all
-#  google-cloud* libraries to >= 2.0.0.
-google-cloud-bigquery = "<3.0.0"
-google-cloud-bigquery-datatransfer = "<3.0.0"
+google-api-core = "*"
+google-cloud-core = "*"
+google-cloud-bigquery = "*"
+google-cloud-bigquery-datatransfer = "*"
 google-cloud-bigquery-storage = "*"
 google-cloud-build = "*"
 google-cloud-dataflow-client = "*"
@@ -205,8 +200,7 @@ seaborn = "*"
 statsmodels = "*"
 openpyxl = "*"
 analytics-python = "*"
-# TODO(#24244): Remove pin once TryExcept attribute errors are fixed
-astroid = "2.15.7"
+astroid = "*"
 # TODO(#11759): Remove version pin once fakeredis supports 4.2.0+
 redis = "<4.6.0"
 pyarrow = "*"
@@ -244,7 +238,7 @@ xlrd = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
-python_version = "3.9"
+python_version = "3.11.6"
 
 [scripts]
 # Run via `pipenv run <name>`

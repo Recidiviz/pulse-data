@@ -39,7 +39,6 @@ def request_api(
     token: str,
     endpoint: str,
 ) -> None:
-
     url = STAGING_URL if target_env == "staging" else LOCALHOST_URL
 
     s = requests.session()
@@ -54,7 +53,6 @@ def request_api(
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--target_env",

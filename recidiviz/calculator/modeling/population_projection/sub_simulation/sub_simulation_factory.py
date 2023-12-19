@@ -228,7 +228,6 @@ class SubSimulationFactory:
                 )
             # initialize full compartment
             elif compartment_type == "full":
-
                 if compartment not in transition_tables_by_compartment.keys():
                     raise ValueError(
                         f"no transitions data for compartment: {compartment}"

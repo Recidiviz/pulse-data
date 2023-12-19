@@ -40,7 +40,6 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
         description: str,
         **query_format_kwargs: str,
     ) -> None:
-
         if population_name.upper() != population_name:
             raise ValueError(f"Population name [{population_name}] must be upper case.")
 

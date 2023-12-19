@@ -20,12 +20,13 @@ batches.
 import datetime
 from collections import defaultdict
 from math import ceil
-from typing import Callable, Dict, Iterable, Iterator, List, Optional
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, cast
 
 import attr
 import numpy as np
 import pandas as pd
 from google.cloud import bigquery
+from google.cloud.bigquery import QueryJob
 from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClient
@@ -185,7 +186,7 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
                 )
 
             query_job = self._fake_query_job_for_batch(batch_data)
-            return BigQueryResultsContentsHandle(query_job)
+            return BigQueryResultsContentsHandle(cast(QueryJob, query_job))
 
         raise ValueError(f"Did not find data for batch: [{batch_to_find}]")
 

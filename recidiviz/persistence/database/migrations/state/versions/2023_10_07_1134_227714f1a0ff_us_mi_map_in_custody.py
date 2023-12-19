@@ -29,7 +29,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-
     op.execute(
         """
         UPDATE state_supervision_period 

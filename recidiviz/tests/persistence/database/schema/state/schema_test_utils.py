@@ -105,7 +105,6 @@ def generate_incarceration_incident(
 def generate_supervision_violation_response(
     person, **kwargs
 ) -> schema.StateSupervisionViolationResponse:
-
     args = {
         "state_code": _STATE_CODE,
     }

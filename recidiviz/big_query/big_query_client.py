@@ -139,7 +139,7 @@ class BigQueryClient:
         self,
         dataset_ref: bigquery.DatasetReference,
         default_table_expiration_ms: Optional[int] = None,
-    ) -> None:
+    ) -> bigquery.Dataset:
         """Create a BigQuery dataset if it does not exist, with the optional dataset table expiration if provided."""
 
     @abc.abstractmethod
@@ -289,7 +289,7 @@ class BigQueryClient:
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
-        write_disposition: bigquery.WriteDisposition,
+        write_disposition: str,
         skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
         """Loads a table from CSV data in GCS to BigQuery.
@@ -378,7 +378,7 @@ class BigQueryClient:
         source_table_dataset_ref: bigquery.dataset.DatasetReference,
         source_table_id: str,
         destination_uri: str,
-        destination_format: bigquery.DestinationFormat,
+        destination_format: str,
         print_header: bool,
     ) -> Optional[bigquery.ExtractJob]:
         """Exports the table corresponding to the given view to the path in Google Cloud Storage denoted by
@@ -537,7 +537,7 @@ class BigQueryClient:
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         """Inserts rows from the source table into the destination table. May include an optional filter clause
         to only insert a subset of rows into the destination table.
@@ -574,7 +574,7 @@ class BigQueryClient:
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
         use_query_cache: bool,
     ) -> bigquery.QueryJob:
@@ -624,7 +624,7 @@ class BigQueryClient:
         table_id: str,
         rows: Sequence[Dict[str, Any]],
         *,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.job.LoadJob:
         """Inserts the provided rows into the specified table.
 
@@ -1256,7 +1256,7 @@ class BigQueryClientImpl(BigQueryClient):
         destination_dataset_ref: bigquery.DatasetReference,
         destination_table_id: str,
         destination_table_schema: List[bigquery.SchemaField],
-        write_disposition: bigquery.WriteDisposition,
+        write_disposition: str,
         skip_leading_rows: int = 0,
     ) -> bigquery.job.LoadJob:
         """Triggers a load job, i.e. a job that will copy all of the data from the given
@@ -1371,7 +1371,7 @@ class BigQueryClientImpl(BigQueryClient):
         source_table_dataset_ref: bigquery.DatasetReference,
         source_table_id: str,
         destination_uri: str,
-        destination_format: bigquery.DestinationFormat,
+        destination_format: str,
         print_header: bool,
     ) -> Optional[bigquery.ExtractJob]:
         if not print_header and destination_format != bigquery.DestinationFormat.CSV:
@@ -1423,8 +1423,8 @@ class BigQueryClientImpl(BigQueryClient):
                     query_jobs.append(query_job)
 
             logging.info("Waiting on [%d] query jobs to finish", len(query_jobs))
-            for job in query_jobs:
-                job.result()
+            for query_job in query_jobs:
+                query_job.result()
 
             logging.info("Completed [%d] query jobs.", len(query_jobs))
 
@@ -1444,9 +1444,9 @@ class BigQueryClientImpl(BigQueryClient):
                 "Waiting on [%d] extract jobs to finish", len(extract_jobs_to_config)
             )
 
-            for job, export_config in extract_jobs_to_config.items():
+            for export_job, export_config in extract_jobs_to_config.items():
                 try:
-                    job.result()
+                    export_job.result()
                 except Exception as e:
                     logging.exception(
                         "Extraction failed for table: %s",
@@ -1605,7 +1605,7 @@ class BigQueryClientImpl(BigQueryClient):
         source_data_filter_clause: Optional[str] = None,
         allow_field_additions: bool = False,
         hydrate_missing_columns_with_null: bool = False,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         """Loads data from a source table to a destination table, depending on the write_disposition passed in
         it can either append or overwrite the destination table. Defaults to WRITE_APPEND.
@@ -1675,7 +1675,7 @@ class BigQueryClientImpl(BigQueryClient):
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         allow_field_additions: bool = False,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
         use_query_cache: bool,
     ) -> bigquery.QueryJob:
@@ -1741,7 +1741,7 @@ class BigQueryClientImpl(BigQueryClient):
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
         return self._insert_into_table_from_table_async(
             source_dataset_id=source_dataset_id,
@@ -1784,7 +1784,7 @@ class BigQueryClientImpl(BigQueryClient):
         table_id: str,
         rows: Sequence[Dict],
         *,
-        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
+        write_disposition: str = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.job.LoadJob:
         logging.info(
             "Inserting %d rows into %s.%s", len(rows), dataset_ref.dataset_id, table_id

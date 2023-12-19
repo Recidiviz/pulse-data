@@ -274,7 +274,6 @@ def upload_validation_projection_results(
     validation_projections_df: pd.DataFrame,
     state_code: str,
 ) -> None:
-
     # Set the upload timestamp for the population output to the current time in PST
     upload_time = datetime.datetime.now(tz=timezone("US/Pacific"))
 

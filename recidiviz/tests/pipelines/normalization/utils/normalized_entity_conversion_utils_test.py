@@ -93,7 +93,7 @@ class TestBQSchemaForNormalizedStateEntity(unittest.TestCase):
                 bigquery.enums.SqlTypeNames.INTEGER.value,
             ),
             SchemaField("state_code", bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField("condition", "STRING", "NULLABLE", None, (), None),
+            SchemaField("condition", "STRING", "NULLABLE"),
             SchemaField("condition_raw_text", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("person_id", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField(

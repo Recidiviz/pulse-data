@@ -33,7 +33,6 @@ class UsMoStaffRolePeriodNormalizationDelegate(
     def normalize_role_periods(
         self, role_periods: List[StateStaffRolePeriod]
     ) -> List[StateStaffRolePeriod]:
-
         return [
             deep_entity_update(
                 rp,

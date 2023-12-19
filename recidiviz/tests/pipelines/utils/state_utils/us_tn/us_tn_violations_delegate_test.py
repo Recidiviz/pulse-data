@@ -154,7 +154,6 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
     def test_us_tn_violation_history_window_relevant_to_critical_date(
         self,
     ) -> None:
-
         violation_window = (
             UsTnViolationDelegate().violation_history_window_relevant_to_critical_date(
                 critical_date=date(2000, 1, 1),

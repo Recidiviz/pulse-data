@@ -30,6 +30,7 @@ from typing import List, Optional, Tuple, cast
 from unittest.mock import create_autospec
 
 from google.cloud import bigquery
+from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
@@ -89,7 +90,7 @@ def create_table(
     bq_client: BigQueryClientImpl,
     local_file: ContentsHandle,
     dataset_id: str,
-    dataset_ref: str,
+    dataset_ref: DatasetReference,
     table_id: str,
 ) -> None:
     """Creates a temporary table and inserts json data into it"""

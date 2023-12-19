@@ -317,8 +317,7 @@ class PopulationSimulation:
             columns=["simulation_population", "historical_population", "percent_error"],
         )
 
-        for (compartment, time_step) in population_error.index:
-
+        for compartment, time_step in population_error.index:
             (
                 simulation_population,
                 historical_population,

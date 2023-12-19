@@ -60,7 +60,9 @@ def _schema_column_type_for_attribute(attribute: attr.Attribute) -> str:
     raise ValueError(f"Unhandled attribute type for attribute: {attribute}")
 
 
-def schema_field_for_attribute(field_name: str, attribute: attr.Attribute) -> bigquery:
+def schema_field_for_attribute(
+    field_name: str, attribute: attr.Attribute
+) -> bigquery.SchemaField:
     """Returns a BigQuery SchemaField object with the information needed for a column
     with the name of |field_name| storing the values in the |attribute|."""
     return bigquery.SchemaField(

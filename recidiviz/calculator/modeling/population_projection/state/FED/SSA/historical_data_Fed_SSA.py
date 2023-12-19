@@ -48,6 +48,7 @@ ussc = ussc[ussc["PRISDUM"] == 1]  # determines if someone is actually sent to p
 
 drug_mins = ussc.loc[(ussc["DRUGMIN"] > 0)]
 
+
 ##### b) Iterating through NWSTAT (variable description below) columns to isolate cases sentenced under statutes affected by policy (21 USC 841 & 960)
 ##### NWSTAT1-NWSTATX: Title, Section, and Subsection number of the UNIQUE statutes for each case generated from all of the statute fields. (USSC Datafile Codebook)
 def convicted_for(statute):
@@ -104,6 +105,7 @@ yearly_outflows = pd.read_csv(
 yearly_population = pd.read_csv(
     "recidiviz/calculator/modeling/population_projection/state/FED/SSA/population.csv"
 )
+
 
 ##### b) Disaggregating historical data using subtype weights
 def disaggregate(to_disagg, prop_df, prop_type):

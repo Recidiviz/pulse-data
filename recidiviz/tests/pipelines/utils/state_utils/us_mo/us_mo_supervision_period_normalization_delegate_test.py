@@ -1759,7 +1759,6 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         )
 
     def test_do_not_override(self) -> None:
-
         delegate = UsMoSupervisionNormalizationDelegate([])
 
         sp_ending_in_absconsion = StateSupervisionPeriod.new_with_defaults(
@@ -1841,7 +1840,6 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         )
 
     def test_multiple_absconsion_events(self) -> None:
-
         delegate = UsMoSupervisionNormalizationDelegate([])
 
         sp_ending_in_absconsion_1 = StateSupervisionPeriod.new_with_defaults(

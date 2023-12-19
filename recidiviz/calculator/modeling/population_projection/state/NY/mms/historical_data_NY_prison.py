@@ -284,7 +284,6 @@ d["LOS"] = np.clip(d["LOS"], a_min=None, a_max=THIRTY_YRS)
 transition_df_by_crime = []
 
 for (crime_type, race), by_group in d.groupby(["crime_type", "race"]):
-
     # combine inmates with the same LOS
     LOS_count = by_group.groupby("LOS").count()
 

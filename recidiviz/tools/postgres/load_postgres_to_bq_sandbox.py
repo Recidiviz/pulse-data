@@ -63,9 +63,7 @@ def main(
     direct_ingest_instance: Optional[DirectIngestInstance],
 ) -> None:
     """Defines the main function responsible for moving data from Postgres to BQ."""
-    logging.info(
-        "Prefixing all output datasets with [%s_].", known_args.sandbox_dataset_prefix
-    )
+    logging.info("Prefixing all output datasets with [%s_].", sandbox_dataset_prefix)
     fake_gcs = FakeGCSFileSystem()
 
     # We mock the export config to a version that does not have any paused regions.

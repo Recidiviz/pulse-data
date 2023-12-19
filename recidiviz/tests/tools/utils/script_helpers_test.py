@@ -204,12 +204,14 @@ class TestInteractiveLoopUntilTasksSucceed:
 
     @staticmethod
     @pytest.fixture(name="tasks")
-    def tasks_fixture() -> Tuple[
-        Dict[str, int],
-        Dict[str, int],
-        Dict[str, int],
-        Dict[str, int],
-    ]:
+    def tasks_fixture() -> (
+        Tuple[
+            Dict[str, int],
+            Dict[str, int],
+            Dict[str, int],
+            Dict[str, int],
+        ]
+    ):
         return ({"one": 1}, {"two": 2}, {"three": 3}, {"four": 4})
 
     @staticmethod

@@ -61,7 +61,6 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         self,
         job_id: str,
     ) -> str:
-
         return f"""
             INSERT INTO {DirectIngestDataflowJob.__tablename__}
                 (job_id, region_code, ingest_instance, completion_time , is_invalidated)

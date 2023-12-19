@@ -66,7 +66,6 @@ class TestEmailSentMetadata(TestCase):
         self.project_id_patcher.stop()
 
     def test_add_new_email_send_result(self) -> None:
-
         self.email_sent_metadata.add_new_email_send_result(
             total_delivered=4,
             redirect_address="letter@kenny.ca",
@@ -103,7 +102,6 @@ class TestEmailSentMetadata(TestCase):
         self.assertEqual(expected_result, json_dict)
 
     def test_build_from_gcs(self) -> None:
-
         email_metadata = EmailSentMetadata.build_from_gcs(
             batch=self.batch, gcs_fs=self.fs
         )

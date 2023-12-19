@@ -156,16 +156,15 @@ def parse_results(
         ) -> None:
             nonlocal num_errors
 
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 logging.info("Error: %s", result)
 
                 num_errors += 1
                 print(f"### Row {i}", file=logfile)
                 print(f"Ingest View Result: {row}", file=logfile)
                 traceback.print_exception(
-                    etype=type(result),
+                    type(result),
                     value=result,
-                    tb=result.__traceback__,
                     file=logfile,
                 )
             elif isinstance(result, Entity) and write_results:

@@ -50,7 +50,6 @@ SET_TO_NULL_QUERY = """
 
 
 def upgrade() -> None:
-
     for state_code, id_type in [
         ("US_TN", "US_TN_STAFF_TOMIS"),
         ("US_ME", "US_ME_EMPLOYEE"),

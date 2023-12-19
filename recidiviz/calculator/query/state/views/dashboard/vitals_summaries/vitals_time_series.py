@@ -72,7 +72,8 @@ Historical record of vitals metrics over the last 365 days
 
 def make_overall_score_queries_by_state(field: str) -> str:
     """Generate a SELECT expression to generate a state-specific overall score using the
-    mappings defined in ENABLED_VITALS. Values are rounded to the nearest 1/10th decimal."""
+    mappings defined in ENABLED_VITALS. Values are rounded to the nearest 1/10th decimal.
+    """
 
     # Example generated statement:
     # CASE state_code

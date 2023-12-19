@@ -43,7 +43,6 @@ class FullCompartment(SparkCompartment):
         starting_time_step: int,
         tag: str,
     ) -> None:
-
         super().__init__(outflow_data, starting_time_step, tag)
 
         # store all population cohorts with their population counts per time-step

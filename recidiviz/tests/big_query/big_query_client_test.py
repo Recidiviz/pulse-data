@@ -372,7 +372,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[
-                SchemaField("my_column", "STRING", "NULLABLE", None, ())
+                SchemaField(
+                    "my_column",
+                    "STRING",
+                    "NULLABLE",
+                    None,
+                )
             ],
             source_uris=["gs://bucket/export-uri"],
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
@@ -389,7 +394,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[
-                SchemaField("my_column", "STRING", "NULLABLE", None, ())
+                SchemaField(
+                    "my_column",
+                    "STRING",
+                    "NULLABLE",
+                )
             ],
             source_uris=["gs://bucket/export-uri"],
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
@@ -740,9 +749,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.bq_client.load_table_from_cloud_storage_async(
             destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
-            destination_table_schema=[
-                SchemaField("my_column", "STRING", "NULLABLE", None, ())
-            ],
+            destination_table_schema=[SchemaField("my_column", "STRING", "NULLABLE")],
             source_uris=["gs://bucket/export-uri"],
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
@@ -2472,7 +2479,10 @@ class MaterializeTableJobConfigMatcher:
     def __init__(self, expected_destination: str):
         self.expected_destination = expected_destination
 
-    def __eq__(self, other: QueryJobConfig) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, QueryJobConfig):
+            return False
+
         if other.write_disposition != bigquery.WriteDisposition.WRITE_TRUNCATE:
             return False
 

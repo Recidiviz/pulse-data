@@ -34,7 +34,6 @@ class CompartmentTransitions:
     """Handle transition tables for one compartment that sends groups to multiple other compartments over time"""
 
     def __init__(self, historical_outflows: pd.DataFrame) -> None:
-
         self._check_inputs_valid(historical_outflows)
 
         self.outflows = historical_outflows["outflow_to"].unique()

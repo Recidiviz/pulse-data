@@ -45,7 +45,6 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
 
     # Test case 1: there's a probation revocation incarceration period following the probation violation response
     def test_get_additional_violation_types_for_response_fill(self) -> None:
-
         violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="PROBATION-1",
@@ -102,7 +101,6 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
     def test_get_additional_violation_types_for_response_no_revocation_ips(
         self,
     ) -> None:
-
         violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="PROBATION-1",
@@ -145,7 +143,6 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
     def test_get_additional_violation_types_for_response_next_revocation_after_another_probation_violation(
         self,
     ) -> None:
-
         violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="PROBATION-1",
@@ -188,7 +185,6 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
     def test_get_additional_violation_types_for_response_not_probation(
         self,
     ) -> None:
-
         violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="PAROLE-1",
@@ -231,7 +227,6 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
     def test_get_additional_violation_types_for_response_revocations_on_same_day(
         self,
     ) -> None:
-
         violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="PROBATION-1",
@@ -278,7 +273,6 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
     def test_get_additional_violation_types_for_response_no_next_probation_violation(
         self,
     ) -> None:
-
         prev_violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="PROBATION-0",
@@ -333,7 +327,6 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
     def test_get_additional_violation_types_for_response_one_probation_violation(
         self,
     ) -> None:
-
         violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             external_id="PROBATION-1",

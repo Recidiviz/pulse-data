@@ -23,8 +23,7 @@ from http import HTTPStatus
 from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import flask
-from google.api_core.future.polling import PollingFuture
-from google.cloud.bigquery import WriteDisposition
+from google.cloud.bigquery import WriteDisposition, CopyJob, QueryJob
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import one
 
@@ -500,8 +499,7 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
         else dataset_config.STATE_BASE_DATASET
     )
 
-    jobs: List[PollingFuture] = []
-
+    jobs: list[CopyJob | QueryJob] = []
     # Build a map of normalized entity table_id to the schema for that table.
     normalized_entity_table_ids_to_schema = {
         # We store normalized entities in tables with the same names as the tables of
@@ -531,14 +529,14 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
         if table_id not in normalized_table_id_to_schema:
             # This is not a normalized entity. Copy the entire table from state into
             # the temporary dataset.
-            job = bq_client.copy_table(
+            copy_job = bq_client.copy_table(
                 source_dataset_id=non_normalized_dataset_id,
                 source_table_id=table_id,
                 destination_dataset_id=dataset_id,
             )
 
-            if job:
-                jobs.append(job)
+            if copy_job is not None:
+                jobs.append(copy_job)
         else:
             schema_for_entity_class = normalized_table_id_to_schema[table_id]
 
@@ -554,7 +552,7 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
             for (
                 state_specific_normalized_dataset_id
             ) in state_specific_normalized_dataset_ids:
-                job = bq_client.insert_into_table_from_table_async(
+                insert_job = bq_client.insert_into_table_from_table_async(
                     source_dataset_id=state_specific_normalized_dataset_id,
                     source_table_id=table_id,
                     destination_dataset_id=dataset_id,
@@ -562,7 +560,7 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
                     use_query_cache=True,
                 )
 
-                jobs.append(job)
+                jobs.append(insert_job)
 
     for job in jobs:
         job.result()  # Wait for the job to complete.

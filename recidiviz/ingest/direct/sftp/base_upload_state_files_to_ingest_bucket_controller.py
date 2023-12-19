@@ -115,7 +115,8 @@ class BaseUploadStateFilesToIngestBucketController:
     @abc.abstractmethod
     def get_paths_to_upload(self) -> List[Tuple[str, datetime.datetime]]:
         """Returns the appropriate paths to upload and the proper associated timestamp that
-        it is to be normalized with. Should be overridden based on the filesystem the paths are in."""
+        it is to be normalized with. Should be overridden based on the filesystem the paths are in.
+        """
 
     def upload_files(
         self,

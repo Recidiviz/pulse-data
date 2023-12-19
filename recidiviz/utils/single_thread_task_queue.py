@@ -97,7 +97,6 @@ class SingleThreadTaskQueue(Queue):
         while True:
             _task_name, task, args, kwargs = self._worker_pop_task()
             try:
-
                 task(*args, **kwargs)
             except Exception as e:
                 self._worker_mark_task_done()

@@ -15,6 +15,7 @@ down_revision = "4c1b99806c43"
 branch_labels = None
 depends_on = None
 
+
 # Ending all employment periods generated off of OMNI data to end on the COMS migration date
 # since that's the date all employment data got moved to COMS
 def upgrade() -> None:

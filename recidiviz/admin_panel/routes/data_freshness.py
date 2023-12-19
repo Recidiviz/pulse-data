@@ -27,6 +27,7 @@ from recidiviz.common.constants.states import StateCode
 
 def add_data_freshness_routes(admin_panel_blueprint: Blueprint) -> None:
     """Adds the relevant Data Freshness API routes to an input Blueprint."""
+
     # Data freshness
     @admin_panel_blueprint.route(
         "/api/ingest_metadata/data_freshness", methods=["POST"]

@@ -74,6 +74,7 @@ RELATIVE_IMPORT: Literal["relative_import"] = "relative_import"
 # Note this is a mapping is lists of paths.
 packagePathMap: Dict[str, List[str]] = {}
 
+
 # A Public interface
 def AddPackagePath(packagename: str, path: str) -> None:
     packagePathMap.setdefault(packagename, []).append(path)

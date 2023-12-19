@@ -78,7 +78,6 @@ class TestEntityMergerUtils(unittest.TestCase):
         )
 
     def test_enum_entity_key(self) -> None:
-
         person_race = make_person_race(race=StateRace.BLACK, race_raw_text="B")
 
         self.assertEqual(

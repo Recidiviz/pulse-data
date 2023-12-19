@@ -519,13 +519,10 @@ def transitions_interpolation(
 
     # handle missing years
     if len(year_list) < year_list[-1] - year_list[0] + 1:
-
         for i in range(0, year_list[-1] - year_list[0]):
-
             # check if more than year difference
             year_diff = year_list[i + 1] - year_list[i]
             if year_diff > 1:
-
                 # get slope
                 slope = (pdf_list[i + 1] - pdf_list[i]) / year_diff
 
@@ -547,7 +544,6 @@ def transitions_interpolation(
 
         # transverse the list backwards, interpolate as we go
         for i in range(len(year_list) - 1, 0 - 1, -1):
-
             # get monthly change
             yint = pdf_output[-1]
             slope = (pdf_list[i] - yint) / 6
@@ -585,7 +581,6 @@ def transitions_interpolation(
 
     # create plot if option chosen
     if plot:
-
         # plot full PDF
         plt.plot(
             months,
