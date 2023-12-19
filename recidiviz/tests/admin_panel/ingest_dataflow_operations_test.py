@@ -174,14 +174,41 @@ class IngestDataflowOperations(TestCase):
             },
         }
 
-        def return_pipeline_by_state_instance(
-            state_code: StateCode, instance: DirectIngestInstance
-        ) -> DataflowPipelineMetadataResponse:
-            return expected[state_code][instance]
+        most_recent_job_id_map = {
+            StateCode.US_XX: {
+                DirectIngestInstance.PRIMARY: pipeline.id,
+                DirectIngestInstance.SECONDARY: pipeline2.id,
+            },
+            StateCode.US_YY: {
+                DirectIngestInstance.PRIMARY: pipeline3.id,
+                DirectIngestInstance.SECONDARY: pipeline4.id,
+            },
+        }
 
-        with mock.patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_job_for_state_instance",
-            side_effect=return_pipeline_by_state_instance,
+        jobs_by_id = {
+            pipeline.id: pipeline,
+            pipeline2.id: pipeline2,
+            pipeline3.id: pipeline3,
+            pipeline4.id: pipeline4,
+        }
+
+        def return_pipeline_by_id(
+            state_code: StateCode,  # pylint: disable=unused-argument
+            job_id: str,
+        ) -> Optional[DataflowPipelineMetadataResponse]:
+            if job_id:
+                return jobs_by_id[job_id]
+            return None
+
+        with (
+            mock.patch(
+                "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_job_ids_by_state_and_instance",
+                return_value=most_recent_job_id_map,
+            ),
+            mock.patch(
+                "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_job_for_state_instance",
+                side_effect=return_pipeline_by_id,
+            ),
         ):
             self.assertEqual(expected, get_all_latest_ingest_jobs())
 
@@ -219,14 +246,39 @@ class IngestDataflowOperations(TestCase):
             },
         }
 
-        def return_pipeline_by_state_instance(
-            state_code: StateCode, instance: DirectIngestInstance
-        ) -> Optional[DataflowPipelineMetadataResponse]:
-            return expected[state_code][instance]
+        most_recent_job_id_map = {
+            StateCode.US_XX: {
+                DirectIngestInstance.PRIMARY: pipeline.id,
+                DirectIngestInstance.SECONDARY: None,
+            },
+            StateCode.US_YY: {
+                DirectIngestInstance.PRIMARY: pipeline2.id,
+                DirectIngestInstance.SECONDARY: None,
+            },
+        }
 
-        with mock.patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_job_for_state_instance",
-            side_effect=return_pipeline_by_state_instance,
+        jobs_by_id = {
+            pipeline.id: pipeline,
+            pipeline2.id: pipeline2,
+        }
+
+        def return_pipeline_by_id(
+            state_code: StateCode,  # pylint: disable=unused-argument
+            job_id: str,
+        ) -> Optional[DataflowPipelineMetadataResponse]:
+            if job_id:
+                return jobs_by_id[job_id]
+            return None
+
+        with (
+            mock.patch(
+                "recidiviz.admin_panel.ingest_dataflow_operations.DirectIngestDataflowJobManager.get_most_recent_job_ids_by_state_and_instance",
+                return_value=most_recent_job_id_map,
+            ),
+            mock.patch(
+                "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_job_for_state_instance",
+                side_effect=return_pipeline_by_id,
+            ),
         ):
             self.assertEqual(expected, get_all_latest_ingest_jobs())
 
