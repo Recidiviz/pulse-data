@@ -147,12 +147,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_screeners_p
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_early_termination import (
-    US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_overdue_discharge import (
-    US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
@@ -315,8 +309,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
-    US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
-    US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
     US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER,
     US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
     US_OR_SENTENCED_AFTER_AUGUST_2013_VIEW_BUILDER,
