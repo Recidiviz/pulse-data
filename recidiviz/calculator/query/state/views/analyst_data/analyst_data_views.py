@@ -72,17 +72,8 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_clients_to_
 from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable_housing_status_periods import (
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_responses import (
-    US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_early_discharge_sessions_preprocessing import (
     US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_early_discharges import (
-    US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_successful_supervision_terminations import (
-    US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_supervision_contacts import (
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
@@ -290,10 +281,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PSA_RISK_SCORES_VIEW_BUILDER,
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
     SUPERVISION_CLIENTS_TO_OFFICERS_RATIO_QUARTERLY_VIEW_BUILDER,
-    US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
-    US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER,
-    US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER,
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER,
