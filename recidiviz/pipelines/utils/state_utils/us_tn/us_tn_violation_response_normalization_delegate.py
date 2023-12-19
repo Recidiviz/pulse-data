@@ -115,6 +115,7 @@ class UsTnViolationResponseNormalizationDelegate(
                             state_code=response.state_code,
                             violation_type=StateSupervisionViolationType.TECHNICAL,
                             violation_type_raw_text=None,
+                            supervision_violation=response.supervision_violation,
                         )
 
                         # Add a unique id value to the new violation type entry
@@ -130,6 +131,7 @@ class UsTnViolationResponseNormalizationDelegate(
                             state_code=response.state_code,
                             violation_type=StateSupervisionViolationType.LAW,
                             violation_type_raw_text=None,
+                            supervision_violation=response.supervision_violation,
                         )
 
                         # Add a unique id value to the new violation type entry
