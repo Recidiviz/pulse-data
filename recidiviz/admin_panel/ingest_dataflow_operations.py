@@ -89,22 +89,18 @@ PIPELINE_CONFIG_YAML_PATH = os.path.join(
 
 
 def get_latest_job_for_state_instance(
-    state_code: StateCode, instance: DirectIngestInstance
+    state_code: StateCode, job_id: Optional[str]
 ) -> Optional[DataflowPipelineMetadataResponse]:
     """Get the latest job metadata for a state and instance from the Dataflow API."""
+    if job_id is None:
+        return None
+
     # TODO(#209930): remove this check once dataflow is launched for all states
     if state_code not in DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE:
         return None
 
     location = DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
     client = dataflow_v1beta3.JobsV1Beta3Client()
-
-    # TODO(#25528): Instead of calling get_job_id_for_most_recent_job() in here every
-    #  time, call this once before we dispatch any futures, then dispatch futures
-    #  with the job_id as an argument.
-    job_id = DirectIngestDataflowJobManager().get_job_id_for_most_recent_job(
-        state_code, instance
-    )
 
     if job_id:
         request = dataflow_v1beta3.GetJobRequest(
@@ -141,8 +137,22 @@ def get_all_latest_ingest_jobs() -> (
             Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
         ] = defaultdict(dict)
 
+        most_recent_job_ids_map = (
+            DirectIngestDataflowJobManager().get_most_recent_job_ids_by_state_and_instance()
+        )
+
         locations_futures = {
-            executor.submit(get_latest_job_for_state_instance, state_code, instance): (
+            executor.submit(
+                get_latest_job_for_state_instance,
+                state_code,
+                # a job may not have yet completed successfully for a state code and instance combination
+                # in this case most_recent_job_ids_map will not contain an entry for that combination
+                # use None in that case
+                most_recent_job_ids_map[state_code][instance]
+                if state_code in most_recent_job_ids_map
+                and instance in most_recent_job_ids_map[state_code]
+                else None,
+            ): (
                 state_code,
                 instance,
             )
