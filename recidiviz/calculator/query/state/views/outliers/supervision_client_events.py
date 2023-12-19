@@ -26,7 +26,11 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.outliers.utils import (
     format_state_specific_person_events_filters,
 )
-from recidiviz.outliers.constants import VIOLATION_RESPONSES, VIOLATIONS
+from recidiviz.outliers.constants import (
+    TREATMENT_REFERRALS,
+    VIOLATION_RESPONSES,
+    VIOLATIONS,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -57,19 +61,51 @@ events_with_metric_id AS (
   {format_state_specific_person_events_filters()}
 ),
 violations AS (
-    -- TODO(#24491): Add real query
-    SELECT
-        "US_MI" AS state_code,
-        "{VIOLATIONS.name}" AS metric_id,
-        DATE(9999, 12, 31) AS event_date,
-        0 AS person_id,
-        TO_JSON_STRING(
-            STRUCT(
-                "TEST" AS code,
-                "TEST" AS description
-            )
-        ) AS attributes
-    
+  SELECT DISTINCT
+    "US_MI" as state_code,
+    "violations" AS metric_id,
+    violation_date AS event_date,
+    sv.person_id,
+    TO_JSON_STRING(
+        STRUCT(
+            UPPER(COALESCE(omni_type_ref.description, coms_parole.Violation_Type, coms_probation.Case_Type)) AS code,
+            UPPER(
+                CONCAT( 
+                NULLIF(SPLIT(condition_raw_text, "@@")[OFFSET(0)], 'NONE'),
+                ": ",
+                NULLIF(SPLIT(condition_raw_text, "@@")[OFFSET(2)], 'NONE')
+                )
+            ) AS description
+        )
+    ) AS attributes
+    FROM `{{project_id}}.state.state_supervision_violation` sv
+    LEFT JOIN `{{project_id}}.state.state_supervision_violated_condition_entry` cond
+        ON sv.supervision_violation_id = cond.supervision_violation_id
+    -- NOTE: Let's use the raw tables instead of state tables for violation type becaue the ingested version has a ton of entity deletion issues.
+    --       The entity deletion issues should be resolved with IID so we can refactor to use state tables after MI is switched over to using IID TODO(#25983)
+    -- violation type for OMNI (only have data for parole violations):
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_SUPERVISION_VIOLATION_latest` type
+        ON SPLIT(sv.external_id, "##")[OFFSET(0)] = type.supervision_violation_id 
+        AND sv.external_id NOT LIKE 'COMS%' 
+        AND sv.external_id NOT LIKE 'PROBATION%'
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_REFERENCE_CODE_latest` omni_type_ref
+        ON type.violation_type_id = omni_type_ref.reference_code_id
+    -- violation type for COMS:
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Violation_Incidents_latest` coms_incidents
+        ON SPLIT(sv.external_id, "##")[OFFSET(1)] = coms_incidents.Violation_Incident_Id 
+        AND sv.external_id LIKE 'COMS%'
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Parole_Violation_Violation_Incidents_latest` coms_parole_incidents 
+        ON coms_parole_incidents.Violation_Incident_Id = coms_incidents.Violation_Incident_Id
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Parole_Violations_latest` coms_parole 
+        ON coms_parole.Parole_Violation_Id = coms_parole_incidents.Parole_Violation_Id
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Probation_Violation_Violation_Incidents_latest` coms_probation_incidents 
+        ON coms_probation_incidents.Violation_Incident_Id = coms_incidents.Violation_Incident_Id
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Probation_Violations_latest` coms_probation 
+        ON coms_probation.Probation_Violation_Id = coms_probation_incidents.Probation_Violation_Id
+    WHERE
+        sv.state_code = 'US_MI'
+        AND violation_date IS NOT NULL
+
     UNION ALL
 
     -- TODO(#24489): Add real query
@@ -87,21 +123,7 @@ violations AS (
     
 ),
 sanctions AS (
-    -- TODO(#24492): Add real query
-    SELECT
-        "US_MI" AS state_code,
-        "{VIOLATION_RESPONSES.name}" AS metric_id,
-        DATE(9999, 12, 31) AS event_date,
-        0 AS person_id,
-        TO_JSON_STRING(
-            STRUCT(
-                "TEST" AS code,
-                "TEST" AS description
-            )
-        ) AS attributes
-    
-    UNION ALL
-
+    -- TODO(#24708): Add in sanction data from COMS once we receive it
     -- TODO(#24490): Add real query
     SELECT
         "US_TN" AS state_code,
@@ -116,12 +138,51 @@ sanctions AS (
         ) AS attributes
     
 ),
+treatment_referrals AS (
+    SELECT
+        "US_MI" AS state_code,
+        "{TREATMENT_REFERRALS.name}" AS metric_id,
+        DATE(Referral_Date) AS event_date, 
+        person_id,
+        TO_JSON_STRING(
+            STRUCT(
+                NULL as code,
+                UPPER(CONCAT(
+                    IF(Program_Type = Service_Type, Program_Type, CONCAT(Program_Type, " (", Service_Type, ")")),
+                    " -- ",
+                    Provider
+                )) as description
+            )
+        ) AS attributes
+    FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Intervention_Referrals_latest` coms_treat
+    INNER JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.COMS_Intervention_Referral_Program_and_Service_Type_Combinations_latest` coms_combo 
+      USING(Intervention_Referral_Id, Offender_Number)
+    LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei 
+      ON LTRIM(coms_treat.Offender_Number, '0') = pei.external_id AND pei.id_type = 'US_MI_DOC'
+    
+    UNION ALL
+
+    -- TODO(#24492): Add real query
+    SELECT
+        "US_TN" AS state_code,
+        "{TREATMENT_REFERRALS.name}" AS metric_id,
+        DATE(9999, 12, 31) AS event_date,
+        0 AS person_id,
+        TO_JSON_STRING(
+            STRUCT(
+                "TEST" AS code,
+                "TEST" AS description
+            )
+        ) AS attributes
+),
 all_events AS (
     SELECT * FROM events_with_metric_id
         UNION ALL
     SELECT * FROM violations
         UNION ALL
     SELECT * FROM sanctions
+        UNION ALL
+    SELECT * FROM treatment_referrals
 ),
 supervision_client_events AS (
     SELECT 
