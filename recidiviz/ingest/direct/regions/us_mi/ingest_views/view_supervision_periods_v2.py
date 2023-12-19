@@ -206,33 +206,23 @@ OMNI_levels as (
 coms_levels_a AS (
   SELECT DISTINCT
     Offender_Number,
-    -- we only want to considers supervision levels from COMS as of the migration date or after
-    CASE WHEN (DATE(Start_Date)) < DATE(2023,8,14) 
-         THEN DATE(2023,8,14)
-         ELSE (DATE(Start_Date)) 
-         END AS level_start_date,
+    (DATE(Start_Date)) AS level_start_date,
     COALESCE((DATE(End_Date)), DATE(9999,9,9)) AS level_end_date,
     Supervision_Level AS supervision_level_value,
     Supervision_Level_Id AS record_id,
     CAST(Entered_Date as DATETIME) AS last_update_date
   FROM {COMS_Supervision_Levels}
-  WHERE COALESCE((DATE(End_Date)), DATE(9999,9,9)) >= DATE(2023,8,14) -- we don't care about levels that were ended before the migration date
 ),
 -- This CTE compiles the periods based on the specific COMS levels
 coms_levels_b as (
   SELECT DISTINCT
     Offender_Number,
     Supervision_Activity_Panel AS supervision_level_value,
-    -- we only want to considers supervision levels from COMS as of the migration date or after
-    CASE WHEN (DATE(Schedule_Start_Date)) < DATE(2023,8,14) 
-         THEN DATE(2023,8,14)
-         ELSE (DATE(Schedule_Start_Date)) 
-         END AS level_start_date,
+    (DATE(Schedule_Start_Date)) AS level_start_date,
     COALESCE((DATE(End_Date)), DATE(9999,9,9)) AS level_end_date,
     Supervision_Schedule_Id AS record_id,
     CAST(Entered_Date as DATETIME) AS last_update_date
   FROM {COMS_Supervision_Schedules} coms
-  WHERE COALESCE((DATE(End_Date)), DATE(9999,9,9)) >= DATE(2023,8,14) -- we don't care about levels that were ended before the migration date
 ), 
 coms_level_periods_base as (
   SELECT 
@@ -314,15 +304,7 @@ offender_supervision_periods as (
     SELECT
         offender_id,
         level_start_date,
-        -- we only want to considers supervision levels from OMNI up until the migration date so let's end all supervision levels from omni that
-        -- are still active on that day
-        CASE WHEN 
-                level_end_date >= DATE(2023,8,14) 
-                OR
-                level_end_date IS NULL
-            THEN DATE(2023,8,14)
-            ELSE level_end_date 
-            END AS level_end_date,
+        level_end_date,
         supervision_level_value,
         last_update_date,
         source,
@@ -340,6 +322,41 @@ offender_supervision_periods as (
         source,
         record_id
     FROM COMS_levels
+)
+"""
+
+MODIFIERS_CTE = """
+
+-- Create modifiers periods (where modifiers from COMS give us information about supervision type and level)
+
+max_modifier_date AS (
+  SELECT MAX(update_datetime) AS last_update_date FROM {COMS_Modifiers@ALL}
+),
+
+most_recent_modifier_info AS (
+  SELECT DISTINCT
+    Modifier_Id,
+    Offender_Number,
+    LAST_VALUE(Modifier) OVER(PARTITION BY Modifier_Id ORDER BY update_datetime) AS Modifier,
+    LAST_VALUE(Start_Date) OVER(PARTITION BY Modifier_Id ORDER BY update_datetime) AS Start_Date,
+    LAST_VALUE(Entered_Date) OVER(PARTITION BY Modifier_Id ORDER BY update_datetime) AS Entered_Date,
+    MAX(update_datetime) OVER(PARTITION BY Modifier_Id) AS last_seen_date
+  from {COMS_Modifiers@ALL}
+),
+
+modifiers_periods AS (
+    SELECT 
+    offender_id,
+    Modifier_Id,
+    (DATE(Start_Date)) AS modifier_start_date,
+    CASE WHEN (DATE(last_seen_date)) < (DATE(last_update_date)) THEN (DATE(last_seen_date))
+        ELSE DATE(9999,9,9)
+        END AS modifier_end_date,
+    Modifier,
+    (DATE(Entered_Date)) as Entered_Date
+    FROM most_recent_modifier_info mod
+    LEFT JOIN max_modifier_date ON 1=1
+    INNER JOIN {ADH_OFFENDER} off ON LTRIM(mod.Offender_Number, '0') = off.offender_number
 )
 """
 
@@ -365,11 +382,7 @@ OMNI_assignments as (
             -- 3/23/23: We can't use the raw sequence number from the table to sort anymore cause that's partitioned by offender_booking_id, not offender_id
             ROW_NUMBER() OVER (PARTITION BY offender_id ORDER BY (date(assignment_date)), (date(closure_date)) NULLS LAST, ass.offender_booking_id, ass.sequence_number) as priority,
             (date(assignment_date)) as employee_assignment_date,
-            -- we only want to considers employee assignments from omni up until the migration date so let's close out all open employee assignments on the migration date
-            CASE WHEN (date(closure_date)) >= DATE(2023,8,14) or (date(closure_date)) is NULL
-                 THEN DATE(2023,8,14)
-                 ELSE (date(closure_date))
-                 END AS employee_closure_date,
+            (date(closure_date)) AS employee_closure_date,
             LEAD(date(assignment_date)) OVER(PARTITION BY offender_id ORDER BY (date(assignment_date)), (date(closure_date)) NULLS LAST, ass.offender_booking_id, ass.sequence_number) as next_assignment_date
         from {ADH_EMPLOYEE_BOOKING_ASSIGNMENT} ass
           INNER JOIN {ADH_OFFENDER_BOOKING} book on ass.offender_booking_id = book.offender_booking_id
@@ -398,18 +411,13 @@ COMS_assignments as (
             offender_id,
             Case_Manager_Id,
             Case_Manager_Omnni_Employee_Id as employee_id,
-            -- we only want to considers officer assignments from COMS as of the migration date or after
-            CASE WHEN (date(coms.Start_Date)) < DATE(2023,8,14) 
-                 THEN DATE(2023,8,14)
-                 ELSE (date(coms.Start_Date)) 
-                 END AS employee_start,
-            (date(coms.End_Date)) as employee_end,
+            (date(coms.Start_Date)) AS employee_start,
+            (date(coms.End_Date)) AS employee_end,
             CAST(Entered_Date as DATETIME) as Entered_Date
         from {COMS_Case_Managers} coms
         inner join {ADH_OFFENDER} off on LTRIM(coms.Offender_Number, '0') = off.offender_number
         INNER JOIN {ADH_OFFENDER_BOOKING} USING(offender_id)
         WHERE Case_Manager_Omnni_Employee_Id is not NULL -- not sure if this is a concern for real data, but it's sometimes null in sample data
-            AND (coms.End_Date is NULL or (date(coms.End_Date)) >= DATE(2023,8,14)) -- we don't care about assignments that ended before the migration date
     ) sub
 ), 
 offender_booking_assignment as (
@@ -494,6 +502,10 @@ SUPERVISION_LEVEL_COLUMNS = """
     supervision_level_value
 """
 
+MODIFIERS_COLUMNS = """
+    Modifier
+"""
+
 LEGAL_ORDER_COLUMNS = """
     legal_order_id_combined,
     order_type_id_list,
@@ -515,6 +527,7 @@ VIEW_QUERY_TEMPLATE = f"""
 WITH {ALL_MOVEMENTS_CTE},
 {SUPERVISON_MOVEMENT_PERIODS_CTE},
 {SUPERVISION_LEVELS_CTE},
+{MODIFIERS_CTE},
 {EMPLOYEE_ASSIGNMENTS_CTE},
 {LEGAL_ORDERS_CTE},
 {MISC_CTE},
@@ -596,6 +609,20 @@ tiny_spans as (
                 employee_end as dte
             from offender_booking_assignment
             )
+            union all
+            (
+            select
+                distinct offender_id,
+                modifier_start_date as dte
+            from modifiers_periods
+            )
+            union all
+            (
+            select
+                distinct offender_id,
+                modifier_end_date as dte
+            from modifiers_periods
+            )
         ) unioned
         -- don't include periods in the future
         where dte is not null and dte <= @update_timestamp
@@ -662,6 +689,36 @@ spans_movements_supervision as (
   where supervision_rnk = 1
 ),
 
+-- Join modifiers periods data onto all tiny spans
+-- In the cases where there are two modifiers that map to the same tiny span, let's prioritize whichever one was most recently entered
+
+spans_movements_supervision_modifiers as (
+  select *
+  from (
+    select
+        sp.offender_id,
+        {PERIOD_COLUMNS},
+        {MOVEMENT_COLUMNS},
+        {SUPERVISION_LEVEL_COLUMNS},
+        {MODIFIERS_COLUMNS},
+        RANK() OVER(PARTITION BY sp.offender_id, period_start, period_end ORDER BY mod.Entered_Date DESC, Modifier_Id) as modifier_rnk
+    from spans_movements_supervision sp
+        left join modifiers_periods mod on (
+            sp.offender_id = mod.offender_id 
+            and (mod.modifier_start_date <= sp.period_start)
+            and 
+                (
+                    (sp.period_end is not null and mod.modifier_end_date >= sp.period_end)
+                    or
+                    (sp.period_end is null and mod.modifier_end_date > sp.period_start)
+                    or
+                    (mod.modifier_end_date is null)
+                )
+            )  
+  ) sub
+  where modifier_rnk = 1
+),
+
 -- Join legal order periods data onto all tiny spans
 
 -- Note: 1. Since overlapping legal orders would indicate a person is both on parole and probation, we'll use STRING_AGG to concatenate legal order info for each period
@@ -674,6 +731,7 @@ spans_supervision_legal as (
     {PERIOD_COLUMNS},
     {MOVEMENT_COLUMNS},
     {SUPERVISION_LEVEL_COLUMNS},
+    {MODIFIERS_COLUMNS},
     STRING_AGG(distinct legal_order_id, ',' ORDER BY legal_order_id) as legal_order_id_combined,
     STRING_AGG(distinct order_type_id, ',' ORDER BY order_type_id) as order_type_id_list,
     STRING_AGG(distinct supervision_condition_id, ',' ORDER BY supervision_condition_id) as supervision_condition_id_combined,
@@ -684,11 +742,12 @@ spans_supervision_legal as (
         {PERIOD_COLUMNS},
         {MOVEMENT_COLUMNS},
         {SUPERVISION_LEVEL_COLUMNS},
+        {MODIFIERS_COLUMNS},
         legal.legal_order_id,
         legal.order_type_id,
         supervision_condition_id,
         cond.special_condition_id
-    from spans_movements_supervision sp
+    from spans_movements_supervision_modifiers sp
         left join legal_orders legal on (
             sp.offender_id = legal.offender_id 
             and (legal.legal_start <= sp.period_start)
@@ -711,7 +770,8 @@ spans_supervision_legal as (
     offender_id,    
     {PERIOD_COLUMNS},
     {MOVEMENT_COLUMNS},
-    {SUPERVISION_LEVEL_COLUMNS}
+    {SUPERVISION_LEVEL_COLUMNS},
+    {MODIFIERS_COLUMNS}
 ),
 
 -- Join on supervision officer assignment periods as well filter down only to spans with an offender_booking_id in ADH_OFFENDER_BOOKING
@@ -725,6 +785,7 @@ spans_all_combos as (
       {PERIOD_COLUMNS},
       {MOVEMENT_COLUMNS},
       {SUPERVISION_LEVEL_COLUMNS},
+      {MODIFIERS_COLUMNS},
       {LEGAL_ORDER_COLUMNS},
       {EMPLOYEE_COLUMNS},
       RANK() OVER(PARTITION BY sp.offender_id, period_start, period_end ORDER BY source, priority) as booking_rnk
@@ -776,7 +837,8 @@ select
     -- grab the most recent supervision level we saw for this person (which could be the supervision level currently active)
     LAST_VALUE(supervision_level_value IGNORE NULLS)
         OVER (PARTITION BY offender_id, legal_order_id_combined ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id
-        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS most_recent_supervision_level_id
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS most_recent_supervision_level_id,
+    modifier
 from spans_all_combos
 where movement_reason_id is not null;
 """
