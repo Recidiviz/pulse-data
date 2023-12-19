@@ -69,18 +69,6 @@ from recidiviz.calculator.query.state.views.analyst_data.specialized_agents_prep
 from recidiviz.calculator.query.state.views.analyst_data.supervision_clients_to_officers_ratio_quarterly import (
     SUPERVISION_CLIENTS_TO_OFFICERS_RATIO_QUARTERLY_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_primary_office import (
-    SUPERVISION_OFFICER_PRIMARY_OFFICE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_by_district_by_month import (
-    SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_by_supervision_office_by_month import (
-    SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.supervision_population_by_officer_daily_windows import (
-    SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable_housing_status_periods import (
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
 )
@@ -322,10 +310,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PROJECTED_DISCHARGES_VIEW_BUILDER,
     PSA_RISK_SCORES_VIEW_BUILDER,
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
-    SUPERVISION_OFFICER_PRIMARY_OFFICE_VIEW_BUILDER,
-    SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
-    SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
-    SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     SUPERVISION_CLIENTS_TO_OFFICERS_RATIO_QUARTERLY_VIEW_BUILDER,
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
