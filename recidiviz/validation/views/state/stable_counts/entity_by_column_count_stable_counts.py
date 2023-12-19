@@ -79,7 +79,7 @@ SELECT * FROM (
             LAG({col}_count) OVER (PARTITION BY region_code ORDER BY month) AS previous_month_{col}_count, 
         FROM all_months_filled_zeroes
         -- select where the month < first of the current month
-        WHERE month <= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 7 DAY)
+        WHERE DATE_ADD(month, INTERVAL 1 MONTH) <= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 7 DAY)
     )
     -- Limit to most recent {validation_window_months} months
     -- We apply this filter here after the LAG caluclation has been done so we do not
