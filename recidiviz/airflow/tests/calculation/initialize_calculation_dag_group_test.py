@@ -79,7 +79,6 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
     def test_verify_parameters_upstream_of_handle_params_check(
         self,
     ) -> None:
-
         verify_parameters_task = test_dag.get_task("initialize_dag.verify_parameters")
         handle_params_check = test_dag.get_task("initialize_dag.handle_params_check")
 

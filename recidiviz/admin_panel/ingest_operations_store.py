@@ -114,7 +114,6 @@ class IngestOperationsStore(AdminPanelStore):
             Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
         ],
     ) -> None:
-
         jobs_dict = {
             state_code.value: {
                 instance.value: attr_to_json_dict(
@@ -240,13 +239,15 @@ class IngestOperationsStore(AdminPanelStore):
         ingest_view_contents = InstanceIngestViewContentsImpl(
             self.bq_client, state_code.value, instance, dataset_prefix=None
         )
-        dataset_id = ingest_view_contents.results_dataset()
+        dataset_ref = self.bq_client.dataset_ref_for_id(
+            ingest_view_contents.results_dataset()
+        )
         if (
-            self.bq_client.dataset_exists(dataset_id)
-            and len(list(self.bq_client.list_tables(dataset_id))) > 0
+            self.bq_client.dataset_exists(dataset_ref)
+            and len(list(self.bq_client.list_tables(dataset_ref.dataset_id))) > 0
         ):
             raise DirectIngestInstanceError(
-                f"There are ingest view results in {dataset_id} that have not been"
+                f"There are ingest view results in {dataset_ref} that have not been"
                 f"cleaned up. Cannot proceed with ingest rerun."
             )
 

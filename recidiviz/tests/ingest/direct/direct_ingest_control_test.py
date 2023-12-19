@@ -556,7 +556,6 @@ class TestDirectIngestControl(unittest.TestCase):
     def test_normalize_file_path(
         self, mock_fs_factory: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
-
         mock_environment.return_value = "production"
         mock_fs = FakeGCSFileSystem()
         mock_fs_factory.return_value = mock_fs
@@ -593,7 +592,6 @@ class TestDirectIngestControl(unittest.TestCase):
     def test_normalize_file_path_does_not_change_already_normalized(
         self, mock_fs_factory: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
-
         mock_environment.return_value = "production"
         mock_fs = FakeGCSFileSystem()
         mock_fs_factory.return_value = mock_fs
@@ -787,7 +785,6 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
     ) -> None:
-
         region_code = "us_xx"
 
         mock_environment.return_value = "staging"
@@ -842,7 +839,6 @@ class TestDirectIngestControl(unittest.TestCase):
         self,
         mock_region: mock.MagicMock,
     ) -> None:
-
         region_code = "us_xx"
 
         mock_controller = create_autospec(BaseDirectIngestController)
@@ -892,7 +888,6 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_environment: mock.MagicMock,
         mock_states_in_env: mock.MagicMock,
     ) -> None:
-
         fake_supported_regions = {
             "us_xx": fake_region(region_code="us_xx", environment="staging"),
             self.region_code: fake_region(
@@ -949,7 +944,6 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_environment: mock.MagicMock,
         mock_states_in_env: mock.MagicMock,
     ) -> None:
-
         fake_supported_regions = {
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(
@@ -1000,7 +994,6 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_environment: mock.MagicMock,
         mock_states_in_env: mock.MagicMock,
     ) -> None:
-
         fake_supported_regions = {
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(

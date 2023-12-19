@@ -249,7 +249,6 @@ def _create_dataflow_pipeline(
         def create_flex_template(
             max_update_datetimes: Dict[str, str]
         ) -> Dict[str, Union[str, int, bool]]:
-
             parameters = IngestPipelineParameters(
                 project=get_project_id(),
                 ingest_instance=ingest_instance.value,
@@ -285,7 +284,6 @@ def create_single_ingest_pipeline_group(
     )
 
     with TaskGroup(get_ingest_branch_key(state_code.value, instance.value)) as dataflow:
-
         (
             initialize_dataflow_pipeline,
             get_max_update_datetimes,

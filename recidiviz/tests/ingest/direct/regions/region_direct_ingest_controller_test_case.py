@@ -338,9 +338,9 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
                 f"Must define integration test with name "
                 f"[{FULL_INTEGRATION_TEST_NAME}] in this test class."
             )
-
         if (
-            self._outcome.errors  # type: ignore
+            # _outcome exists as a private property, but not in typings. Ignore warnings
+            not self._outcome.success  # type: ignore
             or self._testMethodName != FULL_INTEGRATION_TEST_NAME
         ):
             # If test fails or this is not the integration test, do not validate

@@ -30,6 +30,7 @@ from recidiviz.validation.configured_validations import get_all_validations
 
 def add_validation_routes(admin_panel: Blueprint) -> None:
     """Adds the relevant Validation API routes to an input Blueprint."""
+
     # Validation status
     @admin_panel.route("/api/validation_metadata/state_codes", methods=["POST"])
     def fetch_validation_state_codes() -> Tuple[Response, HTTPStatus]:

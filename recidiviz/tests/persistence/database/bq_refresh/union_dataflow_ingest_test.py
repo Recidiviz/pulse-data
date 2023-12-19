@@ -107,6 +107,7 @@ class UnionDataflowIngestTest(unittest.TestCase):
             "recidiviz.big_query.view_update_manager.BigQueryClientImpl"
         )
         self.mock_bq = self.bq_patcher.start().return_value
+
         # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
         def mock_dataset_ref_for_id(dataset_id: str) -> bigquery.DatasetReference:
             return bigquery.DatasetReference(TEST_PROJECT, dataset_id)

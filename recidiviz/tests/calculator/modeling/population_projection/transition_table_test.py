@@ -71,7 +71,6 @@ class TestInitialization(TestTransitionTable):
             )
 
     def test_results_independent_of_data_order(self) -> None:
-
         compartment_policies = [
             SparkPolicy(
                 policy_fn=TransitionTable.test_retroactive_policy,
@@ -262,7 +261,6 @@ class TestPolicyFunctions(TestTransitionTable):
     def test_apply_reduction_with_trivial_reductions_doesnt_change_transition_table(
         self,
     ) -> None:
-
         policy_mul = partial(
             TransitionTable.apply_reductions,
             reduction_df=pd.DataFrame(

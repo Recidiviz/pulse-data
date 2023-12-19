@@ -1,4 +1,4 @@
-FROM ubuntu:focal-20221130 AS recidiviz-init
+FROM ubuntu:mantic-20231011 AS recidiviz-init
 ENV DEBIAN_FRONTEND noninteractive
 # NOTE: It is is extremely important that we do not delete this
 # variable. One of our dependencies, dateparser, seems to require
@@ -7,18 +7,14 @@ ENV DEBIAN_FRONTEND noninteractive
 # return None in a large set of circumstances which is of course,
 # unideal.
 ENV TZ America/New_York
-# Add a package repo to get archived python versions.
-RUN apt update -y && \
-    apt install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa
 RUN apt update -y && \
     apt install -y \
     locales \
     git \
     libxml2-dev libxslt1-dev \
-    python3.9-dev python3.9-distutils python3-pip \
     default-jre \
     libpq-dev \
+    python3.11-dev pipenv/mantic \
     curl
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
@@ -29,7 +25,6 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
 # Make stdout/stderr unbuffered. This prevents delay between output and cloud
 # logging collection.
 ENV PYTHONUNBUFFERED 1
-RUN pip3 install pipenv
 # In order to use this Dockerfile with Cloud Run, PIPENV_VENV_IN_PROJECT must be set.
 # If not, Cloud Run will try to "helpfully" create a new virtualenv for us which will not match our
 # expected set of dependencies.

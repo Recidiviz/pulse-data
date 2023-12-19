@@ -35,7 +35,6 @@ SUPERVISION_TYPE_PRECEDENCE_ORDER = [
 def sentence_supervision_types_to_supervision_period_supervision_type(
     supervision_types: Set[Optional[StateSupervisionSentenceSupervisionType]],
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
-
     supervision_period_supervision_types = [
         sentence_supervision_type_to_supervision_periods_supervision_type(
             supervision_type

@@ -38,7 +38,6 @@ class MatchedMultipleDatabaseEntitiesError(EntityMatchingError):
     def __init__(
         self, ingested_entity: CoreEntity, database_entities: Sequence[CoreEntity]
     ):
-
         database_ids = "\n".join(str(e.get_id()) for e in database_entities)
         msg = (
             "Matched one ingested entity to multiple database entities."

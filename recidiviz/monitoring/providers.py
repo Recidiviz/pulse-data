@@ -49,7 +49,8 @@ CUSTOM_METRIC_NAMESPACE = "custom.googleapis.com/opencensus"
 
 def get_global_tracer_provider() -> TracerProvider:
     """Returns the globally-configured provider object that can be used to generate OpenTelemetry
-    Tracer objects (see https://opentelemetry-python.readthedocs.io/en/latest/api/trace.html#opentelemetry.trace.Tracer)"""
+    Tracer objects (see https://opentelemetry-python.readthedocs.io/en/latest/api/trace.html#opentelemetry.trace.Tracer)
+    """
     # A ProxyTracerProvider is returned when a global meter provider is not configured.
     # It maintains the same interface, so cast it
     return cast(TracerProvider, get_tracer_provider())
@@ -57,7 +58,8 @@ def get_global_tracer_provider() -> TracerProvider:
 
 def get_global_meter_provider() -> MeterProvider:
     """Returns the globally-configured provider object that can be used to generate OpenTelemetry
-    Meter objects (see https://opentelemetry-python.readthedocs.io/en/latest/api/metrics.html#module-opentelemetry.metrics)"""
+    Meter objects (see https://opentelemetry-python.readthedocs.io/en/latest/api/metrics.html#module-opentelemetry.metrics)
+    """
     # A ProxyMeterProvider is returned when a global meter provider is not configured.
     # It maintains the same interface, so cast it
     return cast(MeterProvider, get_meter_provider())

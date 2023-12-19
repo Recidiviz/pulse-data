@@ -57,7 +57,6 @@ class SuperSimulation:
         validator: Validator,
         exporter: Exporter,
     ) -> None:
-
         self.initializer = initializer
         self.simulator = simulator
         self.validator = validator

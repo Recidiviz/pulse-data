@@ -262,7 +262,6 @@ class BuildableAttrTests(unittest.TestCase):
 
     def testBuildFromDictionary_InvalidForwardRefInDict(self) -> None:
         with self.assertRaises(ValueError):
-
             # Construct dictionary representation
             subject_dict = {
                 "required_field": "value",
@@ -319,7 +318,6 @@ class BuildableAttrTests(unittest.TestCase):
 
     def testBuildFromDictionary_WithInvalidDateFormat(self) -> None:
         with self.assertRaises(ValueError):
-
             # Construct dictionary representation
             subject_dict = {
                 "required_field": "value",
@@ -333,7 +331,6 @@ class BuildableAttrTests(unittest.TestCase):
 
     def testBuildFromDictionary_WithInvalidDateString(self) -> None:
         with self.assertRaises(ValueError):
-
             # Construct dictionary representation
             subject_dict = {
                 "required_field": "value",

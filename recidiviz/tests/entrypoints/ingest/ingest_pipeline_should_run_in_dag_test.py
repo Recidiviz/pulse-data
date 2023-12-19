@@ -40,7 +40,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-
         self.secondary_has_raw_data_changes_patcher = patch(
             "recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag._secondary_has_raw_data_changes",
             return_value=False,
@@ -180,7 +179,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
     def test_ingest_pipeline_should_run_in_dag_only_us_dd_launched_in_env(
         self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
     ) -> None:
-
         self.assertFalse(
             ingest_pipeline_should_run_in_dag(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY

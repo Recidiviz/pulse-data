@@ -196,7 +196,6 @@ def aggregate_adjacent_spans(
     attribute_grouping_str = ""
 
     if attribute:
-
         # If only one attribute is specified, turn it into a single-element list. This is done to reduce
         # repeated logic below to handle both situations separately.
         attribute_list = [attribute] if not isinstance(attribute, List) else attribute
@@ -299,7 +298,6 @@ def aggregate_adjacent_spans_postgres(
     attribute_grouping_str = ""
 
     if attribute:
-
         # If only one attribute is specified, turn it into a single-element list. This is done to reduce
         # repeated logic below to handle both situations separately.
         attribute_list = [attribute] if not isinstance(attribute, List) else attribute

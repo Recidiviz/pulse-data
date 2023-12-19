@@ -325,7 +325,6 @@ def parse_supervision_level(
     # If the raw text isn't a concatenated string, then the raw text is coming from OMNI
     # and map it like so
     if re.search(r"_", raw_text) is None:
-
         if supervision_level_value in limited_levels:
             return StateSupervisionLevel.LIMITED
 
@@ -408,7 +407,6 @@ def parse_supervision_level(
 def map_supervision_type_based_on_coms_level(
     raw_text: str,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
-
     if "parole" in raw_text.lower() and "probation" in raw_text.lower():
         return StateSupervisionPeriodSupervisionType.DUAL
 
@@ -427,7 +425,6 @@ def map_supervision_type_based_on_coms_level(
 def parse_staff_role_type(
     raw_text: str,
 ) -> Optional[StateStaffRoleType]:
-
     if "parole" in raw_text.lower() and (
         "probation" in raw_text.lower() or "prbtn" in raw_text.lower()
     ):
@@ -450,7 +447,6 @@ def parse_staff_role_type(
 def parse_staff_role_subtype(
     raw_text: str,
 ) -> Optional[StateStaffRoleSubtype]:
-
     if parse_staff_role_type(raw_text) == StateStaffRoleType.SUPERVISION_OFFICER:
         if "manager" in raw_text.lower():
             return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR

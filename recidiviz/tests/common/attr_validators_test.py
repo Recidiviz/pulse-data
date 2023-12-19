@@ -39,7 +39,8 @@ class AttrValidatorsTest(unittest.TestCase):
             _ = _TestClass()  # type: ignore[call-arg]
 
         self.assertEqual(
-            "__init__() missing 1 required positional argument: 'my_required_str'",
+            "AttrValidatorsTest.test_str_validators.<locals>._TestClass.__init__() "
+            "missing 1 required positional argument: 'my_required_str'",
             str(e.exception.args[0]),
         )
 

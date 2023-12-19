@@ -58,7 +58,6 @@ class ExtractAndMergeJobPrioritizerImpl(ExtractAndMergeJobPrioritizer):
     def get_next_job_args(
         self,
     ) -> Optional[ExtractAndMergeArgs]:
-
         logging.info("Getting next extract and merge job args")
         highest_pri_batch = None
 

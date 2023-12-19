@@ -197,7 +197,6 @@ class TransitionTable:
         full_release_times = np.isclose(normalized_df["remaining"], 0, SIG_FIGS)
 
         if full_release_times.sum() == 0:
-
             # KNOWN ISSUE: presumed rounding error for valid transitions table
             # use this commented hack below if happening
 
@@ -692,7 +691,6 @@ class TransitionTable:
         To tell the method to assume the mode compartment_sentence is the current mm, set `current_mm`='auto'
         """
         if current_mm is not None:
-
             if current_mm == "auto":
                 current_mm = (
                     historical_outflows.sort_values("cohort_portion")

@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for ValidationStatusStore"""
-
+# TODO(protocolbuffers/protobuf#10372): Remove pylint no-name-in-module check
+# pylint: disable=no-name-in-module
 import datetime
 import unittest
 

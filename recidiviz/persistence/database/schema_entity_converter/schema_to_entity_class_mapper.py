@@ -40,7 +40,6 @@ class SchemaToEntityClassMapper:
     def __init__(
         self, *, entities_module: ModuleType, schema_module: ModuleType
     ) -> None:
-
         self._entities_module = entities_module
         self._schema_module = schema_module
 

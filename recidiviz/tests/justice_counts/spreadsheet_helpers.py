@@ -137,7 +137,13 @@ def _create_dataframe_dict(
         else []
     )
 
-    year_col, month_col, agency_col, value_col, dimension_col, = _get_dimension_columns(
+    (
+        year_col,
+        month_col,
+        agency_col,
+        value_col,
+        dimension_col,
+    ) = _get_dimension_columns(
         month_list=month_list,
         dimension_list=dimension_list,
         vary_values=vary_values,

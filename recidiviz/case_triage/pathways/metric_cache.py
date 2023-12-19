@@ -73,7 +73,6 @@ class PathwaysMetricCache:
         self.initialize_cache(mapper)
 
     def initialize_cache(self, mapper: MetricQueryBuilder) -> None:
-
         operable_dimensions = mapper.dimension_mapping_collection.operable_map
         for dimension in operable_dimensions[DimensionOperation.GROUP]:
             params = mapper.build_params({"group": dimension})

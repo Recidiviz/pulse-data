@@ -68,6 +68,8 @@ jobs:
           fetch-depth: 0
       - name: Python Setup
         uses: ./.github/actions/python-setup
+      - name: Install Pylint
+        run: pipenv run pip install pylint
       - name: Pylint
         run: pipenv run ./recidiviz/tools/lint/run_pylint.sh
 

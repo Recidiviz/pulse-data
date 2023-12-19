@@ -164,7 +164,8 @@ def lsu_supervision_level(raw_text: str) -> StateSupervisionLevel:
 
 def determine_ed_requesting_body(raw_text: str) -> StateActingBodyType:
     """Maps parole early discharge requesting body based on when the request date was since there was a policy change Oct 2019 that
-    changed it such that all parole early discharge requests are now made by the client instead of by the supervision officer"""
+    changed it such that all parole early discharge requests are now made by the client instead of by the supervision officer
+    """
     request_date = parse_date(raw_text)
     if request_date:
         if request_date < date(2019, 10, 1):

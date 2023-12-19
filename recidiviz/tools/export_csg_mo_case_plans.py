@@ -30,6 +30,7 @@ import sys
 from datetime import date
 from typing import List, Tuple
 
+from google.cloud.bigquery import DatasetReference
 from google.cloud.bigquery.enums import DestinationFormat
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -52,9 +53,9 @@ def export_csg_files(
 
     # create a temp dataset for exports
     client = BigQueryClientImpl(project_id=project_id)
-
+    dataset_ref = DatasetReference(project=project_id, dataset_id=TEMP_DATASET_NAME)
     if not dry_run:
-        client.create_dataset_if_necessary(f"{project_id}.{TEMP_DATASET_NAME}", 3600000)
+        client.create_dataset_if_necessary(dataset_ref, 3600000)
 
     # now do a bunch of metric exports
     export_configs = []
@@ -77,7 +78,7 @@ def export_csg_files(
         except Exception as e:
             logging.error("Failed to export data: %s", e)
         finally:
-            client.delete_dataset(TEMP_DATASET_NAME, delete_contents=True)
+            client.delete_dataset(dataset_ref, delete_contents=True)
 
 
 def generate_state_specific_export_configs(

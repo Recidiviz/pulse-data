@@ -33,7 +33,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-
     # original revision = "9211a1fa6315"
     op.execute(
         """
@@ -67,7 +66,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-
     # original revision = "9211a1fa6315"
     op.execute(
         """

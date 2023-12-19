@@ -53,7 +53,8 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
     def get_job(self) -> Dict[Any, Any]:
         """Retrieves the most recent Dataflow job with job_name.
         That job may either be currently running or completed (if another one has not yet started).
-        Queries the Dataflow service directly because DataflowHook does not support retrieving jobs by name."""
+        Queries the Dataflow service directly because DataflowHook does not support retrieving jobs by name.
+        """
         service = build("dataflow", "v1b3", cache_discovery=False)
 
         return (

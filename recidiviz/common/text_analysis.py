@@ -118,7 +118,8 @@ class TextEntity(Enum, metaclass=EnumMeta):
     def matches(self, normalized_text: str) -> bool:
         """Indicates that a text flag matches the normalized text by looping through all
         of the fuzzy matchers. As soon as the first fuzzy matcher matches the text, we
-        say that the flag matches and break before continuing to the rest of the matchers."""
+        say that the flag matches and break before continuing to the rest of the matchers.
+        """
         normalized_text_chunks = [normalized_text]
         if self.chunk_size:
             tokens = normalized_text.split(" ")
@@ -146,7 +147,8 @@ class TextMatchingConfiguration:
 
 class TextAnalyzer:
     """Contains all of the natural-language processing functionality needed in order to
-    be able to process, clean and match free text against given configuration criteria."""
+    be able to process, clean and match free text against given configuration criteria.
+    """
 
     def __init__(self, configuration: TextMatchingConfiguration) -> None:
         self.configuration = configuration

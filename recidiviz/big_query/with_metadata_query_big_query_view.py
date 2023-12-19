@@ -30,7 +30,8 @@ from recidiviz.big_query.big_query_view import (
 class WithMetadataQueryBigQueryView(BigQueryView):
     """An extension of BigQueryView that delegates its view query to a separate BigQueryView.
     It adds an additional `metadata_query` and format kwargs, which enable a
-    WithMetadataQueryBigQueryViewExporter to export the query results to GCS object metadata."""
+    WithMetadataQueryBigQueryViewExporter to export the query results to GCS object metadata.
+    """
 
     def __init__(
         self,
@@ -40,7 +41,6 @@ class WithMetadataQueryBigQueryView(BigQueryView):
         address_overrides: Optional[BigQueryAddressOverrides],
         **metadata_query_format_kwargs: str,
     ):
-
         super().__init__(
             dataset_id=delegate.dataset_id,
             view_id=delegate.view_id,

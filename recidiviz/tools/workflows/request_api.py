@@ -104,7 +104,6 @@ def insert_contact_note(
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--target_env", help="What environment to point the request to", default="dev"

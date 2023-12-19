@@ -493,7 +493,8 @@ class FieldParameterType(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         """Determines types compatible with category based on
-        https://cloud.google.com/looker/docs/reference/param-dimension-filter-parameter-types#type_definitions"""
+        https://cloud.google.com/looker/docs/reference/param-dimension-filter-parameter-types#type_definitions
+        """
         if field_category == LookMLFieldCategory.DIMENSION_GROUP:
             return self.field_type in (LookMLFieldType.TIME, LookMLFieldType.DURATION)
         if field_category in (

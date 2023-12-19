@@ -139,7 +139,6 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
         self,
     ) -> None:
-
         view_query_template = """SELECT * FROM {tagColumnsMissing};"""
 
         view = DirectIngestViewQueryBuilder(
@@ -157,7 +156,6 @@ ORDER BY col1, col2;"""
             view.build_query(config=self.DEFAULT_LATEST_CONFIG)
 
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
-
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN `{{project_id}}.reference_tables.my_table`
 USING (col1);"""
@@ -220,7 +218,6 @@ ORDER BY col1, col2;"""
         )
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
-
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_first}
 USING (col1);"""
@@ -252,7 +249,6 @@ ORDER BY col1, col2;"""
         )
 
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
-
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
 SELECT * FROM {file_tag_first}
@@ -368,7 +364,6 @@ ORDER BY col1, col2;"""
         )
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
-
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_not_in_config}
 USING (col1);"""
@@ -389,7 +384,6 @@ USING (col1);"""
     def test_direct_ingest_preprocessed_view_materialized_raw_table_subqueries(
         self,
     ) -> None:
-
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
@@ -486,7 +480,6 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_other_materialized_subquery_fails(
         self,
     ) -> None:
-
         view_query_template = """
 CREATE TEMP TABLE my_subquery AS (SELECT * FROM {file_tag_first});
 SELECT * FROM my_subquery;"""
@@ -504,7 +497,6 @@ SELECT * FROM my_subquery;"""
             )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
-
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
 SELECT * FROM {file_tag_first}
@@ -624,7 +616,6 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_temp_output_table(
         self,
     ) -> None:
-
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
 SELECT * FROM {file_tag_first}
@@ -733,7 +724,6 @@ ORDER BY col1, col2
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_permanent_expiring_output_table(
         self,
     ) -> None:
-
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
 SELECT * FROM {file_tag_first}
@@ -851,7 +841,6 @@ ORDER BY col1, col2
         )
 
     def test_direct_ingest_preprocessed_view_with_update_datetime(self) -> None:
-
         view_query_template = f"""SELECT * FROM {{file_tag_first}}
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}"""
 
@@ -907,14 +896,12 @@ ORDER BY col1, col2;"""
         )
 
     def test_direct_ingest_preprocessed_view_with_current_date(self) -> None:
-
         for current_date_fn in [
             "CURRENT_DATE('US/Eastern')",
             # Split up to avoid the lint check for this function used without a timezone
             "CURRENT_DATE(" + ")",
             "current_date(" + ")",
         ]:
-
             view_query_template = f"""SELECT * FROM {{file_tag_first}}
             WHERE col1 <= {current_date_fn}"""
             with self.assertRaisesRegex(

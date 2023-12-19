@@ -52,5 +52,4 @@ class MetricFile:
     display_name: str = attr.field(factory=str)
 
     def __attrs_post_init__(self) -> None:
-
         self.display_name = self.canonical_filename.replace("_", " ").title()

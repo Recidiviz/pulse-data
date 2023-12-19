@@ -73,7 +73,6 @@ class PopulationSimulationFactory:
         )
 
         if data_inputs.should_initialize_compartment_populations:
-
             # add to `policy_list` to switch from remaining sentences data to transitions data
             alternate_transition_policies = []
             for sub_group in simulation_groups:

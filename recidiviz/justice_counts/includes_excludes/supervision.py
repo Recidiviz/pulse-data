@@ -24,6 +24,7 @@ SUPERVISION_PAROLE_BREAKDOWN_DESCRIPTION = "People who are conditionally release
 SUPERVISION_PRETRIAL_BREAKDOWN_DESCRIPTION = "People who are supervised while awaiting trial as a condition of staying in the community until the disposition of their case. Decisions to revoke pretrial supervision are generally the responsibility of a court."
 SUPERVISION_OTHER_COMMUNITY_BREAKDOWN_DESCRIPTION = "People who are under a type of community supervision, by a public or private agency, that is not probation, parole, or pretrial."
 
+
 # Funding
 class SupervisionFundingTimeframeIncludesExcludes(Enum):
     SINGLE_FISCAL_YEAR = "Funding for single fiscal year"

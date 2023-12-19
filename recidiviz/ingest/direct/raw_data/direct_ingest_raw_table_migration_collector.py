@@ -94,7 +94,6 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
 
         all_migrations = []
         for table_migrations_module in table_migrations_modules:
-
             if not hasattr(table_migrations_module, _MIGRATIONS_FUNCTION_EXPECTED_NAME):
                 raise ValueError(
                     f"File [{table_migrations_module.__file__}] has no top-level "

@@ -29,7 +29,9 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 def test_simple_empty() -> None:
     handle: BigQueryResultsContentsHandle[
         Dict[str, Any]
-    ] = BigQueryResultsContentsHandle(query_job=iter(()))
+    ] = BigQueryResultsContentsHandle(
+        query_job=iter(())  # type: ignore
+    )
     results = list(handle.get_contents_iterator())
     assert not results
 
@@ -47,7 +49,9 @@ def test_iterate_twice() -> None:
 
     handle: BigQueryResultsContentsHandle[
         Dict[str, Any]
-    ] = BigQueryResultsContentsHandle(query_job=FakeQueryJob())
+    ] = BigQueryResultsContentsHandle(
+        query_job=FakeQueryJob()  # type: ignore
+    )
 
     expected_results = [
         {"bar": 2010, "foo": "00001"},
@@ -76,7 +80,7 @@ def test_iterate_with_value_converter() -> None:
         raise ValueError(f"Unexpected field name [{field_name}] for value [{value}].")
 
     handle = BigQueryResultsContentsHandle(
-        query_job=iter(
+        query_job=iter(  # type: ignore
             (
                 Row((2010, "00001"), {"bar": 0, "foo": 1}),
                 Row((2020, "00002"), {"bar": 0, "foo": 1}),
@@ -98,7 +102,7 @@ def test_more_than_max_rows() -> None:
     with pytest.raises(ValueError, match=r"^Found more than \[2\] rows in result\.$"):
         list(
             BigQueryResultsContentsHandle(
-                query_job=iter(
+                query_job=iter(  # type: ignore
                     (
                         Row((2010, "00001"), {"bar": 0, "foo": 1}),
                         Row((2020, "00002"), {"bar": 0, "foo": 1}),
@@ -114,6 +118,6 @@ def test_query_object_must_be_iterator_of_gcloud_rows() -> None:
     with pytest.raises(ValueError, match=r"^Found unexpected type for row: \[.*\]\.$"):
         list(
             BigQueryResultsContentsHandle(
-                query_job=iter(("test string",)),
+                query_job=iter(("test string",)),  # type: ignore
             ).get_contents_iterator()
         )

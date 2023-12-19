@@ -13,7 +13,13 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global = Function('return this')();
+var global =
+    (typeof globalThis !== 'undefined' && globalThis) ||
+    (typeof window !== 'undefined' && window) ||
+    (typeof global !== 'undefined' && global) ||
+    (typeof self !== 'undefined' && self) ||
+    (function () { return this; }).call(null) ||
+    Function('return this')();
 
 var google_protobuf_timestamp_pb = require('google-protobuf/google/protobuf/timestamp_pb.js');
 goog.object.extend(proto, google_protobuf_timestamp_pb);
@@ -1415,7 +1421,8 @@ proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.Partit
  */
 proto.recidiviz.admin_panel.models.SamenessPerViewValidationResultDetails.PartitionCounts.prototype.clearColumnCountsMap = function() {
   this.getColumnCountsMap().clear();
-  return this;};
+  return this;
+};
 
 
 /**

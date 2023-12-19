@@ -391,7 +391,8 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 @pytest.mark.uses_db
 class TestStateSchemaUniqueConstraints(unittest.TestCase):
     """Generalized Test Class for SupervisionViolation, SupervisionCaseTypeEntry, IncarcerationPeriod,
-    SupervisionViolationResponse, Bond, EarlyDischarge, ProgramAssignment, SupervisionContact, Charge"""
+    SupervisionViolationResponse, Bond, EarlyDischarge, ProgramAssignment, SupervisionContact, Charge
+    """
 
     EXTERNAL_ID_1 = "EXTERNAL_ID_1"
     EXTERNAL_ID_2 = "EXTERNAL_ID_2"

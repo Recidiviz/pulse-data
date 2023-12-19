@@ -42,7 +42,6 @@ def us_tn_fines_fees_info() -> str:
 
 
 def us_tn_get_offense_information(in_projected_completion_array: bool = True) -> str:
-
     return f"""
         SELECT person_id,
          ARRAY_AGG(DISTINCT off.docket_number IGNORE NULLS) AS docket_numbers,

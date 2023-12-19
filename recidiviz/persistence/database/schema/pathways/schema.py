@@ -130,7 +130,8 @@ class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
 
 class PrisonPopulationOverTime(PathwaysBase):
     """ETL data imported from
-    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_over_time`"""
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_over_time`
+    """
 
     __tablename__ = "prison_population_over_time"
     # Adds covered index for time series view
@@ -187,7 +188,8 @@ class PrisonPopulationOverTime(PathwaysBase):
 
 class PrisonPopulationByDimension(PathwaysBase):
     """ETL data imported from
-    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_by_dimension`"""
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_by_dimension`
+    """
 
     __tablename__ = "prison_population_by_dimension"
 
@@ -230,7 +232,8 @@ class PrisonPopulationByDimension(PathwaysBase):
 
 class PrisonPopulationProjection(PathwaysBase):
     """ETL data imported from
-    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_projection`"""
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_projection`
+    """
 
     __tablename__ = "prison_population_projection"
 
@@ -256,7 +259,8 @@ class PrisonPopulationProjection(PathwaysBase):
 
 class PrisonPopulationPersonLevel(PathwaysBase):
     """ETL data imported from
-    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_person_level"""
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_person_level
+    """
 
     __tablename__ = "prison_population_person_level"
 
@@ -315,7 +319,8 @@ class PrisonToSupervisionTransitions(PathwaysBase, TransitionsOverTimeMixin):
 
 class SupervisionPopulationOverTime(PathwaysBase):
     """ETL data imported from
-    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_over_time`"""
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_over_time`
+    """
 
     __tablename__ = "supervision_population_over_time"
     # Adds covered index for time series view
@@ -365,7 +370,8 @@ class SupervisionPopulationOverTime(PathwaysBase):
 
 class SupervisionPopulationByDimension(PathwaysBase):
     """ETL data imported from
-    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_by_dimension`"""
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_by_dimension`
+    """
 
     __tablename__ = "supervision_population_by_dimension"
 
@@ -400,7 +406,8 @@ class SupervisionPopulationByDimension(PathwaysBase):
 
 class SupervisionPopulationProjection(PathwaysBase):
     """ETL data imported from
-    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_projection`"""
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_projection`
+    """
 
     __tablename__ = "supervision_population_projection"
 

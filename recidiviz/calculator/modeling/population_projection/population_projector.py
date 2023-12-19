@@ -195,7 +195,6 @@ class PopulationProjector:
         ), one_month_error in self.one_month_error.groupby(
             ["compartment", "simulation_group"]
         ):
-
             # Get the projection value to center the interval around
             group_projection = population_projection.loc[
                 (compartment, simulation_group)

@@ -111,7 +111,6 @@ def main(
         ingest_view_tag_from_sheet,
         output_filename_values,
     ) in values_by_ingest_view_and_output_filename.items():
-
         for (
             output_filename,
             external_id_to_test_id_map,

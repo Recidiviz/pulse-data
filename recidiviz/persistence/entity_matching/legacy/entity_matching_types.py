@@ -117,7 +117,6 @@ class IndividualMatchResult:
     ingested_entity_tree."""
 
     def __init__(self, merged_entity_trees: List[EntityTree], error_count: int):
-
         # If matching was successful, these are results of merging the
         # ingested_entity_tree with any of its DB matches.
         self.merged_entity_trees: List[EntityTree] = merged_entity_trees

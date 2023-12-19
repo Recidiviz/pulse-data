@@ -302,7 +302,6 @@ class ViewDagInvariantTests(unittest.TestCase):
         )
 
         if failing_views:
-
             error_message_rows = []
             for view_builder, expected in failing_views.items():
                 error_message_rows.append(

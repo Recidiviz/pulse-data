@@ -96,7 +96,6 @@ class TestDagIntegrity(unittest.TestCase):
             dag_id,
             discrete_parameters_list,
         ) in DISCRETE_CONFIGURATION_PARAMETERS.items():
-
             known_params_set = set(KNOWN_CONFIGURATION_PARAMETERS[dag_id])
 
             missing_params = set(discrete_parameters_list) - known_params_set

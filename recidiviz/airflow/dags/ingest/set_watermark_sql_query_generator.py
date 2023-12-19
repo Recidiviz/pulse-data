@@ -71,7 +71,6 @@ class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         job_id: str,
         max_update_datetimes: Dict[str, str],
     ) -> str:
-
         values = ", ".join(
             [
                 f"('{self.region_code.upper()}', '{file_tag}', '{max_update_datetime}', '{job_id}')"

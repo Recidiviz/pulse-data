@@ -1061,7 +1061,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         self,
         mid_processing_periods: List[StateIncarcerationPeriod],
     ) -> Dict[int, Optional[StateSupervisionViolationType]]:
-
         """Generates a map of incarceration admission violation type information
         to be added to each period."""
 

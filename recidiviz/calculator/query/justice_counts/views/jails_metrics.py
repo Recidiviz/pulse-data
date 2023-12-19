@@ -71,7 +71,8 @@ WHERE with_resident_ordinal = 1
 class AddResidentPopulationViewBuilder(SimpleBigQueryViewBuilder):
     """Factory class for building a view that adds the county resident population
 
-    Relies on `dimensions_string` and `date_partition` forming a unique id for the input rows"""
+    Relies on `dimensions_string` and `date_partition` forming a unique id for the input rows
+    """
 
     def __init__(
         self,

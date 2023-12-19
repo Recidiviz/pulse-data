@@ -166,7 +166,6 @@ https://drive.google.com/drive/folders/{self._directory_id}
 
         # Create new directory, if necessary
         if new_directory_name:
-
             # set metadata for creating new directory
             new_directory_metadata = {
                 "name": new_directory_name,
@@ -334,7 +333,6 @@ https://drive.google.com/drive/folders/{parent_directory_id}
         # create replaceImage request
         replace_image_requests: List[Dict[str, Any]] = []
         if figure_replace_dict:
-
             # get list of imageObjectIds, in case integer keys provided
             image_dict = self.get_image_objects(slide_numbers)
             image_objects = []
@@ -344,7 +342,6 @@ https://drive.google.com/drive/folders/{parent_directory_id}
 
             # iteratively map image placeholder to new figure
             for figure_key in figure_replace_dict.keys():
-
                 # get imageObjectId, if integer key provided
                 image_object_id = None
                 if isinstance(figure_key, str):
@@ -433,7 +430,6 @@ https://drive.google.com/drive/folders/{parent_directory_id}
 
             # handle failure
             except HttpError as err:
-
                 # handle forbidden access - retry since permissions haven't yet changed
                 if err.resp.status == 400:
                     if retries == max_retries:

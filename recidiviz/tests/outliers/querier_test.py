@@ -429,7 +429,6 @@ class TestOutliersQuerier(TestCase):
     def test_get_supervision_officer_entities(
         self,
     ) -> None:
-
         expected = [
             SupervisionOfficerSupervisorEntity(
                 full_name=PersonName(

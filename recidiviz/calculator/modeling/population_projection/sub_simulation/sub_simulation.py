@@ -38,7 +38,6 @@ class SubSimulation:
         self,
         simulation_compartments: Dict[str, SparkCompartment],
     ) -> None:
-
         # A DataFrame with total population errors at all time steps with population data
         self.end_time_step_scale_factors = pd.DataFrame()
 

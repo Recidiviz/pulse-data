@@ -270,7 +270,8 @@ def _build_task_instance_state_dataframe(
 
 def get_configured_pagerduty_integrations() -> Dict[str, str]:
     """Returns a dictionary of configured DAG IDs -> PagerDuty Integration email.
-    The PagerDuty Integrations are configured on a service-by-service basis inside PagerDuty."""
+    The PagerDuty Integrations are configured on a service-by-service basis inside PagerDuty.
+    """
     try:
         connection = Connection.get_connection_from_secrets("pagerduty_integration")
         return connection.extra_dejson

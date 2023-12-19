@@ -339,7 +339,8 @@ def add_to_dimension_manifest(
     data_point: Dict[str, Any], dimension_values_by_key: Dict[str, Set[str]]
 ) -> Dict[str, Set[str]]:
     """Updates the given dictionary-based dimension manifest with the dimensional contents of the given data point,
-    i.e. ensures that any new values for any dimensions in the data point are included in the manifest."""
+    i.e. ensures that any new values for any dimensions in the data point are included in the manifest.
+    """
     for key in dimension_values_by_key.keys():
         dimension_value = data_point[key]
         normalized_value = _normalize_dimension_value(dimension_value)

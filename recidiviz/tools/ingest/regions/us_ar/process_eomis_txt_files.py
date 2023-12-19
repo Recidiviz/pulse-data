@@ -128,7 +128,6 @@ def _read_and_convert_txt_to_csv(
 
     # Convert each txt file in the folder, skipping other files (hidden .DS_Store files can cause errors otherwise)
     for fp in [filepath for filepath in filepaths if ".txt" in filepath]:
-
         filename = fp.split("/")[-1].split(".")[0] + ".csv"
 
         if filename in os.listdir(output_storage_folder):
@@ -288,7 +287,6 @@ def _update_config_using_sheet(
     encoding: str,
     metadata_dfs: dict,
 ) -> DirectIngestRawFileConfig:
-
     """Updates a config using the eOMIS reference sheets. Pulls in the table description
     and primary keys from the table names and metadata tables, respectively. Then, uses
     _get_col_details_from_ref_sheet to set column-level details."""

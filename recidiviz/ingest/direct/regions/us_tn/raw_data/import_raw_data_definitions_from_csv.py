@@ -86,7 +86,7 @@ def import_csv_to_raw_yaml(absolute_file_path: str) -> None:
                 definition,
             )
 
-    for (table_name, table_description) in all_tables:
+    for table_name, table_description in all_tables:
         yaml_file_path = os.path.join(ENTITY_DOCS_ROOT, f"us_tn_{table_name}.yaml")
         new_file = ""
         new_file += f"file_tag: {table_name}\n"

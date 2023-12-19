@@ -15,6 +15,7 @@ down_revision = "2071ae47b07f"
 branch_labels = None
 depends_on = None
 
+
 # In cases where custodial authority is OTHER_STATE and supervision level is currently NULL,
 # set supervision level to INTERNAL_UNKNOWN (see #20972)
 def upgrade() -> None:

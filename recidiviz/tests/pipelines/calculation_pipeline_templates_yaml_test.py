@@ -105,7 +105,7 @@ class TestConfiguredPipelines(unittest.TestCase):
             get_ingest_pipeline_enabled_state_and_instance_pairs()
         )
 
-        for (state_code, ingest_instance) in pairs_with_pipelines_enabled:
+        for state_code, ingest_instance in pairs_with_pipelines_enabled:
             if is_ingest_in_dataflow_enabled(state_code, ingest_instance):
                 self.assertIn(state_code, states_launched_in_env)
 

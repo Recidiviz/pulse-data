@@ -89,8 +89,8 @@ import sys
 from typing import List, Tuple, Type, Union, get_origin
 
 import attr
-from google.cloud import bigquery
 from google.cloud.bigquery import QueryJob
+from google.cloud.bigquery.table import TableListItem
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -268,15 +268,13 @@ def compare_dataflow_output_to_sandbox(
     )
 
     if metrics_with_different_output:
-        for metric_table in metrics_with_different_output:
-            # This will always be true, and is here to silence mypy warnings
-            assert isinstance(metric_table, bigquery.table.TableListItem)
-
+        metric_table_with_different_output: TableListItem
+        for metric_table_with_different_output in metrics_with_different_output:
             logging.warning(
                 "Dataflow output differs for metric %s. See %s.%s for diverging rows.",
-                metric_table.table_id,
+                metric_table_with_different_output.table_id,
                 sandbox_comparison_output_dataset_id,
-                metric_table.table_id,
+                metric_table_with_different_output.table_id,
             )
     else:
         logging.info(

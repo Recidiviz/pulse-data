@@ -38,7 +38,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-
     op.execute(
         """
         UPDATE state_supervision_period

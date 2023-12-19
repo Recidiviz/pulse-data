@@ -96,7 +96,6 @@ class IngestViewMaterializationArgsGenerator:
         view_collector: DirectIngestViewQueryBuilderCollector,
         launched_ingest_views: List[str],
     ):
-
         self.region = region
         self.metadata_manager = metadata_manager
         self.raw_file_metadata_manager = raw_file_metadata_manager

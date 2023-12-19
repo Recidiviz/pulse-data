@@ -149,7 +149,6 @@ class TestMetricDefinition(TestCase):
         )
 
     def test_display_name(self) -> None:
-
         self.assertEqual(
             GenderRestricted.display_name(),
             "Gender",

@@ -87,7 +87,6 @@ def get_most_severe_response_decision(
 
     response_decisions: List[StateSupervisionViolationResponseDecision] = []
     for response in violation_responses:
-
         if response.supervision_violation_response_decisions:
             decision_entries = response.supervision_violation_response_decisions
 

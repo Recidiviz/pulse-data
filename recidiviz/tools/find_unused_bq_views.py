@@ -152,7 +152,6 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
             for instance in DirectIngestInstance
         },
     }:
-
         return True
 
     if address.dataset_id.startswith("task_eligibility") and address.table_id in {
