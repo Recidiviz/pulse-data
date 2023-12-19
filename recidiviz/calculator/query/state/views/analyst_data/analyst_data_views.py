@@ -180,9 +180,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_drug_screen_eligible import (
     US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligibility_sessions import (
-    US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
 )
@@ -233,9 +230,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_incarcerati
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_invoices_preprocessed import (
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_overdue_for_discharge import (
-    US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_payments_preprocessed import (
     US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
@@ -294,7 +288,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
-    US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
@@ -302,7 +295,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_FEES_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_OFFENSE_ELIGIBLE_VIEW_BUILDER,
