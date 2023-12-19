@@ -28,6 +28,7 @@ from typing import Optional
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
@@ -370,7 +371,10 @@ def parse_supervision_level(
     if re.search(r"MINIMUM ADMINISTRATIVE", supervision_level_value):
         return StateSupervisionLevel.UNSUPERVISED
 
-    if re.search(r"IN JAIL", supervision_level_value):
+    if re.search(
+        r"IN JAIL|MPVU|IN PRISON|PENDING REVOCATION HEARING|PAROLE TO CUSTODY|#2",
+        supervision_level_value,
+    ):
         return StateSupervisionLevel.IN_CUSTODY
 
     if re.search(r"ABSCONDER", supervision_level_value):
@@ -535,5 +539,31 @@ def map_incident_type(
 
     if raw_text:
         return StateIncarcerationIncidentType.INTERNAL_UNKNOWN
+
+    return None
+
+
+def map_supervision_type_based_on_COMS(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+
+    if re.search(r"ABSCONDED|ESCAPED|ABSCONDER WARRANT", raw_text.upper()):
+        return StateSupervisionPeriodSupervisionType.ABSCONSION
+
+    if re.search(
+        r"ARRESTED OUT OF STATE|WARRANT STATUS|#2 WARRANT|PAROLE #2|PROBATION WARRANT",
+        raw_text.upper(),
+    ):
+        return StateSupervisionPeriodSupervisionType.WARRANT_STATUS
+
+    return None
+
+
+def map_custodial_authority_based_on_COMS(
+    raw_text: str,
+) -> Optional[StateCustodialAuthority]:
+
+    if raw_text:
+        return StateCustodialAuthority.OTHER_STATE
 
     return None

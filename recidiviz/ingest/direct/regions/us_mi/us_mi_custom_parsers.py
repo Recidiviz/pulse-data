@@ -24,7 +24,7 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
-from re import findall
+from re import findall, search
 from typing import Optional
 
 from dateutil.relativedelta import relativedelta
@@ -191,23 +191,36 @@ def is_coms_level(supervision_level_value: str) -> bool:
     return len(supervision_level_value.split("_")) > 1
 
 
-def coms_parse_warrant_level(supervision_level_value: str) -> bool:
-    """Returns True if the supervision level is coming from COMS and indicates a warrant status"""
+def supervision_type_info_from_COMS(supervision_level: str, modifier: str) -> bool:
+    """Returns whether the COMS supervision level or modifier data contains information about supervision type"""
 
-    if len(supervision_level_value.split("_")) > 1:
-        if supervision_level_value.split("_")[1] in ("Probation Warrant"):
-            return True
+    if search(
+        r"ABSCONDER WARRANT|ARRESTED OUT OF STATE|PAROLE #2|PROBATION WARRANT",
+        supervision_level.upper(),
+    ):
+        return True
+
+    if search(
+        r"ABSCONDED|ESCAPED|ARRESTED OUT OF STATE|WARRANT STATUS|#2 WARRANT",
+        modifier.upper(),
+    ):
+        return True
 
     return False
 
 
-def coms_parse_absconsion_level(supervision_level_value: str) -> bool:
-    """Returns True if the supervision level is coming from COMS and indicates an absconsion status"""
-    if len(supervision_level_value.split("_")) > 1:
-        if supervision_level_value.split("_")[1] in (
-            "Parole Absconder Warrant",
-            "Probation Absconder Warrant",
-        ):
-            return True
+def custodial_authority_info_from_COMS(supervision_level: str, modifier: str) -> bool:
+    """Returns whether the COMS supervision level or modifier data contains information about supervision type"""
+
+    if search(
+        r"SUPERVISED OUT OF STATE|ARRESTED OUT OF STATE", supervision_level.upper()
+    ):
+        return True
+
+    if search(
+        r"SUPERVISED OUT OF STATE|PAROLED TO CUSTODY (FED/OUTSTATE)|ARRESTED OUT OF STATE",
+        modifier.upper(),
+    ):
+        return True
 
     return False

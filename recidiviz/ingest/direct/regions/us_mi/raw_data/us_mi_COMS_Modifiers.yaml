@@ -30,6 +30,9 @@ columns:
   - name: Start_Date
     description: Start date of modifier period
     field_type: datetime
+  # - name: End_Date
+  #   description: End date of modifier period
+  #   field_type: datetime
   - name: Entered_Date
     description: Date modifier record entered into COMS
     field_type: datetime

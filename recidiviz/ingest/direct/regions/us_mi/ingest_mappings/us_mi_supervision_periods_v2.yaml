@@ -28,6 +28,7 @@ input_columns:
   - position
   - prev_movement_reason_id
   - most_recent_supervision_level_id
+  - modifier
 unused_columns:
   - next_order_type_id_list
   - first_name
@@ -51,20 +52,24 @@ output:
               $include_nulls: True
           supervision_type:
             $conditional:
-              # If this period has a supervision level from COMS that indicates warrant status, map type to BENCH_WARRANT
+              # If the COMS supervision level or modifiers data contain information about supervision type, use that
               - $if:
                   $custom:
-                    $function: us_mi_custom_parsers.coms_parse_warrant_level
+                    $function: us_mi_custom_parsers.supervision_type_info_from_COMS
                     $args:
-                      supervision_level_value: supervision_level_id
-                $then: $literal_enum(StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
-              # Else if this period has a supervision level from COMS that indicates absconsion status, map type to ABSCONSION
-              - $else_if:
-                  $custom:
-                    $function: us_mi_custom_parsers.coms_parse_absconsion_level
-                    $args:
-                      supervision_level_value: supervision_level_id
-                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
+                      supervision_level: supervision_level_id
+                      modifier: modifier
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("SUPERVISION LEVEL-")
+                          - supervision_level_id
+                          - $literal("##MODIFIER-")
+                          - modifier
+                        $separator: ""
+                    $custom_parser: us_mi_custom_enum_parsers.map_supervision_type_based_on_COMS
               # Else if this period has a supervision level from OMNI that indicates absconsion or warrant status, map types accordingly
               - $else_if:
                   $in:
@@ -760,11 +765,59 @@ output:
                         - "3" # Other Movement
           supervision_level:
             $conditional:
+              # If this period has a in custody related modifier, map to IN_CUSTODY
+              - $if:
+                  $in:
+                    $value: modifier
+                    $options:
+                      - $literal("MPVU")
+                      - $literal("Pending Revocation Hearing")
+                      - $literal("Paroled to Custody")
+                      - $literal("In Prison")
+                      - $literal("In Jail")
+                      - $literal("Paroled to Custody (Fed/Outstate)")
+                      - $literal("#2 Warrant Issued Sentenced Over 90 Days")
+                      - $literal("#2 Warrant Issued")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("MODIFIER")
+                          - modifier
+                    $mappings:
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - "MODIFIER-MPVU"
+                        - "MODIFIER-Pending Revocation Hearing"
+                        - "MODIFIER-Paroled to Custody"
+                        - "MODIFIER-In Prison"
+                        - "MODIFIER-In Jail"
+                        - "MODIFIER-Paroled to Custody (Fed/Outstate)"
+                        - "MODIFIER-#2 Warrant Issued Sentenced Over 90 Days"
+                        - "MODIFIER-#2 Warrant Issued"
+              # If this period has a in custody related supervision site, map to IN_CUSTODY
+              - $else_if:
+                  $in:
+                    $value: dest_name
+                    $options:
+                      - $literal("PAROLED IN CUSTODY")
+                      - $literal("Paroled to Michigan Custody")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("SUPERVISION_SITE")
+                          - dest_name
+                    $mappings:
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - "SUPERVISION_SITE-PAROLED IN CUSTODY"
+                        - "SUPERVISION_SITE-Paroled to Michigan Custody"
               # if this period is an OTHER_STATE period, supervision level is null, and
               # we wouldn't be imputing it based on most recent supervision level, then
               # let's set supervision level to INTERNAL_UNKNOWN so that they won't be
               # excluded from the workflows candidate population query due to NULL supervision level
-              - $if:
+              - $else_if:
                   $and:
                     - $is_null: supervision_level_id
                     - $or:
@@ -815,7 +868,25 @@ output:
                 $then: $literal("US_MI_OMNI_USER")
           custodial_authority:
             $conditional:
+              # If this has custodial authority info in the COMS modifier or supervision level info
               - $if:
+                  $custom:
+                    $function: us_mi_custom_parsers.custodial_authority_info_from_COMS
+                    $args:
+                      supervision_level: supervision_level_id
+                      modifier: modifier
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("SUPERVISION LEVEL-")
+                          - supervision_level_id
+                          - $literal("##MODIFIER-")
+                          - modifier
+                        $separator: ""
+                    $custom_parser: us_mi_custom_enum_parsers.map_custodial_authority_based_on_COMS
+              - $else_if:
                   $equal:
                     - dest_location_type_id
                     - $literal("2155")
