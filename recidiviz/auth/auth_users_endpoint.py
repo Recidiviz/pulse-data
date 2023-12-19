@@ -17,7 +17,7 @@
 """Endpoints related to getting/setting information about users of Recidiviz applications."""
 import csv
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
@@ -55,7 +55,6 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     UserOverride,
 )
 from recidiviz.persistence.database.session import Session
-from recidiviz.utils.auth.gae import authenticate_gae
 
 users_blueprint = Blueprint("users", "users")
 
@@ -119,11 +118,6 @@ def get_users_query(session: Session) -> Query:
             == PermissionsOverride.email_address,
         )
     )
-
-
-@users_blueprint.before_request
-def handle_authorization() -> Optional[Tuple[str, HTTPStatus]]:
-    return authenticate_gae()
 
 
 @users_blueprint.route("")

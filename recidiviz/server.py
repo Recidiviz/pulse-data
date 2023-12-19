@@ -32,6 +32,7 @@ from opentelemetry.trace import set_tracer_provider
 from werkzeug import Response
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
+from recidiviz.auth.auth_users_endpoint import users_blueprint
 from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
 from recidiviz.monitoring.providers import (
     create_monitoring_meter_provider,
@@ -113,6 +114,7 @@ if not in_gunicorn():
 
 
 @auth_endpoint_blueprint.before_request
+@users_blueprint.before_request
 @requires_gae_auth
 def authorization_middleware() -> None:
     pass
