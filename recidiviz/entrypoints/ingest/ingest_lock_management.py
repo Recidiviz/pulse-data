@@ -26,7 +26,7 @@ INGEST_LOCK_EXPIRATION_OVERRIDES = {
     # TODO(#25750): remove this once the TN views has been rewritten
     StateCode.US_TN: 60 * 80,  # 80 minutes
     # TODO(#25751): remove this once the ME views has been rewritten
-    StateCode.US_ME: 60 * 180,  # 180 minutes
+    StateCode.US_ME: 60 * 240,  # 240 minutes
     # TODO(#25752): remove this once the IX views has been rewritten
     StateCode.US_IX: 60 * 180,  # 180 minutes
 }
