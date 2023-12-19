@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements api routes for the Justice Counts Publisher Admin Panel."""
+from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
 
@@ -190,12 +191,19 @@ def get_admin_blueprint(
         )
 
         agency_jsons: List[Dict[str, Any]] = []
+
+        super_agency_id_to_child_agency_ids = defaultdict(list)
+        for agency in agencies:
+            if agency.super_agency_id is not None:
+                super_agency_id_to_child_agency_ids[agency.super_agency_id].append(
+                    agency.id
+                )
+
         for agency in agencies:
             agency_json = agency.to_json(with_team=True, with_settings=False)
-            child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
-                session=current_session, agency=agency
+            agency_json["child_agency_ids"] = super_agency_id_to_child_agency_ids.get(
+                agency.id, []
             )
-            agency_json["child_agency_ids"] = child_agency_ids
             agency_jsons.append(agency_json)
 
         return jsonify(
