@@ -27,7 +27,6 @@ from recidiviz.case_triage.views.client_contact_info import (
 from recidiviz.case_triage.views.employment_periods import (
     CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER,
 )
-from recidiviz.case_triage.views.etl_client_events import CLIENT_EVENTS_VIEW_BUILDER
 from recidiviz.case_triage.views.etl_clients import CLIENT_LIST_VIEW_BUILDER
 from recidiviz.case_triage.views.etl_opportunities import TOP_OPPORTUNITIES_VIEW_BUILDER
 from recidiviz.case_triage.views.last_known_date_of_employment import (
@@ -36,7 +35,6 @@ from recidiviz.case_triage.views.last_known_date_of_employment import (
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
-    ETLClientEvent,
     ETLOpportunity,
 )
 
@@ -46,7 +44,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER,
     LAST_KNOWN_DATE_OF_EMPLOYMENT_VIEW_BUILDER,
     TOP_OPPORTUNITIES_VIEW_BUILDER,
-    CLIENT_EVENTS_VIEW_BUILDER,
 ]
 
 
@@ -54,5 +51,4 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
 ETL_TABLES: Dict[Type[CaseTriageBase], SelectedColumnsBigQueryViewBuilder] = {
     ETLClient: CLIENT_LIST_VIEW_BUILDER,
     ETLOpportunity: TOP_OPPORTUNITIES_VIEW_BUILDER,
-    ETLClientEvent: CLIENT_EVENTS_VIEW_BUILDER,
 }
