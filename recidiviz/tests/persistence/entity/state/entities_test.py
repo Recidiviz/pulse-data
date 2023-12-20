@@ -388,8 +388,7 @@ class TestStateEntities(TestCase):
     def test_post_attrs_state_task_deadline_eligible_before_due(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateTaskDeadline with id \[1000\] with eligible_date \[2015-06-15\] "
-            r"after due_date \[2012-07-10\]",
+            "Found StateTaskDeadline with eligible_date datetime 2015-06-15 00:00:00 after due_date datetime 2012-07-10 00:00:00.",
         ):
             _ = StateTaskDeadline(
                 task_deadline_id=1000,

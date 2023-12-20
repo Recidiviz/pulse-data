@@ -16,7 +16,8 @@
 # ============================================================================
 """Base class for all entity types"""
 import abc
-from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar
+import datetime
+from typing import Callable, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from more_itertools import one
@@ -129,7 +130,7 @@ class EnumEntity(Entity):
 
     # Consider EnumEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is HasExternalIdEntity:
+        if cls is EnumEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
@@ -174,6 +175,64 @@ class RootEntity:
         entity, which connects that non-root entity back to the root entity (e.g.
         'person' or 'staff').
         """
+
+
+class LedgerEntity(Entity):
+    """An abstract class to represent 'ledgers'—points and/or periods of time relating back to another entity.
+
+    Ledger entities must have a datetime field for the 'start' of the ledger that cannot be in the future.
+    They may also have one or more datetime fields that are after the designated 'start' datetime field.
+    """
+
+    # Consider LedgerEntity abstract and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is LedgerEntity:
+            raise NotImplementedError("Abstract class cannot be instantiated")
+        return super().__new__(cls)
+
+    @classmethod
+    @abc.abstractmethod
+    def get_ledger_datetime_field(cls) -> str:
+        """A ledger entity has a single field denoting a 'start' or 'update' of its period of time. Return it here."""
+        raise NotImplementedError("Must define a start datetime field")
+
+    @classmethod
+    def get_enforced_datetime_pairs(cls) -> List[Tuple[str, str]]:
+        """Returns a list of tuples, where each tuple consists of two field names.
+
+        Both field names must be datetime.datetime or datetime.date fields.
+        The first field's date/datetime must be before the second field's date/datetime.
+        """
+        return []
+
+    def _get_field_as_datetime(self, field_name) -> Optional[datetime.datetime]:
+        """Returns the given field's value as a datetime to be compared against other datetimes."""
+        dt: Optional[Union[datetime.datetime, datetime.date]] = getattr(
+            self, field_name
+        )
+        if not dt:
+            return None
+        if isinstance(dt, datetime.datetime):
+            return dt
+        return datetime.datetime(dt.year, dt.month, dt.day)
+
+    def __attrs_post_init__(self):
+        """Ensures that all pairs in get_enforced_datetime_pairs are actually enforced."""
+        dt_fields: List[Tuple[str, str]] = self.get_enforced_datetime_pairs()
+        for before_name, after_name in dt_fields:
+            before = self._get_field_as_datetime(before_name)
+            after = self._get_field_as_datetime(after_name)
+            if (before and after) and (before > after):
+                raise ValueError(
+                    f"Found {self.__class__.__name__} with {before_name} datetime {before} after {after_name} datetime {after}."
+                )
+
+
+LedgerEntityT = TypeVar("LedgerEntityT", bound=LedgerEntity)
+
+
+# TODO(#1894): Write unit tests for entity graph equality that reference the
+# schema defined in test_schema/test_entities.py.
 
 
 def _default_should_ignore_field_cb(_: Type, __: str) -> bool:

@@ -22,7 +22,7 @@ ORM objects can't provide.
 """
 
 import datetime
-from typing import List, Optional, TypeVar, Union
+from typing import List, Optional, Tuple, TypeVar, Union
 
 import attr
 
@@ -131,6 +131,7 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
+    LedgerEntity,
     RootEntity,
     UniqueConstraint,
 )
@@ -1963,7 +1964,7 @@ class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
+class StateTaskDeadline(LedgerEntity, BuildableAttr, DefaultableAttr):
     """The StateTaskDeadline object represents a single task that should be performed as
     part of someone’s supervision or incarceration term, along with an associated date
     that task can be started and/or a deadline when that task must be completed.
@@ -1981,7 +1982,7 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_date
     )
     update_datetime: datetime.datetime = attr.ib(
-        default=None, validator=attr_validators.is_datetime
+        default=None, validator=attr_validators.is_not_future_datetime
     )
 
     #   - What
@@ -2022,12 +2023,15 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
             )
         ]
 
-    def __attrs_post_init__(self):
-        if self.eligible_date and self.due_date and self.eligible_date > self.due_date:
-            raise ValueError(
-                f"Found StateTaskDeadline with id [{self.task_deadline_id}] with eligible_date [{self.eligible_date}] "
-                f"after due_date [{self.due_date}]"
-            )
+    @classmethod
+    def get_ledger_datetime_field(cls) -> str:
+        """StateTaskDeadline ledger updates happen on update_datetime."""
+        return "update_datetime"
+
+    @classmethod
+    def get_enforced_datetime_pairs(cls) -> List[Tuple[str, str]]:
+        """StateTaskDeadlines have an eligible date before a due date."""
+        return [("eligible_date", "due_date")]
 
 
 @attr.s(eq=False, kw_only=True)

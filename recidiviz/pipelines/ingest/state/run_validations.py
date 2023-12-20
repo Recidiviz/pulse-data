@@ -328,7 +328,7 @@ class RunValidations(beam.PTransform):
                     root_entity_to_child_constraint_failures
                 )
 
-        all_constraint_failures: beam.PCollection[
+        unique_constraint_failures: beam.PCollection[
             Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
         ] = (
             unique_constraint_failure_pcollections
@@ -344,7 +344,7 @@ class RunValidations(beam.PTransform):
         final_entities: beam.PCollection[RootEntity] = (
             {
                 ROOT_ENTITY: root_entity_by_key,
-                UNIQUENESS_CONSTRAINT_ERRORS: all_constraint_failures,
+                UNIQUENESS_CONSTRAINT_ERRORS: unique_constraint_failures,
             }
             | "Group by root entity key" >> beam.CoGroupByKey()
             | beam.Map(
