@@ -78,9 +78,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_early_discharge_sessions_preprocessing import (
     US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_supervision_contacts import (
-    US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_detainer_spans import (
     US_IX_DETAINER_SPANS_VIEW_BUILDER,
 )
@@ -247,7 +244,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
     SUPERVISION_CLIENTS_TO_OFFICERS_RATIO_QUARTERLY_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
-    US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER,
     US_IX_DETAINER_SPANS_VIEW_BUILDER,
