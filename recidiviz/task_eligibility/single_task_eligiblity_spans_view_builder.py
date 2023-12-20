@@ -284,22 +284,23 @@ type switches.
 */
 (
     SELECT
-        * EXCEPT(new_span),
-        SUM(IF(new_span, 1, 0)) OVER (PARTITION BY state_code, person_id
-            ORDER BY start_date ASC) AS task_eligibility_span_id,
+        *,
+        SUM(IF(is_date_gap OR is_eligibility_change OR is_ineligible_criteria_change OR is_reasons_change, 1, 0)) OVER 
+            (PARTITION BY state_code, person_id ORDER BY start_date ASC) AS task_eligibility_span_id,
     FROM (
         SELECT
-        * EXCEPT(ineligible_reasons_str),
-        -- TODO(#14445): split spans when the `reasons` array changes
-        COALESCE(
-            start_date != LAG(end_date) OVER state_person_window
-                OR is_eligible != LAG(is_eligible) OVER state_person_window
-                OR ineligible_reasons_str != LAG(ineligible_reasons_str) OVER state_person_window,
-            TRUE
-        ) AS new_span,
+        * EXCEPT(ineligible_reasons_str, full_reasons_str),
+        COALESCE(start_date != LAG(end_date) OVER state_person_window, TRUE) AS is_date_gap,
+        COALESCE(is_eligible != LAG(is_eligible) OVER state_person_window, TRUE) AS is_eligibility_change,
+        COALESCE(ineligible_reasons_str != LAG(ineligible_reasons_str) OVER state_person_window, TRUE)
+            AS is_ineligible_criteria_change,
+        COALESCE(full_reasons_str != LAG(full_reasons_str) OVER state_person_window, TRUE) AS is_reasons_change
         FROM (
             SELECT 
-                *, COALESCE(ARRAY_TO_STRING(ineligible_criteria, ","), "") AS ineligible_reasons_str
+                *,
+                COALESCE(ARRAY_TO_STRING(ineligible_criteria, ","), "") AS ineligible_reasons_str,
+                #TODO(#25910): Sort all arrays in reasons json to avoid non-determinism in sub-sessionization  
+                TO_JSON_STRING(reasons) AS full_reasons_str
             FROM eligibility_sub_spans
         )
         WINDOW state_person_window AS (PARTITION BY state_code, person_id
@@ -328,17 +329,16 @@ SELECT
             CASE
                 -- Became eligible
                 WHEN LEAD(is_eligible) OVER w THEN "BECAME_ELIGIBLE"
-                -- TODO(#14445): refine logic when the `reasons` array changes
-                -- and add "INELIGIBLE_REASONS_CHANGED" `end_reason`
-                ELSE "INELIGIBLE_CRITERIA_CHANGED"
+                WHEN LEAD(is_ineligible_criteria_change) over w THEN "INELIGIBLE_CRITERIA_CHANGED"
+                WHEN LEAD(is_reasons_change) OVER w THEN "INELIGIBLE_REASONS_CHANGED"
+                ELSE "UNKNOWN_NOT_ELIGIBLE"
             END
         WHEN is_eligible THEN
             CASE
                 -- Became ineligible
                 WHEN NOT LEAD(is_eligible) OVER w THEN "BECAME_INELIGIBLE"
-                -- TODO(#14445): refine logic when the `reasons` array changes
-                -- and add "ELIGIBLE_REASONS_CHANGED" `end_reason`
-                ELSE "UNKNOWN"
+                WHEN LEAD(is_reasons_change) OVER w THEN "ELIGIBLE_REASONS_CHANGED"
+                ELSE "UNKNOWN_IS_ELIGIBLE"
             END
         -- Edge case that should never occur
         ELSE "UNKNOWN" 

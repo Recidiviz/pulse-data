@@ -63,8 +63,7 @@ def get_task_eligible_event_query_builder(
         task_name,
         completion_event_type AS task_type,
     FROM
-        -- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
-        `{{project_id}}.task_eligibility.all_tasks_materialized`
+        `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized`
     INNER JOIN
         `{{project_id}}.reference_views.task_to_completion_event`
     USING
@@ -781,7 +780,7 @@ LEFT JOIN
 USING
     (completion_event_type)
 LEFT JOIN
-    `{{project_id}}.task_eligibility.all_tasks_materialized` t
+    `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` t
 ON
     e.person_id = t.person_id
     AND r.task_name = t.task_name
