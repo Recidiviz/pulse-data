@@ -326,7 +326,7 @@ class _AsyncProcessNodeQueue:
         adjacent_node, previous_level_results, entered_queue_time = item
         self.future_to_context[
             self.executor.submit(
-                trace.time_and_trace(
+                trace.time_execution(
                     structured_logging.with_context(self.view_process_fn)
                 ),
                 adjacent_node.view,

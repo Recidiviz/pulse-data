@@ -32,7 +32,7 @@ from freezegun import freeze_time
 from google.api_core.future.polling import DEFAULT_RETRY, PollingFuture
 from google.api_core.retry import Retry
 from google.cloud import bigquery, exceptions
-from google.cloud.bigquery import QueryJobConfig, SchemaField
+from google.cloud.bigquery import CopyJob, QueryJobConfig, SchemaField
 from google.cloud.bigquery_datatransfer import (
     CheckValidCredsRequest,
     CheckValidCredsResponse,
@@ -2120,7 +2120,10 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.list_tables.side_effect = mock_list_tables
         self.mock_client.get_table.side_effect = dataset_tables
-        copy_jobs: List[futures.Future] = [futures.Future(), futures.Future()]
+        copy_jobs: List[PollingFuture] = [
+            create_autospec(CopyJob),
+            create_autospec(CopyJob),
+        ]
         for job in copy_jobs:
             job.set_result(None)
         self.mock_client.copy_table.side_effect = copy_jobs
@@ -2291,7 +2294,10 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.list_tables.side_effect = mock_list_tables
         self.mock_client.get_table.side_effect = dataset_tables
-        copy_jobs: List[futures.Future] = [futures.Future(), futures.Future()]
+        copy_jobs: List[PollingFuture] = [
+            create_autospec(CopyJob),
+            create_autospec(CopyJob),
+        ]
         for job in copy_jobs:
             job.set_result(None)
         self.mock_client.copy_table.side_effect = copy_jobs
@@ -2385,7 +2391,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.list_tables.side_effect = mock_list_tables
         self.mock_client.get_table.side_effect = dataset_tables
-        copy_jobs: List[futures.Future] = [futures.Future()]
+        copy_jobs: List[PollingFuture] = [create_autospec(CopyJob)]
         for job in copy_jobs:
             job.set_result(None)
         self.mock_client.copy_table.side_effect = copy_jobs

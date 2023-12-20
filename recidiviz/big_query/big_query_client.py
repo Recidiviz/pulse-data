@@ -31,6 +31,7 @@ import __main__
 import pandas as pd
 import pytz
 import requests
+from google.api_core import retry
 from google.api_core.client_options import ClientOptions
 from google.api_core.future.polling import PollingFuture
 from google.auth.credentials import AnonymousCredentials
@@ -50,6 +51,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.retry_predicate import ssl_error_retry_predicate
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
@@ -2256,13 +2258,18 @@ class BigQueryClientImpl(BigQueryClient):
     def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
         logging.info("Waiting for [%s] query jobs to complete", len(jobs))
         results = []
+
+        ssl_retry_policy = retry.Retry(predicate=ssl_error_retry_predicate)
+
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
             # Lower this number if we see "urllib3.connectionpool:Connection pool is
             # full, discarding connection" errors.
             max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
         ) as executor:
-            job_futures = [executor.submit(job.result) for job in jobs]
+            job_futures = [
+                executor.submit(job.result, retry=ssl_retry_policy) for job in jobs
+            ]
             for f in futures.as_completed(job_futures):
                 results.append(f.result())
         return results

@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Google API Retry Predicate to be used throughout the Recidiviz codebase."""
+from ssl import SSLError
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.api_core import retry
+from urllib3.connectionpool import MaxRetryError
 
 
 def google_api_retry_predicate(
@@ -29,3 +31,8 @@ def google_api_retry_predicate(
         or retry.if_exception_type(exceptions.GatewayTimeout)(exception)
         or retry.if_exception_type(exceptions.BadGateway)(exception)
     )
+
+
+def ssl_error_retry_predicate(exc: BaseException) -> bool:
+    """Unexpected SSL EOF Errors may occur when working with threaded requests, this predicate will retry them"""
+    return isinstance(exc, MaxRetryError) and isinstance(exc.reason, SSLError)
