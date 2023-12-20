@@ -902,7 +902,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response], UsXxViolationDelegate()
+            revocation_date,
+            [supervision_violation_response],
+            UsXxViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -978,7 +981,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         end_date = datetime.date(2019, 9, 5)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            end_date, violation_responses, UsXxViolationDelegate()
+            end_date,
+            violation_responses,
+            UsXxViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1043,7 +1049,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response], UsMoViolationDelegate()
+            revocation_date,
+            [supervision_violation_response],
+            UsMoViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1101,7 +1110,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response], UsPaViolationDelegate()
+            revocation_date,
+            [supervision_violation_response],
+            UsPaViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1154,7 +1166,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response], UsPaViolationDelegate()
+            revocation_date,
+            [supervision_violation_response],
+            UsPaViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1209,7 +1224,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response], UsPaViolationDelegate()
+            revocation_date,
+            [supervision_violation_response],
+            UsPaViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1319,6 +1337,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 supervision_violation_response_1,
             ],
             UsPaViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1360,13 +1379,17 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 revocation_date,
                 [supervision_violation_response],
                 UsXxViolationDelegate(),
+                incarceration_period=None,
             )
 
     def test_get_violation_and_response_history_no_responses(self):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [], UsXxViolationDelegate()
+            revocation_date,
+            [],
+            UsXxViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1421,7 +1444,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response], UsXxViolationDelegate()
+            revocation_date,
+            [supervision_violation_response],
+            UsXxViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -1484,7 +1510,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response], UsMoViolationDelegate()
+            revocation_date,
+            [supervision_violation_response],
+            UsMoViolationDelegate(),
+            incarceration_period=None,
         )
 
         expected_output = violation_utils.ViolationHistory(

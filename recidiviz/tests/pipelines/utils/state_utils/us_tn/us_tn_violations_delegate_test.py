@@ -32,6 +32,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
@@ -165,7 +166,7 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
         expected_violation_window = DateRange(
             # 24 months before
             lower_bound_inclusive_date=date(1998, 1, 1),
-            # 10 days after admission_date
+            # Admission date + 10 days
             upper_bound_exclusive_date=date(2000, 1, 11),
         )
 
@@ -180,7 +181,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsTnViolationDelegate()
 
-    def test_get_violation_and_response_history_with_tn_logic(
+    def test_get_violation_and_response_history_with_tn_logic_prio_misdemeanor_before_incarceration(
         self,
     ) -> None:
         supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -250,6 +251,13 @@ class TestViolationAndResponseHistory(unittest.TestCase):
             ),
         ]
 
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="ip1",
+            admission_date=date(2021, 3, 1),
+            incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
+        )
+
         filtered_and_sorted_responses = (
             violation_utils.filter_violation_responses_for_violation_history(
                 violation_delegate=self.delegate,
@@ -270,20 +278,186 @@ class TestViolationAndResponseHistory(unittest.TestCase):
         # admission to incarceration
         violation_history_result = get_violation_and_response_history(
             upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
-            lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
             violation_responses_for_history=filtered_and_sorted_responses,
             violation_delegate=self.delegate,
+            incarceration_period=incarceration_period,
+            lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
         )
 
         expected_violation_history_result = ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
             most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
             most_severe_violation_id=123456,
-            violation_history_id_array="123455,123456",
+            violation_history_id_array="3,123455,123456",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=2,
-            violation_history_description="1misdemeanor;1technical",
-            violation_type_frequency_counter=[["TECHNICAL"], ["MISDEMEANOR"]],
+            violation_history_description="1misdemeanor;2technical",
+            violation_type_frequency_counter=[
+                ["TECHNICAL"],
+                ["MISDEMEANOR"],
+                ["TECHNICAL"],
+            ],
+        )
+
+        self.assertEqual(expected_violation_history_result, violation_history_result)
+
+    def test_get_violation_and_response_history_with_tn_logic_prio_technical_attached_to_ip_no_other_viols(
+        self,
+    ) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="ip1",
+            admission_date=date(2021, 3, 1),
+            incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
+        )
+
+        violation_history_window = (
+            UsTnViolationDelegate().violation_history_window_relevant_to_critical_date(
+                critical_date=date(2021, 3, 1),
+                sorted_and_filtered_violation_responses=[],
+                default_violation_history_window_months=12,
+            )
+        )
+
+        # Get details about the violation and response history leading up to the
+        # admission to incarceration
+        violation_history_result = get_violation_and_response_history(
+            upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
+            violation_responses_for_history=[],
+            violation_delegate=self.delegate,
+            incarceration_period=incarceration_period,
+            lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
+        )
+
+        expected_violation_history_result = ViolationHistory(
+            most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
+            most_severe_violation_id=1,
+            violation_history_id_array="1",
+            most_severe_response_decision=None,
+            response_count=0,
+            violation_history_description="1technical",
+            violation_type_frequency_counter=[["TECHNICAL"]],
+        )
+
+        self.assertEqual(expected_violation_history_result, violation_history_result)
+
+    def test_get_violation_and_response_history_with_tn_logic_prio_misdemeanor_from_ip_over_technicals_in_window(
+        self,
+    ) -> None:
+        supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            external_id="sv1",
+            state_code="US_TN",
+            violation_date=date(2021, 1, 1),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+            ],
+        )
+
+        supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            external_id="sv2",
+            state_code="US_TN",
+            violation_date=date(2021, 1, 20),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_TN",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+            ],
+        )
+
+        supervision_violation_responses = [
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE,
+                external_id="svr1",
+                response_date=date(2019, 1, 1),
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
+            ),
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE,
+                external_id="svr2",
+                response_date=date(2021, 1, 1),
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
+                supervision_violation_response_decisions=[
+                    NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_TN",
+                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    ),
+                ],
+                supervision_violation=supervision_violation_1,
+            ),
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE,
+                external_id="svr3",
+                response_date=date(2021, 1, 20),
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
+                supervision_violation_response_decisions=[
+                    NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_TN",
+                        decision=StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
+                    ),
+                ],
+                supervision_violation=supervision_violation_2,
+            ),
+            NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                state_code=_STATE_CODE,
+                external_id="svr4",
+                response_date=date(2021, 1, 30),
+                response_type=StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,  # Should not be included
+            ),
+        ]
+
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="ip1",
+            admission_date=date(2021, 3, 1),
+            incarceration_admission_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+        )
+
+        filtered_and_sorted_responses = (
+            violation_utils.filter_violation_responses_for_violation_history(
+                violation_delegate=self.delegate,
+                violation_responses=supervision_violation_responses,
+                include_follow_up_responses=False,
+            )
+        )
+
+        violation_history_window = (
+            UsTnViolationDelegate().violation_history_window_relevant_to_critical_date(
+                critical_date=date(2021, 3, 1),
+                sorted_and_filtered_violation_responses=filtered_and_sorted_responses,
+                default_violation_history_window_months=12,
+            )
+        )
+
+        # Get details about the violation and response history leading up to the
+        # admission to incarceration
+        violation_history_result = get_violation_and_response_history(
+            upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
+            violation_responses_for_history=filtered_and_sorted_responses,
+            violation_delegate=self.delegate,
+            incarceration_period=incarceration_period,
+            lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
+        )
+
+        expected_violation_history_result = ViolationHistory(
+            most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
+            most_severe_violation_id=3,
+            violation_history_id_array="3,123455,123456",
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            response_count=2,
+            violation_history_description="1misdemeanor;2technical",
+            violation_type_frequency_counter=[
+                ["TECHNICAL"],
+                ["TECHNICAL"],
+                ["MISDEMEANOR"],
+            ],
         )
 
         self.assertEqual(expected_violation_history_result, violation_history_result)
