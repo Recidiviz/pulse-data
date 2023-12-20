@@ -2792,6 +2792,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         },
                     ],
                     "jurisdictions": {"excluded": [], "included": []},
+                    "is_subscribed_to_emails": False,
                 },
             )
 
@@ -2838,6 +2839,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
+                    "is_subscribed_to_emails": False,
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
                         "excluded": [],
@@ -2866,6 +2868,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
+                    "is_subscribed_to_emails": False,
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
                         "excluded": ["0105500000", "0105900000"],
@@ -2894,6 +2897,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
+                    "is_subscribed_to_emails": False,
                     "jurisdictions": {
                         "included": [],
                         "excluded": ["0105500000", "0105900000"],
@@ -2922,6 +2926,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
+                    "is_subscribed_to_emails": False,
                     "jurisdictions": {
                         "included": [],
                         "excluded": [],
@@ -3007,6 +3012,45 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             association.last_visit, datetime.datetime.now(tz=datetime.timezone.utc)
         )
+
+    def test_update_user_subscribed(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add_all(
+            [
+                agency,
+                user,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                    role=schema.UserAccountRole.AGENCY_ADMIN,
+                    subscribed=False,
+                ),
+            ]
+        )
+        self.session.commit()
+        user_id = user.id
+        agency_id = agency.id
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+            )
+
+            response = self.client.put(
+                f"/api/agency/{agency_id}/subscription/{user_id}",
+                json={"is_subscribed": True},
+            )
+        self.assertEqual(response.status_code, 200)
+
+        # Get the user's last visit to the agency
+        association = AgencyUserAccountAssociationInterface.get_associations_by_ids(
+            user_account_ids=[user_id],
+            agency_id=agency_id,
+            session=self.session,
+        )[0]
+
+        self.assertEqual(association.subscribed, True)
 
 
 def test_frozen_now_is_not_global_now() -> None:
