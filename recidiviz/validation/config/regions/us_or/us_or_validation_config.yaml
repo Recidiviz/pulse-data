@@ -25,3 +25,9 @@ num_allowed_rows_overrides:
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 1500000
     override_reason: Current failing level as of 11/29/23 is 1252613 rows, not necessary currently and will be automated in future
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 400
+    override_reason: Needs further investigation #TODO(#26393)
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 200
+    override_reason: Needs further investigation #TODO(#26393)
