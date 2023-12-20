@@ -30,7 +30,9 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
+from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -248,6 +250,7 @@ def get_violation_and_response_history(
     upper_bound_exclusive_date: date,
     violation_responses_for_history: List[NormalizedStateSupervisionViolationResponse],
     violation_delegate: StateSpecificViolationDelegate,
+    incarceration_period: Optional[NormalizedStateIncarcerationPeriod],
     lower_bound_inclusive_date_override: Optional[date] = None,
 ) -> ViolationHistory:
     """Identifies and returns various details of the violation history on the responses
@@ -295,6 +298,25 @@ def get_violation_and_response_history(
             violation_ids_in_window.add(violation.supervision_violation_id)
 
     # Find the most severe violation type info of all of the entries in the window
+
+    # First, append violation_type information from incarceration period
+    if (
+        incarceration_period
+        and incarceration_period.incarceration_admission_violation_type
+    ):
+        placeholder_violation_based_on_ip = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code=incarceration_period.state_code,
+            external_id=incarceration_period.external_id,
+            supervision_violation_id=len(violations_in_window) + 1,
+            violation_date=incarceration_period.admission_date,
+            supervision_violation_types=[
+                normalized_entities.NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=incarceration_period.state_code,
+                    violation_type=incarceration_period.incarceration_admission_violation_type,
+                ),
+            ],
+        )
+        violations_in_window.append(placeholder_violation_based_on_ip)
 
     most_severe_violation = _identify_most_severe_violation(
         violations_in_window, violation_delegate

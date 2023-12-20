@@ -394,6 +394,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     upper_bound_exclusive_date=(event_date + relativedelta(days=1)),
                     violation_responses_for_history=violation_responses_for_history,
                     violation_delegate=violation_delegate,
+                    incarceration_period=None,
                 )
 
                 case_compliance: Optional[SupervisionCaseCompliance] = None
@@ -696,9 +697,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             # supervision termination
             violation_history = get_violation_and_response_history(
                 upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
-                lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
                 violation_responses_for_history=violation_responses_for_history,
                 violation_delegate=violation_delegate,
+                incarceration_period=None,
+                lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
             )
 
             (

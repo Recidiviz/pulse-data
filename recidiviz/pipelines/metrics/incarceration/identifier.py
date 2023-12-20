@@ -398,28 +398,19 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         # admission to incarceration
         violation_history = get_violation_and_response_history(
             upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
-            lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
             violation_responses_for_history=violation_responses_for_history,
             violation_delegate=violation_delegate,
+            incarceration_period=incarceration_period,
+            lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
         )
 
-        most_severe_violation_type = (
-            incarceration_period.incarceration_admission_violation_type
-            if incarceration_period.incarceration_admission_violation_type
-            else violation_history.most_severe_violation_type
-        )
+        most_severe_violation_type = violation_history.most_severe_violation_type
 
         most_severe_violation_type_subtype = (
-            None
-            if incarceration_period.incarceration_admission_violation_type
-            else violation_history.most_severe_violation_type_subtype
+            violation_history.most_severe_violation_type_subtype
         )
 
-        most_severe_violation_id = (
-            None
-            if incarceration_period.incarceration_admission_violation_type
-            else violation_history.most_severe_violation_id
-        )
+        most_severe_violation_id = violation_history.most_severe_violation_id
 
         responses_for_decision_evaluation = violation_responses_for_history
 
