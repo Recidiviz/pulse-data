@@ -18,7 +18,7 @@
 
 import datetime
 import itertools
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from auth0.exceptions import Auth0Error
 from sqlalchemy.orm import Session, joinedload
@@ -174,6 +174,28 @@ class AgencyUserAccountAssociationInterface:
             .options(joinedload(schema.AgencyUserAccountAssociation.user_account))
             .all()
         )
+
+    @staticmethod
+    def get_association_by_ids(
+        user_account_id: int,
+        agency_id: int,
+        session: Session,
+        load_user_account: Optional[bool] = False,
+    ) -> schema.AgencyUserAccountAssociation:
+        """This method retrieves an AgencyUserAccountAssociation based
+        upon a user_account_id and agency_id."""
+
+        query = session.query(schema.AgencyUserAccountAssociation).filter(
+            schema.AgencyUserAccountAssociation.user_account_id == user_account_id,
+            schema.AgencyUserAccountAssociation.agency_id == agency_id,
+        )
+
+        if load_user_account is True:
+            query = query.options(
+                joinedload(schema.AgencyUserAccountAssociation.user_account)
+            )
+
+        return query.one()
 
     @staticmethod
     def get_editor_id_to_json(

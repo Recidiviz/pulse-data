@@ -197,7 +197,9 @@ def get_api_blueprint(
     @auth_decorator
     def get_agency_settings(agency_id: int) -> Response:
         """
-        This endpoint gets the settings for a Agency record.
+        This endpoint gets the settings for an Agency as well as
+        information about if the current logged-in user is subscribed
+        to emails.
         """
         try:
             request_json = assert_type(request.values, dict)
@@ -215,10 +217,22 @@ def get_api_blueprint(
             jurisdictions = AgencyJurisdictionInterface.to_json(
                 session=current_session, agency_id=agency_id
             )
+
+            current_user_agency_association = (
+                AgencyUserAccountAssociationInterface.get_association_by_ids(
+                    agency_id=agency_id,
+                    user_account_id=user.id,
+                    session=current_session,
+                )
+            )
+
+            is_subscribed_to_emails = current_user_agency_association.subscribed is True
+
             return jsonify(
                 {
                     "settings": [setting.to_json() for setting in agency_settings],
                     "jurisdictions": jurisdictions,
+                    "is_subscribed_to_emails": is_subscribed_to_emails,
                 }
             )
         except Exception as e:
@@ -2068,6 +2082,30 @@ def get_api_blueprint(
             include_unpublished_data=True,
             system=request.args.get("system"),
         )
+
+    # Email Notifications
+
+    @api_blueprint.route("/agency/<agency_id>/subscription/<user_id>", methods=["PUT"])
+    def update_user_email_subscription(agency_id: int, user_id: int) -> Response:
+        """Updates a user's subscription to emails in a given agency"""
+        try:
+            request_dict = assert_type(request.json, dict)
+            is_subscribed = assert_type(request_dict.get("is_subscribed"), bool)
+
+            association = AgencyUserAccountAssociationInterface.get_association_by_ids(
+                agency_id=agency_id,
+                user_account_id=user_id,
+                session=current_session,
+            )
+
+            # Update subscription status
+            association.subscribed = is_subscribed
+            current_session.commit()
+
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+        except Exception as e:
+            raise _get_error(error=e) from e
 
     return api_blueprint
 
