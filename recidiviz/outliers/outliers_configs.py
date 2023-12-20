@@ -168,10 +168,10 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
-                title_display_name="Absconsion Rate",
-                body_display_name="absconsion rate",
-                event_name="absconsions",
-                event_name_singular="absconsion",
+                title_display_name="Absconder Warrant Rate",
+                body_display_name="absconder warrant rate",
+                event_name="absconder warrants",
+                event_name_singular="absconder warrant",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
