@@ -171,20 +171,8 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q7 impo
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q8 import (
     US_TN_CAF_Q8_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_c4_isc_eligiblility_sessions import (
-    US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_cr_rejection_ineligible import (
-    US_TN_COMPLIANT_REPORTING_CR_REJECTION_INELIGIBLE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_drug_screen_eligible import (
-    US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_fees_eligibility_sessions import (
-    US_TN_COMPLIANT_REPORTING_FEES_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
@@ -192,23 +180,11 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_guardrail import (
     US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_judicial_order_ineligible import (
-    US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_logic import (
     US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_offense_eligible import (
-    US_TN_COMPLIANT_REPORTING_OFFENSE_ELIGIBLE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_referral import (
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_sanction_ineligible import (
-    US_TN_COMPLIANT_REPORTING_SANCTION_INELIGIBLE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_supervision_level_eligible import (
-    US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_workflow_status import (
     US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
@@ -293,14 +269,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_FEES_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_OFFENSE_ELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_CR_REJECTION_INELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_SANCTION_INELIGIBLE_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_BUILDER,
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
     US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
     SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
