@@ -294,14 +294,13 @@ class WorkbookUploader:
             ):
                 self.updated_reports.add(updated_report)
 
-            if updated_report.status.value != "DRAFT":
-                ReportInterface.update_report_metadata(
-                    report=updated_report,
-                    editor_id=self.user_account.id
-                    if self.user_account is not None
-                    else AUTOMATIC_UPLOAD_ID,
-                    status=ReportStatus.DRAFT.value,
-                )
+            ReportInterface.update_report_metadata(
+                report=updated_report,
+                editor_id=self.user_account.id
+                if self.user_account is not None
+                else AUTOMATIC_UPLOAD_ID,
+                status=ReportStatus.DRAFT.value,
+            )
 
         for (
             unique_key,
@@ -330,14 +329,13 @@ class WorkbookUploader:
                 # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
                 self.updated_reports.add(updated_report)
 
-                if updated_report.status.value != "DRAFT":
-                    ReportInterface.update_report_metadata(
-                        report=updated_report,
-                        editor_id=self.user_account.id
-                        if self.user_account is not None
-                        else AUTOMATIC_UPLOAD_ID,
-                        status=ReportStatus.DRAFT.value,
-                    )
+                ReportInterface.update_report_metadata(
+                    report=updated_report,
+                    editor_id=self.user_account.id
+                    if self.user_account is not None
+                    else AUTOMATIC_UPLOAD_ID,
+                    status=ReportStatus.DRAFT.value,
+                )
 
     def _transform_combined_metric_file_upload(
         self,
