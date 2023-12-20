@@ -48,7 +48,8 @@ VIEW_QUERY_TEMPLATE = """
     'STATUS_CHANGE' AS DIRECTION_CODE,
     CAST(NULL AS STRING) AS facility,
     IF(REVIEW_SUP_LEVEL_TYPE='',CALC_SUP_LEVEL_TYPE, REVIEW_SUP_LEVEL_TYPE) AS custody_level,
-    COALESCE(ASSESS_COMMENT_TEXT, OVERRIDE_REASON) AS override_reason
+    -- Trim to 200 characters to avoid exceeding the 255 character limit on the column
+    LEFT(COALESCE(ASSESS_COMMENT_TEXT, OVERRIDE_REASON), 200) AS override_reason
   FROM {recidiviz_elite_OffenderAssessments}
   WHERE ASSESSMENT_TYPE_ID IN (
     '1,008.00', -- INITIAL ASSESSMENT	
