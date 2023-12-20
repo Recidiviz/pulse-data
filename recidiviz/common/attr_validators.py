@@ -54,6 +54,38 @@ def is_utc_timezone_aware_datetime(
             )
 
 
+def is_not_future_date(
+    _instance: Any, _attribute: attr.Attribute, value: datetime.date
+) -> None:
+    today = datetime.date.today()
+    if value > today:
+        raise ValueError(
+            f"Datetime with {value} has a date in the future. Today is {today}"
+        )
+
+
+def is_opt_not_future_date(
+    _instance: Any, _attribute: attr.Attribute, value: Optional[datetime.date]
+) -> None:
+    if value is not None:
+        is_not_future_date(_instance, _attribute, value)
+
+
+def is_not_future_datetime(
+    _instance: Any, _attribute: attr.Attribute, value: datetime.datetime
+) -> None:
+    now = datetime.datetime.now()
+    if value > now:
+        raise ValueError(f"Datetime with {value} has is in the future. It is now {now}")
+
+
+def is_opt_not_future_datetime(
+    _instance: Any, _attribute: attr.Attribute, value: Optional[datetime.datetime]
+) -> None:
+    if value is not None:
+        is_not_future_datetime(_instance, _attribute, value)
+
+
 # String field validators
 is_str = attr.validators.instance_of(str)
 is_opt_str = is_opt(str)

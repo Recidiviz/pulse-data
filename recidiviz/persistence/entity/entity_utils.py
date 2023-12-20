@@ -54,6 +54,7 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
+    LedgerEntity,
     RootEntity,
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
@@ -251,6 +252,7 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 ExternalIdEntity,
                 HasMultipleExternalIdsEntity,
                 EnumEntity,
+                LedgerEntity,
             ) and issubclass(attribute, Entity):
                 expected_classes.add(attribute)
 
