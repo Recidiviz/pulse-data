@@ -40,7 +40,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def time_and_trace(func: Callable[P, T]) -> Callable[P, Tuple[float, T]]:
+def time_execution(func: Callable[P, T]) -> Callable[P, Tuple[float, T]]:
     """Wraps a function in a function that will emit a span to Cloud Trace covering the
     duration of the execution and then return both the result of the function and the
     execution duration.
@@ -49,11 +49,19 @@ def time_and_trace(func: Callable[P, T]) -> Callable[P, Tuple[float, T]]:
     @wraps(func)
     def _wrapper(*args: P.args, **kwargs: P.kwargs) -> Tuple[float, T]:
         start = time.perf_counter()
-        res = span(func)(*args, **kwargs)
+        res = func(*args, **kwargs)
         end = time.perf_counter()
         return (end - start), res
 
     return _wrapper
+
+
+def time_and_trace(func: Callable[P, T]) -> Callable[P, Tuple[float, T]]:
+    """Wraps a function in a function that will emit a span to Cloud Trace covering the
+    duration of the execution and then return both the result of the function and the
+    execution duration.
+    """
+    return span(time_execution(func))
 
 
 def span(func: Callable[P, T]) -> Callable[P, T]:

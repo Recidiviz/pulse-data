@@ -112,12 +112,13 @@ def execute_entrypoint(entrypoint: str, entrypoint_argv: List[str]) -> None:
         for key, arg in vars(entrypoint_args).items():
             current_span.set_attribute(key, str(arg))
 
-        entrypoint_cls.run_entrypoint(args=entrypoint_args)
-
-        logging.info(
-            "Cloud Trace profile can be found with the following trace id: %s",
-            get_current_trace_id(),
-        )
+        try:
+            entrypoint_cls.run_entrypoint(args=entrypoint_args)
+        finally:
+            logging.info(
+                "Cloud Trace profile can be found with the following trace id: %s",
+                get_current_trace_id(),
+            )
 
 
 def quit_kubernetes_cloud_sql_proxy() -> None:
