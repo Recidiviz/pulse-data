@@ -64,5 +64,6 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
                 SELECT MAX(job_id) 
                 FROM {DirectIngestDataflowJob.__tablename__}
                 WHERE region_code = '{self.region_code.upper()}' AND ingest_instance = '{self.ingest_instance.upper()}'
+                AND is_invalidated = FALSE
             );
         """

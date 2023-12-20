@@ -48,6 +48,7 @@ class TestGetWatermarkSqlQueryGenerator(unittest.TestCase):
                 SELECT MAX(job_id) 
                 FROM direct_ingest_dataflow_job
                 WHERE region_code = 'US_XX' AND ingest_instance = 'PRIMARY'
+                AND is_invalidated = FALSE
             );
         """
         self.assertEqual(self.generator.sql_query(), expected_query)
