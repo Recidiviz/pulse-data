@@ -21,7 +21,10 @@ import classNames from "classnames";
 import moment from "moment";
 import { useHistory } from "react-router-dom";
 import { getAllIngestInstanceDataflowEnabledStatuses } from "../../AdminPanelAPI";
-import { getAllLatestDataflowJobs } from "../../AdminPanelAPI/IngestOperations";
+import {
+  getAllIngestInstanceStatuses,
+  getAllLatestDataflowJobs,
+} from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import {
   INGEST_DATAFLOW_ROUTE,
@@ -30,8 +33,13 @@ import {
 import {
   DirectIngestInstance,
   IngestInstanceDataflowEnabledStatusResponse,
+  IngestInstanceStatusResponse,
   StateCodeInfo,
 } from "../IngestOperationsView/constants";
+import {
+  getStatusSortedOrder,
+  renderStatusCell,
+} from "../IngestOperationsView/ingestStatusUtils";
 import NewTabLink from "../NewTabLink";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
@@ -54,6 +62,10 @@ export type IngestInstanceDataflowStatusTableInfo = {
   stateCode: string;
   primaryStatus: DataflowJobStatusMetadata;
   secondaryStatus: DataflowJobStatusMetadata;
+  primaryRawDataStatus: string;
+  secondaryRawDataStatus: string;
+  primaryRawDataTimestamp: string;
+  secondaryRawDataTimestamp: string;
 };
 
 const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
@@ -61,6 +73,11 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   const { loading: dataflowPipelinesLoading, data: dataflowPipelines } =
     useFetchedDataJSON<DataflowIngestPipelineJobResponse>(
       getAllLatestDataflowJobs
+    );
+
+  const { loading: loadingRawDataStatuses, data: rawDataStatuses } =
+    useFetchedDataJSON<IngestInstanceStatusResponse>(
+      getAllIngestInstanceStatuses
     );
 
   // TODO(#20390): stop loading dataflow enabled statuses once dataflow is fully enabled
@@ -71,7 +88,11 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     getAllIngestInstanceDataflowEnabledStatuses
   );
 
-  if (dataflowPipelinesLoading || dataflowEnabledStatusesLoading) {
+  if (
+    dataflowPipelinesLoading ||
+    dataflowEnabledStatusesLoading ||
+    loadingRawDataStatuses
+  ) {
     return (
       <div className="center">
         <Spin size="large" />
@@ -97,6 +118,14 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
           message="Failed to load ingest pipeline statuses."
           type="error"
         />
+      </>
+    );
+  }
+
+  if (rawDataStatuses === undefined) {
+    return (
+      <>
+        <Alert message="Failed to load raw data statuses." type="error" />
       </>
     );
   }
@@ -170,6 +199,17 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   const dataSource: IngestInstanceDataflowStatusTableInfo[] = Object.keys(
     dataflowPipelines
   ).map((key) => {
+    const stateRawDataStatuses = rawDataStatuses[key];
+
+    const primaryRawDataStatus: string = stateRawDataStatuses.primary.status;
+    const secondaryRawDataStatus: string =
+      stateRawDataStatuses.secondary.status;
+
+    const primaryRawDataTimestamp: string =
+      stateRawDataStatuses.primary.statusTimestamp;
+    const secondaryRawDataTimestamp: string =
+      stateRawDataStatuses.secondary.statusTimestamp;
+
     return {
       stateCode: key,
       primaryStatus: getJobMetadataForCell(
@@ -184,6 +224,10 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
         stateDataflowEnabledStatuses,
         dataflowPipelines
       ),
+      primaryRawDataStatus,
+      secondaryRawDataStatus,
+      primaryRawDataTimestamp,
+      secondaryRawDataTimestamp,
     };
   });
 
@@ -230,6 +274,39 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       render: (secondaryStatus: DataflowJobStatusMetadata) => (
         <span>{renderDataflowStatusCell(secondaryStatus)}</span>
       ),
+    },
+    {
+      title: "Raw Data Status (Primary)",
+      dataIndex: "primary",
+      key: "primary",
+
+      render: (value, record: IngestInstanceDataflowStatusTableInfo) => (
+        <span>
+          {renderStatusCell(
+            record.primaryRawDataStatus,
+            record.primaryRawDataTimestamp
+          )}
+        </span>
+      ),
+      sorter: (a, b) =>
+        getStatusSortedOrder().indexOf(a.primaryRawDataStatus) -
+        getStatusSortedOrder().indexOf(b.primaryRawDataStatus),
+    },
+    {
+      title: "Raw Data Status (Secondary)",
+      dataIndex: "secondary",
+      key: "secondary",
+      render: (value, record: IngestInstanceDataflowStatusTableInfo) => (
+        <span>
+          {renderStatusCell(
+            record.secondaryRawDataStatus,
+            record.secondaryRawDataTimestamp
+          )}
+        </span>
+      ),
+      sorter: (a, b) =>
+        getStatusSortedOrder().indexOf(a.secondaryRawDataStatus) -
+        getStatusSortedOrder().indexOf(b.secondaryRawDataStatus),
     },
   ];
 
