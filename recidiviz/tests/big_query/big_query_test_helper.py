@@ -41,8 +41,15 @@ class BigQueryTestHelper:
         """Compares the results in the |expected| dataframe to |results|."""
         if sorted(results.columns) != sorted(expected.columns):
             raise ValueError(
-                f"Columns in expected and actual results do not match (order agnostic). "
-                f"Expected: {expected.columns}. Actual: {results.columns}."
+                f"Columns in expected and actual results do not match (order "
+                f"agnostic).\n"
+                f"Expected results to contain these columns, but they did not:\n"
+                f"{set(expected.columns).difference(results.columns)}\n"
+                f"Results contained these additional columns that were not expected:\n"
+                f"{set(results.columns).difference(expected.columns)}\n"
+                f"Full results:\n"
+                f"Expected: {expected.columns}.\n"
+                f"Actual: {results.columns}.\n"
             )
 
         data_types = {
