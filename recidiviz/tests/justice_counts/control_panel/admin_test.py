@@ -408,7 +408,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "name": "New Agency New Name",
                 "state_code": "us_ca",
                 "systems": ["LAW_ENFORCEMENT", "JAILS"],
-                "is_superagency": True,
+                "is_superagency": False,
                 "super_agency_id": None,
                 "child_agency_ids": [],
                 "agency_id": agency.id,
@@ -424,7 +424,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             session=self.session, name="New Agency New Name"
         )
         self.assertIsNotNone(agency)
-        self.assertTrue(agency.is_superagency)
+        self.assertFalse(agency.is_superagency)
         self.assertFalse(agency.is_dashboard_enabled)
         self.assertEqual(
             agency.systems,
