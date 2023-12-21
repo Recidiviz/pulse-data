@@ -33,7 +33,6 @@ US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessing file pul
 sentencing-relevant dates not yet ingested"""
 
 US_MO_SENTENCING_DATES_PREPROCESSED_QUERY_TEMPLATE = """
-
 WITH ME_MM_dates AS (
   -- Pulls latest Minimum Eligibility Date and Minimum Mandatory Release Date for each 
   -- person-cycle. For each date type, only keeps dates that are non-zero and then
@@ -42,21 +41,10 @@ WITH ME_MM_dates AS (
   SELECT 
     CG_DOC AS doc_id,
     CG_CYC AS cycle_num,
-    SAFE.PARSE_DATE('%Y%m%d',has_md.CG_MD) AS minimum_eligibility_date,
-    SAFE.PARSE_DATE('%Y%m%d',has_mm.CG_MM) AS minimum_mandatory_release_date 
-    FROM (
-      SELECT * 
-      FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
-      WHERE CG_MD !='0'
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT) DESC) = 1
-    ) has_md
-    FULL OUTER JOIN (
-      SELECT * 
-      FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
-      WHERE CG_MM !='0'
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT) DESC) = 1
-    ) has_mm
-    USING (CG_DOC,CG_CYC)
+    SAFE.PARSE_DATE('%Y%m%d',CG_MD) AS minimum_eligibility_date,
+    SAFE.PARSE_DATE('%Y%m%d',CG_MM) AS minimum_mandatory_release_date 
+    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT) DESC) = 1
 ), 
 -- TODO(#19222): Use ingested values when available
 PPR_date AS (
@@ -70,9 +58,17 @@ PPR_date AS (
             next_action_type,
             next_board_action,
             CASE WHEN next_action_type = 'REL' 
-                 AND COALESCE(next_board_action,'NA') NOT IN ('CAN','CRE') 
-                 THEN next_action_date
-                 END AS board_determined_release_date,
+                AND COALESCE(next_board_action,'NA') NOT IN ('CAN','CRE') 
+                -- If the next action type is 'REL' and the next parole board action (obtained via LEAD) isn't a cancellation/extension,
+                -- it's still possible that the next parole board action sets a new next_action_type that replaces the planned release action.
+                -- If the BQ_PBH value that follows a release date being set is FPH (first parole hearing), NPR (no parole), CRE (extension),
+                -- or RCH (reconsideration hearing), then we can infer that the board determined release date has been replaced. Note that
+                -- this approach risks overlooking correct board determined release dates in historical data, as data from subsequent cycles
+                -- may be treated as release-overriding events. Therefore, when/if ingesting this data, keep in mind that this is only
+                -- accurate for determining someone's CURRENT board determined release date. 
+                AND COALESCE(next_next_action_type,'NA') NOT IN ('FPH','NPR','CRE','RCH') 
+                THEN next_action_date
+                END AS board_determined_release_date,
            type_of_release,
            special_condition_needed,
       FROM (
@@ -86,6 +82,7 @@ PPR_date AS (
              BQ_SCN AS special_condition_needed,
              -- Find the type of action in the next parole hearing
              LEAD(BQ_PBA) OVER(PARTITION BY BQ_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) ASC) AS next_board_action,
+             LEAD(BQ_PBN) OVER(PARTITION BY BQ_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) ASC) AS next_next_action_type,
              SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_NA,'0')) AS next_action_date,
              SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) AS parole_hearing_date,
              SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PR,'0')) AS parole_presumptive_date,
@@ -114,15 +111,22 @@ PPR_date AS (
   SELECT CV_DOC AS doc_id,
          CV_CYC As cycle_num,
          SAFE.PARSE_DATE('%Y%m%d',NULLIF(CV_AP,'0')) AS max_discharge, 
-         SAFE.PARSE_DATE('%Y%m%d',NULLIF(CV_MR,'0')) AS conditional_release
+         SAFE.PARSE_DATE('%Y%m%d',NULLIF(CV_MR,'0')) AS conditional_release,
+         CASE WHEN CV_AP = '99999999' THEN TRUE ELSE FALSE END AS life_flag
   FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK071_latest`
 )
-SELECT ME_MM_dates.*, 
+
+SELECT 
+COALESCE(ME_MM_dates.doc_id, PPR_date.doc_id, MAX_CR.doc_id) AS doc_id,
+COALESCE(ME_MM_dates.cycle_num, PPR_date.cycle_num, MAX_CR.cycle_num) AS cycle_num,
+ME_MM_dates.minimum_eligibility_date, 
+ME_MM_dates.minimum_mandatory_release_date,
       PPR_date.board_determined_release_date, 
       PPR_date.special_condition_needed,
       PPR_date.seq_num,
       MAX_CR.max_discharge, 
       MAX_CR.conditional_release,
+      MAX_CR.life_flag,
       pei.person_id
 FROM ME_MM_dates
 FULL OUTER JOIN PPR_date 
