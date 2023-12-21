@@ -79,6 +79,9 @@ SELECT * FROM (
             LAG({col}_count) OVER (PARTITION BY region_code ORDER BY month) AS previous_month_{col}_count, 
         FROM all_months_filled_zeroes
         -- select where the month < first of the current month
+        -- A 1 month delay (DATE_ADD(month, INTERVAL 1 MONTH) is added to ensure that we don't start 
+        -- running these validations on the current month since they will fail until the month ends 
+        -- and we've received all necessary data to calculate month over month changes
         WHERE DATE_ADD(month, INTERVAL 1 MONTH) <= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 7 DAY)
     )
     -- Limit to most recent {validation_window_months} months
