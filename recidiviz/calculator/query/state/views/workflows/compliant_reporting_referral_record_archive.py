@@ -21,9 +21,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     EXPORT_ARCHIVES_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
-from recidiviz.calculator.query.state.views.workflows.populate_missing_exports_template import (
-    populate_missing_export_dates,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -129,12 +126,16 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
             almost_eligible_serious_sanctions,
         FROM compliant_reporting_archive_fields
     )
-    {populate_missing_export_dates}
+    , export_date_to_next_export AS (
+        SELECT export_date, LEAD(export_date) OVER (ORDER BY export_date) AS next_export FROM (
+            SELECT DISTINCT export_date FROM records_by_state_by_date
+        )
+    )
     SELECT
         person_id,
         records_by_state_by_date.state_code,
         records_by_state_by_date.export_date,
-        generated_export_date AS date_of_supervision,
+        next_export,
         records_by_state_by_date.person_external_id,
         remaining_criteria_needed,
         compliant_reporting_eligible,
@@ -143,8 +144,9 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         almost_eligible_fines_fees,
         almost_eligible_recent_rejection,
         almost_eligible_serious_sanctions,
-    FROM date_to_archive_map
-    LEFT JOIN records_by_state_by_date USING (state_code, export_date)
+    FROM records_by_state_by_date
+    LEFT JOIN export_date_to_next_export
+        USING (export_date)
     LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` 
         USING (state_code, person_external_id)
     WHERE compliant_reporting_eligible IS NOT NULL
@@ -158,7 +160,6 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBui
     should_materialize=True,
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
     workflows_dataset=WORKFLOWS_VIEWS_DATASET,
-    populate_missing_export_dates=populate_missing_export_dates(),
 )
 
 if __name__ == "__main__":
