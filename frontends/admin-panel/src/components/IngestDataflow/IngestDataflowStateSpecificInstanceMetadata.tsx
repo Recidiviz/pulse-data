@@ -15,8 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert, PageHeader } from "antd";
+import { Alert, PageHeader, Spin } from "antd";
+import { useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
+import { useFetchedDataJSON } from "../../hooks";
+import IngestInstanceCard from "../IngestOperationsView/IngestInstanceCard";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
 import IngestDataflowInstanceCard from "./IngestDataflowInstanceCard";
 
@@ -32,8 +36,26 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
 
   const directInstance = getInstance(instance);
 
+  // TODO(#24652): delete once dataflow is fully enabled
+  const fetchDataflowEnabled = useCallback(async () => {
+    if (directInstance === undefined) {
+      throw new Error("Invalid instance");
+    }
+    return isIngestInDataflowEnabled(stateCode, directInstance);
+  }, [stateCode, directInstance]);
+  const { data: dataflowEnabled } =
+    useFetchedDataJSON<boolean>(fetchDataflowEnabled);
+
   if (!directInstance) {
     return <Alert message="Invalid instance" type="error" />;
+  }
+
+  if (dataflowEnabled === undefined) {
+    return (
+      <div className="center">
+        <Spin size="large" />
+      </div>
+    );
   }
 
   return (
@@ -47,6 +69,12 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
           instance={directInstance}
           env={env}
           stateCode={stateCode}
+        />
+        <IngestInstanceCard
+          instance={directInstance}
+          env={env}
+          stateCode={stateCode}
+          dataflowEnabled={dataflowEnabled}
         />
       </div>
     </>
