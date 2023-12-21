@@ -33,7 +33,10 @@ import {
   INGEST_DATAFLOW_SECONDARY_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
+import {
+  ANCHOR_INGEST_RAW_DATA,
+  StateCodeInfo,
+} from "../IngestOperationsView/constants";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
 import { ANCHOR_DATAFLOW_LATEST_JOB } from "./constants";
@@ -62,11 +65,19 @@ const items: MenuProps["items"] = [
       "Latest Job",
       `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_DATAFLOW_LATEST_JOB}`
     ),
+    getItem(
+      "Raw Data",
+      `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_INGEST_RAW_DATA}`
+    ),
   ]),
   getItem("Secondary Instance", INGEST_DATAFLOW_SECONDARY_ROUTE, null, [
     getItem(
       "Latest Job",
       `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_DATAFLOW_LATEST_JOB}`
+    ),
+    getItem(
+      "Raw Data",
+      `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_INGEST_RAW_DATA}`
     ),
   ]),
 ];
