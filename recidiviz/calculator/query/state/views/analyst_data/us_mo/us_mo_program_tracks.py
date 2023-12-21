@@ -58,7 +58,8 @@ mosop_completion_flags AS (
   */
   SELECT 
     DOC_ID,
-    LOGICAL_AND(sfl_flag) AS all_complete,
+    (LOGICAL_OR(p1_completed_flag) and LOGICAL_OR(p2_completed_flag)) or 
+      (LOGICAL_OR(p1_completed_flag) and not LOGICAL_OR(p2_enrollment)) AS all_complete,
     LOGICAL_OR(uns_flag) AS has_uns,  
     LOGICAL_OR(nof_flag) AS has_nof,
     LOGICAL_OR(any_exit_flag) AS has_any_exit,
@@ -73,7 +74,9 @@ mosop_completion_flags AS (
       CASE WHEN mosop_general.EXIT_TYPE_CD = 'UNS' THEN TRUE ELSE FALSE END AS uns_flag,
       CASE WHEN mosop_general.EXIT_TYPE_CD = 'NOF' THEN TRUE ELSE FALSE END AS nof_flag,
       CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' THEN TRUE ELSE FALSE END AS sfl_flag,
-      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' AND CLASS_TITLE = 'MOSOP PHASE I' THEN TRUE ELSE FALSE END AS p1_completed_flag
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' AND CLASS_TITLE = 'MOSOP PHASE I' THEN TRUE ELSE FALSE END AS p1_completed_flag,
+      CASE WHEN CLASS_TITLE = 'MOSOP PHASE II' THEN TRUE ELSE FALSE END AS p2_enrollment,
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' AND CLASS_TITLE = 'MOSOP PHASE II' THEN TRUE ELSE FALSE END AS p2_completed_flag,
     FROM (
       SELECT 
         DOC_ID,
@@ -200,14 +203,20 @@ board_mandated AS (
 ),
 latest_sentencing_dates AS (
   -- Previously unique at the person-cycle level, this takes max across a given person
+  SELECT * EXCEPT(cycle_num) FROM (
   SELECT person_id,
+         cycle_num,
          MAX(minimum_eligibility_date) AS minimum_eligibility_date,
          MAX(minimum_mandatory_release_date) AS minimum_mandatory_release_date,
          MAX(board_determined_release_date) AS board_determined_release_date,
          MAX(conditional_release) AS conditional_release,
-         MAX(max_discharge) AS max_discharge
+         MAX(max_discharge) AS max_discharge,
+         -- If the person has a life sentence in their current cycle 
+         -- (CV_AP = '99999999'), then we flag that here.
+         LOGICAL_OR(life_flag) AS life_flag
   FROM `{{project_id}}.{{analyst_dataset}}.us_mo_sentencing_dates_preprocessed_materialized`
-  GROUP BY 1
+  GROUP BY 1,2
+  ) QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY cycle_num DESC) = 1
 ),
 current_inc_pop AS (
   SELECT cs.*, pei.external_id
@@ -287,6 +296,7 @@ SELECT p.*,
             latest_sentencing_dates.max_discharge,
             NULL
         ) AS max_discharge,
+        latest_sentencing_dates.life_flag,
        mosop.mosop_indicator,
        flag_120_required AS court_mandated_treatment,
        special_conditions AS board_inst_special_conditions,
