@@ -123,6 +123,9 @@ resource "google_project_iam_member" "admin_panel_iam" {
     "roles/bigquery.dataOwner",
     "roles/bigquery.jobUser",
     "roles/storage.objectCreator",
+    "roles/cloudsql.viewer",
+    "roles/pubsub.publisher",
+    "projects/${var.project_id}/roles/${google_project_iam_custom_role.sql-importer.role_id}"
   ]))
   project = var.project_id
   role    = each.key
