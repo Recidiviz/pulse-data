@@ -21,9 +21,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     EXPORT_ARCHIVES_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
-from recidiviz.calculator.query.state.views.workflows.populate_missing_exports_template import (
-    populate_missing_export_dates,
-)
 from recidiviz.calculator.query.state.views.workflows.user_event_template import (
     first_ix_export_date,
 )
@@ -57,13 +54,10 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
             IF(path_parts[OFFSET(2)] = "US_ID" AND DATE(path_parts[OFFSET(1)]) >= "{first_ix_export_date}", "US_IX", path_parts[OFFSET(2)]) AS state_code,
         FROM split_path
     )
-    {populate_missing_export_dates}
     SELECT
-        generated_export_date AS date_of_supervision,
         person_id,
         records_by_state_by_date.*,
-    FROM date_to_archive_map
-    LEFT JOIN records_by_state_by_date USING (state_code, export_date)
+    FROM records_by_state_by_date
     LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` 
         USING (state_code, person_external_id)
 """
@@ -76,7 +70,6 @@ CLIENT_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
     workflows_dataset=WORKFLOWS_VIEWS_DATASET,
-    populate_missing_export_dates=populate_missing_export_dates(),
     first_ix_export_date=first_ix_export_date,
 )
 

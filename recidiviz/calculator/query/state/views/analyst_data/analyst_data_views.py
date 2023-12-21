@@ -177,9 +177,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_guardrail import (
-    US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_logic import (
     US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
 )
@@ -268,7 +265,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
-    US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER,
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
     US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
     SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,

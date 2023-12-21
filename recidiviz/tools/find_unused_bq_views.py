@@ -41,9 +41,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_require
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_guardrail import (
-    US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
 )
@@ -85,9 +82,6 @@ LOOKER_REFERENCED_ADDRESSES = {
     #  any existing dashboard for standard workflows infra, and it cannot be deleted
     #  until we have an adequate replacement.
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER.address,
-    # TODO(Recidiviz/looker#520): The dashboard referencing this view is no longer
-    #  needed and can be deleted.
-    US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER.address,
 }
 
 # List of views that are not referenced in Looker but should still be kept around,
