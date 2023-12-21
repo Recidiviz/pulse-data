@@ -24,6 +24,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 class MetricTimePeriod(enum.Enum):
+    CUSTOM = "CUSTOM"
     DAY = "DAY"
     WEEK = "WEEK"
     MONTH = "MONTH"
