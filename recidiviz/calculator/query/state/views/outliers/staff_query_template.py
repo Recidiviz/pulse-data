@@ -18,7 +18,6 @@
 from recidiviz.calculator.query.bq_utils import (
     get_pseudonymized_id_query_str,
     today_between_start_date_and_nullable_end_date_clause,
-    today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
@@ -78,9 +77,9 @@ def staff_query_template(role: str) -> str:
     INNER JOIN `{{project_id}}.normalized_state.state_staff` staff 
         ON attrs.staff_id = staff.staff_id AND attrs.state_code = staff.state_code
     WHERE staff.state_code = '{state}' 
-      -- Get the staff's attributes from the current session
-      AND {today_between_start_date_and_nullable_end_date_exclusive_clause("attrs.start_date", "attrs.end_date_exclusive")}
       {f"AND {config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else ""}
+    -- Get the staff's attributes from the most recent session
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY attrs.state_code, attrs.officer_id ORDER BY COALESCE(attrs.end_date_exclusive, "9999-01-01") DESC) = 1
 """
         )
 
