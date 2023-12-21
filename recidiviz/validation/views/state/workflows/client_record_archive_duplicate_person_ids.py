@@ -33,7 +33,7 @@ CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_DESCRIPTION = (
 
 CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_QUERY_TEMPLATE = """
     SELECT
-        date_of_supervision,
+        export_date,
         state_code as region_code,
         COUNT(DISTINCT person_id) AS unique_person_ids,
         COUNT(person_id) AS client_records,
