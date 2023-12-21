@@ -47,9 +47,8 @@ import {
   getIngestQueuesCumalativeState,
   getQueueColor,
   getQueueStatusSortedOrder,
-  getStatusBoxColor,
-  getStatusMessage,
   getStatusSortedOrder,
+  renderStatusCell,
 } from "./ingestStatusUtils";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
@@ -152,17 +151,6 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       timestampSecondary: secondaryTimestamp,
     };
   });
-
-  const renderStatusCell = (status: string, timestamp: string) => {
-    const statusColorClassName = getStatusBoxColor(status);
-    const statusMessage = getStatusMessage(status, timestamp);
-
-    return (
-      <div className={classNames("ingest-status-cell", statusColorClassName)}>
-        {statusMessage}
-      </div>
-    );
-  };
 
   const renderIngestQueuesCell = (queueInfo: string | undefined) => {
     if (queueInfo === undefined) {

@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import classNames from "classnames";
 import moment from "moment";
 import { GCP_STORAGE_BASE_URL, QueueMetadata, QueueState } from "./constants";
 
@@ -207,6 +208,20 @@ const queueStatusColorDict: {
     color: "queue-status-running",
     sortRank: 4,
   },
+};
+
+export const renderStatusCell = (
+  status: string,
+  timestamp: string
+): React.ReactElement => {
+  const statusColorClassName = getStatusBoxColor(status);
+  const statusMessage = getStatusMessage(status, timestamp);
+
+  return (
+    <div className={classNames("ingest-status-cell", statusColorClassName)}>
+      {statusMessage}
+    </div>
+  );
 };
 
 export const getQueueColor = (queueInfo: string): string => {

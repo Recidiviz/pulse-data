@@ -159,7 +159,7 @@ tr.metadata-table-row > td.ant-table-cell > div {
 
 .ingest-status-cell {
   height: 60px;
-  width: 450px;
+  width: 350px;
   padding: 10px;
   border-radius: 15px;
   font-weight: bold;
@@ -183,29 +183,37 @@ tr.metadata-table-row > td.ant-table-cell > div {
 .queue-status-running {
   color: #ffffff;
   background-color: #389e0d;
-  width: 150px;
+  width: 100px;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
 
 .queue-status-not-running {
   color: #ffffff;
   background-color: #f5222d;
-  width: 150px;
+  width: 100px;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
 
 .dataflow-enabled {
   color: #ffffff;
   background-color: #389e0d;
-  width: 150px;
+  width: 100px;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
 
 .dataflow-disabled {
   color: #ffffff;
   background-color: #f5222d;
-  width: 150px;
+  width: 100px;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
 
 .ingest-caution {
@@ -221,9 +229,11 @@ tr.metadata-table-row > td.ant-table-cell > div {
 .job-succeeded {
   color: #ffffff;
   background-color: #389e0d;
-  width: 300px;
+  width: 150px;
   white-space: pre-line;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
 
 .job-failed {
@@ -231,6 +241,8 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #f5222d;
   width: 150px;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
 
 .job-no-runs {
@@ -238,6 +250,8 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #444444;
   width: 150px;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
 
 .job-dataflow-not-enabled {
@@ -245,4 +259,6 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #000000;
   width: 150px;
   text-align: center;
+  font-weight: bold;
+  border-radius: 15px;
 }
