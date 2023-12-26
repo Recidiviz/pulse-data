@@ -37,10 +37,10 @@ class AgencyInterface:
         systems: List[schema.System],
         state_code: str,
         fips_county_code: Optional[str],
-        is_superagency: Optional[bool],
         super_agency_id: Optional[int],
         agency_id: Optional[int],
         is_dashboard_enabled: Optional[bool],
+        is_superagency: Optional[bool] = None,
     ) -> schema.Agency:
         """We first look up existing agency by ID, then fallback to name,
         if no ID is available. If there is an existing agency, the metadata
@@ -206,6 +206,9 @@ class AgencyInterface:
     def get_child_agencies_for_agency(
         session: Session, agency: schema.Agency
     ) -> List[schema.Agency]:
+        if agency.is_superagency is False:
+            return []
+
         return (
             session.query(schema.Agency)
             .filter(schema.Agency.super_agency_id == agency.id)
@@ -216,6 +219,9 @@ class AgencyInterface:
     def get_child_agency_ids_for_agency(
         session: Session, agency: schema.Agency
     ) -> List[int]:
+        if agency.is_superagency is False:
+            return []
+
         # Extract the agency IDs from the tuples
         child_agency_ids = [
             id[0]

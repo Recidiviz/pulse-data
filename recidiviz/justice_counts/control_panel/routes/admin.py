@@ -255,7 +255,6 @@ def get_admin_blueprint(
             systems=[schema.System[system] for system in systems],
             state_code=state_code,
             fips_county_code=request_json.get("fips_county_code"),
-            is_superagency=request_json["is_superagency"],
             super_agency_id=request_json["super_agency_id"],
             is_dashboard_enabled=request_json["is_dashboard_enabled"],
         )
@@ -290,6 +289,12 @@ def get_admin_blueprint(
                 super_agency_id=agency.id,
                 child_agencies=agencies_to_remove,
             )
+
+        # Update `is_superagency` after editing the child agencies because if we
+        # call AgencyInterface.get_child_agencies_for_agency after `is_superagency`
+        # has been flipped to False, the helper function will return an empty list
+        # and the child agencies will not be updated.
+        agency.is_superagency = request_json["is_superagency"]
 
         if request_json.get("team") is not None:
             # Add users to agency
