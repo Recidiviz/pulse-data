@@ -6,7 +6,6 @@ input_columns:
   - DOC
   - CYC
   - PFI
-  - START_STATUS_SEQ_NUM
   - END_STATUS_CODE # TODO(#2898): Delete this column when we can use solely TAK026 statuses to populate release reason
   - END_STATUS_SUBTYPE # TODO(#2898): Delete this column when we can use solely TAK026 statuses to populate release reason
   - START_DATE
@@ -16,8 +15,7 @@ input_columns:
   - SQN
   - START_SCD_CODES
   - END_SCD_CODES
-unused_columns:
-  - START_STATUS_SEQ_NUM
+unused_columns: []
 variables:
   - incarceration_period_external_id:
       $concat:
