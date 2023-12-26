@@ -847,8 +847,12 @@ class DatapointHistory(JusticeCountsBase):
     timestamp = Column(DateTime, nullable=False)
     old_value = Column(String, nullable=True)
     new_value = Column(String, nullable=True)
+    # Only populated for reporting datapoints.
     old_upload_method = Column(String, nullable=True)
     new_upload_method = Column(String, nullable=True)
+    # Only populated for agency datapoints for metric/breakdown enabling.
+    old_enabled = Column(Boolean, nullable=True)
+    new_enabled = Column(Boolean, nullable=True)
 
     __table_args__ = tuple(
         [

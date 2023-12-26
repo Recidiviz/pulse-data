@@ -328,7 +328,7 @@ class DatapointInterface:
     ### Save Path: Report Datapoints ###
 
     @staticmethod
-    def add_datapoint(
+    def add_report_datapoint(
         session: Session,
         report: schema.Report,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
@@ -540,6 +540,71 @@ class DatapointInterface:
         return agency_metrics
 
     @staticmethod
+    def record_agency_datapoint_history(
+        session: Session,
+        datapoint_before_update: Optional[schema.Datapoint],
+        datapoint_after_update: schema.Datapoint,
+        user_account: Optional[schema.UserAccount] = None,
+    ) -> None:
+        """
+        Record metric datapoint changes in the DatapointHistory table. We won't record
+        the following fields because they remain the same across modifications:
+            -> source_id
+            -> dimension_identifier_to_member
+            -> context_key
+            -> includes_excludes_key
+        A user can cross reference the datapoint id with the Datapoint table to derive
+        these non-included column values.
+        """
+        if datapoint_before_update is None:
+            return
+        # Don't write a history entry if the underlying datapoint has not changed.
+        if (
+            datapoint_before_update.value == datapoint_after_update.value
+            and datapoint_before_update.enabled == datapoint_after_update.enabled
+        ):
+            return
+        session.add(
+            schema.DatapointHistory(
+                # datapoint_before_update and datapoint_after_update share the same id.
+                datapoint_id=datapoint_after_update.id,
+                user_account_id=user_account.id if user_account is not None else None,
+                timestamp=datapoint_after_update.last_updated,
+                old_value=datapoint_before_update.value,
+                new_value=datapoint_after_update.value,
+                old_enabled=datapoint_before_update.enabled,
+                new_enabled=datapoint_after_update.enabled,
+                # Not populated for agency datapoints.
+                old_upload_method=None,
+                new_upload_method=None,
+            )
+        )
+        return
+
+    @staticmethod
+    def add_agency_datapoint(
+        session: Session,
+        datapoint: schema.Datapoint,
+        current_time: datetime.datetime,
+        user_account: Optional[schema.UserAccount] = None,
+    ) -> None:
+        """
+        Write (or overwrite) the agency datapoint in the Datapoint table and record the
+        modification in the Datapoint History table.
+        """
+        datapoint_after_update, datapoint_before_update = update_existing_or_create(
+            ingested_entity=datapoint,
+            session=session,
+            current_time=current_time,
+        )
+        DatapointInterface.record_agency_datapoint_history(
+            session=session,
+            datapoint_before_update=datapoint_before_update,
+            datapoint_after_update=datapoint_after_update,
+            user_account=user_account,
+        )
+
+    @staticmethod
     def add_or_update_agency_datapoints(
         session: Session,
         agency: schema.Agency,
@@ -573,22 +638,24 @@ class DatapointInterface:
         if agency_metric.is_metric_enabled is not None:
             # Only enable/disable metric if the frontend explicitly specifies an
             # enable/disabled status.
-            update_existing_or_create(
-                ingested_entity=schema.Datapoint(
+            DatapointInterface.add_agency_datapoint(
+                session=session,
+                datapoint=schema.Datapoint(
                     metric_definition_key=agency_metric.key,
                     source=agency,
                     enabled=agency_metric.is_metric_enabled,
                     dimension_identifier_to_member=None,
                     is_report_datapoint=False,
                 ),
-                session=session,
                 current_time=current_time,
+                user_account=user_account,
             )
 
         # 2. Set default contexts
         for context in agency_metric.contexts:
-            update_existing_or_create(
-                schema.Datapoint(
+            DatapointInterface.add_agency_datapoint(
+                session=session,
+                datapoint=schema.Datapoint(
                     metric_definition_key=agency_metric.key,
                     source=agency,
                     context_key=context.key.value,
@@ -596,8 +663,8 @@ class DatapointInterface:
                     dimension_identifier_to_member=None,
                     is_report_datapoint=False,
                 ),
-                session,
                 current_time=current_time,
+                user_account=user_account,
             )
 
         # 3. Set top-level includes/excludes
@@ -624,8 +691,9 @@ class DatapointInterface:
         if agency_metric.custom_reporting_frequency.frequency is not None:
             # Only enable/disable if the frontend explicitly specifies an
             # enable/disabled status.
-            update_existing_or_create(
-                schema.Datapoint(
+            DatapointInterface.add_agency_datapoint(
+                session=session,
+                datapoint=schema.Datapoint(
                     metric_definition_key=agency_metric.key,
                     source=agency,
                     context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
@@ -633,8 +701,8 @@ class DatapointInterface:
                     dimension_identifier_to_member=None,
                     is_report_datapoint=False,
                 ),
-                session,
                 current_time=current_time,
+                user_account=user_account,
             )
 
         # 4. Add datapoints to record that metric is disaggregated_by_supervision_subsystems
@@ -652,8 +720,9 @@ class DatapointInterface:
                         if system == current_system
                         else agency_metric.key.replace(current_system, system, 1)
                     )
-                    update_existing_or_create(
-                        schema.Datapoint(
+                    DatapointInterface.add_agency_datapoint(
+                        session=session,
+                        datapoint=schema.Datapoint(
                             metric_definition_key=metric_definition_key,
                             source=agency,
                             context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
@@ -663,38 +732,41 @@ class DatapointInterface:
                             ),
                             is_report_datapoint=False,
                         ),
-                        session,
                         current_time=current_time,
+                        user_account=user_account,
                     )
+
                     # Then, update the enabled/disabled statuses accordingly. If the metric
                     # is Supervision and we are *not* disaggregating, the metric should be
                     # enabled; otherwise, disabled. If the metric is a supervsion subsystem,
                     # the logic is reversed.
                     if schema.System[system] == schema.System.SUPERVISION:
-                        update_existing_or_create(
-                            ingested_entity=schema.Datapoint(
+                        DatapointInterface.add_agency_datapoint(
+                            session=session,
+                            datapoint=schema.Datapoint(
                                 metric_definition_key=metric_definition_key,
                                 source=agency,
                                 enabled=not agency_metric.disaggregated_by_supervision_subsystems,
                                 dimension_identifier_to_member=None,
                                 is_report_datapoint=False,
                             ),
-                            session=session,
                             current_time=current_time,
+                            user_account=user_account,
                         )
                     elif (
                         schema.System[system] in schema.System.supervision_subsystems()
                     ):
-                        update_existing_or_create(
-                            ingested_entity=schema.Datapoint(
+                        DatapointInterface.add_agency_datapoint(
+                            session=session,
+                            datapoint=schema.Datapoint(
                                 metric_definition_key=metric_definition_key,
                                 source=agency,
                                 enabled=agency_metric.disaggregated_by_supervision_subsystems,
                                 dimension_identifier_to_member=None,
                                 is_report_datapoint=False,
                             ),
-                            session=session,
                             current_time=current_time,
+                            user_account=user_account,
                         )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
@@ -702,8 +774,9 @@ class DatapointInterface:
                 aggregated_dimension.dimension_to_contexts or {}
             ).items():
                 for context in contexts_lst:
-                    update_existing_or_create(
-                        schema.Datapoint(
+                    DatapointInterface.add_agency_datapoint(
+                        session=session,
+                        datapoint=schema.Datapoint(
                             metric_definition_key=agency_metric.key,
                             source=agency,
                             context_key=context.key.value,
@@ -713,8 +786,8 @@ class DatapointInterface:
                             },
                             is_report_datapoint=False,
                         ),
-                        session=session,
                         current_time=current_time,
+                        user_account=user_account,
                     )
 
             for (
@@ -730,16 +803,17 @@ class DatapointInterface:
 
                 # 1b. Enable / disable metric dimensions
                 if is_dimension_enabled is not None:
-                    update_existing_or_create(
-                        ingested_entity=schema.Datapoint(
+                    DatapointInterface.add_agency_datapoint(
+                        session=session,
+                        datapoint=schema.Datapoint(
                             metric_definition_key=agency_metric.key,
                             source=agency,
                             dimension_identifier_to_member=dimension_identifier_to_member,
                             enabled=is_dimension_enabled,
                             is_report_datapoint=False,
                         ),
-                        session=session,
                         current_time=current_time,
+                        user_account=user_account,
                     )
 
                 # 3b. Set disaggregation-level includes/excludes
@@ -776,8 +850,9 @@ class DatapointInterface:
         if setting is None:
             return
         current_time = datetime.datetime.now(tz=datetime.timezone.utc)
-        datapoint, existing_datapoint = update_existing_or_create(
-            ingested_entity=schema.Datapoint(
+        DatapointInterface.add_agency_datapoint(
+            session=session,
+            datapoint=schema.Datapoint(
                 metric_definition_key=agency_metric.key,
                 source=agency,
                 includes_excludes_key=member.name,
@@ -785,22 +860,9 @@ class DatapointInterface:
                 dimension_identifier_to_member=dimension_identifier_to_member,
                 is_report_datapoint=False,
             ),
-            session=session,
             current_time=current_time,
+            user_account=user_account,
         )
-        if existing_datapoint is not None:
-            if existing_datapoint.value != datapoint.value:
-                session.add(
-                    schema.DatapointHistory(
-                        datapoint_id=existing_datapoint.id,
-                        user_account_id=user_account.id
-                        if user_account is not None
-                        else None,
-                        timestamp=current_time,
-                        old_value=existing_datapoint.value,
-                        new_value=setting.value,
-                    )
-                )
 
     ### Helpers ###
 

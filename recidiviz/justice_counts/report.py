@@ -528,7 +528,7 @@ class ReportInterface:
         # we should save the incoming one.
         if not uploaded_via_breakdown_sheet or report_metric.value is not None:
             datapoint_json_list.append(
-                DatapointInterface.add_datapoint(
+                DatapointInterface.add_report_datapoint(
                     session=session,
                     existing_datapoints_dict=existing_datapoints_dict,
                     user_account=user_account,
@@ -560,7 +560,7 @@ class ReportInterface:
                     continue
 
                 datapoint_json_list.append(
-                    DatapointInterface.add_datapoint(
+                    DatapointInterface.add_report_datapoint(
                         session=session,
                         existing_datapoints_dict=existing_datapoints_dict,
                         user_account=user_account,
@@ -585,7 +585,7 @@ class ReportInterface:
                 continue
 
             datapoint_json_list.append(
-                DatapointInterface.add_datapoint(
+                DatapointInterface.add_report_datapoint(
                     session=session,
                     existing_datapoints_dict=existing_datapoints_dict,
                     user_account=user_account,

@@ -66,12 +66,12 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         super().setUp()
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
 
-    def test_add_datapoint(self) -> None:
+    def test_add_report_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             monthly_report = self.test_schema_objects.test_report_monthly
             created_datetime = datetime.datetime.now()
 
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=monthly_report,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
@@ -87,7 +87,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             report_id = monthly_report.id
 
             # Update datapoint with new value
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=monthly_report,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
@@ -110,49 +110,6 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 datapoints[0].created_at,
                 created_datetime,
             )
-
-    def test_record_change_history_for_report_datapoints(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            monthly_report = self.test_schema_objects.test_report_monthly
-            created_datetime = datetime.datetime.now()
-
-            DatapointInterface.add_datapoint(
-                session=session,
-                report=monthly_report,
-                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
-                    reports=[monthly_report]
-                ),
-                value="123abc",
-                metric_definition_key=law_enforcement.funding.key,
-                current_time=created_datetime,
-                upload_method=UploadMethod.MANUAL_ENTRY,
-            )
-            session.commit()
-            session.refresh(monthly_report)
-
-            datapoint_histories = session.query(DatapointHistory).all()
-            self.assertEqual(len(datapoint_histories), 0)
-
-            # Update datapoint with new value
-            DatapointInterface.add_datapoint(
-                session=session,
-                report=monthly_report,
-                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
-                    reports=[monthly_report]
-                ),
-                value="456def",
-                metric_definition_key=law_enforcement.funding.key,
-                current_time=created_datetime + datetime.timedelta(days=2),
-                upload_method=UploadMethod.BULK_UPLOAD,
-            )
-
-            datapoint_histories = session.query(DatapointHistory).all()
-            self.assertEqual(len(datapoint_histories), 1)
-            datapoint = datapoint_histories[0]
-            self.assertEqual(datapoint.old_value, "123abc")
-            self.assertEqual(datapoint.new_value, "456def")
-            self.assertEqual(datapoint.old_upload_method, "MANUAL_ENTRY")
-            self.assertEqual(datapoint.new_upload_method, "BULK_UPLOAD")
 
     def test_save_agency_datapoints_turnoff_whole_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -610,7 +567,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
             try:
                 # When a report is in Draft mode, no errors are raised when the value is invalid
-                DatapointInterface.add_datapoint(
+                DatapointInterface.add_report_datapoint(
                     session=session,
                     existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                         reports=[monthly_report]
@@ -635,7 +592,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     editor_id=user.id,
                     status=ReportStatus.PUBLISHED.value,
                 )
-                DatapointInterface.add_datapoint(
+                DatapointInterface.add_report_datapoint(
                     session=session,
                     existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                         reports=[monthly_report]
@@ -719,7 +676,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             session.refresh(monthly_report)
             current_time = datetime.datetime(2022, 6, 1)
 
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
@@ -772,7 +729,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 },
             )
 
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
@@ -834,7 +791,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
                 reports=[report]
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -843,7 +800,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 current_time=current_time,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -853,7 +810,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ACTIVE"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -863,7 +820,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ADMINISTRATIVE"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -895,7 +852,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
                 reports=[report]
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -904,7 +861,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 current_time=updated_time,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -914,7 +871,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ACTIVE"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -924,7 +881,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ADMINISTRATIVE"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -959,7 +916,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
                 reports=[report]
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -968,7 +925,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 current_time=updated_time_2,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -978,7 +935,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ACTIVE"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -988,7 +945,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ADMINISTRATIVE"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-            DatapointInterface.add_datapoint(
+            DatapointInterface.add_report_datapoint(
                 session=session,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -1153,3 +1110,409 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(first_context_created_at, second_context_created_at)
             self.assertGreater(second_context_updated_at, first_context_updated_at)
+
+    ## Datapoint History tests.
+
+    def test_record_change_history_for_report_datapoints(self) -> None:
+        """
+        Change the value of a report datapoint. Test that this change is recorded in the
+        datapoint history table.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            monthly_report = self.test_schema_objects.test_report_monthly
+            created_datetime = datetime.datetime.now()
+
+            DatapointInterface.add_report_datapoint(
+                session=session,
+                report=monthly_report,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
+                value="123abc",
+                metric_definition_key=law_enforcement.funding.key,
+                current_time=created_datetime,
+                upload_method=UploadMethod.MANUAL_ENTRY,
+            )
+            session.commit()
+            session.refresh(monthly_report)
+
+            # No update is written for the first datapoint upload.
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            # Update datapoint with new value
+            DatapointInterface.add_report_datapoint(
+                session=session,
+                report=monthly_report,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
+                value="456def",
+                metric_definition_key=law_enforcement.funding.key,
+                current_time=created_datetime + datetime.timedelta(days=2),
+                upload_method=UploadMethod.BULK_UPLOAD,
+            )
+
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 1)
+            datapoint = datapoint_histories[0]
+            self.assertEqual(datapoint.old_value, "123abc")
+            self.assertEqual(datapoint.new_value, "456def")
+            self.assertEqual(datapoint.old_upload_method, "MANUAL_ENTRY")
+            self.assertEqual(datapoint.new_upload_method, "BULK_UPLOAD")
+
+    def test_record_enable_disable_metric_changes(self) -> None:
+        """
+        Disable a previosly-enabled metric. Test that this change is recorded in the
+        datapoint history table.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_C
+            user = self.test_schema_objects.test_user_C
+            session.add_all([user, agency])
+            # Add enabled metric datapoint.
+            agency_metric_enabled = (
+                self.test_schema_objects.get_agency_metric_interface(
+                    include_contexts=False,
+                    include_disaggregation=False,
+                    use_partially_disabled_disaggregation=False,
+                    is_metric_enabled=True,
+                )
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_enabled,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # No update is written for the first datapoint upload.
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            # Disable the metric.
+            agency_metric_disabled = (
+                self.test_schema_objects.get_agency_metric_interface(
+                    include_contexts=False,
+                    include_disaggregation=False,
+                    use_partially_disabled_disaggregation=False,
+                    is_metric_enabled=False,
+                )
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_disabled,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(histories), 1)
+            history = histories[0]
+            self.assertEqual(history.old_enabled, True)
+            self.assertEqual(history.new_enabled, False)
+            ## Enable/disable metric histories will have these values as None.
+            self.assertEqual(history.old_value, None)
+            self.assertEqual(history.new_value, None)
+            self.assertEqual(history.old_upload_method, None)
+            self.assertEqual(history.new_upload_method, None)
+
+    def test_record_metric_context_updates(self) -> None:
+        """
+        Modify a metric's context (note, this is the top-level metric's context and not
+        the metric breakdown's context). Test that this change is recorded in the
+        datapoint history table.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_C
+            user = self.test_schema_objects.test_user_C
+            session.add_all([user, agency])
+            agency_metric_context = (
+                self.test_schema_objects.get_agency_metric_interface(
+                    include_contexts=True,
+                    include_disaggregation=False,
+                    use_partially_disabled_disaggregation=False,
+                    is_metric_enabled=True,
+                )
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_context,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # No update is written for the first datapoint upload.
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            # Change the metric's context value.
+            agency_metric_context.contexts[0].value = "new additional contexts."
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_context,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(histories), 1)
+            history = histories[0]
+            ## Enable/disable metric histories will have these values as None.
+            self.assertEqual(history.old_value, "our metrics are different because xyz")
+            self.assertEqual(history.new_value, "new additional contexts.")
+            self.assertEqual(history.old_upload_method, None)
+            self.assertEqual(history.new_upload_method, None)
+            self.assertEqual(history.old_enabled, None)
+            self.assertEqual(history.new_enabled, None)
+
+    def test_record_custom_reporting_frequency_updates(self) -> None:
+        """
+        Modify a metric's reporting frequency from ANNUAL to MONTHLY.
+        Test that this change is recorded in datapoint history.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
+            # Set metric's frequency to annual.
+            agency_metric = MetricInterface(
+                key=law_enforcement.funding.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=ReportingFrequency.ANNUAL, starting_month=3
+                ),
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # No update is written for the first datapoint upload.
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            # Update the metric's frequency to monthly.
+            agency_metric = MetricInterface(
+                key=law_enforcement.funding.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=ReportingFrequency.MONTHLY
+                ),
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(histories), 1)
+            history = histories[0]
+            self.assertEqual(
+                history.old_value, '{"custom_frequency": "ANNUAL", "starting_month": 3}'
+            )
+            self.assertEqual(
+                history.new_value,
+                '{"custom_frequency": "MONTHLY", "starting_month": null}',
+            )
+            self.assertEqual(history.old_upload_method, None)
+            self.assertEqual(history.new_upload_method, None)
+            self.assertEqual(history.old_enabled, None)
+            self.assertEqual(history.new_enabled, None)
+
+    def test_record_disaggregated_by_supervision_subsystems_updates(self) -> None:
+        """
+        Flip the DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS boolean from True to False.
+        Test that this generates 6 datapoint history entries:
+            * 3 entries (one for the supervision system and two for the subsystems)
+                record that the disaggregated by supervision subsystems boolean was
+                flipped from True to False.
+            * 2 entries (one for each of the two subsystems the agency belongs to)
+                record that the metric changed from enabled to disabled.
+            * 1 entry for the supervision system records that the metric changed from
+                disabled to enabled.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_E
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=MetricInterface(
+                    key=supervision.funding.key,
+                    disaggregated_by_supervision_subsystems=True,
+                ),
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # No update is written for the first datapoint upload.
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            # Change `disaggregated_by_supervision_subsystems` to false.
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=MetricInterface(
+                    key=supervision.funding.key,
+                    disaggregated_by_supervision_subsystems=False,
+                ),
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(histories), 6)
+
+            # 3 entries (one for the supervision system and two for the subsystems)
+            # recording that the disaggregated by supervision subsystems boolean was
+            # flipped from True to False.
+            disagg_histories = [dp for dp in histories if dp.new_value is not None]
+            self.assertEqual(len(disagg_histories), 3)
+            for history in disagg_histories:
+                self.assertEqual(history.old_value, "True")
+                self.assertEqual(history.new_value, "False")
+                self.assertEqual(history.old_upload_method, None)
+                self.assertEqual(history.new_upload_method, None)
+                self.assertEqual(history.old_enabled, None)
+                self.assertEqual(history.new_enabled, None)
+
+            # 2 entries (one for each of the two subsystems the agency belongs to)
+            # recording that the metric changed from enabled to disabled.
+            subsystem_disabled_histories = [
+                dp for dp in histories if dp.new_enabled is False
+            ]
+            self.assertEqual(len(subsystem_disabled_histories), 2)
+            for history in subsystem_disabled_histories:
+                self.assertEqual(history.old_enabled, True)
+                self.assertEqual(history.new_enabled, False)
+                self.assertEqual(history.old_value, None)
+                self.assertEqual(history.new_value, None)
+                self.assertEqual(history.old_upload_method, None)
+                self.assertEqual(history.new_upload_method, None)
+
+            # 1 entry for the supervision system recording that the metric changed from
+            # disabled to enabled.
+            supervision_enabled = [dp for dp in histories if dp.new_enabled is True]
+            self.assertEqual(len(supervision_enabled), 1)
+            for history in supervision_enabled:
+                self.assertEqual(history.old_enabled, False)
+                self.assertEqual(history.new_enabled, True)
+                self.assertEqual(history.old_value, None)
+                self.assertEqual(history.new_value, None)
+                self.assertEqual(history.old_upload_method, None)
+                self.assertEqual(history.new_upload_method, None)
+
+    def test_record_breakdown_context_updates(self) -> None:
+        """
+        Modify a metric dimension's context. Test that this results in an addition to
+        the datapoint history table.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_G
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
+            agency_metric = MetricInterface(
+                key=prisons.funding.key,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_contexts={
+                            FundingType.OTHER: [
+                                MetricContextData(
+                                    key=ContextKey["ADDITIONAL_CONTEXT"],
+                                    value="Old and boring context description.",
+                                )
+                            ],
+                        }
+                    ),
+                ],
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # No update is written for the first datapoint upload.
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            agency_metric = MetricInterface(
+                key=prisons.funding.key,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_contexts={
+                            FundingType.OTHER: [
+                                MetricContextData(
+                                    key=ContextKey["ADDITIONAL_CONTEXT"],
+                                    value="New and fun context description.",
+                                )
+                            ],
+                        }
+                    ),
+                ],
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(histories), 1)
+            history = histories[0]
+            self.assertEqual(history.old_value, "Old and boring context description.")
+            self.assertEqual(history.new_value, "New and fun context description.")
+            self.assertEqual(history.old_enabled, None)
+            self.assertEqual(history.new_enabled, None)
+            self.assertEqual(history.old_upload_method, None)
+            self.assertEqual(history.new_upload_method, None)
+
+    def test_record_enable_disable_breakdown_updates(self) -> None:
+        """
+        Change one breakdown metric from enabled to disabled. Test that this results
+        in an addition to the datapoint history table.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            # Enables EMERGENCY dimension, but leaves the NON_EMERGENCY and UNKNOWN
+            # dimensions disabled.
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                use_partially_disabled_disaggregation=True, include_disaggregation=True
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # No update is written for the first datapoint upload.
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+
+            # Disable EMERGENCY dimension as well.
+            updated_metric = self.test_schema_objects.get_agency_metric_interface(
+                use_partially_disabled_disaggregation=False, include_disaggregation=True
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=updated_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            # The change is stored in datapoint history.
+            histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(histories), 1)
+            history = histories[0]
+            self.assertEqual(history.old_enabled, True)
+            self.assertEqual(history.new_enabled, False)
+            self.assertEqual(history.old_value, None)
+            self.assertEqual(history.new_value, None)
+            self.assertEqual(history.old_upload_method, None)
+            self.assertEqual(history.new_upload_method, None)

@@ -65,6 +65,7 @@ def update_existing_or_create(
     """
     Given a new database entity (for example, a new datapoint object), either add the object to the
     database using session.add(), or update the existing database row using session.merge().
+    Returns a tuple of the updated and the existing (previous) datapoints.
     """
     # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
     # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
