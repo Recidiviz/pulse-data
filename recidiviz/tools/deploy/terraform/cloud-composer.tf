@@ -47,6 +47,9 @@ resource "google_composer_environment" "default_v2" {
       airflow_config_overrides = {
         "api-auth_backends"                        = "airflow.composer.api.backend.composer_auth,airflow.api.auth.backend.session"
         "api-composer_auth_user_registration_role" = "Op"
+        # For most tasks, the time it takes to load the entire Airflow environment in a new subprocess is negligible
+        # This should help with cross-process resource contention
+        "core-execute_tasks_new_python_interpreter" = "True"
         # The default maximum is 1024, but there may be instances where we may have stopped
         # SFTP and will need to catch up after a few days, so we will increase the limit.
         "core-max_map_length"                       = 2000
@@ -55,7 +58,7 @@ resource "google_composer_environment" "default_v2" {
         "email-email_conn_id"                       = "sendgrid_default"
         "webserver-rbac"                            = true
         "webserver-web_server_name"                 = "orchestration-v2"
-        "scheduler-scheduler_zombie_task_threshold" = 1200
+        "scheduler-scheduler_zombie_task_threshold" = 3600
         "secrets-backend"                           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
         "secrets-backend_kwargs"                    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
