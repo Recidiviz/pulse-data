@@ -47,8 +47,6 @@ WITH early_discharges_last_1_month_agg_metrics AS (
     state_code,
     officer_id,
     officer_name,
-    period,
-    start_date, 
     end_date,
     ROUND(avg_population_task_eligible_early_discharge, 1) AS avg_population_task_eligible_early_discharge,
     task_completions_early_discharge
@@ -66,6 +64,7 @@ early_discharges_last_6_months_agg_metrics AS (
       state_code,
       officer_id,
       officer_name,
+      MAX(end_date) AS end_date,
       SUM(task_completions_early_discharge) AS task_completions_early_discharge_6_months
   FROM (
       SELECT *
@@ -82,6 +81,20 @@ early_discharges_last_6_months_agg_metrics AS (
   GROUP BY 1,2,3
 ),
 
+combined_early_discharges_agg_metrics AS (
+  SELECT
+    IFNULL(ed1.state_code, ed6.state_code) AS state_code,
+    IFNULL(ed1.officer_id, ed6.officer_id) AS officer_id,
+    IFNULL(ed1.officer_name, ed6.officer_name) AS officer_name,
+    ed1.end_date,
+    ed1.avg_population_task_eligible_early_discharge,
+    IFNULL(ed1.task_completions_early_discharge, 0) AS task_completions_early_discharge,
+    ed6.task_completions_early_discharge_6_months,
+  FROM early_discharges_last_1_month_agg_metrics ed1
+  FULL OUTER JOIN early_discharges_last_6_months_agg_metrics ed6
+    USING (state_code, officer_id)
+),
+
 employee_to_supervisor_map AS (
     -- Maine
     #TODO(#24426): use ingested entity data instead of CIS_900_EMPLOYEE_latest
@@ -89,24 +102,20 @@ employee_to_supervisor_map AS (
 )
 
 SELECT 
-  ed1.state_code,
-  ed1.officer_id,
-  ed1.officer_name,
+  ed.state_code,
+  ed.officer_id,
+  ed.officer_name,
   esm.officer_email,
   esm2.officer_name AS supervisor_name,
   esm2.officer_id AS supervisor_id,
   esm2.officer_email AS supervisor_email,
-  ed1.end_date AS report_date,
-  ed1.avg_population_task_eligible_early_discharge AS avg_eligible_month,
-  ed1.task_completions_early_discharge AS early_terminations_month,
-  ed6.task_completions_early_discharge_6_months AS early_terminations_6_months,
+  ed.end_date AS report_date,
+  ed.avg_population_task_eligible_early_discharge AS avg_eligible_month,
+  ed.task_completions_early_discharge AS early_terminations_month,
+  ed.task_completions_early_discharge_6_months AS early_terminations_6_months,
 -- 1 month stats
 FROM 
-  early_discharges_last_1_month_agg_metrics ed1
--- 6 month stats
-LEFT JOIN 
-  early_discharges_last_6_months_agg_metrics ed6
-USING (state_code, officer_id)
+  combined_early_discharges_agg_metrics ed
 -- Map officer to supervisor
 LEFT JOIN 
   employee_to_supervisor_map esm
@@ -116,8 +125,7 @@ LEFT JOIN
   employee_to_supervisor_map esm2
 ON 
   esm2.officer_id = esm.supervisor_id
-    AND esm2.state_code = ed1.state_code
-WHERE ed1.avg_population_task_eligible_early_discharge IS NOT NULL"""
+    AND esm2.state_code = ed.state_code"""
 
 EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
