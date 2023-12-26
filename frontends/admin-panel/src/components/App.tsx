@@ -93,7 +93,7 @@ const ENVIRONMENT_OPTIONS: Map<EnvironmentType, EnvironmentOption> = new Map([
     "staging",
     {
       title: "Staging",
-      baseUrl: "https://admin-panel-staging.recidiviz.org/admin/",
+      baseUrl: "https://admin-panel-staging.recidiviz.org",
       backgroundColor: "#bf7474",
     },
   ],
@@ -101,7 +101,7 @@ const ENVIRONMENT_OPTIONS: Map<EnvironmentType, EnvironmentOption> = new Map([
     "production",
     {
       title: "Production",
-      baseUrl: "https://admin-panel-prod.recidiviz.org/admin/",
+      baseUrl: "https://admin-panel-prod.recidiviz.org",
       backgroundColor: "#90aeb5",
     },
   ],
