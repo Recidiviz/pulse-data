@@ -110,6 +110,13 @@ class UsMiIncarcerationNormalizationDelegate(
                     else:
                         inference_reason = "MISSING-SUP-LEVEL"
 
+                    if sp.termination_date:
+                        release_reason = (
+                            StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
+                        )
+                    else:
+                        release_reason = None
+
                     # NOTE: this won't be hydrating admisson_reason_raw_text so this period will
                     #       have a null admission reason violation type and will instead rely on
                     #       sessions logic for that information
@@ -119,7 +126,7 @@ class UsMiIncarcerationNormalizationDelegate(
                         admission_date=sp.start_date,
                         release_date=sp.termination_date,
                         admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+                        release_reason=release_reason,
                         custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
                         custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
                         incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,

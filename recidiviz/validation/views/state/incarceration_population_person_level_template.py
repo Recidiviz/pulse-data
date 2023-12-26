@@ -72,6 +72,9 @@ sanitized_internal_metrics AS (
       ON dataflow.state_code = dates.region_code
       AND dates.date_of_stay BETWEEN dataflow.start_date_inclusive AND {non_null_end_date}
    WHERE included_in_state_population
+   -- For MI, exclude incarceration periods that are TEMPORARY_CUSTODY incarceration periods inferred during normalization
+   -- (which have custodial authority set to 'INTERNAL_UNKNOWN' as opposed to 'STATE_PRISON' like all other ingested incarceration periods)
+   AND (state_code <> 'US_MI' OR custodial_authority = 'STATE_PRISON')
 )
 SELECT
   region_code,
