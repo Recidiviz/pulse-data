@@ -90,7 +90,6 @@ WITH status_bw AS (
             '' AS STATUS_SUBTYPE,
             sub_cycle_partition_statuses.STATUS_CODE_CHG_DT AS STATUS_CODE_CHG_DT,
             '2-PARTITION' AS SUBCYCLE_DATE_TYPE
-
         FROM
             incarceration_subcycle_body_status body_status_f1
         LEFT OUTER JOIN
@@ -209,6 +208,7 @@ WITH status_bw AS (
             NULLIF(CS_DD, '0') as CS_DD,
             CS_OLA
         FROM {LBAKRDTA_TAK065} locations
+        WHERE CS_OLA IS NOT NULL
     ),
     cleaned_housing_details AS (
         SELECT
@@ -218,7 +218,7 @@ WITH status_bw AS (
             NULLIF(BN_HE, '0') AS BN_HE,
             BN_LRU
         FROM {LBAKRDTA_TAK017} housing
-        WHERE BN_HS != '0'
+        WHERE BN_HS != '0' AND BN_LRU IS NOT NULL
     ),
     -- To join the status spans of time with facility location spans of time, we use the following 7 CTEs to find all possible start dates
     -- and end dates among the two sources and join them in order to get a comprehensive  list of any time someone changed either 
@@ -368,102 +368,131 @@ WITH status_bw AS (
             *
         FROM start_and_end_dates_same_day_housing
     ),
+    start_end_facility AS (
+        SELECT *
+        FROM (
+            SELECT 
+                se.*,
+                f.CS_OLA,
+                ROW_NUMBER() OVER (PARTITION BY se.DOC, se.CYC, se.StartDate, se.EndDate 
+                ORDER BY ((CAST(CS_DD AS INT64)) - CAST(CS_NM AS INT64)) ASC NULLS LAST) as f_rn
+            FROM start_and_end_dates_cte se
+            LEFT JOIN cleaned_facility_locations f
+            ON se.DOC = f.CS_DOC
+                AND se.CYC = f.CS_CYC
+                AND se.StartDate >= f.CS_NM 
+                AND COALESCE(se.EndDate,'99990101') <= COALESCE(f.CS_DD,'99990101')
+        ) ranked
+        WHERE f_rn = 1
+    ),
+    start_end_facility_housing AS (
+        SELECT *
+        FROM (
+            SELECT 
+                se.*,
+                h.BN_LRU,
+                ROW_NUMBER() OVER (PARTITION BY se.DOC, se.CYC, se.StartDate, se.EndDate 
+                ORDER BY ((CAST(BN_HE AS INT64)) - CAST(BN_HS AS INT64)) ASC NULLS LAST) as h_rn
+            FROM start_end_facility se
+            LEFT JOIN cleaned_housing_details h
+            ON se.DOC = h.BN_DOC
+                AND se.CYC = h.BN_CYC
+                AND se.StartDate >= h.BN_HS
+                AND COALESCE(se.EndDate,'99990101') <= COALESCE(h.BN_HE,'99990101')
+        ) ranked
+        WHERE h_rn = 1
+    ),
     -- Using the unioned table from above, we join the comprehensive list of start and end dates to the sub_subcycle_span 
     -- information and the facility information in the following 2 CTEs, handling zero days periods with window functions. 
-    start_and_end_date_with_status AS (
+    periods_with_location_and_status AS (
         SELECT * 
         FROM (
             SELECT 
-                sss.*,
+                se.DOC,
+                se.CYC,
                 se.StartDate as START_DATE,
                 se.EndDate as END_DATE,
+                se.CS_OLA as FACILITY,
+                se.BN_LRU as HOUSING_TYPE,
+
+                -- End status codes, end status subtypes, and the dates used to obtain status code
+                -- lists are no longer set for periods within the boundaries of a sub-subcycle
+                -- (i.e., this information only applies to periods that start when a sub-subcycle
+                -- opens or end when a sub-subcycle closes). This prevents admission/release reasons
+                -- from being set erroneously for periods constructed within sub-subcycles based
+                -- on change in facility/housing status. Transitions between these periods will lack
+                -- status info and therefore be treated as transfers. 
+                -- TODO(#15905): Do away with the sub-subcycle structure altogether in a full refactor 
+                -- of this view.
+
+                CASE WHEN se.StartDate = full_span_details.SUB_SUBCYCLE_START_DT THEN se.StartDate ELSE NULL END AS subcycle_start,
+                CASE WHEN se.EndDate = full_span_details.SUB_SUBCYCLE_END_DT AND se.EndDate IS NOT NULL THEN se.EndDate ELSE NULL END AS subcycle_end,
+                CASE WHEN se.EndDate = full_span_details.SUB_SUBCYCLE_END_DT AND se.EndDate IS NOT NULL THEN full_span_details.END_STATUS_CODE ELSE NULL END AS END_STATUS_CODE,
+                CASE WHEN se.EndDate = full_span_details.SUB_SUBCYCLE_END_DT AND se.EndDate IS NOT NULL THEN full_span_details.END_STATUS_SUBTYPE ELSE NULL END AS END_STATUS_SUBTYPE,
+
+                -- PFI is still set via the parent sub-subcycle, unlike start/end statuses.
+                full_span_details.PFI,
+
                 -- If there are multiple for a single start and end date then we want to keep the one that is smallest as that will 
                 -- be the most relevant to our start and end dates. This is the logic that allows us to handle zero day periods, 
                 -- as a zero day period will always match both the matching zero day sub cycle span as well as the previous sub cycle span. 
                 -- In this case we want to only keep the row with the zero day sub cycle span. 
-                ROW_NUMBER() OVER (PARTITION BY sss.DOC, sss.CYC, se.StartDate, se.EndDate 
-                    ORDER BY ((CAST(SUB_SUBCYCLE_END_DT AS INT64)) - CAST(SUB_SUBCYCLE_START_DT AS INT64)) ASC) as ses_rn
-            FROM start_and_end_dates_cte se 
-            LEFT JOIN sub_subcycle_spans sss
-                ON se.DOC = sss.DOC
-                AND se.CYC = sss.CYC
-                AND se.StartDate >= sss.SUB_SUBCYCLE_START_DT 
-                AND COALESCE(se.EndDate,'99990101') <= COALESCE(sss.SUB_SUBCYCLE_END_DT,'99990101')
-            WHERE sss.SUB_SUBCYCLE_START_DT IS NOT NULL
+                ROW_NUMBER() OVER (PARTITION BY se.DOC, se.CYC, se.StartDate, se.EndDate 
+                    ORDER BY ((CAST(full_span_details.SUB_SUBCYCLE_END_DT AS INT64)) - CAST(full_span_details.SUB_SUBCYCLE_START_DT AS INT64)) ASC NULLS LAST) as fsd_rn
+            FROM start_end_facility_housing se 
+            LEFT JOIN sub_subcycle_spans full_span_details
+                ON se.DOC = full_span_details.DOC
+                AND se.CYC = full_span_details.CYC
+                AND se.StartDate >= full_span_details.SUB_SUBCYCLE_START_DT 
+                AND COALESCE(se.EndDate,'99990101') <= COALESCE(full_span_details.SUB_SUBCYCLE_END_DT,'99990101')
+            WHERE full_span_details.SUB_SUBCYCLE_START_DT IS NOT NULL
         ) ordered
-        WHERE ses_rn = 1
-    ),
-    start_and_end_date_with_status_and_facility AS (
-        SELECT * 
-        FROM (
-            SELECT 
-                ses.* EXCEPT(ses_rn),
-                mo_facility_locations.CS_OLA as FACILITY,
-                ROW_NUMBER() OVER (PARTITION BY ses.DOC, ses.CYC, ses.START_DATE, ses.END_DATE 
-                    ORDER BY ((CAST(mo_facility_locations.CS_DD AS INT64)) - CAST(mo_facility_locations.CS_NM AS INT64)) ASC) as sesf_rn
-            FROM start_and_end_date_with_status ses
-            LEFT JOIN cleaned_facility_locations mo_facility_locations
-                ON ses.DOC = mo_facility_locations.CS_DOC
-                AND ses.CYC = mo_facility_locations.CS_CYC
-                AND ses.START_DATE >= mo_facility_locations.CS_NM 
-                AND COALESCE(ses.END_DATE,'99990101') <= COALESCE(mo_facility_locations.CS_DD,'99990101') 
-        ) ordered
-        WHERE sesf_rn = 1
-    ),
-    start_and_end_date_with_status_and_facility_and_location AS (
-        SELECT * FROM (
-            SELECT
-                ses.* EXCEPT(sesf_rn),
-                housing_details.BN_LRU as HOUSING_TYPE,
-                ROW_NUMBER() OVER (PARTITION BY ses.DOC, ses.CYC, ses.START_DATE, ses.END_DATE 
-                    ORDER BY ((CAST(housing_details.BN_HE AS INT64)) - CAST(housing_details.BN_HS AS INT64)) ASC) as sesfl_rn
-            FROM start_and_end_date_with_status_and_facility ses
-            LEFT JOIN cleaned_housing_details housing_details
-                ON ses.DOC = housing_details.BN_DOC
-                AND ses.CYC = housing_details.BN_CYC
-                AND ses.START_DATE >= housing_details.BN_HS
-                AND COALESCE(ses.END_DATE,'99990101') <= COALESCE(housing_details.BN_HE,'99990101') 
-        ) ordered
-        WHERE sesfl_rn = 1
+        WHERE fsd_rn = 1
     )
+
     SELECT
-        start_and_end_date_with_status_and_facility_and_location.DOC,
-        start_and_end_date_with_status_and_facility_and_location.CYC,
-        start_and_end_date_with_status_and_facility_and_location.PFI,
-        start_and_end_date_with_status_and_facility_and_location.START_STATUS_SEQ_NUM,
-        start_and_end_date_with_status_and_facility_and_location.END_STATUS_CODE,
-        start_and_end_date_with_status_and_facility_and_location.END_STATUS_SUBTYPE,
-        start_and_end_date_with_status_and_facility_and_location.START_DATE,
-        CASE WHEN start_and_end_date_with_status_and_facility_and_location.END_DATE IN ('99999999') 
+        periods_with_location_and_status.DOC,
+        periods_with_location_and_status.CYC,
+        periods_with_location_and_status.PFI,
+        periods_with_location_and_status.END_STATUS_CODE,
+        periods_with_location_and_status.END_STATUS_SUBTYPE,
+        periods_with_location_and_status.START_DATE,
+        CASE WHEN periods_with_location_and_status.END_DATE IN ('99999999') 
             THEN most_recent_status_updates.MOST_RECENT_SENTENCE_STATUS_DATE
-            ELSE start_and_end_date_with_status_and_facility_and_location.END_DATE END AS END_DATE,
-        start_and_end_date_with_status_and_facility_and_location.FACILITY,
-        start_and_end_date_with_status_and_facility_and_location.HOUSING_TYPE,
+            ELSE periods_with_location_and_status.END_DATE END AS END_DATE,
+        periods_with_location_and_status.FACILITY,
+        periods_with_location_and_status.HOUSING_TYPE,
         ROW_NUMBER() OVER (
             PARTITION BY DOC, CYC 
-            ORDER BY START_DATE, END_DATE, SQN
+            ORDER BY START_DATE, END_DATE
         ) AS SQN,
         start_codes.STATUS_CODES AS START_SCD_CODES,
         end_codes.STATUS_CODES AS END_SCD_CODES,
     FROM
-        start_and_end_date_with_status_and_facility_and_location
+        periods_with_location_and_status
     LEFT OUTER JOIN
         all_scd_codes_by_date start_codes
     ON
-        start_and_end_date_with_status_and_facility_and_location.DOC = start_codes.BW_DOC AND
-        start_and_end_date_with_status_and_facility_and_location.CYC = start_codes.BW_CYC AND
-        start_and_end_date_with_status_and_facility_and_location.SUB_SUBCYCLE_START_DT = start_codes.STATUS_DATE
+        periods_with_location_and_status.DOC = start_codes.BW_DOC AND
+        periods_with_location_and_status.CYC = start_codes.BW_CYC AND
+        -- Set start status codes for a period if the period starts at the same time as 
+        -- a sub-subcycle span does. Previously, start status codes were set based on the 
+        -- start date of the parent sub-subcycle, such that every period within the 
+        -- sub-subcycle would have the same start status codes. 
+        periods_with_location_and_status.subcycle_start = start_codes.STATUS_DATE
     LEFT OUTER JOIN
         all_scd_codes_by_date end_codes
     ON
-        start_and_end_date_with_status_and_facility_and_location.DOC = end_codes.BW_DOC AND
-        start_and_end_date_with_status_and_facility_and_location.CYC = end_codes.BW_CYC AND
-        start_and_end_date_with_status_and_facility_and_location.SUB_SUBCYCLE_END_DT = end_codes.STATUS_DATE
+        periods_with_location_and_status.DOC = end_codes.BW_DOC AND
+        periods_with_location_and_status.CYC = end_codes.BW_CYC AND
+        -- Likewise, set end status codes for a period if the period ends at the same time as 
+        -- a sub-subcycle span does.
+        periods_with_location_and_status.subcycle_end = end_codes.STATUS_DATE
     LEFT OUTER JOIN
         most_recent_status_updates
     ON
-        start_and_end_date_with_status_and_facility_and_location.DOC = most_recent_status_updates.BW_DOC AND
-        start_and_end_date_with_status_and_facility_and_location.CYC = most_recent_status_updates.BW_CYC
+        periods_with_location_and_status.DOC = most_recent_status_updates.BW_DOC AND
+        periods_with_location_and_status.CYC = most_recent_status_updates.BW_CYC
     WHERE DOC IS NOT NULL
     """
 
