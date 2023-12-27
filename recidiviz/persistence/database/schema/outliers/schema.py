@@ -22,6 +22,7 @@ from sqlalchemy import (
     Date,
     Float,
     ForeignKeyConstraint,
+    Integer,
     String,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -196,17 +197,19 @@ class SupervisionClientEvent(OutliersBase):
 
     __tablename__ = "supervision_client_events"
 
-    state_code = Column(String, primary_key=True)
+    # An autoincrementing primary key to allow duplicate rows.
+    _id = Column(Integer, primary_key=True)
+    state_code = Column(String)
     # The metric id that this event applies to
-    metric_id = Column(String, primary_key=True)
+    metric_id = Column(String)
     # The date the event occurred
-    event_date = Column(Date, primary_key=True)
+    event_date = Column(Date)
     # The id of the JII the event applies to
-    client_id = Column(String, primary_key=True)
+    client_id = Column(String)
     # Should follow the Recidiviz-standard JSON struct string representation
     client_name = Column(JSON, nullable=False)
     # The external id of the officer assigned to this person at the time the event occurred
-    officer_id = Column(String, primary_key=True)
+    officer_id = Column(String)
     # The start date of the officer assignment period that this event occurred in
     officer_assignment_date = Column(Date, nullable=True)
     # The end date of the officer assignment that this event occurred in
