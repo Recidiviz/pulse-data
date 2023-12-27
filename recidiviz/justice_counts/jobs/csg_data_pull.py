@@ -66,6 +66,8 @@ SCOREBOARD_ALL_SHEET_ID = 659567415
 SCOREBOARD_NON_CHILD_SHEET_ID = 855433685
 
 CREATED_AT = "created_at"
+LAST_VISIT = "last_visit"
+VISIT_THIS_WEEK = "visit_this_week"
 LAST_LOGIN = "last_login"
 LOGIN_THIS_WEEK = "login_this_week"
 LAST_UPDATE = "last_update"
@@ -278,8 +280,10 @@ def create_new_agency_columns(
     today: datetime.datetime,
     spreadsheets: List[schema.Spreadsheet],
     environment: str,
+    agency_id_to_last_visit: Dict[str, datetime.date],
 ) -> Tuple[List[schema.Agency], Dict[str, int]]:
     """Given a list of agencies and their users, create and populate the following columns:
+    - last_visit
     - last_login
     - created_at
     - is_superagency
@@ -378,10 +382,18 @@ def create_new_agency_columns(
                 else False
             )
 
+        last_visit = agency_id_to_last_visit.get(agency_id)
+
+        agency[LAST_VISIT] = last_visit or ""
+        agency[VISIT_THIS_WEEK] = (
+            last_visit > (today + datetime.timedelta(days=-7)).date()
+            if last_visit is not None
+            else False
+        )
         agency[LAST_LOGIN] = last_login or ""
         agency[LOGIN_THIS_WEEK] = (
             last_login > (today + datetime.timedelta(days=-7)).date()
-            if last_login
+            if last_login is not None
             else False
         )
         agency[CREATED_AT] = agency_created_at_str or first_user_created_at or ""
@@ -464,6 +476,8 @@ def generate_agency_summary_csv(
     }
 
     agency_id_to_users = defaultdict(list)
+    # A dictionary that maps agency ids to the date of the last user visit to that agency
+    agency_id_to_last_visit: Dict[str, datetime.date] = defaultdict()
     for assoc in agency_user_account_associations:
         auth0_user = user_id_to_auth0_user[assoc["user_account_id"]]
         if (
@@ -474,6 +488,12 @@ def generate_agency_summary_csv(
             and "recidiviz" not in auth0_user["email"]
         ):
             agency_id_to_users[assoc["agency_id"]].append(auth0_user)
+
+            if assoc["last_visit"] is not None:
+                assoc_last_visit = assoc["last_visit"].date()
+                agency_last_visit = agency_id_to_last_visit.get(assoc["agency_id"])
+                if not agency_last_visit or (assoc_last_visit > agency_last_visit):
+                    agency_id_to_last_visit[assoc["agency_id"]] = assoc_last_visit
 
     # A dictionary that maps agency ids to agency objects
     agency_id_to_agency = {}
@@ -495,6 +515,7 @@ def generate_agency_summary_csv(
         today=today,
         spreadsheets=spreadsheets,
         environment=environment,
+        agency_id_to_last_visit=agency_id_to_last_visit,
     )
 
     # Now that state_code_by_new_agency_count is populated, we can determine if
@@ -527,6 +548,8 @@ def generate_agency_summary_csv(
         "name",
         "state",
         CREATED_AT,
+        LAST_VISIT,
+        VISIT_THIS_WEEK,
         LAST_LOGIN,
         LOGIN_THIS_WEEK,
         LAST_UPDATE,
@@ -589,6 +612,7 @@ def generate_and_write_scoreboard(
         - date_last_updated
         - num_total_agencies
         - num_agencies_created_in_last_week
+        - num_agencies_visited_last_week
         - num_agencies_logged_in_last_week
         - num_super_agencies
         - num_agencies_shared_data_at_least_one_metric
@@ -610,6 +634,7 @@ def generate_and_write_scoreboard(
         num_agencies_created_in_last_week = str(
             len(sheet_df[sheet_df["new_agency_this_week"]])
         )
+        num_agencies_visited_last_week = str(len(sheet_df[sheet_df["visit_this_week"]]))
         num_agencies_logged_in_last_week = str(
             len(sheet_df[sheet_df["login_this_week"]])
         )
@@ -633,6 +658,7 @@ def generate_and_write_scoreboard(
                 updated,
                 num_total_agencies,
                 num_agencies_created_in_last_week,
+                num_agencies_visited_last_week,
                 num_agencies_logged_in_last_week,
                 num_super_agencies,
                 num_agencies_shared_data_at_least_one_metric,
