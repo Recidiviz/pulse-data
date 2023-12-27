@@ -37,6 +37,7 @@ from recidiviz.justice_counts.control_panel.routes.admin import get_admin_bluepr
 from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.justice_counts.feed import FeedInterface
+from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils import structured_logging
@@ -87,8 +88,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
         # pylint: disable=abstract-class-instantiated
         sentry_sdk.init(
-            # not a secret!
-            dsn="https://3e8c790dbf0c407b8c039b91c7af9abc@o432474.ingest.sentry.io/4504532096516096",
+            dsn=JUSTICE_COUNTS_SENTRY_DSN,
             integrations=[FlaskIntegration()],
             traces_sample_rate=1.0,
             environment=get_gcp_environment(),

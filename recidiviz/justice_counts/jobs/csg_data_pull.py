@@ -32,6 +32,7 @@ from itertools import groupby
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
+import sentry_sdk
 from google.oauth2.service_account import Credentials
 
 from recidiviz.auth.auth0_client import Auth0Client
@@ -44,7 +45,10 @@ from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
     get_reported_metrics_and_dashboard_helper,
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
-from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
+from recidiviz.justice_counts.utils.constants import (
+    AGENCIES_TO_EXCLUDE,
+    JUSTICE_COUNTS_SENTRY_DSN,
+)
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -94,6 +98,12 @@ USED_BULK_UPLOAD = "used_bulk_upload"
 # NUM_METRICS_DEFINED = "num_metrics_defined"
 
 logger = logging.getLogger(__name__)
+
+sentry_sdk.init(
+    dsn=JUSTICE_COUNTS_SENTRY_DSN,
+    # Enable performance monitoring
+    enable_tracing=True,
+)
 
 
 def create_parser() -> argparse.ArgumentParser:
