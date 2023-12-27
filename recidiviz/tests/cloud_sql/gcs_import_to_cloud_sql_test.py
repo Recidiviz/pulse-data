@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for gcs_import_to_cloud_sql.py"""
+from datetime import date
 from http import HTTPStatus
 from typing import Any, List, Optional
 from unittest import TestCase
@@ -38,6 +39,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLOpportunity,
     Roster,
 )
+from recidiviz.persistence.database.schema.outliers.schema import SupervisionClientEvent
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_outliers_table_classes,
@@ -409,6 +411,110 @@ class TestGCSImportToCloudSQL(TestCase):
                 ),
                 columns=["id", "comment"],
             )
+
+
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789"))
+@pytest.mark.uses_db
+class TestGCSImportToCloudSQLWithGeneratedPrimaryKey(TestCase):
+    """Tests for gcs_import_to_cloud_sql.py when a table has a generated primary key."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def setUp(self) -> None:
+        self.mock_instance_id = "mock_instance_id"
+        self.cloud_sql_client_patcher = patch(
+            "recidiviz.cloud_sql.gcs_import_to_cloud_sql.CloudSQLClientImpl"
+        )
+        self.mock_cloud_sql_client = MagicMock()
+        self.cloud_sql_client_patcher.start().return_value = self.mock_cloud_sql_client
+
+        self.mock_sqlalchemy_engine_manager = SQLAlchemyEngineManager
+        setattr(
+            self.mock_sqlalchemy_engine_manager,
+            "get_stripped_cloudsql_instance_id",
+            Mock(return_value=self.mock_instance_id),
+        )
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_mi")
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+
+        self.table_name = SupervisionClientEvent.__tablename__
+        self.model = SupervisionClientEvent
+        self.columns = [
+            col.name
+            for col in SupervisionClientEvent.__table__.columns
+            if col.name != "_id"
+        ]
+        self.export_uri = GcsfsFilePath.from_absolute_path(
+            "US_MI/supervision_client_events.csv"
+        )
+
+    def tearDown(self) -> None:
+        self.cloud_sql_client_patcher.stop()
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    def _mock_load_data_from_csv(self, values: List[str], **_kwargs: Any) -> str:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.execute(
+                f"INSERT INTO tmp__{self.table_name} ({','.join(self.columns)}) "
+                f"VALUES {','.join(values)}"
+            )
+            return "fake-id"
+
+    def test_import_gcs_csv_to_cloud_sql_with_generated_primary_key(self) -> None:
+        existing_row = SupervisionClientEvent(
+            state_code="US_MI",
+            metric_id="violations",
+            event_date=date(2023, 1, 1),
+            client_id="34567",
+            client_name={"given_names": "fname"},
+            officer_id="BCDEF",
+            pseudonymized_client_id="34567::hashed",
+            pseudonymized_officer_id="BCDEF::hashed",
+        )
+        add_entity_to_database_session(self.database_key, [existing_row])
+
+        values_to_import = [
+            # 2 duplicate rows
+            "('US_MI', 'violations', '2022-12-01', '12345', '{\"given_names\": \"fname\"}', 'ABCDE', NULL, NULL, NULL, NULL, NULL, NULL, '12345::hashed', 'ABCDE::hashed')",
+            "('US_MI', 'violations', '2022-12-01', '12345', '{\"given_names\": \"fname\"}', 'ABCDE', NULL, NULL, NULL, NULL, NULL, NULL, '12345::hashed', 'ABCDE::hashed')",
+            # existing entry
+            "('US_MI', 'violations', '2022-12-15', '23456', '{\"given_names\": \"fname\"}', 'BCDEF', NULL, NULL, NULL, NULL, NULL, NULL, '23456::hashed', 'BCDEF::hashed')",
+            # new entry
+            "('US_MI', 'violations', '2023-01-01', '34567', '{\"given_names\": \"fname\"}', 'BCDEF', NULL, NULL, NULL, NULL, NULL, NULL, '34567::hashed', 'BCDEF::hashed')",
+        ]
+
+        def _mock_side_effect(**_kwargs: Any) -> str:
+            return self._mock_load_data_from_csv(values=values_to_import)
+
+        self.mock_cloud_sql_client.import_gcs_csv.side_effect = _mock_side_effect
+        self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
+
+        import_gcs_csv_to_cloud_sql(
+            database_key=self.database_key,
+            model=self.model,
+            gcs_uri=self.export_uri,
+            columns=self.columns,
+            region_code="US_MI",
+        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            destination_table_rows = session.query(SupervisionClientEvent).all()
+            self.assertEqual(len(destination_table_rows), len(values_to_import))
 
 
 def build_table(name: str, *args: List[Any]) -> Table:
