@@ -35,6 +35,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
+    get_base_entity_class,
     get_entity_class_names_excluded_from_normalization,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
@@ -69,11 +70,11 @@ class TestNormalizedEntities(unittest.TestCase):
             entity_name = str(normalized_entity_class.__name__)
             self.assertTrue(NORMALIZED_PREFIX in entity_name)
             self.assertEqual(
-                normalized_entity_class.__base__.__name__,
+                get_base_entity_class(normalized_entity_class).__name__,
                 entity_name[len(NORMALIZED_PREFIX) :],
             )
             self.assertEqual(
-                normalized_entity_class.__base__.__name__,
+                get_base_entity_class(normalized_entity_class).__name__,
                 entity_name.replace(NORMALIZED_PREFIX, ""),
             )
 

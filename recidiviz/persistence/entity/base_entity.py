@@ -216,7 +216,7 @@ class LedgerEntity(Entity):
             return dt
         return datetime.datetime(dt.year, dt.month, dt.day)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """Ensures that all pairs in get_enforced_datetime_pairs are actually enforced."""
         dt_fields: List[Tuple[str, str]] = self.get_enforced_datetime_pairs()
         for before_name, after_name in dt_fields:

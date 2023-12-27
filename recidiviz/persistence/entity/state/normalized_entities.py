@@ -48,6 +48,19 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
+def get_base_entity_class(
+    entity_cls: Type["NormalizedStateEntity"],
+) -> type[BuildableAttr]:
+    """For the given NormalizeStateEntity, returns the base Entity class for this class.
+    For example: for NormalizedStatePerson, returns `StatePerson`."""
+    base_class = entity_cls.__base__
+
+    if not base_class or not issubclass(base_class, BuildableAttr):
+        raise ValueError(f"Cannot find base class for entity {entity_cls}")
+
+    return base_class
+
+
 class NormalizedStateEntity(BuildableAttr):
     """Models an entity in state/entities.py that has been normalized and is prepared
     to be used in calculations."""
@@ -55,7 +68,7 @@ class NormalizedStateEntity(BuildableAttr):
     @classmethod
     def base_class_name(cls) -> str:
         """The name of the base state entity that this normalized entity extends."""
-        return cls.__base__.__name__
+        return get_base_entity_class(cls).__name__
 
 
 def is_normalized_entity_validator(
