@@ -41,6 +41,7 @@ class AgencyInterface:
         agency_id: Optional[int],
         is_dashboard_enabled: Optional[bool],
         is_superagency: Optional[bool] = None,
+        with_users: bool = False,
     ) -> schema.Agency:
         """We first look up existing agency by ID, then fallback to name,
         if no ID is available. If there is an existing agency, the metadata
@@ -49,9 +50,13 @@ class AgencyInterface:
         """
 
         existing_agency = (
-            AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
+            AgencyInterface.get_agency_by_id(
+                session=session, agency_id=agency_id, with_users=with_users
+            )
             if agency_id is not None
-            else AgencyInterface.get_agency_by_name(session=session, name=name)
+            else AgencyInterface.get_agency_by_name(
+                session=session, name=name, with_users=with_users
+            )
         )
 
         # agency_id is not None for update requests, agency_id is None
@@ -94,8 +99,21 @@ class AgencyInterface:
         return agency
 
     @staticmethod
-    def get_agency_by_id(session: Session, agency_id: int) -> schema.Agency:
-        return session.query(schema.Agency).filter(schema.Agency.id == agency_id).one()
+    def get_agency_by_id(
+        session: Session,
+        agency_id: int,
+        with_users: bool = False,
+    ) -> schema.Agency:
+        q = session.query(schema.Agency).filter(schema.Agency.id == agency_id)
+
+        if with_users is True:
+            q = q.options(
+                selectinload(schema.Agency.user_account_assocs).joinedload(
+                    schema.AgencyUserAccountAssociation.user_account
+                )
+            )  # eagerly load the users in this agency
+
+        return q.one()
 
     @staticmethod
     def get_agencies_by_id(
@@ -126,12 +144,22 @@ class AgencyInterface:
 
     @staticmethod
     def get_agency_by_name(
-        session: Session, name: str, with_settings: bool = False
+        session: Session,
+        name: str,
+        with_settings: bool = False,
+        with_users: bool = False,
     ) -> schema.Agency:
         # ilike is case insensitive
         q = session.query(schema.Agency).filter(schema.Agency.name.ilike(name))
-        if with_settings:
+        if with_settings is True:
             q = q.options(joinedload(schema.Agency.agency_settings))
+
+        if with_users is True:
+            q = q.options(
+                selectinload(schema.Agency.user_account_assocs).joinedload(
+                    schema.AgencyUserAccountAssociation.user_account
+                )
+            )  # eagerly load the users in this agency
         return q.one_or_none()
 
     @staticmethod

@@ -257,6 +257,7 @@ def get_admin_blueprint(
             fips_county_code=request_json.get("fips_county_code"),
             super_agency_id=request_json["super_agency_id"],
             is_dashboard_enabled=request_json["is_dashboard_enabled"],
+            with_users=True,
         )
 
         if request_json.get("child_agency_ids") is not None:
