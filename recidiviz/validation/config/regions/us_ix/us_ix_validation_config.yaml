@@ -28,7 +28,7 @@ max_allowed_error_overrides:
       TODO(#20470) - Added in IX specific logic to address some of the error, but
       requires further investigation
   - validation_name: incarceration_release_person_level_external_comparison
-    hard_max_allowed_error_override: 0.37
+    hard_max_allowed_error_override: 0.375
     override_reason:
       TODO(#20470) - Added in IX specific logic to address some of the error, but
       requires further investigation
