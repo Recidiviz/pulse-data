@@ -15,30 +15,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which there
-is no violations within 6 to 8 months on supervision."""
+is no violations within 6 to 8 months since the parole or probation start_date."""
 
-from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_GENERAL
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    spans_within_x_and_y_months_of_end_date,
+    no_supervision_violation_within_x_to_y_months_of_start,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_WITHIN_6_TO_8_MONTHS"
+_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_WITHIN_6_TO_8_MONTHS_OF_START"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which there
-is no violations within 6 to 8 months on supervision."""
+is no violations within 6 to 8 months since the parole or probation start_date."""
 
 _QUERY_TEMPLATE = f"""
-WITH {spans_within_x_and_y_months_of_end_date(
-    x_months=0,
-    y_months=2,
-    end_date_plus_x_months_name_in_reason_blob='six_months_violation_free_date',
-    dataset = 'tes_criteria_general_dataset',
-    table_view= "no_supervision_violation_within_6_months_materialized")}
+{no_supervision_violation_within_x_to_y_months_of_start(
+    x_months= 6, y_months = 8
+)}
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
@@ -46,7 +46,8 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        tes_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

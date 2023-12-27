@@ -23,8 +23,13 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
+)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
+    aggregate_adjacent_spans,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 
@@ -286,54 +291,97 @@ FROM cte
 WHERE cte.end_date > start_date_plus_x_months"""
 
 
-def spans_within_x_and_y_months_of_end_date(
-    x_months: int,
-    y_months: int,
-    end_date_plus_x_months_name_in_reason_blob: str,
-    table_view: str,
-    dataset: str,
-    project_id: str = "project_id",
+def no_supervision_violation_within_x_to_y_months_of_start(
+    x_months: int, y_months: int
 ) -> str:
     """
-    Returns a SQL query that returns spans of time where someone is between |x_months| and
-    |y_months| of the end_date of a False (meets_criteria=False) span from the |table_view|.
-
-    Args:
-        x_months (int): Number of months to add to the end_date.
-        y_months (int): Number of months to add to the end_date.
-        end_date_plus_x_months_name_in_reason_blob (str): Name of the end_date_plus_x_months field in the reason blob.
-        table_view (str): Name of the table or view to query.
-        dataset (str): BigQuery dataset.
-        project_id (str): Project id. Defaults to 'project_id'
-
-    Returns:
-        str: SQL query as a string.
-
-    Example usage:
-        query = spans_within_x_and_y_months_of_end_date(3, 6, "end_date_plus_3_months", "my_table_view")
+    Defines a criteria span view that shows spans of time during which there
+    is no supervision violation within x to y months. If x_months is 6 and y_months is 8,
+    then the criteria is met if there is no violation within 6 to 8 months of
+    the probation/parole start date (or the latest violation).
     """
 
-    return f"""cte AS (
-        SELECT
-            state_code,
-            person_id,
-            LEAD(start_date) OVER(PARTITION BY state_code, person_id 
-                                  ORDER BY {nonnull_end_date_clause('end_date')})
-                AS lead_start_date,
-            # TODO(#23420): Use end_date exclusive instead of end_date
-            DATE_ADD({nonnull_end_date_clause('end_date')}, INTERVAL {x_months} MONTH) AS end_date_plus_x_months,
-            DATE_ADD({nonnull_end_date_clause('end_date')}, INTERVAL {y_months} MONTH) AS end_date_plus_y_months,
-        FROM `{{{project_id}}}.{{{dataset}}}.{table_view}`
-        WHERE meets_criteria=False
-    )
-
-SELECT
+    return f"""
+WITH violations AS (
+  -- All violations and violation responses
+  SELECT
+      vr.state_code,
+      vr.person_id,
+      COALESCE(v.violation_date, vr.response_date) AS violation_date,
+  FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_response` vr
+  LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation` v
+      ON vr.supervision_violation_id = v.supervision_violation_id
+      AND vr.person_id = v.person_id
+      AND vr.state_code = v.state_code
+),
+probation_and_parole_sessions AS (
+  -- Compartment sessions for probation, parole or DUAL
+  SELECT 
     state_code,
     person_id,
-    end_date_plus_x_months AS start_date,
-    LEAST(end_date_plus_y_months,
-          {nonnull_end_date_clause('lead_start_date')}) AS end_date,
-    TRUE AS meets_criteria,
-    TO_JSON(STRUCT(end_date_plus_x_months AS {end_date_plus_x_months_name_in_reason_blob})) AS reason
-FROM cte
-WHERE {nonnull_end_date_clause('lead_start_date')} > end_date_plus_x_months"""
+    start_date,
+    end_date,
+    compartment_level_1,
+    compartment_level_2,
+  FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+  WHERE compartment_level_1 = 'SUPERVISION'
+    AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'DUAL')
+  ORDER BY 1,2,3
+),
+probation_and_parole_sessions_agg AS (
+    -- Aggregate adjacent probation and parole sessions. This means if a probation 
+    --      session ends and it is immediately followed by a parole session, we don't 
+    --      restart the clock for violations.
+    SELECT *,
+    FROM ({aggregate_adjacent_spans(table_name='probation_and_parole_sessions',
+                                    end_date_field_name="end_date")})
+),
+critical_date_spans AS (
+    -- Combine previous CTEs and calculate critical date as x months after start date
+    --      or violation date, whichever is later.
+    SELECT 
+        pps.state_code,
+        pps.person_id,
+        pps.start_date AS start_datetime,
+        {nonnull_end_date_clause('pps.end_date')} AS end_datetime,
+        v.violation_date AS violation_date,
+        DATE_ADD(IFNULL(v.violation_date, pps.start_date),
+                INTERVAL {x_months} MONTH) AS critical_date,
+    FROM probation_and_parole_sessions_agg pps
+    LEFT JOIN violations v
+        ON v.state_code = pps.state_code
+            AND v.person_id = pps.person_id
+            AND v.violation_date BETWEEN pps.start_date AND {nonnull_end_date_clause('pps.end_date')}
+),
+{critical_date_has_passed_spans_cte(attributes = ['violation_date'])},
+
+{create_sub_sessions_with_attributes(
+    table_name="critical_date_has_passed_spans",  
+)},
+
+deduped_sub_sessions_with_attributes AS (
+    -- Dedupe sub-sessions with attributes. If a person has multiple sub-sessions,
+    --      only if all of them have critical_date_has_passed = True, then the person
+    --      meets the criteria. We also store the last violation date for the reason blob.
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        LOGICAL_AND(critical_date_has_passed) AS meets_criteria,
+        MAX(violation_date) AS last_violation_date,
+    FROM sub_sessions_with_attributes
+    GROUP BY state_code, person_id, start_date, end_date
+)
+-- Only surface folks as eligible for Y months after X months of the last violation date
+--      or start date.
+SELECT 
+    * EXCEPT(end_date, last_violation_date),
+    LEAST(
+        DATE_ADD(start_date, INTERVAL {y_months-x_months} MONTH),
+        {nonnull_end_date_clause('end_date')}
+    ) AS end_date,
+    TO_JSON(STRUCT(last_violation_date AS last_violation_date)) AS reason
+FROM deduped_sub_sessions_with_attributes
+WHERE meets_criteria
+"""

@@ -28,7 +28,7 @@ from recidiviz.task_eligibility.completion_events.general import (
     supervision_level_downgrade,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    no_supervision_violation_within_12_to_14_months,
+    no_supervision_violation_within_12_to_14_months_of_start,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -47,7 +47,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        no_supervision_violation_within_12_to_14_months.VIEW_BUILDER,
+        no_supervision_violation_within_12_to_14_months_of_start.VIEW_BUILDER,
     ],
     # TODO(#22285) - Change to the right completion_event_builder
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
