@@ -65,6 +65,12 @@ ERRORS_WARNINGS_JSON_BUCKET_PROD = (
 NEW_MEXICO_SUPERAGENCY_BUCKET_STAGING = "justice-counts-staging-ingest-agency-207"
 NEW_MEXICO_SUPERAGENCY_BUCKET_PROD = "justice-counts-production-ingest-agency-534"
 
+# Justice Counts Sentry Data Source Name. See monitoring page at https://recidiviz-inc.sentry.io/projects/justice-counts/?project=4504532096516096
+JUSTICE_COUNTS_SENTRY_DSN = (
+    # not a secret!
+    "https://3e8c790dbf0c407b8c039b91c7af9abc@o432474.ingest.sentry.io/4504532096516096"
+)
+
 # This dictionary contains ids and names of agencies that exist in our database, but
 # should be excluded from the weekly CSG Data Pull. Agencies are excluded for a number
 # of reasons, including if they were an Alpha Partner, the agency has yet to opt-in, etc.

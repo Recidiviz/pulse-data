@@ -25,10 +25,12 @@ Remote Usage: Execute the `justice-counts-recurring-reports` Cloud Run Job
 import datetime
 import logging
 
+import sentry_sdk
 from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -39,6 +41,12 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 
 logger = logging.getLogger(__name__)
+
+sentry_sdk.init(
+    dsn=JUSTICE_COUNTS_SENTRY_DSN,
+    # Enable performance monitoring
+    enable_tracing=True,
+)
 
 
 def main(engine: Engine) -> None:

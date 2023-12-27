@@ -33,9 +33,11 @@ from typing import Dict, List
 
 import pandas as pd
 import requests
+import sentry_sdk
 from google.cloud import storage
 
 from recidiviz.justice_counts.utils.constants import (
+    JUSTICE_COUNTS_SENTRY_DSN,
     NEW_MEXICO_SUPERAGENCY_BUCKET_PROD,
     NEW_MEXICO_SUPERAGENCY_BUCKET_STAGING,
 )
@@ -47,6 +49,12 @@ METRIC_TO_URL = {
     "cases_filed_by_severity": "https://www.nmdataxchange.gov/resource/wa8m-ubx9.json"
 }
 logger = logging.getLogger(__name__)
+
+sentry_sdk.init(
+    dsn=JUSTICE_COUNTS_SENTRY_DSN,
+    # Enable performance monitoring
+    enable_tracing=True,
+)
 
 
 def create_parser() -> argparse.ArgumentParser:
