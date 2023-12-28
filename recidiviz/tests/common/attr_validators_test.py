@@ -16,10 +16,11 @@
 # =============================================================================
 """Tests for attr_validators.py."""
 import datetime
-from typing import Optional, List
-
 import unittest
+from typing import List, Optional
+
 import attr
+import pytz
 
 from recidiviz.common import attr_validators
 
@@ -186,3 +187,77 @@ class AttrValidatorsTest(unittest.TestCase):
         _ = _TestClass()
         _ = _TestClass(my_required_list=[])
         _ = _TestClass(my_required_list=[_TestChildClass(my_field="foobar")])
+
+    def test_not_future_datetime_validators(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_required_not_future_date: datetime.datetime = attr.ib(
+                validator=attr_validators.is_not_future_datetime
+            )
+            my_optional_not_future_date: Optional[datetime.datetime] = attr.ib(
+                validator=attr_validators.is_opt_not_future_datetime, default=None
+            )
+
+        now_aware = datetime.datetime.now(tz=pytz.UTC)
+        now_naive = datetime.datetime.now()
+
+        # Throw when in the future, timezone aware.
+        with self.assertRaises(ValueError):
+            future = now_aware + datetime.timedelta(days=7)
+            _ = _TestClass(my_required_not_future_date=future)  # type: ignore[arg-type]
+
+        # Throw when in the future, timezone naive.
+        with self.assertRaises(ValueError):
+            future = now_naive + datetime.timedelta(days=7)
+            _ = _TestClass(my_required_not_future_date=future)
+
+        # Throw when optional value is in the future.
+        with self.assertRaises(ValueError):
+            future = now_aware + datetime.timedelta(days=7)
+            past = now_aware - datetime.timedelta(days=7)
+            _ = _TestClass(
+                my_required_not_future_date=past, my_optional_not_future_date=future
+            )
+
+        # Throw when optional value is in the future, timezone naive.
+        with self.assertRaises(ValueError):
+            future = now_naive + datetime.timedelta(days=7)
+            past = now_naive - datetime.timedelta(days=7)
+            _ = _TestClass(
+                my_required_not_future_date=past, my_optional_not_future_date=future
+            )
+
+        # These don't crash
+        ok = now_aware - datetime.timedelta(days=7)
+        _ = _TestClass(my_required_not_future_date=ok, my_optional_not_future_date=ok)
+        ok = now_naive - datetime.timedelta(days=7)
+        _ = _TestClass(my_required_not_future_date=ok, my_optional_not_future_date=ok)
+
+    def test_not_future_date_validators(self) -> None:
+        @attr.s
+        class _TestClass:
+            my_required_not_future_date: datetime.date = attr.ib(
+                validator=attr_validators.is_not_future_date
+            )
+            my_optional_not_future_date: Optional[datetime.date] = attr.ib(
+                validator=attr_validators.is_opt_not_future_date, default=None
+            )
+
+        today = datetime.date.today()
+
+        # Throw when in the future, timezone aware.
+        with self.assertRaises(ValueError):
+            future = today + datetime.timedelta(days=7)
+            _ = _TestClass(my_required_not_future_date=future)  # type: ignore[arg-type]
+
+        # Throw when optional value is in the future.
+        with self.assertRaises(ValueError):
+            future = today + datetime.timedelta(days=7)
+            past = today - datetime.timedelta(days=7)
+            _ = _TestClass(
+                my_required_not_future_date=past, my_optional_not_future_date=future
+            )
+
+        # These don't crash
+        ok = today - datetime.timedelta(days=7)
+        _ = _TestClass(my_required_not_future_date=ok, my_optional_not_future_date=ok)
