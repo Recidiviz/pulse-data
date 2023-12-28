@@ -156,7 +156,7 @@ class UserAccountInterface:
         agency_ids: List[int],
     ) -> None:
         existing_agency_assocs_by_id = {
-            assoc.agency.id: assoc for assoc in user.agency_assocs
+            assoc.agency_id: assoc for assoc in user.agency_assocs
         }
         for agency_id in agency_ids:
             existing_assoc = existing_agency_assocs_by_id.get(int(agency_id))
