@@ -80,7 +80,18 @@ class TestPredicates(unittest.TestCase):
 
         should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
         self.assertFalse(should_trigger, messages)
-        self.assertIn("state_code_branch_end is not an actionable failure", messages)
+        self.assertIn("branch_end is not an actionable failure", messages)
+
+        incident = AirflowAlertingIncident(
+            dag_id="test_project_ingest_dag",
+            conf="{}",
+            task_id=f"post_normalization_pipelines.{BRANCH_END_TASK_NAME}",
+            failed_execution_dates=[datetime.now(tz=timezone.utc)],
+        )
+
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+        self.assertFalse(should_trigger, messages)
+        self.assertIn("branch_end is not an actionable failure", messages)
 
     def test_secondary_dag(self) -> None:
         incident = AirflowAlertingIncident(

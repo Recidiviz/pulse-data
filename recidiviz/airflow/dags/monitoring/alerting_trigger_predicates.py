@@ -80,9 +80,8 @@ def get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
-            dag_id=f"{project_id}_calculation_dag",
             condition=lambda incident: incident.task_id.endswith(BRANCH_END_TASK_NAME),
-            failure_message="state_code_branch_end is not an actionable failure",
+            failure_message="branch_end is not an actionable failure",
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
