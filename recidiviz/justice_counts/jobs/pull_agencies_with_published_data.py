@@ -31,11 +31,13 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, Set, Tuple
 
+import sentry_sdk
 from google.oauth2.service_account import Credentials
 
 from recidiviz.justice_counts.control_panel.utils import write_data_to_spreadsheet
 from recidiviz.justice_counts.metrics.metric_definition import MetricCategory
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -51,6 +53,12 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 logger = logging.getLogger(__name__)
+
+sentry_sdk.init(
+    dsn=JUSTICE_COUNTS_SENTRY_DSN,
+    # Enable performance monitoring
+    enable_tracing=True,
+)
 
 # Sheet Title: Agency Dashboard Pull
 # Link: https://docs.google.com/spreadsheets/d/1TcskbQat7a3OA7X-KRra74qBcXZMZVg5nOfdRFa9-64/edit#gid=251741843
@@ -206,6 +214,10 @@ def pull_agencies_with_published_capacity_and_cost_data(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+
+    logging.error("Local Test Error: pull_agencies_with_published_data")
+    divide_by_zero = 1 / 0
+
     args = create_parser().parse_args()
     if args.run_as_script is True:
         environment_str = (

@@ -28,11 +28,15 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 import pandas as pd
+import sentry_sdk
 from google.oauth2.service_account import Credentials
 from oauth2client.client import GoogleCredentials
 
 from recidiviz.justice_counts.control_panel.utils import write_data_to_spreadsheet
-from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
+from recidiviz.justice_counts.utils.constants import (
+    AGENCIES_TO_EXCLUDE,
+    JUSTICE_COUNTS_SENTRY_DSN,
+)
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -54,6 +58,12 @@ from recidiviz.utils.params import str_to_bool
 SUPERAGENCY_SPREADSHEET_ID = "1-w-ZY9uCrbEBX9R6MHRY0Ukv86KuP_aYZx6Bs9ZCqKw"
 
 logger = logging.getLogger(__name__)
+
+sentry_sdk.init(
+    dsn=JUSTICE_COUNTS_SENTRY_DSN,
+    # Enable performance monitoring
+    enable_tracing=True,
+)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -132,6 +142,10 @@ def generate_superagency_summary(
 
 
 if __name__ == "__main__":
+
+    logging.error("Local Test Error: super_agency_data_pull")
+    divide_by_zero = 1 / 0
+
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     if args.project_id is not None:
