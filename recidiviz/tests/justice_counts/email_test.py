@@ -16,7 +16,7 @@
 # =============================================================================
 """This class implements tests for the Justice Counts Publisher emails."""
 import datetime
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
@@ -49,9 +49,15 @@ class TestEmails(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
+        self.today = datetime.date.today()
+        self.january_start_date = datetime.date(
+            month=1, year=self.today.year - 1, day=1
+        )
+        self.january_end_date = datetime.date(month=1, year=self.today.year, day=1)
+        self.july_start_date = datetime.date(month=7, year=self.today.year - 1, day=1)
+        self.july_end_date = datetime.date(month=7, year=self.today.year, day=1)
 
     def get_monthly_report(self, agency: schema.Agency) -> schema.Report:
-        today = datetime.date.today()
         return schema.Report(
             source=agency,
             type="MONTHLY",
@@ -59,18 +65,11 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
             instance="Test Monthly Report",
             status=schema.ReportStatus.NOT_STARTED,
-            date_range_start=datetime.date(
-                month=today.month - 1, year=today.year, day=1
-            ),
-            date_range_end=datetime.date(
-                month=today.month + 1 if today.month != 12 else 1,
-                year=today.year,
-                day=1,
-            ),
+            date_range_start=self.today.replace(month=self.today.month - 1, day=1),
+            date_range_end=self.today.replace(day=1),
         )
 
     def get_annual_calendar_year_report(self, agency: schema.Agency) -> schema.Report:
-        today = datetime.date.today()
         return schema.Report(
             source=agency,
             type="ANNUAL",
@@ -78,12 +77,11 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             status=schema.ReportStatus.NOT_STARTED,
             acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
-            date_range_start=datetime.date(month=1, year=today.year - 1, day=1),
-            date_range_end=datetime.date(month=1, year=today.year, day=1),
+            date_range_start=self.january_start_date,
+            date_range_end=self.january_end_date,
         )
 
     def annual_fiscal_year_report(self, agency: schema.Agency) -> schema.Report:
-        today = datetime.date.today()
         return schema.Report(
             source=agency,
             type="ANNUAL",
@@ -91,8 +89,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             status=schema.ReportStatus.NOT_STARTED,
             acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
-            date_range_start=datetime.date(month=7, year=today.year - 2, day=1),
-            date_range_end=datetime.date(month=7, year=today.year - 1, day=1),
+            date_range_start=self.july_start_date,
+            date_range_end=self.july_end_date,
         )
 
     def get_enabled_metric_setting_datapoints(
@@ -132,10 +130,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
     def _test_missing_metrics_functionality_law_enforcement_and_prison_agency(
         self,
         system_to_missing_monthly_metrics: Dict[schema.System, List[MetricDefinition]],
-        starting_month_to_system_to_missing_annual_metrics: Dict[
-            int, Dict[schema.System, List[MetricDefinition]]
+        date_range_to_system_to_missing_annual_metrics: Dict[
+            Tuple[datetime.date, datetime.date],
+            Dict[schema.System, List[MetricDefinition]],
         ],
         agency: schema.Agency,
+        monthly_report_date_range: Tuple[datetime.date, datetime.date],
     ) -> None:
         """
         Shared tests for test_get_missing_metrics_empty_reports and
@@ -147,7 +147,11 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             {schema.System.LAW_ENFORCEMENT, schema.System.PRISONS},
         )
         self.assertEqual(
-            set(starting_month_to_system_to_missing_annual_metrics.keys()), {1, 7}
+            set(date_range_to_system_to_missing_annual_metrics.keys()),
+            {
+                (self.july_start_date, self.july_end_date),
+                (self.january_start_date, self.january_end_date),
+            },
         )
 
         for system in agency.systems:
@@ -172,11 +176,9 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 {
                     definition.key
-                    for definition in starting_month_to_system_to_missing_annual_metrics[
-                        1
-                    ][
-                        schema.System[system]
-                    ]
+                    for definition in date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
+                    ][schema.System[system]]
                 },
                 {
                     metric_definition.key
@@ -191,11 +193,9 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 {
                     definition.key
-                    for definition in starting_month_to_system_to_missing_annual_metrics[
-                        7
-                    ][
-                        schema.System[system]
-                    ]
+                    for definition in date_range_to_system_to_missing_annual_metrics[
+                        (self.july_start_date, self.july_end_date)
+                    ][schema.System[system]]
                 },
                 {
                     metric_definition.key
@@ -206,25 +206,32 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 },
             )
 
-        for starting_month in [1, 7]:
+        for date_range in [
+            (self.january_start_date, self.january_end_date),
+            (self.july_start_date, self.july_end_date),
+        ]:
             # Missing fiscal-year metrics and missing calendar-year metrics are represented in
-            # starting_month_to_system_to_missing_annual_metrics
+            # date_range_to_system_to_missing_annual_metrics
             self.assertEqual(
-                set(
-                    starting_month_to_system_to_missing_annual_metrics[
-                        starting_month
-                    ].keys()
-                ),
+                set(date_range_to_system_to_missing_annual_metrics[date_range].keys()),
                 {schema.System.LAW_ENFORCEMENT, schema.System.PRISONS},
             )
+
+        monthly_report = self.get_monthly_report(agency=agency)
+        self.assertEqual(
+            monthly_report_date_range,
+            (monthly_report.date_range_start, monthly_report.date_range_end),
+        )
 
     def _test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
         self,
         system_to_missing_monthly_metrics: Dict[schema.System, List[MetricDefinition]],
-        starting_month_to_system_to_missing_annual_metrics: Dict[
-            int, Dict[schema.System, List[MetricDefinition]]
+        date_range_to_system_to_missing_annual_metrics: Dict[
+            Tuple[datetime.date, datetime.date],
+            Dict[schema.System, List[MetricDefinition]],
         ],
         agency: schema.Agency,
+        monthly_report_date_range: Tuple[datetime.date, datetime.date],
     ) -> None:
         """
         Shared tests for test_get_missing_metrics_empty_reports and
@@ -251,11 +258,9 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 {
                     definition.key
-                    for definition in starting_month_to_system_to_missing_annual_metrics[
-                        1
-                    ][
-                        schema.System[system]
-                    ]
+                    for definition in date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
+                    ][schema.System[system]]
                 },
                 {
                     metric_definition.key
@@ -265,6 +270,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                     and "FUNDING" not in metric_definition.key
                     and "EXPENSES" not in metric_definition.key
                 },
+            )
+
+            monthly_report = self.get_monthly_report(agency=agency)
+            self.assertEqual(
+                monthly_report_date_range,
+                (monthly_report.date_range_start, monthly_report.date_range_end),
             )
 
     def test_get_missing_metrics_empty_reports(self) -> None:
@@ -311,12 +322,14 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             (
                 system_to_missing_monthly_metrics,
-                starting_month_to_system_to_missing_annual_metrics,
+                date_range_to_system_to_missing_annual_metrics,
+                monthly_report_date_range,
             ) = get_missing_metrics(agency=agency, session=session)
 
             self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
                 system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-                starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
+                date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
+                monthly_report_date_range=monthly_report_date_range,
                 agency=agency,
             )
 
@@ -340,13 +353,15 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
         (
             system_to_missing_monthly_metrics,
-            starting_month_to_system_to_missing_annual_metrics,
+            date_range_to_system_to_missing_annual_metrics,
+            monthly_report_date_range,
         ) = get_missing_metrics(agency=agency, session=session)
 
         self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
             agency=agency,
             system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-            starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
+            date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
+            monthly_report_date_range=monthly_report_date_range,
         )
 
     def test_get_missing_metrics_non_existing_reports(self) -> None:
@@ -376,13 +391,15 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             session.commit()
             (
                 system_to_missing_monthly_metrics,
-                starting_month_to_system_to_missing_annual_metrics,
+                date_range_to_system_to_missing_annual_metrics,
+                monthly_report_date_range,
             ) = get_missing_metrics(agency=agency, session=session)
 
             self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
                 system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-                starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
+                date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
                 agency=agency,
+                monthly_report_date_range=monthly_report_date_range,
             )
 
             # Disable Funding Metrics!
@@ -405,13 +422,15 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
         (
             system_to_missing_monthly_metrics,
-            starting_month_to_system_to_missing_annual_metrics,
+            date_range_to_system_to_missing_annual_metrics,
+            monthly_report_date_range,
         ) = get_missing_metrics(agency=agency, session=session)
 
         self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
             agency=agency,
             system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-            starting_month_to_system_to_missing_annual_metrics=starting_month_to_system_to_missing_annual_metrics,
+            date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
+            monthly_report_date_range=monthly_report_date_range,
         )
 
     def test_get_missing_metrics_partially_filled_reports(self) -> None:
@@ -450,7 +469,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             (
                 system_to_missing_monthly_metrics,
-                starting_month_to_system_to_missing_annual_metrics,
+                date_range_to_system_to_missing_annual_metrics,
+                monthly_report_date_range,
             ) = get_missing_metrics(agency=agency, session=session)
 
             # No monthly metrics are enabled, so no monthly metrics are missing
@@ -460,24 +480,32 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             self.assertEqual(
-                set(starting_month_to_system_to_missing_annual_metrics.keys()),
-                {1},
+                set(date_range_to_system_to_missing_annual_metrics.keys()),
+                {(self.january_start_date, self.january_end_date)},
             )
             self.assertEqual(
-                set(starting_month_to_system_to_missing_annual_metrics[1].keys()),
+                set(
+                    date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
+                    ].keys()
+                ),
                 {schema.System.LAW_ENFORCEMENT},
             )
             # Only funding is missing because it's the only enabled metric without data
             self.assertEqual(
                 {
                     definition.key
-                    for definition in starting_month_to_system_to_missing_annual_metrics[
-                        1
-                    ][
-                        schema.System.LAW_ENFORCEMENT
-                    ]
+                    for definition in date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
+                    ][schema.System.LAW_ENFORCEMENT]
                 },
                 {law_enforcement.funding.key},
+            )
+
+            monthly_report = self.get_monthly_report(agency=agency)
+            self.assertEqual(
+                monthly_report_date_range,
+                (monthly_report.date_range_start, monthly_report.date_range_end),
             )
 
     def test_get_missing_metrics_no_missing_metrics(self) -> None:
@@ -514,6 +542,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             (
                 system_to_missing_monthly_metrics,
                 system_to_starting_month_to_missing_annual_metrics,
+                monthly_report_date_range,
             ) = get_missing_metrics(agency=agency, session=session)
 
             # No monthly metrics are enabled
@@ -526,6 +555,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 len(system_to_starting_month_to_missing_annual_metrics),
                 0,
+            )
+
+            monthly_report = self.get_monthly_report(agency=agency)
+            self.assertEqual(
+                monthly_report_date_range,
+                (monthly_report.date_range_start, monthly_report.date_range_end),
             )
 
     def test_get_missing_metrics_supervision_subsystem(self) -> None:
@@ -561,7 +596,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             (
                 system_to_missing_monthly_metrics,
-                starting_month_to_system_to_missing_annual_metrics,
+                date_range_to_system_to_missing_annual_metrics,
+                monthly_report_date_range,
             ) = get_missing_metrics(agency=agency, session=session)
 
             # No monthly metrics are enabled
@@ -571,11 +607,16 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             self.assertEqual(
-                set(starting_month_to_system_to_missing_annual_metrics.keys()), {1}
+                set(date_range_to_system_to_missing_annual_metrics.keys()),
+                {(self.january_start_date, self.january_end_date)},
             )
 
             self.assertEqual(
-                set(starting_month_to_system_to_missing_annual_metrics[1].keys()),
+                set(
+                    date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
+                    ].keys()
+                ),
                 {
                     schema.System.SUPERVISION,
                     schema.System.PAROLE,
@@ -587,8 +628,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 set(
                     metric_definition.key
-                    for metric_definition in starting_month_to_system_to_missing_annual_metrics[
-                        1
+                    for metric_definition in date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
                     ][
                         schema.System.SUPERVISION
                     ]
@@ -600,8 +641,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 set(
                     metric_definition.key
-                    for metric_definition in starting_month_to_system_to_missing_annual_metrics[
-                        1
+                    for metric_definition in date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
                     ][
                         schema.System.PAROLE
                     ]
@@ -611,11 +652,17 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 set(
                     metric_definition.key
-                    for metric_definition in starting_month_to_system_to_missing_annual_metrics[
-                        1
+                    for metric_definition in date_range_to_system_to_missing_annual_metrics[
+                        (self.january_start_date, self.january_end_date)
                     ][
                         schema.System.PROBATION
                     ]
                 ),
                 {METRIC_KEY_TO_METRIC["PROBATION_FUNDING"].key},
+            )
+
+            monthly_report = self.get_monthly_report(agency=agency)
+            self.assertEqual(
+                monthly_report_date_range,
+                (monthly_report.date_range_start, monthly_report.date_range_end),
             )
