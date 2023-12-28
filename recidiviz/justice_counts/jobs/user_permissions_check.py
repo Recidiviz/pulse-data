@@ -26,6 +26,7 @@ import logging
 from collections import defaultdict
 from typing import Any, List, Optional
 
+import sentry_sdk
 from google.oauth2.service_account import Credentials
 from oauth2client.client import GoogleCredentials
 from sqlalchemy.orm import Session
@@ -36,6 +37,7 @@ from recidiviz.justice_counts.control_panel.utils import (
     write_data_to_spreadsheet,
 )
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -64,6 +66,12 @@ COLUMN_HEADERS = [
 
 SCHEMA_TYPE = schema_type = SchemaType.JUSTICE_COUNTS
 logger = logging.getLogger(__name__)
+
+sentry_sdk.init(
+    dsn=JUSTICE_COUNTS_SENTRY_DSN,
+    # Enable performance monitoring
+    enable_tracing=True,
+)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -517,6 +525,9 @@ def check_user_permissions(
 
 
 if __name__ == "__main__":
+    logging.error("Local Test Error: user_permissions_check")
+    divide_by_zero = 1 / 0
+
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     database_key = SQLAlchemyDatabaseKey.for_schema(
