@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for RecidivizDataflowFlexTemplateOperator."""
-import unittest
 from datetime import datetime
 from unittest.mock import create_autospec, patch
 
@@ -29,10 +28,10 @@ from google.cloud.logging import Client as LoggingClient
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
-from recidiviz.airflow.tests.test_utils import execute_task
+from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest, execute_task
 
 
-class TestRecidivizDataflowFlexTemplateOperator(unittest.TestCase):
+class TestRecidivizDataflowFlexTemplateOperator(AirflowIntegrationTest):
     """Tests for RecidivizDataflowFlexTemplateOperator."""
 
     def setUp(self) -> None:
@@ -90,7 +89,7 @@ class TestRecidivizDataflowFlexTemplateOperator(unittest.TestCase):
         self.mock_get_job.return_value = {
             "currentState": DataflowJobStatus.JOB_STATE_FAILED,
             "id": "2023-09-18_07_09_47-16912541725945987225",
-            "creationTime": "2023-09-18T14:09:47.864426Z",
+            "createTime": "2023-09-18T14:09:47.864426Z",
         }
 
         with self.assertRaises(Exception):
