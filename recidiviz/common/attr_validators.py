@@ -74,9 +74,19 @@ def is_opt_not_future_date(
 def is_not_future_datetime(
     _instance: Any, _attribute: attr.Attribute, value: datetime.datetime
 ) -> None:
-    now = datetime.datetime.now()
+    """Checks that the given value is a datetime that is not in the future.
+
+    The check matches the value's timezone if it exists. Otherwise we check
+    against a non-timezone aware UTC now.
+    """
+    if value.tzinfo:
+        now = datetime.datetime.now(tz=value.tzinfo)
+    else:
+        now = datetime.datetime.utcnow()
     if value > now:
-        raise ValueError(f"Datetime with {value} has is in the future. It is now {now}")
+        raise ValueError(
+            f"Datetime field with value {value} is in the future. It is now {now}"
+        )
 
 
 def is_opt_not_future_datetime(
