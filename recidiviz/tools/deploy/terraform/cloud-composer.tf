@@ -78,7 +78,7 @@ resource "google_composer_environment" "default_v2" {
         "python-levenshtein"                       = "==0.21.0"
         "dateparser"                               = "==1.1.8"
       }
-      image_version = "composer-2.1.14-airflow-2.5.1"
+      image_version = "composer-2.5.2-airflow-2.6.3"
     }
 
     private_environment_config {
