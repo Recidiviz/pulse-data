@@ -56,7 +56,7 @@ WITH requests_by_status_code AS (
         AND success_requests.latest_response > requests_by_status_code.latest_response
         AND success_requests.status = 200
       ) AS since_succeeded_timestamp,
-      ARRAY_AGG(DISTINCT trace_errors.jsonPayload.message IGNORE NULLS) AS error_logs
+      ARRAY_AGG(DISTINCT COALESCE(trace_errors.jsonPayload.message, trace_errors.textPayload) IGNORE NULLS) AS error_logs
     FROM requests_by_status_code
     JOIN UNNEST(requests_by_status_code.traces) AS trace
     LEFT OUTER JOIN `{project_id}.{on_call_logs_dataset}.{traces_table}` trace_errors
@@ -103,7 +103,6 @@ class OnCallLogsSearch:
 
         if view == LogsView.CLOUD_RUN:
             requests_table = "run_googleapis_com_requests"
-            traces_table = "python"
             view_filter = 'requests_by_status_code.resource.type = "cloud_run_revision"'
             service_filter = (
                 f"AND requests_by_status_code.resource.labels.service_name IN"
@@ -111,7 +110,6 @@ class OnCallLogsSearch:
             )
         else:
             requests_table = "appengine_googleapis_com_nginx_request"
-            traces_table = "app"
             service_filter = ""
 
         query_builder = BigQueryQueryBuilder(address_overrides=None)
@@ -121,7 +119,7 @@ class OnCallLogsSearch:
             query_format_kwargs={
                 "on_call_logs_dataset": ON_CALL_LOGS_DATASET,
                 "requests_table": requests_table,
-                "traces_table": traces_table,
+                "traces_table": "python",
                 "show_resolved_filter": "true"
                 if show_resolved
                 else "since_succeeded_timestamp is null",
