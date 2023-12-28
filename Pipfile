@@ -237,7 +237,7 @@ xlrd = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
-python_version = "3.11.6"
+python_version = "3.11"
 
 [scripts]
 # Run via `pipenv run <name>`
