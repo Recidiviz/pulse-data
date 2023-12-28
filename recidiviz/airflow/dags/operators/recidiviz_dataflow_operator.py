@@ -111,7 +111,7 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
                     filter_=StrictStringFormatter().format(
                         DATAFLOW_ERROR_LOGS_QUERY,
                         job_id=job["id"],
-                        job_creation_time=job["creationTime"],
+                        job_creation_time=job["createTime"],
                     ),
                 ):
                     logging.info(entry.payload)
