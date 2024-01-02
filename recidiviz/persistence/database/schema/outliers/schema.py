@@ -22,6 +22,7 @@ from sqlalchemy import (
     Date,
     Float,
     ForeignKeyConstraint,
+    Identity,
     Integer,
     String,
 )
@@ -198,7 +199,7 @@ class SupervisionClientEvent(OutliersBase):
     __tablename__ = "supervision_client_events"
 
     # An autoincrementing primary key to allow duplicate rows.
-    _id = Column(Integer, primary_key=True)
+    _id = Column(Integer, Identity(), primary_key=True)
     state_code = Column(String)
     # The metric id that this event applies to
     metric_id = Column(String)
