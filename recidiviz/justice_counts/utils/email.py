@@ -23,6 +23,7 @@ import os
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
+from dateutil.relativedelta import relativedelta
 from jinja2 import Template
 from sqlalchemy.orm import Session
 
@@ -272,7 +273,7 @@ def get_missing_metrics(
         )
         if latest_monthly_report is not None
         else (
-            today.replace(month=today.month - 1, day=1),
+            (today - relativedelta(months=1)).replace(day=1),
             today.replace(day=1),
         )
     )
@@ -390,9 +391,7 @@ def _get_missing_metrics_by_system(
                 datapoints_for_metric.custom_reporting_frequency.starting_month or 1
             )
             today = datetime.date.today()
-            most_recent_year = (
-                today.year - 1 if starting_month <= today.month else today.year - 2
-            )
+            most_recent_year = today.year - 1
             date_range = (
                 datetime.date(year=most_recent_year, month=starting_month, day=1),
                 datetime.date(year=most_recent_year + 1, month=starting_month, day=1),
