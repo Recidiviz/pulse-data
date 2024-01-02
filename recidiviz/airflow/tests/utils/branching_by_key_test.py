@@ -26,8 +26,14 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 
-from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
-from recidiviz.airflow.dags.utils.config_utils import get_state_code_filter
+from recidiviz.airflow.dags.utils.branching_by_key import (
+    BRANCH_END_TASK_NAME,
+    create_branching_by_key,
+)
+from recidiviz.airflow.dags.utils.config_utils import (
+    STATE_CODE_FILTER,
+    get_state_code_filter,
+)
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -75,7 +81,6 @@ class TestBranchingByKey(AirflowIntegrationTest):
             branching_end.upstream_task_ids, {"US_XX", "US_YY", "US_ZZ_group.US_ZZ_2"}
         )
 
-    # TODO(#22762): Update test to use new AirflowIntegrationTest helper functions
     def test_all_states_succeed(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
         def create_test_dag() -> None:
@@ -90,7 +95,6 @@ class TestBranchingByKey(AirflowIntegrationTest):
         test_dag = create_test_dag()
         test_dag.test()
 
-    # TODO(#22762): This test currently fails ath the python operator script, but what we really want to test is that the end task fails
     def test_all_states_one_fails(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
         def create_test_dag() -> None:
@@ -105,5 +109,75 @@ class TestBranchingByKey(AirflowIntegrationTest):
             create_branching_by_key(state_codes, get_state_code_filter)
 
         test_dag = create_test_dag()
-        with self.assertRaises(AirflowFailException):
-            test_dag.test()
+        test_dag.test()
+        dagrun = test_dag.get_last_dagrun()
+        us_zz_ti = dagrun.get_task_instance("US_ZZ")
+        self.assertEqual(us_zz_ti.state, "failed")
+        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
+        self.assertEqual(branch_end_ti.state, "failed")
+
+    def test_all_states_upstream_fails(self) -> None:
+        @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
+        def create_test_dag() -> None:
+            upstream_failed = PythonOperator(
+                task_id="upstream", python_callable=raise_task_failure
+            )
+            state_codes = {
+                "US_XX": EmptyOperator(task_id="US_XX"),
+                "US_ZZ": EmptyOperator(task_id="US_ZZ"),
+            }
+
+            branch_start, _ = create_branching_by_key(
+                state_codes, get_state_code_filter
+            )
+            upstream_failed >> branch_start
+
+        test_dag = create_test_dag()
+        test_dag.test()
+        dagrun = test_dag.get_last_dagrun()
+        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
+        self.assertEqual(branch_end_ti.state, "failed")
+
+    def test_selected_state_succeeds_branch_succeeds(self) -> None:
+        @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
+        def create_test_dag() -> None:
+            state_codes = {
+                "US_XX": EmptyOperator(task_id="US_XX"),
+                "US_ZZ": PythonOperator(
+                    task_id="US_ZZ", python_callable=raise_task_failure
+                ),
+            }
+
+            create_branching_by_key(state_codes, get_state_code_filter)
+
+        test_dag = create_test_dag()
+        test_dag.test(run_conf={STATE_CODE_FILTER: "US_XX"})
+        dagrun = test_dag.get_last_dagrun()
+        us_xx_ti = dagrun.get_task_instance("US_XX")
+        self.assertEqual(us_xx_ti.state, "success")
+        us_zz_ti = dagrun.get_task_instance("US_ZZ")
+        self.assertEqual(us_zz_ti.state, "skipped")
+        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
+        self.assertEqual(branch_end_ti.state, "success")
+
+    def test_selected_state_fails_branch_fails(self) -> None:
+        @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
+        def create_test_dag() -> None:
+            state_codes = {
+                "US_XX": EmptyOperator(task_id="US_XX"),
+                "US_ZZ": PythonOperator(
+                    task_id="US_ZZ", python_callable=raise_task_failure
+                ),
+            }
+
+            create_branching_by_key(state_codes, get_state_code_filter)
+
+        test_dag = create_test_dag()
+        test_dag.test(run_conf={STATE_CODE_FILTER: "US_ZZ"})
+        dagrun = test_dag.get_last_dagrun()
+        us_xx_ti = dagrun.get_task_instance("US_XX")
+        self.assertEqual(us_xx_ti.state, "skipped")
+        us_zz_ti = dagrun.get_task_instance("US_ZZ")
+        self.assertEqual(us_zz_ti.state, "failed")
+        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
+        self.assertEqual(branch_end_ti.state, "failed")
