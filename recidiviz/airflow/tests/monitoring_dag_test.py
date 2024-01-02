@@ -46,7 +46,7 @@ def dummy_dag_run(dag: DAG, date: str, **kwargs: Dict[str, Any]) -> DagRun:
 
     return DagRun(
         dag_id=dag.dag_id,
-        run_id=date,
+        run_id=execution_date.strftime("%Y-%m-%d-%H:%M"),
         run_type="manual",
         start_date=execution_date,
         execution_date=execution_date,

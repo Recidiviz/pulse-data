@@ -78,7 +78,7 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
         the job. Polls the status of the job until it's finished or failed."""
         hook = DataflowHook(
             gcp_conn_id=self.gcp_conn_id,
-            delegate_to=self.delegate_to,
+            impersonation_chain=self.impersonation_chain,
         )
         try:
             # If the operator is on a retry loop, we ignore the start operation by checking

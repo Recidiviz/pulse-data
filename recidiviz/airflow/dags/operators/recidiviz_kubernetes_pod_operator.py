@@ -103,7 +103,7 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
         super().__init__(
             namespace=COMPOSER_USER_WORKLOADS,
             # Do not delete pods after running, its handled `recidiviz.airflow.dags.monitoring.cleanup_exited_pods`
-            is_delete_operator_pod=False,
+            on_finish_action="keep_pod",
             image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
             image_pull_policy="Always",
             # This config is provided by Cloud Composer
