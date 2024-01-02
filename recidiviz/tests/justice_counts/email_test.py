@@ -18,6 +18,8 @@
 import datetime
 from typing import Dict, List, Tuple
 
+from dateutil.relativedelta import relativedelta
+
 from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
@@ -65,7 +67,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
             instance="Test Monthly Report",
             status=schema.ReportStatus.NOT_STARTED,
-            date_range_start=self.today.replace(month=self.today.month - 1, day=1),
+            date_range_start=(self.today - relativedelta(months=1)).replace(day=1),
             date_range_end=self.today.replace(day=1),
         )
 
