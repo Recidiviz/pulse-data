@@ -27,7 +27,7 @@ class LookMLDashboardTest(unittest.TestCase):
 
     def test_no_filters_dashboard(self) -> None:
         # Not including filters throws an error.
-        with self.assertRaisesRegex(ValueError, r"Length of 'filters' must be => 1: 0"):
+        with self.assertRaisesRegex(ValueError, r"Length of 'filters' must be >= 1: 0"):
             _ = LookMLDashboard(
                 dashboard_name="test_dashboard",
                 parameters=[],
@@ -38,7 +38,7 @@ class LookMLDashboardTest(unittest.TestCase):
     def test_no_elements_dashboard(self) -> None:
         # Not including elements throws an error.
         with self.assertRaisesRegex(
-            ValueError, r"Length of 'elements' must be => 1: 0"
+            ValueError, r"Length of 'elements' must be >= 1: 0"
         ):
             _ = LookMLDashboard(
                 dashboard_name="test_dashboard",

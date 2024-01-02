@@ -50,7 +50,7 @@ class ParameterizedValueTest(unittest.TestCase):
 
     def test_parameterized_value_no_options_throw(self) -> None:
         with self.assertRaisesRegex(
-            ValueError, r"Length of 'parameter_options' must be => 1: 0"
+            ValueError, r"Length of 'parameter_options' must be >= 1: 0"
         ):
             _ = ParameterizedValue(
                 parameter_name="name",
@@ -61,7 +61,7 @@ class ParameterizedValueTest(unittest.TestCase):
 
     def test_parameterized_value_no_name_throw(self) -> None:
         with self.assertRaisesRegex(
-            ValueError, r"Length of 'parameter_name' must be => 1: 0"
+            ValueError, r"Length of 'parameter_name' must be >= 1: 0"
         ):
             _ = ParameterizedValue(
                 parameter_name="",
