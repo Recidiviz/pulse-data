@@ -22,9 +22,6 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.analyst_data_views import (
     ANALYST_DATA_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import (
-    COVID_DASHBOARD_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     DASHBOARD_VIEW_BUILDERS,
 )
@@ -69,7 +66,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
         (
             ANALYST_DATA_VIEW_BUILDERS,
-            COVID_DASHBOARD_VIEW_BUILDERS,
             DASHBOARD_VIEW_BUILDERS,
             DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
             EXTERNAL_REFERENCE_VIEW_BUILDERS,
