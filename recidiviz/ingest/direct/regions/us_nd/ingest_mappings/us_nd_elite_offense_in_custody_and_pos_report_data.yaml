@@ -61,6 +61,7 @@ output:
                         - NON
                         - REFSEC
                         - INDEXP # Indecent Exposure
+                        - THEFT
                       StateIncarcerationIncidentType.CONTRABAND:
                         - CONT
                         - PROP
