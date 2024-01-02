@@ -214,10 +214,6 @@ def pull_agencies_with_published_capacity_and_cost_data(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-
-    logging.error("Local Test Error: pull_agencies_with_published_data")
-    divide_by_zero = 1 / 0
-
     args = create_parser().parse_args()
     if args.run_as_script is True:
         environment_str = (

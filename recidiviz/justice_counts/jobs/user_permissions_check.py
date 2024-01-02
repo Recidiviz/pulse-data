@@ -525,9 +525,6 @@ def check_user_permissions(
 
 
 if __name__ == "__main__":
-    logging.error("Local Test Error: user_permissions_check")
-    divide_by_zero = 1 / 0
-
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     database_key = SQLAlchemyDatabaseKey.for_schema(

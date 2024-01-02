@@ -142,10 +142,6 @@ def generate_superagency_summary(
 
 
 if __name__ == "__main__":
-
-    logging.error("Local Test Error: super_agency_data_pull")
-    divide_by_zero = 1 / 0
-
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     if args.project_id is not None:
