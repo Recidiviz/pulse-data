@@ -79,6 +79,7 @@ output:
                 StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN:
                   - "HOS" # Hospitalized
                   - "***" # UNKNOWN
+                  - "INF" # Infirmary
                 StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT:
                   - "ADS" # Administrative Segregation
                   - "DIS" # Disciplinary Segregation
@@ -93,7 +94,9 @@ output:
                 StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT: "DIS"
                 StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY: "PRC"
                 StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT: "TAS"
-                StateIncarcerationPeriodHousingUnitType.HOSPITAL: "HOS"
+                StateIncarcerationPeriodHousingUnitType.HOSPITAL:
+                  - "HOS"
+                  - "INF"
                 StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
                   - "ADS"
                   - "NOC"
