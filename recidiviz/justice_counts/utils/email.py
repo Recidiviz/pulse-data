@@ -387,15 +387,30 @@ def _get_missing_metrics_by_system(
                     system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
                 )
         else:
-            starting_month = (
+            report_start_month = (
                 datapoints_for_metric.custom_reporting_frequency.starting_month or 1
             )
             today = datetime.date.today()
-            most_recent_year = today.year - 1
-            date_range = (
-                datetime.date(year=most_recent_year, month=starting_month, day=1),
-                datetime.date(year=most_recent_year + 1, month=starting_month, day=1),
-            )
+            current_year = today.year
+            current_month = today.month
+
+            if current_month >= report_start_month:
+                start_year = current_year - 1
+                end_year = current_year
+            else:
+                # This will catch the edge case of fiscal-year reports with
+                # end dates in the current year that have not passed yet.
+                # For example, say its June 2023, but a fiscal year report is
+                # reported from July in one year to July in the next. The most
+                # recent fiscal year report will be July 2021 - July 2022 because
+                # the report from July 2022 - July 2023 is still in progress.
+                start_year = current_year - 2
+                end_year = current_year - 1
+
+            start_date = datetime.date(start_year, report_start_month, 1)
+            end_date = datetime.date(end_year, report_start_month, 1)
+
+            date_range = (start_date, end_date)
             if (
                 datapoints_for_metric.disaggregated_by_supervision_subsystems
                 is not True

@@ -56,8 +56,16 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             month=1, year=self.today.year - 1, day=1
         )
         self.january_end_date = datetime.date(month=1, year=self.today.year, day=1)
-        self.july_start_date = datetime.date(month=7, year=self.today.year - 1, day=1)
-        self.july_end_date = datetime.date(month=7, year=self.today.year, day=1)
+        self.july_start_date = datetime.date(
+            month=7,
+            year=self.today.year - 1 if self.today.month >= 7 else self.today.year - 2,
+            day=1,
+        )
+        self.july_end_date = datetime.date(
+            month=7,
+            year=self.today.year if self.today.month >= 7 else self.today.year - 1,
+            day=1,
+        )
 
     def get_monthly_report(self, agency: schema.Agency) -> schema.Report:
         return schema.Report(
