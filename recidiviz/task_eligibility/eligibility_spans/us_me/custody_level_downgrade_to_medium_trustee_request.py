@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     no_violation_for_5_years,
     five_years_remaining_on_sentence,
     not_in_msp_imhu,
+    not_already_medium_trustee,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -48,7 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        # TODO(#25311): Add 'not already a Medium trustee' criteria once information from state is received
+        not_already_medium_trustee.VIEW_BUILDER,
         custody_level_is_medium.VIEW_BUILDER,
         no_violation_for_5_years.VIEW_BUILDER,
         five_years_remaining_on_sentence.VIEW_BUILDER,
