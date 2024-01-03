@@ -18,9 +18,7 @@
 """
 
 
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -141,8 +139,14 @@ def has_at_least_x_negative_tests_in_time_interval(
             start_date,
             end_date,
             count(*) AS num_screens_within_time_interval,
-            TO_JSON(STRUCT(ARRAY_AGG(drug_screen_date ORDER BY drug_screen_date) AS latest_negative_screen_dates,
-                    ARRAY_AGG(result_raw_text_primary ORDER BY drug_screen_date) AS latest_negative_screen_results)) AS reason
+            TO_JSON(
+                ARRAY_AGG(
+                    STRUCT(
+                        drug_screen_date AS negative_screen_date,
+                        result_raw_text_primary AS negative_screen_result
+                    ) ORDER BY drug_screen_date
+                )
+            ) AS reason
         FROM
             sub_sessions_with_attributes
         GROUP BY
