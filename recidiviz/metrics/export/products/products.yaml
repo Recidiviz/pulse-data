@@ -8,12 +8,6 @@ products:
       - INGEST_METADATA
       - VALIDATION_METADATA
     environment: production
-  - name: Justice Counts
-    description: The Justice Counts Data Dashboards are designed to keep policymakers and other actors in the CJ arena informed of basic trends on the corrections systems in all fifty states.
-    is_state_agnostic: True
-    exports:
-      - JUSTICE_COUNTS
-    environment: production
   - name: Lantern Dashboard
     description: Lantern is a dashboard for leadership and supervisors to understand the patterns and behaviors associated with revocations. Users can see over-time revocation trends, the violation history leading up to revocation, demographic and geographic breakdowns of revocations, and individual lists of people who were revoked.
     exports:
