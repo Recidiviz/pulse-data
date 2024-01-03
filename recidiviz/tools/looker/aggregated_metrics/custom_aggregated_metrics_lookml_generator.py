@@ -33,6 +33,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
+    MiscAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -159,6 +160,7 @@ def _generate_period_span_metric_view(
     ON
         ses.start_date < time_period.end_date
         AND time_period.start_date < {nonnull_current_date_clause("ses.end_date")}
+        AND ses.person_id = time_period.person_id
     GROUP BY
         1, 2, 3, 4, 5, 6
     """
@@ -199,27 +201,22 @@ def _generate_period_event_metric_view(
         assignments.all_attributes,
 
         -- time_period
-        time_period.period,
-        time_period.start_date,
-        time_period.end_date,
+        assignments.period,
+        assignments.start_date,
+        assignments.end_date,
 
         -- period_event metrics
         {metric_aggregation_fragment}
     FROM
-        ${{attributes.SQL_TABLE_NAME}} assignments
-    INNER JOIN
-        ${{time_periods.SQL_TABLE_NAME}} time_period
-    ON
-        assignments.assignment_date < time_period.end_date
-        AND IFNULL(assignments.assignment_end_date, "9999-12-31") >= time_period.start_date
+        ${{time_periods.SQL_TABLE_NAME}} assignments
     LEFT JOIN
         `{analyst_dataset}.person_events_materialized` AS events
     ON
         events.person_id = assignments.person_id
-        AND events.event_date BETWEEN GREATEST(assignments.assignment_date, time_period.start_date)
+        AND events.event_date BETWEEN GREATEST(assignments.assignment_date, assignments.start_date)
           AND LEAST(
-            {nonnull_end_date_exclusive_clause("assignments.assignment_end_date")},
-            DATE_SUB(time_period.end_date, INTERVAL 1 DAY)
+            {nonnull_end_date_clause("assignments.assignment_end_date")},
+            assignments.end_date
     )
 
     GROUP BY
@@ -264,18 +261,14 @@ def _generate_assignment_span_metric_view(
         assignments.all_attributes,
 
         -- time_period
-        time_period.period,
-        time_period.start_date,
-        time_period.end_date,
+        assignments.period,
+        assignments.start_date,
+        assignments.end_date,
 
         COUNT(DISTINCT CONCAT(assignments.person_id, assignments.assignment_date)) AS assignments,
         {metric_aggregation_fragment}
     FROM
-        ${{time_periods.SQL_TABLE_NAME}} time_period
-    LEFT JOIN
-        ${{attributes.SQL_TABLE_NAME}} assignments
-    ON
-        assignments.assignment_date BETWEEN time_period.start_date AND DATE_SUB(time_period.end_date, INTERVAL 1 DAY)
+        ${{time_periods.SQL_TABLE_NAME}} assignments
     LEFT JOIN
         `{analyst_dataset}.person_spans_materialized` spans
     ON
@@ -340,19 +333,15 @@ def _generate_assignment_event_metric_view(
         SELECT
             assignments.state_code,
             unit_of_analysis,
-            time_period.start_date,
-            time_period.end_date,
+            assignments.start_date,
+            assignments.end_date,
             period,
             assignments.person_id,
             assignments.assignment_date,
             assignments.all_attributes,
             {metric_aggregation_fragment_inner}
         FROM
-            ${{time_periods.SQL_TABLE_NAME}} time_period
-        LEFT JOIN
-            ${{attributes.SQL_TABLE_NAME}} assignments
-        ON
-            assignments.assignment_date BETWEEN time_period.start_date AND DATE_SUB(time_period.end_date, INTERVAL 1 DAY)
+            ${{time_periods.SQL_TABLE_NAME}} assignments
         LEFT JOIN
             `{analyst_dataset}.person_events_materialized` events
         ON
@@ -532,9 +521,13 @@ def main(
         # Create subdirectory for all subquery views
         output_subdirectory = os.path.join(output_directory, "subqueries")
 
-        _generate_custom_metrics_view(metrics).write(
-            output_directory, source_script_path=__file__
-        )
+        _generate_custom_metrics_view(
+            [
+                metric
+                for metric in metrics
+                if not isinstance(metric, MiscAggregatedMetric)
+            ]
+        ).write(output_directory, source_script_path=__file__)
         _generate_period_span_metric_view(
             [
                 metric
