@@ -47,7 +47,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
