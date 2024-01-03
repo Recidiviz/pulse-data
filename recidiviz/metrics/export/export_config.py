@@ -26,9 +26,6 @@ from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
     ExportValidationType,
 )
-from recidiviz.calculator.query.justice_counts.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT as JUSTICE_COUNTS_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     LANTERN_DASHBOARD_VIEW_BUILDERS,
 )
@@ -178,7 +175,6 @@ DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-dashboard-event-level-data"
 )
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
-JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
 PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-product-user-import"
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
@@ -205,12 +201,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=VALIDATION_METADATA_BUILDERS,
         output_directory_uri_template=VALIDATION_METADATA_OUTPUT_DIRECTORY_URI,
         export_name="VALIDATION_METADATA",
-    ),
-    # Justice Counts views for frontend
-    ExportViewCollectionConfig(
-        view_builders_to_export=JUSTICE_COUNTS_VIEW_BUILDERS,
-        output_directory_uri_template=JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI,
-        export_name="JUSTICE_COUNTS",
     ),
     # Lantern Dashboard views
     ExportViewCollectionConfig(

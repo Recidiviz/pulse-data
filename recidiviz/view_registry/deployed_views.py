@@ -33,9 +33,6 @@ from recidiviz.calculator.query.experiments.view_config import (
 from recidiviz.calculator.query.externally_shared_views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXTERNALLY_SHARED_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.justice_counts.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as JUSTICE_COUNTS_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS,
 )
@@ -71,7 +68,6 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             get_direct_ingest_view_builders(),
             EXPERIMENTS_VIEW_BUILDERS,
             EXTERNALLY_SHARED_VIEW_BUILDERS,
-            JUSTICE_COUNTS_VIEW_BUILDERS,
             INGEST_METADATA_VIEW_BUILDERS,
             STATE_VIEW_BUILDERS,
             get_task_eligibility_view_builders(),
