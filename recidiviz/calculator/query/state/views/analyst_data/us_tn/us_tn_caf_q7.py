@@ -48,6 +48,7 @@ US_TN_CAF_Q7_QUERY_TEMPLATE = f"""
         WHERE
             state_code = "US_TN"
             AND disposition = 'GU'
+            AND incident_details NOT LIKE "%VERBAL WARNING%"
             AND incident_class IS NOT NULL
         QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, incident_date
                                   ORDER BY disciplinary_score DESC) = 1
