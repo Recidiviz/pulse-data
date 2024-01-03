@@ -62,6 +62,75 @@ PROGRAM_ENROLLMENT_NOTE_TX_REGEX = "|".join(
 )
 
 
+def disciplinary_reports_helper() -> str:
+    """
+    Compiles the various datasets necessary to pull disciplinary report information in ME
+    """
+    return """
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_181_VIOLATION_DISPOSITION_latest` vd
+      LEFT JOIN
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_180_DISCIPLINARY_CASE_latest` dc
+      ON
+        vd.Cis_180_Disciplinary_Case_Id = dc.DISCIPLINARY_CASE_ID
+      LEFT JOIN
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1811_VIOLATION_DISPOSITION_TYPE_latest` vdt
+      ON
+        vd.Cis_1811_Violation_Type_Cd = vdt.Violation_Disposition_Type_Cd
+      LEFT JOIN
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1810_VIOLATION_DISPOSITION_CLASS_latest` vdc
+      ON
+        vd.Cis_1810_Violation_Class_Cd = vdc.Violation_Disposition_Class_Cd
+      LEFT JOIN
+        `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_462_CLIENTS_INVOLVED_latest` ci
+      ON
+        ci.Clients_Involved_Id = dc.CIS_462_CLIENTS_INVOLVED_ID
+      INNER JOIN
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` ei
+      ON
+        ci.Cis_100_Client_Id = external_id
+        AND id_type = 'US_ME_DOC'
+    """
+
+
+def program_enrollment_helper() -> str:
+    """
+    Compiles the various datasets necessary to pull program enrollment notes in ME
+    """
+    return """
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_425_MAIN_PROG_latest` mp
+    INNER JOIN
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_420_PROGRAMS_latest` pr
+    ON
+      mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
+      -- Comments_Tx/Note_body could be NULL, which happens when the record does not contain free text
+    LEFT JOIN
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_426_PROG_STATUS_latest` ps
+    ON
+      mp.ENROLL_ID = ps.Cis_425_Enroll_Id
+    INNER JOIN
+      `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_9900_STATUS_TYPE_latest` st
+    ON
+      ps.Cis_9900_Stat_Type_Cd = st.STAT_TYPE_CD
+
+    """
+
+
+def case_plan_goals_helper() -> str:
+    """
+    Compiles the various datasets necessary to pull program enrollment notes in ME
+    """
+    return """
+            `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_201_GOALS_latest` gl
+        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2012_GOAL_STATUS_TYPE_latest` gs
+            ON gl.Cis_2012_Goal_Status_Cd = gs.Goal_Status_Cd
+        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2010_GOAL_TYPE_latest` gt
+            ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
+        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_2011_DOMAIN_GOAL_TYPE_latest` dg
+            ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
+        WHERE gs.Goal_Status_Cd IN ('1','2') 
+        """
+
+
 def cis_319_after_csswa(table: str = "sub_sessions_with_attributes") -> str:
     """
     Clean CIS_319 table after create_sub_sessions_with_attributes.
@@ -218,14 +287,7 @@ def cis_425_program_enrollment_notes(
         {note_body} AS note_body,
         -- TODO(#17587) remove LEFT once the YAML file is updated
         SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS event_date,
-    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
-    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
-        ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
-    -- Comments_Tx/Note_body could be NULL, which happens when the record does not contain free text 
-    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_426_PROG_STATUS_latest`  ps
-        ON mp.ENROLL_ID = ps.Cis_425_Enroll_Id
-    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
-        ON ps.Cis_9900_Stat_Type_Cd = st.STAT_TYPE_CD
+    FROM {program_enrollment_helper()}
     {additional_joins}
     WHERE pr.NAME_TX IS NOT NULL {where_clause}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY mp.ENROLL_ID ORDER BY Effct_Datetime DESC) = 1
@@ -343,14 +405,7 @@ def cis_201_case_plan_case_notes() -> str:
     return f"""
     {_FINAL_SELECT} (SELECT 
                 *
-            FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_201_GOALS_latest` gl
-            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2012_GOAL_STATUS_TYPE_latest` gs
-                ON gl.Cis_2012_Goal_Status_Cd = gs.Goal_Status_Cd
-            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2010_GOAL_TYPE_latest` gt
-                ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
-            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2011_DOMAIN_GOAL_TYPE_latest` dg
-                ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
-            WHERE gs.Goal_Status_Cd IN ('1','2')) 
+            FROM {case_plan_goals_helper()}) 
     """
 
 
@@ -546,25 +601,13 @@ def no_violations_for_x_time(
           SAFE_CAST(LEFT(dc.CREATED_ON_DATE, 10) AS DATE) AS pending_violation_start_date,
           dc.CIS_462_CLIENTS_INVOLVED_ID,
           ci.Cis_100_Client_Id,
-      FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_181_VIOLATION_DISPOSITION_latest`  vd
-      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_180_DISCIPLINARY_CASE_latest` dc
-        ON vd.Cis_180_Disciplinary_Case_Id = dc.DISCIPLINARY_CASE_ID
-      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_1811_VIOLATION_DISPOSITION_TYPE_latest` vdt
-        ON vd.Cis_1811_Violation_Type_Cd = vdt.Violation_Disposition_Type_Cd
-      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_1810_VIOLATION_DISPOSITION_CLASS_latest` vdc
-        ON vd.Cis_1810_Violation_Class_Cd = vdc.Violation_Disposition_Class_Cd
-      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_462_CLIENTS_INVOLVED_latest` ci
-        ON ci.Clients_Involved_Id = dc.CIS_462_CLIENTS_INVOLVED_ID
-      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ei
-          ON ci.Cis_100_Client_Id = external_id
-          AND id_type = 'US_ME_DOC'
+      FROM {disciplinary_reports_helper()}
       WHERE
           {'vdc.E_Violation_Disposition_Class_Desc in ' + str(violation_classes) + ' AND' if violation_classes else ''}
           # Drop if logical delete = yes
           COALESCE(dc.LOGICAL_DELETE_IND, 'N') != 'Y'
           AND COALESCE(vd.Logical_Delete_Ind , 'N') != 'Y'
-          # Whenever a disciplinary sanction has informal sanctions taken, it does not affect SCCP eligibility.
-          # TODO(#25437): Does it affect Medium Trustee eligibility?
+          # Whenever a disciplinary sanction has informal sanctions taken, it does not affect eligibility.
           AND COALESCE(dc.DISCIPLINARY_ACTION_FORMAL_IND, 'Y') != 'N'
           
     ),

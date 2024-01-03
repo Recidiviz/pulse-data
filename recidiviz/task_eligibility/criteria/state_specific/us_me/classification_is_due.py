@@ -13,43 +13,34 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
+# ============================================================================
+"""Defines a criteria span view that shows spans of time during which
+someone is past their reclassification date"""
 
-"""Defines a criteria view that shows spans of time for
-which residents are within 5 years of having received a violation.
-"""
-from recidiviz.task_eligibility.utils.us_me_query_fragments import (
-    no_violations_for_x_time,
-)
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
+    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ME_NO_VIOLATION_FOR_5_YEARS"
+_CRITERIA_NAME = "US_ME_CLASSIFICATION_IS_DUE"
 
-_DESCRIPTION = """Defines a criteria view that shows spans of time for
-which residents are within 5 years of having received a violation.
-"""
+_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
+someone is past their reclassification date"""
 
-_QUERY_TEMPLATE = no_violations_for_x_time(x=5, date_part="YEAR")
+# TODO(#26353): Write reason query in full
+_REASON_QUERY = """TO_JSON(STRUCT(DATE("9999-12-31") AS eligible_date))"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
+    state_specific_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
+        reason_query=_REASON_QUERY,
         state_code=StateCode.US_ME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
-        ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        meets_criteria_default=True,
     )
 )
 
