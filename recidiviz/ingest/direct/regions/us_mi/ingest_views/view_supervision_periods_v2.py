@@ -304,7 +304,15 @@ offender_supervision_periods as (
     SELECT
         offender_id,
         level_start_date,
-        level_end_date,
+        -- we only want to considers supervision levels from OMNI up until the migration date so let's end all supervision levels from omni that
+        -- are still active on that day
+        CASE WHEN 
+                level_end_date >= DATE(2023,8,14) 
+                OR
+                level_end_date IS NULL
+            THEN DATE(2023,8,14)
+            ELSE level_end_date 
+            END AS level_end_date,
         supervision_level_value,
         last_update_date,
         source,
@@ -328,34 +336,15 @@ offender_supervision_periods as (
 MODIFIERS_CTE = """
 
 -- Create modifiers periods (where modifiers from COMS give us information about supervision type and level)
-
-max_modifier_date AS (
-  SELECT MAX(update_datetime) AS last_update_date FROM {COMS_Modifiers@ALL}
-),
-
-most_recent_modifier_info AS (
-  SELECT DISTINCT
-    Modifier_Id,
-    Offender_Number,
-    LAST_VALUE(Modifier) OVER(PARTITION BY Modifier_Id ORDER BY update_datetime) AS Modifier,
-    LAST_VALUE(Start_Date) OVER(PARTITION BY Modifier_Id ORDER BY update_datetime) AS Start_Date,
-    LAST_VALUE(Entered_Date) OVER(PARTITION BY Modifier_Id ORDER BY update_datetime) AS Entered_Date,
-    MAX(update_datetime) OVER(PARTITION BY Modifier_Id) AS last_seen_date
-  from {COMS_Modifiers@ALL}
-),
-
 modifiers_periods AS (
     SELECT 
     offender_id,
     Modifier_Id,
     (DATE(Start_Date)) AS modifier_start_date,
-    CASE WHEN (DATE(last_seen_date)) < (DATE(last_update_date)) THEN (DATE(last_seen_date))
-        ELSE DATE(9999,9,9)
-        END AS modifier_end_date,
+    COALESCE(DATE(End_Date), DATE(9999,9,9)) AS modifier_end_date,
     Modifier,
     (DATE(Entered_Date)) as Entered_Date
-    FROM most_recent_modifier_info mod
-    LEFT JOIN max_modifier_date ON 1=1
+    FROM {COMS_Modifiers} mod
     INNER JOIN {ADH_OFFENDER} off ON LTRIM(mod.Offender_Number, '0') = off.offender_number
 )
 """
@@ -382,7 +371,11 @@ OMNI_assignments as (
             -- 3/23/23: We can't use the raw sequence number from the table to sort anymore cause that's partitioned by offender_booking_id, not offender_id
             ROW_NUMBER() OVER (PARTITION BY offender_id ORDER BY (date(assignment_date)), (date(closure_date)) NULLS LAST, ass.offender_booking_id, ass.sequence_number) as priority,
             (date(assignment_date)) as employee_assignment_date,
-            (date(closure_date)) AS employee_closure_date,
+            -- we only want to considers employee assignments from omni up until the migration date so let's close out all open employee assignments on the migration date
+            CASE WHEN (date(closure_date)) >= DATE(2023,8,14) or (date(closure_date)) is NULL
+                 THEN DATE(2023,8,14)
+                 ELSE (date(closure_date))
+                 END AS employee_closure_date,
             LEAD(date(assignment_date)) OVER(PARTITION BY offender_id ORDER BY (date(assignment_date)), (date(closure_date)) NULLS LAST, ass.offender_booking_id, ass.sequence_number) as next_assignment_date
         from {ADH_EMPLOYEE_BOOKING_ASSIGNMENT} ass
           INNER JOIN {ADH_OFFENDER_BOOKING} book on ass.offender_booking_id = book.offender_booking_id
