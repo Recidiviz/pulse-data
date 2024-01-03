@@ -61,6 +61,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
         WHERE
             state_code = "US_TN" 
             AND disposition = 'GU' 
+            AND incident_details NOT LIKE "%VERBAL WARNING%"
             AND incident_class IS NOT NULL
       
       UNION DISTINCT 

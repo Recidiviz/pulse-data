@@ -39,15 +39,34 @@ def detainers_cte() -> str:
         SELECT
             state_code,
             person_id,
-            DATE(DetainerReceivedDate) AS start_date,
-            DATE(DetainerLiftDate) AS end_date,
-            DetainerFelonyFlag AS detainer_felony_flag,
-            DetainerMisdemeanorFlag AS detainer_misdemeanor_flag,
-            CASE WHEN DetainerFelonyFlag = 'X' THEN 5
-                 WHEN DetainerMisdemeanorFlag = 'X' THEN 3
-                 END AS detainer_score
-        FROM 
-            `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Detainer_latest` dis
+            start_date,
+            end_date,
+            detainer_felony_flag,
+            detainer_misdemeanor_flag,
+            CASE WHEN detainer_felony_flag = 'X' THEN 5
+                 WHEN detainer_misdemeanor_flag = 'X' THEN 3
+                 END AS detainer_score,
+            jurisdiction,
+            description,
+            charge_pending,
+        FROM (
+            SELECT
+                OffenderID,
+                DATE(DetainerReceivedDate) AS start_date,
+                DATE(DetainerLiftDate) AS end_date,
+                -- According to TN counselors, if a detainer is missing a felony/misdemeanor flag but is from a federal
+                -- agency, it's always a felony
+                CASE WHEN DetainerFelonyFlag IS NULL
+                        AND DetainerMisdemeanorFlag IS NULL
+                        AND Jurisdiction IN ("FED","INS") THEN 'X'
+                    ELSE DetainerFelonyFlag END AS detainer_felony_flag,
+                DetainerMisdemeanorFlag AS detainer_misdemeanor_flag,
+                Jurisdiction AS jurisdiction,
+                OffenseDescription AS description,
+                ChargePendingFlag AS charge_pending,
+            FROM
+                `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Detainer_latest`
+            ) dis
         INNER JOIN
             `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON
@@ -55,9 +74,7 @@ def detainers_cte() -> str:
         AND
             pei.state_code = 'US_TN'
         WHERE
-            (DetainerFelonyFlag = 'X' OR DetainerMisdemeanorFlag = 'X')
-            AND 
-            {nonnull_end_date_exclusive_clause('DATE(DetainerLiftDate)')} > {nonnull_end_date_exclusive_clause('DATE(DetainerReceivedDate)')}
+            {nonnull_end_date_exclusive_clause('end_date')} > {nonnull_end_date_exclusive_clause('start_date')}
         
         """
 
@@ -337,6 +354,7 @@ def us_tn_classification_forms(
         -- For q7, we only want to consider guilty disciplinaries with non-missing disciplinary class
         WHERE disposition = 'GU'
              AND note_body != ""
+             AND incident_details NOT LIKE "%VERBAL WARNING%"
     ),
     guilty_disciplinary_history AS (
         SELECT
@@ -388,7 +406,10 @@ def us_tn_classification_forms(
                 ARRAY_AGG(
                     STRUCT(start_date AS detainer_received_date, 
                            detainer_felony_flag AS detainer_felony_flag, 
-                           detainer_misdemeanor_flag AS detainer_misdemeanor_flag
+                           detainer_misdemeanor_flag AS detainer_misdemeanor_flag,
+                           jurisdiction AS jurisdiction,
+                           description AS description,
+                           charge_pending AS charge_pending
                            )
                 )
             ) AS form_information_q8_notes
