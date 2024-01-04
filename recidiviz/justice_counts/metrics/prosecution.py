@@ -173,7 +173,7 @@ expenses = MetricDefinition(
             dimension=ExpenseType,
             required=False,
             dimension_to_description={
-                ExpenseType.PERSONNEL: "The amount spent to employ personnel involved in the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers.",
+                ExpenseType.PERSONNEL: "The amount spent to employ personnel involved in the operation and maintenance of the prosecutor’s office to process criminal cases.",
                 ExpenseType.TRAINING: "The amount spent by the office on the training of personnel involved in the operation and maintenance of the prosecutor’s office to process criminal cases, including any associated expenses, such as registration fees and travel costs.",
                 ExpenseType.FACILITIES: "The amount spent by the office for the purchase and use of the physical plant and property owned and operated by the office to process criminal cases.",
                 ExpenseType.OTHER: "The amount spent by the office to process criminal cases on other costs relating to the operation and maintenance of the prosecutor’s office that are not personnel, training, or facilities and equipment expenses.",

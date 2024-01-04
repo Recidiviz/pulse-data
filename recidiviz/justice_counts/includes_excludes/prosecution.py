@@ -87,10 +87,8 @@ class ProsecutionPersonnelExpensesIncludesExcludes(enum.Enum):
     SALARIES = "Salaries"
     BENEFITS = "Benefits"
     RETIREMENT_CONTRIBUTIONS = "Retirement contributions"
-    CONTRACTS = (
-        "Contracts for individuals doing work related to criminal public defense"
-    )
-    DEFENSE = "Companies or service providers contracted to support work related to criminal public defense"
+    CONTRACTS = "Contracts for individuals doing work related to prosecution"
+    DEFENSE = "Companies or service providers contracted to support work related to prosecution"
 
 
 class ProsecutionTrainingExpensesIncludesExcludes(enum.Enum):
