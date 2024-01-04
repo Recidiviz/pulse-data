@@ -68,6 +68,7 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifestCompiler,
 )
@@ -974,24 +975,8 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         )
 
         for path in unnormalized_paths:
-            if path.has_zip_extension:
-                logging.info("File [%s] is a zip file, unzipping...", path.abs_path())
-                paths_to_normalize = self.fs.unzip(
-                    path, destination_dir=self.raw_data_bucket_path
-                )
-                # Move the zip file to deprecated storage once we have unzipped it
-                self.fs.mv(
-                    src_path=path,
-                    dst_path=self.raw_data_deprecated_storage_directory_path(
-                        deprecated_on_date=datetime.date.today()
-                    ),
-                )
-            else:
-                paths_to_normalize = [path]
-
-            for p in paths_to_normalize:
-                logging.info("File [%s] is not yet seen, normalizing.", p.abs_path())
-                self.fs.mv_raw_file_to_normalized_path(p)
+            logging.info("File [%s] is not yet seen, normalizing.", path.abs_path())
+            self.fs.mv_raw_file_to_normalized_path(path)
 
         if unnormalized_paths:
             logging.info(
@@ -1013,6 +998,32 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         unprocessed_raw_paths = self.fs.get_unprocessed_raw_file_paths(
             self.raw_data_bucket_path
         )
+
+        unprocessed_zip_files = [
+            p for p in unprocessed_raw_paths if p.has_zip_extension
+        ]
+        for zip_path in unprocessed_zip_files:
+            logging.info("File [%s] is a zip file, unzipping...", zip_path.abs_path())
+            parts = filename_parts_from_path(zip_path)
+            unzipped_files = self.fs.unzip(
+                zip_path, destination_dir=self.raw_data_bucket_path
+            )
+            # Normalize all the internal file paths with the same date as the outer file
+            for internal_path in unzipped_files:
+                self.fs.mv_raw_file_to_normalized_path(
+                    internal_path, dt=parts.utc_upload_datetime
+                )
+            self.fs.mv(
+                src_path=zip_path,
+                dst_path=self.raw_data_deprecated_storage_directory_path(
+                    deprecated_on_date=datetime.date.today()
+                ),
+            )
+        if unprocessed_zip_files:
+            logging.info("Unzipped at least one path - returning")
+            # Normalizing file paths will cause the cloud function that calls
+            # this function to be re-triggered.
+            return
 
         self._register_all_new_raw_file_paths_in_metadata(unprocessed_raw_paths)
 
