@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.reference.current_staff import (
+    CURRENT_STAFF_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.incarceration_location_ids_to_names import (
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
 )
@@ -104,4 +107,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
     STATE_STAFF_WITH_NAMES_VIEW_BUILDER,
     US_PA_OFFICER_SUPERVISORS_VIEW_BUILDER,
+    CURRENT_STAFF_VIEW_BUILDER,
 ]
