@@ -37,7 +37,6 @@ level modifier.
 """
 
 _QUERY_TEMPLATE = f"""
-#TODO(#25323) Simplify once we receive end dates
 WITH modifiers_preprocessed AS (
 --This cte groups by person_id, start_date and Modifier to take the MAX update_datetime at which this 
 --person_id, start_date, modifier entry was seen 
@@ -45,8 +44,8 @@ WITH modifiers_preprocessed AS (
         pei.state_code,
         pei.person_id,
         DATE(m.start_date) AS start_date,
+        DATE(m.end_date) AS end_date,
         m.Modifier,
-        MAX(m.update_datetime) AS update_datetime,
     FROM `{{project_id}}.{{raw_tables_dataset_for_region_dataset}}.COMS_Modifiers` m
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON LTRIM(m.Offender_Number, '0')= pei.external_id
@@ -68,30 +67,8 @@ WITH modifiers_preprocessed AS (
        OR UPPER(modifier) LIKE '%PAROLED TO CUSTODY (FED/OUTSTATE)%'
        OR UPPER(modifier) LIKE '%#2 WARRANT ISSUED SENTENCED OVER 90 DAYS%'
        OR UPPER(modifier) LIKE '%ARRESTED OUT OF STATE SENTENCED OVER 90 DAYS%'
-    GROUP BY 1,2,3,4
 ),
-modifier_spans AS (
---this cte than compares that max update_datetime for that person_id, start_date, modifier entry to the
--- MAX update_datetime for the entire file, to determine whether that modifier is no longer active. 
---if the MAX update_datetime for the file is greater than the max update_datetime for the entry, then 
--- we set the end_date as a day after that update_datetime. Otherwise, the end_date is NULL
-    SELECT
-       state_code,
-       person_id, 
-       start_date,
-       CASE
-         WHEN update_datetime < max_update_datetime THEN DATE_ADD(update_datetime, INTERVAL 1 DAY)
-         ELSE NULL
-       END AS end_date,
-       Modifier,
-    FROM (
-      SELECT
-        *,
-        MAX(DATE(update_datetime)) OVER () AS max_update_datetime
-      FROM modifiers_preprocessed
-    )
-),
-{create_sub_sessions_with_attributes('modifier_spans')},
+{create_sub_sessions_with_attributes('modifiers_preprocessed')},
 aggregated_modifier_spans AS (
     SELECT 
         state_code,
