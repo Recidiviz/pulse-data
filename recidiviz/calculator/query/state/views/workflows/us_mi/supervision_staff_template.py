@@ -16,73 +16,32 @@
 # =============================================================================
 
 """View logic to prepare US_MI supervision staff data for Workflows"""
-import os
 
-import yaml
-
-MICHIGAN_COUNTIES_BY_DISTRICT_FILE = os.path.join(
-    os.path.dirname(__file__), "us_mi_counties_by_district.yaml"
-)
-
-
-def get_district_clause(county_column: str) -> str:
-    with open(
-        MICHIGAN_COUNTIES_BY_DISTRICT_FILE, "r", encoding="utf-8"
-    ) as counties_file:
-        counties_by_district = yaml.safe_load(counties_file.read())
-
-    when_clauses = []
-    for district, counties in counties_by_district["districts"].items():
-        counties_clause = ",".join([repr(f"{county} County") for county in counties])
-        when_clauses.append(
-            f"WHEN {county_column} IN ({counties_clause}) THEN {repr(district)}"
-        )
-
-    when_clause = "\n".join(when_clauses)
-
-    return f"""
-        CASE 
-        {when_clause}
-        ELSE {county_column}
-        END
-    """
-
-
-US_MI_SUPERVISION_STAFF_TEMPLATE = f"""
+US_MI_SUPERVISION_STAFF_TEMPLATE = """
     WITH officers_with_caseload AS (
         SELECT DISTINCT officer_id
-        FROM `{{project_id}}.{{workflows_dataset}}.client_record_materialized`
+        FROM `{project_id}.{workflows_dataset}.client_record_materialized`
         WHERE state_code = 'US_MI'
     )
     SELECT
         "US_MI" AS state_code,
-        employee.employee_id AS id,
-        {get_district_clause("county_reference.description")} AS district,
-        LOWER(additional_info.email_address) as email,
+        officer_id AS id,
+        -- If there are staff members that don't have a district in the staff record, they won't
+        -- show up in search results for states that restrict search by district. This is a pretty
+        -- common class of tickets we get from external users, so filling it in from the roster
+        -- means that in this case, it can be fixed via the admin panel.
+        IFNULL(supervision_district_id, roster.district) AS district,
+        email,
         TRUE AS has_caseload,
         FALSE AS has_facility_caseload,
-        employee.first_name AS given_names,
-        employee.last_name AS surname,
-        CAST(NULL AS STRING) AS role_subtype,
-    FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_EMPLOYEE_latest` employee
-    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_EMPLOYEE_ADDITIONAL_INFO_latest`
-        additional_info USING (employee_id)
-    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_LOCATION_latest`
-        location ON location.location_id = employee.default_location_id
-    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest`
-        county_reference ON  county_reference.reference_code_id = location.county_id
-    LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest`
-        location_reference_code ON location_reference_code.reference_code_id = employee.work_site_id
-    WHERE
-        employee.employee_id in (SELECT officer_id FROM officers_with_caseload)
-        AND employee.termination_date IS NULL
-        AND employee.employee_type_id IN (
-            "2104", # Supervisor
-            "2105", # Agent
-            "2106", # Field Services Assistant
-            "2109", # Parole Manager
-            "2110", # Probation Manager
-            "2111", # Center Manager
-            "13744" # Parole Probation Specialist
-        )
+        given_names,
+        surname,
+        CAST(NULL AS STRING) AS role_subtype
+    FROM officers_with_caseload
+    INNER JOIN `{project_id}.reference_views.current_staff_materialized` current_staff
+        ON current_staff.state_code = "US_MI"
+        AND current_staff.external_id = officers_with_caseload.officer_id
+    LEFT JOIN `{project_id}.reference_views.product_roster_materialized` roster
+        ON current_staff.state_code = roster.state_code
+        AND current_staff.email = roster.email_address
  """

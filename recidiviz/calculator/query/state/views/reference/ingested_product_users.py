@@ -19,7 +19,9 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.auth import RosterPredefinedRoles
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -32,7 +34,7 @@ INGESTED_PRODUCT_USERS_DESCRIPTION = """View containing users that may have acce
 that we receive via ingest (instead of uploaded CSVs). This view is only used for exporting and
 should not have any downstream views: use `product_roster` instead."""
 
-INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
+INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
     WITH
     mo_users AS (
         SELECT
@@ -46,8 +48,8 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
             ARRAY_AGG(first_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS first_name,
             ARRAY_AGG(last_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS last_name,
             CAST(NULL AS STRING) AS pseudonymized_id,
-        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
-        LEFT JOIN `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBCMDATA_APFX90_latest` emp_info
+        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LANTERN_DA_RA_LIST_latest`
+        LEFT JOIN `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBCMDATA_APFX90_latest` emp_info
             ON UPPER(lname) LIKE '%' || UPPER(last_name) || '%'
             AND UPPER(fname) LIKE '%' || UPPER(first_name) || '%'
             AND ENDDTE='0'
@@ -64,20 +66,40 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
             FNAME AS first_name,
             LNAME AS last_name,
             CAST(NULL AS STRING) AS pseudonymized_id,
-        FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest`
-        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
+        FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.docstars_officers_latest`
+        LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map` ids
             ON OFFICER = ids.external_id_to_map AND 'US_ND' = ids.state_code
         WHERE
             CAST(status AS STRING) = "(1)"
             AND ids.external_id_to_map IS NULL
         GROUP BY email_address, external_id, first_name, last_name
     ),
+    state_staff_users AS (
+        SELECT
+            state_code,
+            email AS email_address,
+            CASE
+                WHEN is_supervision_officer_supervisor THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value}"
+                WHEN is_supervision_officer THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER.value}"
+                ELSE "{RosterPredefinedRoles.UNKNOWN.value}"
+            END AS role,
+            supervision_district_id AS district,
+            external_id,
+            given_names AS first_name,
+            surname AS last_name,
+            pseudonymized_id
+        FROM `{{project_id}}.reference_views.current_staff_materialized`
+        WHERE state_code IN ({{state_staff_states}})
+        AND email IS NOT NULL
+    ),
     all_users AS (
         SELECT * FROM mo_users
         UNION ALL
         SELECT * FROM nd_users
+        UNION ALL
+        SELECT * FROM state_staff_users
     )
-    SELECT {columns} FROM all_users
+    SELECT {{columns}} FROM all_users
 """
 
 
@@ -93,11 +115,13 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    state_staff_states=list_to_query_string(["US_MI"], quoted=True),
     columns=[
         "state_code",
         "email_address",
         "external_id",
         "role",
+        # TODO(#26245): Rename to district_id or district_name (or supervision_[one of those]?)
         "district",
         "first_name",
         "last_name",

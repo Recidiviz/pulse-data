@@ -34,7 +34,7 @@ type UploadRosterProps = {
 // Some states send us their rosters directly, so we don't want to allow them to be uploaded.
 // We _could_ derive this list from products.yaml, but it's going to change so rarely (and
 // hopefully be obsoleted soon with StateStaff) that hardcoding it is fine.
-const STATES_WITH_INGESTED_ROSTERS = ["US_MO", "US_ND"];
+const STATES_WITH_INGESTED_ROSTERS = ["US_MO", "US_ND", "US_MI"];
 
 const UploadRoster = ({
   action,

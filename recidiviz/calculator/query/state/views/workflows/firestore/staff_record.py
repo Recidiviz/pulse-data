@@ -117,9 +117,6 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
-    us_mi_raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
-    ),
     vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
