@@ -96,6 +96,7 @@ def initialize_worker_process() -> None:
         sampler = CompositeSampler(
             {
                 "/direct/extract_and_merge": TraceIdRatioBased(rate=100 / 100),
+                "/auth/users": TraceIdRatioBased(rate=100 / 100),
             },
             # For other requests, trace 1 in 20.
             default_sampler=TraceIdRatioBased(rate=1 / 20),
