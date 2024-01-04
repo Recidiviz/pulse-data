@@ -26,6 +26,7 @@ from opentelemetry.context import Context
 from opentelemetry.trace import INVALID_SPAN, format_trace_id
 
 from recidiviz.monitoring.keys import AttributeKey
+from recidiviz.utils import environment
 
 
 @contextmanager
@@ -80,6 +81,8 @@ def push_region_context(
 def get_current_trace_id() -> str:
     """Returns the Trace ID representing the trace that the current span is a part of.
     Raises a KeyError if we are not currently in a span being traced by OpenTelemetry"""
+    if not environment.in_gcp():
+        return "local"
     current_span = trace.get_current_span()
 
     if current_span == INVALID_SPAN:
