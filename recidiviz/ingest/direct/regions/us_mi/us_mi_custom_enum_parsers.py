@@ -367,14 +367,14 @@ def parse_supervision_level(
     # Note: The specific ordering between IN CUSTODY, ABSCONSION, and WARRANT is currently arbitrary but should
     #       be reordered as necessary as determined.
 
-    if re.search(r"MINIMUM ADMINISTRATIVE", supervision_level_value):
-        return StateSupervisionLevel.UNSUPERVISED
-
     if re.search(
         r"IN JAIL|MPVU|IN PRISON|PENDING REVOCATION HEARING|PAROLE TO CUSTODY|#2",
         supervision_level_value,
     ):
         return StateSupervisionLevel.IN_CUSTODY
+
+    if re.search(r"MINIMUM ADMINISTRATIVE", supervision_level_value):
+        return StateSupervisionLevel.UNSUPERVISED
 
     if re.search(r"ABSCONDER", supervision_level_value):
         return StateSupervisionLevel.ABSCONSION
