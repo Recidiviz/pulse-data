@@ -14,25 +14,62 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates view to identify individuals' sentences for which at least half the sentence has been served"""
+"""Identifies individuals' supervision sentences for which at least half the sentence has been served"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
+)
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    sentence_attributes,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_SERVED_HALF_SENTENCE_VIEW_NAME = "us_or_served_half_sentence"
 
-US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION = """Creates view to identify individuals' sentences for which at least half the sentence has been served"""
+US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION = """Identifies individuals' supervision sentences for which at least half the sentence has been served"""
 
-US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = """
-    SELECT person_id,
-        sentence_id,
-        DATE("9999-12-31") AS start_date,
-        DATE("9999-12-31") AS end_date,
-        NULL AS meets_criteria,
-    FROM `{project_id}.sessions.sentences_preprocessed_materialized`
-    LIMIT 0
+# TODO(#26623): Account for absconsions, which should not be counted as time served.
+US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
+    WITH sentences AS (
+        /* NB: this query pulls from sentences_preprocessed (not sentence_spans, even
+        though we'll ultimately end up creating spans for eligibility). This has been
+        done because if we start from sentences_preprocessed, we start with a single
+        span and end up with at most two spans per sentence for each subcriterion;
+        however, if we started from sentence_spans, we might start with multiple spans
+        per sentence that we'd then have to work with. Also, we treat each sentence
+        separately when evaluating eligibility for OR earned discharge. If we decide to
+        change this in the future, we can refactor this subcriterion query to rely upon
+        sentence_spans. */
+        SELECT * 
+        FROM ({sentence_attributes()})
+        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+    ),
+    critical_date_spans AS (
+        SELECT state_code,
+            person_id,
+            sentence_id,
+            sentence_type,
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            DATE_ADD(start_date, INTERVAL CAST(max_sentence_length_days_calculated / 2 AS INT64) DAY) AS critical_date,
+        FROM sentences
+    ),
+    {critical_date_has_passed_spans_cte(attributes=[
+    'sentence_id', 
+    'sentence_type',
+    ])}
+    SELECT cd.person_id,
+        cd.sentence_id,
+        cd.start_date,
+        cd.end_date,
+        cd.critical_date_has_passed AS meets_criteria,
+    FROM critical_date_has_passed_spans cd
 """
 
 US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -40,6 +77,7 @@ US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_OR_SERVED_HALF_SENTENCE_VIEW_NAME,
     description=US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION,
     view_query_template=US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
 )
 
