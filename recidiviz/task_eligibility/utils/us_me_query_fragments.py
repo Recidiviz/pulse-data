@@ -24,12 +24,8 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
 )
-
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
-)
-from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    critical_date_has_passed_spans_cte,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -37,6 +33,9 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 
 PROGRAM_ENROLLMENT_NOTE_TX_REGEX = "|".join(
@@ -465,20 +464,22 @@ def cis_300_relevant_property_case_notes(
     FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest` pp
     LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_3030_PP_Item_Type_latest` ppit
         ON CIS_3030_PP_ITEM_TYPE_CD = PP_ITEM_TYPE_CD
-    -- Inner join to the latest admission ID
+    -- Only keep the latest admission ID
     INNER JOIN (
         SELECT 
             CIS_100_CLIENT_ID,
             CIS_301_ADMISSION_ID,
             MIN(ENTRY_DATE) AS entry_date
         FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest`
-        WHERE CIS_3030_PP_ITEM_TYPE_CD IN ('18', '172')
+        -- Legal docs, Ids and Legal Materials
+        WHERE CIS_3030_PP_ITEM_TYPE_CD IN ('18', '172', '50')
         GROUP BY 1,2
         QUALIFY ROW_NUMBER() OVER(PARTITION BY CIS_100_CLIENT_ID ORDER BY entry_date DESC) =1 
         ORDER BY 1,2
     )
         USING (CIS_100_CLIENT_ID, CIS_301_ADMISSION_ID)
-    WHERE E_PP_ITEM_TYPE_DESC IN ("Legal Documents", "ID's", "Personal ID's", "Legal Materials")
+    -- Legal docs, Ids and Legal Materials
+    WHERE CIS_3030_PP_ITEM_TYPE_CD IN ('18', '172', '50')
         AND LOGICAL_DELETE_IND != 'Y'
         AND ADULT_IND = 'Y'"""
 
