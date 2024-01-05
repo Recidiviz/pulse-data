@@ -126,6 +126,34 @@ class DeployedViewsTest(unittest.TestCase):
             if view.materialized_address:
                 _ = view.materialized_table_bq_description
 
+    def test_views_have_valid_parents(self) -> None:
+        for project_id in GCP_PROJECTS:
+            views = build_views_to_update(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                candidate_view_builders=deployed_view_builders(project_id),
+                address_overrides=None,
+            )
+            view_addresses = set()
+            for view in views:
+                view_addresses.add(view.address)
+                if view.materialized_address:
+                    view_addresses.add(view.materialized_address)
+            for view in views:
+                invalid_parents = {
+                    parent_address
+                    for parent_address in view.parent_tables
+                    if (
+                        parent_address.dataset_id not in VIEW_SOURCE_TABLE_DATASETS
+                        and parent_address not in view_addresses
+                    )
+                }
+                if invalid_parents:
+                    parent_strs = sorted(a.to_str() for a in invalid_parents)
+                    raise ValueError(
+                        f"Found view {view.address.to_str()} that references parent tables that"
+                        f"are neither registered views nor tables in a valid source table dataset: {parent_strs}"
+                    )
+
 
 class ViewDagInvariantTests(unittest.TestCase):
     """Tests that certain views have the correct descendants."""
