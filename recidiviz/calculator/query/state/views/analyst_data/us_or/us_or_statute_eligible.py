@@ -14,25 +14,50 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates view to identify individuals' sentences that fall under eligible statutes"""
+"""Identifies individuals' supervision sentences that fall under eligible statutes"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    sentence_attributes,
+)
+from recidiviz.task_eligibility.utils.us_or_query_fragments import (
+    OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_OR_STATUTE_ELIGIBLE_VIEW_NAME = "us_or_statute_eligible"
 
-US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION = """Creates view to identify individuals' sentences that fall under eligible statutes"""
+US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION = """Identifies individuals' supervision sentences that fall under eligible statutes"""
 
-US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = """
-    SELECT person_id,
+US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
+    WITH sentences AS (
+        /* NB: this query pulls from sentences_preprocessed (not sentence_spans, even
+        though we'll ultimately end up creating spans for eligibility). This has been
+        done because if we start from sentences_preprocessed, we start with a single
+        span and end up with at most two spans per sentence for each subcriterion;
+        however, if we started from sentence_spans, we might start with multiple spans
+        per sentence that we'd then have to work with. Also, we treat each sentence
+        separately when evaluating eligibility for OR earned discharge. If we decide to
+        change this in the future, we can refactor this subcriterion query to rely upon
+        sentence_spans. */
+        SELECT * 
+        FROM ({sentence_attributes()})
+        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+    )
+    SELECT DISTINCT person_id,
         sentence_id,
-        DATE("9999-12-31") AS start_date,
-        DATE("9999-12-31") AS end_date,
-        NULL AS meets_criteria,
-    FROM `{project_id}.sessions.sentences_preprocessed_materialized`
-    LIMIT 0
+        start_date,
+        end_date,
+        IF((statute IN ({list_to_query_string(
+                OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True
+            )})), FALSE, TRUE) AS meets_criteria,
+    FROM sentences
 """
 
 US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -40,6 +65,7 @@ US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_OR_STATUTE_ELIGIBLE_VIEW_NAME,
     description=US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
 )
 

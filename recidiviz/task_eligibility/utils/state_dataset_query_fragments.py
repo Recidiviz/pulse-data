@@ -18,20 +18,20 @@
 normalized_state dataset.
 """
 from typing import List, Optional
+
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-    aggregate_adjacent_spans,
-)
-from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 
 
 def task_deadline_critical_date_update_datetimes_cte(
@@ -385,3 +385,37 @@ SELECT
 FROM deduped_sub_sessions_with_attributes
 WHERE meets_criteria
 """
+
+
+def sentence_attributes() -> str:
+    """
+    Gets time span and other critical attributes for each sentence.
+
+    Returns:
+        str: SQL query as a string.
+    """
+
+    return """
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        sentence_id,
+        sentence_type,
+        charge_id,
+        offense_date,
+        date_imposed,
+        statute,
+        max_sentence_length_days_calculated,
+        effective_date AS start_date,
+        /* TODO(#26460): use projected_completion_date_max (once that field is hydrated)
+        for simplicity, rather than calculating completion dates here. */
+        CASE
+            WHEN completion_date IS NOT NULL THEN completion_date
+            /* The below condition safeguards against date overflow issues, which can
+            occur when a) dates for effective_date are far into the future and/or b)
+            values for max_sentence_length_days_calculated are extremely large. */
+            WHEN max_sentence_length_days_calculated > DATE_DIFF('9999-12-31', effective_date, DAY) THEN '9999-12-31'
+            ELSE DATE_ADD(effective_date, INTERVAL max_sentence_length_days_calculated DAY)
+        END AS end_date,
+    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized`
+    """
