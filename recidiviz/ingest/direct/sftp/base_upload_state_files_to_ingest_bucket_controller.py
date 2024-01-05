@@ -56,7 +56,7 @@ class UploadStateFilesToIngestBucketDelegate:
 class BaseUploadStateFilesToIngestBucketController:
     """Base class for uploading files from a filesystem to a region's ingest bucket."""
 
-    SUPPORTED_EXTENSIONS: List[str] = [".csv", ".txt"]
+    SUPPORTED_EXTENSIONS: List[str] = [".csv", ".txt", ".zip"]
 
     def __init__(
         self,
