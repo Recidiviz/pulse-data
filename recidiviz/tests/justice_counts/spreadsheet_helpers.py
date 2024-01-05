@@ -80,22 +80,22 @@ def _get_dimension_columns(
 
     if child_agencies is not None:
         agency_names = [a.name for a in child_agencies]
+        month_col = [
+            mon for mon in month_col for _ in range(len(agency_names))
+        ]  # [January, February] -> [January, January, February, February]
+        if len(dimension_col) > 0:
+            dimension_col = [
+                val for val in dimension_col for _ in range(len(agency_names))
+            ]  # [Person, Property, .. Unknown, Other] -> [Person, Person, Property, Property...]
+        year_col = [
+            year for year in year_col for _ in range(len(agency_names))
+        ]  # [2021, 2022, 2023] -> [2021, 2021, 2022, 2022, 2023 ...]
         agency_col = agency_names * len(
             value_col
         )  # [Agency A, Agency B] -> [Agency A, Agency B,... Agency A, Agency B ...]
         value_col = [
-            val for val in value_col for _ in (0, len(agency_names))
+            val for val in value_col for _ in range(len(agency_names))
         ]  # [10, 20, 30] -> [10, 10, 20, 20, 30, 30]
-        month_col = [
-            mon for mon in month_col for _ in (0, len(agency_names))
-        ]  # [January, February] -> [January, January, February, February]
-        if len(dimension_col) > 0:
-            dimension_col = [
-                val for val in dimension_col for _ in (0, len(agency_names))
-            ]  # [Person, Property, .. Unknown, Other] -> [Person, Person, Property, Property...]
-        year_col = [
-            year for year in year_col for _ in (0, len(agency_names))
-        ]  # [2021, 2022, 2023] -> [2021, 2021, 2022, 2022, 2023 ...]
 
     return (
         year_col,
@@ -109,6 +109,7 @@ def _get_dimension_columns(
 def _create_dataframe_dict(
     metricfile: MetricFile,
     reporting_frequency: schema.ReportingFrequency,
+    custom_frequency_dict: Optional[Dict[str, schema.ReportingFrequency]] = None,
     child_agencies: Optional[List[schema.Agency]] = None,
     invalid_month: bool = False,
     vary_values: bool = False,
@@ -128,6 +129,11 @@ def _create_dataframe_dict(
         if metricfile.disaggregation is not None
         else []
     )
+
+    if custom_frequency_dict is not None:
+        custom_frequency = custom_frequency_dict.get(metricfile.canonical_filename)
+        if custom_frequency is not None:
+            reporting_frequency = custom_frequency
 
     month_list = (
         ["January", "February"]
@@ -193,6 +199,7 @@ def _create_dataframe_dict(
 def create_excel_file(
     system: schema.System,
     file_name: str,
+    custom_frequency_dict: Optional[Dict[str, schema.ReportingFrequency]] = None,
     child_agencies: Optional[list] = None,
     metric_key_to_subsystems: Optional[Dict[str, List[schema.System]]] = None,
     invalid_month_sheet_name: Optional[str] = None,
@@ -254,6 +261,7 @@ def create_excel_file(
                     unexpected_disaggregation=filename
                     == unexpected_disaggregation_sheet_name,
                     null_data=False,
+                    custom_frequency_dict=custom_frequency_dict,
                 )
 
             # If the metric is for the supervision system or the sheet contains
