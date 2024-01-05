@@ -22,12 +22,13 @@ from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import get_column_value
 from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
-from recidiviz.justice_counts.datapoint import DatapointUniqueKey
+from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
@@ -57,7 +58,6 @@ class SpreadsheetUploader:
         agency: schema.Agency,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         sheet_name: str,
-        column_names: List[str],
         agency_id_to_time_range_to_reports: Dict[
             int, Dict[Tuple[Any, Any], List[schema.Report]]
         ],
@@ -75,7 +75,6 @@ class SpreadsheetUploader:
         self.user_account = user_account
         self.metric_key_to_agency_datapoints = metric_key_to_agency_datapoints
         self.sheet_name = sheet_name
-        self.column_names = column_names
         self.agency_id_to_time_range_to_reports = agency_id_to_time_range_to_reports
         self.existing_datapoints_dict = existing_datapoints_dict
         self.agency_name_to_metric_key_to_timerange_to_total_value = (
@@ -160,7 +159,28 @@ class SpreadsheetUploader:
         """Uploads agency rows one agency at a time. If the agency is a
         supervision agency, the rows from each agency will be uploaded one system
         at a time."""
+
+        child_agency_ids = [
+            self.child_agency_name_to_agency[child_agency_name].id
+            for child_agency_name in agency_name_to_rows.keys()
+        ]
+
+        # get agency_datapoints specific to child agency
+        child_agency_id_to_metric_key_to_datapoints = (
+            DatapointInterface.get_agency_id_to_metric_key_to_datapoints(
+                session=session, agency_ids=child_agency_ids
+            )
+        )
+
         for curr_agency_name, current_rows in agency_name_to_rows.items():
+            # For child agencies, update current_rows to not include columns with NaN values
+            # since different child agencies can have different metric configs. For example,
+            # Child Agency 1 can report data monthly while Child Agency 2 can report data
+            # annually. So the same sheet may have a 'month' column filled out for some
+            # child agencies, and not for others.
+            current_rows = (
+                pd.DataFrame(current_rows).dropna(axis=1).to_dict(orient="records")
+            )
             if self.system == schema.System.SUPERVISION:
                 system_to_rows = self._get_system_to_rows(
                     rows=current_rows,
@@ -175,6 +195,7 @@ class SpreadsheetUploader:
                     child_agency_name=curr_agency_name,
                     uploaded_reports=uploaded_reports,
                     upload_method=upload_method,
+                    child_agency_id_to_metric_key_to_datapoints=child_agency_id_to_metric_key_to_datapoints,
                 )
             else:
                 self._upload_rows(
@@ -187,6 +208,7 @@ class SpreadsheetUploader:
                     child_agency_name=curr_agency_name,
                     uploaded_reports=uploaded_reports,
                     upload_method=upload_method,
+                    child_agency_id_to_metric_key_to_datapoints=child_agency_id_to_metric_key_to_datapoints,
                 )
 
     def _upload_supervision_sheet(
@@ -201,6 +223,9 @@ class SpreadsheetUploader:
         uploaded_reports: Set[schema.Report],
         upload_method: UploadMethod,
         child_agency_name: Optional[str] = None,
+        child_agency_id_to_metric_key_to_datapoints: Optional[
+            Dict[int, Dict[str, List[schema.Datapoint]]]
+        ] = None,
     ) -> None:
         """Uploads supervision rows one system at a time."""
         for current_system, current_rows in system_to_rows.items():
@@ -214,6 +239,7 @@ class SpreadsheetUploader:
                 uploaded_reports=uploaded_reports,
                 child_agency_name=child_agency_name,
                 upload_method=upload_method,
+                child_agency_id_to_metric_key_to_datapoints=child_agency_id_to_metric_key_to_datapoints,
             )
 
     def _upload_rows(
@@ -229,6 +255,9 @@ class SpreadsheetUploader:
         uploaded_reports: Set[schema.Report],
         upload_method: UploadMethod,
         child_agency_name: Optional[str] = None,
+        child_agency_id_to_metric_key_to_datapoints: Optional[
+            Dict[int, Dict[str, List[schema.Datapoint]]]
+        ] = None,
     ) -> None:
         """Uploads rows for a given system and child agency. If child_agency_id
         if None, then the rows are uploaded for the agency specified as self.agency."""
@@ -260,6 +289,7 @@ class SpreadsheetUploader:
                 uploaded_reports=uploaded_reports,
                 child_agency_name=child_agency_name,
                 upload_method=upload_method,
+                child_agency_id_to_metric_key_to_datapoints=child_agency_id_to_metric_key_to_datapoints,
             )
         except Exception as e:
             new_datapoint_json_list = []
@@ -286,6 +316,9 @@ class SpreadsheetUploader:
         uploaded_reports: Set[schema.Report],
         upload_method: UploadMethod,
         child_agency_name: Optional[str] = None,
+        child_agency_id_to_metric_key_to_datapoints: Optional[
+            Dict[int, Dict[str, List[schema.Datapoint]]]
+        ] = None,
     ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -305,21 +338,39 @@ class SpreadsheetUploader:
         corresponds to one of the MetricFile objects in bulk_upload_helpers.py.
         """
         metric_definition = metricfile.definition
+
+        child_agency_datapoints = None
+        if (
+            child_agency_name is not None
+            and child_agency_id_to_metric_key_to_datapoints is not None
+        ):
+            child_agency = self.child_agency_name_to_agency.get(child_agency_name)
+            if child_agency is not None:
+                child_agency_id = child_agency.id
+                metric_key_to_child_agency_datapoints: Dict[
+                    str, List[schema.Datapoint]
+                ] = child_agency_id_to_metric_key_to_datapoints.get(child_agency_id, {})
+                child_agency_datapoints = metric_key_to_child_agency_datapoints.get(
+                    metric_definition.key
+                )
+
+        agency_datapoints = (
+            child_agency_datapoints
+            or self.metric_key_to_agency_datapoints.get(metric_definition.key, [])
+        )
         (
             reporting_frequency,
             custom_starting_month,
         ) = metric_definition.get_reporting_frequency_to_use(
-            agency_datapoints=self.metric_key_to_agency_datapoints.get(
-                metric_definition.key, []
-            ),
+            agency_datapoints=agency_datapoints
         )
+
         # Step 1: Warn if there are unexpected columns in the file
         # actual_columns is a set of all of the column names that have been uploaded by the user
         # we are filtering out 'Unnamed: 0' because this is the column name of the index column
         # the index column is produced when the excel file is converted to a pandas df
-        actual_columns = {
-            col.lower() for col in self.column_names if col != "Unnamed: 0"
-        }
+        column_names = pd.DataFrame(rows).dropna(axis=1).columns
+        actual_columns = {col.lower() for col in column_names if col != "Unnamed: 0"}
         metric_key_to_errors = self._check_expected_columns(
             metricfile=metricfile,
             actual_columns=actual_columns,
@@ -621,7 +672,7 @@ class SpreadsheetUploader:
             )
             if agency_name is None:
                 actual_columns = {
-                    col.lower() for col in self.column_names if col != "Unnamed: 0"
+                    col.lower() for col in row.keys() if col != "Unnamed: 0"
                 }
                 description = (
                     f'We expected to see a column named "agency". '

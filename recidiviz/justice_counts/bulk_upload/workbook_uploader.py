@@ -203,7 +203,6 @@ class WorkbookUploader:
                 # _get_column_value.
                 pass
             rows = df.to_dict("records")
-            column_names = df.columns
             spreadsheet_uploader = SpreadsheetUploader(
                 text_analyzer=self.text_analyzer,
                 system=self.system,
@@ -211,7 +210,6 @@ class WorkbookUploader:
                 user_account=self.user_account,
                 metric_key_to_agency_datapoints=self.metric_key_to_agency_datapoints,
                 sheet_name=sheet_name,
-                column_names=column_names,
                 agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
                 existing_datapoints_dict=existing_datapoints_dict,
                 agency_name_to_metric_key_to_timerange_to_total_value=self.agency_name_to_metric_key_to_timerange_to_total_value,

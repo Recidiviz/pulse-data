@@ -120,6 +120,23 @@ class DatapointInterface:
         return filter_deprecated_datapoints(datapoints=datapoints)
 
     @staticmethod
+    def get_agency_datapoints_for_multiple_agencies(
+        session: Session,
+        agency_ids: List[int],
+    ) -> List[schema.Datapoint]:
+        """Given a list of agency ids, get all "Agency Datapoints" -- i.e. datapoints
+        that provide configuration information, rather than report data, for each agency.
+        Filter out datapoints with a deprecated dimension identifier or value.
+        """
+        datapoints = (
+            session.query(schema.Datapoint).filter(
+                schema.Datapoint.source_id.in_(agency_ids),
+                schema.Datapoint.is_report_datapoint == false(),
+            )
+        ).all()
+        return filter_deprecated_datapoints(datapoints=datapoints)
+
+    @staticmethod
     def get_datapoints_for_agency_dashboard(
         session: Session,
         agency_id: int,
@@ -950,3 +967,23 @@ class DatapointInterface:
             )
         }
         return metric_key_to_agency_datapoints
+
+    @staticmethod
+    def get_agency_id_to_metric_key_to_datapoints(
+        session: Session,
+        agency_ids: List[int],
+    ) -> Dict[int, Dict[str, List[schema.Datapoint]]]:
+        agency_datapoints = (
+            DatapointInterface.get_agency_datapoints_for_multiple_agencies(
+                session=session, agency_ids=agency_ids
+            )
+        )
+        agency_id_to_metric_key_to_datapoints: Dict[
+            int, Dict[str, List[schema.Datapoint]]
+        ] = defaultdict(lambda: defaultdict(list))
+        for agency_datapoint in agency_datapoints:
+            agency_id_to_metric_key_to_datapoints[agency_datapoint.source_id][
+                agency_datapoint.metric_definition_key
+            ].append(agency_datapoint)
+
+        return agency_id_to_metric_key_to_datapoints

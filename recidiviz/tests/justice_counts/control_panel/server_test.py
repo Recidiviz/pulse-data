@@ -52,12 +52,18 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import UploadMethod
+from recidiviz.justice_counts.utils.constants import (
+    REPORTING_FREQUENCY_CONTEXT_KEY,
+    UploadMethod,
+)
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -3051,6 +3057,152 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )[0]
 
         self.assertEqual(association.subscribed, True)
+
+    def test_upload_superagency_spreadsheet(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_prison_super_agency,
+                self.test_schema_objects.test_prison_affiliate_A,
+                AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_prison_super_agency,
+                ),
+                AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_prison_affiliate_A,
+                ),
+            ]
+        )
+        self.session.commit()
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        child_agency = self.test_schema_objects.test_prison_affiliate_A
+        child_agency.super_agency_id = super_agency.id
+
+        # Set superagency to have the following metric config
+        # - funding reported annually
+        # - total staff reported monthly
+        # - grievances upheld reported annually
+        super_funding_datapoint = schema.Datapoint(
+            metric_definition_key=prisons.funding.key,
+            source_id=super_agency.id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.ANNUAL
+            ).to_json_str(),
+            is_report_datapoint=False,
+        )
+        super_staff_datapoint = schema.Datapoint(
+            metric_definition_key=prisons.staff.key,
+            source_id=super_agency.id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.MONTHLY
+            ).to_json_str(),
+            is_report_datapoint=False,
+        )
+        super_grievances_datapoint = schema.Datapoint(
+            metric_definition_key=prisons.grievances_upheld.key,
+            source_id=super_agency.id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.ANNUAL
+            ).to_json_str(),
+            is_report_datapoint=False,
+        )
+        self.session.add_all(
+            [super_funding_datapoint, super_staff_datapoint, super_grievances_datapoint]
+        )
+
+        # Set child agency to have the following metric config (different from super agency)
+        # - funding reported monthly
+        # - total staff reported annually
+        # - grievances upheld reported monthly
+        child_funding_datapoint = schema.Datapoint(
+            metric_definition_key=prisons.funding.key,
+            source_id=child_agency.id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.MONTHLY
+            ).to_json_str(),
+            is_report_datapoint=False,
+        )
+        child_staff_datapoint = schema.Datapoint(
+            metric_definition_key=prisons.staff.key,
+            source_id=child_agency.id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.ANNUAL
+            ).to_json_str(),
+            is_report_datapoint=False,
+        )
+        child_grievances_datapoint = schema.Datapoint(
+            metric_definition_key=prisons.grievances_upheld.key,
+            source_id=child_agency.id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.MONTHLY
+            ).to_json_str(),
+            is_report_datapoint=False,
+        )
+        self.session.add_all(
+            [child_funding_datapoint, child_staff_datapoint, child_grievances_datapoint]
+        )
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+
+            file_path = create_excel_file(
+                system=schema.System.PRISONS,
+                file_name="test_super_child_upload.xlsx",
+                child_agencies=[child_agency],
+                custom_frequency_dict={
+                    "funding": schema.ReportingFrequency.MONTHLY,
+                    "funding_by_type": schema.ReportingFrequency.MONTHLY,
+                    "staff": schema.ReportingFrequency.ANNUAL,
+                    "staff_by_type": schema.ReportingFrequency.ANNUAL,
+                    "grievances_upheld": schema.ReportingFrequency.MONTHLY,
+                    "grievances_upheld_by_type": schema.ReportingFrequency.MONTHLY,
+                },
+                sheet_names_to_skip={
+                    "expenses",
+                    "expenses_by_type",
+                    "readmissions",
+                    "readmissions_by_type",
+                    "admissions",
+                    "admissions_by_type",
+                    "population",
+                    "population_by_type",
+                    "population_by_race",
+                    "population_by_biological_sex",
+                    "releases",
+                    "releases_by_type",
+                    "use_of_force",
+                },
+            )
+
+            # Upload file via superagency for child agency
+            # File contains monthly funding data, annual total staff data, and monthly grievances upheld data
+            # Should not result in any errors/warnings since child agency has those metrics configured accordingly
+            with open(Path(file_path), "rb") as file:
+                response = self.client.post(
+                    "/api/spreadsheets",
+                    data={
+                        "agency_id": super_agency.id,
+                        "system": System.PRISONS.value,
+                        "file": file,
+                    },
+                )
+            self.assertEqual(response.status_code, 200)
+            response_dict = assert_type(response.json, dict)
+            funding_errors = response_dict["metrics"][0]["metric_errors"]
+            self.assertEqual(len(funding_errors), 0)
+            staff_errors = response_dict["metrics"][2]["metric_errors"]
+            self.assertEqual(len(staff_errors), 0)
+            grievances_errors = response_dict["metrics"][8]["metric_errors"]
+            self.assertEqual(len(grievances_errors), 0)
 
 
 def test_frozen_now_is_not_global_now() -> None:
