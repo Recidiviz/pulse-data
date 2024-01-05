@@ -35,12 +35,6 @@ from recidiviz.validation.views.state.prod_staging_comparison.incarceration_popu
 from recidiviz.validation.views.state.prod_staging_comparison.incarceration_release_external_prod_staging_comparison import (
     INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.prod_staging_comparison.sessions_justice_counts_comparison import (
-    SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.sessions_justice_counts_prod_staging_comparison import (
-    SESSIONS_JUSTICE_COUNTS_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.prod_staging_comparison.supervision_population_external_prod_staging_comparison import (
     SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
@@ -110,9 +104,6 @@ class TestConfiguredValidations(unittest.TestCase):
                 SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
                 SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
                 SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-                # Sessions
-                SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
-                SESSIONS_JUSTICE_COUNTS_PROD_STAGING_COMPARISON_VIEW_BUILDER,
             ]
         )
 
