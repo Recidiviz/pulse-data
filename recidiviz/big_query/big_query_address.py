@@ -19,6 +19,7 @@ or table.
 """
 import attr
 from google.cloud import bigquery
+from google.cloud.bigquery import DatasetReference
 
 from recidiviz.common import attr_validators
 
@@ -75,3 +76,9 @@ class ProjectSpecificBigQueryAddress:
 
     def select_query(self) -> str:
         return f"SELECT * FROM {self.format_address_for_query()}"
+
+    @property
+    def dataset_reference(self) -> DatasetReference:
+        return DatasetReference.from_string(
+            dataset_id=self.dataset_id, default_project=self.project_id
+        )

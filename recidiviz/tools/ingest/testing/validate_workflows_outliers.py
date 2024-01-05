@@ -34,11 +34,12 @@ Usage:
 
 import argparse
 import re
-from typing import Dict, List
+from collections import defaultdict
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import attr
 import pandas as pd
-from google.cloud.bigquery import DatasetReference
+from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import (
@@ -46,14 +47,23 @@ from recidiviz.big_query.big_query_address import (
     ProjectSpecificBigQueryAddress,
 )
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import WORKFLOWS_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
+    SingleTaskEligibilityBigQueryViewCollector,
+)
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
+from recidiviz.tools.ingest.testing.validate_state_dataset import (
+    ONE_TO_ONE_LINKS_TEMPLATE,
 )
 from recidiviz.tools.utils.bigquery_helpers import run_operation_for_given_tables
 from recidiviz.tools.utils.compare_tables_helper import (
@@ -63,6 +73,7 @@ from recidiviz.tools.utils.compare_tables_helper import (
     compare_table_or_view,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.string import StrictStringFormatter
 
 PRIMARY_KEY_OVERRIDES = {
     BigQueryAddress(
@@ -70,16 +81,31 @@ PRIMARY_KEY_OVERRIDES = {
     ): "person_external_id",
 }
 
+ValidationAddress = NamedTuple(
+    "ValidationAddress",
+    [
+        ("state_code", StateCode),
+        ("address", BigQueryAddress),
+        ("person_key", str),
+        ("excluded_keys", List[str]),
+    ],
+)
 
-def _get_workflow_address_by_state() -> Dict[StateCode, Dict[BigQueryAddress, str]]:
-    """Returns a dictionary of state code to list of workflow table ids for that state."""
-    workflow_address_by_state: Dict[StateCode, Dict[BigQueryAddress, str]] = {}
-    workflows_addresses = [
+
+def _get_workflow_addresses() -> List[ValidationAddress]:
+    """Returns a list of workflow table ids for that state.
+
+    The tuple contains the state code, the BigQueryAddress, the key used to identify person
+    (usually external_id or person_id), and the list of columns to exclude in the comparison
+    (like foreign keys and primary keys).
+    """
+    workflow_addresses: List[ValidationAddress] = []
+    firestore_workflows_addresses = [
         vb.address
         for vb in FIRESTORE_VIEW_BUILDERS
         if re.match(r"^(us_[a-z]{2}).*_record$", vb.address.table_id)
     ]
-    for address in workflows_addresses:
+    for address in firestore_workflows_addresses:
         match = re.match(r"^(us_[a-z]{2}).*", address.table_id)
         if not match:
             raise ValueError(
@@ -87,23 +113,63 @@ def _get_workflow_address_by_state() -> Dict[StateCode, Dict[BigQueryAddress, st
             )
 
         state_code = StateCode(match.group(1).upper())
-        if state_code not in workflow_address_by_state:
-            workflow_address_by_state[state_code] = {}
-
-        workflow_address_by_state[state_code][address] = PRIMARY_KEY_OVERRIDES.get(
-            address, "external_id"
+        primary_key = PRIMARY_KEY_OVERRIDES.get(address, "external_id")
+        workflow_addresses.append(
+            ValidationAddress(state_code, address, primary_key, [])
         )
-    return workflow_address_by_state
+    return workflow_addresses
 
 
-ADDRESS_BY_STATE = _get_workflow_address_by_state()
+def _get_single_eligibility_task_span_addresses() -> List[ValidationAddress]:
+    """Returns the list of eligibility_task_span tables for any state.
 
-
-def _primary_keys_for_differences_output(address: BigQueryAddress) -> List[str]:
-    """Returns the list of columns that should not be nulled out for convenience
-    (when the values are the same) in the differences output for this table.
+    The tuple contains the state code, the BigQueryAddress, the key used to identify person
+    (usually external_id or person_id), and the list of columns to exclude in the comparison
+    (like foreign keys and primary keys).
     """
-    return [PRIMARY_KEY_OVERRIDES.get(address, "external_id")]
+    eligibility_task_span_addresses: List[ValidationAddress] = []
+    eligibility_view_by_state = (
+        SingleTaskEligibilityBigQueryViewCollector().collect_view_builders_by_state()
+    )
+    for state_code, eligibility_view_builders in eligibility_view_by_state.items():
+        eligibility_task_span_addresses.extend(
+            [
+                ValidationAddress(
+                    state_code,
+                    vb.address,
+                    "person_id",
+                    ["task_eligibility_span_id"],
+                )
+                for vb in eligibility_view_builders
+            ]
+        )
+
+    return eligibility_task_span_addresses
+
+
+def _get_address_by_state() -> (
+    Dict[StateCode, Dict[BigQueryAddress, Tuple[str, List[str]]]]
+):
+    """Returns a dictionary of addresses and their primary keys for a different state codes.
+
+    The dictionary is keyed by state code, and the value is a dictionary of BigQueryAddress
+    to a tuple of the key used to identify person (usually external_id or person_id)
+    and a list of columns to exclude in the comparison (like foreign keys and primary keys).
+    """
+    address_by_state: Dict[
+        StateCode, Dict[BigQueryAddress, Tuple[str, List[str]]]
+    ] = defaultdict(dict)
+    for workflow_address in (
+        _get_workflow_addresses() + _get_single_eligibility_task_span_addresses()
+    ):
+        address_by_state[workflow_address.state_code][workflow_address.address] = (
+            workflow_address.person_key,
+            workflow_address.excluded_keys,
+        )
+    return address_by_state
+
+
+ADDRESS_BY_STATE = _get_address_by_state()
 
 
 class WorkflowsOutliersDatasetValidator:
@@ -134,6 +200,119 @@ class WorkflowsOutliersDatasetValidator:
         )
         self.bq_client = BigQueryClientImpl(project_id=self.output_project_id)
 
+    def build_person_id_mapping(self) -> None:
+        mappings_address = ProjectSpecificBigQueryAddress(
+            dataset_id=self.output_dataset_id,
+            table_id="person_id_mappings",
+            project_id=self.output_project_id,
+        )
+
+        query = StrictStringFormatter().format(
+            ONE_TO_ONE_LINKS_TEMPLATE,
+            root_entity_id_col="person_id",
+            reference_root_entity_external_id_table=ProjectSpecificBigQueryAddress(
+                dataset_id=STATE_BASE_DATASET,
+                table_id="state_person_external_id",
+                project_id=self.reference_project_id,
+            ).format_address_for_query(),
+            sandbox_root_entity_external_id_table=ProjectSpecificBigQueryAddress(
+                dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
+                    prefix=self.sandbox_prefix_to_validate,
+                    dataset_id=STATE_BASE_DATASET,
+                ),
+                table_id="state_person_external_id",
+                project_id=self.sandbox_project_id,
+            ).format_address_for_query(),
+            state_code_filter=self.state_code_filter.value,
+        )
+        self.bq_client.insert_into_table_from_query_async(
+            destination_dataset_id=mappings_address.dataset_id,
+            destination_table_id=mappings_address.table_id,
+            write_disposition=WriteDisposition.WRITE_TRUNCATE,
+            query=query,
+            use_query_cache=False,
+        ).result()
+
+    def _filtered_table_rows_clause_for_table_with_person_id(
+        self, table_address: ProjectSpecificBigQueryAddress, dataset_name: str
+    ) -> str:
+        """Returns a formatted query clause that filters the table in |table_address|
+        to only include rows that have a person_id that exists in the person_id_mappings
+        """
+
+        return f"""
+  SELECT 
+    * EXCEPT(
+     sandbox_person_id,
+     reference_person_id
+    ), 
+    reference_person_id AS comparable_person_id
+  FROM {table_address.format_address_for_query()} t
+  JOIN `{self.output_project_id}.{self.output_dataset_id}.person_id_mappings`
+  ON t.person_id = {dataset_name}_person_id
+"""
+
+    def _build_comparable_entity_rows_query(
+        self,
+        table_address: ProjectSpecificBigQueryAddress,
+        dataset_name: str,
+        original_reference_table_address: Optional[BigQueryAddress] = None,
+    ) -> str:
+        """Returns a formatted query that queries the provided state entity in the
+        provided |dataset|, which can be used to compare against the same table in
+        a different dataset.
+        """
+
+        filtered_with_new_cols = (
+            self._filtered_table_rows_clause_for_table_with_person_id(
+                table_address=table_address, dataset_name=dataset_name
+            )
+        )
+        bigquery_address = BigQueryAddress(
+            dataset_id=table_address.dataset_id, table_id=table_address.table_id
+        )
+
+        person_key, excluded_keys = ADDRESS_BY_STATE[self.state_code_filter][
+            bigquery_address
+            if not original_reference_table_address
+            else original_reference_table_address
+        ]
+        columns_to_exclude = [person_key, *excluded_keys]
+        columns_to_exclude_str = ",".join(columns_to_exclude)
+        return f"""SELECT * EXCEPT ({columns_to_exclude_str})
+    FROM ({filtered_with_new_cols})"""
+
+    def _materialize_comparable_table(
+        self,
+        table_address: ProjectSpecificBigQueryAddress,
+        dataset_name: str,
+        original_reference_table_address: Optional[BigQueryAddress] = None,
+    ) -> ProjectSpecificBigQueryAddress:
+        """For the given state dataset table, generates a query that produces results
+        for that table that can be compared against results from another dataset, then
+        materializes the results of that query and returns the results address.
+        """
+        comparable_rows_query = self._build_comparable_entity_rows_query(
+            table_address=table_address,
+            dataset_name=dataset_name,
+            original_reference_table_address=original_reference_table_address,
+        )
+
+        comparable_table_address = ProjectSpecificBigQueryAddress(
+            project_id=self.bq_client.project_id,
+            dataset_id=self.output_dataset_id,
+            table_id=f"{table_address.table_id}_{dataset_name}_comparable",
+        )
+
+        self.bq_client.insert_into_table_from_query_async(
+            destination_dataset_id=comparable_table_address.dataset_id,
+            destination_table_id=comparable_table_address.table_id,
+            write_disposition=WriteDisposition.WRITE_TRUNCATE,
+            query=comparable_rows_query,
+            use_query_cache=False,
+        ).result()
+        return comparable_table_address
+
     def _generate_table_specific_comparison_result(
         self,
         client: BigQueryClient,  # pylint: disable=unused-argument
@@ -145,38 +324,43 @@ class WorkflowsOutliersDatasetValidator:
 
         Returns None if the table is not supported for comparison.
         """
-        table_id = reference_table_address.table_id
-
-        reference_dataset = DatasetReference.from_string(
-            reference_table_address.dataset_id,
-            default_project=reference_table_address.project_id,
+        bigquery_address = BigQueryAddress(
+            dataset_id=reference_table_address.dataset_id,
+            table_id=reference_table_address.table_id,
         )
 
-        sandbox_dataset = DatasetReference.from_string(
-            BigQueryAddressOverrides.format_sandbox_dataset(
-                prefix=self.sandbox_prefix_to_validate,
-                dataset_id=reference_dataset.dataset_id,
-            ),
-            default_project=self.sandbox_project_id,
+        person_key, _ = ADDRESS_BY_STATE[self.state_code_filter][bigquery_address]
+        sandbox_dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
+            prefix=self.sandbox_prefix_to_validate,
+            dataset_id=reference_table_address.dataset_id,
         )
+
+        sandbox_table_address = ProjectSpecificBigQueryAddress(
+            project_id=self.sandbox_project_id,
+            dataset_id=sandbox_dataset_id,
+            table_id=reference_table_address.table_id,
+        )
+
+        if person_key == "person_id":
+            reference_comparable_address = self._materialize_comparable_table(
+                table_address=reference_table_address, dataset_name="reference"
+            )
+            sandbox_comparable_address = self._materialize_comparable_table(
+                table_address=sandbox_table_address,
+                dataset_name="sandbox",
+                original_reference_table_address=bigquery_address,
+            )
+            person_key = f"comparable_{person_key}"
+
+        else:
+            reference_comparable_address = reference_table_address
+            sandbox_comparable_address = sandbox_table_address
 
         return compare_table_or_view(
-            address_original=ProjectSpecificBigQueryAddress(
-                dataset_id=reference_dataset.dataset_id,
-                table_id=table_id,
-                project_id=reference_dataset.project,
-            ),
-            address_new=ProjectSpecificBigQueryAddress(
-                dataset_id=sandbox_dataset.dataset_id,
-                table_id=table_id,
-                project_id=sandbox_dataset.project,
-            ),
+            address_original=reference_comparable_address,
+            address_new=sandbox_comparable_address,
             comparison_output_dataset_id=self.output_dataset_id,
-            primary_keys=_primary_keys_for_differences_output(
-                BigQueryAddress(
-                    dataset_id=reference_dataset.dataset_id, table_id=table_id
-                )
-            ),
+            primary_keys=[person_key],
             grouping_columns=None,
         )
 
@@ -186,6 +370,9 @@ class WorkflowsOutliersDatasetValidator:
             self.bq_client.dataset_ref_for_id(self.output_dataset_id),
             default_table_expiration_ms=TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
+
+        print("Building StatePerson mapping...")
+        self.build_person_id_mapping()
 
         print("Outputting table-specific validation results...")
         results = run_operation_for_given_tables(
