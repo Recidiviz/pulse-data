@@ -60,4 +60,5 @@ class UsOzController(BaseDirectIngestController):
             "lotr_periods",
             "sm_person",
             "sm_periods",
+            "hunger_games_people",
         ]

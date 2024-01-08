@@ -114,6 +114,8 @@ def build_state_person_entity(
     race: Optional[entities.StateRace] = None,
     ethnicity_raw_text: Optional[str] = None,
     ethnicity: Optional[entities.StateEthnicity] = None,
+    current_address: Optional[str] = None,
+    current_email_address: Optional[str] = None,
 ) -> entities.StatePerson:
     """Build a StatePerson entity with optional state_person_external_id, state_person_race
     and state_person_ethnicity entities appended"""
@@ -123,6 +125,8 @@ def build_state_person_entity(
         gender=gender,
         gender_raw_text=gender_raw_text,
         birthdate=birthdate,
+        current_address=current_address,
+        current_email_address=current_email_address,
     )
     if external_id:
         add_external_id_to_person(
