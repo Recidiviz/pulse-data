@@ -17,6 +17,7 @@
 """This criteria view builder defines spans of time that clients do not have a disqualifying supervision
 level modifier.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -51,7 +52,7 @@ WITH modifiers_preprocessed AS (
         ON LTRIM(m.Offender_Number, '0')= pei.external_id
         AND pei.state_code = 'US_MI'
         AND pei.id_type = "US_MI_DOC"
-    WHERE UPPER(modifier) LIKE '%MPVU%'
+    WHERE (UPPER(modifier) LIKE '%MPVU%'
        OR UPPER(modifier) LIKE '%PA223%'
        OR UPPER(modifier) LIKE '%ESCAPED%'
        OR UPPER(modifier) LIKE '%IN JAIL%'
@@ -66,7 +67,8 @@ WITH modifiers_preprocessed AS (
        OR UPPER(modifier) LIKE '%IN JAIL - #2 WARRANT ISSUED%'
        OR UPPER(modifier) LIKE '%PAROLED TO CUSTODY (FED/OUTSTATE)%'
        OR UPPER(modifier) LIKE '%#2 WARRANT ISSUED SENTENCED OVER 90 DAYS%'
-       OR UPPER(modifier) LIKE '%ARRESTED OUT OF STATE SENTENCED OVER 90 DAYS%'
+       OR UPPER(modifier) LIKE '%ARRESTED OUT OF STATE SENTENCED OVER 90 DAYS%')
+       AND m.start_date != {nonnull_end_date_clause('m.end_date')}
 ),
 {create_sub_sessions_with_attributes('modifiers_preprocessed')},
 aggregated_modifier_spans AS (
