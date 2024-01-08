@@ -32,13 +32,14 @@ _DESCRIPTION = """Combined sentence-related criteria for OR Earned Discharge"""
 
 _REASON_QUERY = """TO_JSON(STRUCT(
         [STRUCT(
+            0 AS sentence_id,
             DATE("9999-12-31") AS eligible_date,
             DATE("9999-12-31") AS sentence_imposed_date,
             DATE("9999-12-31") AS supervision_sentence_start_date,
             DATE("9999-12-31") AS latest_conviction_date,
             0 AS num_days_absconsion,
             "" AS sentence_statute
-        )] AS active_sentences
+        )] AS eligible_sentences
     ))"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
