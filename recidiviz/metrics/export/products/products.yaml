@@ -22,6 +22,8 @@ products:
     exports:
       - PRODUCT_USER_IMPORT
     states:
+      - state_code: US_MI
+        environment: production
       - state_code: US_MO
         environment: production
       - state_code: US_ND
