@@ -297,13 +297,6 @@ class UsMoSupervisionNormalizationDelegate(
             )
             case_type_entries: List[StateSupervisionCaseTypeEntry] = []
 
-            if relevant_period:
-                case_type_entries = copy_entities_and_add_unique_ids(
-                    person_id=person_id,
-                    entities=relevant_period.case_type_entries,
-                    state_code=StateCode.US_MO,
-                )
-
             new_supervision_period = StateSupervisionPeriod(
                 state_code=StateCode.US_MO.value,
                 external_id=f"{person_id}-{i}-NORMALIZED",
@@ -325,6 +318,19 @@ class UsMoSupervisionNormalizationDelegate(
             update_normalized_entity_with_globally_unique_id(
                 person_id, new_supervision_period, state_code=StateCode.US_MO
             )
+
+            if relevant_period:
+                for case_type_entry in relevant_period.case_type_entries:
+                    case_type_entry = deep_entity_update(
+                        original_entity=case_type_entry,
+                        supervision_period=new_supervision_period,
+                    )
+                    case_type_entries.append(case_type_entry)
+                case_type_entries = copy_entities_and_add_unique_ids(
+                    person_id=person_id,
+                    entities=case_type_entries,
+                    state_code=StateCode.US_MO,
+                )
 
             new_supervision_period = deep_entity_update(
                 original_entity=new_supervision_period,
