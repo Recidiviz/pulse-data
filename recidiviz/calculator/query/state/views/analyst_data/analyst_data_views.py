@@ -66,9 +66,6 @@ from recidiviz.calculator.query.state.views.analyst_data.recommended_custody_lev
 from recidiviz.calculator.query.state.views.analyst_data.session_cohort_reincarceration import (
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.specialized_agents_preprocessed import (
-    SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.supervision_clients_to_officers_ratio_quarterly import (
     SUPERVISION_CLIENTS_TO_OFFICERS_RATIO_QUARTERLY_VIEW_BUILDER,
 )
@@ -152,9 +149,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_statute_eli
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_specialized_agents_preprocessed import (
-    US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q1 import (
     US_TN_CAF_Q1_VIEW_BUILDER,
@@ -266,8 +260,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
-    US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
-    SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
     US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
