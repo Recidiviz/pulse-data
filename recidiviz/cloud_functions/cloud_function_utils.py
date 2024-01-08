@@ -146,9 +146,9 @@ def get_google_open_id_connect_token(
     request = Request()
     body = {
         "assertion": service_account_jwt,
-        "grant_type": google.oauth2._client._JWT_GRANT_TYPE,
+        "grant_type": google.oauth2._client._JWT_GRANT_TYPE,  # type: ignore
     }
-    token_response = google.oauth2._client._token_endpoint_request(
+    token_response = google.oauth2._client._token_endpoint_request(  # type: ignore
         request, _OAUTH_TOKEN_URI, body
     )
     return token_response["id_token"]
