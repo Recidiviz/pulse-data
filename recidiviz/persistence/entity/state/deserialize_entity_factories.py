@@ -527,3 +527,42 @@ class StateChargeV2Factory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StateSentenceStatusSnapshotFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateSentenceStatusSnapshot:
+        return entity_deserialize(
+            cls=entities.StateSentenceStatusSnapshot,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
+class StateSentenceLengthFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateSentenceLength:
+        return entity_deserialize(
+            cls=entities.StateSentenceLength,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )
+
+
+class StateSentenceGroupFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateSentenceGroup:
+        return entity_deserialize(
+            cls=entities.StateSentenceGroup,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

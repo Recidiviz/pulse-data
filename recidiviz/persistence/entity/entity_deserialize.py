@@ -190,5 +190,7 @@ def entity_deserialize(
 class EntityFactory(Generic[EntityT]):
     @staticmethod
     @abstractmethod
-    def deserialize(**kwargs: DeserializableEntityFieldValue) -> EntityT:
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> Union[EntityT]:
         """Instantiates an entity from the provided list of arguments."""

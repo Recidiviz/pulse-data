@@ -1140,3 +1140,42 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             statute="THE STATUTE",
         )
         self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateSentenceStatusSnapshot(self):
+        result = (
+            deserialize_entity_factories.StateSentenceStatusSnapshotFactory.deserialize(
+                state_code="US_XX",
+                status=StateSentenceStatus.SERVING,
+                status_update_datetime="2023-01-01",
+            )
+        )
+        expected_result = entities.StateSentenceStatusSnapshot(
+            state_code="US_XX",
+            status=StateSentenceStatus.SERVING,
+            status_update_datetime=datetime.datetime(2023, 1, 1),
+        )
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateSentenceLength(self):
+        result = deserialize_entity_factories.StateSentenceLengthFactory.deserialize(
+            state_code="US_XX",
+            length_update_datetime="2023-01-01",
+        )
+        expected_result = entities.StateSentenceLength(
+            state_code="US_XX",
+            length_update_datetime=datetime.datetime(2023, 1, 1),
+        )
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateSentenceGroup(self):
+        result = deserialize_entity_factories.StateSentenceGroupFactory.deserialize(
+            external_id="SENTENCE-GROUP-LEDGER-ID",
+            state_code="US_XX",
+            group_update_datetime="2023-01-01",
+        )
+        expected_result = entities.StateSentenceGroup(
+            external_id="SENTENCE-GROUP-LEDGER-ID",
+            state_code="US_XX",
+            group_update_datetime=datetime.datetime(2023, 1, 1),
+        )
+        self.assertEqual(expected_result, result)

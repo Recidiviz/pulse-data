@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state/entities.py"""
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import ForwardRef, Optional
 from unittest import TestCase
 
@@ -27,14 +27,18 @@ from recidiviz.common.attr_utils import is_non_optional_enum
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, LedgerEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateProgramAssignment,
+    StateSentenceGroup,
+    StateSentenceLength,
+    StateSentenceStatusSnapshot,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateTaskDeadline,
@@ -388,7 +392,7 @@ class TestStateEntities(TestCase):
     def test_post_attrs_state_task_deadline_eligible_before_due(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "Found StateTaskDeadline with eligible_date datetime 2015-06-15 00:00:00 after due_date datetime 2012-07-10 00:00:00.",
+            "Found StateTaskDeadline with datetime 2015-06-15 after datetime 2012-07-10.",
         ):
             _ = StateTaskDeadline(
                 task_deadline_id=1000,
@@ -397,4 +401,281 @@ class TestStateEntities(TestCase):
                 due_date=date(2012, 7, 10),
                 update_datetime=datetime(2022, 4, 8, 0, 0, 0),
                 task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            )
+
+
+class TestStateLedgerEntities(TestCase):
+    """Tests specific aspects of LedgerEntities in the state dataset."""
+
+    before = date(1999, 1, 1)
+    after = date(2022, 1, 1)
+    ledger_time = datetime(2023, 1, 1)
+    the_future = datetime.now() + timedelta(days=7)
+    external_id = "EXTERNAL-ID"
+    state_code = "US_XX"
+
+    def test_all_ledger_entities_have_start_datetime_field(self):
+        for cls in get_all_entity_classes_in_module(entities):
+            if not issubclass(cls, LedgerEntity):
+                continue
+            self.assertIsNotNone(cls.get_ledger_datetime_field())
+            self.assertIsNotNone(
+                getattr(cls.__attrs_attrs__, cls.get_ledger_datetime_field())
+            )
+
+    def test_ledger_datetime_is_not_future_StateSentenceStatusSnapshot(self) -> None:
+        _ = StateSentenceStatusSnapshot(
+            status_update_datetime=self.ledger_time,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+            _ = StateSentenceStatusSnapshot(
+                status_update_datetime=self.the_future,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                state_code=self.state_code,
+            )
+
+    def test_ledger_datetime_is_not_future_StateSentenceLength(self) -> None:
+        _ = StateSentenceLength(
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+            _ = StateSentenceLength(
+                length_update_datetime=self.the_future,
+                state_code=self.state_code,
+            )
+
+    def test_ledger_datetime_is_not_future_StateSentenceGroup(self) -> None:
+        _ = StateSentenceGroup(
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+        )
+        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+            _ = StateSentenceGroup(
+                group_update_datetime=self.the_future,
+                state_code=self.state_code,
+                external_id=self.external_id,
+            )
+
+    def test_enforced_datetime_pairs_StateSentenceLength(self) -> None:
+        # "parole_eligibility_date_external" before "projected_parole_release_date_external"
+        _ = StateSentenceLength(
+            parole_eligibility_date_external=self.before,
+            projected_parole_release_date_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceLength with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceLength(
+                parole_eligibility_date_external=self.after,
+                projected_parole_release_date_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+            )
+        # "parole_eligibility_date_external" before "projected_completion_date_min_external"
+        _ = StateSentenceLength(
+            parole_eligibility_date_external=self.before,
+            projected_completion_date_min_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceLength with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceLength(
+                parole_eligibility_date_external=self.after,
+                projected_completion_date_min_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+            )
+        # "parole_eligibility_date_external" before "projected_completion_date_max_external"
+        _ = StateSentenceLength(
+            parole_eligibility_date_external=self.before,
+            projected_completion_date_max_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceLength with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceLength(
+                parole_eligibility_date_external=self.after,
+                projected_completion_date_max_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+            )
+        # "projected_parole_release_date_external" before "projected_completion_date_min_external"
+        _ = StateSentenceLength(
+            projected_parole_release_date_external=self.before,
+            projected_completion_date_min_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceLength with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceLength(
+                projected_parole_release_date_external=self.after,
+                projected_completion_date_min_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+            )
+        # "projected_parole_release_date_external" before "projected_completion_date_max_external"
+        _ = StateSentenceLength(
+            projected_parole_release_date_external=self.before,
+            projected_completion_date_max_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceLength with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceLength(
+                projected_parole_release_date_external=self.after,
+                projected_completion_date_max_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+            )
+        # "projected_completion_date_min_external" before "projected_completion_date_max_external"
+        _ = StateSentenceLength(
+            projected_completion_date_min_external=self.before,
+            projected_completion_date_max_external=self.after,
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceLength with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceLength(
+                projected_completion_date_min_external=self.after,
+                projected_completion_date_max_external=self.before,
+                length_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+            )
+
+    def test_enforced_datetime_pairs_StateSentenceGroup(self) -> None:
+        # "parole_eligibility_date_external" before "projected_parole_release_date_min_external"
+        _ = StateSentenceGroup(
+            parole_eligibility_date_external=self.before,
+            projected_parole_release_date_min_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceGroup(
+                parole_eligibility_date_external=self.after,
+                projected_parole_release_date_min_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                external_id=self.external_id,
+            )
+        # "parole_eligibility_date_external" before "projected_full_term_release_date_min_external"
+        _ = StateSentenceGroup(
+            parole_eligibility_date_external=self.before,
+            projected_full_term_release_date_min_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceGroup(
+                parole_eligibility_date_external=self.after,
+                projected_full_term_release_date_min_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                external_id=self.external_id,
+            )
+        # "parole_eligibility_date_external" before "projected_full_term_release_date_max_external"
+        _ = StateSentenceGroup(
+            parole_eligibility_date_external=self.before,
+            projected_full_term_release_date_max_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceGroup(
+                parole_eligibility_date_external=self.after,
+                projected_full_term_release_date_max_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                external_id=self.external_id,
+            )
+        # "projected_parole_release_date_min_external" before "projected_full_term_release_date_min_external"
+        _ = StateSentenceGroup(
+            projected_parole_release_date_min_external=self.before,
+            projected_full_term_release_date_min_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceGroup(
+                projected_parole_release_date_min_external=self.after,
+                projected_full_term_release_date_min_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                external_id=self.external_id,
+            )
+        # "projected_parole_release_date_min_external" before "projected_full_term_release_date_max_external"
+        _ = StateSentenceGroup(
+            projected_parole_release_date_min_external=self.before,
+            projected_full_term_release_date_max_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceGroup(
+                projected_parole_release_date_min_external=self.after,
+                projected_full_term_release_date_max_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                external_id=self.external_id,
+            )
+        # "projected_full_term_release_date_min_external" before "projected_full_term_release_date_max_external"
+        _ = StateSentenceGroup(
+            projected_full_term_release_date_min_external=self.before,
+            projected_full_term_release_date_max_external=self.after,
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
+        ):
+            _ = StateSentenceGroup(
+                projected_full_term_release_date_min_external=self.after,
+                projected_full_term_release_date_max_external=self.before,
+                group_update_datetime=self.ledger_time,
+                state_code=self.state_code,
+                external_id=self.external_id,
             )
