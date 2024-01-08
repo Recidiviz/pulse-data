@@ -22,7 +22,7 @@ ORM objects can't provide.
 """
 
 import datetime
-from typing import List, Optional, Tuple, TypeVar, Union
+from typing import List, Optional, TypeVar, Union
 
 import attr
 
@@ -477,6 +477,9 @@ class StatePerson(
         factory=list, validator=attr_validators.is_list
     )
     housing_status_periods: List["StatePersonHousingStatusPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    sentence_groups: List["StateSentenceGroup"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
 
@@ -1964,7 +1967,7 @@ class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateTaskDeadline(LedgerEntity, BuildableAttr, DefaultableAttr):
+class StateTaskDeadline(LedgerEntity, BuildableAttr, DefaultableAttr, Entity):
     """The StateTaskDeadline object represents a single task that should be performed as
     part of someone’s supervision or incarceration term, along with an associated date
     that task can be started and/or a deadline when that task must be completed.
@@ -2028,10 +2031,9 @@ class StateTaskDeadline(LedgerEntity, BuildableAttr, DefaultableAttr):
         """StateTaskDeadline ledger updates happen on update_datetime."""
         return "update_datetime"
 
-    @classmethod
-    def get_enforced_datetime_pairs(cls) -> List[Tuple[str, str]]:
+    def __attrs_post_init__(self):
         """StateTaskDeadlines have an eligible date before a due date."""
-        return [("eligible_date", "due_date")]
+        self.assert_datetime_less_than(self.eligible_date, self.due_date)
 
 
 @attr.s(eq=False, kw_only=True)
@@ -2376,6 +2378,15 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+    charges: List["StateChargeV2"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    sentence_status_snapshots: List["StateSentenceStatusSnapshot"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    sentence_lengths: List["StateSentenceLength"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:
@@ -2538,3 +2549,204 @@ class StateChargeV2(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
                 fields=["state_code", "external_id"],
             )
         ]
+
+
+@attr.s(eq=False, kw_only=True)
+class StateSentenceStatusSnapshot(LedgerEntity, BuildableAttr, DefaultableAttr, Entity):
+    """Represents a historical snapshot for when a given sentence had a given status."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # The start of the period of time over which the sentence status is valid
+    status_update_datetime: datetime.datetime = attr.ib(
+        default=None, validator=attr_validators.is_not_future_datetime
+    )
+    # The status of a sentence
+    status: StateSentenceStatus = attr.ib(
+        validator=attr.validators.instance_of(StateSentenceStatus)
+    )
+
+    # The raw text value of the status of the sentence
+    status_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    sentence_status_snapshot_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+    sentence: Optional["StateSentence"] = attr.ib(default=None)
+
+    @classmethod
+    def get_ledger_datetime_field(cls):
+        return "status_update_datetime"
+
+
+@attr.s(eq=False, kw_only=True)
+class StateSentenceLength(LedgerEntity, BuildableAttr, DefaultableAttr, Entity):
+    """Represents a historical ledger of time attributes for a single sentence,
+    including sentence length, accrued amount of days earned off, key dates, etc."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # The start of the period of time over which the set of all sentence length attributes are valid
+    length_update_datetime: datetime.datetime = attr.ib(
+        default=None, validator=attr_validators.is_not_future_datetime
+    )
+    # The minimum duration of this sentence in days
+    sentence_length_days_min: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    # The maximum duration of this sentence in days
+    sentence_length_days_max: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    # Any good time (in days) the person has credited against this sentence due to good conduct,
+    # a.k.a. time off for good behavior, if applicable.
+    good_time_days: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    # Any earned time (in days) the person has credited against this sentence due to participation
+    # in programming designed to reduce the likelihood of re-offense, if applicable.
+    earned_time_days: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    # The date on which a person is expected to become eligible for parole under the terms of this sentence
+    parole_eligibility_date_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    # The date on which a person is projected to be released from incarceration to parole
+    projected_parole_release_date_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    # The earliest date on which a person is projected to be released to liberty
+    # after having completed all sentences in the term.
+    projected_completion_date_min_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    # The latest date on which a person is projected to be released to liberty
+    # after having completed all sentences in the term.
+    projected_completion_date_max_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    sentence_length_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+    sentence: Optional["StateSentence"] = attr.ib(default=None)
+
+    @classmethod
+    def get_ledger_datetime_field(cls):
+        return "length_update_datetime"
+
+    def __attrs_post_init__(self):
+        """Ensures that parole eligibility is before potential completions and
+        that projected completion dates are in the right order."""
+        self.assert_datetime_less_than(
+            self.parole_eligibility_date_external,
+            self.projected_parole_release_date_external,
+        )
+        self.assert_datetime_less_than(
+            self.parole_eligibility_date_external,
+            self.projected_completion_date_min_external,
+        )
+        self.assert_datetime_less_than(
+            self.parole_eligibility_date_external,
+            self.projected_completion_date_max_external,
+        )
+        self.assert_datetime_less_than(
+            self.projected_parole_release_date_external,
+            self.projected_completion_date_min_external,
+        )
+        self.assert_datetime_less_than(
+            self.projected_parole_release_date_external,
+            self.projected_completion_date_max_external,
+        )
+        self.assert_datetime_less_than(
+            self.projected_completion_date_min_external,
+            self.projected_completion_date_max_external,
+        )
+
+
+@attr.s(eq=False, kw_only=True)
+class StateSentenceGroup(
+    LedgerEntity, BuildableAttr, DefaultableAttr, HasExternalIdEntity
+):
+    """Represents a historical ledger of attributes relating to a state designated group of sentences."""
+
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Primary key - Only optional when parsing, before we have written this entity to the persistence layer.
+    # A unique identifier for the collection of sentences defining a continuous period of time served
+    # in the criminal justice system.
+    sentence_group_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # The date when all sentence term attributes are updated
+    group_update_datetime: datetime.datetime = attr.ib(
+        default=None, validator=attr_validators.is_not_future_datetime
+    )
+
+    # The date on which a person is expected to become eligible for parole under the terms of this sentence
+    parole_eligibility_date_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    # The date on which a person is projected to be released from incarceration to parole
+    projected_parole_release_date_min_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    # The earliest date on which a person is projected to be released to liberty after having completed
+    # all sentences in the term.
+    projected_full_term_release_date_min_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    # The latest date on which a person is projected to be released to liberty after having completed
+    # all sentences in the term.
+    projected_full_term_release_date_max_external: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        """Ensures that parole eligibility is before potential releases and
+        that projected release dates are in the right order."""
+        self.assert_datetime_less_than(
+            self.parole_eligibility_date_external,
+            self.projected_parole_release_date_min_external,
+        )
+        self.assert_datetime_less_than(
+            self.parole_eligibility_date_external,
+            self.projected_full_term_release_date_min_external,
+        )
+        self.assert_datetime_less_than(
+            self.parole_eligibility_date_external,
+            self.projected_full_term_release_date_max_external,
+        )
+        self.assert_datetime_less_than(
+            self.projected_parole_release_date_min_external,
+            self.projected_full_term_release_date_min_external,
+        )
+        self.assert_datetime_less_than(
+            self.projected_parole_release_date_min_external,
+            self.projected_full_term_release_date_max_external,
+        )
+        self.assert_datetime_less_than(
+            self.projected_full_term_release_date_min_external,
+            self.projected_full_term_release_date_max_external,
+        )
+
+    @classmethod
+    def get_ledger_datetime_field(cls) -> str:
+        return "group_update_datetime"

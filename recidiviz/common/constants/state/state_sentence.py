@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 @unique
 class StateSentenceStatus(StateEntityEnum):
-    """State Sentence Status used in v1 of sentencing schema (State Incarceration/Supervision Sentence)."""
+    """The given status of a single state sentence for a single period of time."""
 
     AMENDED = state_enum_strings.state_sentence_status_amended
     COMMUTED = state_enum_strings.state_sentence_status_commuted

@@ -323,6 +323,9 @@ def can_atomically_merge_entity(
             schema.StateSentence,
             schema.StateSentenceServingPeriod,
             schema.StateChargeV2,
+            schema.StateSentenceStatusSnapshot,
+            schema.StateSentenceLength,
+            schema.StateSentenceGroup,
         ),
     ):
         return True

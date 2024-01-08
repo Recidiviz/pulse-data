@@ -20,7 +20,7 @@
 """Tests for base_entity.py"""
 import datetime
 import unittest
-from typing import List, Tuple, no_type_check
+from typing import List, Optional, Tuple, Union, no_type_check
 
 import attr
 
@@ -49,8 +49,6 @@ class TestBaseEntities(unittest.TestCase):
     # but it is nice to test we can't do this without it.
     @no_type_check
     def test_base_classes_are_subclass_only(self) -> None:
-        with self.assertRaises(NotImplementedError):
-            base_entity.LedgerEntity()
         with self.assertRaises(NotImplementedError):
             base_entity.Entity()
         with self.assertRaises(NotImplementedError):
@@ -87,9 +85,8 @@ class TestLedgerEntity(unittest.TestCase):
             def get_ledger_datetime_field(cls) -> str:
                 return "start"
 
-            @classmethod
-            def get_enforced_datetime_pairs(cls) -> List[Tuple[str, str]]:
-                return [("start", "end")]
+            def __attrs_post_init__(self):
+                self.assert_datetime_less_than(self.start, self.end)
 
         _ = ExampleLedger(
             start=datetime.datetime(2022, 1, 1), end=datetime.datetime(2022, 1, 3)
@@ -99,21 +96,6 @@ class TestLedgerEntity(unittest.TestCase):
             _ = ExampleLedger(
                 start=datetime.datetime(2022, 1, 1), end=datetime.datetime(2001, 1, 1)
             )
-
-    def test_ledger_entity_validation_no_after_dates(self):
-        @attr.s(eq=False, kw_only=True)
-        class ExampleLedger(base_entity.LedgerEntity):
-            start = attr.ib()
-            end = attr.ib()
-
-            @classmethod
-            def get_ledger_datetime_field(cls) -> str:
-                """A ledger entity has a single field denoting the 'start' of its period of time. Return it here."""
-                return "start"
-
-        _ = ExampleLedger(
-            start=datetime.datetime(2022, 1, 1), end=datetime.datetime(2001, 1, 1)
-        )
 
     def test_ledger_entity_validation_multiple_after_dates(self):
         @attr.s(eq=False, kw_only=True)
@@ -127,11 +109,11 @@ class TestLedgerEntity(unittest.TestCase):
                 """A ledger entity has a single field denoting the 'start' of its period of time. Return it here."""
                 return "START"
 
-            @classmethod
-            def get_enforced_datetime_pairs(cls) -> List[Tuple[str, str]]:
+            def __attrs_post_init__(self):
                 """A ledger entity may have one or more datetime fields that are strictly after the 'start' datetime field.
                 Return them here."""
-                return [("START", "END_1"), ("START", "END_2")]
+                self.assert_datetime_less_than(self.START, self.END_1)
+                self.assert_datetime_less_than(self.START, self.END_2)
 
         _ = ExampleLedger(
             START=datetime.datetime(2022, 1, 1),

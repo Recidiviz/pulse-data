@@ -88,6 +88,9 @@ class TestSchemaUtils(unittest.TestCase):
             "StateSentence",
             "StateSentenceServingPeriod",
             "StateChargeV2",
+            "StateSentenceStatusSnapshot",
+            "StateSentenceLength",
+            "StateSentenceGroup",
         ]
         operations_database_entity_names = [
             "DirectIngestViewMaterializationMetadata",
@@ -201,6 +204,9 @@ class TestSchemaUtils(unittest.TestCase):
             "state_sentence_serving_period",
             "state_charge_v2",
             "state_charge_v2_state_sentence_association",
+            "state_sentence_status_snapshot",
+            "state_sentence_length",
+            "state_sentence_group",
         ]
         operations_table_names = [
             "direct_ingest_view_materialization_metadata",
@@ -292,6 +298,9 @@ class TestSchemaUtils(unittest.TestCase):
             "StateSentence",
             "StateSentenceServingPeriod",
             "StateChargeV2",
+            "StateSentenceStatusSnapshot",
+            "StateSentenceLength",
+            "StateSentenceGroup",
         ]
 
         expected_database_entity_names = _prefix_module_name(

@@ -496,6 +496,14 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
 # Instead, they only identify the entity for referencing.
 # Concretely, this means the object has an external_id but no other set fields.
 REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateSentenceGroup: [
+        schema.StateSentenceGroup(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+        )
+    ],
+    schema.StateSentenceLength: [],
+    schema.StateSentenceStatusSnapshot: [],
     schema.StateChargeV2: [
         schema.StateChargeV2(
             state_code=StateCode.US_XX.value,
@@ -678,12 +686,32 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
 }
 
 HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
+    schema.StateSentenceGroup: [
+        schema.StateSentenceGroup(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            group_update_datetime=datetime.datetime(2022, 1, 1),
+        )
+    ],
+    schema.StateSentenceLength: [
+        schema.StateSentenceLength(
+            state_code=StateCode.US_XX.value,
+            length_update_datetime=datetime.datetime(2022, 1, 1),
+        )
+    ],
+    schema.StateSentenceStatusSnapshot: [
+        schema.StateSentenceStatusSnapshot(
+            state_code=StateCode.US_XX.value,
+            status=StateSentenceStatus.SERVING.value,
+            status_update_datetime=datetime.datetime(2022, 1, 1),
+        )
+    ],
     schema.StateChargeV2: [
         schema.StateChargeV2(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
-            date_charged=datetime.date(2022, 1, 1),
+            date_charged=datetime.datetime(2022, 1, 1),
         )
     ],
     schema.StateSentenceServingPeriod: [

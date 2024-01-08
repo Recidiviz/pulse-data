@@ -98,6 +98,9 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateSentenceServingPeriod.__name__,
     # TODO(#26240): Replace StateCharge with this entity
     state_entities.StateChargeV2.__name__,
+    state_entities.StateSentenceStatusSnapshot.__name__,
+    state_entities.StateSentenceLength.__name__,
+    state_entities.StateSentenceGroup.__name__,
     # StateStaff hierarchy
     state_entities.StateStaff.__name__,
     state_entities.StateStaffExternalId.__name__,

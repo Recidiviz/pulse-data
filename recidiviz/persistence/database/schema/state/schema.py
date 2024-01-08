@@ -1319,6 +1319,9 @@ class StatePerson(StateBase):
     housing_status_periods = relationship(
         "StatePersonHousingStatusPeriod", backref="person", lazy="selectin"
     )
+    sentence_groups = relationship(
+        "StateSentenceGroup", backref="person", lazy="selectin"
+    )
 
 
 class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
@@ -3804,6 +3807,12 @@ class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
         back_populates="sentences",
         lazy="selectin",
     )
+    sentence_status_snapshots = relationship(
+        "StateSentenceStatusSnapshot", backref="sentence", lazy="selectin"
+    )
+    sentence_lengths = relationship(
+        "StateSentenceLength", backref="sentence", lazy="selectin"
+    )
 
 
 class StateSentenceServingPeriod(StateBase, _ReferencesStatePersonSharedColumns):
@@ -4018,4 +4027,208 @@ class StateChargeV2(StateBase, _ReferencesStatePersonSharedColumns):
         # so the "charges" attr in the StateSentence model.
         back_populates="charges",
         lazy="selectin",
+    )
+
+
+class StateSentenceStatusSnapshot(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a historical ledger for when a given sentence had a given status."""
+
+    __tablename__ = "state_sentence_status_snapshot"
+    __table_args__ = (
+        {
+            "comment": "Represents a historical snapshot for when a given sentence had a given status."
+        },
+    )
+    sentence_status_snapshot_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="state sentence status snapshot"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    status_update_datetime = Column(
+        DateTime,
+        nullable=False,
+        comment="The start of the period of time over which the sentence status is valid",
+    )
+    status = Column(
+        state_sentence_status,
+        nullable=False,
+        comment="The status of this sentence for the time period of this observation.",
+    )
+
+    status_raw_text = Column(
+        String(255),
+        nullable=True,
+        comment="The raw text value of the status of the sentence",
+    )
+    sentence_id = Column(
+        Integer,
+        ForeignKey("state_sentence.sentence_id", deferrable=True, initially="DEFERRED"),
+        comment="Unique internal ID for a state sentence.",
+    )
+
+    # Cross-entity relationships
+    person = relationship("StatePerson", uselist=False)
+
+
+class StateSentenceLength(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a historical ledger for when a given sentence had a given status."""
+
+    __tablename__ = "state_sentence_length"
+    __table_args__ = (
+        {
+            "comment": "Represents a historical ledger for when a given sentence had a given status."
+        },
+    )
+    sentence_length_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="state sentence length ledger"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    sentence_id = Column(
+        Integer,
+        ForeignKey("state_sentence.sentence_id", deferrable=True, initially="DEFERRED"),
+        comment="Unique internal ID for a state sentence.",
+    )
+    length_update_datetime = Column(
+        DateTime,
+        nullable=False,
+        comment="The start of the period of time over which the set of all sentence length attributes are true.",
+    )
+    sentence_length_days_min = Column(
+        Integer, nullable=True, comment="The maximum duration of this sentence in days"
+    )
+    sentence_length_days_max = Column(
+        Integer, nullable=True, comment="The maximum duration of this sentence in days"
+    )
+    good_time_days = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "Any good time (in days) the person has credited against this sentence due to good conduct,"
+            " a.k.a. time off for good behavior, if applicable."
+        ),
+    )
+    earned_time_days = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "Any earned time (in days) the person has credited against this sentence due to participation"
+            " in programming designed to reduce the likelihood of re-offense, if applicable."
+        ),
+    )
+    parole_eligibility_date_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The date on which a person is expected to become eligible for parole under the terms of this sentence"
+        ),
+    )
+    projected_parole_release_date_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The date on which a person is projected to be released from incarceration to parole"
+        ),
+    )
+    projected_completion_date_min_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The earliest date on which a person is projected to be released to liberty"
+            " after having completed all sentences in the term."
+        ),
+    )
+    projected_completion_date_max_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The latest date on which a person is projected to be released to liberty"
+            " after having completed all sentences in the term."
+        ),
+    )
+
+    # Cross-entity relationships
+    person = relationship("StatePerson", uselist=False)
+
+
+class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a historical ledger of attributes relating to a state designated group of sentences."""
+
+    __tablename__ = "state_sentence_group"
+    __table_args__ = (
+        {
+            "comment": "Represents a historical ledger of attributes relating to a state designated group of sentences."
+        },
+    )
+    sentence_group_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="state sentence group"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSentenceGroup"
+        ),
+    )
+    group_update_datetime = Column(
+        DateTime,
+        nullable=False,
+        comment="The start of the period of time over which the set of all sentence group attributes are valid.",
+    )
+    parole_eligibility_date_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The date on which a person is expected to become eligible for parole under the terms of this sentence"
+        ),
+    )
+    projected_parole_release_date_min_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The date on which a person is projected to be released from incarceration to parole"
+        ),
+    )
+    projected_full_term_release_date_min_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The earliest date on which a person is projected to be released to liberty"
+            " after having completed all sentences in the term."
+        ),
+    )
+    projected_full_term_release_date_max_external = Column(
+        Date,
+        nullable=True,
+        comment=(
+            "The latest date on which a person is projected to be released to liberty"
+            " after having completed all sentences in the term."
+        ),
     )
