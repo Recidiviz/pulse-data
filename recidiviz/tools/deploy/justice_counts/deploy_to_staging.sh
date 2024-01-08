@@ -162,6 +162,8 @@ run_cmd gcloud run jobs update recurring-report-creation --image "${LATEST_DOCKE
 run_cmd gcloud run jobs update recurring-new-mexico-courts-dataxchange --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
 run_cmd gcloud run jobs update csg-data-pull --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
 run_cmd gcloud run jobs update user-permission-check --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
+run_cmd gcloud run jobs update upload-reminder-email-job --image "${LATEST_DOCKER_TAG}" --region "us-central1" --project "justice-counts-staging"
+
 
 # TODO(#16325): Create release candidate branches to facilitate cherry-picks.
 
