@@ -124,6 +124,7 @@ run_cmd gcloud -q run services update-traffic "${DASHBOARD_CLOUD_RUN_SERVICE}" \
 echo "Updating Image for Cloud Run Jobs"
 run_cmd gcloud run jobs update recurring-report-creation --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
 run_cmd gcloud run jobs update csg-data-pull --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
+run_cmd gcloud run jobs update upload-reminder-email-job --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
 
 # TODO(#16325): Automatically create a new release in the justice-counts repo.
 

@@ -177,8 +177,9 @@ def send_reminder_emails(
     # Send reminder email to all users that belong to the agency
     # except for CSG users
     for user_email in subscribed_user_emails:
-        # TODO(#26282): Filter out Recidiviz Emails
-        if "@csg.org" in user_email:
+        # TODO(#26282): Filter out Recidiviz Emails. For playtesting, only recidiviz email
+        # addresses will get reminder emails
+        if "@recidiviz.org" not in user_email:
             continue
         try:
             send_grid_client.send_message(
