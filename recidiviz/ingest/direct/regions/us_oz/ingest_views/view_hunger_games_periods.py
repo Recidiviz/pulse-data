@@ -27,8 +27,8 @@ SELECT
     entry_id,
     id,
     games_year,
-    CAST(start_date AS DATE) AS start_date,
-    CAST(end_date AS DATE) AS end_date
+    start_date,
+    end_date
 FROM {hunger_games_periods}
 """
 
