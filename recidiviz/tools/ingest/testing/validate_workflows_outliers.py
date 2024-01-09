@@ -51,6 +51,18 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
+from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
+    METRIC_BENCHMARKS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_outlier_status import (
+    SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervisors import (
+    SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
@@ -86,7 +98,7 @@ ValidationAddress = NamedTuple(
     [
         ("state_code", StateCode),
         ("address", BigQueryAddress),
-        ("person_key", str),
+        ("entity_primary_key", str),
         ("excluded_keys", List[str]),
     ],
 )
@@ -147,6 +159,40 @@ def _get_single_eligibility_task_span_addresses() -> List[ValidationAddress]:
     return eligibility_task_span_addresses
 
 
+def _get_outliers_addresses() -> List[ValidationAddress]:
+    """Returns the list of outliers tables for any state.
+
+    The tuple contains the state code, the BigQueryAddress, the key used to identify officer
+    (usually officer_id), and the list of columns to exclude in the comparison (like foreign
+    keys and primary keys).
+    """
+    outliers_addresses: List[ValidationAddress] = []
+    for state_code in get_outliers_enabled_states():
+        outliers_addresses.extend(
+            [
+                ValidationAddress(
+                    StateCode(state_code),
+                    SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER.address,
+                    "officer_id",
+                    [],
+                ),
+                ValidationAddress(
+                    StateCode(state_code),
+                    SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER.address,
+                    "staff_id",
+                    [],
+                ),
+                ValidationAddress(
+                    StateCode(state_code),
+                    METRIC_BENCHMARKS_VIEW_BUILDER.address,
+                    "metric_id",
+                    [],
+                ),
+            ]
+        )
+    return outliers_addresses
+
+
 def _get_address_by_state() -> (
     Dict[StateCode, Dict[BigQueryAddress, Tuple[str, List[str]]]]
 ):
@@ -159,12 +205,14 @@ def _get_address_by_state() -> (
     address_by_state: Dict[
         StateCode, Dict[BigQueryAddress, Tuple[str, List[str]]]
     ] = defaultdict(dict)
-    for workflow_address in (
-        _get_workflow_addresses() + _get_single_eligibility_task_span_addresses()
+    for address in (
+        _get_workflow_addresses()
+        + _get_single_eligibility_task_span_addresses()
+        + _get_outliers_addresses()
     ):
-        address_by_state[workflow_address.state_code][workflow_address.address] = (
-            workflow_address.person_key,
-            workflow_address.excluded_keys,
+        address_by_state[address.state_code][address.address] = (
+            address.entity_primary_key,
+            address.excluded_keys,
         )
     return address_by_state
 
@@ -200,19 +248,19 @@ class WorkflowsOutliersDatasetValidator:
         )
         self.bq_client = BigQueryClientImpl(project_id=self.output_project_id)
 
-    def build_person_id_mapping(self) -> None:
+    def build_id_mapping(self, entity_name: str) -> None:
         mappings_address = ProjectSpecificBigQueryAddress(
             dataset_id=self.output_dataset_id,
-            table_id="person_id_mappings",
+            table_id=f"{entity_name}_id_mappings",
             project_id=self.output_project_id,
         )
 
         query = StrictStringFormatter().format(
             ONE_TO_ONE_LINKS_TEMPLATE,
-            root_entity_id_col="person_id",
+            root_entity_id_col=f"{entity_name}_id",
             reference_root_entity_external_id_table=ProjectSpecificBigQueryAddress(
                 dataset_id=STATE_BASE_DATASET,
-                table_id="state_person_external_id",
+                table_id=f"state_{entity_name}_external_id",
                 project_id=self.reference_project_id,
             ).format_address_for_query(),
             sandbox_root_entity_external_id_table=ProjectSpecificBigQueryAddress(
@@ -220,7 +268,7 @@ class WorkflowsOutliersDatasetValidator:
                     prefix=self.sandbox_prefix_to_validate,
                     dataset_id=STATE_BASE_DATASET,
                 ),
-                table_id="state_person_external_id",
+                table_id=f"state_{entity_name}_external_id",
                 project_id=self.sandbox_project_id,
             ).format_address_for_query(),
             state_code_filter=self.state_code_filter.value,
@@ -233,51 +281,56 @@ class WorkflowsOutliersDatasetValidator:
             use_query_cache=False,
         ).result()
 
-    def _filtered_table_rows_clause_for_table_with_person_id(
-        self, table_address: ProjectSpecificBigQueryAddress, dataset_name: str
+    def _filtered_table_rows_clause_for_table(
+        self,
+        table_address: ProjectSpecificBigQueryAddress,
+        dataset_name: str,
+        entity_name: str,
     ) -> str:
         """Returns a formatted query clause that filters the table in |table_address|
         to only include rows that have a person_id that exists in the person_id_mappings
+        or a staff_id that exists in the staff_id_mappings.
         """
 
         return f"""
   SELECT 
     * EXCEPT(
-     sandbox_person_id,
-     reference_person_id
+     sandbox_{entity_name}_id,
+     reference_{entity_name}_id
     ), 
-    reference_person_id AS comparable_person_id
+    reference_{entity_name}_id AS comparable_{entity_name}_id
   FROM {table_address.format_address_for_query()} t
-  JOIN `{self.output_project_id}.{self.output_dataset_id}.person_id_mappings`
-  ON t.person_id = {dataset_name}_person_id
+  JOIN `{self.output_project_id}.{self.output_dataset_id}.{entity_name}_id_mappings`
+  ON t.{entity_name}_id = {dataset_name}_{entity_name}_id
 """
 
     def _build_comparable_entity_rows_query(
         self,
         table_address: ProjectSpecificBigQueryAddress,
         dataset_name: str,
+        entity_name: str,
         original_reference_table_address: Optional[BigQueryAddress] = None,
     ) -> str:
         """Returns a formatted query that queries the provided state entity in the
         provided |dataset|, which can be used to compare against the same table in
         a different dataset.
         """
-
-        filtered_with_new_cols = (
-            self._filtered_table_rows_clause_for_table_with_person_id(
-                table_address=table_address, dataset_name=dataset_name
-            )
-        )
         bigquery_address = BigQueryAddress(
             dataset_id=table_address.dataset_id, table_id=table_address.table_id
         )
-
-        person_key, excluded_keys = ADDRESS_BY_STATE[self.state_code_filter][
+        entity_primary_key, excluded_keys = ADDRESS_BY_STATE[self.state_code_filter][
             bigquery_address
             if not original_reference_table_address
             else original_reference_table_address
         ]
-        columns_to_exclude = [person_key, *excluded_keys]
+
+        filtered_with_new_cols = self._filtered_table_rows_clause_for_table(
+            table_address=table_address,
+            dataset_name=dataset_name,
+            entity_name=entity_name,
+        )
+
+        columns_to_exclude = [entity_primary_key, *excluded_keys]
         columns_to_exclude_str = ",".join(columns_to_exclude)
         return f"""SELECT * EXCEPT ({columns_to_exclude_str})
     FROM ({filtered_with_new_cols})"""
@@ -286,6 +339,7 @@ class WorkflowsOutliersDatasetValidator:
         self,
         table_address: ProjectSpecificBigQueryAddress,
         dataset_name: str,
+        entity_name: str,
         original_reference_table_address: Optional[BigQueryAddress] = None,
     ) -> ProjectSpecificBigQueryAddress:
         """For the given state dataset table, generates a query that produces results
@@ -295,6 +349,7 @@ class WorkflowsOutliersDatasetValidator:
         comparable_rows_query = self._build_comparable_entity_rows_query(
             table_address=table_address,
             dataset_name=dataset_name,
+            entity_name=entity_name,
             original_reference_table_address=original_reference_table_address,
         )
 
@@ -329,7 +384,9 @@ class WorkflowsOutliersDatasetValidator:
             table_id=reference_table_address.table_id,
         )
 
-        person_key, _ = ADDRESS_BY_STATE[self.state_code_filter][bigquery_address]
+        entity_primary_key, _ = ADDRESS_BY_STATE[self.state_code_filter][
+            bigquery_address
+        ]
         sandbox_dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
             prefix=self.sandbox_prefix_to_validate,
             dataset_id=reference_table_address.dataset_id,
@@ -341,17 +398,20 @@ class WorkflowsOutliersDatasetValidator:
             table_id=reference_table_address.table_id,
         )
 
-        if person_key == "person_id":
+        if entity_primary_key in ("person_id", "staff_id"):
+            entity_name = entity_primary_key.strip("_id")
             reference_comparable_address = self._materialize_comparable_table(
-                table_address=reference_table_address, dataset_name="reference"
+                table_address=reference_table_address,
+                dataset_name="reference",
+                entity_name=entity_name,
             )
             sandbox_comparable_address = self._materialize_comparable_table(
                 table_address=sandbox_table_address,
                 dataset_name="sandbox",
+                entity_name=entity_name,
                 original_reference_table_address=bigquery_address,
             )
-            person_key = f"comparable_{person_key}"
-
+            entity_primary_key = f"comparable_{entity_name}_id"
         else:
             reference_comparable_address = reference_table_address
             sandbox_comparable_address = sandbox_table_address
@@ -360,7 +420,7 @@ class WorkflowsOutliersDatasetValidator:
             address_original=reference_comparable_address,
             address_new=sandbox_comparable_address,
             comparison_output_dataset_id=self.output_dataset_id,
-            primary_keys=[person_key],
+            primary_keys=[entity_primary_key],
             grouping_columns=None,
         )
 
@@ -372,7 +432,9 @@ class WorkflowsOutliersDatasetValidator:
         )
 
         print("Building StatePerson mapping...")
-        self.build_person_id_mapping()
+        self.build_id_mapping(entity_name="person")
+        print("Building StateStaff mapping...")
+        self.build_id_mapping(entity_name="staff")
 
         print("Outputting table-specific validation results...")
         results = run_operation_for_given_tables(

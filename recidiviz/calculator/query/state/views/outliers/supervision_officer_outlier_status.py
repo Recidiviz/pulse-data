@@ -87,7 +87,7 @@ SELECT
 FROM outlier_status_statewide
 """
 
-SUPERVISION_OFFICER_OUTLIER_STATUS = SelectedColumnsBigQueryViewBuilder(
+SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET,
     view_id=_VIEW_NAME,
     view_query_template=_QUERY_TEMPLATE,
@@ -109,4 +109,4 @@ SUPERVISION_OFFICER_OUTLIER_STATUS = SelectedColumnsBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_OFFICER_OUTLIER_STATUS.build_and_print()
+        SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER.build_and_print()
