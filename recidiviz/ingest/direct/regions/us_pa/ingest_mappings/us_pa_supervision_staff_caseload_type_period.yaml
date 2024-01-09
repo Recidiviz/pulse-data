@@ -34,7 +34,10 @@ output:
                         - SEX OFFENDER
                       StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION:
                         - ADMINISTRATIVE
+                        - ADMINSTRATIVE
+                        - ADMINISTRATIVE / COURT LIAISON
                         - ADMINISTRATIVE & MONITOR CASES
+                        - ADMINISTRATIVE/MON/SPECIAL CIRCUMSTANCE
                       StateStaffCaseloadType.ALCOHOL_AND_DRUG:
                         - AOD
                         - INTENSIVE DRUG
@@ -45,15 +48,20 @@ output:
                         - INTENSIVE SUPERVISION AGENT
                       StateStaffCaseloadType.MENTAL_HEALTH:
                         - MENTAL HEALTH
+                        - MENTAL HEALTH (MIXED)
                       StateStaffCaseloadType.ELECTRONIC_MONITORING:
                         - GPS
                       StateStaffCaseloadType.OTHER_COURT:
                         - HEARING
                         - COURT LIAISON
+                        - DRUG COURT LIASON
                       StateStaffCaseloadType.VETERANS_COURT:
                         - VETERANS (MIXED)
                       StateStaffCaseloadType.COMMUNITY_FACILITY:
                         - CCC AGENT
+                      StateStaffCaseloadType.OTHER:
+                        - INTERSTATE
+                        - HBG PD LIAISON
                       StateStaffCaseloadType.INTERNAL_UNKNOWN:
                         - FAST
                         - STREET CRIME
@@ -61,7 +69,11 @@ output:
                         - FTA
                         - TRANSPORT
                         - JUVENILE LIFER
+                        - JUVENILE LIFERS
+                        - JUVENILE LIFER/PSN
+                        - JUVENILE LIFER/WRAP AROUNDS
                         - PROJECT SAFE NEIGHBORHOODS
                         - REENTRY
                         - TASK FORCE AGENT
+                        - FIELD TRAINING AGENT
               - $else: $literal_enum(StateStaffCaseloadType.GENERAL)
