@@ -27,16 +27,6 @@ max_allowed_error_overrides:
     override_reason:
       TODO(#19985) - current_email_address was hydrated and now there are duplicate entries per external_id in state_person.
       Planned rerun will resolve.
-  - validation_name: most_recent_face_to_face_contact_date_by_person_by_state_comparison
-    hard_max_allowed_error_override: 0.20
-    override_reason: |
-      TODO(#16865): Our supervision case compliance logic only includes contacts since
-      the start of supervision, so if someone has not had a face to face contact since
-      they started this most recent stint of supervision then `etl_clients` will have a
-      `NULL` date. The other side of this comparison just pulls the most recent face to
-      face contact from `normalized_state`, so if they have had one on a prior stint of
-      supervision this will fail. We are going to delete this validation in the future
-      so ignoring this failure for now.
   - validation_name: state_incarceration_period_by_admission_date_stable_counts
     hard_max_allowed_error_override: .26
     override_reason: This is standard deviation for this validation.

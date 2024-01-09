@@ -36,9 +36,6 @@ from recidiviz.calculator.query.externally_shared_views.view_config import (
 from recidiviz.calculator.query.state.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS,
 )
-from recidiviz.case_triage.views.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS,
-)
 from recidiviz.ingest.direct.views.view_config import (
     get_view_builders_for_views_to_update as get_direct_ingest_view_builders,
 )
@@ -64,7 +61,6 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
     return list(
         itertools.chain(
             get_aggregated_metrics_view_builders(),
-            CASE_TRIAGE_VIEW_BUILDERS,
             get_direct_ingest_view_builders(),
             EXPERIMENTS_VIEW_BUILDERS,
             EXTERNALLY_SHARED_VIEW_BUILDERS,
