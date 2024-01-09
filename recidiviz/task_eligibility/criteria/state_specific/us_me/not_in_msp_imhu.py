@@ -18,7 +18,7 @@
 """Defines a criteria view that shows spans of time when clients are not in the Intensive Mental Health Unit (IMHU)
 in Maine State Prison (MSP)
 """
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
     aggregate_adjacent_spans,
@@ -61,6 +61,7 @@ WITH
         is_imhu,
       FROM
         sub_sessions_with_attributes
+      WHERE start_date != end_date
       GROUP BY
         1,
         2,
@@ -74,7 +75,7 @@ SELECT
   state_code,
   person_id,
   start_date,
-  {nonnull_end_date_clause('end_date')} AS end_date,
+  {revert_nonnull_end_date_clause('end_date')} AS end_date,
   NOT is_imhu AS meets_criteria,
   TO_JSON(STRUCT(start_date AS imhu_start_date)) AS reason,
 FROM
