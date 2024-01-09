@@ -36,26 +36,8 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
-from recidiviz.validation.views.case_triage.assessment_freshness_validation import (
-    ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-)
-from recidiviz.validation.views.case_triage.contact_freshness_validation import (
-    CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-)
 from recidiviz.validation.views.case_triage.employment_freshness_validation import (
     EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-)
-from recidiviz.validation.views.case_triage.etl_freshness_validation import (
-    ETL_FRESHNESS_VALIDATION_VIEW_BUILDER,
-)
-from recidiviz.validation.views.case_triage.most_recent_assessment_date_by_person_by_state_comparison import (
-    MOST_RECENT_ASSESSMENT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.case_triage.most_recent_assessment_score_by_person_by_state_comparison import (
-    MOST_RECENT_ASSESSMENT_SCORE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.case_triage.most_recent_face_to_face_contact_date_by_person_by_state_comparison import (
-    MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.active_in_population_after_death_date import (
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
@@ -433,19 +415,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-            validation_category=ValidationCategory.FRESHNESS,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-            validation_category=ValidationCategory.FRESHNESS,
-        ),
-        ExistenceDataValidationCheck(
             view_builder=EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-            validation_category=ValidationCategory.FRESHNESS,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=ETL_FRESHNESS_VALIDATION_VIEW_BUILDER,
             validation_category=ValidationCategory.FRESHNESS,
         ),
         ExistenceDataValidationCheck(
@@ -716,35 +686,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view_builder=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
             comparison_columns=["metric_total", "race_or_ethnicity_breakdown_sum"],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=MOST_RECENT_ASSESSMENT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            comparison_columns=[
-                "most_recent_etl_date",
-                "most_recent_state_date",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=MOST_RECENT_ASSESSMENT_SCORE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-            comparison_columns=[
-                "most_recent_etl_score",
-                "most_recent_state_score",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            comparison_columns=[
-                "most_recent_etl_face_to_face_contact_date",
-                "most_recent_state_face_to_face_contact_date",
-            ],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
         ),

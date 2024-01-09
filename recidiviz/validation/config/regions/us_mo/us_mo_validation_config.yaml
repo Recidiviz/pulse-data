@@ -15,12 +15,6 @@ max_allowed_error_overrides:
   - validation_name: sentence_type_by_district_by_demographics_internal_consistency
     hard_max_allowed_error_override: 0.2
     override_reason: TODO(#5074) - The age_bucket_breakdown_sum column does not match the others - investigate.
-  - validation_name: most_recent_assessment_date_by_person_by_state_comparison
-    hard_max_allowed_error_override: 0.5
-    override_reason: Needs investigation.
-  - validation_name: most_recent_assessment_score_by_person_by_state_comparison
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
   - validation_name: client_and_resident_record_percent_change_in_eligibility_exceeded
     hard_max_allowed_error_override: 0.40
     override_reason:
