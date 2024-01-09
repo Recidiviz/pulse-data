@@ -27,9 +27,9 @@ VIEW_QUERY_TEMPLATE = """
 WITH staff_from_roster AS (
     SELECT DISTINCT 
         EmployeeID,
-        EmployeeLastName,
-        EmployeeFirstName,
-        Email,
+        UPPER(EmployeeLastName) AS EmployeeLastName,
+        UPPER(EmployeeFirstName) AS EmployeeFirstName,
+        UPPER(Email) AS Email,
     FROM {RECIDIVIZ_REFERENCE_staff_roster}
     WHERE EmployeeID IS NOT NULL 
     AND EmployeeID != ''
