@@ -52,7 +52,7 @@ def main(engine: Engine) -> None:
     agencies = AgencyInterface.get_agencies(session=session)
     for agency in agencies:
         if agency.is_superagency is True or agency.super_agency_id is not None:
-            # For P0 of rollout, no superagencies or child agencies will
+            # TODO(#26632) For P0 of rollout, no superagencies or child agencies will
             # receive reminder emails
             continue
         logger.info("Sending reminder emails for %s", agency.name)
