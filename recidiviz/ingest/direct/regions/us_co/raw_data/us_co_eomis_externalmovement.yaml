@@ -225,6 +225,8 @@ columns:
         description: Finished serving Sentence
       - value: "5A"
         description: Absconder in Custody Out of State
+      - value: "5B"
+        description: Received Enroute to Another Institutition
       - value: "5C"
         description: Escapee in Custody in State
       - value: "5D"
