@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+launch_env:
+  $env: is_dataflow_pipeline
+input_columns:
+  - PERSON_ID
+  - FIRST_NAME
+  - MIDDLE_NAME
+  - SURNAME
+  - GENDER
+  - RACE
+  - DATE_OF_BIRTH
+  - ETHNICITY
+  - full_address
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    current_address: full_address
+    full_name:
+      $person_name:
+        $given_names: FIRST_NAME
+        $middle_names: MIDDLE_NAME
+        $surname: SURNAME
+    birthdate: DATE_OF_BIRTH
+    gender:
+      $conditional:
+        - $if:
+            $not_null: GENDER
+          $then:
+            $enum_mapping:
+              $raw_text: GENDER
+              $mappings:
+                StateGender.MALE:
+                  - Male
+                StateGender.FEMALE:
+                  - Female
+        - $else: $literal_enum(StateGender.INTERNAL_UNKNOWN)
+    races:
+      - StatePersonRace:
+          race:
+            $conditional:
+              - $if:
+                  $not_null: RACE
+                $then:
+                  $enum_mapping:
+                    $raw_text: RACE
+                    $ignore:
+                      # These are listed as races in the lookup table, but cannot be parsed as
+                      # races.
+                      - Mexican American
+                      - Mexican National
+                    $mappings:
+                      StateRace.WHITE:
+                        - Caucasian
+                      StateRace.BLACK:
+                        - Black
+                      StateRace.ASIAN:
+                        - Asian
+                      StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE:
+                        - Native Indian
+                        - Native American/Mex. American
+                      StateRace.OTHER:
+                        - Other
+                      StateRace.EXTERNAL_UNKNOWN:
+                        - Unknown
+              - $else: $literal_enum(StateRace.INTERNAL_UNKNOWN)
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              # Pipe race into the ethnicity parser so that we can appropriately map Mexican Americans
+              # and Mexican Nationals as Hispanic.
+              $raw_text:
+                $concat:
+                  $values:
+                    - ETHNICITY
+                    - RACE
+                  $separator: "##"
+              $custom_parser: us_az_custom_enum_parsers.parse_ethnicity

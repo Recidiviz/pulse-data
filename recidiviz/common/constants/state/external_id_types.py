@@ -118,3 +118,8 @@ US_OZ_AGEID_USER_ID = "US_OZ_AGEID_USER_ID"
 US_OZ_LOTR_ID = "US_OZ_LOTR_ID"
 US_OZ_SM = "US_OZ_SM"
 US_OZ_HG_ID = "US_OZ_HG_ID"
+
+# AZ Person ID Number (not necessarily resident or client)
+US_AZ_PERSON_ID = "US_AZ_PERSON_ID"
+# AZ DOC ID Number
+US_AZ_DOC_ID = "US_AZ_DOC_ID"
