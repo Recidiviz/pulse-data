@@ -72,7 +72,7 @@ def liquid_wrap(query_fragment: str, metric: AggregatedMetric) -> str:
     Outputs a conditional liquid fragment that will display the provided query fragment
     if the metric is selected in the Explore.
     """
-    return f"""{{% if custom_metrics.{metric.name}.in_query or custom_metrics.metric_filter._parameter_value contains "{metric.name}" %}}
+    return f"""{{% if custom_metrics.{metric.name}_measure._in_query or custom_metrics.metric_filter._parameter_value contains "{metric.name}" %}}
     {query_fragment},
         {{% endif %}}"""
 
@@ -484,7 +484,7 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
             metric_filter_parameter,
             metric_value_measure,
         ],
-        included_paths=["./subqueries/*"],
+        included_paths=["./subqueries/*", "/views/aggregated_metrics/subqueries/*"],
         extended_views=[
             "time_periods",
             "assignment_sessions",
