@@ -104,6 +104,7 @@ output:
                   - "56" # Absconder in Custody In-State
                   - "58" # Jail Treatment (CO call for general because this code has to do with YOS failures, not really treatment)
                   - "5A" # Absconder in Custody Out of State
+                  - "5B" # Received Enroute to Another Institutition
                   - "5C" # Escapee in Custody in State
                   - "5D" # Escapee in Custody Out of State
                   - "5M" # Enroute to Another Institution
