@@ -32,13 +32,19 @@ corrected_adh_shuser AS (
     LastName,
     DateUpdated,
     DateCreated,
-    (NULLIF(LOWER(Email), 'no_email@michigan.gov')) AS Email
+    CASE WHEN LOWER(Email) = 'no_email@michigan.gov' THEN NULL
+         WHEN REGEXP_CONTAINS(Email, r'@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9\\-.]+') THEN Email
+         ELSE NULL
+        END AS Email
   FROM {ADH_SHUSER}
 ),
 corrected_adh_employee_additional_info AS (
   SELECT
     employee_id,
-    NULLIF(LOWER(email_address), 'no_email@michigan.gov') AS email_address
+    CASE WHEN LOWER(email_address) = 'no_email@michigan.gov' THEN NULL
+         WHEN REGEXP_CONTAINS(email_address, r'@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9\\-.]+') THEN email_address
+         ELSE NULL
+        END AS email_address
   FROM {ADH_EMPLOYEE_ADDITIONAL_INFO}
 ),
 compas AS (
