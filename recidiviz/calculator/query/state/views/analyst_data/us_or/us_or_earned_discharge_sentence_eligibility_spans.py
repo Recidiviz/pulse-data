@@ -14,9 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates view to identify eligibility spans for earned discharge at the person-sentence level"""
+"""Identifies eligibility spans at the person-sentence level for earned discharge in OR"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -25,68 +28,85 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_NAME = (
     "us_or_earned_discharge_sentence_eligibility_spans"
 )
 
-US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_DESCRIPTION = """Creates view to identify eligibility spans for earned discharge at the person-sentence level"""
+US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_DESCRIPTION = """Identifies eligibility spans at the person-sentence level for earned discharge in OR"""
 
-US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = """
+US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
+    WITH sentence_subcriteria_eligibility_spans AS (
+        SELECT * EXCEPT(meets_criteria),
+            meets_criteria AS sentence_date,
+            NULL AS served_6_months,
+            NULL AS served_half_of_sentence,
+            NULL AS statute,
+            NULL AS no_convictions_since_sentence_start_date,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_sentenced_after_august_2013`
+        UNION ALL
+        SELECT * EXCEPT(meets_criteria),
+            NULL AS sentence_date,
+            meets_criteria AS served_6_months,
+            NULL AS served_half_of_sentence,
+            NULL AS statute,
+            NULL AS no_convictions_since_sentence_start_date,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_served_6_months_supervision`
+        UNION ALL
+        SELECT * EXCEPT(meets_criteria),
+            NULL AS sentence_date,
+            NULL AS served_6_months,
+            meets_criteria AS served_half_of_sentence,
+            NULL AS statute,
+            NULL AS no_convictions_since_sentence_start_date,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_served_half_sentence`
+        UNION ALL
+        SELECT * EXCEPT(meets_criteria),
+            NULL AS sentence_date,
+            NULL AS served_6_months,
+            NULL AS served_half_of_sentence,
+            meets_criteria AS statute,
+            NULL AS no_convictions_since_sentence_start_date,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_statute_eligible`
+        UNION ALL
+        SELECT * EXCEPT(meets_criteria),
+            NULL AS sentence_date,
+            NULL AS served_6_months,
+            NULL AS served_half_of_sentence,
+            NULL AS statute,
+            meets_criteria AS no_convictions_since_sentence_start_date,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_no_convictions_since_sentence_start`
+    ),
+    {create_sub_sessions_with_attributes("sentence_subcriteria_eligibility_spans", index_columns=["person_id", "sentence_id"])},
+    sub_sessions_with_attributes_condensed AS (
+        SELECT person_id,
+            sentence_id,
+            start_date,
+            end_date,
+            /* Note: using COALSECE(LOGICAL_AND(), FALSE) prevents the problem of ending
+            up with NULL for the meets_criteria_ fields, which can happen if there is no
+            row in the relevant view for that person-sentence span (i.e., there's
+            nothing going into the LOGICAL_AND). By using COALESCE here, we ensure that
+            each of these criteria is always either TRUE or FALSE (and never NULL). */
+            COALESCE(LOGICAL_AND(sentence_date), FALSE) AS meets_criteria_sentence_date,
+            COALESCE(LOGICAL_AND(served_6_months), FALSE) AS meets_criteria_served_6_months,
+            COALESCE(LOGICAL_AND(served_half_of_sentence), FALSE) AS meets_criteria_served_half_of_sentence,
+            COALESCE(LOGICAL_AND(statute), FALSE) AS meets_criteria_statute,
+            COALESCE(LOGICAL_AND(no_convictions_since_sentence_start_date), FALSE) AS meets_criteria_no_convictions_since_sentence_start_date
+        FROM sub_sessions_with_attributes
+        GROUP BY 1, 2, 3, 4
+    )
     SELECT person_id,
         sentence_id,
         start_date,
         end_date,
-        NULL AS is_eligible,
-        meets_criteria AS meets_criteria_sentence_date,
-        NULL AS meets_criteria_served_6_months,
-        NULL AS meets_criteria_served_half_of_sentence,
-        NULL AS meets_criteria_statute,
-        NULL AS meets_criteria_no_convictions_since_sentence_start_date,
-    FROM `{project_id}.{analyst_dataset}.us_or_sentenced_after_august_2013`
-    UNION ALL
-    SELECT person_id,
-        sentence_id,
-        start_date,
-        end_date,
-        NULL AS is_eligible,
-        NULL AS meets_criteria_sentence_date,
-        meets_criteria AS meets_criteria_served_6_months,
-        NULL AS meets_criteria_served_half_of_sentence,
-        NULL AS meets_criteria_statute,
-        NULL AS meets_criteria_no_convictions_since_sentence_start_date,
-    FROM `{project_id}.{analyst_dataset}.us_or_served_6_months_supervision`
-    UNION ALL
-    SELECT person_id,
-        sentence_id,
-        start_date,
-        end_date,
-        NULL AS is_eligible,
-        NULL AS meets_criteria_sentence_date,
-        NULL AS meets_criteria_served_6_months,
-        meets_criteria AS meets_criteria_served_half_of_sentence,
-        NULL AS meets_criteria_statute,
-        NULL AS meets_criteria_no_convictions_since_sentence_start_date,
-    FROM `{project_id}.{analyst_dataset}.us_or_served_half_sentence`
-    UNION ALL
-    SELECT person_id,
-        sentence_id,
-        start_date,
-        end_date,
-        NULL AS is_eligible,
-        NULL AS meets_criteria_sentence_date,
-        NULL AS meets_criteria_served_6_months,
-        NULL AS meets_criteria_served_half_of_sentence,
-        meets_criteria AS meets_criteria_statute,
-        NULL AS meets_criteria_no_convictions_since_sentence_start_date,
-    FROM `{project_id}.{analyst_dataset}.us_or_statute_eligible`
-    UNION ALL
-    SELECT person_id,
-        sentence_id,
-        start_date,
-        end_date,
-        NULL AS is_eligible,
-        NULL AS meets_criteria_sentence_date,
-        NULL AS meets_criteria_served_6_months,
-        NULL AS meets_criteria_served_half_of_sentence,
-        NULL AS meets_criteria_statute,
-        meets_criteria AS meets_criteria_no_convictions_since_sentence_start_date,
-    FROM `{project_id}.{analyst_dataset}.us_or_no_convictions_since_sentence_start`
+        (meets_criteria_sentence_date
+            AND meets_criteria_served_6_months
+            AND meets_criteria_served_half_of_sentence
+            AND meets_criteria_statute
+            AND meets_criteria_no_convictions_since_sentence_start_date
+        ) AS is_eligible,
+        meets_criteria_sentence_date,
+        meets_criteria_served_6_months,
+        meets_criteria_served_half_of_sentence,
+        meets_criteria_statute,
+        meets_criteria_no_convictions_since_sentence_start_date
+    FROM sub_sessions_with_attributes_condensed
 """
 
 US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
