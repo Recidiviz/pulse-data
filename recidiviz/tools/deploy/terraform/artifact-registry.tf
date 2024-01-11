@@ -27,12 +27,13 @@ locals {
 }
 
 resource "google_artifact_registry_repository" "repositories" {
-  provider      = google-beta
-  for_each      = tomap(local.config.repositories)
-  location      = each.value.location
-  repository_id = each.value.repository_id
-  description   = each.value.description
-  format        = each.value.format
+  provider               = google-beta
+  for_each               = tomap(local.config.repositories)
+  location               = each.value.location
+  repository_id          = each.value.repository_id
+  description            = each.value.description
+  format                 = each.value.format
+  cleanup_policy_dry_run = each.value.cleanup_policy_dry_run
 
   depends_on = [
     google_project_service.artifact_registry_api

@@ -432,7 +432,7 @@ module "unified-product-load-balancer" {
       }
       log_config = {
         enable      = true
-        sample_rate = null
+        sample_rate = 0
       }
     }
   }
