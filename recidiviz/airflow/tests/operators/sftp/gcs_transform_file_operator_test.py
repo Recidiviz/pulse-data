@@ -40,7 +40,7 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 
 class FakeSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def root_directory(self, candidate_paths: List[str]) -> str:
-        return "."
+        return "/"
 
     def filter_paths(self, candidate_paths: List[str]) -> List[str]:
         return candidate_paths

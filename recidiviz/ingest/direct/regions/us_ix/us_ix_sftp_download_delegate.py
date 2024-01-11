@@ -29,7 +29,7 @@ from recidiviz.utils.environment import GCP_PROJECTS
 class UsIxSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_IX SFTP downloads are handled."""
 
-    CURRENT_ROOT = "."
+    CURRENT_ROOT = "/"
     FILE_PREFIX = "recidiviz-atlas-cmd-"
 
     def _matches(self, path: str) -> bool:

@@ -49,7 +49,7 @@ TWO_DAYS_AGO = TODAY - datetime.timedelta(2)
 
 class FakeSftpDownloadDelegate(BaseSftpDownloadDelegate):
     def root_directory(self, candidate_paths: List[str]) -> str:
-        return "."
+        return "/"
 
     def filter_paths(self, candidate_paths: List[str]) -> List[str]:
         return [path for path in candidate_paths if path.startswith("test")]
@@ -136,11 +136,11 @@ class TestFindSftpFilesOperator(unittest.TestCase):
             result,
             [
                 {
-                    "remote_file_path": "./testToday/file1.txt",
+                    "remote_file_path": "/testToday/file1.txt",
                     "sftp_timestamp": int(TODAY.timestamp()),
                 },
                 {
-                    "remote_file_path": "./testTwoDaysAgo/file1.txt",
+                    "remote_file_path": "/testTwoDaysAgo/file1.txt",
                     "sftp_timestamp": int(TWO_DAYS_AGO.timestamp()),
                 },
             ],
@@ -151,7 +151,7 @@ class TestFindSftpFilesOperator(unittest.TestCase):
         )
 
     def test_execute_with_file_exclusions(self, _mock_sftp_delegate: MagicMock) -> None:
-        # Update to read from a config where ./testToday/file1.txt is excluded
+        # Update to read from a config where /testToday/file1.txt is excluded
         self.mock_read_config_fn.return_value = YAMLDict.from_path(
             filepath_relative_to_caller(
                 "sftp_excluded_remote_file_paths_with_exclusions.yaml", "fixtures"
@@ -196,7 +196,7 @@ class TestFindSftpFilesOperator(unittest.TestCase):
             result,
             [
                 {
-                    "remote_file_path": "./testTwoDaysAgo/file1.txt",
+                    "remote_file_path": "/testTwoDaysAgo/file1.txt",
                     "sftp_timestamp": int(TWO_DAYS_AGO.timestamp()),
                 },
             ],
