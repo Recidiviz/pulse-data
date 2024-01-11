@@ -334,7 +334,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 date_range_to_system_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session)
+            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
 
             self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
                 system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
@@ -365,7 +365,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             system_to_missing_monthly_metrics,
             date_range_to_system_to_missing_annual_metrics,
             monthly_report_date_range,
-        ) = get_missing_metrics(agency=agency, session=session)
+        ) = get_missing_metrics(agency=agency, session=session, today=self.today)
 
         self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
             agency=agency,
@@ -403,7 +403,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 date_range_to_system_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session)
+            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
 
             self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
                 system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
@@ -434,7 +434,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             system_to_missing_monthly_metrics,
             date_range_to_system_to_missing_annual_metrics,
             monthly_report_date_range,
-        ) = get_missing_metrics(agency=agency, session=session)
+        ) = get_missing_metrics(agency=agency, session=session, today=self.today)
 
         self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
             agency=agency,
@@ -481,7 +481,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 date_range_to_system_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session)
+            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
 
             # No monthly metrics are enabled, so no monthly metrics are missing
             self.assertEqual(
@@ -553,7 +553,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 system_to_starting_month_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session)
+            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
 
             # No monthly metrics are enabled
             self.assertEqual(
@@ -637,7 +637,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 date_range_to_system_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session)
+            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
 
             # No monthly metrics are enabled
             self.assertEqual(
