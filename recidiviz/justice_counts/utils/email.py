@@ -35,10 +35,7 @@ from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
-from recidiviz.justice_counts.metrics.metric_registry import (
-    METRIC_KEY_TO_METRIC,
-    get_supervision_subsystem_metric_definition,
-)
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
@@ -150,6 +147,10 @@ def send_reminder_emails(
         )
     )
 
+    if len(subscribed_user_emails) == 0:
+        logging.debug("No users subscribed, no emails to send")
+        return
+
     agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
 
     (
@@ -163,6 +164,7 @@ def send_reminder_emails(
         and len(date_range_to_system_to_missing_annual_metrics) == 0
     ):
         # Don't send reminder email if no metrics are missing
+        logging.debug("No missing metrics, not sending email")
         return
 
     domain = "publisher-staging" if in_gcp_staging() is True else "publisher"
@@ -310,7 +312,7 @@ def get_missing_metrics(
         system_to_missing_monthly_metrics,
         date_range_to_system_to_missing_annual_metrics,
     ) = _get_missing_metrics_by_system(
-        metric_key_to_datapoints=metric_key_to_datapoints, agency=agency
+        metric_key_to_datapoints=metric_key_to_datapoints,
     )
 
     return (
@@ -321,7 +323,7 @@ def get_missing_metrics(
 
 
 def _get_missing_metrics_by_system(
-    metric_key_to_datapoints: Dict[str, DatapointsForMetric], agency: schema.Agency
+    metric_key_to_datapoints: Dict[str, DatapointsForMetric]
 ) -> Tuple[
     Dict[schema.System, List[MetricDefinition]],
     Dict[
@@ -371,22 +373,10 @@ def _get_missing_metrics_by_system(
         )
 
         if reporting_frequency == schema.ReportingFrequency.MONTHLY:
-            if (
-                datapoints_for_metric.disaggregated_by_supervision_subsystems
-                is not True
-            ):
-                # If this metric is NOT disaggeregated by supervision subsystem,
-                # add it's metric definition to system_to_missing_monthly_metrics
-                # as is
-                system_to_missing_monthly_metrics[metric_definition.system].append(
-                    metric_definition
-                )
-            else:
-                _add_disaggregated_supervision_metrics(
-                    agency=agency,
-                    metric_definition=metric_definition,
-                    system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-                )
+            system_to_missing_monthly_metrics[metric_definition.system].append(
+                metric_definition
+            )
+
         else:
             report_start_month = (
                 datapoints_for_metric.custom_reporting_frequency.starting_month or 1
@@ -410,104 +400,12 @@ def _get_missing_metrics_by_system(
 
             start_date = datetime.date(start_year, report_start_month, 1)
             end_date = datetime.date(end_year, report_start_month, 1)
-
             date_range = (start_date, end_date)
-            if (
-                datapoints_for_metric.disaggregated_by_supervision_subsystems
-                is not True
-            ):
-                # If this metric is NOT disaggeregated by supervision subsystem,
-                # add it's metric definition to
-                # system_to_starting_month_to_missing_annual_metrics as is
-                date_range_to_system_to_missing_annual_metrics[date_range][
-                    metric_definition.system
-                ].append(metric_definition)
-            else:
-                _add_disaggregated_supervision_metrics(
-                    agency=agency,
-                    metric_definition=metric_definition,
-                    date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
-                    date_range=date_range,
-                )
+            date_range_to_system_to_missing_annual_metrics[date_range][
+                metric_definition.system
+            ].append(metric_definition)
 
     return (
         system_to_missing_monthly_metrics,
         date_range_to_system_to_missing_annual_metrics,
     )
-
-
-def _add_disaggregated_supervision_metrics(
-    agency: schema.Agency,
-    metric_definition: MetricDefinition,
-    system_to_missing_monthly_metrics: Optional[
-        Dict[schema.System, List[MetricDefinition]]
-    ] = None,
-    date_range_to_system_to_missing_annual_metrics: Optional[
-        Dict[
-            Tuple[datetime.date, datetime.date],
-            Dict[schema.System, List[MetricDefinition]],
-        ]
-    ] = None,
-    date_range: Optional[Tuple[datetime.date, datetime.date]] = None,
-) -> None:
-    """
-    The metric definition passed-in is disaggeregated by supervision subsystem.
-    This function adds the metric definitions of the supervision
-    subsystems that the agency reports for to the corresponding missing
-    metric dictionary.
-
-    Args:
-        agency (schema.Agency): The current agency.
-
-        metric_definition (MetricDefinition): Metric definition of a metric
-        disaggregated by supervision subsystem
-
-        system_to_missing_monthly_metrics(Optional[Dict[schema.System, List[MetricDefinition]]]):
-        Missing metric dictionary for the monthly report
-
-        date_range_to_system_to_missing_annual_metrics (Optional[
-        Dict[int, Dict[schema.System, List[MetricDefinition]]]): Missing metric
-        dictionary for annual metrics
-
-        starting_month (Optional[int]): Starting month of the annual report
-
-    """
-
-    # If this metric IS disaggeregated by supervision subsystem,
-    # add the metric definitions of the supervision subsystems that
-    # the agency reports for to system_to_missing_monthly_metrics
-    for system in [
-        system
-        for system in agency.systems
-        if schema.System[system] in schema.System.supervision_subsystems()
-    ]:
-        supervision_subsystem_metric_definition = (
-            get_supervision_subsystem_metric_definition(
-                subsystem=system,
-                supervision_metric_definition=metric_definition,
-            )
-        )
-
-        if (
-            system_to_missing_monthly_metrics is not None
-            and supervision_subsystem_metric_definition
-            not in system_to_missing_monthly_metrics[schema.System[system]]
-        ):
-            system_to_missing_monthly_metrics[schema.System[system]].append(
-                supervision_subsystem_metric_definition
-            )
-
-        if (
-            date_range is not None
-            and date_range_to_system_to_missing_annual_metrics is not None
-        ):
-            # Check if the metric is not already present before adding
-            if (
-                supervision_subsystem_metric_definition
-                not in date_range_to_system_to_missing_annual_metrics[date_range][
-                    schema.System[system]
-                ]
-            ):
-                date_range_to_system_to_missing_annual_metrics[date_range][
-                    schema.System[system]
-                ].append(supervision_subsystem_metric_definition)

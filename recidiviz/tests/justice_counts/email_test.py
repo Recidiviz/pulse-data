@@ -584,17 +584,46 @@ class TestEmails(JusticeCountsDatabaseTestCase):
 
             # Enable funding and expense metrics, disaggregate funding by
             # parole and probation
-            agency_datapoints = self.get_enabled_metric_setting_datapoints(
-                metric_definitions=[supervision.funding, supervision.expenses],
-                agency=agency,
-            ) + [
+            agency_datapoints = [
+                schema.Datapoint(
+                    metric_definition_key=supervision.expenses.key,
+                    enabled=True,
+                    source=agency,
+                    is_report_datapoint=False,
+                ),
+                schema.Datapoint(
+                    metric_definition_key="PROBATION_FUNDING",
+                    enabled=True,
+                    source=agency,
+                    is_report_datapoint=False,
+                ),
+                schema.Datapoint(
+                    metric_definition_key="PAROLE_FUNDING",
+                    enabled=True,
+                    source=agency,
+                    is_report_datapoint=False,
+                ),
                 schema.Datapoint(
                     metric_definition_key=supervision.funding.key,
                     source=agency,
                     context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
                     value=str(True),
                     is_report_datapoint=False,
-                )
+                ),
+                schema.Datapoint(
+                    metric_definition_key="PROBATION_FUNDING",
+                    source=agency,
+                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+                    value=str(True),
+                    is_report_datapoint=False,
+                ),
+                schema.Datapoint(
+                    metric_definition_key="PAROLE_FUNDING",
+                    source=agency,
+                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+                    value=str(True),
+                    is_report_datapoint=False,
+                ),
             ]
 
             annual_calendar_year_report = self.get_annual_calendar_year_report(
