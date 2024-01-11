@@ -25,7 +25,7 @@ module "state-specific-scratch-dataset" {
 # TODO(#13312): Move all one off validation data for these states into `us_xx_validation_oneoffs`
 # and have `us_xx_validation` only contain version controlled views pulling from oneoffs and raw data.
 module "state-specific-validation-dataset" {
-  count       = contains(["US_ID", "US_ME", "US_MO", "US_ND", "US_PA", "US_TN"], var.state_code) ? 1 : 0 
+  count       = contains(["US_ID", "US_MO", "US_ND", "US_PA", "US_TN"], var.state_code) ? 1 : 0 
   source      = "../big_query_dataset"
   dataset_id  = "${lower(var.state_code)}_validation"
   description = "State-specific validation dataset for state-specific validation views."

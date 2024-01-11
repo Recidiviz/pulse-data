@@ -39,9 +39,6 @@ UNION ALL
 SELECT region_code, person_external_id, 'US_PA_PBPP' as external_id_type, date_of_supervision, district, supervising_officer, supervision_level
 FROM `{project_id}.{us_pa_validation_dataset}.supervision_population_person_level_raw`
 UNION ALL
-SELECT region_code, person_external_id, 'US_ME_DOC' as external_id_type, date_of_supervision, district, supervising_officer, CAST(supervision_level AS STRING) AS supervision_level
-FROM `{project_id}.{us_me_validation_dataset}.supervision_by_person_by_officer_view`
-UNION ALL
 SELECT
   'US_TN' as region_code,
   OffenderID as person_external_id,
@@ -124,9 +121,6 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
         clustering_fields=None,
         us_id_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ID
-        ),
-        us_me_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_ME
         ),
         us_mo_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_MO

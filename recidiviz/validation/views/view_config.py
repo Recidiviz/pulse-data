@@ -65,6 +65,24 @@ from recidiviz.validation.views.external_data.regions.us_ix.incarceration_releas
 from recidiviz.validation.views.external_data.regions.us_ix.supervision_population_person_level import (
     US_IX_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_me.incarceration_population_by_facility import (
+    US_ME_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_me.incarceration_population_person_level import (
+    US_ME_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_me.incarceration_release_person_level import (
+    US_ME_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_me.population_releases import (
+    US_ME_POPULATION_RELEASES_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_me.supervision_population_person_level import (
+    US_ME_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_me.supervision_termination_person_level import (
+    US_ME_SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.regions.us_mi.cb_971_report_supervision_unified import (
     CB_971_REPORT_SUPERVISION_UNIFIED_VIEW_BUILDER,
 )
@@ -205,6 +223,12 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             US_IX_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
             US_IX_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_OZ_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+            US_ME_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+            US_ME_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+            US_ME_POPULATION_RELEASES_VIEW_BUILDER,
+            US_ME_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+            US_ME_SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
+            US_ME_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
         ]
         + get_view_builders_from_configured_validations()
     )

@@ -37,9 +37,6 @@ UNION ALL
 SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_stay, facility
 FROM `{project_id}.{us_id_validation_dataset}.daily_summary_incarceration`
 UNION ALL 
-SELECT region_code, person_external_id, 'US_ME_DOC' as external_id_type, date_of_stay, facility
-FROM `{project_id}.{us_me_validation_dataset}.incarceration_population_person_level_view`
-UNION ALL
 SELECT region_code, person_external_id, 'US_PA_CONT' as external_id_type, date_of_stay, facility
 FROM `{project_id}.{us_pa_validation_dataset}.incarceration_population_person_level_raw`
 -- TODO(#10883): Ignoring this ND data for now because we are not sure that it is correct.
@@ -143,9 +140,6 @@ def get_incarceration_population_person_level_view_builder() -> (
         # Query format arguments
         us_id_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ID
-        ),
-        us_me_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_ME
         ),
         us_nd_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ND

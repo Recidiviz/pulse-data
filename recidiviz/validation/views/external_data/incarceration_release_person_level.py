@@ -60,9 +60,6 @@ FROM (
     UNION ALL
     SELECT control_number, move_dt_std FROM `{project_id}.{us_pa_validation_dataset}.2022_01_incarceration_releases`
 )
-UNION ALL
-SELECT region_code, person_external_id, 'US_ME_DOC' as external_id_type, release_date
-FROM `{project_id}.{us_me_validation_dataset}.incarceration_release_person_level_raw`
 """
 
 VIEW_ID = "incarceration_release_person_level"
@@ -115,9 +112,6 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
         ),
         us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_PA
-        ),
-        us_me_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_ME
         ),
         **region_dataset_params,
     )
