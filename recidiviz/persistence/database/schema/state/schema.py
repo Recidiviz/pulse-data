@@ -3746,11 +3746,11 @@ class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
     )
 
     is_life = Column(
-        String, nullable=True, comment="True if this is sentence is a life sentence."
+        Boolean, nullable=True, comment="True if this is sentence is a life sentence."
     )
 
     is_capital_punishment = Column(
-        String,
+        Boolean,
         nullable=True,
         comment="True if this is sentence is for the death penalty",
     )
@@ -4209,7 +4209,7 @@ class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
             "The date on which a person is expected to become eligible for parole under the terms of this sentence"
         ),
     )
-    projected_parole_release_date_min_external = Column(
+    projected_parole_release_date_external = Column(
         Date,
         nullable=True,
         comment=(

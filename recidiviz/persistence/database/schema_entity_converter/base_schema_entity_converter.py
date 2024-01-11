@@ -210,6 +210,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             self._populate_root_entity_back_edges(dst)
         return dst
 
+    # TODO(#26775) Check type compatibility when converting.
     def _convert_forward(
         self, src: SrcBaseType, populate_back_edges: bool
     ) -> DstBaseType:

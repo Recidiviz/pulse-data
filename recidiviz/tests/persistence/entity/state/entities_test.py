@@ -568,7 +568,7 @@ class TestStateLedgerEntities(TestCase):
         # "parole_eligibility_date_external" before "projected_parole_release_date_min_external"
         _ = StateSentenceGroup(
             parole_eligibility_date_external=self.before,
-            projected_parole_release_date_min_external=self.after,
+            projected_parole_release_date_external=self.after,
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
@@ -579,7 +579,7 @@ class TestStateLedgerEntities(TestCase):
         ):
             _ = StateSentenceGroup(
                 parole_eligibility_date_external=self.after,
-                projected_parole_release_date_min_external=self.before,
+                projected_parole_release_date_external=self.before,
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
                 external_id=self.external_id,
@@ -624,7 +624,7 @@ class TestStateLedgerEntities(TestCase):
             )
         # "projected_parole_release_date_min_external" before "projected_full_term_release_date_min_external"
         _ = StateSentenceGroup(
-            projected_parole_release_date_min_external=self.before,
+            projected_parole_release_date_external=self.before,
             projected_full_term_release_date_min_external=self.after,
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
@@ -635,7 +635,7 @@ class TestStateLedgerEntities(TestCase):
             "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
         ):
             _ = StateSentenceGroup(
-                projected_parole_release_date_min_external=self.after,
+                projected_parole_release_date_external=self.after,
                 projected_full_term_release_date_min_external=self.before,
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
@@ -643,7 +643,7 @@ class TestStateLedgerEntities(TestCase):
             )
         # "projected_parole_release_date_min_external" before "projected_full_term_release_date_max_external"
         _ = StateSentenceGroup(
-            projected_parole_release_date_min_external=self.before,
+            projected_parole_release_date_external=self.before,
             projected_full_term_release_date_max_external=self.after,
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
@@ -654,7 +654,7 @@ class TestStateLedgerEntities(TestCase):
             "Found StateSentenceGroup with datetime 2022-01-01 after datetime 1999-01-01.",
         ):
             _ = StateSentenceGroup(
-                projected_parole_release_date_min_external=self.after,
+                projected_parole_release_date_external=self.after,
                 projected_full_term_release_date_max_external=self.before,
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,

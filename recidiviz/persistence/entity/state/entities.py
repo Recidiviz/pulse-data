@@ -2702,7 +2702,7 @@ class StateSentenceGroup(
         default=None, validator=attr_validators.is_opt_date
     )
     # The date on which a person is projected to be released from incarceration to parole
-    projected_parole_release_date_min_external: Optional[datetime.date] = attr.ib(
+    projected_parole_release_date_external: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
     # The earliest date on which a person is projected to be released to liberty after having completed
@@ -2724,7 +2724,7 @@ class StateSentenceGroup(
         that projected release dates are in the right order."""
         self.assert_datetime_less_than(
             self.parole_eligibility_date_external,
-            self.projected_parole_release_date_min_external,
+            self.projected_parole_release_date_external,
         )
         self.assert_datetime_less_than(
             self.parole_eligibility_date_external,
@@ -2735,11 +2735,11 @@ class StateSentenceGroup(
             self.projected_full_term_release_date_max_external,
         )
         self.assert_datetime_less_than(
-            self.projected_parole_release_date_min_external,
+            self.projected_parole_release_date_external,
             self.projected_full_term_release_date_min_external,
         )
         self.assert_datetime_less_than(
-            self.projected_parole_release_date_min_external,
+            self.projected_parole_release_date_external,
             self.projected_full_term_release_date_max_external,
         )
         self.assert_datetime_less_than(

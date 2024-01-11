@@ -47,6 +47,7 @@ class TestStateSchemaEntityConverter(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
+        self.maxDiff = None
         local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
@@ -129,7 +130,7 @@ class TestStateSchemaEntityConverter(TestCase):
         input_person = generate_full_graph_state_person(set_back_edges=False)
         expected_person = generate_full_graph_state_person(set_back_edges=True)
         self._run_convert_test(
-            [input_person], [expected_person], populate_back_edges=True
+            [input_person], [expected_person], populate_back_edges=True, debug=True
         )
 
     def test_convertPerson_noBackEdges_dontPopulateBackEdges(self):
