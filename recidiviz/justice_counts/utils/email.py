@@ -137,8 +137,7 @@ def _confirmation_email_builder(
 
 
 def send_reminder_emails(
-    session: Session,
-    agency_id: int,
+    session: Session, agency_id: int, dry_run: bool, logger: logging.Logger
 ) -> None:
     """Every month we send a reminder email to all users subscribed to their agency's
     emails to notify them that they have data missing from their most recent annual / fiscal-year
@@ -152,8 +151,11 @@ def send_reminder_emails(
         )
     )
 
+    msg = "DRY_RUN " if dry_run is True else ""
+
     if len(subscribed_user_emails) == 0:
-        logging.debug("No users subscribed, no emails to send")
+        msg += "No users subscribed, no emails to send"
+        logger.info(msg)
         return
 
     agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
@@ -169,7 +171,8 @@ def send_reminder_emails(
         and len(date_range_to_system_to_missing_annual_metrics) == 0
     ):
         # Don't send reminder email if no metrics are missing
-        logging.debug("No missing metrics, not sending email")
+        msg += "No missing metrics, not sending email"
+        logger.info(msg)
         return
 
     domain = "publisher-staging" if in_gcp_staging() is True else "publisher"
@@ -192,6 +195,8 @@ def send_reminder_emails(
 
     blob = bucket.blob(file_path)
     blob.upload_from_string(html)
+    msg += "Saving email to GCS"
+    logger.info(msg)
 
     # Send reminder email to all users that belong to the agency
     # except for CSG users
@@ -201,6 +206,11 @@ def send_reminder_emails(
         if "@recidiviz.org" not in user_email:
             continue
         try:
+            if dry_run is True:
+                logger.info("DRY_RUN: Would send email to %s", user_email)
+                continue
+
+            logger.info("Sending email to %s", user_email)
             send_grid_client.send_message(
                 to_email=user_email,
                 from_email="no-reply@justice-counts.org",
@@ -210,7 +220,7 @@ def send_reminder_emails(
                 disable_link_click=True,
             )
         except Exception as e:
-            logging.exception("Failed to send reminder email to %s. %s", user_email, e)
+            logger.exception("Failed to send reminder email to %s. %s", user_email, e)
 
 
 def _reminder_email_builder(

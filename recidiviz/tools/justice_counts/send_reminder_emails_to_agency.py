@@ -34,6 +34,7 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_JUSTICE_COUNTS_STAGING,
 )
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_bool
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ def create_parser() -> argparse.ArgumentParser:
         help="ID of the agency you want to send emails to",
         required=True,
     )
+    parser.add_argument("--dry-run", type=str_to_bool, default=True)
     return parser
 
 
@@ -73,4 +75,9 @@ if __name__ == "__main__":
                 secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
                 autocommit=False,
             ) as session:
-                send_reminder_emails(session=session, agency_id=args.agency_id)
+                send_reminder_emails(
+                    session=session,
+                    agency_id=args.agency_id,
+                    dry_run=args.dry_run,
+                    logger=logger,
+                )
