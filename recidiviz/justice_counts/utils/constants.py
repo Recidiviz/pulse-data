@@ -65,6 +65,10 @@ ERRORS_WARNINGS_JSON_BUCKET_PROD = (
 NEW_MEXICO_SUPERAGENCY_BUCKET_STAGING = "justice-counts-staging-ingest-agency-207"
 NEW_MEXICO_SUPERAGENCY_BUCKET_PROD = "justice-counts-production-ingest-agency-534"
 
+# Bucket for Reminder Email HTML files
+REMINDER_EMAILS_BUCKET_STAGING = "justice-counts-staging-reminder-emails"
+REMINDER_EMAILS_BUCKET_PROD = "justice-counts-production-reminder-emails"
+
 # Justice Counts Sentry Data Source Name. See monitoring page at https://recidiviz-inc.sentry.io/projects/justice-counts/?project=4504532096516096
 JUSTICE_COUNTS_SENTRY_DSN = (
     # not a secret!

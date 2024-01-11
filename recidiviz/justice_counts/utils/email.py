@@ -24,6 +24,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
+from google.cloud import storage
 from jinja2 import Template
 from sqlalchemy.orm import Session
 
@@ -37,9 +38,13 @@ from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.utils.constants import (
+    REMINDER_EMAILS_BUCKET_PROD,
+    REMINDER_EMAILS_BUCKET_STAGING,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
-from recidiviz.utils.environment import in_gcp_staging
+from recidiviz.utils.environment import in_gcp_production, in_gcp_staging
 
 UNSUBSCRIBE_GROUP_ID = 26272
 
@@ -152,12 +157,12 @@ def send_reminder_emails(
         return
 
     agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
-
+    today = datetime.date.today()
     (
         system_to_missing_monthly_metrics,
         date_range_to_system_to_missing_annual_metrics,
         monthly_report_date_range,
-    ) = get_missing_metrics(agency=agency, session=session)
+    ) = get_missing_metrics(agency=agency, today=today, session=session)
 
     if (
         len(system_to_missing_monthly_metrics) == 0
@@ -175,6 +180,18 @@ def send_reminder_emails(
         domain=domain,
         monthly_report_date_range=monthly_report_date_range,
     )
+
+    # Save email in GCP so that we have a copy to review every month
+    date_str = f"{today.month}-{today.day}-{today.year}.html"
+    file_path = f"{agency.name}/{date_str}"
+    storage_client = storage.Client()
+    if in_gcp_production():
+        bucket = storage_client.bucket(REMINDER_EMAILS_BUCKET_PROD)
+    else:
+        bucket = storage_client.bucket(REMINDER_EMAILS_BUCKET_STAGING)
+
+    blob = bucket.blob(file_path)
+    blob.upload_from_string(html)
 
     # Send reminder email to all users that belong to the agency
     # except for CSG users
@@ -243,7 +260,7 @@ def _reminder_email_builder(
 
 
 def get_missing_metrics(
-    agency: schema.Agency, session: Session
+    agency: schema.Agency, today: datetime.date, session: Session
 ) -> Tuple[
     Dict[schema.System, List[MetricDefinition]],
     Dict[
@@ -263,7 +280,6 @@ def get_missing_metrics(
         agency (schema.Agency): The agency to fetch the missing metrics for.
         session (Session): The database session to use.
     """
-    today = datetime.date.today()
 
     latest_monthly_report = ReportInterface.get_latest_monthly_report_by_agency_id(
         session=session, agency_id=agency.id
@@ -404,7 +420,6 @@ def _get_missing_metrics_by_system(
             date_range_to_system_to_missing_annual_metrics[date_range][
                 metric_definition.system
             ].append(metric_definition)
-
     return (
         system_to_missing_monthly_metrics,
         date_range_to_system_to_missing_annual_metrics,
