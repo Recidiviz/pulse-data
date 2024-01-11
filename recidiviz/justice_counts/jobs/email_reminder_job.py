@@ -22,6 +22,7 @@ Local Usage: docker exec pulse-data-control_panel_backend-1 pipenv run python -m
 Remote Usage: Execute the `email_reminder_job` Cloud Run Job
 """
 
+import argparse
 import logging
 
 import sentry_sdk
@@ -37,6 +38,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.utils.params import str_to_bool
 
 logger = logging.getLogger(__name__)
 
@@ -47,16 +49,27 @@ sentry_sdk.init(
 )
 
 
-def main(engine: Engine) -> None:
+def create_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dry-run", type=str_to_bool, default=True)
+    return parser
+
+
+def send_reminder_emails_to_all_agencies(engine: Engine, dry_run: bool) -> None:
     session = Session(bind=engine)
     agencies = AgencyInterface.get_agencies(session=session)
     for agency in agencies:
+        msg = "DRY_RUN " if dry_run is True else ""
         if agency.is_superagency is True or agency.super_agency_id is not None:
             # TODO(#26632) For P0 of rollout, no superagencies or child agencies will
             # receive reminder emails
             continue
-        logger.info("Sending reminder emails for %s", agency.name)
-        send_reminder_emails(session=session, agency_id=agency.id)
+        msg += "Sending reminder emails to " + agency.name
+        logger.info(msg)
+        send_reminder_emails(
+            session=session, agency_id=agency.id, dry_run=dry_run, logger=logger
+        )
+        logger.info("-----------------------------------\n\n")
 
 
 if __name__ == "__main__":
@@ -68,5 +81,7 @@ if __name__ == "__main__":
         database_key=database_key,
         secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
     )
-
-    main(justice_counts_engine)
+    args = create_parser().parse_args()
+    send_reminder_emails_to_all_agencies(
+        engine=justice_counts_engine, dry_run=args.dry_run
+    )
