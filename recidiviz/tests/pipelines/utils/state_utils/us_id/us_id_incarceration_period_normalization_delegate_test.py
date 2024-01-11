@@ -68,7 +68,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
-            person_id=None,
+            person_id=123,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsIdIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
