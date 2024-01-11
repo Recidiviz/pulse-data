@@ -25,7 +25,7 @@ from recidiviz.validation.views import dataset_config
 _QUERY_TEMPLATE = """
 SELECT * FROM `{project_id}.{us_id_validation_dataset}.incarceration_population_by_facility_raw`
 UNION ALL
-SELECT * FROM `{project_id}.{us_me_validation_dataset}.incarceration_population_by_facility_view`
+SELECT * FROM `{project_id}.{us_me_validation_dataset}.incarceration_population_by_facility`
 UNION ALL
 SELECT * FROM `{project_id}.{us_mi_validation_dataset}.incarceration_population_by_facility_view`
 UNION ALL

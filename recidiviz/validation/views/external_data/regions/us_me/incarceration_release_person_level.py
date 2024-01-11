@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,35 +14,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view containing external data for person level supervision terminations to validate against."""
-
+"""A view detailing incarceration releases at the person level for Maine."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-_QUERY_TEMPLATE = """
-SELECT * FROM `{project_id}.{us_id_validation_dataset}.supervision_termination_person_level_raw`
-UNION ALL
-SELECT * FROM `{project_id}.{us_pa_validation_dataset}.supervision_termination_person_level_raw`
-UNION ALL
-SELECT * FROM `{project_id}.{us_me_validation_dataset}.supervision_termination_person_level`
+VIEW_QUERY_TEMPLATE = """
+SELECT 
+    'US_ME' AS region_code,
+    person_external_id,
+    'US_ME_DOC' as external_id_type,
+    release_date
+FROM `{project_id}.{us_me_validation_dataset}.population_releases_materialized`
+
+-- -- Filter to releases from prison to liberty or supervision
+WHERE released_from_location_type IN ('2', '7')
+AND (
+    released_to_location_type NOT IN (
+    '2',  -- Adult DOC Facilities
+    '3', -- Juvenile DOC Facilities
+    '7',  -- Adult pre-release centers
+    '9', -- County Jails
+    '19' -- Federal transfers
+    ) OR released_to_location_type IS NULL -- released to liberty
+)
 """
 
-SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    view_id="supervision_termination_person_level",
-    view_query_template=_QUERY_TEMPLATE,
-    description="Contains external data for person level supervision terminations to "
-    "validate against. See http://go/external-validations for instructions on adding "
-    "new data.",
-    us_id_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ID
-    ),
-    us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_PA
-    ),
+US_ME_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.validation_dataset_for_state(StateCode.US_ME),
+    view_id="incarceration_release_person_level",
+    description="A view detailing incarceration releases at the person level for Maine",
+    should_materialize=True,
+    view_query_template=VIEW_QUERY_TEMPLATE,
     us_me_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_ME
     ),
@@ -50,4 +55,4 @@ SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
+        US_ME_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
