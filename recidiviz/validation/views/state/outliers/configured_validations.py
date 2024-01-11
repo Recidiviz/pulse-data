@@ -37,9 +37,6 @@ from recidiviz.validation.views.state.outliers.unidentified_supervision_district
 from recidiviz.validation.views.state.outliers.unidentified_supervision_officer_supervisors import (
     UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.outliers.unidentified_supervision_officers import (
-    UNIDENTIFIED_SUPERVISION_OFFICERS_VIEW_BUILDER,
-)
 
 
 def get_all_outliers_validations() -> List[DataValidationCheck]:
@@ -61,10 +58,6 @@ def get_all_outliers_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=UNIDENTIFIED_SUPERVISION_OFFICERS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
