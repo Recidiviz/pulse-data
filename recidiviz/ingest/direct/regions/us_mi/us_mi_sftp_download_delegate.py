@@ -35,7 +35,7 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_MI SFTP downloads are handled."""
 
-    CURRENT_ROOT = "."
+    CURRENT_ROOT = "/"
 
     def _matches(self, path: str) -> bool:
         """File names must match ADH_{TABLE_NAME}.zip or ATG_{TABLE}_YYYYMMDD.zip"""
