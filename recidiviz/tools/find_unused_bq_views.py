@@ -27,22 +27,98 @@ from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATAS
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.calculator.query.experiments.views.experiments import (
+    EXPERIMENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.experiments.views.officer_assignments import (
+    OFFICER_ASSIGNMENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.experiments.views.state_assignments import (
+    STATE_ASSIGNMENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.externally_shared_views.dataset_config import (
     EXTERNALLY_SHARED_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     POPULATION_PROJECTION_DATASET,
     REFERENCE_VIEWS_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
+from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
+    EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
+    EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
+    POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_eligibility import (
+    PRIORITIZED_ELIGIBILITY,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_groups import (
+    US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tracks import (
+    US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
+    US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_earned_discharge_sentence_eligibility_spans import (
+    US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_no_convictions_since_sentence_start import (
+    US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_sentenced_after_august_2013 import (
+    US_OR_SENTENCED_AFTER_AUGUST_2013_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_6_months_supervision import (
+    US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_half_sentence import (
+    US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_statute_eligible import (
+    US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
+    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
+    ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.custody_level_raw_text_sessions import (
+    CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
+    HOUSING_UNIT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
+    PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assessments import (
+    US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
+    US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.work_release_sessions import (
+    WORK_RELEASE_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snoozed import (
+    CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
@@ -92,7 +168,147 @@ OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER.address: (
         "This view was created relatively recently (5/31/23) and may still be in use "
         "for ad-hoc analysis."
-    )
+    ),
+    EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER.address: (
+        "This view aggregates early discharge stats at the officer-level. It is used "
+        "to generate reports that can be used by supervisors to identify officers who "
+        "are not completing early discharges in a timely manner. These only include "
+        "information for the most recent complete months. (Hugo S 12/21/23)"
+    ),
+    EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER.address: (
+        "View of early_discharge_sessions with additional information related to"
+        "1) the officer who supervised the individual during the early discharge, and"
+        "2) the supervisor who supervised the officer during the early discharge (Hugo S 12/21/23)"
+    ),
+    POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER.address: (
+        "Not currently referenced but has been used for ad-hoc related research questions "
+        "in the past and could become useful for census-based looker dashboards in the future"
+        "(mayukas 12/21/23)"
+    ),
+    PRIORITIZED_ELIGIBILITY.address: (
+        "Used for ongoing MOSOP work (n-damiani 12/21/23)"
+    ),
+    US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address: (
+        "Used for ongoing MOSOP work (n-damiani 12/21/23)"
+    ),
+    US_MO_PROGRAM_TRACKS_VIEW_BUILDER.address: (
+        "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
+    ),
+    US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address: (
+        "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
+    ),
+    US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER.address: (
+        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
+        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
+        "downstream TES criteria query will enable this view to be deleted."
+    ),
+    US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER.address: (
+        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
+        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
+        "downstream TES criteria query will enable this view to be deleted."
+    ),
+    US_OR_SENTENCED_AFTER_AUGUST_2013_VIEW_BUILDER.address: (
+        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
+        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
+        "downstream TES criteria query will enable this view to be deleted."
+    ),
+    US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER.address: (
+        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
+        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
+        "downstream TES criteria query will enable this view to be deleted."
+    ),
+    US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER.address: (
+        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
+        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
+        "downstream TES criteria query will enable this view to be deleted."
+    ),
+    US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER.address: (
+        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
+        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
+        "downstream TES criteria query will enable this view to be deleted."
+    ),
+    US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER.address: (
+        "(Damini Sharma 12/21/23) TODO(#17885): Completion of this epic will enable deletion of this view."
+    ),
+    EXPERIMENTS_VIEW_BUILDER.address: (
+        "These views are still referenced by existing looker infra and will likely become relevant "
+        "to future templatized dashboards tracking pre-post rollout trends, which is one of the "
+        "pieces of tooling requested by DA's (mayukas 12/21/23)"
+    ),
+    OFFICER_ASSIGNMENTS_VIEW_BUILDER.address: (
+        "These views are still referenced by existing looker infra and will likely become relevant "
+        "to future templatized dashboards tracking pre-post rollout trends, which is one of the "
+        "pieces of tooling requested by DA's (mayukas 12/21/23)"
+    ),
+    STATE_ASSIGNMENTS_VIEW_BUILDER.address: (
+        "These views are still referenced by existing looker infra and will likely become relevant "
+        "to future templatized dashboards tracking pre-post rollout trends, which is one of the "
+        "pieces of tooling requested by DA's (mayukas 12/21/23)"
+    ),
+    ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER.address: (
+        "Not currently referenced but captures state-specific logic that may eventually be relevant to "
+        "assessment schema and could assist with PSI-shaped work (mayukas 12/21/23)"
+    ),
+    CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: (
+        "Currently unused but may need in future TN work (Damini Sharma 12/21/23)"
+    ),
+    HOUSING_UNIT_SESSIONS_VIEW_BUILDER.address: (
+        "We don't use specific housing unit info in downstream products right now, but "
+        "this sessions view is useful for ad hoc analysis (Shalin Brahmbhatt 12/21/23)"
+    ),
+    PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: (
+        "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
+        "provides a template for an eventual  schema addition to support parole boards info. "
+        "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
+    ),
+    US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER.address: (
+        "Not currently referenced but captures state-specific logic that may eventually be relevant "
+        "to assessment schema and could assist with PSI-shaped work (mayukas 12/21/23)"
+    ),
+    US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: (
+        "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
+        "provides a template for an eventual  schema addition to support parole boards info. "
+        "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
+    ),
+    WORK_RELEASE_SESSIONS_VIEW_BUILDER.address: (
+        "Will be used for event view builders (Hugo S 12/21/23) "
+        "TODO(#16722): can be deleted once this view is referenced"
+    ),
+    CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER.address: (
+        "Pulled into a google sheet that is being used for impact tracking (Dana Hoffman 12/21/23)"
+    ),
+    BigQueryAddress(
+        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        table_id="most_recent_incarceration_admission_metrics_not_included_in_state_population",
+    ): (
+        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
+        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
+        "(Anna Geiduschek 1/8/23)"
+    ),
+    BigQueryAddress(
+        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        table_id="most_recent_incarceration_commitment_from_supervision_metrics_not_included_in_state_population",
+    ): (
+        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
+        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
+        "(Anna Geiduschek 1/8/23)"
+    ),
+    BigQueryAddress(
+        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        table_id="most_recent_incarceration_release_metrics_not_included_in_state_population",
+    ): (
+        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
+        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
+        "(Anna Geiduschek 1/8/23)"
+    ),
+    BigQueryAddress(
+        dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        table_id="most_recent_supervision_out_of_state_population_metrics",
+    ): (
+        'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
+        "When we revisit how we calculate in state / out of state populations we may be able to revisit."
+        "(Anna Geiduschek 1/8/23)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {

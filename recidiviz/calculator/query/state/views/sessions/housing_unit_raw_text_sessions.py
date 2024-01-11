@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_NAME = "housing_unit_raw_text_sessions"
+HOUSING_UNIT_SESSIONS_VIEW_NAME = "housing_unit_sessions"
 
 HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual that is incarcerated.
 Session defined as continuous period of time at a given housing unit, housing unit type, raw text, and facility using
@@ -56,9 +56,9 @@ HOUSING_UNIT_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = f"""
     FROM sessionized_cte
 """
 
-HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+HOUSING_UNIT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    view_id=HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_NAME,
+    view_id=HOUSING_UNIT_SESSIONS_VIEW_NAME,
     view_query_template=HOUSING_UNIT_RAW_TEXT_SESSIONS_QUERY_TEMPLATE,
     description=HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
@@ -68,4 +68,4 @@ HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_BUILDER.build_and_print()
+        HOUSING_UNIT_SESSIONS_VIEW_BUILDER.build_and_print()
