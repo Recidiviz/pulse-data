@@ -91,6 +91,7 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
+    StateChargeV2,
     StateIncarcerationSentence,
     StatePerson,
     StateStaff,
@@ -1445,6 +1446,11 @@ class TestBidirectionalUpdates(TestCase):
                 self.assertSetEqual(
                     many_to_many_relationships,
                     {"incarceration_sentences", "supervision_sentences"},
+                )
+            elif isinstance(entity, StateChargeV2):
+                self.assertSetEqual(
+                    many_to_many_relationships,
+                    {"sentences"},
                 )
             else:
                 self.assertEqual(len(many_to_many_relationships), 0)

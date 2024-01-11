@@ -30,6 +30,8 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
+    StateChargeV2ClassificationType,
+    StateChargeV2Status,
 )
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
@@ -47,7 +49,10 @@ from recidiviz.common.constants.state.state_person import StateEthnicity, StateR
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
@@ -545,6 +550,33 @@ def generate_full_graph_state_person(
     )
     person.task_deadlines = [task_deadline]
 
+    sentence = entities.StateSentence.new_with_defaults(
+        state_code="US_XX",
+        external_id="SENTENCE_EXTERNAL_ID_1",
+        sentence_group_external_id="SENTENCE_GROUP_EXTERNAL_ID_1",
+        sentence_metadata='{"BS_CCI": "", "BS_CRQ": "0", "SENTENCE_FLAG": "SENTENCE: 120 DAY"}',
+        sentence_type=StateSentenceType.STATE_PRISON,
+        imposed_date=datetime.date(year=1956, month=3, day=16),
+        is_life=True,
+        is_capital_punishment=True,
+    )
+    person.sentences = [sentence]
+    charge_v2 = entities.StateChargeV2.new_with_defaults(
+        state_code="US_XX",
+        status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+        external_id="CHARGE_V2_EXTERNAL_ID_1",
+        county_code="US_MO_JACKSON",
+        ncic_code="0904",
+        statute="10021040",
+        description="TC: MURDER 1ST - FIST",
+        is_violent=True,
+        classification_type=StateChargeV2ClassificationType.FELONY,
+        classification_type_raw_text="F",
+        classification_subtype="O",
+        judicial_district_code="22",
+    )
+    sentence.charges = [charge_v2]
+
     if set_back_edges:
         incarceration_sentence_children: Sequence[Entity] = (
             *incarceration_sentence.charges,
@@ -592,6 +624,14 @@ def generate_full_graph_state_person(
         for violated_condition in supervision_violation.supervision_violated_conditions:
             violated_condition.supervision_violation = supervision_violation
 
+        # TODO(#26676) Add sentence ledger entities here!
+        sentence_children: Sequence[Entity] = (*sentence.charges,)
+        for child in sentence_children:
+            if hasattr(child, "sentences"):
+                child.sentences = [sentence]  # type: ignore[attr-defined]
+            else:
+                child.sentence = sentence  # type: ignore[attr-defined]
+
     all_entities: Sequence[Entity] = (
         *[person],
         *person.external_ids,
@@ -608,6 +648,7 @@ def generate_full_graph_state_person(
         *person.incarceration_periods,
         *person.supervision_periods,
         *person.task_deadlines,
+        *person.sentences,
         *incarceration_sentence.charges,
         *incarceration_sentence.early_discharges,
         *supervision_sentence.early_discharges,
@@ -616,6 +657,7 @@ def generate_full_graph_state_person(
         *supervision_violation.supervision_violation_responses,
         *supervision_violation.supervision_violation_types,
         *supervision_violation.supervision_violated_conditions,
+        *sentence.charges,
     )
 
     if include_person_back_edges and set_back_edges:
