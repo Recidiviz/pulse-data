@@ -43,6 +43,7 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.incarceratio
     ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
     IncarcerationPeriodNormalizationManager,
     PurposeForIncarcerationInfo,
+    StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
@@ -65,6 +66,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
         earliest_death_date: Optional[date] = None,
+        normalization_delegate_override: Optional[
+            StateSpecificIncarcerationNormalizationDelegate
+        ] = None,
     ) -> List[StateIncarcerationPeriod]:
         """Normalizes incarceration periods for calculations"""
         # None of the state-agnostic tests rely on supervision periods
@@ -75,9 +79,12 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
-            person_id=None,
+            person_id=123,
             incarceration_periods=incarceration_periods,
-            normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
+            normalization_delegate=(
+                normalization_delegate_override
+                or UsXxIncarcerationNormalizationDelegate()
+            ),
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
             incarceration_sentences=incarceration_sentences,
@@ -1340,6 +1347,40 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(expected_periods, validated_incarceration_periods)
 
+    def test_add_inferred_periods_even_if_there_are_no_original_ips(self) -> None:
+        """Tests that if the delegate returns additional inferred IPs, those are
+        returned, even if there are no input IPs.
+        """
+        inferred_ip = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            external_id="ip1",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        class _UsXxIncarcerationNormalizationDelegate(
+            StateSpecificIncarcerationNormalizationDelegate
+        ):
+            def infer_additional_periods(
+                self,
+                person_id: int,
+                incarceration_periods: List[StateIncarcerationPeriod],
+                supervision_period_index: NormalizedSupervisionPeriodIndex,
+            ) -> List[StateIncarcerationPeriod]:
+                return [inferred_ip]
+
+        validated_incarceration_periods = self._normalized_incarceration_periods_for_calculations(
+            incarceration_periods=[],
+            normalization_delegate_override=_UsXxIncarcerationNormalizationDelegate(),
+        )
+        self.assertEqual([inferred_ip], validated_incarceration_periods)
+
     def test_additional_attributes_map(self) -> None:
         incarceration_periods = [
             StateIncarcerationPeriod.new_with_defaults(
@@ -1355,7 +1396,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         ]
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
-            person_id=None,
+            person_id=123,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=default_normalized_sp_index_for_tests(
@@ -1398,7 +1439,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
-            person_id=None,
+            person_id=123,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=default_normalized_sp_index_for_tests(

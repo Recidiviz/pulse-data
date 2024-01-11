@@ -287,7 +287,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         ],
         incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         field_index: CoreEntityFieldIndex,
-        person_id: Optional[int],
+        person_id: int,
         earliest_death_date: Optional[date] = None,
     ):
         self._person_id = person_id
@@ -326,114 +326,99 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         if self._normalized_incarceration_periods_and_additional_attributes:
             return self._normalized_incarceration_periods_and_additional_attributes
 
-        if not self._original_incarceration_periods:
-            self._normalized_incarceration_periods_and_additional_attributes = (
-                [],
-                self.additional_attributes_map_for_normalized_ips(
-                    incarceration_periods=[],
-                    ip_id_to_pfi_subtype={},
-                    ip_id_to_violation_type={},
-                ),
-            )
-        else:
-            # Make a deep copy of the original incarceration periods
-            periods_for_normalization = deepcopy(self._original_incarceration_periods)
+        # Make a deep copy of the original incarceration periods
+        periods_for_normalization = deepcopy(self._original_incarceration_periods)
 
-            # Drop placeholder IPs with no start and no end dates
-            mid_processing_periods = self._drop_missing_date_periods(
-                periods_for_normalization
-            )
+        # Drop placeholder IPs with no start and no end dates
+        mid_processing_periods = self._drop_missing_date_periods(
+            periods_for_normalization
+        )
 
-            # Drop IPs that are fuzzy matched, as we are not yet confident in their
-            # placement of a person's entire journey within the system
-            mid_processing_periods = drop_fuzzy_matched_periods(mid_processing_periods)
+        # Drop IPs that are fuzzy matched, as we are not yet confident in their
+        # placement of a person's entire journey within the system
+        mid_processing_periods = drop_fuzzy_matched_periods(mid_processing_periods)
 
-            # Sort periods, and infer as much missing information as possible
-            mid_processing_periods = self._sort_and_infer_missing_dates_and_statuses(
+        # Sort periods, and infer as much missing information as possible
+        mid_processing_periods = self._sort_and_infer_missing_dates_and_statuses(
+            mid_processing_periods
+        )
+
+        # Infer missing periods
+        mid_processing_periods = self.normalization_delegate.infer_additional_periods(
+            self._person_id,
+            mid_processing_periods,
+            supervision_period_index=self._normalized_supervision_period_index,
+        )
+
+        original_sorted_periods = deepcopy(mid_processing_periods)
+
+        # Handle any periods that may have been erroneously set to have a
+        # TEMPORARY_CUSTODY pfi at ingest due to limitations in ingest
+        # mapping logic. (For example, logic that requires looking at more
+        # than one period to determine the correct pfi value.)
+        mid_processing_periods = self._handle_erroneously_set_temporary_custody_periods(
+            mid_processing_periods
+        )
+
+        # Update transfers that should be status change edges
+        mid_processing_periods = self._update_transfers_to_status_changes(
+            mid_processing_periods
+        )
+
+        # Update parole board hold and other temporary custody period attributes
+        # to match standardized values
+        mid_processing_periods = (
+            self._standardize_temporary_custody_and_board_hold_periods(
                 mid_processing_periods
             )
+        )
 
-            # Infer missing periods
-            if self._person_id:
-                mid_processing_periods = self.normalization_delegate.infer_additional_periods(
-                    self._person_id,
-                    mid_processing_periods,
-                    supervision_period_index=self._normalized_supervision_period_index,
-                )
+        # Override values on the incarceration periods that are
+        # commitment from supervision admissions
+        (
+            mid_processing_periods,
+            ip_id_to_pfi_subtype,
+        ) = self._normalize_commitment_from_supervision_admission_periods(
+            mid_processing_periods=mid_processing_periods,
+            original_sorted_periods=original_sorted_periods,
+            supervision_period_index=self._normalized_supervision_period_index,
+            violation_responses=self._violation_responses,
+        )
 
-            original_sorted_periods = deepcopy(mid_processing_periods)
+        # Drop certain periods entirely from the calculations
+        mid_processing_periods = self._drop_periods_from_calculations(
+            mid_processing_periods
+        )
 
-            # Handle any periods that may have been erroneously set to have a
-            # TEMPORARY_CUSTODY pfi at ingest due to limitations in ingest
-            # mapping logic. (For example, logic that requires looking at more
-            # than one period to determine the correct pfi value.)
-            mid_processing_periods = (
-                self._handle_erroneously_set_temporary_custody_periods(
-                    mid_processing_periods
-                )
-            )
+        # Ensure that the purpose_for_incarceration values on all periods is
+        # what we expect
+        mid_processing_periods = self._standardize_purpose_for_incarceration_values(
+            mid_processing_periods
+        )
 
-            # Update transfers that should be status change edges
-            mid_processing_periods = self._update_transfers_to_status_changes(
-                mid_processing_periods
-            )
+        # Process fields on final incarceration period set
+        mid_processing_periods = self._process_fields_on_final_incarceration_period_set(
+            mid_processing_periods, self._incarceration_sentences
+        )
 
-            # Update parole board hold and other temporary custody period attributes
-            # to match standardized values
-            mid_processing_periods = (
-                self._standardize_temporary_custody_and_board_hold_periods(
-                    mid_processing_periods
-                )
-            )
-
-            # Override values on the incarceration periods that are
-            # commitment from supervision admissions
-            (
-                mid_processing_periods,
-                ip_id_to_pfi_subtype,
-            ) = self._normalize_commitment_from_supervision_admission_periods(
+        # Generates map of admisson violation type information
+        ip_id_to_violation_type = (
+            self._generate_incarceration_admission_violation_types(
                 mid_processing_periods=mid_processing_periods,
-                original_sorted_periods=original_sorted_periods,
-                supervision_period_index=self._normalized_supervision_period_index,
-                violation_responses=self._violation_responses,
             )
+        )
 
-            # Drop certain periods entirely from the calculations
-            mid_processing_periods = self._drop_periods_from_calculations(
-                mid_processing_periods
-            )
+        # Validate IPs
+        self.validate_ip_invariants(mid_processing_periods)
 
-            # Ensure that the purpose_for_incarceration values on all periods is
-            # what we expect
-            mid_processing_periods = self._standardize_purpose_for_incarceration_values(
-                mid_processing_periods
-            )
-
-            # Process fields on final incarceration period set
-            mid_processing_periods = (
-                self._process_fields_on_final_incarceration_period_set(
-                    mid_processing_periods, self._incarceration_sentences
-                )
-            )
-
-            # Generates map of admisson violation type information
-            ip_id_to_violation_type = (
-                self._generate_incarceration_admission_violation_types(
-                    mid_processing_periods=mid_processing_periods,
-                )
-            )
-
-            # Validate IPs
-            self.validate_ip_invariants(mid_processing_periods)
-
-            self._normalized_incarceration_periods_and_additional_attributes = (
-                mid_processing_periods,
-                self.additional_attributes_map_for_normalized_ips(
-                    incarceration_periods=mid_processing_periods,
-                    ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
-                    ip_id_to_violation_type=ip_id_to_violation_type,
-                ),
-            )
+        self._normalized_incarceration_periods_and_additional_attributes = (
+            mid_processing_periods,
+            self.additional_attributes_map_for_normalized_ips(
+                incarceration_periods=mid_processing_periods,
+                ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
+                ip_id_to_violation_type=ip_id_to_violation_type,
+            ),
+        )
 
         return self._normalized_incarceration_periods_and_additional_attributes
 
