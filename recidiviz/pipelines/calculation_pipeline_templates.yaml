@@ -100,7 +100,7 @@ metric_pipelines:
   - pipeline: program_metrics
     job_name: full-us-nd-program-metrics
     state_code: US_ND
-    metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
+    metric_types: PROGRAM_PARTICIPATION
     region: us-west1
   - pipeline: violation_metrics
     job_name: full-us-nd-violation-metrics
@@ -166,7 +166,7 @@ metric_pipelines:
   - pipeline: program_metrics
     job_name: full-us-ix-program-metrics
     state_code: US_IX
-    metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
+    metric_types: PROGRAM_PARTICIPATION
     region: us-west3
 
   # Full US_PA calculations with no time limit

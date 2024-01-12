@@ -17,11 +17,10 @@
 """Identifies instances of interaction with a program."""
 import logging
 from datetime import date
-from typing import List, Optional
+from typing import List
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -31,7 +30,6 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateAssessment,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
@@ -42,20 +40,11 @@ from recidiviz.pipelines.metrics.base_identifier import (
 from recidiviz.pipelines.metrics.program.events import (
     ProgramEvent,
     ProgramParticipationEvent,
-    ProgramReferralEvent,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.utils import assessment_utils
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
-)
 from recidiviz.pipelines.utils.supervision_period_utils import (
-    supervising_location_info,
     supervision_periods_overlapping_with_date,
 )
 
@@ -79,18 +68,12 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             supervision_periods=identifier_context[
                 NormalizedStateSupervisionPeriod.base_class_name()
             ],
-            assessments=identifier_context[NormalizedStateAssessment.base_class_name()],
-            supervision_delegate=identifier_context[
-                StateSpecificSupervisionDelegate.__name__
-            ],
         )
 
     def _find_program_events(
         self,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         program_assignments: List[NormalizedStateProgramAssignment],
-        assessments: List[NormalizedStateAssessment],
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProgramEvent]:
         """Finds instances of interaction with a program.
 
@@ -119,14 +102,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         )
 
         for program_assignment in sorted_program_assignments:
-            program_referrals = self._find_program_referrals(
-                program_assignment,
-                assessments,
-                sp_index.sorted_supervision_periods,
-                supervision_delegate,
-            )
-
-            program_events.extend(program_referrals)
 
             program_participation_events = self._find_program_participation_events(
                 program_assignment, sp_index.sorted_supervision_periods
@@ -135,59 +110,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             program_events.extend(program_participation_events)
 
         return program_events
-
-    def _find_program_referrals(
-        self,
-        program_assignment: NormalizedStateProgramAssignment,
-        assessments: List[NormalizedStateAssessment],
-        supervision_periods: List[NormalizedStateSupervisionPeriod],
-        supervision_delegate: StateSpecificSupervisionDelegate,
-    ) -> List[ProgramReferralEvent]:
-        """Finds instances of being referred to a program.
-
-        If the program assignment has a referral date, then using date-based logic,
-        connects that referral to assessment and supervision data where possible to
-        build ProgramReferralEvents. For assessments, identifies the most recent
-        assessment at the time of the referral. For supervision, identifies any
-        supervision periods that were active at the time of the referral. If there
-        are multiple overlapping supervision periods, returns one ProgramReferralEvent
-        for each unique supervision type for each supervision period that overlapped.
-
-        Returns a list of ProgramReferralEvents.
-        """
-        program_referrals: List[ProgramReferralEvent] = []
-
-        referral_date = program_assignment.referral_date
-        program_id = program_assignment.program_id
-
-        if not program_id:
-            program_id = EXTERNAL_UNKNOWN_VALUE
-
-        if referral_date and program_id:
-            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                cutoff_date=referral_date,
-                assessments=assessments,
-                assessment_class=StateAssessmentClass.RISK,
-                supervision_delegate=supervision_delegate,
-            )
-
-            relevant_supervision_periods = supervision_periods_overlapping_with_date(
-                referral_date, supervision_periods
-            )
-
-            program_referrals.extend(
-                self._referrals_for_supervision_periods(
-                    program_assignment.state_code,
-                    program_id,
-                    referral_date,
-                    program_assignment.participation_status,
-                    most_recent_assessment,
-                    relevant_supervision_periods,
-                    supervision_delegate,
-                )
-            )
-
-        return program_referrals
 
     def _find_program_participation_events(
         self,
@@ -293,81 +215,3 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             participation_date = participation_date + relativedelta(days=1)
 
         return program_participation_events
-
-    def _referrals_for_supervision_periods(
-        self,
-        state_code: str,
-        program_id: str,
-        referral_date: date,
-        participation_status: Optional[StateProgramAssignmentParticipationStatus],
-        most_recent_assessment: Optional[NormalizedStateAssessment],
-        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]],
-        supervision_delegate: StateSpecificSupervisionDelegate,
-    ) -> List[ProgramReferralEvent]:
-        """Builds ProgramReferralEvents with data from the relevant supervision periods
-        at the time of the referral.
-
-        # TODO(#8818): Consider producing only one ProgramReferralEvent per referral
-        Returns one ProgramReferralEvent for each of the supervision periods that
-        overlap with the referral."""
-        program_referrals: List[ProgramReferralEvent] = []
-
-        assessment_score = (
-            most_recent_assessment.assessment_score if most_recent_assessment else None
-        )
-        assessment_type = (
-            most_recent_assessment.assessment_type if most_recent_assessment else None
-        )
-        assessment_score_bucket = (
-            most_recent_assessment.assessment_score_bucket
-            if most_recent_assessment
-            else DEFAULT_ASSESSMENT_SCORE_BUCKET
-        )
-
-        if supervision_periods:
-            for supervision_period in supervision_periods:
-                # Return one ProgramReferralEvent per supervision period
-                (
-                    level_1_supervision_location_external_id,
-                    level_2_supervision_location_external_id,
-                ) = supervising_location_info(
-                    supervision_period,
-                    supervision_delegate,
-                )
-
-                deprecated_supervising_district_external_id = supervision_delegate.get_deprecated_supervising_district_external_id(
-                    level_1_supervision_location_external_id,
-                    level_2_supervision_location_external_id,
-                )
-
-                program_referrals.append(
-                    ProgramReferralEvent(
-                        state_code=state_code,
-                        program_id=program_id,
-                        event_date=referral_date,
-                        participation_status=participation_status,
-                        assessment_score=assessment_score,
-                        assessment_type=assessment_type,
-                        assessment_score_bucket=assessment_score_bucket,
-                        supervision_type=supervision_period.supervision_type,
-                        supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-                        supervising_district_external_id=deprecated_supervising_district_external_id,
-                        level_1_supervision_location_external_id=level_1_supervision_location_external_id,
-                        level_2_supervision_location_external_id=level_2_supervision_location_external_id,
-                    )
-                )
-        else:
-            # Return a ProgramReferralEvent without any supervision details
-            return [
-                ProgramReferralEvent(
-                    state_code=state_code,
-                    program_id=program_id,
-                    event_date=referral_date,
-                    participation_status=participation_status,
-                    assessment_score=assessment_score,
-                    assessment_type=assessment_type,
-                    assessment_score_bucket=assessment_score_bucket,
-                )
-            ]
-
-        return program_referrals
