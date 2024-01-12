@@ -47,7 +47,7 @@ from recidiviz.server_blueprint_registry import (
 from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
 from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import GCPEnvironment, in_gunicorn
+from recidiviz.utils.environment import get_admin_panel_base_url, in_gunicorn
 
 structured_logging.setup()
 
@@ -142,17 +142,13 @@ def health() -> Tuple[str, HTTPStatus]:
 @app.route("/admin", defaults={"path": ""})
 @app.route("/admin/<path:path>")
 def fallback(path: Optional[str] = None) -> Response:
-    gcp_env = environment.get_gcp_environment()
-
-    if gcp_env == GCPEnvironment.STAGING.value:
-        new_host = "admin-panel-staging.recidiviz.org"
-    elif gcp_env == GCPEnvironment.PRODUCTION.value:
-        new_host = "admin-panel-prod.recidiviz.org"
-    else:
+    admin_panel_url = get_admin_panel_base_url()
+    if not admin_panel_url:
         raise RuntimeError("Admin Panel no longer lives in this app")
 
     return redirect(
-        f"https://{new_host}/admin/{path}", code=HTTPStatus.MOVED_PERMANENTLY.value
+        f"{admin_panel_url}/admin/{path}?{str(request.query_string)}",
+        code=HTTPStatus.MOVED_PERMANENTLY.value,
     )
 
 

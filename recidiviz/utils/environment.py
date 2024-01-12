@@ -315,3 +315,14 @@ def get_service_type() -> ServiceType:
 
 def in_app_engine() -> bool:
     return get_app_engine_version() != ""
+
+
+def get_admin_panel_base_url() -> Optional[str]:
+    if get_gcp_environment() == GCPEnvironment.PRODUCTION.value:
+        return "https://admin-panel-prod.recidiviz.org"
+    if get_gcp_environment() == GCPEnvironment.STAGING.value:
+        return "https://admin-panel-staging.recidiviz.org"
+    if in_development():
+        return "http://localhost:5050"
+
+    return None
