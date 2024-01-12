@@ -25,13 +25,11 @@ from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.program.events import (
     ProgramEvent,
     ProgramParticipationEvent,
-    ProgramReferralEvent,
 )
 from recidiviz.pipelines.metrics.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
     ProgramParticipationMetric,
-    ProgramReferralMetric,
 )
 
 
@@ -44,7 +42,6 @@ class ProgramMetricProducer(
         # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
         self.metric_class = ProgramMetric  # type: ignore
         self.event_to_metric_classes = {
-            ProgramReferralEvent: [ProgramReferralMetric],
             ProgramParticipationEvent: [ProgramParticipationMetric],
         }
         self.metrics_producer_delegate_classes = {}

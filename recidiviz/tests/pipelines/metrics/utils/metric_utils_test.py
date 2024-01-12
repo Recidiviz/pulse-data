@@ -33,7 +33,6 @@ from recidiviz.pipelines.metrics.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
     ProgramParticipationMetric,
-    ProgramReferralMetric,
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
@@ -109,7 +108,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 
     def test_bq_schema_for_metric_table_program(self) -> None:
         program_metrics_for_type: Dict[ProgramMetricType, Type[ProgramMetric]] = {
-            ProgramMetricType.PROGRAM_REFERRAL: ProgramReferralMetric,
             ProgramMetricType.PROGRAM_PARTICIPATION: ProgramParticipationMetric,
         }
 

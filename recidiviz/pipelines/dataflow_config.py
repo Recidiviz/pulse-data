@@ -32,7 +32,6 @@ from recidiviz.pipelines.metrics.population_spans.metrics import (
 from recidiviz.pipelines.metrics.program.metrics import (
     ProgramMetricType,
     ProgramParticipationMetric,
-    ProgramReferralMetric,
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
@@ -73,7 +72,6 @@ ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
     IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
     IncarcerationMetricType.INCARCERATION_RELEASE,
     ProgramMetricType.PROGRAM_PARTICIPATION,
-    ProgramMetricType.PROGRAM_REFERRAL,
     SupervisionMetricType.SUPERVISION_COMPLIANCE,
     SupervisionMetricType.SUPERVISION_DOWNGRADE,
     SupervisionMetricType.SUPERVISION_START,
@@ -106,7 +104,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     IncarcerationPopulationSpanMetric: "incarceration_population_span_metrics",
     SupervisionPopulationSpanMetric: "supervision_population_span_metrics",
     # ProgramMetrics
-    ProgramReferralMetric: "program_referral_metrics",
     ProgramParticipationMetric: "program_participation_metrics",
     # ReincarcerationRecidivismMetrics
     ReincarcerationRecidivismCountMetric: "recidivism_count_metrics",
@@ -133,7 +130,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     "incarceration_population_span_metrics": PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
     "supervision_population_span_metrics": PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
     # ProgramMetrics
-    "program_referral_metrics": ProgramMetricType.PROGRAM_REFERRAL,
     "program_participation_metrics": ProgramMetricType.PROGRAM_PARTICIPATION,
     # ReincarcerationRecidivismMetrics
     "recidivism_count_metrics": ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,

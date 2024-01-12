@@ -22,7 +22,6 @@ from typing import Dict, List, Type
 
 from freezegun import freeze_time
 
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
     StateGender,
@@ -40,7 +39,6 @@ from recidiviz.pipelines.metrics.program import metric_producer, pipeline
 from recidiviz.pipelines.metrics.program.events import (
     ProgramEvent,
     ProgramParticipationEvent,
-    ProgramReferralEvent,
 )
 from recidiviz.pipelines.metrics.program.metrics import ProgramMetricType
 from recidiviz.pipelines.metrics.utils.metric_utils import (
@@ -83,10 +81,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        program_events = [
-            ProgramReferralEvent(
-                state_code="US_ND", event_date=date(2019, 10, 10), program_id="XXX"
-            ),
+        program_events: List[ProgramEvent] = [
             ProgramParticipationEvent(
                 state_code="US_ND", event_date=date(2019, 2, 2), program_id="ZZZ"
             ),
@@ -129,17 +124,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         event_date = date(2009, 10, 31)
 
-        program_events = [
-            ProgramReferralEvent(
-                state_code="US_ND",
-                event_date=event_date,
-                program_id="XXX",
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_score=22,
-                assessment_type=StateAssessmentType.LSIR,
-                supervising_officer_staff_id=10000,
-                supervising_district_external_id="135",
-            ),
+        program_events: List[ProgramEvent] = [
             ProgramParticipationEvent(
                 state_code="US_ND",
                 event_date=event_date,
@@ -185,16 +170,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         event_date = date(2009, 10, 31)
 
-        program_events = [
-            ProgramReferralEvent(
-                state_code="US_ND",
-                event_date=event_date,
-                program_id="XXX",
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                assessment_score=22,
-                assessment_type=StateAssessmentType.LSIR,
-                supervising_district_external_id="135",
-            ),
+        program_events: List[ProgramEvent] = [
             ProgramParticipationEvent(
                 state_code="US_ND",
                 event_date=event_date,
@@ -240,25 +216,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         event_date = date(2009, 10, 7)
 
-        program_events = [
-            ProgramReferralEvent(
-                state_code="US_ND",
-                event_date=event_date,
-                program_id="XXX",
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_score=22,
-                assessment_type=StateAssessmentType.LSIR,
-                supervising_district_external_id="135",
-            ),
-            ProgramReferralEvent(
-                state_code="US_ND",
-                event_date=date(2009, 10, 7),
-                program_id="XXX",
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                assessment_score=22,
-                assessment_type=StateAssessmentType.LSIR,
-                supervising_district_external_id="135",
-            ),
+        program_events: List[ProgramEvent] = [
             ProgramParticipationEvent(
                 state_code="US_ND",
                 event_date=event_date,
@@ -286,99 +244,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         )
 
         expected_count = expected_metrics_count(program_events)
-
-        self.assertEqual(expected_count, len(metrics))
-
-    @freeze_time("2012-11-30")
-    def test_produce_program_metrics_calculation_month_count_1(self) -> None:
-        person = StatePerson.new_with_defaults(
-            state_code="US_ND",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
-        )
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        included_event = ProgramReferralEvent(
-            state_code="US_ND", event_date=date(2012, 11, 10), program_id="XXX"
-        )
-
-        not_included_event = ProgramReferralEvent(
-            state_code="US_ND", event_date=date(2000, 2, 2), program_id="ZZZ"
-        )
-
-        program_events: List[ProgramEvent] = [
-            included_event,
-            not_included_event,
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            program_events,
-            ALL_METRICS_INCLUSIONS_DICT,
-            metrics_producer_delegates={},
-            calculation_month_count=1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=PIPELINE_JOB_ID,
-        )
-
-        expected_count = expected_metrics_count([included_event])
-
-        self.assertEqual(expected_count, len(metrics))
-
-    @freeze_time("2012-12-31")
-    def test_produce_program_metrics_calculation_month_count_36(self) -> None:
-        person = StatePerson.new_with_defaults(
-            state_code="US_ND",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=StateGender.FEMALE,
-        )
-
-        race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
-        )
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        included_event = ProgramReferralEvent(
-            state_code="US_ND", event_date=date(2012, 12, 10), program_id="XXX"
-        )
-
-        not_included_event = ProgramReferralEvent(
-            state_code="US_ND", event_date=date(2009, 12, 10), program_id="ZZZ"
-        )
-
-        program_events: List[ProgramEvent] = [included_event, not_included_event]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            program_events,
-            ALL_METRICS_INCLUSIONS_DICT,
-            metrics_producer_delegates={},
-            calculation_month_count=36,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=PIPELINE_JOB_ID,
-        )
-
-        expected_count = expected_metrics_count([included_event])
 
         self.assertEqual(expected_count, len(metrics))
 

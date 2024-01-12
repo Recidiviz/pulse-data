@@ -51,15 +51,11 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import (
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.program import identifier, pipeline
-from recidiviz.pipelines.metrics.program.events import (
-    ProgramParticipationEvent,
-    ProgramReferralEvent,
-)
+from recidiviz.pipelines.metrics.program.events import ProgramParticipationEvent
 from recidiviz.pipelines.metrics.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
     ProgramParticipationMetric,
-    ProgramReferralMetric,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
@@ -253,7 +249,6 @@ class TestProgramPipeline(unittest.TestCase):
         data_dict = self.build_data_dict(fake_person_id, fake_supervision_period_id)
 
         expected_metric_types = {
-            ProgramMetricType.PROGRAM_REFERRAL,
             ProgramMetricType.PROGRAM_PARTICIPATION,
         }
 
@@ -267,7 +262,6 @@ class TestProgramPipeline(unittest.TestCase):
         data_dict = self.build_data_dict(fake_person_id, fake_supervision_period_id)
 
         expected_metric_types = {
-            ProgramMetricType.PROGRAM_REFERRAL,
             ProgramMetricType.PROGRAM_PARTICIPATION,
         }
 
@@ -451,7 +445,6 @@ class TestProgramPipeline(unittest.TestCase):
         data_dict.update(data_dict_overrides)
 
         expected_metric_types = {
-            ProgramMetricType.PROGRAM_REFERRAL,
             ProgramMetricType.PROGRAM_PARTICIPATION,
         }
 
@@ -543,18 +536,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         assert program_assignment.program_id is not None
         assert program_assignment.referral_date is not None
         program_events = [
-            ProgramReferralEvent(
-                state_code=program_assignment.state_code,
-                program_id=program_assignment.program_id,
-                event_date=program_assignment.referral_date,
-                participation_status=program_assignment.participation_status,
-                assessment_score=33,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervision_type=supervision_period.supervision_type,
-                supervising_district_external_id="10",
-                level_1_supervision_location_external_id="10",
-            ),
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
                 program_id=program_assignment.program_id,
@@ -650,18 +631,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         assert program_assignment.program_id is not None
         assert program_assignment.referral_date is not None
         program_events = [
-            ProgramReferralEvent(
-                state_code=program_assignment.state_code,
-                program_id=program_assignment.program_id,
-                event_date=program_assignment.referral_date,
-                participation_status=program_assignment.participation_status,
-                assessment_score=33,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervision_type=supervision_period.supervision_type,
-                supervising_district_external_id="10",
-                level_1_supervision_location_external_id="10",
-            ),
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
                 program_id=program_assignment.program_id,
@@ -759,88 +728,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyProgramAssignments_NoAssessments(self) -> None:
-        """Tests the ClassifyProgramAssignments DoFn."""
-        fake_person_id = 12345
-
-        fake_person = entities.StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=fake_person_id,
-            gender=StateGender.MALE,
-            birthdate=date(1970, 1, 1),
-            residency_status=StateResidencyStatus.PERMANENT,
-        )
-
-        program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
-            sequence_num=0,
-            external_id="pa1",
-            state_code="US_XX",
-            program_id="PG3",
-            referral_date=date(2009, 10, 3),
-            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_period = (
-            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
-                sequence_num=0,
-                supervision_period_id=111,
-                external_id="sp1",
-                state_code="US_XX",
-                start_date=date(2008, 3, 5),
-                termination_date=date(2010, 5, 19),
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                supervision_site="10",
-            )
-        )
-
-        supervision_location_to_name_map = {
-            "state_code": "US_XX",
-            "level_1_supervision_location_external_id": "site",
-            "level_2_supervision_location_external_id": "district",
-        }
-
-        person_periods = {
-            entities.StatePerson.__name__: [fake_person],
-            entities.StateProgramAssignment.__name__: [program_assignment],
-            entities.StateAssessment.__name__: [],
-            entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_location_ids_to_names": [supervision_location_to_name_map],
-        }
-
-        assert program_assignment.program_id is not None
-        assert program_assignment.referral_date is not None
-        program_event = ProgramReferralEvent(
-            state_code=program_assignment.state_code,
-            program_id=program_assignment.program_id,
-            event_date=program_assignment.referral_date,
-            participation_status=program_assignment.participation_status,
-            supervision_type=supervision_period.supervision_type,
-            supervising_district_external_id="10",
-            level_1_supervision_location_external_id="10",
-            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-        )
-
-        correct_output = [(fake_person.person_id, (fake_person, [program_event]))]
-
-        test_pipeline = TestPipeline()
-
-        output = (
-            test_pipeline
-            | beam.Create([(fake_person_id, person_periods)])
-            | "Identify Program Events"
-            >> beam.ParDo(
-                ClassifyResults(),
-                self.state_code,
-                self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
-            )
-        )
-
-        assert_that(output, equal_to(correct_output))
-
-        test_pipeline.run()
-
     def testClassifyProgramAssignments_NoSupervision(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
@@ -888,17 +775,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         assert program_assignment.program_id is not None
         assert program_assignment.referral_date is not None
-        program_event = ProgramReferralEvent(
-            state_code=program_assignment.state_code,
-            program_id=program_assignment.program_id,
-            event_date=program_assignment.referral_date,
-            assessment_score=33,
-            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            participation_status=program_assignment.participation_status,
-        )
-
-        correct_output = [(fake_person.person_id, (fake_person, [program_event]))]
 
         test_pipeline = TestPipeline()
 
@@ -914,7 +790,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        assert_that(output, equal_to(correct_output))
+        assert_that(output, equal_to([]))
 
         test_pipeline.run()
 
@@ -965,13 +841,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         )
 
         program_events = [
-            ProgramReferralEvent(
-                state_code="US_XX",
-                event_date=date(2011, 4, 3),
-                program_id="program",
-                participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
-                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            ),
             ProgramParticipationEvent(
                 state_code="US_XX", event_date=date(2011, 6, 3), program_id="program"
             ),
@@ -980,7 +849,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         expected_metric_count = 1
 
         expected_combination_counts = {
-            "referrals": expected_metric_count,
             "participation": expected_metric_count,
         }
 
@@ -1125,11 +993,7 @@ class AssertMatchers:
                 actual_metric_counts[key] = 0
 
             for metric in output:
-                if isinstance(metric, ProgramReferralMetric):
-                    actual_metric_counts["referrals"] = (
-                        actual_metric_counts["referrals"] + 1
-                    )
-                elif isinstance(metric, ProgramParticipationMetric):
+                if isinstance(metric, ProgramParticipationMetric):
                     actual_metric_counts["participation"] = (
                         actual_metric_counts["participation"] + 1
                     )
