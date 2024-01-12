@@ -80,7 +80,7 @@ metric_pipelines:
   - pipeline: recidivism_metrics
     job_name: full-us-nd-recidivism-metrics
     state_code: US_ND
-    metric_types: REINCARCERATION_COUNT REINCARCERATION_RATE
+    metric_types: REINCARCERATION_RATE
     region: us-west1
   - pipeline: population_span_metrics
     job_name: full-us-nd-population-span-metrics

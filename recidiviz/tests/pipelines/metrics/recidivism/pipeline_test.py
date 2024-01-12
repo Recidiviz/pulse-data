@@ -61,9 +61,6 @@ from recidiviz.pipelines.metrics.recidivism.events import (
     RecidivismReleaseEvent,
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
-    ReincarcerationRecidivismCountMetric,
-)
-from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismMetricType,
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
@@ -106,7 +103,6 @@ from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manage
 _COUNTY_OF_RESIDENCE = "county"
 
 ALL_METRIC_INCLUSIONS_DICT = {
-    MetricType.REINCARCERATION_COUNT: True,
     MetricType.REINCARCERATION_RATE: True,
 }
 
@@ -441,7 +437,6 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         expected_metric_types: Set[MetricType] = {
             ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
-            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
         }
 
         read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
@@ -864,13 +859,9 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
         expected_combinations_count_2014 = periods
 
-        # Add count metrics for the 2 events
-        expected_count_metric_combinations = 2
-
         expected_metric_counts = {
             2010: expected_combinations_count_2010,
             2014: expected_combinations_count_2014,
-            "counts": expected_count_metric_combinations,
         }
 
         test_pipeline = TestPipeline()
@@ -1137,10 +1128,6 @@ class AssertMatchers:
                     release_cohort_year = metric.release_cohort
                     actual_combination_counts[release_cohort_year] = (
                         actual_combination_counts[release_cohort_year] + 1
-                    )
-                elif isinstance(metric, ReincarcerationRecidivismCountMetric):
-                    actual_combination_counts["counts"] = (
-                        actual_combination_counts["counts"] + 1
                     )
 
             for key in expected_metric_counts:

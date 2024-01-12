@@ -34,7 +34,6 @@ from recidiviz.pipelines.metrics.program.metrics import (
     ProgramParticipationMetric,
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
-    ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
 )
@@ -63,7 +62,6 @@ PIPELINE_CONFIG_YAML_PATH = os.path.join(
 
 # Pipelines that are always run for all dates.
 ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
-    ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
     ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
     PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
     PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
@@ -104,7 +102,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     # ProgramMetrics
     ProgramParticipationMetric: "program_participation_metrics",
     # ReincarcerationRecidivismMetrics
-    ReincarcerationRecidivismCountMetric: "recidivism_count_metrics",
     ReincarcerationRecidivismRateMetric: "recidivism_rate_metrics",
     # SupervisionMetrics
     SupervisionCaseComplianceMetric: "supervision_case_compliance_metrics",
@@ -129,7 +126,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     # ProgramMetrics
     "program_participation_metrics": ProgramMetricType.PROGRAM_PARTICIPATION,
     # ReincarcerationRecidivismMetrics
-    "recidivism_count_metrics": ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
     "recidivism_rate_metrics": ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
     # SupervisionMetrics
     "supervision_case_compliance_metrics": SupervisionMetricType.SUPERVISION_COMPLIANCE,

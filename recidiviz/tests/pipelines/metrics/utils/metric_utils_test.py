@@ -35,7 +35,6 @@ from recidiviz.pipelines.metrics.program.metrics import (
     ProgramParticipationMetric,
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
-    ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetric,
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
@@ -121,7 +120,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
         recidivism_metrics_for_type: Dict[
             ReincarcerationRecidivismMetricType, Type[ReincarcerationRecidivismMetric]
         ] = {
-            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT: ReincarcerationRecidivismCountMetric,
             ReincarcerationRecidivismMetricType.REINCARCERATION_RATE: ReincarcerationRecidivismRateMetric,
         }
 
