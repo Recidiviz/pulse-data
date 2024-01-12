@@ -100,6 +100,7 @@ ValidationAddress = NamedTuple(
         ("address", BigQueryAddress),
         ("entity_primary_key", str),
         ("excluded_keys", List[str]),
+        ("additional_primary_keys", List[str]),
     ],
 )
 
@@ -127,7 +128,7 @@ def _get_workflow_addresses() -> List[ValidationAddress]:
         state_code = StateCode(match.group(1).upper())
         primary_key = PRIMARY_KEY_OVERRIDES.get(address, "external_id")
         workflow_addresses.append(
-            ValidationAddress(state_code, address, primary_key, [])
+            ValidationAddress(state_code, address, primary_key, [], [])
         )
     return workflow_addresses
 
@@ -151,6 +152,7 @@ def _get_single_eligibility_task_span_addresses() -> List[ValidationAddress]:
                     vb.address,
                     "person_id",
                     ["task_eligibility_span_id"],
+                    ["start_date", "end_date"],
                 )
                 for vb in eligibility_view_builders
             ]
@@ -175,11 +177,13 @@ def _get_outliers_addresses() -> List[ValidationAddress]:
                     SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER.address,
                     "officer_id",
                     [],
+                    ["metric_id", "caseload_type", "end_date"],
                 ),
                 ValidationAddress(
                     StateCode(state_code),
                     SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER.address,
                     "staff_id",
+                    [],
                     [],
                 ),
                 ValidationAddress(
@@ -187,6 +191,7 @@ def _get_outliers_addresses() -> List[ValidationAddress]:
                     METRIC_BENCHMARKS_VIEW_BUILDER.address,
                     "metric_id",
                     [],
+                    ["state_code", "end_date"],
                 ),
             ]
         )
@@ -194,7 +199,7 @@ def _get_outliers_addresses() -> List[ValidationAddress]:
 
 
 def _get_address_by_state() -> (
-    Dict[StateCode, Dict[BigQueryAddress, Tuple[str, List[str]]]]
+    Dict[StateCode, Dict[BigQueryAddress, Tuple[str, List[str], List[str]]]]
 ):
     """Returns a dictionary of addresses and their primary keys for a different state codes.
 
@@ -203,7 +208,7 @@ def _get_address_by_state() -> (
     and a list of columns to exclude in the comparison (like foreign keys and primary keys).
     """
     address_by_state: Dict[
-        StateCode, Dict[BigQueryAddress, Tuple[str, List[str]]]
+        StateCode, Dict[BigQueryAddress, Tuple[str, List[str], List[str]]]
     ] = defaultdict(dict)
     for address in (
         _get_workflow_addresses()
@@ -213,6 +218,7 @@ def _get_address_by_state() -> (
         address_by_state[address.state_code][address.address] = (
             address.entity_primary_key,
             address.excluded_keys,
+            address.additional_primary_keys,
         )
     return address_by_state
 
@@ -318,7 +324,7 @@ class WorkflowsOutliersDatasetValidator:
         bigquery_address = BigQueryAddress(
             dataset_id=table_address.dataset_id, table_id=table_address.table_id
         )
-        entity_primary_key, excluded_keys = ADDRESS_BY_STATE[self.state_code_filter][
+        entity_primary_key, excluded_keys, _ = ADDRESS_BY_STATE[self.state_code_filter][
             bigquery_address
             if not original_reference_table_address
             else original_reference_table_address
@@ -330,7 +336,10 @@ class WorkflowsOutliersDatasetValidator:
             entity_name=entity_name,
         )
 
-        columns_to_exclude = [entity_primary_key, *excluded_keys]
+        columns_to_exclude = [
+            entity_primary_key,
+            *excluded_keys,
+        ]
         columns_to_exclude_str = ",".join(columns_to_exclude)
         return f"""SELECT * EXCEPT ({columns_to_exclude_str})
     FROM ({filtered_with_new_cols})"""
@@ -384,9 +393,9 @@ class WorkflowsOutliersDatasetValidator:
             table_id=reference_table_address.table_id,
         )
 
-        entity_primary_key, _ = ADDRESS_BY_STATE[self.state_code_filter][
-            bigquery_address
-        ]
+        entity_primary_key, _, additional_primary_keys = ADDRESS_BY_STATE[
+            self.state_code_filter
+        ][bigquery_address]
         sandbox_dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
             prefix=self.sandbox_prefix_to_validate,
             dataset_id=reference_table_address.dataset_id,
@@ -420,7 +429,7 @@ class WorkflowsOutliersDatasetValidator:
             address_original=reference_comparable_address,
             address_new=sandbox_comparable_address,
             comparison_output_dataset_id=self.output_dataset_id,
-            primary_keys=[entity_primary_key],
+            primary_keys=[entity_primary_key] + additional_primary_keys,
             grouping_columns=None,
         )
 
