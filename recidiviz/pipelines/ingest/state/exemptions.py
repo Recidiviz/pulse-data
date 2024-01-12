@@ -75,6 +75,7 @@ INGEST_VIEW_ORDER_EXEMPTIONS: Dict[StateCode, List[str]] = {
         "incarceration_incident",
         "program_assignment",
     ],
+    StateCode.US_ME: ["supervision_task_deadline", "incarceration_task_deadline"],
     StateCode.US_ND: [
         # Elite - incarceration-focused
         "elite_offenderidentifier",

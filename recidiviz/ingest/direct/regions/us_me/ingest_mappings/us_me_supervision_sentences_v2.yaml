@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_incarceration_sentences` to the corresponding
+# This file associates the columns outputted from the query in `view_supervision_sentences` to the corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
@@ -9,24 +9,15 @@ input_columns:
   - Charge_Id
   - Court_Finding_Date
   - Court_Order_Sent_Date
-  - Est_Sent_Start_Date
-  - Early_Cust_Rel_Date
-  - Max_Cust_Rel_Date
+  - Sentence_Start_Date
+  - Comm_Rel_Date
   - completion_date
-  - Adj_Days_Earned_Num
-  - Adj_Days_Lost_Num
-  - Adj_Days_Restored_Num
-  - Stc_Yrs_Num
-  - Stc_Mths_Num
-  - Stc_Days_Num
-  - Revocation_Yrs_Num
-  - Revocation_Mths_Num
-  - Revocation_Days_Num
-  - Life_Ind
-  - Probation_Term_Ind
+  - Prob_Yrs_Num
+  - Prob_Mths_Num
+  - Prob_Days_Num
   - E_Crt_Order_Status_Desc
   - Sex_Offense_Cd
-  - Cust_Override_Reason
+  - Comm_Override_Reason
   - Consecutive_Court_Order_Id
   - Judge_Professional_Id
   - conditions
@@ -52,14 +43,10 @@ input_columns:
 unused_columns:
   - E_Professional_Type_Desc
   - Court_Finding_Date
+  - Term_Curr_Cust_Rel_Date
 launch_env:
-  $not:
-    $env: is_dataflow_pipeline
+  $env: is_dataflow_pipeline
 variables:
-  - is_life:
-      $equal:
-        - Life_Ind
-        - $literal("Y")
   - is_sex_offense:
       $in:
         $value: Sex_Offense_Cd
@@ -73,8 +60,8 @@ output:
       - StatePersonExternalId:
           external_id: Client_Id
           id_type: $literal("US_ME_DOC")
-    incarceration_sentences:
-      - StateIncarcerationSentence:
+    supervision_sentences:
+      - StateSupervisionSentence:
           external_id:
             $concat:
               $values:
@@ -83,75 +70,28 @@ output:
                 - Court_Order_Id
           status:
             $enum_mapping:
-              $raw_text: E_Crt_Order_Status_Desc
-              $mappings:
-                StateSentenceStatus.COMPLETED:
-                  - Complete
-                StateSentenceStatus.PENDING:
-                  - Pending
-                  - PreDisposition
-                StateSentenceStatus.SANCTIONED:
-                  - Court Sanction
-                StateSentenceStatus.SERVING:
-                  - Committed
-                  - Probation
-                  - Tolled
-              $ignore:
-                - Migration
-                - Drug Court
-          incarceration_type:
-            $enum_mapping:
-              $raw_text: Cust_Override_Reason
-              $mappings:
-                StateIncarcerationType.COUNTY_JAIL:
-                  - County Jail
-                StateIncarcerationType.STATE_PRISON:
-                  # Most of these values are used sparingly, so we default to this overwhelmingly likely choice
-                  - Vacated
-                  - Pre 1983 Code
-                  - Migration
-                  - Holiday Release
-                  - Other
-                  - InterState Compact (IN)
-                  - Early Termination
-                  - Parole
-                  - Deceased
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - Comm_Override_Reason
+                    - E_Crt_Order_Status_Desc
+                  $include_nulls: True
+              $custom_parser: us_me_custom_enum_parsers.parse_supervision_sentence_status
+          supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
           date_imposed: Court_Order_Sent_Date
-          effective_date: Est_Sent_Start_Date
-          projected_min_release_date: Early_Cust_Rel_Date
-          projected_max_release_date: Max_Cust_Rel_Date
+          effective_date: Sentence_Start_Date
+          projected_completion_date: Comm_Rel_Date
           completion_date: completion_date
           county_code: Jurisdiction_County_Cd
           max_length_days:
-            $conditional:
-              - $if:
-                  $equal:
-                    - Probation_Term_Ind
-                    - $literal("Y")
-                $then:
-                  $custom:
-                    $function: us_me_custom_parsers.total_days_from_ymd
-                    $args:
-                      years: Revocation_Yrs_Num
-                      months: Revocation_Mths_Num
-                      days: Revocation_Days_Num
-                      start_date: Est_Sent_Start_Date
-              - $else:
-                  $custom:
-                    $function: us_me_custom_parsers.total_days_from_ymd
-                    $args:
-                      years: Stc_Yrs_Num
-                      months: Stc_Mths_Num
-                      days: Stc_Days_Num
-                      start_date: Est_Sent_Start_Date
-          is_life: $variable(is_life)
-          earned_time_days:
             $custom:
-              $function: us_me_custom_parsers.compute_earned_time
+              $function: us_me_custom_parsers.total_days_from_ymd
               $args:
-                days_earned: Adj_Days_Earned_Num
-                days_lost: Adj_Days_Lost_Num
-                days_restored: Adj_Days_Restored_Num
+                years: Prob_Yrs_Num
+                months: Prob_Mths_Num
+                days: Prob_Days_Num
+                start_date: Sentence_Start_Date
           sentence_metadata:
             $json_dict:
               CONSECUTIVE_SENTENCE_ID: Consecutive_Court_Order_Id
@@ -160,7 +100,6 @@ output:
               TERM_EARLY_CUSTODY_RELEASE_DATE: Term_Early_Cust_Rel_Date
               TERM_MAX_CUSTODY_RELEASE_DATE: Term_Max_Cust_Rel_Date
               TERM_COMMUNITY_RELEASE_DATE: Term_Comm_Rel_Date
-              IS_REVOCATION_SENTENCE: Probation_Term_Ind
           conditions: conditions
           charges:
             - StateCharge:
@@ -235,18 +174,3 @@ output:
                         $person_name:
                           $given_names: First_Name
                           $surname: Last_Name
-    task_deadlines:
-      - StateTaskDeadline:
-          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
-          eligible_date: Term_Curr_Cust_Rel_Date
-          update_datetime:
-            $env: results_update_datetime
-          task_metadata:
-            $json_dict:
-              external_id:
-                $concat:
-                  $values:
-                    - Client_Id
-                    - Term_Id
-                    - Court_Order_Id
-              sentence_type: $literal("INCARCERATION")
