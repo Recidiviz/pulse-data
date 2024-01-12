@@ -70,8 +70,12 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 )
 from recidiviz.utils import csv, environment
 
-DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0, tzinfo=pytz.UTC)
-DEFAULT_QUERY_RUN_DATETIME = datetime.datetime(2021, 4, 15, 0, 0, 0)
+# we need file_update_dt to have a pytz.UTC timezone, but the query_run_dt to be
+# timzone naive for bq
+DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime.now(tz=pytz.UTC) - datetime.timedelta(
+    days=1
+)
+DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 
 
 class IngestViewTestBigQueryDatabaseDelegate(BigQueryTestHelper):
@@ -113,6 +117,7 @@ class IngestViewQueryTester:
         region_code: str,
         ingest_view: DirectIngestViewQueryBuilder,
         query_run_dt: datetime.datetime,
+        file_update_dt: datetime.datetime,
         create_expected: bool,
     ) -> None:
         """Reads in the expected output CSV file from the ingest view fixture path and
@@ -132,6 +137,7 @@ class IngestViewQueryTester:
             region_code=region_code,
             ingest_view=ingest_view,
             raw_fixtures_name=fixtures_files_name,
+            file_update_dt=file_update_dt,
         )
 
         expected_output_fixture_path = ingest_view_results_fixture_path(
@@ -187,13 +193,17 @@ class IngestViewQueryTester:
         region_code: str,
         ingest_view: DirectIngestViewQueryBuilder,
         raw_fixtures_name: str,
+        file_update_dt: datetime.datetime,
     ) -> None:
         """Loads mock raw data tables from fixture files used by the given ingest view.
         All raw fixture files must have names matching |raw_fixtures_name|.
         """
         for raw_table_dependency_config in ingest_view.raw_table_dependency_configs:
             raw_data_df = self._get_raw_data(
-                region_code, raw_table_dependency_config, raw_fixtures_name
+                region_code,
+                raw_table_dependency_config,
+                raw_fixtures_name,
+                file_update_dt,
             )
             self.helper.load_mock_raw_table(
                 region_code=region_code,
@@ -221,6 +231,7 @@ class IngestViewQueryTester:
         region_code: str,
         raw_file_dependency_config: DirectIngestViewRawFileDependency,
         raw_fixtures_name: str,
+        file_update_dt: datetime.datetime,
     ) -> pd.DataFrame:
         raw_fixture_path = ingest_view_raw_table_dependency_fixture_path(
             region_code=region_code,
@@ -246,7 +257,7 @@ class IngestViewQueryTester:
         return augment_raw_data_df_with_metadata_columns(
             raw_data_df=raw_data_df,
             file_id=0,
-            utc_upload_datetime=DEFAULT_FILE_UPDATE_DATETIME,
+            utc_upload_datetime=file_update_dt,
         )
 
     def _query_ingest_view_for_builder(
@@ -310,6 +321,7 @@ class IngestViewQueryTestCase(
         # do that.
         self.ingest_view: DirectIngestViewQueryBuilder
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
+        self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
 
         self.tester = IngestViewQueryTester(self)
 
@@ -321,6 +333,7 @@ class IngestViewQueryTestCase(
             region_code=self.region_code,
             ingest_view=self.ingest_view,
             query_run_dt=self.query_run_dt,
+            file_update_dt=self.file_update_dt,
             create_expected=create_expected,
         )
 
@@ -384,6 +397,7 @@ class IngestViewEmulatorQueryTestCase(
         # do that.
         self.ingest_view: DirectIngestViewQueryBuilder
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
+        self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
 
         self.tester = IngestViewQueryTester(self)
 
@@ -395,6 +409,7 @@ class IngestViewEmulatorQueryTestCase(
             region_code=self.region_code,
             ingest_view=self.ingest_view,
             query_run_dt=self.query_run_dt,
+            file_update_dt=self.file_update_dt,
             create_expected=create_expected,
         )
 
