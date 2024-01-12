@@ -44,6 +44,9 @@ unused_columns:
   - E_Professional_Type_Desc
   - Court_Finding_Date
   - Term_Curr_Cust_Rel_Date
+launch_env:
+  $not:
+    $env: is_dataflow_pipeline
 variables:
   - is_sex_offense:
       $in:
