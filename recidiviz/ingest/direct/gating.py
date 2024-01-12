@@ -32,6 +32,7 @@ def is_ingest_in_dataflow_enabled(
         StateCode.US_NC,
         StateCode.US_AR,
         StateCode.US_OR,
+        StateCode.US_CO,
     ]
     if state_code in all_projects_enabled_states:
         return True
@@ -41,7 +42,6 @@ def is_ingest_in_dataflow_enabled(
     staging_enabled_states = [
         StateCode.US_OZ,
         StateCode.US_CA,
-        StateCode.US_CO,
         StateCode.US_IX,
         StateCode.US_MI,
         StateCode.US_PA,
