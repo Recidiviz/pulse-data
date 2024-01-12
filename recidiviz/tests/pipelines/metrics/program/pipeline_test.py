@@ -163,6 +163,7 @@ class TestProgramPipeline(unittest.TestCase):
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id,
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            start_date=date(2015, 5, 15),
         )
 
         assessment = schema.StateAssessment(
@@ -251,7 +252,12 @@ class TestProgramPipeline(unittest.TestCase):
 
         data_dict = self.build_data_dict(fake_person_id, fake_supervision_period_id)
 
-        self.run_test_pipeline(data_dict)
+        expected_metric_types = {
+            ProgramMetricType.PROGRAM_REFERRAL,
+            ProgramMetricType.PROGRAM_PARTICIPATION,
+        }
+
+        self.run_test_pipeline(data_dict, expected_metric_types)
 
     def testProgramPipelineWithFilterSet(self) -> None:
         """Tests the program pipeline."""
@@ -260,21 +266,27 @@ class TestProgramPipeline(unittest.TestCase):
 
         data_dict = self.build_data_dict(fake_person_id, fake_supervision_period_id)
 
-        self.run_test_pipeline(data_dict, unifying_id_field_filter_set={fake_person_id})
+        expected_metric_types = {
+            ProgramMetricType.PROGRAM_REFERRAL,
+            ProgramMetricType.PROGRAM_PARTICIPATION,
+        }
+
+        self.run_test_pipeline(
+            data_dict,
+            expected_metric_types,
+            unifying_id_field_filter_set={fake_person_id},
+        )
 
     def run_test_pipeline(
         self,
         data_dict: DataTablesDict,
+        expected_metric_types: Set[ProgramMetricType],
         unifying_id_field_filter_set: Optional[Set[int]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the program pipeline."""
         project = "recidiviz-staging"
         normalized_dataset = "us_xx_normalized_state"
-
-        expected_metric_types = {
-            ProgramMetricType.PROGRAM_REFERRAL,
-        }
 
         read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
             # TODO(#25244) Replace with actual input once supported.
@@ -356,7 +368,8 @@ class TestProgramPipeline(unittest.TestCase):
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id_2,
-            participation_status=StateProgramAssignmentParticipationStatus.DENIED,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            start_date=date(2015, 5, 15),
         )
 
         assessment = schema.StateAssessment(
@@ -437,7 +450,12 @@ class TestProgramPipeline(unittest.TestCase):
 
         data_dict.update(data_dict_overrides)
 
-        self.run_test_pipeline(data_dict)
+        expected_metric_types = {
+            ProgramMetricType.PROGRAM_REFERRAL,
+            ProgramMetricType.PROGRAM_PARTICIPATION,
+        }
+
+        self.run_test_pipeline(data_dict, expected_metric_types)
 
 
 class TestClassifyProgramAssignments(unittest.TestCase):
