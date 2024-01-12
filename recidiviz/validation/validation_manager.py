@@ -34,7 +34,11 @@ from recidiviz.monitoring import trace
 from recidiviz.monitoring.instruments import get_monitoring_instrument
 from recidiviz.monitoring.keys import AttributeKey, CounterInstrumentKey
 from recidiviz.utils import metadata, structured_logging
-from recidiviz.utils.environment import gcp_only, get_environment_for_project
+from recidiviz.utils.environment import (
+    gcp_only,
+    get_admin_panel_base_url,
+    get_environment_for_project,
+)
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.validation.configured_validations import (
     get_all_validations,
@@ -360,7 +364,7 @@ def _file_tickets_for_failing_validations(
             name_str = f"`{name}`"
             env_str = f"[{env}]"
             ticket_body = f"""Automated data validation found a hard failure for {name_str} in {env} environment.
-Admin Panel link: https://{metadata.project_id()}.ue.r.appspot.com/admin/validation_metadata/status/details/{name}?stateCode={region}
+Admin Panel link: {get_admin_panel_base_url()}/admin/validation_metadata/status/details/{name}?stateCode={region}
 Failure details: {validation.result_details.failure_description()}
 Description: {validation.validation_job.validation.view_builder.description}
 """
