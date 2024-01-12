@@ -37,7 +37,6 @@ from recidiviz.pipelines.metrics.recidivism.events import (
     ReleaseEvent,
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
-    ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetric,
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
@@ -119,34 +118,6 @@ class RecidivismMetricProducer(
                     )
 
                     metrics.extend(reincarceration_rate_metrics)
-
-        if metric_inclusions.get(
-            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT
-        ):
-            for reincarceration_event in all_reincarcerations.values():
-                event_date = reincarceration_event.reincarceration_date
-
-                metric = build_metric(
-                    result=reincarceration_event,
-                    metric_class=ReincarcerationRecidivismCountMetric,
-                    person=person,
-                    person_age=age_at_date(person, event_date),
-                    person_metadata=person_metadata,
-                    pipeline_job_id=pipeline_job_id,
-                    additional_attributes={
-                        "year": event_date.year,
-                        "month": event_date.month,
-                    },
-                    metrics_producer_delegate=metrics_producer_delegate,
-                )
-
-                if not isinstance(metric, ReincarcerationRecidivismMetric):
-                    raise ValueError(
-                        f"Unexpected metric type {type(metric)}. "
-                        "All metrics should be ReincarcerationRecidivismMetrics."
-                    )
-
-                metrics.append(metric)
 
         return metrics
 
