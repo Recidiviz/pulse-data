@@ -1861,8 +1861,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 supervision_level_raw_text="MINIMUM",
-                supervision_level_downgrade_occurred=True,
-                previous_supervision_level=StateSupervisionLevel.HIGH,
                 projected_end_date=None,
             ),
         ]
@@ -1933,46 +1931,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_event_in_metric_downgrade_no_downgrade(self) -> None:
-        event = SupervisionPopulationEvent(
-            state_code="US_XX",
-            year=2018,
-            month=3,
-            event_date=date(2018, 3, 31),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            case_type=StateSupervisionCaseType.GENERAL,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="HIGH",
-            supervision_level_downgrade_occurred=False,
-            projected_end_date=None,
-        )
-
-        self.assertFalse(
-            self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_DOWNGRADE
-            )
-        )
-
-    def test_include_event_in_metric_downgrade_with_downgrade(self) -> None:
-        event = SupervisionPopulationEvent(
-            state_code="US_XX",
-            year=2018,
-            month=3,
-            event_date=date(2018, 3, 31),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            case_type=StateSupervisionCaseType.GENERAL,
-            supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text="HIGH",
-            supervision_level_downgrade_occurred=True,
-            projected_end_date=None,
-        )
-
-        self.assertTrue(
-            self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_DOWNGRADE
-            )
-        )
-
     def test_include_event_in_metric_not_out_of_state(self) -> None:
         event = SupervisionPopulationEvent(
             state_code="US_XX",
@@ -2011,7 +1969,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            supervision_level_downgrade_occurred=True,
             projected_end_date=None,
             supervision_out_of_state=supervision_delegate.is_supervision_location_out_of_state(
                 "some_district"
@@ -2053,7 +2010,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            supervision_level_downgrade_occurred=True,
             projected_end_date=None,
         )
 
@@ -2085,15 +2041,6 @@ def expected_metrics_count(
                     for event in supervision_events
                     if isinstance(event, SupervisionPopulationEvent)
                     and event.case_compliance is not None
-                ]
-            )
-        elif metric_type == SupervisionMetricType.SUPERVISION_DOWNGRADE:
-            output_count_by_metric_type[metric_type] = len(
-                [
-                    event
-                    for event in supervision_events
-                    if isinstance(event, SupervisionPopulationEvent)
-                    and event.supervision_level_downgrade_occurred
                 ]
             )
         elif metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:

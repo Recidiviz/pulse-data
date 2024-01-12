@@ -51,7 +51,6 @@ class SupervisionMetricType(RecidivizMetricType):
     SUPERVISION_START = "SUPERVISION_START"
     SUPERVISION_SUCCESS = "SUPERVISION_SUCCESS"
     SUPERVISION_TERMINATION = "SUPERVISION_TERMINATION"
-    SUPERVISION_DOWNGRADE = "SUPERVISION_DOWNGRADE"
 
 
 @attr.s
@@ -395,46 +394,3 @@ The calculation of the attributes of this metric relies entirely on the state-sp
     recommended_supervision_downgrade_level: Optional[StateSupervisionLevel] = attr.ib(
         default=None
     )
-
-
-@attr.s
-class SupervisionDowngradeMetric(SupervisionMetric):
-    """
-    Subclass of SupervisionMetric for people whose supervision level has been
-    downgraded.
-
-    Note: This metric only identifies supervision level downgrades for states where a
-    new supervision period is created if the supervision level changes.
-    """
-
-    @classmethod
-    def get_description(cls) -> str:
-        return """
-The `SupervisionDowngradeMetric` stores instances of when the supervision level of a person’s supervision is changed to a level that is less restrictive. This metric tracks the day that the downgrade occurred, as well as other information related to the supervision that was downgraded.
-
-With this metric, we can answer questions like:
-
-- How many people were downgraded from a supervision level of `MEDIUM` to `MINIMUM` in 2020?
-- How did the number of people downgraded to the `UNSUPERVISED` supervision level change after the state requirements for the downgrade were updated in 2019?
-- Were there more supervision downgrades for men or women last month?
-
-This metric is derived from the `supervision_level` values on the `StateSupervisionPeriod` entities, which store information about periods of time that an individual was supervised. The calculations for this metric only identify supervision level downgrades for states where a new supervision period is created when the supervision level changes. If the `supervision_level` value of a period is updated in place when a downgrade occurs, then these calculations will not be able to capture that downgrade in this metric. We also consider supervision level downgrades between two adjacent supervision periods, where the `termination_date` of one period is the same as the `start_date` of the next period. If a person ends a supervision period with a `MAXIMUM` supervision level on 2018-04-12, and then starts a new supervision period with a `MEDIUM` supervision level months later, on 2018-11-17, then this is not counted as a supervision level downgrade.
-
-We are only able to calculate supervision downgrades between two supervision levels that fall within the clear level hierarchy (e.g. `MAXIMUM`, `HIGH`, `MEDIUM`, etc). We are not able to identify if a downgrade occurred if a person is on a supervision level of, say, `DIVERSION`, which doesn’t have an explicit correlation to a degree of restriction for the supervision. 
-
-Say a person started serving a period of probation with a `supervision_level` of `MEDIUM` on 2020-01-01, and then on 2020-08-13 this supervision period is terminated and they start a new supervision period with a `supervision_level` of `MINIMUM`. There would be a `SupervisionDowngradeMetric` for this downgrade of supervision levels with a `date_of_downgrade` of 2020-08-13, a `previous_supervision_level` of `MEDIUM` and a `supervision_level` of `MINIMUM`. 
-"""
-
-    # The type of SupervisionMetric
-    metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_DOWNGRADE
-    )
-
-    # The date on which the downgrade in supervision level took place
-    date_of_downgrade: date = attr.ib(default=None)
-
-    # The previous supervision level, prior to the downgrade
-    previous_supervision_level: StateSupervisionLevel = attr.ib(default=None)
-
-    # The new supervision level, after the downgrade
-    supervision_level: StateSupervisionLevel = attr.ib(default=None)
