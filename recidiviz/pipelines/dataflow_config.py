@@ -40,7 +40,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
 )
 from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionCaseComplianceMetric,
-    SupervisionDowngradeMetric,
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
@@ -73,7 +72,6 @@ ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
     IncarcerationMetricType.INCARCERATION_RELEASE,
     ProgramMetricType.PROGRAM_PARTICIPATION,
     SupervisionMetricType.SUPERVISION_COMPLIANCE,
-    SupervisionMetricType.SUPERVISION_DOWNGRADE,
     SupervisionMetricType.SUPERVISION_START,
     SupervisionMetricType.SUPERVISION_SUCCESS,
     SupervisionMetricType.SUPERVISION_TERMINATION,
@@ -110,7 +108,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     ReincarcerationRecidivismRateMetric: "recidivism_rate_metrics",
     # SupervisionMetrics
     SupervisionCaseComplianceMetric: "supervision_case_compliance_metrics",
-    SupervisionDowngradeMetric: "supervision_downgrade_metrics",
     SupervisionOutOfStatePopulationMetric: "supervision_out_of_state_population_metrics",
     SupervisionPopulationMetric: "supervision_population_metrics",
     SupervisionStartMetric: "supervision_start_metrics",
@@ -136,7 +133,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     "recidivism_rate_metrics": ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
     # SupervisionMetrics
     "supervision_case_compliance_metrics": SupervisionMetricType.SUPERVISION_COMPLIANCE,
-    "supervision_downgrade_metrics": SupervisionMetricType.SUPERVISION_DOWNGRADE,
     "supervision_out_of_state_population_metrics": SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
     "supervision_population_metrics": SupervisionMetricType.SUPERVISION_POPULATION,
     "supervision_start_metrics": SupervisionMetricType.SUPERVISION_START,

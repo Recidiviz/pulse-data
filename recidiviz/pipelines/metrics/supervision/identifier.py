@@ -29,7 +29,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -409,16 +408,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     level_2_supervision_location_external_id,
                 )
 
-                supervision_level_downgrade_occurred = False
-                previous_supervision_level = None
-                if event_date == supervision_period.start_date:
-                    (
-                        supervision_level_downgrade_occurred,
-                        previous_supervision_level,
-                    ) = self._get_supervision_downgrade_details_if_downgrade_occurred(
-                        supervision_period_index, supervision_period
-                    )
-
                 projected_end_date = supervision_delegate.get_projected_completion_date(
                     supervision_period=supervision_period,
                     incarceration_sentences=incarceration_sentences,
@@ -455,8 +444,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     case_compliance=case_compliance,
                     custodial_authority=supervision_period.custodial_authority,
-                    supervision_level_downgrade_occurred=supervision_level_downgrade_occurred,
-                    previous_supervision_level=previous_supervision_level,
                     projected_end_date=projected_end_date,
                     supervision_out_of_state=supervision_out_of_state,
                 )
@@ -1081,7 +1068,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             ProjectedSupervisionCompletionEvent
         ],
         SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationEvent],
-        SupervisionMetricType.SUPERVISION_DOWNGRADE: [SupervisionPopulationEvent],
     }
 
     def _convert_events_to_dual(
@@ -1240,98 +1226,3 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                             )
 
         return None, None, None, None, DEFAULT_ASSESSMENT_SCORE_BUCKET
-
-    def _get_supervision_downgrade_details_if_downgrade_occurred(
-        self,
-        supervision_period_index: NormalizedSupervisionPeriodIndex,
-        current_supervision_period: NormalizedStateSupervisionPeriod,
-    ) -> Tuple[bool, Optional[StateSupervisionLevel]]:
-        """Given a supervision period and the supervision period index it belongs to, determine whether a supervision
-        level downgrade has occurred between the current supervision period and the most recent previous supervision
-        period."""
-        # TODO(#4895): Consider updating SupervisionLevelDowngrade calculation to capture downgrades separated by
-        # SupervisionPeriods with null levels.
-        most_recent_previous_supervision_period: Optional[
-            NormalizedStateSupervisionPeriod
-        ] = supervision_period_index.get_most_recent_previous_supervision_period(
-            current_supervision_period
-        )
-
-        if (
-            current_supervision_period.supervision_level
-            and most_recent_previous_supervision_period
-            and most_recent_previous_supervision_period.supervision_level
-        ):
-            # We only want consider supervision level downgrade between two adjacent supervision periods.
-            if (
-                current_supervision_period.start_date
-                != most_recent_previous_supervision_period.termination_date
-            ):
-                return False, None
-
-            return self._supervision_level_downgrade_occurred(
-                most_recent_previous_supervision_period.supervision_level,
-                current_supervision_period.supervision_level,
-            )
-
-        return False, None
-
-    def _supervision_level_downgrade_occurred(
-        self,
-        previous_supervision_level: StateSupervisionLevel,
-        current_supervision_level: StateSupervisionLevel,
-    ) -> Tuple[bool, Optional[StateSupervisionLevel]]:
-        """Given a current and previous supervision level, return whether a supervision level downgrade has taken place
-        between the previous level and the current."""
-        not_applicable_supervision_levels: List[StateSupervisionLevel] = [
-            StateSupervisionLevel.EXTERNAL_UNKNOWN,
-            StateSupervisionLevel.INTERNAL_UNKNOWN,
-            StateSupervisionLevel.PRESENT_WITHOUT_INFO,
-            StateSupervisionLevel.DIVERSION,
-            StateSupervisionLevel.IN_CUSTODY,
-            StateSupervisionLevel.INTERSTATE_COMPACT,
-            StateSupervisionLevel.LIMITED,
-            StateSupervisionLevel.UNASSIGNED,
-            StateSupervisionLevel.WARRANT,
-            StateSupervisionLevel.ABSCONSION,
-            StateSupervisionLevel.INTAKE,
-            StateSupervisionLevel.RESIDENTIAL_PROGRAM,
-            StateSupervisionLevel.FURLOUGH,
-        ]
-
-        supervision_level_to_number: Dict[StateSupervisionLevel, int] = {
-            StateSupervisionLevel.UNSUPERVISED: 0,
-            StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: 1,
-            StateSupervisionLevel.MINIMUM: 2,
-            StateSupervisionLevel.MEDIUM: 3,
-            StateSupervisionLevel.HIGH: 4,
-            StateSupervisionLevel.MAXIMUM: 5,
-        }
-
-        if (
-            previous_supervision_level in not_applicable_supervision_levels
-            or current_supervision_level in not_applicable_supervision_levels
-        ):
-            return False, None
-
-        if previous_supervision_level not in supervision_level_to_number:
-            raise ValueError(
-                f"Previous supervision level ({previous_supervision_level}) was not listed as a supervision "
-                f"level that is out of scope for downgrades and was not found in the list of levels that can "
-                f"be compared for downgrades. Please add it to one of the two."
-            )
-
-        if current_supervision_level not in supervision_level_to_number:
-            raise ValueError(
-                f"Current supervision level ({current_supervision_level}) was not listed as a supervision "
-                f"level that is out of scope for downgrades and was not found in the list of levels that can "
-                f"be compared for downgrades. Please add it to one of the two."
-            )
-
-        if (
-            supervision_level_to_number[previous_supervision_level]
-            > supervision_level_to_number[current_supervision_level]
-        ):
-            return True, previous_supervision_level
-
-        return False, None

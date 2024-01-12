@@ -21,7 +21,6 @@ from typing import Optional
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -82,27 +81,9 @@ class SupervisionEvent(Event, SupervisionLocationMixin, AssessmentEventMixin):
 
 
 @attr.s(frozen=True)
-class SupervisionDowngradeEvent(BuildableAttr):
-    """
-    Base class for including whether a supervision level downgrade took place on a
-    SupervisionEvent.
-
-    Note: This event only identifies supervision level downgrades for states where a
-    new supervision period is created if the supervision level changes.
-    """
-
-    # Whether a supervision level downgrade has taken place.
-    supervision_level_downgrade_occurred: bool = attr.ib(default=False)
-
-    # The supervision level of the previous supervision period.
-    previous_supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
-
-
-@attr.s(frozen=True)
 class SupervisionPopulationEvent(
     SupervisionEvent,
     ViolationHistoryMixin,
-    SupervisionDowngradeEvent,
 ):
     """Models a day on which a person was on supervision."""
 

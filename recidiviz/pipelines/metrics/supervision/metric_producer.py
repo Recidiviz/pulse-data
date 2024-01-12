@@ -33,7 +33,6 @@ from recidiviz.pipelines.metrics.supervision.events import (
 )
 from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionCaseComplianceMetric,
-    SupervisionDowngradeMetric,
     SupervisionMetric,
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
@@ -72,7 +71,6 @@ class SupervisionMetricProducer(
                 SupervisionMetricType.SUPERVISION_COMPLIANCE,
                 SupervisionMetricType.SUPERVISION_POPULATION,
                 SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
-                SupervisionMetricType.SUPERVISION_DOWNGRADE,
             ],
             ProjectedSupervisionCompletionEvent: [
                 SupervisionMetricType.SUPERVISION_SUCCESS,
@@ -86,7 +84,6 @@ class SupervisionMetricProducer(
             SupervisionMetricType, Type[SupervisionMetric]
         ] = {
             SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
-            SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
@@ -221,14 +218,6 @@ class SupervisionMetricProducer(
                     SupervisionPopulationEvent,
                 )
                 and event.case_compliance is not None
-            )
-        if metric_type == SupervisionMetricType.SUPERVISION_DOWNGRADE:
-            return (
-                isinstance(
-                    event,
-                    SupervisionPopulationEvent,
-                )
-                and event.supervision_level_downgrade_occurred
             )
         if metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
             return (

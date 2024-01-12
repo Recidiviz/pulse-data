@@ -42,7 +42,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
 )
 from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionCaseComplianceMetric,
-    SupervisionDowngradeMetric,
     SupervisionMetric,
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
@@ -143,7 +142,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
-            SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
         }
 
         for metric_type in SupervisionMetricType:

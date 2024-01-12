@@ -3670,9 +3670,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         expected_events = expected_population_events(
             supervision_periods[1],
             supervision_type,
-            supervision_downgrade_date=date(2018, 3, 19),
-            supervision_downgrade_occurred=True,
-            previous_supervision_level=StateSupervisionLevel.HIGH,
             case_compliances=_generate_case_compliances(
                 person=self.person,
                 start_date=supervision_periods[0].start_date,
@@ -5996,9 +5993,6 @@ def expected_population_events(
     level_1_supervision_location_external_id: Optional[str] = None,
     level_2_supervision_location_external_id: Optional[str] = None,
     case_compliances: Optional[Dict[date, SupervisionCaseCompliance]] = None,
-    supervision_downgrade_date: Optional[date] = None,
-    supervision_downgrade_occurred: Optional[bool] = False,
-    previous_supervision_level: Optional[StateSupervisionLevel] = None,
     projected_supervision_completion_date: Optional[date] = None,
 ) -> List[SupervisionPopulationEvent]:
     """Returns the expected SupervisionPopulationEvents based on the provided
@@ -6030,17 +6024,6 @@ def expected_population_events(
 
         for day_on_supervision in days_on_supervision:
             case_compliance = case_compliances.get(day_on_supervision)
-
-            downgrade_occurred = (
-                supervision_downgrade_occurred
-                if (
-                    supervision_downgrade_occurred is not None
-                    and supervision_downgrade_date
-                    and supervision_downgrade_date == day_on_supervision
-                )
-                else False
-            )
-            previous_level = previous_supervision_level if downgrade_occurred else None
 
             default_delegate = UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -6081,8 +6064,6 @@ def expected_population_events(
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_compliance=case_compliance,
-                supervision_level_downgrade_occurred=downgrade_occurred,
-                previous_supervision_level=previous_level,
                 projected_end_date=projected_supervision_completion_date,
                 supervision_out_of_state=default_delegate.is_supervision_location_out_of_state(
                     deprecated_supervising_district_external_id
@@ -6092,23 +6073,6 @@ def expected_population_events(
             expected_events.append(event)
 
     return expected_events
-
-
-class TestSupervisionLevelDowngradeOccurred(unittest.TestCase):
-    """Tests the _supervision_level_downgrade_occurred function."""
-
-    def setUp(self) -> None:
-        self.identifier = identifier.SupervisionIdentifier()
-
-    def test_supervision_level_downgrade_occurred_covers_all_supervision_levels(
-        self,
-    ) -> None:
-        """Ensures that all values in StateSupervisionLevel are covered by _supervision_level_downgrade_occurred."""
-
-        for level in StateSupervisionLevel:
-            self.identifier._supervision_level_downgrade_occurred(
-                level, StateSupervisionLevel.MAXIMUM
-            )
 
 
 class TestFindAssessmentScoreChange(unittest.TestCase):
