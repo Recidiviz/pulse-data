@@ -42,7 +42,9 @@ output:
                 StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "American Indian/Alaskan Native"
                 StateRace.ASIAN: "Asian"
                 StateRace.BLACK: "Black"
-                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "Asian or Pacific Islander"
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER:
+                  - "Asian or Pacific Islander"
+                  - "Pacific Islander"
                 StateRace.WHITE: "White"
                 StateRace.EXTERNAL_UNKNOWN: "Unknown"
                 StateRace.OTHER: "Other"
@@ -83,6 +85,7 @@ output:
                   - "Guamanian"
                   - "Japanese"
                   - "Thai"
+                  - "Other Paciific Islander Not Listed"
                 StateEthnicity.EXTERNAL_UNKNOWN:
                   - "Unknown"
               $ignore:
