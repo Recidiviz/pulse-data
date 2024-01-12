@@ -87,9 +87,6 @@ from recidiviz.calculator.query.state.views.sessions.custody_level_sessions impo
 from recidiviz.calculator.query.state.views.sessions.dataflow_sessions import (
     DATAFLOW_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.district_sessions import (
-    DISTRICT_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.drug_screens_preprocessed import (
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -276,9 +273,6 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_he
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_sessions import (
     US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentence_summary import (
-    US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_preprocessed import (
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -315,7 +309,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     CUSTODY_LEVEL_SESSIONS_VIEW_BUILDER,
     DATAFLOW_SESSIONS_VIEW_BUILDER,
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
-    DISTRICT_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_SESSIONS_VIEW_BUILDER,
@@ -373,7 +366,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     VIOLATION_RESPONSES_VIEW_BUILDER,
     SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
-    US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
     US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_CO_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
