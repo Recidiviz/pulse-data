@@ -61,7 +61,7 @@ class FindSftpFilesOperator(BaseOperator):
 
         Expects to find a YAML config with the following format:
         excluded_paths_by_state:
-          US_XX: ["./path/to/file.zip"]
+          US_XX: ["/path/to/file.zip"]
         """
         excluded_files_config = read_yaml_config(self.excluded_remote_files_config_path)
         return (
@@ -124,10 +124,19 @@ class FindSftpFilesOperator(BaseOperator):
                                 SFTP_TIMESTAMP: file_timestamp,
                             }
                         )
-
-        return [
+        results = [
             file_info
             for file_info in files_to_download_with_timestamps
             # Ignore all files that are not in the exclude list.
             if file_info[REMOTE_FILE_PATH] not in excluded_remote_paths
         ]
+        # Michigan is currently the only state that moves files to a different place once
+        # a file has been downloaded prior, so it's very likely to have no files once a
+        # complete SFTP download process has run prior.
+        if self.state_code != "US_MI" and not results:
+            raise ValueError(
+                f"No files found to download for {self.state_code} state. This indicates"
+                " that the SFTP directory is empty. Please check to see if the state has"
+                " uploaded any files to SFTP."
+            )
+        return results
