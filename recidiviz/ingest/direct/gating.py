@@ -55,9 +55,6 @@ def ingest_pipeline_can_run_in_dag(
     state_code: StateCode,
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
-    if (
-        state_code in [StateCode.US_ME, StateCode.US_TN]
-        and environment.in_gcp_production()
-    ):
+    if state_code == StateCode.US_TN and environment.in_gcp_production():
         return False
     return True
