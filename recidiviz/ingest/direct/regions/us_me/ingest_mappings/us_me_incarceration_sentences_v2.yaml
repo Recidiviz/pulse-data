@@ -11,7 +11,6 @@ input_columns:
   - Court_Order_Sent_Date
   - Est_Sent_Start_Date
   - Early_Cust_Rel_Date
-  - Max_Cust_Rel_Date
   - completion_date
   - Adj_Days_Earned_Num
   - Adj_Days_Lost_Num
@@ -49,6 +48,7 @@ input_columns:
   - Term_Max_Cust_Rel_Date
   - Term_Comm_Rel_Date
   - Term_Curr_Cust_Rel_Date
+  - Curr_Cust_Rel_Date
 unused_columns:
   - E_Professional_Type_Desc
   - Court_Finding_Date
@@ -119,7 +119,7 @@ output:
           date_imposed: Court_Order_Sent_Date
           effective_date: Est_Sent_Start_Date
           projected_min_release_date: Early_Cust_Rel_Date
-          projected_max_release_date: Max_Cust_Rel_Date
+          projected_max_release_date: Curr_Cust_Rel_Date
           completion_date: completion_date
           county_code: Jurisdiction_County_Cd
           max_length_days:
