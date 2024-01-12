@@ -44,7 +44,7 @@ sentences as (
         Court_Order_Sent_Date,
         Est_Sent_Start_Date,
         Early_Cust_Rel_Date,
-        Max_Cust_Rel_Date,
+        Curr_Cust_Rel_Date,
         IF(DATE(Curr_Cust_Rel_Date) < @{UPDATE_DATETIME_PARAM_NAME}, Curr_Cust_Rel_Date, NULL) as completion_date,
         Adj_Days_Earned_Num,
         Adj_Days_Lost_Num,
