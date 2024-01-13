@@ -198,6 +198,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_incarcerati
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_invoices_preprocessed import (
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_max_stays import (
+    US_TN_MAX_STAYS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_payments_preprocessed import (
     US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -209,6 +212,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_prior_recor
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_recommended_custody_level_spans import (
     US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
+    US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_logic import (
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
@@ -292,4 +298,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
     US_TN_TEPE_RELEVANT_CODES_VIEW_BUILDER,
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
+    US_TN_MAX_STAYS_VIEW_BUILDER,
+    US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 ]
