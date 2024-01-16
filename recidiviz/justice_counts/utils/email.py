@@ -185,7 +185,11 @@ def send_reminder_emails(
     )
 
     # Save email in GCP so that we have a copy to review every month
-    date_str = f"{today.month}-{today.day}-{today.year}.html"
+    date_str = (
+        f"DRY-RUN-{today.month}-{today.day}-{today.year}.html"
+        if dry_run is True
+        else f"{today.month}-{today.day}-{today.year}.html"
+    )
     file_path = f"{agency.name}/{date_str}"
     storage_client = storage.Client()
     if in_gcp_production():
