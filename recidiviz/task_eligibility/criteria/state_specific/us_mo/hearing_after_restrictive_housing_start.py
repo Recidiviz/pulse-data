@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Spans during which someone has been subject to a D1 sanction more recently
-than they've had a Restrictive Housing hearing.
+"""Spans during which someone has had a hearing occur since their current Restrictive 
+Housing placement began.
 """
-from recidiviz.calculator.query.bq_utils import nonnull_start_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
 )
@@ -28,56 +27,61 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MO_D1_SANCTION_AFTER_MOST_RECENT_HEARING"
+_CRITERIA_NAME = "US_MO_HEARING_AFTER_RESTRICTIVE_HOUSING_START"
 
-_DESCRIPTION = """Spans during which someone has been subject to a D1 sanction more recently
-than they've had a Restrictive Housing hearing.
+_DESCRIPTION = """Spans during which someone has had a hearing occur since their current
+Restrictive Housing placement began.
 """
 
 _QUERY_TEMPLATE = f"""
-    WITH latest_hearing_spans AS (
+    WITH latest_restrictive_housing_start_spans AS (
+        SELECT DISTINCT
+            state_code,
+            person_id,
+            start_date,
+            LEAD(start_date) OVER w AS end_date,
+            start_date AS latest_restrictive_housing_start_date,
+        FROM `{{project_id}}.sessions.us_mo_confinement_type_sessions_materialized`
+        WHERE 
+            -- TODO(#21788): Use ingested enums once MO housing_unit_type is ingested
+            confinement_type IN ("SOLITARY_CONFINEMENT")
+        WINDOW w AS (
+            PARTITION BY state_code, person_id
+            ORDER BY start_date ASC
+        )
+    )
+    ,
+    hearings AS (
         SELECT
+            state_code,
+            person_id,
+            hearing_date,
+        FROM `{{project_id}}.analyst_data.us_mo_classification_hearings_preprocessed_materialized`
+    )
+    ,
+    latest_hearing_spans AS (
+        SELECT DISTINCT
             state_code,
             person_id,
             hearing_date AS start_date,
             LEAD(hearing_date) OVER w AS end_date,
             hearing_date AS latest_restrictive_housing_hearing_date,
-        FROM `{{project_id}}.analyst_data.us_mo_classification_hearings_preprocessed_materialized`
+        FROM (SELECT DISTINCT * FROM hearings)
         WINDOW w AS (
             PARTITION BY state_code, person_id
             ORDER BY hearing_date ASC
         )
     )
     ,
-    latest_d1_sanction_spans AS (
-        -- Duplicate D1 sanctions with identical start and end date are likely data entry
-        -- errors. Multiple D1 sanctions are served consecutively, not concurrently.
-        SELECT DISTINCT
-            state_code,
-            person_id,
-            -- When someone begins an active sanction, their "latest sanction start date" 
-            -- will be that sanction's start date until the next time they incur a sanction.
-            date_effective AS start_date,
-            LEAD(date_effective) OVER w AS end_date,
-            date_effective AS latest_d1_sanction_start_date,
-        FROM `{{project_id}}.normalized_state.state_incarceration_incident_outcome`
-        WHERE outcome_type_raw_text = 'D1'
-        WINDOW w AS (
-            PARTITION BY state_code, person_id
-            ORDER BY date_effective ASC
-        )
-    )
-    ,
     intersection_spans AS (
         {create_intersection_spans(
-            table_1_name="latest_d1_sanction_spans",
+            table_1_name="latest_restrictive_housing_start_spans",
             table_2_name="latest_hearing_spans",
             index_columns=["state_code", "person_id"],
-            table_1_columns=["latest_d1_sanction_start_date"],
+            table_1_columns=["latest_restrictive_housing_start_date"],
             table_2_columns=["latest_restrictive_housing_hearing_date"],
             table_1_end_date_field_name="end_date",
-            table_2_end_date_field_name="end_date",
-            use_left_join=True
+            table_2_end_date_field_name="end_date"
         )}
     )
     SELECT
@@ -85,11 +89,10 @@ _QUERY_TEMPLATE = f"""
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-        -- Default to true if never had a hearing
-        latest_d1_sanction_start_date > {nonnull_start_date_clause('latest_restrictive_housing_hearing_date')} AS meets_criteria,
+        latest_restrictive_housing_hearing_date > latest_restrictive_housing_start_date AS meets_criteria,
         TO_JSON(STRUCT(
-            latest_d1_sanction_start_date,
-            latest_restrictive_housing_hearing_date
+            latest_restrictive_housing_hearing_date,
+            latest_restrictive_housing_start_date AS restrictive_housing_start_date
         )) AS reason
     FROM intersection_spans
 """

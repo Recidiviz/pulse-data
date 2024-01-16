@@ -26,8 +26,8 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     in_restrictive_housing,
     initial_hearing_past_due_date,
-    no_active_d1_sanctions,
-    no_hearing_or_next_review_since_restrictive_housing_start,
+    no_d1_sanction_after_restrictive_housing_start,
+    no_hearing_after_restrictive_housing_start,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -45,8 +45,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         initial_hearing_past_due_date.VIEW_BUILDER,
         in_restrictive_housing.VIEW_BUILDER,
-        no_hearing_or_next_review_since_restrictive_housing_start.VIEW_BUILDER,
-        no_active_d1_sanctions.VIEW_BUILDER,
+        no_hearing_after_restrictive_housing_start.VIEW_BUILDER,
+        no_d1_sanction_after_restrictive_housing_start.VIEW_BUILDER,
     ],
     completion_event_builder=initial_hearing_occurred.VIEW_BUILDER,
 )

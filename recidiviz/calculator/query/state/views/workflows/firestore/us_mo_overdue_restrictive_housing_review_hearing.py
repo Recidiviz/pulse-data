@@ -64,8 +64,8 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_REVIEW_HEARING_RECORD_QUERY_TEMPLATE = f"""
         FROM base_query
         WHERE 
             'US_MO_IN_RESTRICTIVE_HOUSING' NOT IN UNNEST(ineligible_criteria)
-            AND 'US_MO_HEARING_OR_NEXT_REVIEW_SINCE_RESTRICTIVE_HOUSING_START' NOT IN UNNEST(ineligible_criteria)
-            AND 'US_MO_NO_ACTIVE_D1_SANCTIONS' NOT IN UNNEST(ineligible_criteria)        
+            AND 'US_MO_HEARING_AFTER_RESTRICTIVE_HOUSING_START' NOT IN UNNEST(ineligible_criteria)
+            AND 'US_MO_NO_D1_SANCTION_AFTER_MOST_RECENT_HEARING' NOT IN UNNEST(ineligible_criteria)
     )
     SELECT
         base.external_id,

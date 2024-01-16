@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines a view that shows when hearings that were scheduled have occurred, regardless
 of whether they were on time.
+TODO(#26722): Deprecate once new opportunities are live.
 """
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
