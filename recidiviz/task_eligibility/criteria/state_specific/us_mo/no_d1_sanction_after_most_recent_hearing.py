@@ -14,37 +14,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Spans when someone is in Restrictive Housing and hasn't had a hearing,
-or had a hearing scheduled, since their placement in Restrictive Housing.
+"""Spans during which someone has had a Restrictive Housing hearing more
+recently than they've been subject to a D1 sanction.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MO_NO_HEARING_OR_NEXT_REVIEW_SINCE_RESTRICTIVE_HOUSING_START"
+_CRITERIA_NAME = "US_MO_NO_D1_SANCTION_AFTER_MOST_RECENT_HEARING"
 
-_DESCRIPTION = """Spans when someone is in Restrictive Housing and hasn't had a hearing,
-or had a hearing scheduled, since their placement in Restrictive Housing.
+_DESCRIPTION = """Spans during which someone has had a Restrictive Housing hearing more
+recently than they've been subject to a D1 sanction.
 """
-_REASON_QUERY = """TO_JSON(
-    STRUCT(
-        "9999-12-31" AS restrictive_housing_start_date,
-        "9999-12-31" AS latest_hearing_date,
-        "9999-12-31" AS latest_scheduled_review_date
-    ))"""
+
+_QUERY_TEMPLATE = """
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        NOT meets_criteria AS meets_criteria,
+        reason
+    FROM `{project_id}.task_eligibility_criteria_us_mo.d1_sanction_after_most_recent_hearing_materialized`
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_MO,
+        criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        description=_DESCRIPTION,
+        meets_criteria_default=True,
     )
 )
 

@@ -16,12 +16,13 @@
 # ============================================================================
 """Spans when someone does not have a future initial hearing scheduled or due.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,18 +31,160 @@ _CRITERIA_NAME = "US_MO_INITIAL_HEARING_PAST_DUE_DATE"
 
 _DESCRIPTION = """Spans when someone does not have a future initial hearing scheduled or due.
 """
-_REASON_QUERY = """TO_JSON(
-    STRUCT(
-        "9999-12-31" AS next_review_date,
-        TRUE AS due_date_inferred
-    ))"""
+
+_QUERY_TEMPLATE = f"""
+    WITH tasc_hearing_due_date_spans_scheduled AS (
+        SELECT
+            pei.state_code,
+            pei.person_id,
+            IF (
+                itsc.JV_BA = "0", 
+                NULL,
+                SAFE.PARSE_DATE("%Y%m%d", itsc.JV_BA)
+            ) AS hearing_scheduled_date,
+            IF (
+                itsc.JV_AY = "0", 
+                NULL,
+                SAFE.PARSE_DATE("%Y%m%d", itsc.JV_AY)
+            ) AS next_review_date,
+        -- ITSC: screen used to schedule initial meaningful hearing in Restrictive Housing
+        FROM `{{project_id}}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK295_latest` itsc
+        LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
+        ON
+            itsc.JV_DOC = pei.external_id
+            AND pei.state_code = 'US_MO'
+    )
+    ,
+    -- Someone has been in solitary confinement less than 7 business days, and they haven't had a hearing yet.
+    tasc_hearing_due_date_spans_inferred AS (
+        SELECT
+            c.state_code,
+            c.person_id,
+            /* To identify when a hearing is "due", treat the beginning of a Restrictive 
+            Housing assignment as the date the initial hearing was scheduled */
+            c.start_date as hearing_scheduled_date,
+            EXTRACT(DAYOFWEEK from DATE(c.start_date)) AS hearing_scheduled_date_day_of_week,
+        FROM `{{project_id}}.sessions.us_mo_confinement_type_sessions_materialized` c
+        /* To filter out people who already have initial hearings scheduled, we look for
+        (1) An ITSC entry for hearing_scheduled_date on or before the RH assignment because
+        this date is supposed to reflect when someone was placed on TA status and 
+        (2) If the ITSC screen has a "next review date" after RH assignment start */
+        LEFT JOIN tasc_hearing_due_date_spans_scheduled current_hearing_due_span
+        ON
+            c.person_id = current_hearing_due_span.person_id
+            AND c.state_code = current_hearing_due_span.state_code
+            AND current_hearing_due_span.hearing_scheduled_date <= c.start_date
+            AND current_hearing_due_span.next_review_date >= c.start_date
+        WHERE 
+            -- TODO(#21788): Use ingested enums once MO housing_unit_type is ingested
+            confinement_type IN ("SOLITARY_CONFINEMENT")
+            -- Filter out people with hearing dates assigned in ITSC
+            AND current_hearing_due_span.hearing_scheduled_date IS NULL
+    )
+    ,
+    -- Conversion table between business days and calendar days
+    business_days AS (
+        SELECT 1 AS day_of_week, 7 AS business_days, 9 AS calendar_days UNION ALL
+        SELECT 2 AS day_of_week, 7 AS business_days, 9 AS calendar_days UNION ALL
+        SELECT 3 AS day_of_week, 7 AS business_days, 9 AS calendar_days UNION ALL
+        SELECT 4 AS day_of_week, 7 AS business_days, 9 AS calendar_days UNION ALL
+        SELECT 5 AS day_of_week, 7 AS business_days, 11 AS calendar_days UNION ALL
+        SELECT 6 AS day_of_week, 7 AS business_days, 11 AS calendar_days UNION ALL
+        SELECT 7 AS day_of_week, 7 AS business_days, 10 AS calendar_days
+    )
+    ,
+    -- Infer a due date 7 business days after RH assignment
+    tasc_hearing_due_date_spans_inferred_with_due_date AS (
+        SELECT
+            t.state_code,
+            t.person_id,
+            t.hearing_scheduled_date,
+            DATE_ADD(t.hearing_scheduled_date, INTERVAL business_days.calendar_days DAY) AS next_review_date,
+        FROM tasc_hearing_due_date_spans_inferred t
+        LEFT JOIN business_days
+        ON
+            t.hearing_scheduled_date_day_of_week = business_days.day_of_week
+    )
+    ,
+    hearings_and_tasc_spans AS (
+        SELECT 
+            *, 
+            FALSE AS due_date_inferred,
+        FROM tasc_hearing_due_date_spans_scheduled 
+        
+        UNION ALL 
+        
+        SELECT 
+            *,
+            TRUE AS due_date_inferred,
+        FROM tasc_hearing_due_date_spans_inferred_with_due_date
+    )
+    ,
+    hearing_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            hearing_scheduled_date,
+            LEAD(hearing_scheduled_date) OVER hearing_window AS next_hearing_scheduled_date,
+            next_review_date,
+            due_date_inferred,
+        FROM hearings_and_tasc_spans
+        WINDOW hearing_window AS (
+            PARTITION BY state_code, person_id
+            ORDER BY hearing_scheduled_date ASC
+        )
+    )
+    ,
+    critical_date_spans AS (
+    
+        SELECT
+            h.state_code,
+            h.person_id,
+            h.hearing_scheduled_date AS start_datetime,
+            /* Someone is overdue if their next hearing date is past their next review date (or never occurs), and they 
+            are no longer overdue once they've had their next hearing or are released from Restrictive Housing. */
+            LEAST({nonnull_end_date_clause('h.next_hearing_scheduled_date')}, {nonnull_end_date_clause("c.end_date")}) AS end_datetime,
+            h.next_review_date AS critical_date,
+            due_date_inferred,
+        FROM hearing_spans h
+        LEFT JOIN `{{project_id}}.sessions.us_mo_confinement_type_sessions_materialized` c
+        ON
+            h.person_id = c.person_id
+            AND h.hearing_scheduled_date >= c.start_date
+            AND h.hearing_scheduled_date < c.end_date
+            -- TODO(#23550): Use ingested enums once MO housing_unit_type is ingested
+            AND c.confinement_type IN ("SOLITARY_CONFINEMENT")
+    )
+    ,
+    -- Add 1-day lag so that someone is overdue after, but not on, the "next review date"
+    {critical_date_has_passed_spans_cte(
+        meets_criteria_leading_window_time=-1, 
+        attributes=["due_date_inferred"],
+        date_part="DAY"
+    )}
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        -- Set current span's end date to null
+        IF(end_date > CURRENT_DATE('US/Pacific'), NULL, end_date) AS end_date,
+        critical_date_has_passed AS meets_criteria,
+        TO_JSON(STRUCT(
+            critical_date AS next_review_date,
+            due_date_inferred AS due_date_inferred
+        )) AS reason
+    FROM critical_date_has_passed_spans
+    -- Exclude spans that start in the future
+    WHERE start_date <= CURRENT_DATE('US/Pacific')
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_MO,
+        criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        description=_DESCRIPTION,
+        meets_criteria_default=False,
     )
 )
 

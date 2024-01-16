@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Spans when someone is past their latest scheduled review date.
+"""Spans when someone is in Restrictive Housing and hasn't had a hearing
+since their placement in Restrictive Housing.
 """
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -24,38 +24,21 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MO_PAST_LATEST_SCHEDULED_REVIEW_DATE"
+_CRITERIA_NAME = "US_MO_NO_HEARING_AFTER_RESTRICTIVE_HOUSING_START"
 
-_DESCRIPTION = """Spans when someone is past their latest scheduled review date.
+_DESCRIPTION = """Spans when someone is in Restrictive Housing and hasn't had a hearing
+since their placement in Restrictive Housing.
 """
 
-_QUERY_TEMPLATE = f"""
-    WITH next_review_date_spans AS (
-        SELECT
-            state_code,
-            person_id,
-            hearing_date,
-            LEAD(hearing_date) OVER w as next_hearing_date,
-            COALESCE(next_review_date, DATE_ADD(hearing_date, INTERVAL 30 DAY)) AS next_review_date,
-            next_review_date IS NULL AS due_date_inferred,
-        FROM `{{project_id}}.analyst_data.us_mo_classification_hearings_preprocessed_materialized`
-        WINDOW w AS (
-            PARTITION BY state_code, person_id
-            ORDER BY hearing_date ASC
-        )
-    )
+_QUERY_TEMPLATE = """
     SELECT
         state_code,
         person_id,
-        next_review_date AS start_date,
-        next_hearing_date AS end_date,
-        TRUE AS meets_criteria,
-        TO_JSON(STRUCT(
-            next_review_date,
-            due_date_inferred
-        )) AS reason
-    FROM next_review_date_spans
-    WHERE next_review_date < {nonnull_end_date_clause('next_hearing_date')}
+        start_date,
+        end_date,
+        NOT meets_criteria AS meets_criteria,
+        reason
+    FROM `{project_id}.task_eligibility_criteria_us_mo.hearing_after_restrictive_housing_start_materialized`
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -64,7 +47,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        meets_criteria_default=False,
+        meets_criteria_default=True,
     )
 )
 

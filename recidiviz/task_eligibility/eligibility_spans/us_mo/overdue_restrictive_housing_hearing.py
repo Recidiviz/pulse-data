@@ -16,6 +16,7 @@
 # =============================================================================
 """Builder for a task eligiblity spans view that shows the spans of time during which
 someone in MO has an upcoming restrictive housing hearing.
+TODO(#26722): Deprecate once new opportunities are live.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -44,8 +45,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         in_restrictive_housing.VIEW_BUILDER,
         overdue_for_hearing.VIEW_BUILDER,
-        # TODO(#22382) Require overdue for release
-        # overdue_for_release.VIEW_BUILDER,
     ],
     completion_event_builder=scheduled_hearing_occurred.VIEW_BUILDER,
 )

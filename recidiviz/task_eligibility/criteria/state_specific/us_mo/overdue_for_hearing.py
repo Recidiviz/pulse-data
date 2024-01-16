@@ -16,6 +16,7 @@
 # ============================================================================
 """Describes the spans of time during which someone in MO
 is overdue for a Restrictive Housing hearing.
+TODO(#26722): Deprecate once new opportunities are live.
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import (

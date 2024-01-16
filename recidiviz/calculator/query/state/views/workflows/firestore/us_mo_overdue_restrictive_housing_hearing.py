@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for relevant metadata needed to support upcoming restrictive housing hearing opportunity in Missouri
+TODO(#26722): Deprecate once new opportunities are live.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_start_date_clause
