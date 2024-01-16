@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
+import datetime
 from collections import defaultdict
-from typing import Dict
+from typing import Any, Dict
 
 import mock
 import pytest
@@ -39,7 +40,12 @@ from recidiviz.justice_counts.utils.constants import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     AgencyUserAccountAssociation,
+    Datapoint,
+    DatapointHistory,
     Source,
+    Spreadsheet,
+    SpreadsheetStatus,
+    System,
     UserAccount,
     UserAccountInvitationStatus,
 )
@@ -67,8 +73,14 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "user_id": f"auth0|1234{name}",
             }
 
+        def mock_delete_JC_user(user_id: str) -> Any:
+            return {
+                "user_id": user_id,
+            }
+
         mock_auth0_client = mock.Mock()
         mock_auth0_client.create_JC_user.side_effect = mock_create_JC_user
+        mock_auth0_client.delete_JC_user.side_effect = mock_delete_JC_user
 
         self.client_patcher = patch("recidiviz.auth.auth0_client.Auth0")
         self.test_auth0_client = (
@@ -165,6 +177,104 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
         response = self.client.get(f"/admin/user/{user.id}")
         self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["name"], user.name)
+        self.assertEqual(response_json["id"], user.id)
+        self.assertEqual(len(response_json["agencies"]), 1)
+        self.assertEqual(response_json["agencies"][0]["name"], "Agency Alpha")
+
+    def test_delete_user(self) -> None:
+        self.load_users_and_agencies()
+        user = (
+            self.session.query(UserAccount)
+            .filter(UserAccount.auth0_user_id == "auth0_id_A")
+            .one()
+        )
+
+        self.session.add(
+            Spreadsheet(
+                original_name="original_name",
+                uploaded_by=user.auth0_user_id,
+                standardized_name="standardized_name",
+                agency_id=AgencyInterface.get_agency_by_name(
+                    session=self.session, name="Agency Alpha"
+                ).id,
+                system=System.LAW_ENFORCEMENT,
+                status=SpreadsheetStatus.UPLOADED,
+                uploaded_at=datetime.datetime.now(tz=datetime.timezone.utc),
+            )
+        )
+
+        # Setup datapoint and datapoint history entries logged under the user.
+        datapoint = Datapoint(
+            id=1,
+            metric_definition_key=law_enforcement.funding.key,
+        )
+        self.session.add(datapoint)
+        self.session.add(
+            DatapointHistory(
+                user_account_id=user.id,
+                datapoint_id=datapoint.id,
+                timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+            )
+        )
+
+        self.session.commit()
+
+        response = self.client.delete(f"/admin/user/{user.id}")
+        self.assertEqual(response.status_code, 200)
+
+        # There are still two entries in AgencyUserAccountAssociation but neither are
+        # for the deleted user.
+        self.assertEqual(2, len(self.session.query(AgencyUserAccountAssociation).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(AgencyUserAccountAssociation).filter(
+                        AgencyUserAccountAssociation.user_account_id == user.id
+                    )
+                )
+            ),
+        )
+
+        # There are still two entries in UserAccount but neither are for the deleted user.
+        self.assertEqual(2, len(self.session.query(UserAccount).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(self.session.query(UserAccount).filter(UserAccount.id == user.id))
+            ),
+        )
+
+        # There is still one entry in DatapointHistory but it does not correspond to the
+        # deleted user.
+        self.assertEqual(1, len(self.session.query(DatapointHistory).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(DatapointHistory).filter(
+                        DatapointHistory.user_account_id == user.id
+                    )
+                )
+            ),
+        )
+
+        # There is still one entry in Spreadsheet but it does not correspond to the
+        # deleted user.
+        self.assertEqual(1, len(self.session.query(Spreadsheet).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(Spreadsheet).filter(
+                        Spreadsheet.uploaded_by == user.auth0_user_id
+                    )
+                )
+            ),
+        )
+
         response_json = assert_type(response.json, dict)
         self.assertEqual(response_json["name"], user.name)
         self.assertEqual(response_json["id"], user.id)

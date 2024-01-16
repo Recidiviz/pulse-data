@@ -568,7 +568,9 @@ class Report(JusticeCountsBase):
     date_range_end = Column(Date)  # exclusive
     # Timestamp of last modification (in UTC)
     last_modified_at = Column(DateTime)
-    # List of ids of users who have modified the report
+    # List of ids of users who have modified the report.
+    # Some user_ids here might not map to a user stored in the database since we do not
+    # remove users from this array upon deletion of a user.
     modified_by = Column(ARRAY(Integer))
     # Whether or not the report is "recurring" or not. A recurring report creates a new report on a periodic basis.
     is_recurring = Column(Boolean)

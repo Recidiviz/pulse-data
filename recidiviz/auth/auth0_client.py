@@ -217,6 +217,13 @@ class Auth0Client:
     @sleep_and_retry
     @limits(calls=AUTH0_QPS_LIMIT, period=1)
     @_refresh_token_if_needed
+    def delete_JC_user(self, user_id: str) -> Any:
+        """Deletes a single Auth0 user from the Justice Counts Auth0 tenant."""
+        return self.client.users.delete(id=user_id)
+
+    @sleep_and_retry
+    @limits(calls=AUTH0_QPS_LIMIT, period=1)
+    @_refresh_token_if_needed
     def update_user(
         self,
         user_id: str,
