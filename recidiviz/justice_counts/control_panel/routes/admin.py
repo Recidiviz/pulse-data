@@ -82,6 +82,47 @@ def get_admin_blueprint(
         agencies = [assoc.agency for assoc in user.agency_assocs]
         return jsonify(user.to_json(agencies=agencies))
 
+    @admin_blueprint.route("/user/<user_id>", methods=["DELETE"])
+    @auth_decorator
+    def delete_user(user_id: int) -> Response:
+        """Erases an individual user."""
+        if auth0_client is None:
+            return make_response(
+                "auth0_client could not be initialized. Environment is not development or gcp.",
+                500,
+            )
+
+        user = UserAccountInterface.get_user_by_id(
+            session=current_session, user_account_id=user_id
+        )
+        agencies = [assoc.agency for assoc in user.agency_assocs]
+
+        # Delete all AgencyUserAccountAssociation entries corresponding to the user.
+        AgencyUserAccountAssociationInterface.delete_agency_user_acccount_associations_for_user(
+            session=current_session, user_account_id=user.id
+        )
+
+        # Nullify all user_account_id fields in DatapointHistory that are associated
+        # with the user.
+        current_session.query(schema.DatapointHistory).filter(
+            schema.DatapointHistory.user_account_id == user.id
+        ).update({"user_account_id": None})
+
+        # Nullify all uploaded_by fields in Spreadsheet that are associated
+        # with the user.
+        current_session.query(schema.Spreadsheet).filter(
+            schema.Spreadsheet.uploaded_by == user.auth0_user_id
+        ).update({"uploaded_by": None})
+
+        # Delete the user's auth. Must by done before deleting the user from UserAccount.
+        auth0_client.delete_JC_user(user_id=user.auth0_user_id)
+
+        # Delete the user's UserAccount entry.
+        current_session.delete(user)
+
+        current_session.commit()
+        return jsonify(user.to_json(agencies=agencies))
+
     @admin_blueprint.route("/user", methods=["PUT"])
     @auth_decorator
     def create_or_update_users() -> Response:

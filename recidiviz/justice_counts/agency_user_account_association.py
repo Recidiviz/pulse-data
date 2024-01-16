@@ -407,6 +407,16 @@ class AgencyUserAccountAssociationInterface:
         )
 
     @staticmethod
+    def delete_agency_user_acccount_associations_for_user(
+        session: Session, user_account_id: int
+    ) -> None:
+        """Delete all AgencyUserAccountAssociation entries corresponding to the user."""
+        session.query(schema.AgencyUserAccountAssociation).filter(
+            schema.AgencyUserAccountAssociation.user_account_id == user_account_id,
+        ).delete()
+        session.commit()
+
+    @staticmethod
     def get_subscribed_user_emails_by_agency_id(
         session: Session, agency_id: int
     ) -> List[str]:
