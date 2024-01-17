@@ -18,18 +18,19 @@
 can be parameterized.
 """
 from typing import List, Optional
+
 from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
     join_sentence_spans_to_compartment_sessions,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+    TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
@@ -354,9 +355,15 @@ def custody_level_compared_to_recommended(
     """
 
 
-VIOLATIONS_FOUND_WHERE_CLAUSE = """WHERE (v.state_code != 'US_ME' OR
-       # In ME, convictions are only relevant if their outcome is VIOLATION FOUND
-       response_type IN ("VIOLATION_REPORT", "PERMANENT_DECISION"))
+VIOLATIONS_FOUND_WHERE_CLAUSE = """
+    WHERE 
+        CASE v.state_code
+            # In ME, convictions are only relevant if their outcome is VIOLATION FOUND
+            WHEN 'US_ME' THEN response_type IN ("VIOLATION_REPORT", "PERMANENT_DECISION")
+            -- TODO(#26878): Update this if we revise violation ingest mappings in Oregon
+            WHEN 'US_OR' THEN JSON_EXTRACT_SCALAR(vr.violation_response_metadata, '$.SANCTION_OR_INTERVENTION') = 'S'
+            ELSE TRUE
+            END
 """
 
 
@@ -369,7 +376,9 @@ def violations_within_time_interval_criteria_builder(
     date_interval: int = 12,
     date_part: str = "MONTH",
     violation_date_name_in_reason_blob: str = "latest_convictions",
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    display_single_violation_date: bool = False,
+    state_code: Optional[StateCode] = None,
+) -> TaskCriteriaBigQueryViewBuilder:
     """
     Returns a criteria query that has spans of time where the violations that meet
     certain conditions set by the user (<violaiton_type> and <where clause>) occured.
@@ -388,8 +397,13 @@ def violations_within_time_interval_criteria_builder(
             "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
         violation_date_name_in_reason_blob (str, optional): Name of the violation_date
             field in the reason blob. Defaults to "latest_convictions".
+        display_single_violation_date (bool, optional): Show only the latest violation in
+            the reason blob. Defaults to False, showing all violations in the given time
+            period.
+        state_code (str, optional): State code for which to return a state-specific view
+            builder. Defaults to None, returning a state-agnostic view builder.
     Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: CTE query that shows the spans of
+        TaskCriteriaBigQueryViewBuilder: CTE query that shows the spans of
             time where the violations that meet certain conditions set by the user
             (<violaiton_type> and <where clause>) occured. The span of time for the validity of
             each violation starts at violation_date and ends after a period specified by
@@ -397,12 +411,18 @@ def violations_within_time_interval_criteria_builder(
     """
 
     violation_type_join = f"""
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_type_entry` vt
+    INNER JOIN `{{project_id}}.normalized_state.state_supervision_violation_type_entry` vt
         ON vr.supervision_violation_id = vt.supervision_violation_id
         AND vr.person_id = vt.person_id
         AND vr.state_code = vt.state_code
         {violation_type}
     """
+
+    violation_date_content_in_reason_blob = (
+        "ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC)"
+    )
+    if display_single_violation_date:
+        violation_date_content_in_reason_blob += "[0]"
 
     criteria_query = f"""WITH supervision_violations AS (
         SELECT
@@ -412,32 +432,41 @@ def violations_within_time_interval_criteria_builder(
             DATE_ADD(COALESCE(v.violation_date, vr.response_date), INTERVAL {date_interval} {date_part}) AS end_date,
             COALESCE(v.violation_date, vr.response_date) AS violation_date,
             {bool_column}
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_response` vr
+        FROM `{{project_id}}.normalized_state.state_supervision_violation_response` vr
         {violation_type_join if violation_type else ""}
-        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation` v
+        LEFT JOIN `{{project_id}}.normalized_state.state_supervision_violation` v
             ON vr.supervision_violation_id = v.supervision_violation_id
             AND vr.person_id = v.person_id
             AND vr.state_code = v.state_code
         {where_clause}
     ), 
     {create_sub_sessions_with_attributes('supervision_violations')}
-    
+
     SELECT 
         state_code,
         person_id,
         start_date,
         end_date,
         LOGICAL_AND(meets_criteria) AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS {violation_date_name_in_reason_blob})) AS reason,
+        TO_JSON(STRUCT({violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob})) AS reason,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
     """
+
+    if state_code:
+        # TODO(#26803): Remove this once Oregon fits within state-agnostic logic
+        return StateSpecificTaskCriteriaBigQueryViewBuilder(
+            criteria_name=criteria_name,
+            description=description,
+            criteria_spans_query_template=criteria_query,
+            state_code=state_code,
+            meets_criteria_default=True,
+        )
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
         description=description,
         criteria_spans_query_template=criteria_query,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
     )
 
