@@ -18,7 +18,7 @@
 is no violations within 6 months on supervision."""
 
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+    TaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
     VIOLATIONS_FOUND_WHERE_CLAUSE,
@@ -32,7 +32,7 @@ _CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_WITHIN_6_MONTHS"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which there
 is no violations within 6 months on supervision."""
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = (
     violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,

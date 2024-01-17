@@ -18,10 +18,11 @@
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
+    TaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    VIOLATIONS_FOUND_WHERE_CLAUSE,
+    violations_within_time_interval_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,16 +31,19 @@ _CRITERIA_NAME = "US_OR_NO_SUPERVISION_SANCTIONS_WITHIN_6_MONTHS"
 
 _DESCRIPTION = """Spans of time when someone hasn't had a supervision sanction in the past 6 months"""
 
-_QUERY_TEMPLATE = """TO_JSON(STRUCT(DATE("9999-12-31") AS latest_sanction_date))"""
-
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = (
+    violations_within_time_interval_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_QUERY_TEMPLATE,
+        date_interval=6,
+        date_part="MONTH",
+        where_clause=VIOLATIONS_FOUND_WHERE_CLAUSE,
+        violation_date_name_in_reason_blob="latest_sanction_date",
+        display_single_violation_date=True,
         state_code=StateCode.US_OR,
     )
 )
+
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()
