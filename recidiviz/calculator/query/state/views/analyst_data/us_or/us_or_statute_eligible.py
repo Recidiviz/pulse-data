@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,7 +50,9 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
     )
-    SELECT DISTINCT person_id,
+    SELECT DISTINCT
+        state_code,
+        person_id,
         sentence_id,
         start_date,
         end_date,
