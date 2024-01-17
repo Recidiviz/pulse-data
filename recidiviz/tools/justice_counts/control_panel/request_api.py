@@ -24,9 +24,11 @@ is running in the background. You should also run the `load_fixtures` script fir
 the local database is populated with test objects.
 
 Example usage:
-python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0}'
-python -m recidiviz.tools.justice_counts.control_panel.request_api users '{"email_address":"jsmith@gmail.com"}'
+Note -- you can find your auth0 user id in Auth0
+python -m recidiviz.tools.justice_counts.control_panel.request_api api/home/150 '{"auth0_user_id": "XXX"}' get
+python -m recidiviz.tools.justice_counts.control_panel.request_api admin/user/6 '{}' delete
 """
+
 import argparse
 import json
 from typing import Dict
@@ -36,12 +38,13 @@ import requests
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import HttpMethod
 from recidiviz.utils.secrets import get_secret_from_local_directory
 
-LOCALHOST_URL = "http://localhost:5000/api/"
+LOCALHOST_URL = "http://localhost:5001/"
 
 
 request_string_to_request_type = {
     "get": HttpMethod.GET,
     "post": HttpMethod.POST,
+    "delete": HttpMethod.DELETE,
 }
 
 
@@ -61,8 +64,10 @@ def make_request_to_api(
     auth0_dict = json.loads(get_secret_from_local_directory("justice_counts_auth0"))
     domain = auth0_dict["domain"]
     audience = auth0_dict["audience"]
-    client_id = get_secret_from_local_directory("justice_counts_m2m_client_id")
-    client_secret = get_secret_from_local_directory("justice_counts_m2m_client_secret")
+    client_id = get_secret_from_local_directory("justice_counts_auth0_m2m_client_id")
+    client_secret = get_secret_from_local_directory(
+        "justice_counts_auth0_m2m_client_secret"
+    )
     # First obtain an access_token via a client_credientials grant
     # More details: https://auth0.com/docs/get-started/authentication-and-authorization-flow/client-credentials-flow
     data = {
@@ -78,7 +83,7 @@ def make_request_to_api(
     s = requests.session()
     # Next get a valid CSRF token
     headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
-    response = s.get(LOCALHOST_URL + "init", headers=headers)
+    response = s.get(LOCALHOST_URL + "api/init", headers=headers)
     headers["X-CSRF-Token"] = response.json()["csrf"]
 
     # Finally, make the request
@@ -88,6 +93,8 @@ def make_request_to_api(
         response = s.post(
             LOCALHOST_URL + endpoint, headers=headers, data=json.dumps(body)
         )
+    elif request_type == HttpMethod.DELETE:
+        response = s.delete(LOCALHOST_URL + endpoint, headers=headers)
     else:
         raise ValueError(f"Unsupported HttpMethod: {request_type}")
 
