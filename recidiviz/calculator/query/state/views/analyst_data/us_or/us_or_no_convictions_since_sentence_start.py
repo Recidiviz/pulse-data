@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,7 +52,8 @@ US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_QUERY_TEMPLATE = f"""
         WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
     ),
     sentences_with_later_convictions AS (
-        SELECT s1.person_id,
+        SELECT
+            s1.person_id,
             s1.sentence_id,
             MIN(s2.offense_date) AS next_offense_date,
         FROM sentences s1
@@ -63,7 +64,8 @@ US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_QUERY_TEMPLATE = f"""
         GROUP BY s1.person_id, s1.sentence_id
     ),
     critical_date_spans AS (
-        SELECT sentences.state_code,
+        SELECT
+            sentences.state_code,
             sentences.person_id,
             sentences.sentence_id,
             sentences.sentence_type,
@@ -78,12 +80,14 @@ US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_QUERY_TEMPLATE = f"""
     'sentence_id',
     'sentence_type'
     ])}
-        SELECT cd.person_id,
-        cd.sentence_id,
-        cd.start_date,
-        cd.end_date,
-        IF(cd.critical_date_has_passed, FALSE, TRUE) AS meets_criteria,
-    FROM critical_date_has_passed_spans cd
+        SELECT
+            state_code,
+            person_id,
+            sentence_id,
+            start_date,
+            end_date,
+            IF(critical_date_has_passed, FALSE, TRUE) AS meets_criteria,
+    FROM critical_date_has_passed_spans
 """
 
 US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER = SimpleBigQueryViewBuilder(

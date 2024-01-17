@@ -38,6 +38,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_OR,
     task_name="EARNED_DISCHARGE",
     description=_DESCRIPTION,
+    # TODO(#26891): Revisit candidate population for this opportunity, because many
+    # people are getting dropped from the population due to missing correctional levels.
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         no_supervision_sanctions_within_6_months.VIEW_BUILDER,

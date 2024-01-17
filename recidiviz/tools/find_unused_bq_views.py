@@ -66,24 +66,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tra
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_earned_discharge_sentence_eligibility_spans import (
-    US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_no_convictions_since_sentence_start import (
-    US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_sentenced_after_august_2013 import (
-    US_OR_SENTENCED_AFTER_AUGUST_2013_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_6_months_supervision import (
-    US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_half_sentence import (
-    US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_statute_eligible import (
-    US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 )
@@ -196,36 +178,6 @@ OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
     ),
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
-    ),
-    US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER.address: (
-        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
-        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
-        "downstream TES criteria query will enable this view to be deleted."
-    ),
-    US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER.address: (
-        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
-        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
-        "downstream TES criteria query will enable this view to be deleted."
-    ),
-    US_OR_SENTENCED_AFTER_AUGUST_2013_VIEW_BUILDER.address: (
-        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
-        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
-        "downstream TES criteria query will enable this view to be deleted."
-    ),
-    US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER.address: (
-        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
-        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
-        "downstream TES criteria query will enable this view to be deleted."
-    ),
-    US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER.address: (
-        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
-        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
-        "downstream TES criteria query will enable this view to be deleted."
-    ),
-    US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER.address: (
-        "This view will be used in the OR earned discharge workflow (Maggie Hilderbran 12/21/23)"
-        "TODO(#25505): Incorporating us_or_earned_discharge_sentence_eligibility_spans into the "
-        "downstream TES criteria query will enable this view to be deleted."
     ),
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER.address: (
         "(Damini Sharma 12/21/23) TODO(#17885): Completion of this epic will enable deletion of this view."

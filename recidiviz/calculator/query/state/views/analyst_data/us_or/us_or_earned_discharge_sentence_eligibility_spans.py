@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -72,9 +72,11 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             meets_criteria AS no_convictions_since_sentence_start_date,
         FROM `{{project_id}}.{{analyst_dataset}}.us_or_no_convictions_since_sentence_start`
     ),
-    {create_sub_sessions_with_attributes("sentence_subcriteria_eligibility_spans", index_columns=["person_id", "sentence_id"])},
+    {create_sub_sessions_with_attributes("sentence_subcriteria_eligibility_spans", index_columns=["state_code", "person_id", "sentence_id"])},
     sub_sessions_with_attributes_condensed AS (
-        SELECT person_id,
+        SELECT
+            state_code,
+            person_id,
             sentence_id,
             start_date,
             end_date,
@@ -87,11 +89,13 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             COALESCE(LOGICAL_AND(served_6_months), FALSE) AS meets_criteria_served_6_months,
             COALESCE(LOGICAL_AND(served_half_of_sentence), FALSE) AS meets_criteria_served_half_of_sentence,
             COALESCE(LOGICAL_AND(statute), FALSE) AS meets_criteria_statute,
-            COALESCE(LOGICAL_AND(no_convictions_since_sentence_start_date), FALSE) AS meets_criteria_no_convictions_since_sentence_start_date
+            COALESCE(LOGICAL_AND(no_convictions_since_sentence_start_date), FALSE) AS meets_criteria_no_convictions_since_sentence_start_date,
         FROM sub_sessions_with_attributes
-        GROUP BY 1, 2, 3, 4
+        GROUP BY 1, 2, 3, 4, 5
     )
-    SELECT person_id,
+    SELECT
+        state_code,
+        person_id,
         sentence_id,
         start_date,
         end_date,
@@ -105,8 +109,10 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
         meets_criteria_served_6_months,
         meets_criteria_served_half_of_sentence,
         meets_criteria_statute,
-        meets_criteria_no_convictions_since_sentence_start_date
+        meets_criteria_no_convictions_since_sentence_start_date,
     FROM sub_sessions_with_attributes_condensed
+    /* TODO(#26880): Apply aggregate_adjacent_spans to the end of this query to reduce
+    the number of rows. */
 """
 
 US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
