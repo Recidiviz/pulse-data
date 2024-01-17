@@ -43,6 +43,7 @@ output:
                   - R # (1 instance)
                   - "00" # (1 instance)
                   - CR # (1 instance)
+                  - HL # Hold (OR data team unsure about meaning of this status)
                 StateSupervisionPeriodSupervisionType.INVESTIGATION:
                   - IV # Investigation
                 StateSupervisionPeriodSupervisionType.PAROLE:
@@ -53,14 +54,13 @@ output:
                   - DV # Probation Diversion
                 StateSupervisionPeriodSupervisionType.DUAL:
                   - PO # Post Prison - Post Prison and Parole at same time
+                  - PS # Post Parole - Have open Post Prison and Probation Sentence
+                  - SL # Second Look Juvenile (means they were let out at half of sentence generally) - closest to Post Prison sentence
                 StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
-                  - LV # Leave
-                  - PS # Post Parole
-                  - HL # Hold
-                  - LC # Local Control (generally means a jail)
-                  - SL # Second Look Juvenile (old term, means they were let out at half of sentence generally)
-                  - IN # Adult in Custody (AIC) - look into removing
-                  - DI # Discharge
+                  - LV # Leave - transition from DOC to Supervision (doesn't fit into our enums)
+                  - LC # Local Control #TODO(#26389): Remove post refactor - technically an incarceration sentence but has location type of community
+                  - IN # Adult in Custody (AIC) #TODO(#26389): Remove post refactor - technically an incarceration sentence but has location type of community
+                  - DI # Discharge - these are primarily data errors from OR
                   - AP # Admission Pending (1 instance)
                   - PP # ParolePending - Not used (1 instance)
           start_date: MOVE_IN_DATE
