@@ -57,7 +57,7 @@ VIEW_QUERY_TEMPLATE = f"""
             OffenseSortingOrder
         FROM final_sentences
         WHERE SentenceOrderCategoryId = '2'
-        AND SentenceOrderEventTypeId IN ('1', '2', '3') -- keep "Initial", "Amendment", and "Error Correction" sentences
+        AND SentenceOrderEventTypeId IN ('1', '2', '3', '5') -- keep "Initial", "Amendment", "Error Correction", and "Linked Event" sentences
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
