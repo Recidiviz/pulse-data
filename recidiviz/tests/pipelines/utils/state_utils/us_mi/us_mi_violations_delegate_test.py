@@ -55,7 +55,7 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
             # 24 months before
             lower_bound_inclusive_date=date(1998, 1, 1),
             # Admission Date
-            upper_bound_exclusive_date=date(2000, 1, 2),
+            upper_bound_exclusive_date=date(2000, 1, 15),
         )
 
         self.assertEqual(expected_violation_window, violation_window)
