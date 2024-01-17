@@ -363,20 +363,18 @@ def _file_tickets_for_failing_validations(
             name = validation.validation_job.validation.validation_name
             name_str = f"`{name}`"
             env_str = f"[{env}]"
+            title_str = f"{env_str}[{region}] {name_str}"
             ticket_body = f"""Automated data validation found a hard failure for {name_str} in {env} environment.
 Admin Panel link: {get_admin_panel_base_url()}/admin/validation_metadata/status/details/{name}?stateCode={region}
 Failure details: {validation.result_details.failure_description()}
 Description: {validation.validation_job.validation.view_builder.description}
 """
-            if not any(
-                name_str in issue.title and env_str in issue.title
-                for issue in existing_issues
-            ):
+            if not any(title_str == issue.title for issue in existing_issues):
                 logging.info(
                     "Filing ticket in region %s for validation %s", region, name_str
                 )
                 github_client.get_repo(RECIDIVIZ_DATA_REPO).create_issue(
-                    title=f"{env_str}[{region}] {name_str}",
+                    title=title_str,
                     body=ticket_body,
                     labels=issue_labels,
                 )
