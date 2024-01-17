@@ -48,7 +48,7 @@ class UsMiViolationDelegate(StateSpecificViolationDelegate):
         violation_window_lower_bound_inclusive = critical_date - relativedelta(
             months=24
         )
-        violation_window_upper_bound_exclusive = critical_date + relativedelta(days=1)
+        violation_window_upper_bound_exclusive = critical_date + relativedelta(days=14)
         return DateRange(
             lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
             upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
