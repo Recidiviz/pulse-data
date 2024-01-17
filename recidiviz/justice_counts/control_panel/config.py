@@ -39,7 +39,7 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
     passthrough_authorization_decorator,
 )
-from recidiviz.utils.environment import in_ci, in_gcp_staging
+from recidiviz.utils.environment import in_ci, in_development, in_gcp_staging
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.types import assert_type
 
@@ -99,7 +99,11 @@ class Config:
 
             roles = assert_type(jwt_claims.get(ROLES_CLAIMS, []), list)
 
-            if roles is not None and JUSTICE_COUNTS_ADMIN_CLAIM not in set(roles):
+            if (
+                not in_development()
+                and roles is not None
+                and JUSTICE_COUNTS_ADMIN_CLAIM not in set(roles)
+            ):
                 raise JusticeCountsServerError(
                     code="no_justice_counts_access",
                     description="You are not authorized to access this application.",

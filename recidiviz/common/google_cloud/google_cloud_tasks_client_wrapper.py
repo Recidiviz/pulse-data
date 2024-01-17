@@ -40,6 +40,7 @@ class HttpMethod(Enum):
     POST = "POST"
     PUT = "PUT"
     PATCH = "PATCH"
+    DELETE = "DELETE"
 
 
 QUEUES_REGION = "us-east1"
