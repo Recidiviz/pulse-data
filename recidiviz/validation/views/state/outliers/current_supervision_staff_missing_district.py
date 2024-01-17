@@ -15,15 +15,14 @@
 # along with this program.    If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-View that returns a list of ingested StateStaff individuals that have an open role period with subtype 
-SUPERVISION_OFFICER or SUPERVISION_OFFICER_SUPERVISOR but don't have an open location period
-with valued district information
+View that returns a list of supervision staff that are relevant for outliers 
+(officers with current metrics, current supervisors of those officers, and district managers)
+that either are missing district information or have district information that doesn't
+map to anything in location metadata
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    today_between_start_date_and_nullable_end_date_clause,
-)
+from recidiviz.calculator.query.state.dataset_config import OUTLIERS_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
@@ -31,51 +30,85 @@ from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 _VIEW_NAME = "current_supervision_staff_missing_district"
 
 _VIEW_DESCRIPTION = (
-    "View that returns a list of ingested StateStaff individuals that have an open role period with subtype  "
-    "SUPERVISION_OFFICER, SUPERVISION_OFFICER_SUPERVISOR, or SUPERVISION_DISTRICT_MANAGER but don't have an "
-    "associated open location period with valued district information. "
-    "Missing district ids for supervisor and district managers is currently launch blocking for the Outliers email tool (still TBD whether it'll be launch blocking for the web tool). "
-    "Missing district ids or name is not currently launch blocking officers for the Outliers email tool or web tool, but we still expect that it would be mostly non-missing since we only want to infer districts or display districts as unknown when strictly necessary. "
+    "View that returns a list of supervision staff that are relevant for outliers  "
+    "(officers with current metrics, current supervisors of those officers, and district managers) "
+    "that either are missing district information or have district information that doesn't "
+    "map to anything in location metadata. "
+    "\n "
+    "For the email tool, district information is strictly required for supervisors and district managers for the CC functionality to work. "
+    "For the web tool, district information is not strictly required since staff with missing districts will be displayed in the 'Unknown' district category. "
+    "However, we ideally want as few people to show up under this 'Unknown' category as possible. "
+    "\n "
+    "Missing supervision_district_of_staff for an officer or supervisor indicates that the staff person is missing "
+    "an open StateStaffLocationPeriod with valued supervision district information "
+    "and we are unable to infer district information from client location in dataflow sessions (ultimately from StateSupervisionPeriod). "
+    "Missing supervision_district_of_staff for a district manager indicates district is missing in the state-specific leadership reference file that the district managers product view pulls from for that district manager. "
+    "Valued supervision_district_of_staff but NULL supervision_district_in_location_metadata indicates that the district we have for the staff person is missing from the location metadata for that state. "
 )
 
-_QUERY_TEMPLATE = f"""
-    WITH 
-    current_supervision_staff AS (
-    SELECT 
-        state_code,
-        staff_id,
-        role_subtype
-    FROM `{{project_id}}.normalized_state.state_staff_role_period`
-    WHERE 
-        role_type = 'SUPERVISION_OFFICER' AND 
-        role_subtype IN ('SUPERVISION_OFFICER', 'SUPERVISION_OFFICER_SUPERVISOR', 'SUPERVISION_DISTRICT_MANAGER') AND
-        {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+_QUERY_TEMPLATE = """
+    WITH officers_with_metrics AS (
+        SELECT DISTINCT
+            o.state_code,
+            o.external_id,
+            o.supervisor_external_id,
+            "SUPERVISION_OFFICER" AS role_subtype,
+            supervision_district
+        FROM `{project_id}.{outliers_dataset}.supervision_officers_materialized` o
+        LEFT JOIN `{project_id}.{outliers_dataset}.supervision_officer_outlier_status_materialized` m
+            ON o.state_code = m.state_code AND o.external_id = m.officer_id
+        WHERE
+            m.period = 'YEAR'
+            AND m.end_date = DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH)
+    ), 
+    supervisors_for_officers_with_metrics AS (
+        SELECT DISTINCT
+            s.state_code,
+            s.external_id,
+            "SUPERVISION_OFFICER_SUPERVISOR" AS role_subtype,
+            s.supervision_district
+        FROM `{project_id}.{outliers_dataset}.supervision_officer_supervisors_materialized` s
+        INNER JOIN officers_with_metrics
+            ON officers_with_metrics.state_code = s.state_code AND officers_with_metrics.supervisor_external_id = s.external_id
     ),
-    current_locations AS (
-    SELECT
-        period.state_code,
-        period.staff_id,
-        period.location_external_id,
-        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_id') AS supervision_district_id,
-        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') AS supervision_district_name
-    FROM `{{project_id}}.normalized_state.state_staff_location_period` period
-    LEFT JOIN `{{project_id}}.reference_views.location_metadata_materialized` metadata ON period.location_external_id = metadata.location_external_id
-    WHERE 
-        {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+    district_managers AS (
+        SELECT DISTINCT
+            s.state_code,
+            s.external_id,
+            "SUPERVISION_DISTRICT_MANAGER" AS role_subtype,
+            s.supervision_district
+        FROM `{project_id}.{outliers_dataset}.supervision_district_managers_materialized` s
+    ),
+    relevant_supervision_staff AS (
+        SELECT 
+            * EXCEPT (supervisor_external_id)
+        FROM officers_with_metrics
+
+        UNION ALL 
+
+        SELECT 
+            *
+        FROM supervisors_for_officers_with_metrics
+
+        UNION ALL
+
+        SELECT 
+            *
+        FROM district_managers
     )
 
-    SELECT DISTINCT
-        current_supervision_staff.state_code AS region_code,
-        current_supervision_staff.staff_id,
-        current_supervision_staff.role_subtype,
-        loc.location_external_id,
-        loc.supervision_district_id,
-        loc.supervision_district_name
-    FROM current_supervision_staff
-    LEFT JOIN current_locations loc USING(staff_id, state_code)
+    SELECT
+        relevant_supervision_staff.state_code AS region_code,
+        relevant_supervision_staff.external_id as external_id,
+        relevant_supervision_staff.role_subtype,
+        relevant_supervision_staff.supervision_district as supervision_district_of_staff,
+        d.name as supervision_district_in_location_metadata
+    FROM relevant_supervision_staff
+    LEFT JOIN `{project_id}.{outliers_dataset}.supervision_districts_materialized` d 
+        ON relevant_supervision_staff.state_code = d.state_code AND UPPER(relevant_supervision_staff.supervision_district) = UPPER(d.name)
     WHERE 
-        supervision_district_id IS NULL OR
-        supervision_district_name IS NULL
+        relevant_supervision_staff.supervision_district IS NULL 
+        OR d.external_id IS NULL
 """
 
 CURRENT_SUPERVISION_STAFF_MISSING_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -84,6 +117,7 @@ CURRENT_SUPERVISION_STAFF_MISSING_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuil
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
     should_materialize=True,
+    outliers_dataset=OUTLIERS_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

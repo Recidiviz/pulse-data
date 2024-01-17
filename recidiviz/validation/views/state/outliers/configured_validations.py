@@ -28,9 +28,6 @@ from recidiviz.validation.views.state.outliers.current_supervision_staff_missing
 from recidiviz.validation.views.state.outliers.current_supervision_staff_missing_email import (
     CURRENT_SUPERVISION_STAFF_MISSING_EMAIL_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.outliers.current_supervision_staff_missing_name import (
-    CURRENT_SUPERVISION_STAFF_MISSING_NAME_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.outliers.unidentified_supervision_districts_for_staff import (
     UNIDENTIFIED_SUPERVISION_DISTRICTS_FOR_STAFF_VIEW_BUILDER,
 )
@@ -50,10 +47,6 @@ def get_all_outliers_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=CURRENT_SUPERVISION_STAFF_MISSING_EMAIL_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=CURRENT_SUPERVISION_STAFF_MISSING_NAME_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

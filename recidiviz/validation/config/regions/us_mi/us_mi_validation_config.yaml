@@ -103,10 +103,3 @@ num_allowed_rows_overrides:
     override_reason:
       This validation is failing due to the way task eligibility spans are structured for MI.
       Bumping threshold for now until it's determined whether this is an issue or not.  See #25100
-  - validation_name: current_supervision_staff_missing_district
-    hard_num_allowed_rows_override: 250
-    override_reason:
-      District is only required for the email tool, which MI is not launching yet.  In addition,
-      this validation is also slated to be revised to more accurately reflect the officer/supervisor
-      population that will actually be included in the tool (TODO(#26273)).  So will re-investigate
-      failures after validation is revised TODO(#26496)
