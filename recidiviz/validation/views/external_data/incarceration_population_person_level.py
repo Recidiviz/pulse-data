@@ -19,8 +19,6 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,14 +46,6 @@ FROM `{project_id}.{us_pa_validation_dataset}.incarceration_population_person_le
 --   DATE('2021-11-01') as date_of_stay,
 --   Facility as facility
 -- FROM `{project_id}.{us_nd_validation_dataset}.incarcerated_individuals_2021_11_01`
-UNION ALL
-SELECT
-  'US_TN' as region_code,
-  OffenderID as person_external_id,
-  'US_TN_DOC' as external_id_type,
-  DATE(Date) as date_of_stay,
-  Site as facility
-FROM `{project_id}.{us_tn_raw_data_up_to_date_dateset}.TDPOP_latest`
 UNION ALL
 SELECT
   'US_PA' as region_code,
@@ -146,10 +136,6 @@ def get_incarceration_population_person_level_view_builder() -> (
         ),
         us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_PA
-        ),
-        us_tn_raw_data_up_to_date_dateset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TN,
-            instance=DirectIngestInstance.PRIMARY,
         ),
         **region_dataset_params,
     )

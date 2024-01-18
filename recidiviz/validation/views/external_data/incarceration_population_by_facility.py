@@ -33,7 +33,7 @@ SELECT * FROM `{project_id}.{us_mo_validation_dataset}.incarceration_population_
 UNION ALL
 SELECT * FROM `{project_id}.{us_nd_validation_dataset}.incarceration_population_by_facility_raw`
 UNION ALL
-SELECT * FROM `{project_id}.{us_tn_validation_dataset}.incarceration_population_by_facility_raw`
+SELECT * FROM `{project_id}.{us_tn_validation_dataset}.incarceration_population_by_facility_materialized`
 """
 
 INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
