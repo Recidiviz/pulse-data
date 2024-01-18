@@ -243,7 +243,10 @@ function check_terraform_installed {
 
     # Check that we're on at least the minimum version of Terraform
     TERRAFORM_VERSION=$(terraform --version | grep "^Terraform v" | cut -d ' ' -f 2 | sed 's/v//')
-    MIN_REQUIRED_TERRAFORM_VERSION="1.1.9"
+    # Note: this verison number should be kept in sync with the ones in Dockerfile,
+    # .devcontainer/devcontainer.json, recidiviz/tools/deploy/terraform/terraform.tf, and
+    # .github/workflows/ci.yml
+    MIN_REQUIRED_TERRAFORM_VERSION="1.7.0"
 
     if version_less_than "${TERRAFORM_VERSION}" "${MIN_REQUIRED_TERRAFORM_VERSION}"; then
       echo_error "Installed Terraform version [v$TERRAFORM_VERSION] must be at least [v$MIN_REQUIRED_TERRAFORM_VERSION]. "

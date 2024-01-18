@@ -53,7 +53,10 @@ RUN wget -O /dev/stdout https://apt.releases.hashicorp.com/gpg             | \
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg]" \
     "https://apt.releases.hashicorp.com $(lsb_release -cs) main"      | \
     tee /etc/apt/sources.list.d/hashicorp.list &&                            \
-    apt-get update -y && apt-get install terraform=1.2.9 -y &&               \
+    # Note: this verison number should be kept in sync with the ones in .github/workflows/ci.yml,
+    # .devcontainer/devcontainer.json, recidiviz/tools/deploy/terraform/terraform.tf, and
+    # recidiviz/tools/deploy/deploy_helpers.sh
+    apt-get update -y && apt-get install terraform=1.7.0 -y &&               \
     apt-mark hold terraform
 # Install postgres to be used by tests that need to write to a database from multiple threads.
 ARG PG_VERSION=13

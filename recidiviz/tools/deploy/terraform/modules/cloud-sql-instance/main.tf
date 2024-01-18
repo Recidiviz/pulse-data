@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-terraform {
-  experiments = [module_variable_optional_attrs]
-}
-
 # The project for the related database instance
 variable "project_id" {
   type = string
