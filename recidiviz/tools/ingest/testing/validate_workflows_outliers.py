@@ -177,7 +177,7 @@ def _get_outliers_addresses() -> List[ValidationAddress]:
                     SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER.address,
                     "officer_id",
                     [],
-                    ["metric_id", "caseload_type", "end_date"],
+                    ["metric_id", "caseload_type", "end_date", "state_code"],
                 ),
                 ValidationAddress(
                     StateCode(state_code),
@@ -247,7 +247,7 @@ class WorkflowsOutliersDatasetValidator:
         self.sandbox_prefix_to_validate = sandbox_prefix_to_validate
         self.sandbox_project_id = sandbox_project_id
 
-        self.output_project_id = GCP_PROJECT_STAGING
+        self.output_project_id = sandbox_project_id
         self.output_dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
             prefix=output_sandbox_prefix,
             dataset_id=f"workflows_outliers_validation_results_{state_code_filter.value.lower()}",
