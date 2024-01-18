@@ -19,7 +19,10 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
@@ -38,12 +41,19 @@ US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_QUERY_TEMPLATE = f
 SELECT
     pei.external_id,
     tes.state_code,
+    tes_all.start_date AS metadata_eligible_date,
     reasons,
 FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_telephone_reporting_request_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-ON tes.state_code = pei.state_code 
+    ON tes.state_code = pei.state_code 
     AND tes.person_id = pei.person_id
     AND pei.id_type = "US_MI_DOC"
+--join analyst view dataset that sessionizes spans based on eligibility to get eligible start date
+INNER JOIN `{{project_id}}.{{analyst_views_dataset}}.all_task_eligibility_spans_materialized` tes_all
+    ON tes_all.state_code = tes.state_code
+    AND tes_all.person_id = tes.person_id 
+    AND tes_all.task_name = 'COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST'
+    AND CURRENT_DATE('US/Pacific') BETWEEN tes_all.start_date AND {nonnull_end_date_exclusive_clause('tes_all.end_date')}
 WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_MI'
@@ -55,6 +65,7 @@ US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER = Sim
     view_query_template=US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_QUERY_TEMPLATE,
     description=US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    analyst_views_dataset=ANALYST_VIEWS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_MI
     ),
