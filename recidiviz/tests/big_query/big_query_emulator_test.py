@@ -421,7 +421,7 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
         query = "SELECT TO_JSON([1, 2, 3]) as a;"
         self.run_query_test(
             query,
-            expected_result=[{"a": "[1,2,3]"}],
+            expected_result=[{"a": [1, 2, 3]}],
         )
 
     def test_to_json(self) -> None:
@@ -431,7 +431,7 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
 
         self.run_query_test(
             query,
-            expected_result=[{"result": '{"a":"foo","b":1}'}],
+            expected_result=[{"result": {"a": "foo", "b": 1}}],
         )
 
     def test_to_json_nested(self) -> None:
@@ -441,7 +441,7 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
 
         self.run_query_test(
             query,
-            expected_result=[{"result": '{"a":"foo","b":{"c":"bar"}}'}],
+            expected_result=[{"result": {"a": "foo", "b": {"c": "bar"}}}],
         )
 
     def test_to_json_nested_cte(self) -> None:
@@ -453,7 +453,7 @@ FROM inner_json;"""
 
         self.run_query_test(
             query,
-            expected_result=[{"result": '{"a":"foo","b":{"c":"bar"}}'}],
+            expected_result=[{"result": {"a": "foo", "b": {"c": "bar"}}}],
         )
 
     def test_to_json_nested_cte_column_rename(self) -> None:
@@ -465,7 +465,7 @@ FROM inner_json;"""
 
         self.run_query_test(
             query,
-            expected_result=[{"result": '{"a":"foo","b_2":{"c":"bar"}}'}],
+            expected_result=[{"result": {"a": "foo", "b_2": {"c": "bar"}}}],
         )
 
     def test_to_json_nested_cte_numbers(self) -> None:
@@ -477,7 +477,7 @@ FROM inner_json;"""
 
         self.run_query_test(
             query,
-            expected_result=[{"result": '{"a":2,"b":{"c":1}}'}],
+            expected_result=[{"result": {"a": 2, "b": {"c": 1}}}],
         )
 
     def test_to_json_nested_outer_array(self) -> None:
@@ -492,7 +492,7 @@ FROM inner_json;"""
 
         self.run_query_test(
             query,
-            expected_result=[{"result": '[{"a":"foo","b":{"c":1}}]'}],
+            expected_result=[{"result": [{"a": "foo", "b": {"c": 1}}]}],
         )
 
     def test_nested_json_array_agg(self) -> None:
@@ -511,7 +511,7 @@ SELECT TO_JSON(ARRAY_AGG(
 FROM inner_table;"""
         self.run_query_test(
             query,
-            expected_result=[{"result": '[{"a":"foo","c":{"b":1}}]'}],
+            expected_result=[{"result": [{"a": "foo", "c": {"b": 1}}]}],
         )
 
     def test_array_agg(self) -> None:
