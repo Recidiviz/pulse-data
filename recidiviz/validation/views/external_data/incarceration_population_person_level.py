@@ -34,39 +34,6 @@ FROM `{project_id}.{us_id_validation_dataset}.incarceration_population_person_le
 UNION ALL
 SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_stay, facility
 FROM `{project_id}.{us_id_validation_dataset}.daily_summary_incarceration`
-UNION ALL 
-SELECT region_code, person_external_id, 'US_PA_CONT' as external_id_type, date_of_stay, facility
-FROM `{project_id}.{us_pa_validation_dataset}.incarceration_population_person_level_raw`
-UNION ALL
-SELECT
-  'US_PA' as region_code,
-  person_external_id,
-  'US_PA_CONT' as external_id_type,
-  date_of_stay,
-  facility
-FROM (
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-03-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_03_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-04-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_04_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-05-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_05_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-06-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_06_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-07-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_07_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-08-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_08_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-09-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_09_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-10-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_10_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-11-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_11_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2021-12-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2021_12_incarceration_population`
-  UNION ALL
-  SELECT control_number as person_external_id, LAST_DAY(DATE '2022-01-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2022_01_incarceration_population`
-)
 """
 
 VIEW_ID = "incarceration_population_person_level"
@@ -121,9 +88,6 @@ def get_incarceration_population_person_level_view_builder() -> (
         # Query format arguments
         us_id_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ID
-        ),
-        us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_PA
         ),
         **region_dataset_params,
     )

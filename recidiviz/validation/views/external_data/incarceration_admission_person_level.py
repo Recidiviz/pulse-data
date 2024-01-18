@@ -28,38 +28,6 @@ from recidiviz.validation.views.external_data import regions as external_data_re
 _LEGACY_QUERY_TEMPLATE = """
 SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, admission_date
 FROM `{project_id}.{us_id_validation_dataset}.incarceration_admission_person_level_raw`
-UNION ALL
-SELECT region_code, person_external_id, 'US_PA_CONT' as external_id_type, admission_date
-FROM `{project_id}.{us_pa_validation_dataset}.incarceration_admission_person_level_raw`
-UNION ALL 
-SELECT
-    'US_PA' as region_code,
-    control_number as person_external_id,
-    'US_PA_CONT' as external_id_type,
-    PARSE_DATE('%m/%d/%Y', mov_date_std) as admission_date
-FROM (
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_03_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_04_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_05_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_06_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_07_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_08_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_09_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_10_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_11_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_12_incarceration_admissions`
-    UNION ALL
-    SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2022_01_incarceration_admissions`
-)
 """
 
 VIEW_ID = "incarceration_admission_person_level"
@@ -112,9 +80,6 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
         clustering_fields=None,
         us_id_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ID
-        ),
-        us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_PA
         ),
         **region_dataset_params,
     )
