@@ -212,6 +212,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "us_nd_validation",
     "us_oz_validation",
     "us_tn_validation",
+    "us_pa_validation",
     "validation_external_accuracy",
     "validation_metadata",
     "validation_views",

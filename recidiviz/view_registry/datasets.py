@@ -88,10 +88,7 @@ VALIDATION_DATASETS_TO_DESCRIPTIONS = {
     if state_code
     # TODO(#13312): Move all one off validation data for these states into `us_xx_validation_oneoffs`
     # and have `us_xx_validation` only contain version controlled views pulling from oneoffs and raw data.
-    in (
-        StateCode.US_ID,
-        StateCode.US_PA,
-    )
+    in (StateCode.US_ID,)
 }
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(
