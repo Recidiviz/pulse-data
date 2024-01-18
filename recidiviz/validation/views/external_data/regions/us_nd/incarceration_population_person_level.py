@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,29 +14,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view containing external data for person level recidivations to validate against."""
-
+"""A view detailing the incarceration population at the person level for North Dakota."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-_QUERY_TEMPLATE = """
-SELECT * FROM `{project_id}.{us_nd_validation_dataset}.recidivism_person_level`
+# TODO(#10883): Ignoring this ND data for now because we are not sure that it is correct.
+# remove the LIMIT 0 when we are sure it is correct.
+VIEW_QUERY_TEMPLATE = """
+SELECT
+  'US_ND' as region_code,
+  Offender_ID as person_external_id,
+  'US_ND_ELITE' as external_id_type,
+  DATE('2021-11-01') as date_of_stay,
+  Facility as facility
+FROM `{project_id}.{us_nd_validation_oneoff_dataset}.incarcerated_individuals_2021_11_01`
+--- TODO(#10884): remove the LIMIT 0 when we are sure it is correct.
+LIMIT 0
 """
 
-RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    view_id="recidivism_person_level",
-    view_query_template=_QUERY_TEMPLATE,
-    description="Contains external data for person level recidivations to validate "
-    "against. See http://go/external-validations for instructions on adding new data.",
-    us_nd_validation_dataset=dataset_config.validation_dataset_for_state(
+US_ND_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.validation_dataset_for_state(StateCode.US_ND),
+    view_id="incarceration_population_person_level",
+    description="A view detailing the incarceration population at the person level for North Dakota",
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    should_materialize=True,
+    us_nd_validation_oneoff_dataset=dataset_config.validation_oneoff_dataset_for_state(
         StateCode.US_ND
     ),
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
+        US_ND_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
