@@ -36,6 +36,14 @@ output:
                 - SupervisionPeriodSequenceNumber
           start_date: StartDate
           termination_date: EndDate
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $equal:
+                    - SupervisionLevel
+                    - $literal("9IS")
+                $then: $literal_enum(StateCustodialAuthority.OTHER_STATE)
+              - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
           supervision_site: Site
           supervising_officer_staff_external_id: SupervisionOfficerID
           supervising_officer_staff_external_id_type:

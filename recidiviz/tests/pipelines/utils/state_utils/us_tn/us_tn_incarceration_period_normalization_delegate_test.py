@@ -343,7 +343,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=None,
             release_reason=None,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.COUNTY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
@@ -381,7 +381,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 4, 20),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.COUNTY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
@@ -443,7 +443,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 4, 30),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.COUNTY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
@@ -509,7 +509,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 4, 25),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.COUNTY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
@@ -575,7 +575,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 5, 7),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.COUNTY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
@@ -664,7 +664,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=None,
             release_reason=None,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.COUNTY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
