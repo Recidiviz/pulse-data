@@ -90,7 +90,6 @@ VALIDATION_DATASETS_TO_DESCRIPTIONS = {
     # and have `us_xx_validation` only contain version controlled views pulling from oneoffs and raw data.
     in (
         StateCode.US_ID,
-        StateCode.US_MO,
         StateCode.US_ND,
         StateCode.US_PA,
         # Note: Some pre-existing migration work exists for TN in #13641.
