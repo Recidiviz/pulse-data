@@ -25,10 +25,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.entrypoint_utils import save_to_xcom
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.gating import (
-    ingest_pipeline_can_run_in_dag,
-    is_ingest_in_dataflow_enabled,
-)
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -111,9 +108,6 @@ def _should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
     """
     Returns whether the secondary ingest pipeline should be run for the given state.
     """
-    if not ingest_pipeline_can_run_in_dag(state_code, DirectIngestInstance.SECONDARY):
-        return False
-
     if _secondary_has_raw_data_changes(state_code):
         return True
 
@@ -156,14 +150,6 @@ def ingest_pipeline_should_run_in_dag(
             state_code.value,
             ingest_instance.value,
             environment.get_gcp_environment(),
-        )
-        return False
-
-    if not ingest_pipeline_can_run_in_dag(state_code, ingest_instance):
-        logging.info(
-            "Ingest [%s, %s] is not ungated to run in DAG - returning False",
-            state_code.value,
-            ingest_instance.value,
         )
         return False
 

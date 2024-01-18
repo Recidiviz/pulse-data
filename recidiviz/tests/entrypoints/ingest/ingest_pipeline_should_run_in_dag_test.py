@@ -66,17 +66,8 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             )
         )
 
-        self.ingest_pipeline_can_run_in_dag_patcher = patch(
-            "recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag.ingest_pipeline_can_run_in_dag",
-            return_value=True,
-        )
-        self.mock_ingest_pipeline_can_run_in_dag = (
-            self.ingest_pipeline_can_run_in_dag_patcher.start()
-        )
-
     def tearDown(self) -> None:
         self.direct_ingest_regions_patcher.stop()
-        self.ingest_pipeline_can_run_in_dag_patcher.stop()
         self.is_ingest_in_dataflow_enabled_patcher.stop()
         self.secondary_has_raw_data_changes_patcher.stop()
 

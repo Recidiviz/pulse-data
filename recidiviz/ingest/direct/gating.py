@@ -50,12 +50,3 @@ def is_ingest_in_dataflow_enabled(
         StateCode.US_ME,
     ]
     return state_code in staging_enabled_states
-
-
-def ingest_pipeline_can_run_in_dag(
-    state_code: StateCode,
-    instance: DirectIngestInstance,  # pylint: disable=unused-argument
-) -> bool:
-    if state_code == StateCode.US_TN and environment.in_gcp_production():
-        return False
-    return True

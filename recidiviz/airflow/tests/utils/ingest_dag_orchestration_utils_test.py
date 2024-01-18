@@ -44,17 +44,8 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
         )
         self.get_existing_states_patcher.start()
 
-        self.ingest_pipeline_can_run_in_dag_patcher = patch(
-            "recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils.ingest_pipeline_can_run_in_dag",
-            return_value=True,
-        )
-        self.mock_ingest_pipeline_can_run_in_dag = (
-            self.ingest_pipeline_can_run_in_dag_patcher.start()
-        )
-
     def tearDown(self) -> None:
         self.get_existing_states_patcher.stop()
-        self.ingest_pipeline_can_run_in_dag_patcher.stop()
 
     def test_get_ingest_pipeline_enabled_state_and_instance_pairs(self) -> None:
         result = get_ingest_pipeline_enabled_state_and_instance_pairs()
@@ -64,27 +55,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             {
                 (StateCode.US_DD, DirectIngestInstance.PRIMARY),
                 (StateCode.US_DD, DirectIngestInstance.SECONDARY),
-                (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-                (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-                (StateCode.US_YY, DirectIngestInstance.PRIMARY),
-                (StateCode.US_YY, DirectIngestInstance.SECONDARY),
-                (StateCode.US_WW, DirectIngestInstance.PRIMARY),
-                (StateCode.US_WW, DirectIngestInstance.SECONDARY),
-            },
-        )
-
-    def test_get_ingest_pipeline_enabled_state_and_instance_pairs_ingest_in_dataflow_not_enabled(
-        self,
-    ) -> None:
-        self.mock_ingest_pipeline_can_run_in_dag.side_effect = (
-            lambda state_code, ingest_instance: state_code != StateCode.US_DD
-        )
-
-        result = get_ingest_pipeline_enabled_state_and_instance_pairs()
-
-        self.assertSetEqual(
-            set(result),
-            {
                 (StateCode.US_XX, DirectIngestInstance.PRIMARY),
                 (StateCode.US_XX, DirectIngestInstance.SECONDARY),
                 (StateCode.US_YY, DirectIngestInstance.PRIMARY),
