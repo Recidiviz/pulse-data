@@ -45,20 +45,6 @@ SELECT
   LTRIM(StaffID, '*') as supervising_officer,
   NULL as supervision_level
 FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.DailyCommunitySupervisionForRecidiviz_latest`
--- TODO(#10884): This validation data seems incorrect, so excluding it for now.
--- UNION ALL 
--- (SELECT
---     'US_ND' as region_code,
---     TRIM(SID) as person_external_id,
---     'US_ND_SID' as external_id_type,
---     DATE('2020-06-01') as date_of_supervision,
---     MIN(level_1_supervision_location_external_id) as district,
---     NULL as supervising_officer,
---     NULL as supervision_level
--- FROM `{project_id}.{us_nd_validation_dataset}.open_supervision_2020_06_01`
--- LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
---     ON SITE_NAME = level_1_supervision_location_name
--- GROUP BY SID)
 """
 
 VIEW_ID = "supervision_population_person_level"
@@ -118,12 +104,6 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
         clustering_fields=None,
         us_id_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ID
-        ),
-        us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
-        ),
-        us_nd_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_ND
         ),
         us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_PA
