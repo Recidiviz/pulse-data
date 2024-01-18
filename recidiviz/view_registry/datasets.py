@@ -92,8 +92,6 @@ VALIDATION_DATASETS_TO_DESCRIPTIONS = {
         StateCode.US_ID,
         StateCode.US_ND,
         StateCode.US_PA,
-        # Note: Some pre-existing migration work exists for TN in #13641.
-        StateCode.US_TN,
     )
 }
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
