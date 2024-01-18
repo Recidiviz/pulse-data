@@ -20,7 +20,6 @@ Helper functions for orchestrating the Ingest Airflow Dag.
 from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import ingest_pipeline_can_run_in_dag
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
@@ -33,11 +32,8 @@ def get_ingest_pipeline_enabled_state_and_instance_pairs() -> (
     """
     Returns a list of all state and ingest instance pairs that the ingest pipeline should be run for.
     """
-    states_and_instances: List[Tuple[StateCode, DirectIngestInstance]] = []
-    for state in get_direct_ingest_states_existing_in_env():
-        for instance in DirectIngestInstance:
-            # TODO(#20997): Remove feature flag and include all instances once ingest is enabled in dataflow in all states
-            if ingest_pipeline_can_run_in_dag(state, instance):
-                states_and_instances.append((state, instance))
-
-    return states_and_instances
+    return [
+        (state, instance)
+        for state in get_direct_ingest_states_existing_in_env()
+        for instance in DirectIngestInstance
+    ]
