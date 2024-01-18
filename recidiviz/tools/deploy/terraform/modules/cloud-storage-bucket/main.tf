@@ -14,9 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-terraform {
-  experiments = [module_variable_optional_attrs]
-}
 
 # The project id associated with the buckets and service accounts (ex: "recidiviz-123").
 variable "project_id" {

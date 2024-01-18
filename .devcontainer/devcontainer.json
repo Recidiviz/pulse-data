@@ -1,74 +1,79 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "Python 3",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:0-3.11",
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	"features": {
-		"ghcr.io/devcontainers/features/java:1": {},
-		"ghcr.io/devcontainers-contrib/features/pipenv:2": {},
-		"ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {},
-		"ghcr.io/dhoeric/features/google-cloud-cli:1": {},
-		"ghcr.io/devcontainers/features/common-utils:2": {
-			"configureZshAsDefaultShell": true
-		},
-		// gdal and cmake are needed to install certain pip dependencies.
-		// micromamba lets us install these easily from conda with a small footprint. 
-		"ghcr.io/mamba-org/devcontainer-features/micromamba:1": {
-			"channels": "conda-forge",
-			"packages": "gdal cmake"
-		},
-		"docker-in-docker": {
-			"version": "latest",
-			"moby": true,
-			"dockerDashComposeVersion": "v1",
-			"_comment": "VS Code runs as a Docker container. So if we want to build/run Docker, we need to support running Docker within Docker"
-		},
-		"terraform": {
-			"version": "1.2.9",
-			"tflint": "latest",
-			"terragrunt": "latest",
-			"_comment": "Terraform is needed if we want to run deployments from within VS Code Containers"
-		}
-	},
+  "name": "Python 3",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  "image": "mcr.microsoft.com/devcontainers/python:0-3.11",
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {},
+    "ghcr.io/devcontainers-contrib/features/pipenv:2": {},
+    "ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {},
+    "ghcr.io/dhoeric/features/google-cloud-cli:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "configureZshAsDefaultShell": true
+    },
+    // gdal and cmake are needed to install certain pip dependencies.
+    // micromamba lets us install these easily from conda with a small footprint.
+    "ghcr.io/mamba-org/devcontainer-features/micromamba:1": {
+      "channels": "conda-forge",
+      "packages": "gdal cmake"
+    },
+    "docker-in-docker": {
+      "version": "latest",
+      "moby": true,
+      "dockerDashComposeVersion": "v1",
+      "_comment": "VS Code runs as a Docker container. So if we want to build/run Docker, we need to support running Docker within Docker"
+    },
+    "terraform": {
+      // Note: this verison number should be kept in sync with the ones in Dockerfile,
+      // .github/workflows/ci.yml, recidiviz/tools/deploy/terraform/terraform.tf, and
+      // recidiviz/tools/deploy/deploy_helpers.sh
+      "version": "1.7.0",
+      "tflint": "latest",
+      "terragrunt": "latest",
+      "_comment": "Terraform is needed if we want to run deployments from within VS Code Containers"
+    }
+  },
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sh .devcontainer/postCreate.sh",
-	// The git directory isn't ready until the container has been started, so put `git config`
-	// commands into a separate script.
-	"postStartCommand": "sh .devcontainer/postStart.sh ${containerWorkspaceFolder}",
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "sh .devcontainer/postCreate.sh",
+  // The git directory isn't ready until the container has been started, so put `git config`
+  // commands into a separate script.
+  "postStartCommand": "sh .devcontainer/postStart.sh ${containerWorkspaceFolder}",
 
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"DavidAnson.vscode-markdownlint",
-				"dbaeumer.vscode-eslint",
-				"eamodio.gitlens",
-				"esbenp.prettier-vscode",
-				"hashicorp.terraform",
-				"mechatroner.rainbow-csv",
-				"ms-python.black-formatter",
-				"ms-python.python",
-				"samuelcolvin.jinjahtml",
-				"stkb.rewrap"
-			]
-		}
-	},
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "DavidAnson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "hashicorp.terraform",
+        "mechatroner.rainbow-csv",
+        "ms-python.black-formatter",
+        "ms-python.python",
+        "samuelcolvin.jinjahtml",
+        "stkb.rewrap"
+      ]
+    }
+  },
 
-	// Mount local .config/gcloud directory to get access to existing gcloud credentials. This way,
-	// the user doesn't have to reauthenticate with gcloud every time the container is rebuilt.
-	// This won't work with GH codespaces, but based on https://github.com/Recidiviz/pulse-data/pull/21325#issuecomment-1574052908
-	// it sounds like that's a non-goal.
-	// TODO(#21470): Figure out how to make this work for Windows (configs are in %APPDATA%\gcloud)
-	"mounts": ["source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind,consistency=cached"]
+  // Mount local .config/gcloud directory to get access to existing gcloud credentials. This way,
+  // the user doesn't have to reauthenticate with gcloud every time the container is rebuilt.
+  // This won't work with GH codespaces, but based on https://github.com/Recidiviz/pulse-data/pull/21325#issuecomment-1574052908
+  // it sounds like that's a non-goal.
+  // TODO(#21470): Figure out how to make this work for Windows (configs are in %APPDATA%\gcloud)
+  "mounts": [
+    "source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind,consistency=cached"
+  ]
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+  // Configure tool-specific properties.
+  // "customizations": {},
 
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
 }
