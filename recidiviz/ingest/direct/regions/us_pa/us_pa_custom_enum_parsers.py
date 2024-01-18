@@ -707,11 +707,14 @@ def supervision_period_supervision_type_mapper(
 
 
 def role_subtype_mapper(raw_text: str) -> Optional[StateStaffRoleSubtype]:
+    """Maps position titles to role subtypes for supervision employees.
+    All facilities-side titles are currently mapped to INTERNAL_UNKNOWN."""
     if raw_text:
         if raw_text in (
             "SUPERVISION_OFFICER",
             "PRL AGT 2",
             "PAROLE AGT 2",
+            "PAROLE AGT 1",
             "PRL AGT 1",
             "PRL MGR 1",
             "PRL MGR 2",
@@ -721,7 +724,13 @@ def role_subtype_mapper(raw_text: str) -> Optional[StateStaffRoleSubtype]:
             return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
         if raw_text in ("DISTRICT DIRECTOR", "DEPUTY DISTRICT DIRECTOR"):
             return StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER
-        if raw_text in ("REGIONAL DIRECTOR", "RGNL PBTN PRL DIR"):
+        if raw_text in (
+            "REGIONAL DIRECTOR",
+            "RGNL PBTN PRL DIR",
+            "PBTN PRL DEP DSTR DIR",
+            "PBTN PRL DSTR DIR 1",
+            "PBTN PRL DSTR DIR 2",
+        ):
             return StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER
         if raw_text in (
             "DEPUTY SECRETARY",
