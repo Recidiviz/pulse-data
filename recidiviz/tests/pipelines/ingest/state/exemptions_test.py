@@ -160,6 +160,9 @@ class TestExemptions(unittest.TestCase):
             if state_code in [StateCode.US_ND, StateCode.US_ME]:
                 # US_ND & US_ME have ingest views that are deployed to ingest in Dataflow only
                 continue
+            if state_code == StateCode.US_TN:
+                # US_TN has ingest views that are deployed to ingest in Dataflow only
+                continue
             self.assertListEqual(
                 ordered_views, state_code_to_ingest_view_rank_list[state_code]
             )

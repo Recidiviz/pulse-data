@@ -10,11 +10,9 @@ columns:
     description: |-
       The offense codes as defined by the UNIFORM CRIME REPORTING AGENCY.  This code is tied directly to the offense code TCA.
   - name: TCAOffense
-    is_pii: True
     description: |-
       The offense codes as defined by TENNESSEE CODE ANNOTATED.  This code will be tied to the offense code UCR.
   - name: OffenseDescription
-    is_pii: True
     description: |-
       This element is a textual description of an offense code.
   - name: OffensePriority
