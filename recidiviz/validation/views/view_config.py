@@ -98,6 +98,12 @@ from recidiviz.validation.views.external_data.regions.us_mi.incarceration_popula
 from recidiviz.validation.views.external_data.regions.us_mi.supervision_population_by_type import (
     US_MI_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_mo.incarceration_population_by_facility import (
+    US_MO_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_mo.supervision_population_person_level import (
+    US_MO_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.regions.us_oz.incarceration_population_person_level import (
     US_OZ_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
@@ -229,6 +235,8 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             US_ME_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_ME_SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
             US_ME_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
+            US_MO_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+            US_MO_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
         ]
         + get_view_builders_from_configured_validations()
     )

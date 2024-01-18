@@ -33,9 +33,6 @@ UNION ALL
 SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_supervision, district, supervising_officer, supervision_level
 FROM `{project_id}.{us_id_validation_dataset}.daily_summary_supervision`
 UNION ALL
-SELECT region_code, person_external_id, 'US_MO_DOC' as external_id_type, date_of_supervision, district, supervising_officer, supervision_level
-FROM `{project_id}.{us_mo_validation_dataset}.supervision_population_person_level_raw`
-UNION ALL
 SELECT region_code, person_external_id, 'US_PA_PBPP' as external_id_type, date_of_supervision, district, supervising_officer, supervision_level
 FROM `{project_id}.{us_pa_validation_dataset}.supervision_population_person_level_raw`
 UNION ALL
@@ -121,9 +118,6 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
         clustering_fields=None,
         us_id_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ID
-        ),
-        us_mo_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_MO
         ),
         us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY

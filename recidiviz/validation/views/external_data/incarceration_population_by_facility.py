@@ -29,7 +29,7 @@ SELECT * FROM `{project_id}.{us_me_validation_dataset}.incarceration_population_
 UNION ALL
 SELECT * FROM `{project_id}.{us_mi_validation_dataset}.incarceration_population_by_facility_view`
 UNION ALL
-SELECT * FROM `{project_id}.{us_mo_validation_dataset}.incarceration_population_by_facility_raw`
+SELECT * FROM `{project_id}.{us_mo_validation_dataset}.incarceration_population_by_facility_materialized`
 UNION ALL
 SELECT * FROM `{project_id}.{us_nd_validation_dataset}.incarceration_population_by_facility_raw`
 UNION ALL
