@@ -140,6 +140,9 @@ from recidiviz.validation.views.external_data.regions.us_pa.supervision_populati
 from recidiviz.validation.views.external_data.regions.us_pa.supervision_termination_person_level import (
     US_PA_SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_tn.supervision_population_person_level import (
+    US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.supervision_early_discharge_person_level import (
     SUPERVISION_EARLY_DISCHARGE_PERSON_LEVEL_VIEW_BUILDER,
 )
@@ -272,6 +275,7 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             US_MO_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_TN_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
             US_TN_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+            US_TN_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_ND_RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER,
             US_ND_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_ND_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,

@@ -19,8 +19,6 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.validation.views import dataset_config
@@ -32,16 +30,6 @@ FROM `{project_id}.{us_id_validation_dataset}.supervision_population_person_leve
 UNION ALL
 SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_supervision, district, supervising_officer, supervision_level
 FROM `{project_id}.{us_id_validation_dataset}.daily_summary_supervision`
-UNION ALL
-SELECT
-  'US_TN' as region_code,
-  OffenderID as person_external_id,
-  'US_TN_DOC' as external_id_type,
-  EXTRACT(DATE FROM CAST(ReportingDate AS DATETIME)) as date_of_supervision,
-  SiteID as district,
-  LTRIM(StaffID, '*') as supervising_officer,
-  NULL as supervision_level
-FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.DailyCommunitySupervisionForRecidiviz_latest`
 """
 
 VIEW_ID = "supervision_population_person_level"
@@ -101,9 +89,6 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
         clustering_fields=None,
         us_id_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_ID
-        ),
-        us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
         ),
         **region_dataset_params,
     )
