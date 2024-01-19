@@ -16,6 +16,7 @@ input_columns:
   - ADMISSION_REASON
   - RELEASE_REASON
   - RESPONSIBLE_DIVISION
+  - CASELOAD
 unused_columns:
   - LOCATION_NAME
   - LOCATION_TYPE
@@ -67,6 +68,12 @@ output:
           termination_date: MOVE_OUT_DATE
           county_code: COUNTY
           supervision_site: FACILITY
+          supervising_officer_staff_external_id: CASELOAD
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CASELOAD
+                $then: $literal("US_OR_CASELOAD")
           admission_reason:
             $enum_mapping:
               $raw_text: ADMISSION_REASON
