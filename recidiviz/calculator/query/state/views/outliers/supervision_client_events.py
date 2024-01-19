@@ -18,7 +18,11 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
+from recidiviz.calculator.query.bq_utils import (
+    get_pseudonymized_id_query_str,
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     state_specific_external_id_type,
@@ -223,9 +227,15 @@ supervision_client_events AS (
         a.officer_id,
         a.assignment_date AS officer_assignment_date,
         a.end_date AS officer_assignment_end_date,
-        c.start_date AS supervision_start_date,
-        c.end_date AS supervision_end_date,
-        c.compartment_level_2 AS supervision_type, 
+        -- TODO(#26843): Revisit these calculations / column names
+        COALESCE(s.start_date, ss.start_date) AS supervision_start_date,
+        ss.end_date AS supervision_end_date,
+        CASE WHEN s.compartment_level_2 IN ("PROBATION", "INFORMAL_PROBATION") THEN "PROBATION"
+             WHEN s.compartment_level_2 IN ("PAROLE", "DUAL", "COMMUNITY_CONFINEMENT") THEN s.compartment_level_2
+            -- If they spent time on supervision but were never in one of the above supervision types,
+            -- just say "supervision" so the frontend displays "supervision start date"
+             ELSE "SUPERVISION"
+             END AS supervision_type,
         e.attributes,
         {get_pseudonymized_id_query_str("e.state_code || pid.external_id")} AS pseudonymized_client_id,
         -- This pseudonymized_id will match the one for the user in the auth0 roster. Hashed
@@ -236,25 +246,39 @@ supervision_client_events AS (
     CROSS JOIN
         latest_year_time_period period
     INNER JOIN `{{project_id}}.normalized_state.state_person` p 
-        USING (state_code, person_id)
+        USING (person_id)
     INNER JOIN all_events e
-        USING (state_code, person_id)
+        ON p.person_id = e.person_id
+        -- Get the officer assignment information for the session leading up to the event
+        AND event_date BETWEEN a.assignment_date AND {nonnull_end_date_clause('a.end_date')}
     INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid
-        USING (state_code, person_id)
-    INNER JOIN `{{project_id}}.sessions.compartment_sessions_materialized` c  
-        USING (state_code, person_id)
+        ON p.person_id = pid.person_id
+    INNER JOIN `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` ss  
+        ON a.person_id = ss.person_id
+        -- Get the supervision period information for the session leading up to the event
+        AND event_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause('ss.end_date_exclusive')}
+        AND ss.compartment_level_1 = "SUPERVISION"
+    LEFT JOIN `{{project_id}}.sessions.compartment_sessions_materialized` s
+        ON ss.person_id = s.person_id
+        AND s.session_id BETWEEN ss.session_id_start AND ss.session_id_end
+        AND s.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT")
+        -- we want to show the supervision start date as being before the event. we don't need the
+        -- end date to be before the compartment end, because if we have:
+        --   date 1 - date 2: PAROLE
+        --   date 2 - date 3: WARRANT_STATUS
+        --   date 3: ABSCONSION
+        -- then we want to show the supervision start date as date 1, despite the event date being
+        -- after the compartment end.
+        AND event_date >= s.start_date
     WHERE
         -- Get events for the latest year period only
         event_date >= population_start_date
         AND event_date < population_end_date
-        -- Get the officer assignment information at the time of the event
-        AND event_date BETWEEN assignment_date AND COALESCE(a.end_date, CURRENT_DATE("US/Eastern"))
-        -- Get the supervision period information at the time of the event
-        AND c.compartment_level_1 = 'SUPERVISION'
         AND pid.id_type = {{state_id_type}}
-    -- selects the first period among two periods that overlap with the same event date; 
-    -- allow us to not prioritize a session that starts on the same day as the event (unless there is no other overlapping period) when multiple officer sessions end on the same day as the event date
-    QUALIFY RANK() OVER (PARTITION BY person_id, event_date ORDER BY COALESCE(c.end_date_exclusive, "9999-01-01")) = 1
+    -- Dedup to the latest compartment occurring within the super session and to the earliest
+    -- officer assignment session that overlaps with the event. The latter helps us find the most
+    -- likely actual officer assignment if there is some overlap around the event date.
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY ss.person_id, event_date, metric_id ORDER BY s.start_date DESC, {nonnull_end_date_clause('a.end_date')}, a.assignment_date) = 1
 )
 
 SELECT 
