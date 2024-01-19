@@ -25,14 +25,14 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.task_eligibility.criteria.state_specific.us_tn.on_eligible_level_for_sufficient_time import (
-    EXCLUDED_MEDIUM_RAW_TEXT,
-)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
+)
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
+    EXCLUDED_MEDIUM_RAW_TEXT,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

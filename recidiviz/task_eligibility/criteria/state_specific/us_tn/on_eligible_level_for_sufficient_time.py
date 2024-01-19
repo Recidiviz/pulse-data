@@ -25,6 +25,9 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
+    EXCLUDED_MEDIUM_RAW_TEXT,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -33,10 +36,8 @@ _CRITERIA_NAME = "US_TN_ON_ELIGIBLE_LEVEL_FOR_SUFFICIENT_TIME"
 _DESCRIPTION = """Describes the spans of time when a TN client has been on an eligible supervision level for a
 sufficient amount of time"""
 
-# TODO(#20870) - Deprecate this in favor of better long term solution to excluding these levels
-# TODO(#22511) potentially refactor to build off of a general criteria view builder
-EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "3D3"]
 
+# TODO(#22511) potentially refactor to build off of a general criteria view builder
 _QUERY_TEMPLATE = f"""
     WITH supervision_level_cte AS
     (
