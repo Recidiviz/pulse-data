@@ -32,7 +32,7 @@ POPULATION_PROJECTION_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 POPULATION_PROJECTION_SUPPORTED_STATES = [
-    StateCode.US_ID,
+    StateCode.US_IX,
     StateCode.US_ME,
     StateCode.US_MO,
     StateCode.US_ND,

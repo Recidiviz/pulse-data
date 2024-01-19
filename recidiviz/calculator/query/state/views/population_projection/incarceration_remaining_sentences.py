@@ -119,8 +119,8 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
         compartment,
         incarceration_distribution_cte.outflow_to,
         incarceration_cte.compartment_duration,
-        incarceration_cte.gender,
-        SUM(incarceration_distribution_cte.pct_outflow) AS total_population
+        incarceration_cte.gender as simulation_group,
+        SUM(incarceration_distribution_cte.pct_outflow) AS cohort_portion
     FROM incarceration_cte
     JOIN incarceration_distribution_cte
       USING (state_code, compartment, run_date)

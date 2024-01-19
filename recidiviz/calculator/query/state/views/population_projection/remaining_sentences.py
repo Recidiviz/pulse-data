@@ -28,40 +28,45 @@ REMAINING_SENTENCES_VIEW_DESCRIPTION = """"Current total population by compartme
 
 REMAINING_SENTENCES_QUERY_TEMPLATE = """
 
-    SELECT
-      state_code,
-      run_date,
-      compartment,
-      outflow_to,
-      compartment_duration,
-      gender,
-      total_population
-    FROM `{project_id}.{population_projection_dataset}.supervision_remaining_sentences_materialized`
-    
-    UNION ALL
-    
-    SELECT
+    with cte as (
+        SELECT
         state_code,
         run_date,
         compartment,
         outflow_to,
         compartment_duration,
-        gender,
-        total_population
-    FROM `{project_id}.{population_projection_dataset}.incarceration_remaining_sentences_materialized`
+        simulation_group,
+        cohort_portion
+        FROM `{project_id}.{population_projection_dataset}.supervision_remaining_sentences_materialized`
+        
+        UNION ALL
+        
+        SELECT
+            state_code,
+            run_date,
+            compartment,
+            outflow_to,
+            compartment_duration,
+            simulation_group,
+            cohort_portion
+        FROM `{project_id}.{population_projection_dataset}.incarceration_remaining_sentences_materialized`
 
-    UNION ALL
+        UNION ALL
 
-    SELECT
-        state_code,
-        run_date,
-        compartment,
-        outflow_to,
-        compartment_duration,
-        gender,
-        SUM(total_population) AS total_population
-    FROM `{project_id}.{population_projection_dataset}.us_id_rider_pbh_remaining_sentences_materialized`
-    GROUP BY state_code, run_date, compartment, outflow_to, compartment_duration, gender
+        SELECT
+            state_code,
+            run_date,
+            compartment,
+            outflow_to,
+            compartment_duration,
+            gender as simulation_group,
+            SUM(total_population) AS cohort_portion
+        FROM `{project_id}.{population_projection_dataset}.us_id_rider_pbh_remaining_sentences_materialized`
+        GROUP BY state_code, run_date, compartment, outflow_to, compartment_duration, gender
+    )
+    SELECT * FROM cte
+    WHERE state_code = 'US_IX'
+    and run_date = '2023-12-01'
     """
 
 REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -91,10 +91,10 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
       state_code,
       run_date,
       compartment,
-      gender,
+      gender as simulation_group,
       remaining_compartment_duration AS compartment_duration,
       outflow_to,
-      SUM(total_population) AS total_population -- RENAME?
+      SUM(total_population) AS cohort_portion
     FROM supervision_cte
     GROUP BY 1,2,3,4,5,6
     """
