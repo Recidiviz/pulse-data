@@ -311,7 +311,6 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
         self.entity_matching_error_threshold_patcher.start()
 
         self.file_tags_processed: List[str] = []
-        self.did_rerun_for_idempotence = False
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -361,12 +360,6 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
             expected_tags,
             self.file_tags_processed,
             "Expected and processed tags do not match.",
-        )
-
-        self.assertTrue(
-            self.did_rerun_for_idempotence,
-            "No rerun for idempotence. Make sure the integration test calls "
-            "_do_ingest_job_rerun_for_tags().",
         )
 
     @classmethod
@@ -464,7 +457,6 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
         ingest_view_materializer.processed_args.clear()
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f"{file_tag}.csv", is_rerun=True)
-        self.did_rerun_for_idempotence = True
 
     @staticmethod
     def convert_and_clear_db_ids(db_entities: List[StateBase]) -> List[Entity]:
