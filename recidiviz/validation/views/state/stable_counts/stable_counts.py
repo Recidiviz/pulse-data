@@ -93,6 +93,14 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
                         date(2023, 12, 1),  # Stale data in staging, no issue in prod
                     ],
+                    StateCode.US_MI: [
+                        date(
+                            2023, 8, 1
+                        ),  # This is the month with the COMS migration, and so many supervision periods cut over from using OMNI data to COMS data on 8-14-2023, and we infer an IP every IN_CUSTODY SP so that leads to a lot of IPs inferred as starting this month
+                        date(
+                            2023, 9, 1
+                        ),  # This is just recovery back to regular levels from the Aug 2023 spike
+                    ],
                 },
             ),
             DateCol(
@@ -116,6 +124,14 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_ND: [
                         date(2023, 11, 1),  # Stale data in staging, no issue in prod
                         date(2023, 12, 1),  # Stale data in staging, no issue in prod
+                    ],
+                    StateCode.US_MI: [
+                        date(
+                            2023, 8, 1
+                        ),  # This is the month with the COMS migration, and so many supervision periods cut over from using OMNI data to COMS data on 8-14-2023, and we infer an IP every IN_CUSTODY SP so that leads to a lot of IPs inferred as ending this month
+                        date(
+                            2023, 9, 1
+                        ),  # This is just recovery back to regular levels from the Aug 2023 spike
                     ],
                 },
             ),
