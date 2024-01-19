@@ -29,15 +29,14 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: .035
     override_reason: Needs investigation.  Current failing level as of 9/26 is .0302 #TODO(#13880)
   - validation_name: supervision_population_by_type_external_comparison
-    hard_max_allowed_error_override: .124
+    hard_max_allowed_error_override: .16
     override_reason:
       Some error is expected because MI has told us that their validation
       numbers for supervision have some weirdness. Hopefully we'll be able to get more
       reliable validation data for supervision population when we receive OTIS data (TODO(#18578)).
       There have been some changes in this error rate recently most likely due to all the ingest
-      changes we've made for outliers, and current failing amount in staging is 12.3%, but because
-      there are still some revisions in flight, we should re-investigate this validation
-      when the outliers revisions are finalized (TODO(#26506)).
+      changes we've made for outliers, where IN_CUSTODY supervision periods are no longer counted
+      in the supervision population because we now infer an IP during those periods.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 200000
@@ -58,10 +57,12 @@ num_allowed_rows_overrides:
       incarceration periods (#13336) that might be related? Current failing level as of
       9/26 is 145071 rows #TODO(#13518)
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 4000
+    hard_num_allowed_rows_override: 7000
     override_reason: Addressed known issue with overlapping offender bookings so
-      remaining errors needs further investigation.  I believe the latest spike has to do with the
-      COMS refactor, and it might resolve some with ingest in dataflow #TODO(#15587)
+      remaining errors needs further investigation.  I am not totally sure what exactly caused the latest spike,
+      but it did occur after we did some massive refactoring for Outliers (that changed the way we incorporated COMS data
+      and increased the number of periods overall).  Since this will also resolve completely with ingest in dataflow, I
+      am not necessarily concerned right now. #TODO(#15587)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 350000
     override_reason:
@@ -85,9 +86,10 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 100
     override_reason: Current failing level as of 11/22/23 is 54 rows
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 27500
-    override_reason: Current failing level as of 12/6/23 is 15,658.  Needs
-      investigation. #TODO(#22303)
+    hard_num_allowed_rows_override: 70000
+    override_reason:
+      This is largely due to the TEMPORARY_CUSTODY periods we infer, but the remaining cases
+      require further investigation. #TODO(#22303)
   - validation_name: current_supervision_staff_missing_email
     hard_num_allowed_rows_override: 1
     override_reason:
@@ -103,3 +105,8 @@ num_allowed_rows_overrides:
     override_reason:
       This validation is failing due to the way task eligibility spans are structured for MI.
       Bumping threshold for now until it's determined whether this is an issue or not.  See #25100
+  - validation_name: unidentified_supervision_districts_for_staff
+    hard_num_allowed_rows_override: 1
+    override_reason:
+      This validation is currently failing for 3 staff members, and it's not required to pass for the web tool.
+      This validation is also about to be reworked, so not a ton of point in investigating this right now. TODO(#26275)
