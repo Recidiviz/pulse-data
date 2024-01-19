@@ -93,6 +93,7 @@ output:
                 date_imposed: CONVICTED_DATE
                 effective_date: SENTENCE_BEGIN_DATE
                 completion_date: TERMINATION_DATE
+                projected_completion_date: MAXIMUM_DATE
                 max_length_days:
                   $custom:
                     $function: us_or_custom_parsers.get_length_in_days
