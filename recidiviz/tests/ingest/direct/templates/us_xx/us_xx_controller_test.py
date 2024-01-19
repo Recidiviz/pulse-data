@@ -23,7 +23,6 @@ from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.templates.us_xx.us_xx_controller import UsXxController
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -68,27 +67,5 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
         # Arrange
 
         # < Add to / update expected_root_entities here>
-
-        # Act
-        # if not is_ingest_in_dataflow_enabled(self.region_code(), self.ingest_instance()):
-        #     self._run_ingest_job_for_filename("<ingest view name here>") <Uncomment this>
-
-        # Assert
-        if not is_ingest_in_dataflow_enabled(
-            self.region_code(), self.ingest_instance()
-        ):
-            self.assert_expected_db_root_entities(expected_root_entities)
-
-        ######################################
-        # FULL RERUN FOR IDEMPOTENCE
-        ######################################
-        if not is_ingest_in_dataflow_enabled(
-            self.region_code(), self.ingest_instance()
-        ):
-            self._do_ingest_job_rerun_for_tags(
-                self.controller.get_ingest_view_rank_list()
-            )
-
-            self.assert_expected_db_root_entities(expected_root_entities)
 
         self.run_test_state_pipeline({}, expected_root_entities)
