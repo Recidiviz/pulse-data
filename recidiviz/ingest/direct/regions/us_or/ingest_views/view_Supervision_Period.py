@@ -234,8 +234,8 @@ info_to_split_periods_with_supervision_level_changes AS (
 ), new_periods AS (
   SELECT
     RECORD_KEY,
-    ROW_NUMBER() OVER (PARTITION BY RECORD_KEY ORDER BY MOVE_IN_DATE, MOVE_OUT_DATE, CURRENT_STATUS, LOCATION_TYPE, COUNTY, LOCATION_NAME, FACILITY, RISK_LEVEL, ADMISSION_REASON, RELEASE_REASON, RESPONSIBLE_DIVISION) AS PERIOD_ID,
-    CURRENT_STATUS,
+    ROW_NUMBER() OVER (PARTITION BY RECORD_KEY ORDER BY MOVE_IN_DATE, MOVE_OUT_DATE, spl.CURRENT_STATUS, LOCATION_TYPE, COUNTY, LOCATION_NAME, FACILITY, RISK_LEVEL, spl.ADMISSION_REASON, RELEASE_REASON, spl.RESPONSIBLE_DIVISION) AS PERIOD_ID,
+    spl.CURRENT_STATUS,
     LOCATION_TYPE, 
     MOVE_IN_DATE,
     MOVE_OUT_DATE,
@@ -243,10 +243,14 @@ info_to_split_periods_with_supervision_level_changes AS (
     LOCATION_NAME,
     FACILITY,
     RISK_LEVEL,
-    ADMISSION_REASON,
+    spl.ADMISSION_REASON,
     RELEASE_REASON,
-    RESPONSIBLE_DIVISION
-  FROM split_periods_with_multiple_supervision_levels
+    spl.RESPONSIBLE_DIVISION,
+    cl.CASELOAD
+  FROM split_periods_with_multiple_supervision_levels spl
+  #TODO(#26950): Update to use @ALL to get historical caseload ids
+  LEFT JOIN {RCDVZ_PRDDTA_OP013P} cl
+  USING (RECORD_KEY)
 ), 
 final AS (
   # Carrying custody level over periods and adding a return from court release reason. 
@@ -263,7 +267,8 @@ final AS (
     LAST_VALUE(RISK_LEVEL ignore nulls) OVER (periods_for_person range between UNBOUNDED preceding and current row) AS RISK_LEVEL,
     ADMISSION_REASON,
     RELEASE_REASON,
-    RESPONSIBLE_DIVISION
+    RESPONSIBLE_DIVISION, 
+    CASELOAD
   FROM new_periods
   WINDOW periods_for_person AS (PARTITION BY RECORD_KEY ORDER BY PERIOD_ID)
 )
