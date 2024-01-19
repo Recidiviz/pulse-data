@@ -212,7 +212,6 @@ metric_pipelines:
     state_code: US_TN
     metric_types: VIOLATION
     region: us-east1
-    staging_only: True
 
   # Full US_ME calculations with no time limit
   - pipeline: population_span_metrics
