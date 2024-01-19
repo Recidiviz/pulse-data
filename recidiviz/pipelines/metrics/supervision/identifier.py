@@ -98,6 +98,7 @@ from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate im
     StateSpecificViolationDelegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import (
+    SUCCESSFUL_TERMINATIONS,
     identify_most_severe_case_type,
     supervising_location_info,
 )
@@ -997,14 +998,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         if termination_reason == StateSupervisionPeriodTerminationReason.INVESTIGATION:
             return False, None
 
-        if termination_reason in (
-            # Successful terminations
-            StateSupervisionPeriodTerminationReason.COMMUTED,
-            StateSupervisionPeriodTerminationReason.DISCHARGE,
-            StateSupervisionPeriodTerminationReason.EXPIRATION,
-            StateSupervisionPeriodTerminationReason.PARDONED,
-            StateSupervisionPeriodTerminationReason.VACATED,
-        ):
+        if termination_reason in SUCCESSFUL_TERMINATIONS:
             return True, True
 
         if termination_reason in (

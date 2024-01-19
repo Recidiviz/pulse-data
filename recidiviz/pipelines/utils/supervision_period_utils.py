@@ -60,6 +60,15 @@ CASE_TYPE_SEVERITY_ORDER = [
 
 POST_RELEASE_LOOKFORWARD_DAYS = 30
 
+SUCCESSFUL_TERMINATIONS = (
+    # Successful terminations
+    StateSupervisionPeriodTerminationReason.COMMUTED,
+    StateSupervisionPeriodTerminationReason.DISCHARGE,
+    StateSupervisionPeriodTerminationReason.EXPIRATION,
+    StateSupervisionPeriodTerminationReason.PARDONED,
+    StateSupervisionPeriodTerminationReason.VACATED,
+)
+
 StateSupervisionPeriodT = TypeVar(
     "StateSupervisionPeriodT", bound=StateSupervisionPeriod
 )
