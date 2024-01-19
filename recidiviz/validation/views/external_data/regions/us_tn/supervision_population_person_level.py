@@ -31,7 +31,7 @@ SELECT
   EXTRACT(DATE FROM CAST(ReportingDate AS DATETIME)) as date_of_supervision,
   SiteID as district,
   LTRIM(StaffID, '*') as supervising_officer,
-  NULL as supervision_level
+  CAST(NULL as STRING) as supervision_level
 FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.DailyCommunitySupervisionForRecidiviz_latest`
 """
 
