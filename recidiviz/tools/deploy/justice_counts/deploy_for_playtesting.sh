@@ -18,7 +18,6 @@ BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../../script_base.sh"
 
-JUSTICE_COUNTS_PROJECT_ID='justice-counts-staging'
 PUBLISHER_CLOUD_RUN_SERVICE="publisher-web"
 DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
 
@@ -36,29 +35,32 @@ function print_usage {
     run_cmd exit 1
 }
 
-function deploy_publisher {
-    echo "Deploying new Cloud Run Publisher revision with image ${REMOTE_IMAGE_URL} to playtesting URL..."
+function build_and_deploy {
+    run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_deploy_to_playtesting_trigger \
+        --backend-branch "${BACKEND_BRANCH}" \
+        --frontend-branch-or-sha "${FRONTEND_BRANCH}" \
+        --subdirectory "${SUBDIRECTORY}" \
+        --service-name "${SERVICE_NAME}" \
+        --url-tag "${URL_TAG}"
+}
 
-    run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-        --project "${JUSTICE_COUNTS_PROJECT_ID}" \
-        --image "${REMOTE_IMAGE_URL}" \
-        --region "us-central1" \
-        --tag "${URL_TAG}" \
-        --no-traffic
+function deploy_publisher {
+    echo "Building Docker image off of ${BACKEND_BRANCH} in pulse-data and ${FRONTEND_BRANCH} in justice-counts...
+            And deploying Cloud Run Publisher revision with image ${REMOTE_IMAGE_URL} to playtesting URL ${URL_TAG}..."
+
+    SERVICE_NAME=${PUBLISHER_CLOUD_RUN_SERVICE}
+    build_and_deploy
 
     echo "Deploy of Publisher for playtesting succeeded."
 }
 
 function deploy_dashboard {
-    echo "Deploying new Cloud Run Agency Dashboard revision with image ${REMOTE_IMAGE_URL} to playtesting URL..."
+    echo "Building Docker image off of ${BACKEND_BRANCH} in pulse-data and ${FRONTEND_BRANCH} in justice-counts...
+        And deploying new Cloud Run Agency Dashboard revision with image ${REMOTE_IMAGE_URL} to playtesting URL ${URL_TAG}..."
 
-    run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
-        --project "${JUSTICE_COUNTS_PROJECT_ID}" \
-        --image "${REMOTE_IMAGE_URL}" \
-        --region "us-central1" \
-        --tag "${URL_TAG}" \
-        --no-traffic
-
+    SERVICE_NAME=${DASHBOARD_CLOUD_RUN_SERVICE}
+    build_and_deploy
+    
     echo "Deploy of Agency Dashboard for playtesting succeeded."
 }
 
@@ -101,13 +103,6 @@ fi
 # This is where Cloud Build will put the new Docker image
 SUBDIRECTORY=playtesting
 REMOTE_IMAGE_BASE=us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/${SUBDIRECTORY}
-
-
-echo "Building Docker image off of ${BACKEND_BRANCH} in pulse-data and ${FRONTEND_BRANCH} in justice-counts..."
-run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
-    --backend-branch "${BACKEND_BRANCH}" \
-    --frontend-branch-or-sha "${FRONTEND_BRANCH}" \
-    --subdirectory "${SUBDIRECTORY}"
 
 # Look up the pulse-data commit sha used in the Docker build
 RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud artifacts docker images list "${REMOTE_IMAGE_BASE}" --format=json --include-tags --sort-by=~CREATE_TIME | jq -r '.[0].tags' | cut -d ',' -f 1)
