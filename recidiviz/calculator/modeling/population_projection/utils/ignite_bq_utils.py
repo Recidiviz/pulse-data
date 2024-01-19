@@ -110,13 +110,28 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.Dat
         # If there are no remaining transitions then there are no open sessions for this
         # run_date, and so the remaining sentence length does actually not matter.
         for infrequent_compartment in [
-            "PENDING_CUSTODY - PENDING_CUSTODY",
-            # "SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION",
             "INCARCERATION - TEMPORARY_CUSTODY",
-            "SUPERVISION_OUT_OF_STATE - PROBATION",
-            "SUPERVISION_OUT_OF_STATE - INTERNAL_UNKNOWN",
             "ERRONEOUS_RELEASE - ERRONEOUS_RELEASE",
             "INCARCERATION - WEEKEND_CONFINEMENT",
+            "INCARCERATION - GENERAL",
+            "INCARCERATION - TREATMENT_IN_PRISON",
+            "INCARCERATION - PAROLE_BOARD_HOLD",
+            "INCARCERATION - RE - INCARCERATION",
+            "INCARCERATION_OUT_OF_STATE",
+            "PENDING_CUSTODY - PENDING_CUSTODY",
+            "SUPERVISION - ABSCONSION",
+            "SUPERVISION - BENCH_WARRANT",
+            "SUPERVISION - PAROLE",
+            "SUPERVISION - PROBATION",
+            "SUPERVISION - INFORMAL_PROBATION",
+            "SUPERVISION_OUT_OF_STATE - ABSCONSION",
+            "SUPERVISION_OUT_OF_STATE - BENCH_WARRANT",
+            "SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION",
+            "SUPERVISION_OUT_OF_STATE - PROBATION",
+            "SUPERVISION_OUT_OF_STATE - PAROLE",
+            "SUPERVISION - INTERNAL_UNKNOWN",
+            "SUPERVISION_OUT_OF_STATE - INTERNAL_UNKNOWN",
+            "INVESTIGATION - INVESTIGATION",
         ]:
             infrequent_sentences = complete_remaining[
                 (complete_remaining["run_date"] == run_date)

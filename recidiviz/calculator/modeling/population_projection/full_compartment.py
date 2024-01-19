@@ -184,6 +184,11 @@ class FullCompartment(SparkCompartment):
         # time step get us the total population for this time step
         self.outflows.loc[:, self.current_time_step - 1] = outflow_dict
 
+        # Fix PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+        # Only run the de-fragmentation fix intermittently to save performance
+        if self.current_time_step % 16 == 0:
+            self.outflows = self.outflows.copy()
+
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)
 
