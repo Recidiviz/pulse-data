@@ -649,6 +649,43 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         self.assertEqual(result, expected_periods)
 
+    # Test case 10B: Test that a TEMPORARY_CUSTODY period is not inferred if there's a SP with missing supervision level but it ends in DISCHARGE
+    def test_infer_additional_periods_missing_sup_level_discharge(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2021, 8, 1),
+            release_date=date(2022, 9, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            external_id="ip-2",
+        )
+
+        incarceration_periods = [incarceration_period_1]
+
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=_STATE_CODE,
+            start_date=date(2021, 3, 5),
+            termination_date=date(2021, 5, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
+        )
+
+        sp_index = default_normalized_sp_index_for_tests(
+            supervision_periods=[supervision_period_1]
+        )
+
+        result = self.delegate.infer_additional_periods(
+            incarceration_periods=incarceration_periods,
+            person_id=self.person_id,
+            supervision_period_index=sp_index,
+        )
+
+        expected_periods = [incarceration_period_1]
+
+        self.assertEqual(result, expected_periods)
+
     # Test case 111: Test that a TEMPORARY_CUSTODY period is inferred with there's a SP with and IN_CUSTODY level
     def test_infer_additional_periods_in_custody(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(

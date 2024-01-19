@@ -51,6 +51,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
 from recidiviz.pipelines.utils.period_utils import (
     find_last_terminated_period_on_or_before_date,
 )
+from recidiviz.pipelines.utils.supervision_period_utils import SUCCESSFUL_TERMINATIONS
 
 
 class UsMiIncarcerationNormalizationDelegate(
@@ -97,14 +98,22 @@ class UsMiIncarcerationNormalizationDelegate(
 
         new_incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        # Infer a temporary custody period if there is a supervision period but
-        # supervision level is NULL or supervision level is IN_CUSTODY
+        # Infer a temporary custody period if...
+        # - there is an SP where supervision level is NULL and it doesn't end in a successful termination, or
+        # - there is an SP with IN_CUSTODY supervision level
         if supervision_period_index:
             for sp in supervision_period_index.sorted_supervision_periods:
+
                 if (
+                    # check that supervision level is NULL
                     sp.supervision_level_raw_text is None
                     and sp.supervision_level is None
-                ) or (sp.supervision_level == StateSupervisionLevel.IN_CUSTODY):
+                    # the SP doesn't end in liberty
+                    and sp.termination_reason not in SUCCESSFUL_TERMINATIONS
+                ) or (
+                    sp.supervision_level == StateSupervisionLevel.IN_CUSTODY
+                ):  # check that supervision level isn't IN_CUSTODY
+
                     if sp.supervision_level == StateSupervisionLevel.IN_CUSTODY:
                         inference_reason = "IN-CUSTODY"
                     else:
