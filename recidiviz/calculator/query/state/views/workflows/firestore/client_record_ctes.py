@@ -62,7 +62,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             )
           ) AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
-        LEFT JOIN {{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map ids
+        LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map` ids
             ON sessions.supervising_officer_external_id_end = ids.external_id_to_map AND sessions.state_code = ids.state_code 
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON sessions.person_id = pei.person_id
@@ -403,7 +403,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
             SELECT
             *,
             ROW_NUMBER() OVER(PARTITION BY df.state_code, df.person_id order by violation_date desc) as rn
-            FROM {{project_id}}.{{dataflow_metrics_dataset}}.most_recent_violation_with_response_metrics_materialized df
+            FROM `{{project_id}}.{{dataflow_metrics_dataset}}.most_recent_violation_with_response_metrics_materialized` df
             ORDER BY person_id, rn
         )
         LEFT JOIN supervision_super_sessions ss
@@ -452,7 +452,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     "BIRTHDAY_THIS_MONTH" as milestone_type,
                     1 AS milestone_priority,
                 FROM supervision_cases sc
-                LEFT JOIN {{project_id}}.{{normalized_state_dataset}}.state_person sp
+                LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
                 USING(state_code, person_id)
             )
             UNION ALL

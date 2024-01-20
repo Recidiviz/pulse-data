@@ -175,10 +175,10 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       SELECT
         pei.person_id,
         a.email,
-      FROM {{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_personemailaddress_latest a
-      LEFT JOIN {{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_offender_latest b
+      FROM `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_personemailaddress_latest` a
+      LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_offender_latest` b
         ON a.personid = b.id
-      INNER JOIN {{project_id}}.{{normalized_state_dataset}}.state_person_external_id pei
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON b.offendernumber = pei.external_id
       WHERE a.iscurrent = "T"
       QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.person_id ORDER BY a.insdate DESC)=1
