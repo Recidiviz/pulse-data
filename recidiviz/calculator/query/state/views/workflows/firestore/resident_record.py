@@ -67,7 +67,7 @@ RESIDENT_RECORD_QUERY_TEMPLATE = f"""
         * EXCEPT(key, value),
         {get_pseudonymized_id_query_str("state_code || person_external_id || wk.value")} AS pseudonymized_id
     FROM residents
-    JOIN {{project_id}}.{{static_reference_dataset}}.workflows_keys wk
+    JOIN `{{project_id}}.{{static_reference_dataset}}.workflows_keys` wk
         ON wk.key = 'resident_record_salt'
 """
 

@@ -45,7 +45,7 @@ WITH pending_violations AS (
     peid.person_id,
     SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE) AS start_date,
   FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_480_VIOLATION_latest` v
-  INNER JOIN {{project_id}}.{{normalized_state_dataset}}.state_person_external_id peid
+  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
     ON peid.external_id = v.Cis_100_Client_Id
       AND id_type ='US_ME_DOC'
   -- Violation is pending
