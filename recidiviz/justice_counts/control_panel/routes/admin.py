@@ -22,6 +22,7 @@ from typing import Any, Callable, Dict, List, Optional
 from auth0.exceptions import Auth0Error
 from flask import Blueprint, Response, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
+from google.cloud import run_v2
 from sqlalchemy.dialects.postgresql import insert
 
 from recidiviz.auth.auth0_client import Auth0Client
@@ -29,11 +30,19 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import VALID_SYSTEMS
+from recidiviz.justice_counts.utils.constants import (
+    COPY_SUPERAGENCY_METRIC_SETTINGS_TO_CHILD_AGENCIES_JOB_NAME,
+    VALID_SYSTEMS,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.utils.environment import (
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+    in_gcp_production,
+)
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 
 
@@ -386,34 +395,51 @@ def get_admin_blueprint(
     )
     @auth_decorator
     def copy_metric_config_to_child_agencies(super_agency_id: int) -> Response:
-        """Copies metric settings from a super agency to its child agency."""
+        """Copies metric settings from a super agency to its child agencies via a Cloud Run Job."""
         request_json = assert_type(request.json, dict)
-        metric_definition_key_subset = request_json.get(
-            "metric_definition_key_subset", []
+        user_email = assert_type(request_json.get("user_email"), str)
+        metric_definition_key_subset = (
+            assert_type(request_json.get("metric_definition_key_subset"), list) or []
         )
-        super_agency = AgencyInterface.get_agency_by_id(
-            session=current_session, agency_id=super_agency_id
-        )
-        child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
-            session=current_session, agency_ids=[super_agency_id]
-        )
-        super_agency_metric_settings = DatapointInterface.get_metric_settings_by_agency(
-            session=current_session,
-            agency=super_agency,
+        project_id = (
+            GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
+            if in_gcp_production() is True
+            else GCP_PROJECT_JUSTICE_COUNTS_STAGING
         )
 
-        for child_agency in child_agencies:
-            for metric_setting in super_agency_metric_settings:
-                if "ALL" in set(
-                    metric_definition_key_subset
-                ) or metric_setting.metric_definition.key in set(
-                    metric_definition_key_subset
-                ):
-                    DatapointInterface.add_or_update_agency_datapoints(
-                        session=current_session,
-                        agency=child_agency,
-                        agency_metric=metric_setting,
-                    )
+        # Trigger a cloud run job with container overrides to handle the copying of metric
+        # settings and emailing the user a confirmation when the job is complete.
+        client = run_v2.JobsClient()
+
+        # Add container overrides to pass in custom arguments to the job script
+        override_spec = {
+            "container_overrides": [
+                {
+                    "args": [
+                        "run",
+                        "python",
+                        "-m",
+                        "recidiviz.justice_counts.jobs.copy_superagency_metric_settings_to_child_agencies",
+                        "--super_agency_id",
+                        str(super_agency_id),
+                        "--metric_definition_key_subset",
+                        str(metric_definition_key_subset),
+                        "--user_email",
+                        str(user_email),
+                    ]
+                }
+            ]
+        }
+        job_request = run_v2.RunJobRequest(
+            name=StrictStringFormatter().format(
+                COPY_SUPERAGENCY_METRIC_SETTINGS_TO_CHILD_AGENCIES_JOB_NAME,
+                project_id=project_id,
+            ),
+            overrides=override_spec,
+        )
+
+        # Trigger cloud run job
+        client.run_job(request=job_request)
 
         current_session.commit()
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})

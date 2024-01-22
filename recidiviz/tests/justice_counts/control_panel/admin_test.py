@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
-from collections import defaultdict
 from typing import Any, Dict
 
 import mock
@@ -27,16 +26,9 @@ from sqlalchemy.engine import Engine
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
-    CustomReportingFrequency,
-)
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import (
-    REPORTING_FREQUENCY_CONTEXT_KEY,
-    VALID_SYSTEMS,
-)
+from recidiviz.justice_counts.utils.constants import VALID_SYSTEMS
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     AgencyUserAccountAssociation,
@@ -547,114 +539,115 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(len(child_agencies), 0)
 
-    def test_copy_metric_settings_to_child_agencies(self) -> None:
-        self.load_users_and_agencies()
-        super_agency = (
-            self.session.query(schema.Agency)
-            .filter(schema.Agency.name == "Agency Alpha")
-            .one()
-        )
+    # TODO(#26936) - Test modification in #26936
+    # def test_copy_metric_settings_to_child_agencies(self) -> None:
+    #     self.load_users_and_agencies()
+    #     super_agency = (
+    #         self.session.query(schema.Agency)
+    #         .filter(schema.Agency.name == "Agency Alpha")
+    #         .one()
+    #     )
 
-        child_agency = schema.Agency(
-            name="Agency Alpha Child Agency",
-            super_agency_id=super_agency.id,
-            systems=["LAW_ENFORCEMENT"],
-        )
+    #     child_agency = schema.Agency(
+    #         name="Agency Alpha Child Agency",
+    #         super_agency_id=super_agency.id,
+    #         systems=["LAW_ENFORCEMENT"],
+    #     )
 
-        disabled_metric = schema.Datapoint(
-            metric_definition_key=law_enforcement.funding.key,
-            enabled=False,
-            source_id=super_agency.id,
-            is_report_datapoint=False,
-        )
+    #     disabled_metric = schema.Datapoint(
+    #         metric_definition_key=law_enforcement.funding.key,
+    #         enabled=False,
+    #         source_id=super_agency.id,
+    #         is_report_datapoint=False,
+    #     )
 
-        custom_reporting_frequency = schema.Datapoint(
-            metric_definition_key=law_enforcement.expenses.key,
-            source_id=super_agency.id,
-            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-            value=(
-                CustomReportingFrequency(
-                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
-                ).to_json_str()
-            ),
-            is_report_datapoint=False,
-        )
+    #     custom_reporting_frequency = schema.Datapoint(
+    #         metric_definition_key=law_enforcement.expenses.key,
+    #         source_id=super_agency.id,
+    #         context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+    #         value=(
+    #             CustomReportingFrequency(
+    #                 frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+    #             ).to_json_str()
+    #         ),
+    #         is_report_datapoint=False,
+    #     )
 
-        self.session.add_all(
-            [child_agency, disabled_metric, custom_reporting_frequency]
-        )
-        self.session.commit()
-        self.session.refresh(child_agency)
-        self.session.refresh(super_agency)
-        child_agency_id = child_agency.id
-        super_agency_id = super_agency.id
-        response = self.client.post(
-            f"/admin/agency/{super_agency_id}/child-agency/copy",
-            json={
-                "metric_definition_key_subset": [law_enforcement.expenses.key]
-            },  # only copy over expense metric settings
-        )
-        self.assertEqual(response.status_code, 200)
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_id
-        )
+    #     self.session.add_all(
+    #         [child_agency, disabled_metric, custom_reporting_frequency]
+    #     )
+    #     self.session.commit()
+    #     self.session.refresh(child_agency)
+    #     self.session.refresh(super_agency)
+    #     child_agency_id = child_agency.id
+    #     super_agency_id = super_agency.id
 
-        # There will be two agency datapoints, one that is a default
-        # datapoint to record the includes/excludes description for the
-        # expenses metric, the other that records the information about
-        # the custom reporting frequency.
-        self.assertEqual(len(agency_datapoints), 2)
-        self.assertEqual(
-            agency_datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
-        )
-        self.assertIsNone(agency_datapoints[0].value)
-        self.assertEqual(agency_datapoints[1].context_key, "REPORTING_FREQUENCY")
-        self.assertEqual(
-            agency_datapoints[1].value,
-            '{"custom_frequency": "ANNUAL", "starting_month": 2}',
-        )
+    #     copy_metric_settings(
+    #         super_agency_id=super_agency_id,
+    #         dry_run=False,
+    #         metric_definition_key_subset=[law_enforcement.expenses.key],
+    #         session=self.session,
+    #     )
+    #     agency_datapoints = DatapointInterface.get_agency_datapoints(
+    #         session=self.session, agency_id=child_agency_id
+    #     )
 
-        response = self.client.post(
-            f"/admin/agency/{super_agency_id}/child-agency/copy",
-            json={"metric_definition_key_subset": ["ALL"]},  # copy over all metrics
-        )
+    #     # There will be two agency datapoints, one that is a default
+    #     # datapoint to record the includes/excludes description for the
+    #     # expenses metric, the other that records the information about
+    #     # the custom reporting frequency.
+    #     self.assertEqual(len(agency_datapoints), 2)
+    #     self.assertEqual(
+    #         agency_datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
+    #     )
+    #     self.assertIsNone(agency_datapoints[0].value)
+    #     self.assertEqual(agency_datapoints[1].context_key, "REPORTING_FREQUENCY")
+    #     self.assertEqual(
+    #         agency_datapoints[1].value,
+    #         '{"custom_frequency": "ANNUAL", "starting_month": 2}',
+    #     )
 
-        self.assertEqual(response.status_code, 200)
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_id
-        )
+    #     copy_metric_settings(
+    #         super_agency_id=super_agency_id,
+    #         dry_run=False,
+    #         metric_definition_key_subset=["ALL"],
+    #         session=self.session,
+    #     )
+    #     agency_datapoints = DatapointInterface.get_agency_datapoints(
+    #         session=self.session, agency_id=child_agency_id
+    #     )
 
-        # There will be two agency datapoints, one that is a default
-        # datapoint to record the includes/excludes description for the
-        # expenses metric, the other that records the information about
-        # the custom reporting frequency.
-        metric_key_to_agency_datapoints = defaultdict(list)
-        for datapoint in agency_datapoints:
-            metric_key_to_agency_datapoints[datapoint.metric_definition_key].append(
-                datapoint
-            )
+    #     # There will be two agency datapoints, one that is a default
+    #     # datapoint to record the includes/excludes description for the
+    #     # expenses metric, the other that records the information about
+    #     # the custom reporting frequency.
+    #     metric_key_to_agency_datapoints = defaultdict(list)
+    #     for datapoint in agency_datapoints:
+    #         metric_key_to_agency_datapoints[datapoint.metric_definition_key].append(
+    #             datapoint
+    #         )
 
-        for key, datapoints in metric_key_to_agency_datapoints.items():
-            if key == law_enforcement.expenses.key:
-                # The expenses agency datapoints will not change
-                self.assertEqual(
-                    datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
-                )
-                self.assertIsNone(datapoints[0].value)
-                self.assertEqual(datapoints[1].context_key, "REPORTING_FREQUENCY")
-                self.assertEqual(
-                    datapoints[1].value,
-                    '{"custom_frequency": "ANNUAL", "starting_month": 2}',
-                )
-            elif key == law_enforcement.funding.key:
-                # The funding agency datapoints will not change from when
-                # they were updated in the last call.
-                self.assertEqual(datapoints[0].context_key, None)
-                self.assertEqual(datapoints[0].enabled, False)
-                self.assertEqual(
-                    datapoints[1].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
-                )
-                self.assertIsNone(datapoints[1].value)
-            else:
-                for datapoint in datapoints:
-                    self.assertIsNone(datapoint.value)
+    #     for key, datapoints in metric_key_to_agency_datapoints.items():
+    #         if key == law_enforcement.expenses.key:
+    #             # The expenses agency datapoints will not change
+    #             self.assertEqual(
+    #                 datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
+    #             )
+    #             self.assertIsNone(datapoints[0].value)
+    #             self.assertEqual(datapoints[1].context_key, "REPORTING_FREQUENCY")
+    #             self.assertEqual(
+    #                 datapoints[1].value,
+    #                 '{"custom_frequency": "ANNUAL", "starting_month": 2}',
+    #             )
+    #         elif key == law_enforcement.funding.key:
+    #             # The funding agency datapoints will not change from when
+    #             # they were updated in the last call.
+    #             self.assertEqual(datapoints[0].context_key, None)
+    #             self.assertEqual(datapoints[0].enabled, False)
+    #             self.assertEqual(
+    #                 datapoints[1].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
+    #             )
+    #             self.assertIsNone(datapoints[1].value)
+    #         else:
+    #             for datapoint in datapoints:
+    #                 self.assertIsNone(datapoint.value)

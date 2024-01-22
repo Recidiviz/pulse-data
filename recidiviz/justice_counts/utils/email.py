@@ -41,12 +41,11 @@ from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.utils.constants import (
     REMINDER_EMAILS_BUCKET_PROD,
     REMINDER_EMAILS_BUCKET_STAGING,
+    UNSUBSCRIBE_GROUP_ID,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 from recidiviz.utils.environment import in_gcp_production, in_gcp_staging
-
-UNSUBSCRIBE_GROUP_ID = 26272
 
 
 def send_confirmation_email(
