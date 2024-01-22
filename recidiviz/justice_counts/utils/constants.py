@@ -26,6 +26,9 @@ DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS = "DISAGGREGATED_BY_SUPERVISION_SUBSYSTE
 
 AUTOMATIC_UPLOAD_ID = -1
 
+# Unsubscribe group ID number for SendGrid for Justice Counts
+UNSUBSCRIBE_GROUP_ID = 26272
+
 # Maps the actual name of the child agency to
 # a shorthand used in a the spreadsheet during
 # Bulk Upload. We need this because some agencies
@@ -74,6 +77,10 @@ JUSTICE_COUNTS_SENTRY_DSN = (
     # not a secret!
     "https://3e8c790dbf0c407b8c039b91c7af9abc@o432474.ingest.sentry.io/4504532096516096"
 )
+
+# The name of the Cloud Run Job responsible for copying superagency metric settings to its respective child agencies
+# Requires a `project_id` - either "justice-counts-staging" or "justice-counts-production" depending on the environment
+COPY_SUPERAGENCY_METRIC_SETTINGS_TO_CHILD_AGENCIES_JOB_NAME = "projects/{project_id}/locations/us-central1/jobs/copy-superagency-metric-settings-to-child-agencies"
 
 # This dictionary contains ids and names of agencies that exist in our database, but
 # should be excluded from the weekly CSG Data Pull. Agencies are excluded for a number
