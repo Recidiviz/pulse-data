@@ -106,6 +106,8 @@ products:
         environment: production
       - state_code: US_CA
         environment: production
+      - state_code: US_OR
+        environment: production
   - name: Outliers
     description: Outliers is a state-agnostic product offering for staff performance and accountability.
     exports:

@@ -83,9 +83,9 @@ WORKFLOWS_CONFIGS_WITH_CLIENTS = [
     if config.person_record_type == PersonRecordType.CLIENT
 ]
 
-WORKFLOWS_SUPERVISION_STATES = [
-    config.state_code.value for config in WORKFLOWS_CONFIGS_WITH_CLIENTS
-]
+WORKFLOWS_SUPERVISION_STATES = list(
+    {config.state_code.value for config in WORKFLOWS_CONFIGS_WITH_CLIENTS}
+)
 
 WORKFLOWS_MILESTONES_STATES = ["US_IX", "US_MI", "US_CA"]
 
@@ -184,6 +184,9 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_ca_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_or_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_OR, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
     workflows_supervision_states=list_to_query_string(
