@@ -36,8 +36,9 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
         self.delegate = UsOzIncarcerationNormalizationDelegate()
 
     def test_incarceration_admission_reason_override(self) -> None:
-        """Tests that LOTR data system admission reasons are RETURN FROM ESCAPE
-        and do not affect existing data systems."""
+        """Tests that US_OZ admission overrides work as desired, but do not affect
+        existing defaults.
+        """
         lotr_period_no_admission_reason = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE, external_id="LOTR-99"
         )
@@ -83,4 +84,13 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
                 vfds_period_with_admission_reason, None
             ),
             StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+        hg_period_no_admission_reason = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE, external_id="HG-1"
+        )
+        self.assertEqual(
+            self.delegate.incarceration_admission_reason_override(
+                hg_period_no_admission_reason, None
+            ),
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         )
