@@ -55,7 +55,6 @@ products:
   - name: Pathways
     description: Prison and Supervision populations and transitions over time which can be drilled down by geographic region, demographic categories, time period, etc. Also see PATHWAYS_AND_PROJECTIONS and PATHWAYS_PRISON for variations on the Pathways exports..
     exports:
-      - PATHWAYS
       - PATHWAYS_EVENT_LEVEL
     states:
       - state_code: US_ND
@@ -67,6 +66,17 @@ products:
       - state_code: US_MO
         environment: production
       - state_code: US_IX
+        environment: production
+  - name: Pathways officer page
+    description: Transitions from supervision to prison, broken down by officer.
+    exports:
+      - PATHWAYS
+    states:
+      - state_code: US_ND
+        environment: production
+      - state_code: US_ME
+        environment: production
+      - state_code: US_MO
         environment: production
   - name: Pathways Prison Module
     description: Prison populations over time which can be drilled down by geographic region, demographic categories, time period, etc.
