@@ -304,6 +304,20 @@ export const transferIngestViewMetadataToNewInstance = async (
   );
 };
 
+// Invalidate ingest pipeline runs for a state and instance
+export const invalidateIngestPipelineRuns = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/invalidate_ingest_pipeline_runs",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
 // Get all ingest instance statuses
 export const getAllIngestInstanceStatuses = async (): Promise<Response> => {
   return getResource("/api/ingest_operations/all_ingest_instance_statuses");

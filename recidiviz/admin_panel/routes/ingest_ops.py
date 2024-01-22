@@ -66,6 +66,9 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
+    DirectIngestDataflowJobManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManagerImpl,
 )
@@ -1137,6 +1140,30 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/invalidate_ingest_pipeline_runs",
+        methods=["POST"],
+    )
+    def _invalidate_ingest_pipeline_runs() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"].upper())
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            dataflow_job_manager = DirectIngestDataflowJobManager()
+            dataflow_job_manager.invalidate_all_dataflow_jobs(
+                state_code, ingest_instance
+            )
+            return ("", HTTPStatus.OK)
         except ValueError as error:
             logging.exception(error)
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
