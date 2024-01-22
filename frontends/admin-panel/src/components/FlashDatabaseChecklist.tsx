@@ -47,6 +47,7 @@ import {
   deleteContentsOfRawDataTables,
   deleteTablesInPruningDatasets,
   getIngestRawFileProcessingStatus,
+  invalidateIngestPipelineRuns,
   markInstanceRawDataInvalidated,
   purgeIngestQueues,
   runCalculationDAGForState,
@@ -1158,6 +1159,26 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 )
               }
             />
+            {dataflowEnabled ? (
+              <StyledStep
+                title="Deprecate ingest pipeline runs for PRIMARY"
+                description={
+                  <p>
+                    Mark all <code>PRIMARY</code> ingest pipeline rows in the{" "}
+                    <code>direct_ingest_dataflow_job</code> operations database
+                    table as invalidated.
+                  </p>
+                }
+                actionButtonEnabled={isFlashInProgress}
+                actionButtonTitle="Invalidate primary rows"
+                onActionButtonClick={async () =>
+                  invalidateIngestPipelineRuns(
+                    stateCode,
+                    DirectIngestInstance.PRIMARY
+                  )
+                }
+              />
+            ) : null}
             <StyledStep
               title="Deprecate PRIMARY raw data rows in operations DB"
               description={

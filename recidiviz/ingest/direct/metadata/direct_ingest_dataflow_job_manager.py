@@ -80,6 +80,22 @@ class DirectIngestDataflowJobManager:
 
         return all_most_recent[state_code].get(ingest_instance)
 
+    def invalidate_all_dataflow_jobs(
+        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> None:
+        """For the provided state_code and ingest_instance, invalidates all Dataflow jobs for
+        that state-code and ingest instance. This should only be done after a raw data re-import
+        in SECONDARY so that these jobs cannot be considered for the watermark for the Ingest DAG.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            session.query(schema.DirectIngestDataflowJob).filter(
+                schema.DirectIngestDataflowJob.region_code == state_code.value,
+                schema.DirectIngestDataflowJob.ingest_instance == ingest_instance.value,
+            ).update(
+                {schema.DirectIngestDataflowJob.is_invalidated: True},
+                synchronize_session=False,
+            )
+
     @environment.test_only
     def add_job(
         self,
