@@ -69,4 +69,9 @@ class UsOzIncarcerationNormalizationDelegate(
             or incarceration_period.external_id.upper().startswith("SM")
         ):
             return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
+
+        if incarceration_period.external_id and (
+            incarceration_period.external_id.upper().startswith("HG")
+        ):
+            return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
         return incarceration_period.admission_reason
