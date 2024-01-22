@@ -19,9 +19,11 @@ Update BigQuery table schemas during deployment
 """
 import argparse
 import logging
-from typing import Optional
+import os
+from typing import Any, Dict, List, Optional, Tuple
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
@@ -30,7 +32,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
-    update_bq_dataset_to_match_sqlalchemy_schema,
+    update_bq_dataset_to_match_sqlalchemy_schema_for_one_table,
 )
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
@@ -39,125 +41,139 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.tools.deploy.logging import get_deploy_logs_dir, redirect_logging_to_file
 from recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas import (
     update_dataflow_output_schemas,
 )
 from recidiviz.tools.deploy.update_raw_data_table_schemas import (
     update_all_raw_data_table_schemas,
 )
-from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
+from recidiviz.tools.utils.script_helpers import interactive_loop_until_tasks_succeed
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def _update_cloud_sql_bq_refresh_output_schema(
-    export_config: CloudSqlToBQConfig,
-    dataset_override_prefix: Optional[str],
+def update_all_cloud_sql_bq_refresh_output_schemas(
+    file_kwargs: List[Dict[str, Any]], log_path: str
 ) -> None:
-    interactive_prompt_retry_on_exception(
-        fn=lambda: update_bq_dataset_to_match_sqlalchemy_schema(
-            schema_type=export_config.schema_type,
-            dataset_id=export_config.unioned_multi_region_dataset(
-                dataset_override_prefix=dataset_override_prefix
-            ),
-            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if dataset_override_prefix
-            else None,
-        ),
-        input_text="failed while updating big query table schemas - retry?",
-        accepted_response_override="yes",
-        exit_on_cancel=False,
-    )
+    """Update schemas for bq_refresh datasets based on given kwargs."""
 
-
-def _update_bq_regional_datasets(
-    export_config: CloudSqlToBQConfig,
-    dataset_override_prefix: Optional[str],
-) -> None:
-    """Updates and creates BigQuery datasets for the regional tables for the given
-    config."""
-    # TODO(#7285): Migrate Justice Counts connection to be in same region as instance
-    if export_config.schema_type == SchemaType.JUSTICE_COUNTS:
-        bq_region_override = None
-    else:
-        bq_region_override = SQLAlchemyEngineManager.get_cloudsql_instance_region(
-            export_config.schema_type
-        )
-
-    update_bq_dataset_to_match_sqlalchemy_schema(
-        schema_type=export_config.schema_type,
-        dataset_id=export_config.unioned_regional_dataset(
-            dataset_override_prefix=dataset_override_prefix
-        ),
-        bq_region_override=bq_region_override,
-        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-        if dataset_override_prefix
-        else None,
-    )
-    for state_code in get_direct_ingest_states_existing_in_env():
-        materialized_dataset = export_config.materialized_dataset_for_segment(
-            state_code=state_code,
-        )
-        if dataset_override_prefix:
-            materialized_dataset = BigQueryAddressOverrides.format_sandbox_dataset(
-                dataset_override_prefix, materialized_dataset
+    def update_bq_refresh_tables_with_redirect(
+        file_kwargs: List[Dict[str, Any]], log_path: str
+    ) -> Tuple[
+        List[Tuple[Any, Dict[str, Any]]], List[Tuple[Exception, Dict[str, Any]]]
+    ]:
+        with redirect_logging_to_file(log_path):
+            return map_fn_with_progress_bar_results(
+                fn=update_bq_dataset_to_match_sqlalchemy_schema_for_one_table,
+                kwargs_list=file_kwargs,
+                max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
+                timeout=60 * 10,
+                progress_bar_message="Updating bq_refresh table schemas...",
             )
-        update_bq_dataset_to_match_sqlalchemy_schema(
-            schema_type=export_config.schema_type,
-            dataset_id=materialized_dataset,
-            bq_region_override=bq_region_override,
-            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if dataset_override_prefix
-            else None,
-        )
 
-
-def _update_cloud_sql_bq_refresh_output_schema_regional_datasets(
-    export_config: CloudSqlToBQConfig,
-    dataset_override_prefix: Optional[str],
-) -> None:
-    interactive_prompt_retry_on_exception(
-        fn=lambda: _update_bq_regional_datasets(
-            export_config=export_config,
-            dataset_override_prefix=dataset_override_prefix,
+    interactive_loop_until_tasks_succeed(
+        tasks_fn=lambda tasks_kwargs: update_bq_refresh_tables_with_redirect(
+            file_kwargs=tasks_kwargs, log_path=log_path
         ),
-        input_text="failed while updating big query table schemas - retry?",
-        accepted_response_override="yes",
-        exit_on_cancel=False,
+        tasks_kwargs=file_kwargs,
     )
 
 
 def update_cloud_sql_bq_refresh_output_schemas(
     dataset_override_prefix: Optional[str] = None,
 ) -> None:
-    for s in SchemaType:
-        if not CloudSqlToBQConfig.is_valid_schema_type(s):
-            continue
+    """Update all schemas for bq_refresh datasets in a parallelized way."""
+    export_configs: List[CloudSqlToBQConfig] = [
+        CloudSqlToBQConfig.for_schema_type(s)
+        for s in SchemaType
+        if CloudSqlToBQConfig.is_valid_schema_type(s)
+    ]
 
-        config = CloudSqlToBQConfig.for_schema_type(s)
-        _update_cloud_sql_bq_refresh_output_schema(
-            export_config=config,
-            dataset_override_prefix=dataset_override_prefix,
-        )
-        if not config.is_state_segmented_refresh_schema():
-            continue
+    file_kwargs = (
+        [
+            {
+                "schema_type": export_config.schema_type,
+                "dataset_id": export_config.unioned_multi_region_dataset(
+                    dataset_override_prefix=dataset_override_prefix
+                ),
+                "table": table,
+                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if dataset_override_prefix
+                else None,
+                "bq_region_override": None,
+            }
+            for export_config in export_configs
+            for table in export_config.get_tables_to_export()
+        ]
+        + [
+            {
+                "schema_type": export_config.schema_type,
+                "dataset_id": export_config.unioned_multi_region_dataset(
+                    dataset_override_prefix=dataset_override_prefix
+                ),
+                "table": table,
+                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if dataset_override_prefix
+                else None,
+                "bq_region_override": SQLAlchemyEngineManager.get_cloudsql_instance_region(
+                    export_config.schema_type
+                )
+                if export_config.schema_type != SchemaType.JUSTICE_COUNTS
+                else None,
+            }
+            for export_config in export_configs
+            for table in export_config.get_tables_to_export()
+            if export_config.is_state_segmented_refresh_schema()
+        ]
+        + [
+            {
+                "schema_type": export_config.schema_type,
+                "dataset_id": export_config.materialized_dataset_for_segment(
+                    state_code=state_code,
+                )
+                if not dataset_override_prefix
+                else BigQueryAddressOverrides.format_sandbox_dataset(
+                    dataset_override_prefix,
+                    export_config.materialized_dataset_for_segment(
+                        state_code=state_code
+                    ),
+                ),
+                "table": table,
+                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if dataset_override_prefix
+                else None,
+                "bq_region_override": SQLAlchemyEngineManager.get_cloudsql_instance_region(
+                    export_config.schema_type
+                )
+                if export_config.schema_type != SchemaType.JUSTICE_COUNTS
+                else None,
+            }
+            for state_code in get_direct_ingest_states_existing_in_env()
+            for export_config in export_configs
+            for table in export_config.get_tables_to_export()
+            if export_config.is_state_segmented_refresh_schema()
+        ]
+        + [
+            {
+                "schema_type": SchemaType.STATE,
+                "dataset_id": STATE_BASE_DATASET,
+                "table": table,
+                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if dataset_override_prefix
+                else None,
+                "bq_region_override": None,
+            }
+            for table in CloudSqlToBQConfig(SchemaType.STATE).get_tables_to_export()
+        ]
+    )
 
-        _update_cloud_sql_bq_refresh_output_schema_regional_datasets(
-            export_config=config,
-            dataset_override_prefix=dataset_override_prefix,
-        )
-
-    interactive_prompt_retry_on_exception(
-        fn=lambda: update_bq_dataset_to_match_sqlalchemy_schema(
-            schema_type=SchemaType.STATE,
-            dataset_id=STATE_BASE_DATASET,
-            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if dataset_override_prefix
-            else None,
+    update_all_cloud_sql_bq_refresh_output_schemas(
+        file_kwargs,
+        log_path=os.path.join(
+            get_deploy_logs_dir(), "update_cloud_sql_bq_refresh_outputs.log"
         ),
-        input_text="failed while updating big query table schemas - retry?",
-        accepted_response_override="yes",
-        exit_on_cancel=False,
     )
 
 

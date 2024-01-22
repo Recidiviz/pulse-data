@@ -102,3 +102,22 @@ def update_bq_dataset_to_match_sqlalchemy_schema(
             dataset_id=dataset_id,
             table=table,
         )
+
+
+def update_bq_dataset_to_match_sqlalchemy_schema_for_one_table(
+    schema_type: SchemaType,
+    dataset_id: str,
+    table: Table,
+    default_table_expiration_ms: Optional[int],
+    bq_region_override: Optional[str] = None,
+) -> None:
+    bq_client = BigQueryClientImpl(region_override=bq_region_override)
+    bq_dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
+
+    bq_client.create_dataset_if_necessary(bq_dataset_ref, default_table_expiration_ms)
+    update_bq_schema_for_sqlalchemy_table(
+        bq_client=bq_client,
+        schema_type=schema_type,
+        dataset_id=dataset_id,
+        table=table,
+    )
