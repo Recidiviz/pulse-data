@@ -155,6 +155,7 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
     USING (external_id)
     LEFT JOIN sentences_by_person
     USING (person_id)
+    WHERE base.is_eligible
 """
 
 US_OR_EARNED_DISCHARGE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

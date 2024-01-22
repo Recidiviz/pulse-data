@@ -315,6 +315,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type_path_str="earlyTermination",
         person_record_type=PersonRecordType.CLIENT,
     ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_OR,
+        opportunity_type="usOrEarnedDischarge",
+        experiment_id="US_OR_EARNED_DISCHARGE_WORKFLOWS",
+        opportunity_record_view_name="us_or_earned_discharge_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="us_or_earned_discharge_record.json",
+        export_collection_name="US_OR-earnedDischarge",
+        opportunity_type_path_str="earnedDischarge",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
     # TODO(#22265) - Replace with us_tn_transfer_to_compliant_reporting_record when we move over to new data entirely
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,

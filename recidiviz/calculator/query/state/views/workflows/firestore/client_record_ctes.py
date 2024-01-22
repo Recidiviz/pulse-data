@@ -17,6 +17,7 @@
 """CTEs used across multiple states' client record queries."""
 
 from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
     nonnull_end_date_exclusive_clause,
     today_between_start_date_and_nullable_end_date_clause,
 )
@@ -37,6 +38,22 @@ from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
 )
 
+STATES_WITH_ALTERNATE_OFFICER_SOURCES = list_to_query_string(
+    ["US_CA", "US_OR"], quoted=True
+)
+
+_CLIENT_RECORD_US_OR_CASELOAD_CTE = """
+    us_or_caseloads AS (
+        SELECT
+            person_id,
+            CASELOAD as caseload,
+        FROM `{project_id}.{us_or_raw_data_up_to_date_dataset}.RCDVZ_PRDDTA_OP013P_latest`
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
+        ON RECORD_KEY = external_id
+        WHERE id_type = "US_OR_RECORD_KEY"
+    ),
+"""
+
 _CLIENT_RECORD_SUPERVISION_CTE = f"""
     us_ca_most_recent_client_data AS (
         {US_CA_MOST_RECENT_CLIENT_DATA}
@@ -51,7 +68,12 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             -- to make sure we choose the officer that aligns with other compartment session attributes.
           #   There are officers with more than one legitimate external id. We are merging these ids and
           #   so must move all clients to the merged id.
-          COALESCE(ca_pp.BadgeNumber, ids.external_id_mapped, sessions.supervising_officer_external_id_end) AS officer_id,
+          COALESCE(
+            us_or_caseloads.caseload,
+            ca_pp.BadgeNumber,
+            ids.external_id_mapped,
+            sessions.supervising_officer_external_id_end
+          ) AS officer_id,
           sessions.supervision_district_name_end AS district,
           IFNULL(
             projected_end.projected_completion_date_max,
@@ -80,13 +102,16 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
                 person_id
             FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized`
             WHERE end_date IS NULL
-                AND (state_code = "US_CA" OR supervising_officer_external_id IS NOT NULL)
+                AND (state_code IN ({STATES_WITH_ALTERNATE_OFFICER_SOURCES}) OR supervising_officer_external_id IS NOT NULL)
         ) active_officer
             ON sessions.state_code = active_officer.state_code
             AND sessions.person_id = active_officer.person_id
         LEFT JOIN us_ca_most_recent_client_data ca_pp
             ON pei.person_external_id = ca_pp.OffenderId
             AND sessions.state_code = "US_CA"
+        LEFT JOIN us_or_caseloads
+            ON sessions.state_code = "US_OR"
+            AND sessions.person_id = us_or_caseloads.person_id
         LEFT JOIN (
             {us_tn_supervision_type()}
         ) tn_supervision_type
@@ -94,8 +119,10 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
-          AND (sessions.state_code = "US_CA" OR sessions.supervising_officer_external_id_end IS NOT NULL)
+          AND (sessions.state_code IN ({STATES_WITH_ALTERNATE_OFFICER_SOURCES})
+            OR sessions.supervising_officer_external_id_end IS NOT NULL)
           AND (sessions.state_code != "US_CA" OR ca_pp.BadgeNumber IS NOT NULL)
+          AND (sessions.state_code != "US_OR" OR us_or_caseloads.caseload IS NOT NULL)
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY person_id
             ORDER BY person_external_id
@@ -750,6 +777,7 @@ _CLIENTS_CTE = """
 
 def full_client_record() -> str:
     return f"""
+    {_CLIENT_RECORD_US_OR_CASELOAD_CTE}
     {_CLIENT_RECORD_SUPERVISION_CTE}
     {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
