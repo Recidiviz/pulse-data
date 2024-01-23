@@ -53,12 +53,12 @@ TAGS=$(jq -r '.[0].tags' <<< "${PROD_IMAGE_JSON}")
 CURRENT_PROD_VERSION=$(cut -d ',' -f 1 <<< "${TAGS}")
 
 echo "Commits in pulse-data since last deploy:"
-run_cmd git fetch
+run_cmd git fetch --quiet
 run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION}..tags/jc.${VERSION}" --grep="Justice Counts"
 echo ""
 
 cd ../justice-counts || exit
-run_cmd git fetch
+run_cmd git fetch --quiet
 echo "Commits in justice-counts since last deploy:"
 run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION}..tags/jc.${VERSION}"
 cd ../pulse-data || exit
