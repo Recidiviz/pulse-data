@@ -59,7 +59,7 @@ class TestGetMaxUpdateDateTimeSqlQueryGenerator(unittest.TestCase):
         mock_context = create_autospec(Context)
 
         sample_data = {
-            "test_file_tag": "2023-01-26 00:00:00",
+            "test_file_tag": "2023-01-26 00:00:00.000000",
         }
 
         mock_postgres.get_pandas_df.return_value = pd.DataFrame(
