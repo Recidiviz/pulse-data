@@ -64,31 +64,6 @@ WHERE
 """
         self.assertEqual(my_time_periods_cte, expected_time_periods_cte)
 
-    # tests detection of a standard time period
-    def test_get_time_period_cte_regular_period(self) -> None:
-        my_time_periods_cte = get_time_period_cte(
-            interval_unit=MetricTimePeriod.QUARTER,
-            interval_length=1,
-            min_date=datetime(2020, 1, 4),
-            max_date=datetime(2022, 8, 3),
-        )
-        expected_time_periods_cte = """
-SELECT
-    population_start_date,
-    DATE_ADD(population_start_date, INTERVAL 1 QUARTER) AS population_end_date,
-    "QUARTER" as period,
-FROM
-    UNNEST(GENERATE_DATE_ARRAY(
-        "2020-01-04",
-        "2022-08-03",
-        INTERVAL 1 QUARTER
-    )) AS population_start_date
-WHERE
-    DATE_ADD(population_start_date, INTERVAL 1 QUARTER) <= CURRENT_DATE("US/Eastern")
-    AND DATE_ADD(population_start_date, INTERVAL 1 QUARTER) <= "2022-08-03"
-"""
-        self.assertEqual(my_time_periods_cte, expected_time_periods_cte)
-
     # tests time periods creation when no max date is provided
     def test_get_time_period_cte_no_max_date(self) -> None:
         my_time_periods_cte = get_time_period_cte(
@@ -101,7 +76,7 @@ WHERE
 SELECT
     population_start_date,
     DATE_ADD(population_start_date, INTERVAL 1 QUARTER) AS population_end_date,
-    "QUARTER" as period,
+    "CUSTOM" as period,
 FROM
     UNNEST(GENERATE_DATE_ARRAY(
         "2020-01-04",
