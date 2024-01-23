@@ -128,6 +128,19 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
         GROUP BY 1
     )
     ,
+    current_supervision_type AS (
+        SELECT
+            state_code,
+            person_id,
+            /* In case someone has multiple open supervision periods, pull just distinct
+            supervision types. */
+            ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
+        WHERE state_code='US_OR'
+        AND termination_date IS NULL
+        GROUP BY 1, 2
+    )
+    ,
     -- Replace Record Key (linking ID in tables) with OR ID (used in OMS)
     base_query_with_or_id AS (
         SELECT
@@ -150,11 +163,14 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
         -- TODO(#25442): sentence_by_person should never be null, since someone wouldn't be surfaced
         -- without eligible sentences
         TO_JSON(IFNULL(sentences_by_person.eligible_sentences, [])) AS metadata_eligible_sentences,
+        current_supervision_type.supervision_type AS metadata_supervision_type,
     FROM base_query_with_or_id base
     LEFT JOIN programming
     USING (external_id)
     LEFT JOIN sentences_by_person
     USING (person_id)
+    LEFT JOIN current_supervision_type
+    USING (state_code, person_id)
     WHERE base.is_eligible
 """
 
