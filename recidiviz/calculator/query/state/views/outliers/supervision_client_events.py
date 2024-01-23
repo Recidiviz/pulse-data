@@ -21,7 +21,6 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.bq_utils import (
     get_pseudonymized_id_query_str,
     nonnull_end_date_clause,
-    nonnull_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
@@ -256,7 +255,10 @@ supervision_client_events AS (
     INNER JOIN `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` ss  
         ON a.person_id = ss.person_id
         -- Get the supervision period information for the session leading up to the event
-        AND event_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause('ss.end_date_exclusive')}
+        -- Note: the event_date occurs in the INCARCERATION session after the SUPERVISION session we want
+        -- details about, so we use nonnull_end_date_clause here instead of nonnull_end_date_exclusive_clause to
+        -- ensure the SUPERVISION session is returned in this join 
+        AND event_date BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date_exclusive')}
         AND ss.compartment_level_1 = "SUPERVISION"
     LEFT JOIN `{{project_id}}.sessions.compartment_sessions_materialized` s
         ON ss.person_id = s.person_id
