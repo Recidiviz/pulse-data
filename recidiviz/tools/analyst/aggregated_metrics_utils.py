@@ -74,10 +74,7 @@ def get_time_period_cte(
         MetricTimePeriod.QUARTER,
         MetricTimePeriod.YEAR,
     ]:
-        if interval_length == 1:
-            period_str = f'"{interval_unit.value}"'
-        else:
-            period_str = f'"{MetricTimePeriod.CUSTOM.value}"'
+        period_str = f'"{MetricTimePeriod.CUSTOM.value}"'
     else:
         raise ValueError(
             f"Interval type {interval_unit.value} is not a valid interval type."
