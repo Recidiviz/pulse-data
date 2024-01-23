@@ -17,7 +17,6 @@
 """Utility file for constructing an email to be sent via Sendgrid."""
 import calendar
 import datetime
-import itertools
 import logging
 import os
 from collections import defaultdict
@@ -33,10 +32,11 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
-from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
+    MetricAggregatedDimensionData,
+)
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.utils.constants import (
     REMINDER_EMAILS_BUCKET_PROD,
@@ -318,30 +318,13 @@ def get_missing_metrics(
         session=session, agency_id=agency.id
     )
 
-    monthly_report_datapoints = (
-        latest_monthly_report.datapoints if latest_monthly_report is not None else []
-    )
-
-    annual_reports_datapoints = list(
-        itertools.chain(
-            *[
-                latest_annual_report.datapoints
-                for latest_annual_report in latest_annual_reports
-            ]
-        )
-    )
-
-    metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
-        datapoints=monthly_report_datapoints
-        + annual_reports_datapoints
-        + metric_setting_datapoints
-    )
-
     (
         system_to_missing_monthly_metrics,
         date_range_to_system_to_missing_annual_metrics,
     ) = _get_missing_metrics_by_system(
-        metric_key_to_datapoints=metric_key_to_datapoints,
+        session=session,
+        agency_datapoints=metric_setting_datapoints,
+        reports=[latest_monthly_report] + latest_annual_reports,
     )
 
     return (
@@ -352,7 +335,9 @@ def get_missing_metrics(
 
 
 def _get_missing_metrics_by_system(
-    metric_key_to_datapoints: Dict[str, DatapointsForMetric]
+    session: Session,
+    agency_datapoints: List[schema.Datapoint],
+    reports: List[schema.Report],
 ) -> Tuple[
     Dict[schema.System, List[MetricDefinition]],
     Dict[
@@ -379,61 +364,85 @@ def _get_missing_metrics_by_system(
         Tuple[datetime.date, datetime.date], Dict[schema.System, List[MetricDefinition]]
     ] = defaultdict(lambda: defaultdict(list))
 
-    for metric_key, datapoints_for_metric in metric_key_to_datapoints.items():
-        # If the metric is not reported by this agency, continue
-        if datapoints_for_metric.is_metric_enabled is not True:
+    for report in reports:
+        if report is None:
+            # This assumes that the user has reports for the previous time periods.
+            # This is a fine assumption to work off of since we automatically create
+            # reports for agencies.
             continue
-
-        # If there is data reported for the metric, continue
-        if (
-            datapoints_for_metric.aggregated_value is not None
-            or DatapointsForMetric.are_disaggregated_metrics_reported(
-                datapoints_for_metric=datapoints_for_metric
-            )
-            is True
-        ):
-            continue
-
-        metric_definition = METRIC_KEY_TO_METRIC[metric_key]
 
         reporting_frequency = (
-            datapoints_for_metric.custom_reporting_frequency.frequency
-            or metric_definition.reporting_frequency
+            schema.ReportingFrequency.MONTHLY
+            if abs((report.date_range_end - report.date_range_start).days) <= 31
+            else schema.ReportingFrequency.ANNUAL
         )
 
-        if reporting_frequency == schema.ReportingFrequency.MONTHLY:
-            system_to_missing_monthly_metrics[metric_definition.system].append(
-                metric_definition
-            )
+        report_metrics = ReportInterface.get_metrics_by_report(
+            session=session,
+            report=report,
+            agency_datapoints=agency_datapoints,
+        )
 
-        else:
-            report_start_month = (
-                datapoints_for_metric.custom_reporting_frequency.starting_month or 1
-            )
-            today = datetime.date.today()
-            current_year = today.year
-            current_month = today.month
+        for report_metric in report_metrics:
+            if report_metric.is_metric_enabled is not True:
+                # If the metric is disabled, skip it.
+                continue
 
-            if current_month >= report_start_month:
-                start_year = current_year - 1
-                end_year = current_year
+            if report_metric.value is not None:
+                # If there's a report metric value, skip the metric
+                continue
+
+            # Check each aggregated dimension
+            for a in report_metric.aggregated_dimensions:
+                if is_aggregated_dimension_data_reported(a):
+                    # If data is reported for the breakdown, skip the metric.
+                    continue
+
+            if (
+                report_metric.disaggregated_by_supervision_subsystems is True
+                and report_metric.metric_definition.system == schema.System.SUPERVISION
+            ):
+                # If the metric is disaggregated by subsystem but is a supervision metric, skip it.
+                continue
+
+            if (
+                report_metric.disaggregated_by_supervision_subsystems is False
+                and report_metric.metric_definition.system
+                in schema.System.supervision_subsystems()
+            ):
+                # If the metric is reported as the combined values of supervision subsystem,
+                # but the metric is for a supervision subsystem, skip it.
+                continue
+
+            if reporting_frequency == schema.ReportingFrequency.MONTHLY:
+                system_to_missing_monthly_metrics[
+                    report_metric.metric_definition.system
+                ].append(report_metric.metric_definition)
             else:
-                # This will catch the edge case of fiscal-year reports with
-                # end dates in the current year that have not passed yet.
-                # For example, say its June 2023, but a fiscal year report is
-                # reported from July in one year to July in the next. The most
-                # recent fiscal year report will be July 2021 - July 2022 because
-                # the report from July 2022 - July 2023 is still in progress.
-                start_year = current_year - 2
-                end_year = current_year - 1
+                date_range_to_system_to_missing_annual_metrics[
+                    (report.date_range_start, report.date_range_end)
+                ][report_metric.metric_definition.system].append(
+                    report_metric.metric_definition
+                )
 
-            start_date = datetime.date(start_year, report_start_month, 1)
-            end_date = datetime.date(end_year, report_start_month, 1)
-            date_range = (start_date, end_date)
-            date_range_to_system_to_missing_annual_metrics[date_range][
-                metric_definition.system
-            ].append(metric_definition)
     return (
         system_to_missing_monthly_metrics,
         date_range_to_system_to_missing_annual_metrics,
     )
+
+
+def is_aggregated_dimension_data_reported(
+    aggregated_dimension: MetricAggregatedDimensionData,
+) -> bool:
+    if (
+        aggregated_dimension.dimension_to_value is not None
+        and aggregated_dimension.dimension_to_enabled_status is not None
+    ):
+        for dimension in aggregated_dimension.dimension_to_value.keys():
+            if (
+                aggregated_dimension.dimension_to_value.get(dimension) is not None
+                and aggregated_dimension.dimension_to_enabled_status.get(dimension)
+                is True
+            ):
+                return True
+    return False
