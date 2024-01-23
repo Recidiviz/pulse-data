@@ -745,6 +745,7 @@ class ReportInterface:
                 schema.Report.type == schema.ReportingFrequency.MONTHLY.value,
                 schema.Report.source_id == agency_id,
             )
+            .options(joinedload(schema.Report.datapoints))
             .one_or_none()
         )
 
@@ -764,6 +765,7 @@ class ReportInterface:
                 schema.Report.type == "ANNUAL",
                 schema.Report.source_id == agency_id,
             )
+            .options(joinedload(schema.Report.datapoints))
             .all()
         )
 
@@ -781,6 +783,7 @@ class ReportInterface:
                 schema.Report.type == "ANNUAL",
                 schema.Report.source_id == agency_id,
             )
+            .options(joinedload(schema.Report.datapoints))
             .all()
         )
 
