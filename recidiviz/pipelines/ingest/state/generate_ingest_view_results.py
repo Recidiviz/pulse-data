@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A PTransform that generates ingest view results for a given ingest view."""
+import logging
 from typing import Any, Dict, Generator, Optional
 
 import apache_beam as beam
@@ -186,6 +187,7 @@ class GenerateIngestViewResults(beam.PTransform):
             else INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE,
             raw_data_tables=raw_data_tables_sql,
         )
+        logging.info("Raw date pairs query: %s", raw_date_pairs_query)
         return raw_date_pairs_query
 
     @staticmethod
@@ -223,5 +225,7 @@ class GenerateIngestViewResults(beam.PTransform):
                 raw_data_source_instance=ingest_instance,
                 ingest_view_materialization_args=ingest_view_materialization_args,
             )
+
+            logging.info("Ingest view query: %s", query)
 
             yield beam.io.ReadFromBigQueryRequest(query=query, use_standard_sql=True)
