@@ -47,10 +47,14 @@ _CLIENT_RECORD_US_OR_CASELOAD_CTE = """
         SELECT
             person_id,
             CASELOAD as caseload,
+            county_code as oregon_county
         FROM `{project_id}.{us_or_raw_data_up_to_date_dataset}.RCDVZ_PRDDTA_OP013P_latest`
         LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
         ON RECORD_KEY = external_id
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_period`
+        USING(person_id)
         WHERE id_type = "US_OR_RECORD_KEY"
+        AND termination_date IS NULL
     ),
 """
 
@@ -74,7 +78,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             ids.external_id_mapped,
             sessions.supervising_officer_external_id_end
           ) AS officer_id,
-          sessions.supervision_district_name_end AS district,
+          COALESCE(oregon_county, sessions.supervision_district_name_end) AS district,
           IFNULL(
             projected_end.projected_completion_date_max,
             COALESCE(
