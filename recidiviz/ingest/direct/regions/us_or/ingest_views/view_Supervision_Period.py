@@ -231,6 +231,13 @@ info_to_split_periods_with_supervision_level_changes AS (
     IF(PERIOD_ID = NEXT_PERIOD AND RELEASE_REASON IS NULL, 'SUPLEVEL_CHANGE', RELEASE_REASON) AS RELEASE_REASON,
     RESPONSIBLE_DIVISION
   FROM info_to_split_periods_with_supervision_level_changes
+), staff_caseloads AS (
+  # Adding this to make sure all caseloads have a corresponding entry in CMCMST, which we use for State_Staff
+  SELECT DISTINCT 
+    RECORD_KEY, 
+    CASELOAD
+    FROM {RCDVZ_PRDDTA_OP013P}
+    WHERE CASELOAD IN (SELECT DISTINCT CASELOAD FROM {RCDVZ_CISPRDDTA_CMCMST})
 ), new_periods AS (
   SELECT
     RECORD_KEY,
@@ -249,7 +256,7 @@ info_to_split_periods_with_supervision_level_changes AS (
     cl.CASELOAD
   FROM split_periods_with_multiple_supervision_levels spl
   #TODO(#26950): Update to use @ALL to get historical caseload ids
-  LEFT JOIN {RCDVZ_PRDDTA_OP013P} cl
+  LEFT JOIN staff_caseloads cl
   USING (RECORD_KEY)
 ), 
 final AS (
