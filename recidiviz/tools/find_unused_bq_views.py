@@ -41,6 +41,7 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    EXTERNAL_REFERENCE_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
     REFERENCE_VIEWS_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
@@ -53,6 +54,9 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_session
 )
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
+    PSA_RISK_SCORES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_eligibility import (
     PRIORITIZED_ELIGIBILITY,
@@ -74,6 +78,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.external_reference.state_resident_populations import (
+    STATE_RESIDENT_POPULATIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.external_reference.state_resident_populations_combined_race_ethnicity import (
+    STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
@@ -235,7 +245,7 @@ OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
     ): (
         'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
         "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/23)"
+        "(Anna Geiduschek 1/8/24)"
     ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -243,7 +253,7 @@ OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
     ): (
         'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
         "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/23)"
+        "(Anna Geiduschek 1/8/24)"
     ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -251,7 +261,7 @@ OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
     ): (
         'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
         "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/23)"
+        "(Anna Geiduschek 1/8/24)"
     ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -259,7 +269,25 @@ OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
     ): (
         'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
         "When we revisit how we calculate in state / out of state populations we may be able to revisit."
-        "(Anna Geiduschek 1/8/23)"
+        "(Anna Geiduschek 1/8/24)"
+    ),
+    BigQueryAddress(
+        dataset_id=EXTERNAL_REFERENCE_VIEWS_DATASET,
+        table_id="state_info",
+    ): (
+        "We want to migrate places that require state info and population off of the manually maintained versions "
+        "in `static_reference_tables` to these instead. See #19368. (Colin Adams 1/22/24)"
+    ),
+    STATE_RESIDENT_POPULATIONS_VIEW_BUILDER.address: (
+        "We want to migrate places that require state info and population off of the manually maintained versions "
+        "in `static_reference_tables` to these instead. See #19368. (Colin Adams 1/22/24)"
+    ),
+    STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER.address: (
+        "We want to migrate places that require state info and population off of the manually maintained versions "
+        "in `static_reference_tables` to these instead. See #19368. (Colin Adams 1/22/24)"
+    ),
+    PSA_RISK_SCORES_VIEW_BUILDER.address: (
+        "Past intern work may be picked up so this view should be kept. See #26726. (Damini Sharma 1/22/24)"
     ),
 }
 
