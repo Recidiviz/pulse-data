@@ -43,6 +43,12 @@ columns:
     is_pii: True
     description: |-
       Email of the staff member's supervisor
+  - name: SpecializedTeam
+    description: |-
+      Yes or No Value of whether this supervisor supervises a specialized team
+  - name: UpdatedRoleType
+    description: |-
+      Updated role type based on specialized team
   - name: CaseloadType
     description: |-
       Type of caseload(s) a specific officer is assigned
