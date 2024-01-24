@@ -23,7 +23,7 @@ locally to create sandbox Dataflow datasets.
 import datetime
 import logging
 from concurrent import futures
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 
 import attr
 from google.cloud import bigquery
@@ -66,16 +66,18 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
-    update_bq_dataset_to_match_sqlalchemy_schema,
+    update_bq_dataset_to_match_sqlalchemy_schema_for_one_table,
     update_bq_schema_for_sqlalchemy_table,
 )
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
 )
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_normalization_pipeline_enabled_states,
@@ -83,6 +85,7 @@ from recidiviz.pipelines.dataflow_orchestration_utils import (
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
 )
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
 )
@@ -121,16 +124,20 @@ def update_dataflow_metric_tables_schemas(
         TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS if sandbox_dataset_prefix else None,
     )
 
-    for metric_class, table_id in dataflow_config.DATAFLOW_METRICS_TO_TABLES.items():
+    def _update_metric_table_schema(
+        metric_class: Type[RecidivizMetric], table_id: str
+    ) -> str:
         schema_for_metric_class = metric_class.bq_schema_for_metric_table()
-        clustering_fields = None
-        if all(
-            cluster_field in attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
-            for cluster_field in dataflow_config.METRIC_CLUSTERING_FIELDS
-        ):
-            # Only apply clustering if the table has all of the metric clustering
-            # fields
-            clustering_fields = dataflow_config.METRIC_CLUSTERING_FIELDS
+        # Only apply clustering if the table has all of the metric clustering
+        # fields
+        clustering_fields = (
+            dataflow_config.METRIC_CLUSTERING_FIELDS
+            if all(
+                cluster_field in attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
+                for cluster_field in dataflow_config.METRIC_CLUSTERING_FIELDS
+            )
+            else None
+        )
 
         if bq_client.table_exists(dataflow_metrics_dataset_ref, table_id):
             # Compare schema derived from metric class to existing dataflow views and
@@ -155,6 +162,24 @@ def update_dataflow_metric_tables_schemas(
                 schema_for_metric_class,
                 clustering_fields,
             )
+        return table_id
+
+    with futures.ThreadPoolExecutor(
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        metric_class_futures = [
+            executor.submit(
+                _update_metric_table_schema,
+                metric_class=metric_class,
+                table_id=table_id,
+            )
+            for metric_class, table_id in dataflow_config.DATAFLOW_METRICS_TO_TABLES.items()
+        ]
+        for f in futures.as_completed(metric_class_futures):
+            table_id = f.result()
+            logging.info(
+                "Updated schema for %s.%s", dataflow_metrics_dataset_id, table_id
+            )
 
 
 def update_normalized_table_schemas_in_dataset(
@@ -177,7 +202,7 @@ def update_normalized_table_schemas_in_dataset(
 
     normalized_table_ids: List[str] = []
 
-    for entity_cls in NORMALIZED_ENTITY_CLASSES:
+    def _update_normalized_entity(entity_cls: Type[NormalizedStateEntity]) -> str:
         schema_for_entity_class = bq_schema_for_normalized_state_entity(entity_cls)
         # We store normalized entities in tables with the same names as the tables of
         # their underlying base entity classes.
@@ -199,28 +224,51 @@ def update_normalized_table_schemas_in_dataset(
                 table_id,
                 schema_for_entity_class,
             )
+        return table_id
 
-    for manager in NORMALIZATION_MANAGERS:
-        for child_cls, parent_cls in manager.normalized_entity_associations():
-            association_table = schema_utils.get_state_database_association_with_names(
-                child_cls.__name__, parent_cls.__name__
+    def _update_normalized_entity_association(
+        child_cls: Type[Entity], parent_cls: Type[Entity]
+    ) -> str:
+        association_table = schema_utils.get_state_database_association_with_names(
+            child_cls.__name__, parent_cls.__name__
+        )
+
+        schema_for_association_table = schema_for_sqlalchemy_table(
+            association_table, add_state_code_field=True
+        )
+
+        table_id = association_table.name
+        normalized_table_ids.append(table_id)
+
+        if bq_client.table_exists(normalized_state_dataset_ref, table_id):
+            bq_client.update_schema(
+                normalized_state_dataset_id, table_id, schema_for_association_table
             )
-
-            schema_for_association_table = schema_for_sqlalchemy_table(
-                association_table, add_state_code_field=True
+        else:
+            bq_client.create_table_with_schema(
+                normalized_state_dataset_id, table_id, schema_for_association_table
             )
+        return table_id
 
-            table_id = association_table.name
+    with futures.ThreadPoolExecutor(
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        normalized_entity_futures = [
+            executor.submit(_update_normalized_entity, entity_cls)
+            for entity_cls in NORMALIZED_ENTITY_CLASSES
+        ] + [
+            executor.submit(
+                _update_normalized_entity_association, child_cls, parent_cls
+            )
+            for manager in NORMALIZATION_MANAGERS
+            for child_cls, parent_cls in manager.normalized_entity_associations()
+        ]
+        for f in futures.as_completed(normalized_entity_futures):
+            table_id = f.result()
+            logging.info(
+                "Updated schema for %s.%s", normalized_state_dataset_id, table_id
+            )
             normalized_table_ids.append(table_id)
-
-            if bq_client.table_exists(normalized_state_dataset_ref, table_id):
-                bq_client.update_schema(
-                    normalized_state_dataset_id, table_id, schema_for_association_table
-                )
-            else:
-                bq_client.create_table_with_schema(
-                    normalized_state_dataset_id, table_id, schema_for_association_table
-                )
 
     return normalized_table_ids
 
@@ -282,20 +330,24 @@ def update_normalized_state_schema(
         TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS if sandbox_dataset_prefix else None,
     )
 
-    export_config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
-
-    for table in export_config.get_tables_to_export():
-        table_id = table.name
-
-        if table_id not in normalized_table_ids:
-            # Update the schema of the non-normalized entity to have all columns
-            # expected for the table
-            update_bq_schema_for_sqlalchemy_table(
+    with futures.ThreadPoolExecutor(
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        tables = [
+            executor.submit(
+                update_bq_schema_for_sqlalchemy_table,
                 bq_client=bq_client,
                 schema_type=SchemaType.STATE,
                 dataset_id=normalized_state_dataset_id,
                 table=table,
             )
+            for table in CloudSqlToBQConfig.for_schema_type(
+                SchemaType.STATE
+            ).get_tables_to_export()
+            if table.name not in normalized_table_ids
+        ]
+        for f in futures.as_completed(tables):
+            f.result()
 
 
 def update_supplemental_dataset_schemas(
@@ -351,19 +403,28 @@ def update_state_specific_ingest_state_schemas(
 ) -> None:
     """Updates the tables for each state-specific dataset that stores Dataflow
     state entity output to match expected schemas."""
-    for (
-        state_code,
-        ingest_instance,
-    ) in get_ingest_pipeline_enabled_state_and_instance_pairs():
-        update_bq_dataset_to_match_sqlalchemy_schema(
-            schema_type=SchemaType.STATE,
-            dataset_id=state_dataset_for_state_code(
-                state_code, ingest_instance, sandbox_dataset_prefix
-            ),
-            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if sandbox_dataset_prefix
-            else None,
-        )
+    with futures.ThreadPoolExecutor(
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        tables = [
+            executor.submit(
+                update_bq_dataset_to_match_sqlalchemy_schema_for_one_table,
+                schema_type=SchemaType.STATE,
+                dataset_id=state_dataset_for_state_code(
+                    state_code, ingest_instance, sandbox_dataset_prefix
+                ),
+                default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if sandbox_dataset_prefix
+                else None,
+                table=table,
+            )
+            for state_code, ingest_instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
+            for table in CloudSqlToBQConfig.for_schema_type(
+                SchemaType.STATE
+            ).get_tables_to_export()
+        ]
+        for f in futures.as_completed(tables):
+            f.result()
 
 
 def _get_ingest_view_builders(
@@ -426,41 +487,56 @@ def update_state_specific_ingest_view_result_schema(
             executor.submit(job.result): ingest_view_name
             for ingest_view_name, job in ingest_view_name_to_query_job.items()
         }
+        operation_futures = []
         for f in futures.as_completed(futures_to_ingest_view_name):
             ingest_view_name = futures_to_ingest_view_name[f]
             res = f.result()
             final_schema = res.schema + ADDITIONAL_SCHEMA_COLUMNS
-            if bq_client.table_exists(ingest_view_dataset_ref, ingest_view_name):
-                try:
-                    bq_client.update_schema(
-                        dataset_id=ingest_view_dataset_ref.dataset_id,
-                        table_id=ingest_view_name,
-                        desired_schema_fields=final_schema,
-                    )
-                except ValueError as e:
-                    logging.warning(
-                        "Failed to update schema for %s due to %s, will try to delete and create table.",
-                        ingest_view_name,
-                        e,
-                    )
-                    # We are okay deleting and recreating the table because the materialization results
-                    # will just get overwritten by the next ingest pipeline run anyway.
 
-                    bq_client.delete_table(
-                        dataset_id=ingest_view_dataset_ref.dataset_id,
-                        table_id=ingest_view_name,
-                    )
+            def _update_ingest_view_schema(
+                final_schema: List[bigquery.SchemaField], ingest_view_name: str
+            ) -> str:
+                if bq_client.table_exists(ingest_view_dataset_ref, ingest_view_name):
+                    try:
+                        bq_client.update_schema(
+                            dataset_id=ingest_view_dataset_ref.dataset_id,
+                            table_id=ingest_view_name,
+                            desired_schema_fields=final_schema,
+                        )
+                    except ValueError as e:
+                        logging.warning(
+                            "Failed to update schema for %s due to %s, will try to delete and create table.",
+                            ingest_view_name,
+                            e,
+                        )
+                        # We are okay deleting and recreating the table because the materialization results
+                        # will just get overwritten by the next ingest pipeline run anyway.
+
+                        bq_client.delete_table(
+                            dataset_id=ingest_view_dataset_ref.dataset_id,
+                            table_id=ingest_view_name,
+                        )
+                        bq_client.create_table_with_schema(
+                            dataset_id=ingest_view_dataset_ref.dataset_id,
+                            table_id=ingest_view_name,
+                            schema_fields=final_schema,
+                        )
+                else:
                     bq_client.create_table_with_schema(
                         dataset_id=ingest_view_dataset_ref.dataset_id,
                         table_id=ingest_view_name,
                         schema_fields=final_schema,
                     )
-            else:
-                bq_client.create_table_with_schema(
-                    dataset_id=ingest_view_dataset_ref.dataset_id,
-                    table_id=ingest_view_name,
-                    schema_fields=final_schema,
+                return ingest_view_name
+
+            operation_futures.append(
+                executor.submit(
+                    _update_ingest_view_schema, final_schema, ingest_view_name
                 )
+            )
+        for of in futures.as_completed(operation_futures):
+            name = of.result()
+            print(f"Updated schema for {ingest_view_dataset_id}.{name}")
 
 
 def update_state_specific_ingest_view_results_schemas(
