@@ -243,7 +243,7 @@ def state_specific_external_id_type(state_code_table_prefix: str) -> str:
           WHEN {state_code_table_prefix}.state_code = 'US_ND'
           THEN 'US_ND_SID'
           WHEN {state_code_table_prefix}.state_code = 'US_OR'
-          THEN 'US_OR_RECORD_KEY'
+          THEN 'US_OR_ID'
           WHEN {state_code_table_prefix}.state_code = 'US_PA'
           THEN 'US_PA_PBPP'
           WHEN {state_code_table_prefix}.state_code = 'US_TN'
