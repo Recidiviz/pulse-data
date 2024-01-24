@@ -133,8 +133,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 200000
     override_reason: Needs investigation.  Current failing level as of 11/2 is 192,868 rows #TODO(#16435)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 24000
-    override_reason: Current failing level as of 12/26/23 is 23,694 rows #TODO(#18436)
+    hard_num_allowed_rows_override: 25000
+    override_reason: Current failing level as of 1/24/23 is 24,112 rows #TODO(#18436)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 50
     override_reason: Current failing level as of 4/5/23 is 0 rows

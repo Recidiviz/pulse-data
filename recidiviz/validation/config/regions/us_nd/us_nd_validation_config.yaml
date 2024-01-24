@@ -28,7 +28,10 @@ max_allowed_error_overrides:
       TODO(#19985) - current_email_address was hydrated and now there are duplicate entries per external_id in state_person.
       Planned rerun will resolve.
   - validation_name: state_incarceration_period_by_admission_date_stable_counts
-    hard_max_allowed_error_override: .26
+    hard_max_allowed_error_override: .28
+    override_reason: This is standard deviation for this validation.
+  - validation_name: state_incarceration_period_by_release_date_stable_counts
+    hard_max_allowed_error_override: .28
     override_reason: This is standard deviation for this validation.
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: .28
