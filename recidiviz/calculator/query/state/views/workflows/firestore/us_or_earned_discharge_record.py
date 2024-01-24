@@ -151,7 +151,7 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
         ON
             base.person_id = pei.person_id
             AND base.state_code = pei.state_code
-            AND pei.id_type = "US_OR_RECORD_KEY"
+            AND pei.id_type = "US_OR_ID"
     )
     SELECT
         base.external_id,
