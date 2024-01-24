@@ -869,12 +869,15 @@ FROM
     -- Indicates that event_date is hydrated with response_date because violation_date is NULL
     violation_date IS NULL AS is_inferred_violation_date,
     -- Deduplicates to the earliest response date associated with the violation date
+    #TODO(#27010) remove once support for custom units of analysis are implemented 
+    gender,
+    prioritized_race_or_ethnicity,
     MIN(response_date) AS response_date
 FROM
     `{project_id}.dataflow_metrics_materialized.most_recent_violation_with_response_metrics_materialized`
 WHERE
     IFNULL(violation_date, response_date) IS NOT NULL
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 
 """,
         attribute_cols=[
@@ -885,6 +888,8 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
             "is_most_severe_violation_type",
             "response_date",
             "is_inferred_violation_date",
+            "gender",
+            "prioritized_race_or_ethnicity",
         ],
         event_date_col="event_date",
     ),
