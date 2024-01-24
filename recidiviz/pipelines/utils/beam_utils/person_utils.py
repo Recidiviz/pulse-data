@@ -75,9 +75,21 @@ class BuildPersonMetadata(beam.DoFn):
     ) -> Iterable[Tuple[int, PersonMetadata]]:
         """Returns a tuple containing the person_id and the PersonMetadata containing information about the given
         StatePerson."""
-        _, hydrated_required_entities = element
+        person_id, hydrated_required_entities = element
 
-        person = one(list(hydrated_required_entities[StatePerson.__name__]))
+        try:
+            person = one(list(hydrated_required_entities[StatePerson.__name__]))
+        except ValueError as e:
+            entity_type_counts = {
+                name: len(list(values))
+                for name, values in hydrated_required_entities.items()
+                if len(list(values)) > 0
+            }
+            raise ValueError(
+                f"Found no StatePerson object associated with {person_id=}. "
+                f"Found these types (with associated counts) that have this "
+                f"person_id: {entity_type_counts}"
+            ) from e
 
         person = cast(StatePerson, person)
 
