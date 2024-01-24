@@ -18,19 +18,10 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.common.constants.states import StateCode
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.validation.views import dataset_config
 from recidiviz.validation.views.external_data import regions as external_data_regions
-
-_LEGACY_QUERY_TEMPLATE = """
-SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_supervision, district, supervising_officer, supervision_level
-FROM `{project_id}.{us_id_validation_dataset}.supervision_population_person_level_raw`
-UNION ALL
-SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_supervision, district, supervising_officer, supervision_level
-FROM `{project_id}.{us_id_validation_dataset}.daily_summary_supervision`
-"""
 
 VIEW_ID = "supervision_population_person_level"
 
@@ -71,7 +62,7 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
 """
             )
 
-    query_template = "\nUNION ALL\n".join(region_subqueries + [_LEGACY_QUERY_TEMPLATE])
+    query_template = "\nUNION ALL\n".join(region_subqueries)
 
     return SimpleBigQueryViewBuilder(
         dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
@@ -87,9 +78,6 @@ FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
         materialized_address_override=None,
         should_deploy_predicate=None,
         clustering_fields=None,
-        us_id_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_ID
-        ),
         **region_dataset_params,
     )
 

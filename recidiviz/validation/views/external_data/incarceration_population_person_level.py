@@ -18,23 +18,11 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.common.constants.states import StateCode
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 from recidiviz.validation.views.external_data import regions as external_data_regions
-
-# This gets data for states with validation datasets that are still managed outside
-# of version control.
-_LEGACY_QUERY_TEMPLATE = """
--- Don't use facility from this ID data as it groups most of the jails together.
-SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_stay, NULL as facility
-FROM `{project_id}.{us_id_validation_dataset}.incarceration_population_person_level_raw`
-UNION ALL
-SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_stay, facility
-FROM `{project_id}.{us_id_validation_dataset}.daily_summary_incarceration`
-"""
 
 VIEW_ID = "incarceration_population_person_level"
 
@@ -69,7 +57,7 @@ def get_incarceration_population_person_level_view_builder() -> (
                 """
             )
 
-    query_template = "\nUNION ALL\n".join(region_subqueries + [_LEGACY_QUERY_TEMPLATE])
+    query_template = "\nUNION ALL\n".join(region_subqueries)
 
     return SimpleBigQueryViewBuilder(
         dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
@@ -86,9 +74,6 @@ def get_incarceration_population_person_level_view_builder() -> (
         should_deploy_predicate=None,
         clustering_fields=None,
         # Query format arguments
-        us_id_validation_dataset=dataset_config.validation_dataset_for_state(
-            StateCode.US_ID
-        ),
         **region_dataset_params,
     )
 
