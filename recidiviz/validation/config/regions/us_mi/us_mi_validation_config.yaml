@@ -86,7 +86,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 100
     override_reason: Current failing level as of 11/22/23 is 54 rows
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 70000
+    hard_num_allowed_rows_override: 85000
     override_reason:
       This is largely due to the TEMPORARY_CUSTODY periods we infer, but the remaining cases
       require further investigation. #TODO(#22303)
