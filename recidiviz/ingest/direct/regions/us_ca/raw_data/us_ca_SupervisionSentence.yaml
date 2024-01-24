@@ -6,7 +6,7 @@ data_classification: source
 primary_key_cols:
   - OffenderId
   - SupvLevelChangeDate
-  - SupervisionLevel
+  - SupervisionLevel #TODO(#27027): consider removing!
 columns:
   - name: OffenderId
     is_pii: True
