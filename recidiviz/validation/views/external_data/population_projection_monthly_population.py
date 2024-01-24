@@ -23,7 +23,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
 _QUERY_TEMPLATE = """
-SELECT * FROM `{project_id}.{us_id_validation_dataset}.population_projection_monthly_population_raw`
+SELECT * FROM `{project_id}.{us_ix_validation_dataset}.population_projection_monthly_population`
 """
 
 POPULATION_PROJECTION_MONTHLY_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -33,8 +33,8 @@ POPULATION_PROJECTION_MONTHLY_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     description="Contains external data for aggregate projected populations to "
     "validate against. See http://go/external-validations for instructions on adding "
     "new data.",
-    us_id_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ID
+    us_ix_validation_dataset=dataset_config.validation_dataset_for_state(
+        StateCode.US_IX
     ),
 )
 

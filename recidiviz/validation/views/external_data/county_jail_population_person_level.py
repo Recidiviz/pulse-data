@@ -26,15 +26,6 @@ _QUERY_TEMPLATE = """
 SELECT 
     region_code,
     person_external_id,
-    'US_ID_DOC' as external_id_type,
-    facility,
-    legal_status,
-    date_of_stay,
-FROM `{project_id}.{us_id_validation_dataset}.us_id_county_jail_09_2020_incarceration_population`
-UNION ALL
-SELECT 
-    region_code,
-    person_external_id,
     external_id_type,
     facility,
     legal_status,
@@ -50,9 +41,6 @@ COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description="Contains external data for person level county jail populations to "
     "validate against. See http://go/external-validations for instructions on adding "
     "new data.",
-    us_id_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ID
-    ),
     us_ix_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_IX
     ),

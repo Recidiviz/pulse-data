@@ -47,7 +47,6 @@ from recidiviz.ingest.direct.dataset_config import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.validation.views.dataset_config import (
-    validation_dataset_for_state,
     validation_oneoff_dataset_for_state,
 )
 
@@ -78,27 +77,13 @@ SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
 }
 SUPPLEMENTAL_DATASETS = set(SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS.keys())
 
-VALIDATION_DATASETS_TO_DESCRIPTIONS = {
-    validation_dataset_for_state(
-        state_code
-    ): f"Contains one-off validation data provided directly by {StateCode.get_state(state_code)}. "
-    "Once this state has been migrated to have version controlled validation views, the one-off "
-    f"data will be moved to {validation_oneoff_dataset_for_state(state_code)}."
-    for state_code in StateCode
-    if state_code
-    # TODO(#13312): Move all one off validation data for these states into `us_xx_validation_oneoffs`
-    # and have `us_xx_validation` only contain version controlled views pulling from oneoffs and raw data.
-    in (StateCode.US_ID,)
-}
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(
         state_code
     ): f"Contains one-off validation data provided directed by {StateCode.get_state(state_code)}."
     for state_code in StateCode
 }
-VALIDATION_DATASETS = set(VALIDATION_DATASETS_TO_DESCRIPTIONS.keys()).union(
-    set(VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS.keys())
-)
+VALIDATION_DATASETS = set(VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS.keys())
 
 NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
     **{
@@ -150,7 +135,6 @@ OTHER_SOURCE_TABLE_DATASETS = set(OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS.ke
 VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     **RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS,
     **SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS,
-    **VALIDATION_DATASETS_TO_DESCRIPTIONS,
     **VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS,
     **OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
     **NORMALIZED_DATASETS_TO_DESCRIPTIONS,
