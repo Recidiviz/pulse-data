@@ -127,10 +127,10 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
-                title_display_name="Absconsion & Bench Warrant Rate",
-                body_display_name="absconsion & bench warrant rate",
-                event_name="absconsions & bench warrants",
-                event_name_singular="absconsion/bench warrant",
+                title_display_name="Absconder Warrant Rate",
+                body_display_name="absconder warrant rate",
+                event_name="absconder warrants",
+                event_name_singular="absconder warrant",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
@@ -168,10 +168,10 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
-                title_display_name="Absconder Warrant Rate",
-                body_display_name="absconder warrant rate",
-                event_name="absconder warrants",
-                event_name_singular="absconder warrant",
+                title_display_name="Absconsion & Bench Warrant Rate",
+                body_display_name="absconsion & bench warrant rate",
+                event_name="absconsions & bench warrants",
+                event_name_singular="absconsion/bench warrant",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
