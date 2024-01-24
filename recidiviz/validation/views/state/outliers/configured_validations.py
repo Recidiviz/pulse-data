@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains configured data validations to perform on outliers related entities and views."""
-from typing import List
+from typing import Dict, List
 
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
+from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck
+from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
@@ -28,6 +30,9 @@ from recidiviz.validation.views.state.outliers.current_supervision_staff_missing
 from recidiviz.validation.views.state.outliers.current_supervision_staff_missing_email import (
     CURRENT_SUPERVISION_STAFF_MISSING_EMAIL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.outliers.outliers_staff_count_percent_change import (
+    OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.outliers.unidentified_supervision_districts_for_staff import (
     UNIDENTIFIED_SUPERVISION_DISTRICTS_FOR_STAFF_VIEW_BUILDER,
 )
@@ -36,7 +41,9 @@ from recidiviz.validation.views.state.outliers.unidentified_supervision_officer_
 )
 
 
-def get_all_outliers_validations() -> List[DataValidationCheck]:
+def get_all_outliers_validations(
+    region_configs: Dict[str, ValidationRegionConfig]
+) -> List[DataValidationCheck]:
     """Returns the full list of configured validations to perform on the
     outliers related entities and views.
     """
@@ -56,5 +63,11 @@ def get_all_outliers_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=UNIDENTIFIED_SUPERVISION_DISTRICTS_FOR_STAFF_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_VIEW_BUILDER,
+            comparison_columns=["last_export_staff_count", "current_staff_count"],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
     ]
