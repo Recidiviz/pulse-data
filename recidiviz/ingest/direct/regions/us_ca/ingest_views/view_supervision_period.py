@@ -70,7 +70,7 @@ merged_supervision_periods AS (
               -- period in the latter case.
               LEAD(out_date) OVER (
                   PARTITION BY OffenderId
-                  ORDER BY out_date
+                  ORDER BY out_date, ParoleEndDate
               ) - INTERVAL '1' DAY
           ELSE ParoleEndDate
       END AS inferred_parole_end_date
@@ -102,7 +102,6 @@ merged_supervision_periods AS (
         -- TODO(#21351) We're checking that the inferred_parole_end_date is null, but
         -- what happens if someone on parole leaves parole and then comes back?
         AND cpp.inferred_parole_end_date IS NULL 
-    ORDER BY cpp.OffenderId, parole_start_date ASC
   )
   SELECT 
     OffenderId,
@@ -148,14 +147,32 @@ offender_group_periods AS (
     LEAD(update_datetime) OVER (PARTITION BY OffenderId ORDER BY update_datetime ASC) AS og_end_date,
   FROM offender_group_transitions
 ),
-supervision_level_periods AS (
+supervision_level_changes AS (
   SELECT
     OffenderId,
     CAST(SupvLevelChangeDate AS DATETIME) AS SupvLevelChangeDate,
-    CAST(LEAD(SupvLevelChangeDate) OVER (PARTITION BY OffenderId ORDER BY SupvLevelChangeDate) AS DATETIME) AS sl_end_date,
     SupervisionLevel
-  FROM {SupervisionSentence}
-  ORDER BY OffenderId, SupvLevelChangeDate asc
+  -- TODO(#27027) consider changing the raw data config for SupervisionSentence to only contain
+  -- OffenderId and SupvLevelChangeDate as the PK. 
+  FROM (
+    SELECT
+      *,
+      ROW_NUMBER() OVER (
+        PARTITION BY OffenderId, SupvLevelChangeDate ORDER BY update_datetime DESC
+      ) AS rn
+    FROM {SupervisionSentence@ALL}
+  ) AS a
+  WHERE rn = 1
+),
+supervision_level_periods AS (
+  SELECT
+    OffenderId,
+    SupvLevelChangeDate,
+    LEAD(SupvLevelChangeDate) OVER (
+      PARTITION BY OffenderId ORDER BY SupvLevelChangeDate
+    ) AS sl_end_date,
+    SupervisionLevel
+  FROM supervision_level_changes
 ),
 transition_dates as (
   -- We only need the start dates here. og_end_dates are just lead(start_date), so there are no new values there.
