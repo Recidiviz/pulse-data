@@ -1325,6 +1325,115 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             self.assertEqual(response.json, expected_json)
 
     @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_events_by_officer",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_success_with_null_dates(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_events: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_pa", "101", can_access_all_supervisors=True
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            district="Guts",
+            caseload_type=None,
+            outlier_metrics=[
+                {
+                    "metric_id": "incarceration_starts_and_inferred",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            mock_get_supervisor.return_value = None
+            mock_get_events.return_value = (
+                session.query(SupervisionClientEvent)
+                .filter(
+                    SupervisionClientEvent.metric_id == TEST_METRIC_1.name,
+                    SupervisionClientEvent.client_id
+                    == "444",  # this client fixture null supervision/assignment dates
+                )
+                .all()
+            )
+
+            response = self.test_client.get(
+                "/outliers/US_PA/officer/hashhash/events?period_end_date=2023-05-01",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            mock_get_events.assert_called_with(
+                "hashhash",
+                ["incarceration_starts_and_inferred"],
+                datetime.strptime("2023-05-01", "%Y-%m-%d"),
+            )
+
+            expected_json = {
+                "events": [
+                    {
+                        "attributes": None,
+                        "clientId": "444",
+                        "clientName": {
+                            "givenNames": "Barbie",
+                            "middleNames": "Millicent",
+                            "surname": "Roberts",
+                        },
+                        "eventDate": None,
+                        "metricId": "incarceration_starts_and_inferred",
+                        "officerAssignmentDate": None,
+                        "officerAssignmentEndDate": None,
+                        "officerId": "03",
+                        "stateCode": "US_PA",
+                        "pseudonymizedClientId": "clienthash4",
+                        "supervisionEndDate": None,
+                        "supervisionStartDate": None,
+                        "supervisionType": "PROBATION",
+                    }
+                ]
+            }
+
+            mock_get_events.assert_called_with(
+                "hashhash",
+                [TEST_METRIC_1.name],
+                datetime.strptime("2023-05-01", "%Y-%m-%d"),
+            )
+            self.assertEqual(response.json, expected_json)
+
+    @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
     )
     @patch(
