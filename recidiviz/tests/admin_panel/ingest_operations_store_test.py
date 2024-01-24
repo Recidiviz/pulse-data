@@ -571,10 +571,6 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNone(status["latestUpdateDatetime"])
 
 
-@patch(
-    "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_states_existing_in_env",
-    mock.MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
-)
 class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
     """Tests for Redis caching behavior in the ingest admin panel store."""
 

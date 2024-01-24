@@ -75,7 +75,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -156,7 +155,7 @@ class IngestOperationsStore(AdminPanelStore):
             StateCode,
             Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
         ] = defaultdict(dict)
-        for state_code in get_direct_ingest_states_existing_in_env():
+        for state_code in get_direct_ingest_states_launched_in_env():
             # There is an edge case where if a state was newly added, it would not
             # appear in the cache results yet. We allow for this and just add a None
             # value for pipeline results until the cache is next hydrated.
