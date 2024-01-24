@@ -71,7 +71,7 @@ See the [[scripts] section of our Pipfile](https://github.com/Recidiviz/pulse-da
 1. Pull the Recidiviz base Docker image:
 
 ```bash
-docker pull us-central1-docker.pkg.dev/justice-counts-staging/recidiviz-base-images/recidiviz-base:latest
+docker build . -f Dockerfile.recidiviz-base -t us-central1-docker.pkg.dev/justice-counts-staging/recidiviz-base-images/recidiviz-base:latest --platform=linux/amd64 --build-arg DEV_MODE=True
 ```
 
 2. Build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally, which will take precedence over the frontend that is bundled in the docker image.)
@@ -118,24 +118,6 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 6. Run `yarn run dev`
 
 7. You should see the application running on `localhost:3000`!
-
-### Help! I'm seeing an error
-
-Try rebuilding our Docker image:
-
-```
-docker pull us-central1-docker.pkg.dev/justice-counts-staging/recidiviz-base-images/recidiviz-base:latest
-pipenv run docker-build-jc \
-  --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
-```
-
-If you're adding a new dependency, you'll also need to rebuild the base image locally:
-
-```
-docker build . -f Dockerfile.recidiviz-base -t us-central1-docker.pkg.dev/justice-counts-staging/recidiviz-base-images/recidiviz-base:latest --platform=linux/amd64
-pipenv run docker-build-jc \
-  --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
-```
 
 ## Databases
 
