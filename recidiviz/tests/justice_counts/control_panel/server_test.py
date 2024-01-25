@@ -882,7 +882,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             # TODO(#22143): Deprecate v1
             response_v1 = self.client.get(f"/api/agencies/{agency.id}/published_data")
             response_v2 = self.client.get(
-                "/api/v2/agencies/agency-prison/published_data"
+                "/api/v2/agencies/agency%20prison/published_data"
             )
 
         for response in [response_v1, response_v2]:
