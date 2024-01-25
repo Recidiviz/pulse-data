@@ -102,6 +102,3 @@ num_allowed_rows_overrides:
       TODO(#23965) Current failing level as of 11/10/23 is 38 rows. Likely the same root
       cause as incarceration_admission_after_open_period failure. Increase in failing
       rows after the custody level revision. Needs to be investigated.
-  - validation_name: unidentified_supervision_districts_for_staff
-    hard_num_allowed_rows_override: 2
-    override_reason: TODO(#23971) Known issue, will be resolved soon

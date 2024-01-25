@@ -33,11 +33,11 @@ from recidiviz.validation.views.state.outliers.current_supervision_staff_missing
 from recidiviz.validation.views.state.outliers.outliers_staff_count_percent_change import (
     OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.outliers.unidentified_supervision_districts_for_staff import (
-    UNIDENTIFIED_SUPERVISION_DISTRICTS_FOR_STAFF_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.outliers.unidentified_supervision_officer_supervisors import (
     UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.outliers.unmatched_supervision_districts_for_email_states import (
+    UNMATCHED_SUPERVISION_DISTRICTS_FOR_EMAIL_STATES_VIEW_BUILDER,
 )
 
 
@@ -61,7 +61,7 @@ def get_all_outliers_validations(
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=UNIDENTIFIED_SUPERVISION_DISTRICTS_FOR_STAFF_VIEW_BUILDER,
+            view_builder=UNMATCHED_SUPERVISION_DISTRICTS_FOR_EMAIL_STATES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
