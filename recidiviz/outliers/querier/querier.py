@@ -24,7 +24,7 @@ from typing import Dict, List, Optional, Tuple
 import attr
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func
-from sqlalchemy.dialects.postgresql import aggregate_order_by
+from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import Session, aliased, sessionmaker
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
@@ -59,6 +59,7 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
+    UserMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 
@@ -963,3 +964,30 @@ class OutliersQuerier:
             )
 
             return client
+
+    def get_user_metadata(self, pseudonymized_id: str) -> Optional[UserMetadata]:
+        """Returns the UserMetadata entity given the pseudonymized_id."""
+        with self.database_session() as session:
+            return (
+                session.query(UserMetadata)
+                .filter(UserMetadata.pseudonymized_id == pseudonymized_id)
+                .scalar()
+            )
+
+    def update_user_metadata(
+        self, pseudonymized_id: str, has_seen_onboarding: bool
+    ) -> None:
+        with self.database_session() as session:
+            upsert_stmt = (
+                insert(UserMetadata)
+                .values(
+                    pseudonymized_id=pseudonymized_id,
+                    has_seen_onboarding=has_seen_onboarding,
+                )
+                .on_conflict_do_update(
+                    index_elements=["pseudonymized_id"],
+                    set_={"has_seen_onboarding": has_seen_onboarding},
+                )
+            )
+            session.execute(upsert_stmt)
+            session.commit()
