@@ -91,6 +91,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 
     def test_us_pa_get_pre_commitment_supervision_type_default(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -115,6 +116,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 
     def test_us_pa_get_pre_commitment_supervision_type_temporary_custody(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -141,6 +143,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
     ) -> None:
         """Right now, all sanction admissions are assumed to be from parole."""
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_PA",
@@ -150,6 +153,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -175,6 +179,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 
     def test_us_pa_get_pre_commitment_supervision_type_erroneous(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -224,6 +229,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
     def test_get_commitment_from_supervision_details_pvc(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             case_type_entries=[
@@ -243,6 +249,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=222,
             external_id="ip2",
             state_code=STATE_CODE,

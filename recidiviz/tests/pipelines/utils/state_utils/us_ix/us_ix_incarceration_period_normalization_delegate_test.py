@@ -196,6 +196,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",
@@ -262,6 +263,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -319,6 +321,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -415,6 +418,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",
@@ -453,6 +457,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",
@@ -489,6 +494,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_us_ix_sanction_admission_shock_incarceration(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",
@@ -520,6 +526,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",
@@ -582,6 +589,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",
@@ -644,6 +652,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",
@@ -755,6 +764,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_IX",
             supervision_period_id=111,
             external_id="sp1",

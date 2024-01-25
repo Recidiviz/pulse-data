@@ -57,9 +57,10 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     update_forward_references_on_updated_entity,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateEntity,
-    get_base_entity_class,
     get_entity_class_names_excluded_from_normalization,
+)
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
 )
 
 NormalizedEntityKey = Tuple[Type[NormalizedStateEntity], int]
@@ -468,7 +469,7 @@ def bq_schema_for_normalized_state_entity(
             schema_field_for_attribute(field_name=field, attribute=attribute)
         )
 
-    base_class: Type[BuildableAttr] = get_base_entity_class(entity_cls)
+    base_class: Type[BuildableAttr] = entity_cls.get_base_entity_class()
     base_schema_class = schema_utils.get_state_database_entity_with_name(
         base_class.__name__
     )
@@ -522,9 +523,7 @@ def _get_fields_unique_to_normalized_class(
     yet in the cached _class_structure_reference.
     """
     normalized_class_fields_dict = attr.fields_dict(entity_cls)  # type: ignore[arg-type]
-    base_class: Type[BuildableAttr] = get_base_entity_class(entity_cls)
-    base_class_fields_dict = attr.fields_dict(base_class)  # type: ignore[arg-type]
-
+    base_class_fields_dict = attr.fields_dict(entity_cls.get_base_entity_class())  # type: ignore[arg-type]
     return set(normalized_class_fields_dict.keys()).difference(
         set(base_class_fields_dict.keys())
     )

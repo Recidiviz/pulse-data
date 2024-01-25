@@ -45,6 +45,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
 
         supervision_violation_response_1 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=0,
                 state_code=state_code,
                 supervision_violation_response_id=123,
                 external_id="svr1",
@@ -55,6 +56,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
 
         supervision_violation_response_2 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=0,
                 supervision_violation_response_id=234,
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -65,6 +67,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
 
         supervision_violation_response_3 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=0,
                 state_code=state_code,
                 supervision_violation_response_id=345,
                 external_id="svr3",
@@ -99,6 +102,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
 
         supervision_violation_response_1 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=0,
                 state_code=state_code,
                 supervision_violation_response_id=123,
                 external_id="svr1",
@@ -109,6 +113,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
 
         supervision_violation_response_2 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=1,
                 supervision_violation_response_id=234,
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -120,6 +125,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
         # This is after the critical_date
         supervision_violation_response_3 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=2,
                 state_code=state_code,
                 supervision_violation_response_id=345,
                 external_id="svr3",

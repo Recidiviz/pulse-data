@@ -54,6 +54,7 @@ class TestUsCoCommitmentFromSupervisionDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="10",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=0,
         )
 
         results = self.delegate.get_commitment_from_supervision_supervision_type(
@@ -68,6 +69,7 @@ class TestUsCoCommitmentFromSupervisionDelegate(unittest.TestCase):
         """Tests that incarceration periods beginning with something other than REVOCATION do not show up as coming from
         superivison type of PAROLE."""
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_CO",
             incarceration_period_id=111,
             external_id="ip1",

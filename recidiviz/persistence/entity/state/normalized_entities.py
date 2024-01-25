@@ -19,7 +19,6 @@ from typing import Any, Callable, Dict, List, Optional, Type
 
 import attr
 
-from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name, is_list
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -46,29 +45,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-
-
-def get_base_entity_class(
-    entity_cls: Type["NormalizedStateEntity"],
-) -> type[BuildableAttr]:
-    """For the given NormalizeStateEntity, returns the base Entity class for this class.
-    For example: for NormalizedStatePerson, returns `StatePerson`."""
-    base_class = entity_cls.__base__
-
-    if not base_class or not issubclass(base_class, BuildableAttr):
-        raise ValueError(f"Cannot find base class for entity {entity_cls}")
-
-    return base_class
-
-
-class NormalizedStateEntity(BuildableAttr):
-    """Models an entity in state/entities.py that has been normalized and is prepared
-    to be used in calculations."""
-
-    @classmethod
-    def base_class_name(cls) -> str:
-        """The name of the base state entity that this normalized entity extends."""
-        return get_base_entity_class(cls).__name__
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
+from recidiviz.persistence.entity.state.state_entity_mixins import SequencedEntityMixin
 
 
 def is_normalized_entity_validator(
@@ -160,13 +140,6 @@ def add_normalized_entity_validator_to_ref_fields(
             updated_fields.append(field)
 
     return updated_fields
-
-
-@attr.s
-class SequencedEntityMixin:
-    """Set of attributes for a normalized entity that can be ordered in a sequence."""
-
-    sequence_num: int = attr.ib()
 
 
 # StateAssessment subtree

@@ -128,6 +128,7 @@ class TestFindPopulationSpans(unittest.TestCase):
 
     def test_find_incarceration_spans(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -331,6 +332,7 @@ class TestFindPopulationSpans(unittest.TestCase):
 
     def test_find_both_types_of_spans(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -385,6 +387,7 @@ class TestFindPopulationSpans(unittest.TestCase):
 
     def test_find_both_types_of_spans_with_overlaps(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -453,6 +456,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         self,
     ) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=_DEFAULT_IP_ID,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

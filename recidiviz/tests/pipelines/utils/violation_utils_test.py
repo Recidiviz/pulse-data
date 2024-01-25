@@ -881,6 +881,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -946,6 +947,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         # This is outside of the lookback window
         supervision_violation_response_before_look_back = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=0,
                 supervision_violation_response_id=_DEFAULT_SSVR_ID,
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -955,6 +957,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr2",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1027,6 +1030,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1089,6 +1093,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1145,6 +1150,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1203,6 +1209,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1287,6 +1294,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1307,6 +1315,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response_2 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=0,
                 supervision_violation_response_id=1234567,
                 external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1318,6 +1327,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response_3 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
+                sequence_num=0,
                 supervision_violation_response_id=1234567,
                 external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
@@ -1359,6 +1369,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
     def test_get_violation_and_response_history_no_violations(self):
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -1423,6 +1434,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             external_id="svr1",
@@ -1487,6 +1499,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            sequence_num=0,
             state_code="US_MO",
             external_id="svr1",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,

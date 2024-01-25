@@ -135,6 +135,7 @@ from recidiviz.persistence.entity.base_entity import (
     RootEntity,
     UniqueConstraint,
 )
+from recidiviz.persistence.entity.state import entity_field_validators
 
 # **** Entity Types for convenience *****:
 PeriodType = TypeVar(
@@ -2563,7 +2564,9 @@ class StateSentenceStatusSnapshot(LedgerEntity, BuildableAttr, DefaultableAttr, 
     )
     # The status of a sentence
     status: StateSentenceStatus = attr.ib(
-        validator=attr.validators.instance_of(StateSentenceStatus)
+        validator=entity_field_validators.pre_norm_opt(
+            attr.validators.instance_of(StateSentenceStatus)
+        )
     )
 
     # The raw text value of the status of the sentence

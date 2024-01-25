@@ -388,6 +388,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
 
     def test_one_period_start_end_middle_of_months(self):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=444,
             external_id="ip4",
             state_code="US_XX",
@@ -416,6 +417,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
 
     def test_one_period_start_end_exactly_on_month(self):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=444,
             external_id="ip4",
             state_code="US_XX",
@@ -441,6 +443,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
     @freeze_time("2008-04-01")
     def test_period_no_termination(self):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=444,
             external_id="ip4",
             state_code="US_XX",
@@ -513,6 +516,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
 
     def test_period_starts_ends_same_month(self):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=444,
             external_id="ip4",
             state_code="US_XX",
@@ -1110,6 +1114,7 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
         self,
     ):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=444,
             external_id="ip4",
             state_code="US_XX",
@@ -1666,6 +1671,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         )
 
         incarceration_period_3 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             incarceration_period_id=333,
             external_id="ip3",

@@ -115,6 +115,7 @@ class TestFindProgramEvents(unittest.TestCase):
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             external_id="pa1",
             program_id="PG3",
@@ -135,6 +136,7 @@ class TestFindProgramEvents(unittest.TestCase):
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=999,
             external_id="sp1",
             state_code="US_XX",
@@ -208,6 +210,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_XX",
@@ -257,6 +260,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_XX",

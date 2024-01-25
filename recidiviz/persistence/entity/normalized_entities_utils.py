@@ -28,7 +28,7 @@ from recidiviz.common.attr_mixins import BuildableAttrFieldType
 from recidiviz.common.constants.states import MAX_FIPS_CODE, StateCode
 
 # All entity classes that have Normalized versions
-from recidiviz.persistence.entity.base_entity import Entity, EntityT
+from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, EntityT
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.generate_primary_key import generate_primary_key
 from recidiviz.persistence.entity.serialization import serialize_entity_into_json
@@ -36,7 +36,6 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateCharge,
     NormalizedStateEarlyDischarge,
-    NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateIncarcerationSentence,
     NormalizedStateProgramAssignment,
@@ -50,7 +49,13 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
+)
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
+from recidiviz.persistence.entity.state.state_entity_mixins import (
     SequencedEntityMixin,
+    SequencedEntityMixinT,
 )
 from recidiviz.utils import environment
 
@@ -74,7 +79,6 @@ NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
 ]
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)
-SequencedEntityMixinT = TypeVar("SequencedEntityMixinT", bound=SequencedEntityMixin)
 AdditionalAttributesMap = Dict[
     str,  # Entity class name, e.g. "StateSupervisionPeriod"
     Dict[
@@ -398,8 +402,19 @@ def sort_normalized_entities_by_sequence_num(
     sequenced_entities: List[SequencedEntityMixinT],
 ) -> List[SequencedEntityMixinT]:
     """Returns the list of |sequenced_entities| sorted by sequence_num."""
-    sorted_entities = sorted(sequenced_entities, key=lambda key: key.sequence_num)
-    return sorted_entities
+
+    def get_sequence_num(entity: SequencedEntityMixinT) -> int:
+        if entity.sequence_num is not None:
+            return entity.sequence_num
+        if not isinstance(entity, CoreEntity):
+            raise ValueError(
+                f"Class {entity.__class__} is not a CoreEntity! Cannot show limited_pii_repr."
+            )
+        raise ValueError(
+            f"Class {entity.__class__} must have a sequence_num. Info: {entity.limited_pii_repr()}"
+        )
+
+    return sorted(sequenced_entities, key=get_sequence_num)
 
 
 def update_forward_references_on_updated_entity(

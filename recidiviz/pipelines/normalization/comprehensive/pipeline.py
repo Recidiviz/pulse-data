@@ -57,7 +57,9 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 )
 from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
     ComprehensiveEntityNormalizer,

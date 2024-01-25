@@ -134,6 +134,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
     def test_get_commitment_from_supervision_details(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             state_code="US_XX",
@@ -145,6 +146,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -286,6 +288,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             admission_date=date(2018, 8, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            sequence_num=0,
         )
 
         ip_index = default_normalized_ip_index_for_tests(
@@ -325,6 +328,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
+            sequence_num=0,
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -335,6 +339,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             admission_reason_raw_text="INT",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=0,
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
@@ -368,6 +373,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
             supervising_officer_staff_id=12345,
+            sequence_num=0,
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -377,6 +383,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=0,
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
@@ -403,6 +410,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         self,
     ) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=111,
             external_id="ip1",
             state_code="US_XX",
@@ -434,6 +442,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         state_code = "US_PA"
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
             case_type_entries=[
@@ -453,6 +462,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=222,
             external_id="ip2",
             state_code=state_code,
@@ -506,6 +516,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         when a person is transferred to a new supervision period on the date of an
         admission to incarceration."""
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             incarceration_period_id=111,
             external_id="ip1",
@@ -568,6 +579,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="DISTRICT 999",
             supervising_officer_staff_id=12345,
+            sequence_num=0,
         )
 
         bh_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -637,6 +649,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
 
     def test_period_is_commitment_from_parole_board_hold(self) -> None:
         ip_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             external_id="1",
             incarceration_period_id=1111,
             state_code="US_XX",
@@ -648,6 +661,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         )
 
         ip_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             external_id="1",
             incarceration_period_id=1111,
             state_code="US_XX",
@@ -665,6 +679,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
 
     def test_period_is_commitment_from_parole_board_hold_not_adjacent(self) -> None:
         ip_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             external_id="1",
             incarceration_period_id=1111,
             state_code="US_XX",
@@ -676,6 +691,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         )
 
         ip_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             external_id="1",
             incarceration_period_id=1111,
             state_code="US_XX",

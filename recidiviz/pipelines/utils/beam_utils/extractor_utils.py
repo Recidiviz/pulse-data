@@ -46,7 +46,9 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     state_base_entity_class_for_entity_class,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
     ConvertDictToKVTuple,
     ReadFromBigQuery,

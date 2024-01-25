@@ -477,6 +477,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         does not have any StateIncarcerationPeriods after their first."""
         only_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
+                sequence_num=0,
                 incarceration_period_id=1111,
                 external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -512,6 +513,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
          StateIncarcerationPeriod."""
         only_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
+                sequence_num=0,
                 incarceration_period_id=1111,
                 external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -611,6 +613,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         does not have any StateIncarcerationPeriods after their first, and they
         were released conditionally."""
         only_incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1132,6 +1135,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         release_date = date(2000, 1, 31)
         next_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
+                sequence_num=0,
                 incarceration_period_id=1111,
                 external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1182,6 +1186,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
     def test_find_valid_reincarceration_period(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1193,6 +1198,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         )
 
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=2222,
             external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1216,6 +1222,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
     def test_find_valid_reincarceration_period_overlapping_periods(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1227,6 +1234,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         )
 
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=2222,
             external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1251,6 +1259,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
     def test_find_valid_reincarceration_period_invalid_admission_reason(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1263,6 +1272,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         for admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
             incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+                sequence_num=0,
                 incarceration_period_id=2222,
                 external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1289,6 +1299,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
     ) -> None:
         release_date = date(2009, 4, 21)
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1301,6 +1312,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+                sequence_num=0,
                 incarceration_period_id=2222,
                 external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
