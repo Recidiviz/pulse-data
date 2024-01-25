@@ -105,8 +105,3 @@ num_allowed_rows_overrides:
     override_reason:
       This validation is failing due to the way task eligibility spans are structured for MI.
       Bumping threshold for now until it's determined whether this is an issue or not.  See #25100
-  - validation_name: unidentified_supervision_districts_for_staff
-    hard_num_allowed_rows_override: 1
-    override_reason:
-      This validation is currently failing for 3 staff members, and it's not required to pass for the web tool.
-      This validation is also about to be reworked, so not a ton of point in investigating this right now. TODO(#26275)
