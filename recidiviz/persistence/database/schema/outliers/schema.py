@@ -31,6 +31,9 @@ from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
+# Key to pass to __table_args__["info"] to keep the table up-to-date with alembic migrations.
+RUN_MIGRATIONS = "run_migrations"
+
 # Defines the base class for all table classes in the Outliers schema.
 OutliersBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="OutliersBase"
@@ -245,6 +248,9 @@ class Configuration(OutliersBase):
     """Table containing Outliers information that is configured by Recidiviz users via the admin panel"""
 
     __tablename__ = "configurations"
+    # Other tables are deleted/recreated at import time, but this table needs to be kept up to date
+    # via alembic migrations.
+    __table_args__ = {"info": {RUN_MIGRATIONS: True}}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     updated_by = Column(String, nullable=False)
