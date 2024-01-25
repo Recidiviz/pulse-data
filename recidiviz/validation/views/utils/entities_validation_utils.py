@@ -24,7 +24,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,
 )

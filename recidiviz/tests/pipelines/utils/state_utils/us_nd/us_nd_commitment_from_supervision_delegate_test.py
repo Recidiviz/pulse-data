@@ -65,6 +65,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         supervision_periods: List[NormalizedStateSupervisionPeriod],
     ) -> Optional[StateSupervisionPeriod]:
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_ND",
             incarceration_period_id=111,
             external_id="ip1",
@@ -648,6 +649,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 
     def test_us_nd_get_pre_commitment_supervision_type_default(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -675,6 +677,7 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         self,
     ) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             incarceration_period_id=1112,
             external_id="2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,

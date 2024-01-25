@@ -52,13 +52,15 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateProgramAssignment,
     NormalizedStateStaffRolePeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
+)
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
 )
 from recidiviz.pipelines.normalization.comprehensive import entity_normalizer, pipeline
 from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (

@@ -130,6 +130,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -180,6 +181,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -230,6 +232,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=None,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -280,6 +283,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 6, 10),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -332,6 +336,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=None,
             supervision_level=StateSupervisionLevel.IN_CUSTODY,
+            sequence_num=0,
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
@@ -370,6 +375,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 4, 20),
             supervision_level=StateSupervisionLevel.IN_CUSTODY,
+            sequence_num=0,
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
@@ -653,6 +659,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2017, 3, 5),
             termination_date=None,
             supervision_level=StateSupervisionLevel.IN_CUSTODY,
+            sequence_num=0,
         )
 
         new_period = StateIncarcerationPeriod.new_with_defaults(

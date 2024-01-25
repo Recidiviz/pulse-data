@@ -42,7 +42,9 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,

@@ -163,6 +163,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
         assessments = [
             assessment_out_of_range,
@@ -257,6 +258,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
 
         contacts = [
@@ -306,6 +308,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
     ) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -358,6 +361,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -411,6 +415,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -464,6 +469,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -749,6 +755,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
             supervision_level_raw_text=supervision_level_raw_text,
+            sequence_num=0,
         )
 
         supervision_contacts = [
@@ -796,6 +803,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         supervision_contacts: List[StateSupervisionContact] = []
@@ -838,6 +846,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="LEVEL 2",
+            sequence_num=0,
         )
 
         supervision_contacts: List[StateSupervisionContact] = []
@@ -980,6 +989,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
             supervision_level_raw_text=supervision_level_raw_text,
+            sequence_num=0,
         )
 
         supervision_contacts = [
@@ -1073,6 +1083,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         supervision_contacts = [
@@ -1122,6 +1133,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         evaluation_date = date(2018, 5, 1)
@@ -1160,6 +1172,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         evaluation_date = date(2018, 5, 1)
@@ -1198,6 +1211,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         evaluation_date = date(2019, 5, 1)
@@ -1281,6 +1295,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         supervision_contacts = [
@@ -1330,6 +1345,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         evaluation_date = date(2018, 5, 1)
@@ -1368,6 +1384,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="MODERATE",
+            sequence_num=0,
         )
 
         evaluation_date = date(2018, 5, 1)
@@ -1404,6 +1421,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
+            sequence_num=0,
         )
         us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             self.person,
@@ -1443,6 +1461,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="LEVEL 2",
+            sequence_num=0,
         )
 
         us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
@@ -1476,6 +1495,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=None,
+            sequence_num=0,
         )
 
         us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
@@ -1512,6 +1532,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
+            sequence_num=0,
         )
 
         us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
@@ -1546,6 +1567,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
+            sequence_num=0,
         )
 
         case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
@@ -1580,6 +1602,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="SO MODERATE",
+            sequence_num=0,
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1616,6 +1639,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="SO MAXIMUM",  # Fake string, not actually possible to have max sex offense.
+            sequence_num=0,
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1643,6 +1667,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     ) -> None:
         start_date = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1679,6 +1704,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     def test_guidelines_applicable_for_case_invalid_bench_warrant(self) -> None:
         start_date = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_IX",
@@ -1723,6 +1749,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="LEVEL 2",
+            sequence_num=0,
         )
 
         us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
@@ -1763,6 +1790,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     def test_next_recommended_reassessment_general_minimum(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_IX.value,
@@ -1777,6 +1805,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2018, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment.new_with_defaults(
+            sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1805,6 +1834,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     def test_next_recommended_reassessment_sex_offense_with_score(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_IX.value,
@@ -1819,6 +1849,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2018, 4, 2)
         assessment_score = 34
         assessment = NormalizedStateAssessment.new_with_defaults(
+            sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1847,6 +1878,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     def test_reassessment_requirements_are_not_met(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_IX.value,
@@ -1860,6 +1892,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2010, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment.new_with_defaults(
+            sequence_num=0,
             state_code=StateCode.US_ID.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1900,6 +1933,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         self.person.gender = gender
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_IX.value,
@@ -1913,6 +1947,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2010, 4, 2)
         assessment_boundary_score = SEX_OFFENSE_LSIR_MINIMUM_SCORE[gender]
         assessment_boundary = NormalizedStateAssessment.new_with_defaults(
+            sequence_num=0,
             state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
@@ -1942,6 +1977,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         self.assertEqual(boundary_deadline, date(2011, 4, 2))
 
         assessment_under_boundary = NormalizedStateAssessment.new_with_defaults(
+            sequence_num=0,
             state_code=StateCode.US_IX.value,
             external_id="a2",
             assessment_type=StateAssessmentType.LSIR,
@@ -1996,6 +2032,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
+            sequence_num=0,
         )
 
     def _assessment_with_score(self, score: int) -> NormalizedStateAssessment:
@@ -2230,6 +2267,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_date=supervision_start - timedelta(days=14),
                     assessment_score=1,
+                    sequence_num=0,
                 )
             ],
             supervision_contacts=[],

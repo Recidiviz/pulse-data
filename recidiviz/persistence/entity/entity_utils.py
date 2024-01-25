@@ -60,7 +60,9 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
+from recidiviz.persistence.entity.state.normalized_state_entity import (
+    NormalizedStateEntity,
+)
 from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.types import non_optional

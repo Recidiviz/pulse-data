@@ -216,12 +216,14 @@ class TestViolationAndResponseHistory(unittest.TestCase):
                 external_id="svr1",
                 response_date=date(2019, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
+                sequence_num=0,
             ),
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
+                sequence_num=0,
                 supervision_violation_response_decisions=[
                     NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                         state_code="US_TN",
@@ -235,6 +237,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
+                sequence_num=0,
                 supervision_violation_response_decisions=[
                     NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                         state_code="US_TN",
@@ -247,6 +250,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
                 state_code=_STATE_CODE,
                 external_id="svr4",
                 response_date=date(2021, 1, 30),
+                sequence_num=0,
                 response_type=StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,  # Should not be included
             ),
         ]
@@ -256,6 +260,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
             external_id="ip1",
             admission_date=date(2021, 3, 1),
             incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
+            sequence_num=0,
         )
 
         filtered_and_sorted_responses = (
@@ -309,6 +314,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
             external_id="ip1",
             admission_date=date(2021, 3, 1),
             incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
+            sequence_num=0,
         )
 
         violation_history_window = (
@@ -377,12 +383,14 @@ class TestViolationAndResponseHistory(unittest.TestCase):
                 external_id="svr1",
                 response_date=date(2019, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
+                sequence_num=0,
             ),
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,  # Should be included
+                sequence_num=0,
                 supervision_violation_response_decisions=[
                     NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                         state_code="US_TN",
@@ -396,6 +404,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
                 external_id="svr3",
                 response_date=date(2021, 1, 20),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should be included
+                sequence_num=0,
                 supervision_violation_response_decisions=[
                     NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                         state_code="US_TN",
@@ -409,6 +418,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
                 external_id="svr4",
                 response_date=date(2021, 1, 30),
                 response_type=StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,  # Should not be included
+                sequence_num=0,
             ),
         ]
 
@@ -417,6 +427,7 @@ class TestViolationAndResponseHistory(unittest.TestCase):
             external_id="ip1",
             admission_date=date(2021, 3, 1),
             incarceration_admission_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            sequence_num=0,
         )
 
         filtered_and_sorted_responses = (

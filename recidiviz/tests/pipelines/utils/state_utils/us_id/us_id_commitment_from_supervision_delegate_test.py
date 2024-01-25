@@ -56,6 +56,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         supervision_periods: List[NormalizedStateSupervisionPeriod],
     ) -> Optional[NormalizedStateSupervisionPeriod]:
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_ID",
             incarceration_period_id=111,
             external_id="ip1",

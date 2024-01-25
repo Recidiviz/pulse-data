@@ -332,6 +332,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             response_date=date(2021, 1, 4),
             is_draft=False,
             supervision_violation_response_decisions=[violation_decision],
+            sequence_num=0,
         )
         violation = (
             normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(

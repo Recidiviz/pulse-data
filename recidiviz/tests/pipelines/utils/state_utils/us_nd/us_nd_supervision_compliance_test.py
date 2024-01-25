@@ -129,6 +129,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
 
         assessments = [
@@ -223,6 +224,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
         )
 
         contacts = [
@@ -277,6 +279,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
             supervision_level_raw_text="5",
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -311,6 +314,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERSTATE_COMPACT,
             supervision_level_raw_text="9",
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -345,6 +349,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.DIVERSION,
             supervision_level_raw_text="7",
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -379,6 +384,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="2",
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -414,6 +420,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -448,6 +455,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -496,6 +504,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
+            sequence_num=0,
         )
 
         supervision_contacts = [
@@ -527,6 +536,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         """Tests for when the face to face contacts is sufficient."""
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
@@ -572,6 +582,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         """Tests for when the only face to face contacts is occurs prior to start of supervision."""
         start_of_supervision = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
@@ -622,6 +633,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         """Tests when the only face to face contact is attempted, but not completed."""
         start_of_supervision = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
@@ -672,6 +684,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         """Tests when the only contact is not a valid type for face to face."""
         start_of_supervision = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
@@ -721,6 +734,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         """Tests when the only contact is not a valid type for face to face."""
         start_of_supervision = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
@@ -878,6 +892,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     def test_next_recommended_reassessment(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
@@ -896,6 +911,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_score,
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -919,6 +935,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     def test_reassessment_requirements_are_not_met(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
@@ -937,6 +954,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_score,
+            sequence_num=0,
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -985,6 +1003,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            sequence_num=0,
         )
 
         supervision_contacts = [
@@ -1035,6 +1054,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            sequence_num=0,
         )
 
         supervision_contacts: List[StateSupervisionContact] = []
@@ -1078,6 +1098,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            sequence_num=0,
         )
 
         supervision_contacts = [
@@ -1131,6 +1152,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            sequence_num=0,
         )
 
         supervision_contacts: List[StateSupervisionContact] = []
@@ -1189,6 +1211,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
+            sequence_num=0,
         )
 
         supervision_contacts = [contact_1, contact_2]
@@ -1239,6 +1262,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
+            sequence_num=0,
         )
 
         supervision_contacts = [contact_1]

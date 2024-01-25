@@ -673,6 +673,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
     def test_get_most_recent_previous_supervision_period_single_period_in_list(self):
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
             state_code="US_XX",
             supervision_period_id=111,
             external_id="sp1",

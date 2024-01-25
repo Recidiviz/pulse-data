@@ -120,6 +120,7 @@ class TestFindViolationEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -187,6 +188,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[self.violation_decision],
+                sequence_num=0,
             )
         )
         self.violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -304,6 +306,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -375,6 +378,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision_non_perm],
+                sequence_num=0,
             )
         )
         violation_decision_perm = (
@@ -391,6 +395,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 5),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision_perm],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -458,6 +463,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision_non_draft],
+                sequence_num=0,
             )
         )
         violation_decision_draft = (
@@ -474,6 +480,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 3),
                 is_draft=True,
                 supervision_violation_response_decisions=[violation_decision_draft],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -543,6 +550,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision_1],
+                sequence_num=0,
             )
         )
         violation_decision_2 = (
@@ -559,6 +567,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 5),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision_2],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -628,6 +637,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
+                sequence_num=0,
                 supervision_violation_response_decisions=[
                     violation_decision_1,
                     violation_decision_2,
@@ -706,6 +716,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -805,6 +816,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -900,6 +912,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -971,6 +984,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -1094,6 +1108,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 response_date=date(2021, 1, 4),
                 is_draft=False,
                 supervision_violation_response_decisions=[violation_decision],
+                sequence_num=0,
             )
         )
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
