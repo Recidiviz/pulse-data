@@ -36,7 +36,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 150
     override_reason: Edge cases in TN data where there are two OffenderMovements of Departures on the same day, causing two periods to be generated. Error is increasing over time and should be addressed in some way to better handle zero-day periods. Error is 47 as of 5/18/22. Error is 62 as of 3/17/23. Error is 105 as of 7/11/23.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 75000
+    hard_num_allowed_rows_override: 80000
     override_reason: In TN, there can be concurrent periods for the same offender under different supervision types. We expect this number to by high and grow gradually, but will keep an eye on it for any abnormal spikes.
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 300
