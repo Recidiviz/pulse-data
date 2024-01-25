@@ -395,7 +395,7 @@ def sentence_attributes() -> str:
         str: SQL query as a string.
     """
 
-    return """
+    return f"""
     SELECT DISTINCT
         state_code,
         person_id,
@@ -407,15 +407,6 @@ def sentence_attributes() -> str:
         statute,
         max_sentence_length_days_calculated,
         effective_date AS start_date,
-        /* TODO(#26460): use projected_completion_date_max (once that field is hydrated)
-        for simplicity, rather than calculating completion dates here. */
-        CASE
-            WHEN completion_date IS NOT NULL THEN completion_date
-            /* The below condition safeguards against date overflow issues, which can
-            occur when a) dates for effective_date are far into the future and/or b)
-            values for max_sentence_length_days_calculated are extremely large. */
-            WHEN max_sentence_length_days_calculated > DATE_DIFF('9999-12-31', effective_date, DAY) THEN '9999-12-31'
-            ELSE DATE_ADD(effective_date, INTERVAL max_sentence_length_days_calculated DAY)
-        END AS end_date,
-    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized`
+        IFNULL(completion_date, {nonnull_end_date_clause('projected_completion_date_max')}) AS end_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
     """
