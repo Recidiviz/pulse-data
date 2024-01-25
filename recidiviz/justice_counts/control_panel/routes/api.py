@@ -20,6 +20,7 @@ import logging
 import os
 import re
 import tempfile
+import urllib.parse
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Set
@@ -1929,8 +1930,8 @@ def get_api_blueprint(
         # - It takes as input an agency slug, rather than id
         # - It has some performance improvements
         try:
-            # agency slug will be like "washington-department-of-corrections"
-            agency_name = agency_slug.replace("-", " ")
+            # Agency slug will be encoded (e.g "Washington%20Department%20of%20Corrections")
+            agency_name = urllib.parse.unquote(agency_slug)
             agency = AgencyInterface.get_agency_by_name(
                 session=current_session, name=agency_name, with_settings=True
             )
