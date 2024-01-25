@@ -33,13 +33,13 @@ from recidiviz.outliers.constants import (
 )
 from recidiviz.outliers.types import (
     MetricOutcome,
+    OutliersBackendConfig,
     OutliersClientEventConfig,
-    OutliersConfig,
     OutliersMetricConfig,
 )
 
-OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
-    StateCode.US_IX: OutliersConfig(
+OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
+    StateCode.US_IX: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS,
@@ -84,7 +84,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         learn_more_url="https://drive.google.com/file/d/1nMRMNGRFMzk_e7zAcCvuKvMP9YBOeesU/view",
         supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER')",
     ),
-    StateCode.US_PA: OutliersConfig(
+    StateCode.US_PA: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_AND_INFERRED,
@@ -116,7 +116,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         learn_more_url="https://drive.google.com/file/d/1NvTuKhN-N1-ba1KMI562_z9ka932JqXQ/view",
         supervision_staff_exclusions="COALESCE(supervision_district_id, supervision_district_id_inferred, '') NOT IN ('FAST', 'CO')",
     ),
-    StateCode.US_MI: OutliersConfig(
+    StateCode.US_MI: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_AND_INFERRED,
@@ -157,7 +157,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         supervision_district_manager_label="region manager",
         supervision_district_label="region",
     ),
-    StateCode.US_TN: OutliersConfig(
+    StateCode.US_TN: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS,

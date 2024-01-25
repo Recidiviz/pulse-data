@@ -63,7 +63,7 @@ from recidiviz.outliers.types import (
     MetricOutcome,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
-    OutliersConfig,
+    OutliersBackendConfig,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
@@ -178,7 +178,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         return self.recipient_data["report"]
 
     @property
-    def _config(self) -> OutliersConfig:
+    def _config(self) -> OutliersBackendConfig:
         return self.recipient_data["config"]
 
     def _prepare_metric(self, metric_info: OutlierMetricInfo) -> dict:
@@ -361,7 +361,7 @@ if __name__ == "__main__":
         test_report_date = datetime.datetime.now()
         test_state_code = StateCode.US_OZ
 
-        test_config = OutliersConfig(
+        test_config = OutliersBackendConfig(
             metrics=[
                 metric_fixtures[INCARCERATION_STARTS],
                 metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],

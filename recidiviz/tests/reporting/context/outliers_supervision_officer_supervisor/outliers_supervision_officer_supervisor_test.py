@@ -28,7 +28,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
 )
 from recidiviz.outliers.querier.querier import OfficerSupervisorReportData
-from recidiviz.outliers.types import OutliersConfig, TargetStatusStrategy
+from recidiviz.outliers.types import OutliersBackendConfig, TargetStatusStrategy
 from recidiviz.reporting.asset_generation.types import AssetResponseBase
 from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context import (
@@ -61,7 +61,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             batch_id="20230614123033",
             report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
-        self.config = OutliersConfig(
+        self.config = OutliersBackendConfig(
             metrics=[
                 metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
                 metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],

@@ -37,8 +37,8 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
+    OutliersBackendConfig,
     OutliersClientEventConfig,
-    OutliersConfig,
     OutliersMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
@@ -167,7 +167,7 @@ class TestOutliersQuerier(TestCase):
     def test_get_officer_level_report_data_by_supervisor(
         self, mock_config: MagicMock
     ) -> None:
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_1, TEST_METRIC_2],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
