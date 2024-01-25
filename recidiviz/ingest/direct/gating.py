@@ -25,24 +25,7 @@ def is_ingest_in_dataflow_enabled(
     state_code: StateCode,
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
-    all_projects_enabled_states = [
-        StateCode.US_AZ,
-        StateCode.US_IA,
-        StateCode.US_ID,
-        StateCode.US_NC,
-        StateCode.US_AR,
-        StateCode.US_OR,
-        StateCode.US_CO,
-        StateCode.US_MO,
-        StateCode.US_ME,
-    ]
-    if state_code in all_projects_enabled_states:
-        return True
-    if environment.in_gcp_production():
-        return False
-
-    staging_enabled_states = [
-        StateCode.US_OZ,
+    staging_only_states = [
         StateCode.US_CA,
         StateCode.US_IX,
         StateCode.US_MI,
@@ -50,4 +33,6 @@ def is_ingest_in_dataflow_enabled(
         StateCode.US_ND,
         StateCode.US_TN,
     ]
-    return state_code in staging_enabled_states
+    if state_code not in staging_only_states:
+        return True
+    return not environment.in_gcp_production()

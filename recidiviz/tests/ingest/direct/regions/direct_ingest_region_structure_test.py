@@ -541,6 +541,9 @@ class DirectIngestRegionDirStructure(
                         ingest_instance=DirectIngestInstance.PRIMARY,
                         allow_unlaunched=False,
                         region_module_override=None,
+                        enabled_in_dataflow=is_ingest_in_dataflow_enabled(
+                            StateCode(region_code.upper()), DirectIngestInstance.PRIMARY
+                        ),
                     )
 
 
