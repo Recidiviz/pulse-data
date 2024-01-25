@@ -167,8 +167,11 @@ class OutliersClientEventConfig:
 
 
 @attr.s
-class OutliersConfig:
-    """Information for a state's Outliers configuration represented as structured data."""
+class OutliersBackendConfig:
+    """
+    Information for a state's Outliers configuration represented as structured data.
+    TODO(#27075): Remove copy-related fields once they are being read from the OutliersConfig database entity
+    """
 
     # List of metrics that are relevant for this state,
     # where each element corresponds to a column name in an aggregated_metrics views
@@ -215,12 +218,12 @@ class OutliersConfig:
 
         # Omit the exclusions since they are only for internal (backend) use.
         unst_hook = make_dict_unstructure_fn(
-            OutliersConfig,
+            OutliersBackendConfig,
             c,
             supervision_staff_exclusions=override(omit=True),
             supervision_officer_metric_exclusions=override(omit=True),
         )
-        c.register_unstructure_hook(OutliersConfig, unst_hook)
+        c.register_unstructure_hook(OutliersBackendConfig, unst_hook)
         return c.unstructure(self)
 
 

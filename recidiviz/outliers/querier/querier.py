@@ -40,7 +40,7 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
-    OutliersConfig,
+    OutliersBackendConfig,
     OutliersMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
@@ -364,7 +364,7 @@ class OutliersQuerier:
 
         return metric_benchmark.target, target_status_strategy
 
-    def get_outliers_config(self) -> OutliersConfig:
+    def get_outliers_config(self) -> OutliersBackendConfig:
         return OUTLIERS_CONFIGS_BY_STATE[self.state_code]
 
     def get_supervision_officer_supervisor_entities(

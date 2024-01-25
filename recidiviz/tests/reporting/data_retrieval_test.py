@@ -24,7 +24,7 @@ import pytest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.outliers.constants import INCARCERATION_STARTS_TECHNICAL_VIOLATION
-from recidiviz.outliers.types import OfficerSupervisorReportData, OutliersConfig
+from recidiviz.outliers.types import OfficerSupervisorReportData, OutliersBackendConfig
 from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
     metric_fixtures,
@@ -79,8 +79,8 @@ class OutliersSupervisionOfficerSupervisorDataRetrievalTest(OutliersDataRetrieva
     """Class for tests specific to OutliersSupervisionOfficerSupervisor report type"""
 
     @property
-    def config(self) -> OutliersConfig:
-        return OutliersConfig(
+    def config(self) -> OutliersBackendConfig:
+        return OutliersBackendConfig(
             metrics=[
                 metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
             ],

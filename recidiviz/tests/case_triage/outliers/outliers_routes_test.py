@@ -36,8 +36,8 @@ from recidiviz.outliers.constants import (
     VIOLATION_RESPONSES,
 )
 from recidiviz.outliers.types import (
+    OutliersBackendConfig,
     OutliersClientEventConfig,
-    OutliersConfig,
     OutliersMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
@@ -192,7 +192,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
     )
     def test_get_state_configuration_success(self, mock_config: MagicMock) -> None:
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_1],
             client_events=[TEST_CLIENT_EVENT],
             supervision_officer_label="officer",
@@ -682,7 +682,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -713,7 +713,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -748,7 +748,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -791,7 +791,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -867,7 +867,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -966,7 +966,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1016,7 +1016,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1085,7 +1085,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1165,7 +1165,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1244,7 +1244,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1352,7 +1352,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1451,7 +1451,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1494,7 +1494,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1566,7 +1566,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1636,7 +1636,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1872,7 +1872,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1912,7 +1912,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -1967,7 +1967,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -2036,7 +2036,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -2106,7 +2106,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -2160,7 +2160,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -2213,7 +2213,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -2282,7 +2282,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_config.return_value = OutliersConfig(
+        mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
