@@ -48,5 +48,6 @@ def is_ingest_in_dataflow_enabled(
         StateCode.US_MI,
         StateCode.US_PA,
         StateCode.US_ND,
+        StateCode.US_TN,
     ]
     return state_code in staging_enabled_states
