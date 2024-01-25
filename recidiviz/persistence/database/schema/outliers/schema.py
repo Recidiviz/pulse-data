@@ -239,3 +239,21 @@ class SupervisionClients(OutliersBase):
     birthdate = Column(Date, nullable=True)
     gender = Column(String, nullable=True)
     race_or_ethnicity = Column(String, nullable=True)
+
+
+class Configuration(OutliersBase):
+    """Table containing Outliers information that is configured by Recidiviz users via the admin panel"""
+
+    __tablename__ = "configurations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    updated_by = Column(String, nullable=False)
+    updated_at = Column(Date, nullable=False)
+    feature_variant = Column(String)
+    supervision_officer_label = Column(String)
+    supervision_district_label = Column(String)
+    supervision_unit_label = Column(String)
+    supervision_supervisor_label = Column(String)
+    supervision_district_manager_label = Column(String)
+    supervision_jii_label = Column(String)
+    learn_more_url = Column(String)

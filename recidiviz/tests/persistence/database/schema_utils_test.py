@@ -228,6 +228,7 @@ class TestSchemaUtils(unittest.TestCase):
             "supervision_officer_metrics",
             "supervision_officer_outlier_status",
             "supervision_state_metrics",
+            "configurations",
         ]
 
         expected_table_class_names = (
