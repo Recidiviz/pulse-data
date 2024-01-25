@@ -147,6 +147,40 @@ offender_group_periods AS (
     LEAD(update_datetime) OVER (PARTITION BY OffenderId ORDER BY update_datetime ASC) AS og_end_date,
   FROM offender_group_transitions
 ),
+supervision_location_prep_cte AS
+(
+  SELECT 
+    OffenderId, 
+    ifnull(ParoleUnit, 'null') AS ParoleUnit,
+    ifnull(ParoleRegion, 'null') AS ParoleRegion,
+    ifnull(ParoleDistrict, 'null') AS ParoleDistrict,
+    update_datetime, 
+    CONCAT(ifnull(ParoleDistrict, 'null'),'-',ifnull(ParoleRegion, 'null'),'-',ifnull(ParoleDistrict, 'null')) AS fullLoc
+  FROM {PersonParole@ALL}
+),
+supervision_location_prep_cte2 AS (
+  SELECT
+    OffenderId, 
+    ParoleUnit,
+    ParoleDistrict, 
+    ParoleRegion,
+    fullLoc,
+    lag(fullLoc) over (Partition by OffenderId order by update_datetime) AS prev_fullLoc,
+    update_datetime
+  from supervision_location_prep_cte
+),
+supervision_location_periods AS (
+  SELECT 
+    OffenderId, 
+    ParoleUnit,
+    ParoleDistrict, 
+    ParoleRegion,
+    fullLoc,
+    update_datetime as PeriodStart,
+    lead(update_datetime) OVER (Partition by OffenderId order by update_datetime) as PeriodEnd
+  from supervision_location_prep_cte2
+  WHERE fullLoc != prev_fullLoc or prev_fullLoc is null 
+),
 supervision_level_changes AS (
   SELECT
     OffenderId,
@@ -194,6 +228,13 @@ transition_dates as (
     OffenderId,
     SupvLevelChangeDate AS transition_date
   FROM supervision_level_periods
+
+  UNION DISTINCT
+
+  SELECT DISTINCT
+    OffenderId,
+    PeriodStart AS transition_date
+  FROM supervision_location_periods
 
   UNION DISTINCT
 
@@ -264,6 +305,23 @@ merged_supervision_periods_with_supervision_level_and_offender_groups AS (
     ON p.OffenderId = slp.OffenderId
     AND p.start_date >= slp.SupvLevelChangeDate
     AND (p.end_date <= slp.sl_end_date OR slp.sl_end_date IS NULL)
+),
+merged_supervision_periods_with_location AS (
+  SELECT DISTINCT
+    p.OffenderId,
+    p.start_date,
+    p.end_date,
+    p.OffenderGroup,
+    p.SupervisionLevel,
+    p.period_sequence_number,
+    slp.ParoleUnit,
+    slp.ParoleRegion,
+    slp.ParoleDistrict
+  FROM merged_supervision_periods_with_supervision_level_and_offender_groups p
+  LEFT JOIN supervision_location_periods slp
+    ON p.OffenderId = slp.OffenderId
+    AND p.start_date >= slp.PeriodStart
+    AND (p.end_date <= slp.PeriodEnd OR slp.PeriodEnd IS NULL)
 )
 SELECT
     OffenderId,
@@ -271,8 +329,11 @@ SELECT
     end_date,
     OffenderGroup,
     SupervisionLevel,
-    period_sequence_number
-FROM merged_supervision_periods_with_supervision_level_and_offender_groups
+    period_sequence_number,
+    ParoleUnit,
+    ParoleDistrict,
+    ParoleRegion
+FROM merged_supervision_periods_with_location
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
