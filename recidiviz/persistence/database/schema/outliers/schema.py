@@ -18,6 +18,7 @@
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     Date,
     Float,
@@ -263,3 +264,15 @@ class Configuration(OutliersBase):
     supervision_district_manager_label = Column(String)
     supervision_jii_label = Column(String)
     learn_more_url = Column(String)
+
+
+class UserMetadata(OutliersBase):
+    """Insights-specific iformation about a user. Updated via the app itself, not ETL."""
+
+    __tablename__ = "user_metadata"
+    # Other tables are deleted/recreated at import time, but this table needs to be kept up to date
+    # via alembic migrations.
+    __table_args__ = {"info": {RUN_MIGRATIONS: True}}
+
+    pseudonymized_id = Column(String, primary_key=True)
+    has_seen_onboarding = Column(Boolean, default=False)

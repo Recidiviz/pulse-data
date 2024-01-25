@@ -56,6 +56,7 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
+    UserMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -80,6 +81,8 @@ def load_model_fixture(
                     row["client_name"] = json.loads(row["client_name"])
                 if k == "attributes" and v != "":
                     row["attributes"] = json.loads(row["attributes"])
+                if k == "has_seen_onboarding" and v != "":
+                    row["has_seen_onboarding"] = json.loads(row["has_seen_onboarding"])
                 if v == "":
                     row[k] = None
             results.append(row)
@@ -151,6 +154,8 @@ class TestOutliersQuerier(TestCase):
                 session.add(SupervisionClientEvent(**event))
             for client in load_model_fixture(SupervisionClients):
                 session.add(SupervisionClients(**client))
+            for metadata in load_model_fixture(UserMetadata):
+                session.add(UserMetadata(**metadata))
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -787,3 +792,38 @@ class TestOutliersQuerier(TestCase):
         )
 
         self.assertEqual("111", actual.client_id)  # type: ignore[union-attr]
+
+    def test_get_user_metadata_empty(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+
+        self.assertIsNone(querier.get_user_metadata(pseudonymized_id="hash3"))
+
+    def test_get_user_metadata_defaults(self) -> None:
+        pid = "hash2"
+        querier = OutliersQuerier(StateCode.US_PA)
+        metadata = querier.get_user_metadata(pid)
+        self.assertIsNotNone(metadata)
+        self.assertFalse(metadata.has_seen_onboarding)  # type: ignore
+
+    def test_get_user_metadata_success(self) -> None:
+        pid = "hash1"
+        querier = OutliersQuerier(StateCode.US_PA)
+        metadata = querier.get_user_metadata(pid)
+        self.assertIsNotNone(metadata)
+        self.assertTrue(metadata.has_seen_onboarding)  # type: ignore
+
+    def test_update_user_metadata_new_entity(self) -> None:
+        pid = "hash3"
+        querier = OutliersQuerier(StateCode.US_PA)
+        querier.update_user_metadata(pid, True)
+        metadata = querier.get_user_metadata(pid)
+        self.assertIsNotNone(metadata)
+        self.assertTrue(metadata.has_seen_onboarding)  # type: ignore
+
+    def test_update_user_metadata_existing_entity(self) -> None:
+        pid = "hash1"
+        querier = OutliersQuerier(StateCode.US_PA)
+        querier.update_user_metadata(pid, False)
+        metadata = querier.get_user_metadata(pid)
+        self.assertIsNotNone(metadata)
+        self.assertFalse(metadata.has_seen_onboarding)  # type: ignore
