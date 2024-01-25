@@ -29,7 +29,6 @@ from airflow.operators.python import (
     PythonOperator,
     ShortCircuitOperator,
 )
-from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.tasks import (
     CloudTasksQueueGetOperator,
     CloudTasksQueuePauseOperator,
@@ -101,7 +100,6 @@ project_id = os.environ.get("GCP_PROJECT")
 
 retry: Retry = Retry(predicate=lambda _: False)
 
-GCS_LOCK_BUCKET = f"{project_id}-gcslock"
 GCS_CONFIG_BUCKET = f"{project_id}-configs"
 GCS_ENABLED_STATES_CONFIG_PATH = GcsfsFilePath(
     bucket_name=GCS_CONFIG_BUCKET, blob_name="sftp_enabled_in_airflow_config.yaml"
@@ -133,15 +131,9 @@ def sftp_enabled_states() -> List[str]:
     return enabled_states
 
 
-# TODO(#17283): Remove usage of config once all states are enabled in Airflow.
 def is_enabled_in_config(state_code: str) -> bool:
     config = read_yaml_config(GCS_ENABLED_STATES_CONFIG_PATH)
     return state_code in config.pop_list("states", str)
-
-
-# TODO(#17277): Convert to the Airflow-supported version of GCSPseudoLockManager
-def check_if_lock_does_not_exist(lock_id: str) -> bool:
-    return not GCSHook().exists(bucket_name=GCS_LOCK_BUCKET, object_name=lock_id)
 
 
 def xcom_output_is_non_empty_list(
@@ -237,14 +229,9 @@ def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
 def sftp_dag() -> None:
     """This executes operations to handle files downloaded from SFTP servers."""
 
-    # We want to make sure that the export for the operations DB is not running when
-    # we start SFTP operations. Otherwise, we skip everything.
-    start_sftp = ShortCircuitOperator(
-        task_id="start_sftp",
-        python_callable=check_if_lock_does_not_exist,
-        op_kwargs={"lock_id": "EXPORT_PROCESS_RUNNING_OPERATIONS"},
-        ignore_downstream_trigger_rules=True,
-    )
+    # TODO(#9641): We should add a task that handles locking of the operations database
+    # when we move to a resource-based locking model.
+    start_sftp = EmptyOperator(task_id="start_sftp")
     rm_dags = remove_queued_up_dags()
     start_sftp >> rm_dags
     end_sftp = EmptyOperator(task_id="end_sftp", trigger_rule=TriggerRule.ALL_DONE)
