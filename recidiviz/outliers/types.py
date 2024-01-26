@@ -337,3 +337,13 @@ class SupervisionOfficerSupervisorEntity:
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
+
+
+@attr.s
+class UserInfo:
+    entity: Optional[SupervisionOfficerSupervisorEntity] = attr.ib()
+    role: Optional[str] = attr.ib()
+    has_seen_onboarding: bool = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)

@@ -47,6 +47,7 @@ from recidiviz.outliers.types import (
     SupervisionOfficerSupervisorEntity,
     TargetStatus,
     TargetStatusStrategy,
+    UserInfo,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
@@ -991,3 +992,21 @@ class OutliersQuerier:
             )
             session.execute(upsert_stmt)
             session.commit()
+
+    def get_user_info(self, pseudonymized_id: str) -> UserInfo:
+        """
+        Composes the UserInfo entity given the pseudonymized_id by reading a relevant supervisor
+        entity (if one exists) and user metadata.
+        """
+        supervisor_entity = self.get_supervisor_entity_from_pseudonymized_id(
+            pseudonymized_id
+        )
+        user_metadata = self.get_user_metadata(pseudonymized_id)
+
+        return UserInfo(
+            entity=supervisor_entity,
+            role="supervision_officer_supervisor" if supervisor_entity else None,
+            has_seen_onboarding=user_metadata.has_seen_onboarding
+            if user_metadata
+            else False,
+        )

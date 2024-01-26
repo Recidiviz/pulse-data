@@ -106,7 +106,7 @@ class OutliersBlueprintTestCase(TestCase):
         allowed_states: Optional[list[str]] = None,
         outliers_routes_enabled: Optional[bool] = True,
         can_access_all_supervisors: Optional[bool] = False,
-        pseudonymized_id: Optional[str] = "hash",
+        pseudonymized_id: Optional[str] = None,
     ) -> Callable:
         if allowed_states is None:
             allowed_states = []
@@ -1751,6 +1751,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 "hasOutliers": True,
             },
             "role": "supervision_officer_supervisor",
+            "hasSeenOnboarding": False,
         }
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -1832,10 +1833,199 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 "hasOutliers": True,
             },
             "role": "supervision_officer_supervisor",
+            "hasSeenOnboarding": False,
         }
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_update_user_info_for_supervisor(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="102", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="2",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="hashhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=True,
+        )
+
+        # Our PATCH endpoint returns the updated entity, so we can compare its response directly
+        # without having to make a separate GET
+        response = self.test_client.patch(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={"hasSeenOnboarding": True},
+        )
+
+        expected_json = {
+            "entity": {
+                "fullName": {
+                    "givenNames": "Supervisor",
+                    "middleNames": None,
+                    "nameSuffix": None,
+                    "surname": "2",
+                },
+                "externalId": "102",
+                "pseudonymizedId": "hashhash",
+                "supervisionDistrict": "2",
+                "email": "supervisor2@recidiviz.org",
+                "hasOutliers": True,
+            },
+            "role": "supervision_officer_supervisor",
+            "hasSeenOnboarding": True,
+        }
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_update_user_info_mismatch(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hash-101"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={"hasSeenOnboarding": True},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "User with pseudonymized_id hash-101 is attempting to update user-info about a user that isn't themselves: hashhash"
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_update_user_info_for_recidiviz_user(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="RECIDIVIZ", external_id="RECIDIVIZ", allowed_states=["US_PA"]
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={"hasSeenOnboarding": True},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "User with pseudonymized_id RECIDIVIZ is attempting to update user-info about a user that isn't themselves: hashhash"
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_update_user_info_missing_request_body(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Missing request body",
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_update_user_info_empty_request(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Invalid request body. Expected keys: ['hasSeenOnboarding']. Found keys: []",
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_update_user_info_unknown_key(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        response = self.test_client.patch(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+            json={"notARealKey": "value"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Invalid request body. Expected keys: ['hasSeenOnboarding']. Found keys: ['notARealKey']",
+            },
+        )
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
@@ -1963,7 +2153,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     ) -> None:
         client_hash = "clienthash1"
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="us_pa", external_id="102"
+            state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
@@ -2032,7 +2222,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     ) -> None:
         client_hash = "clienthash1"
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="us_pa", external_id="102"
+            state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
@@ -2156,7 +2346,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor_entity: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="us_pa", external_id="102"
+            state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
@@ -2209,7 +2399,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     ) -> None:
         client_hash = "clienthash1"
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="us_pa", external_id="102"
+            state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
