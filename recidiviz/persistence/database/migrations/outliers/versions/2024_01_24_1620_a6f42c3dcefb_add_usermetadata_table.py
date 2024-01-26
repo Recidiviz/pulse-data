@@ -2,7 +2,7 @@
 """add UserMetadata table
 
 Revision ID: a6f42c3dcefb
-Revises: a384de0a2a3b
+Revises: 57bb5cc14716
 Create Date: 2024-01-24 16:20:41.610218
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a6f42c3dcefb"
-down_revision = "a384de0a2a3b"
+down_revision = "57bb5cc14716"
 branch_labels = None
 depends_on = None
 
