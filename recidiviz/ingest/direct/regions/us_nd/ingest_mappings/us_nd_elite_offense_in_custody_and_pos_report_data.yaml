@@ -81,6 +81,7 @@ output:
                         - GANG
                         - GANGREL
                         - BRIBERY
+                        - MED # Misuse of medication
                       StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO:
                         - CONV
                       StateIncarcerationIncidentType.VIOLENCE:
