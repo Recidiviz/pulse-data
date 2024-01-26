@@ -26,7 +26,6 @@ def is_ingest_in_dataflow_enabled(
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
     staging_only_states = [
-        StateCode.US_CA,
         StateCode.US_IX,
         StateCode.US_MI,
         StateCode.US_PA,
