@@ -38,6 +38,9 @@ from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import is_date_str
 from recidiviz.common.results import MultiRequestResult
@@ -420,3 +423,17 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             f"Deleted documents from collection: {path} with state_code: {state_code_str}",
             HTTPStatus.OK,
         )
+
+    ###############################################
+    # Routes related to Insights/Outliers
+    ###############################################
+    @bp.route("/api/line_staff_tools/outliers/enabled_state_codes", methods=["GET"])
+    def _fetch_outliers_enabled_state_codes() -> Tuple[Response, HTTPStatus]:
+        state_code_info = fetch_state_codes(
+            [
+                StateCode[state_code_str]
+                for state_code_str in get_outliers_enabled_states()
+                if StateCode.is_state_code(state_code_str)
+            ]
+        )
+        return jsonify(state_code_info), HTTPStatus.OK
