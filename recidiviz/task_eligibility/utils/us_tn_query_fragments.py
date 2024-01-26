@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 
 # TODO(#20870) - Deprecate this in favor of better long term solution to excluding these levels
-EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "3D3"]
+EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4", "3D3"]
 EXCLUDED_HIGH_RAW_TEXT = ["2D2"]
 
 
