@@ -16,8 +16,14 @@
 #  =============================================================================
 """Tests us_or_supervision_period_normalization_delegate.py."""
 import unittest
+from datetime import date
 
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.pipelines.utils.state_utils.us_or.us_or_supervision_period_normalization_delegate import (
     UsOrSupervisionNormalizationDelegate,
 )
@@ -28,7 +34,38 @@ _STATE_CODE = StateCode.US_OR.value
 class TestUsOrSupervisionNormalizationDelegate(unittest.TestCase):
     """Tests functions in UsOrSupervisionNormalizationDelegate."""
 
+    # TODO(#27146): Add more test cases
+
     def setUp(self) -> None:
         self.delegate = UsOrSupervisionNormalizationDelegate()
 
-    # ~~ Add new tests here ~~
+    def test_supervision_type_override(
+        self,
+    ) -> None:
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code=StateCode.US_OR.value,
+            external_id="sp1",
+            start_date=date(2022, 12, 15),
+            termination_date=None,
+            admission_reason_raw_text="ABSC",
+            admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
+        )
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code=StateCode.US_OR.value,
+            external_id="sp2",
+            start_date=date(2023, 12, 15),
+            termination_date=date(2024, 1, 12),
+            admission_reason_raw_text="ESCA",
+            admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.ABSCONSION,
+            self.delegate.supervision_type_override(
+                1,
+                [
+                    supervision_period_1,
+                    supervision_period_2,
+                ],
+            ),
+        )
