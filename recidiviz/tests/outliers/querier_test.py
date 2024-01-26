@@ -45,6 +45,7 @@ from recidiviz.outliers.types import (
     SupervisionOfficerSupervisorEntity,
     TargetStatus,
     TargetStatusStrategy,
+    UserInfo,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
     MetricBenchmark,
@@ -827,3 +828,31 @@ class TestOutliersQuerier(TestCase):
         metadata = querier.get_user_metadata(pid)
         self.assertIsNotNone(metadata)
         self.assertFalse(metadata.has_seen_onboarding)  # type: ignore
+
+    def test_get_user_info_success(self) -> None:
+        pid = "hash1"
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_user_info(pid)
+
+        self.assertIsNotNone(result.entity)
+        self.assertEqual(result.entity.external_id, "101")  # type: ignore
+        self.assertEqual(result.role, "supervision_officer_supervisor")
+        self.assertTrue(result.has_seen_onboarding)
+
+    def test_get_user_info_default_onboarding(self) -> None:
+        pid = "hash2"
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_user_info(pid)
+
+        self.assertIsNotNone(result.entity)
+        self.assertEqual(result.entity.external_id, "102")  # type: ignore
+        self.assertEqual(result.role, "supervision_officer_supervisor")
+        self.assertFalse(result.has_seen_onboarding)
+
+    def test_get_user_info_non_supervisor(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_user_info("leadership-hash")
+
+        self.assertEqual(
+            result, UserInfo(entity=None, role=None, has_seen_onboarding=True)
+        )

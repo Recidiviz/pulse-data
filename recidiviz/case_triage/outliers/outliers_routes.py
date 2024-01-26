@@ -34,10 +34,11 @@ from recidiviz.case_triage.outliers.user_context import UserContext
 from recidiviz.case_triage.workflows.utils import jsonify_response
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.str_field_utils import snake_to_camel
+from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import PersonName
 from recidiviz.utils.flask_exception import FlaskException
+from recidiviz.utils.types import assert_type
 
 ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -423,8 +424,6 @@ def create_outliers_api_blueprint() -> Blueprint:
         user_external_id = user_context.user_external_id
         user_pseudonymized_id = user_context.pseudonymized_id
 
-        entity_json, role = None, None
-
         if (
             pseudonymized_id != user_pseudonymized_id
             and user_external_id != "RECIDIVIZ"
@@ -436,26 +435,55 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        supervisor_entity = querier.get_supervisor_entity_from_pseudonymized_id(
-            pseudonymized_id
+        user_info = querier.get_user_info(pseudonymized_id)
+        user_info_json = convert_nested_dictionary_keys(
+            user_info.to_json(),
+            snake_to_camel,
         )
-        if supervisor_entity:
-            # If the requested pseudonymized id is a supervisor that exists and the requesting user is that supervisor,
-            # or the requesting user is a recidiviz user, return the entity
-            entity_json = supervisor_entity.to_json()
-            role = "supervision_officer_supervisor"
+        return jsonify(user_info_json)
 
-        return jsonify(
-            {
-                "entity": convert_nested_dictionary_keys(
-                    entity_json,
-                    snake_to_camel,
-                )
-                if entity_json
-                else None,
-                "role": role,
-            }
+    @api.patch("/<state>/user-info/<pseudonymized_id>")
+    def patch_user_info(state: str, pseudonymized_id: str) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        user_external_id = user_context.user_external_id
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        if pseudonymized_id != user_pseudonymized_id:
+            # Return an unauthorized error if the requesting user is attempting to update information about someone else
+            return jsonify_response(
+                f"User with pseudonymized_id {user_pseudonymized_id if user_pseudonymized_id else user_external_id} is attempting to update user-info about a user that isn't themselves: {pseudonymized_id}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        if request.json is None:
+            return jsonify_response("Missing request body", HTTPStatus.BAD_REQUEST)
+
+        request_json = convert_nested_dictionary_keys(
+            assert_type(request.json, dict), to_snake_case
         )
+        expected_keys = {"has_seen_onboarding"}
+        if len(request_json) == 0 or not set(request_json.keys()).issubset(
+            expected_keys
+        ):
+            return jsonify_response(
+                f"Invalid request body. Expected keys: {[snake_to_camel(k) for k in expected_keys]}. Found keys: {[snake_to_camel(k) for k in request_json]}",
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        querier.update_user_metadata(
+            pseudonymized_id, has_seen_onboarding=request_json["has_seen_onboarding"]
+        )
+
+        # Return updated user info
+        user_info = querier.get_user_info(pseudonymized_id)
+        user_info_json = convert_nested_dictionary_keys(
+            user_info.to_json(),
+            snake_to_camel,
+        )
+        return jsonify(user_info_json)
 
     @api.get("/<state>/client/<pseudonymized_id>/events")
     def events_by_client(state: str, pseudonymized_id: str) -> Response:
