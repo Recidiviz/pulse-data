@@ -188,7 +188,7 @@ periods AS (
   FROM periods
   LEFT JOIN supervision_changes sc
   ON periods.RECORD_KEY = sc.RECORD_KEY 
-  AND sc.EFFECTIVE_DATE BETWEEN MOVE_IN_DATE AND MOVE_OUT_DATE
+  AND sc.EFFECTIVE_DATE BETWEEN MOVE_IN_DATE AND COALESCE(MOVE_OUT_DATE,'9999-01-01')
 ),
 info_to_split_periods_with_supervision_level_changes AS ( 
   # Setting up to add additional periods for when multiple custody level classifications happen within one existing period,
@@ -227,8 +227,8 @@ info_to_split_periods_with_supervision_level_changes AS (
     LOCATION_NAME,
     FACILITY,
     RISK_LEVEL,
-    IF(PERIOD_ID = LAST_PERIOD AND ADMISSION_REASON IS NULL, 'SUPLEVEL_CHANGE', ADMISSION_REASON) AS ADMISSION_REASON,
-    IF(PERIOD_ID = NEXT_PERIOD AND RELEASE_REASON IS NULL, 'SUPLEVEL_CHANGE', RELEASE_REASON) AS RELEASE_REASON,
+    IF(PERIOD_ID = LAST_PERIOD, 'SUPLEVEL_CHANGE', ADMISSION_REASON) AS ADMISSION_REASON,
+    IF(PERIOD_ID = NEXT_PERIOD, 'SUPLEVEL_CHANGE', RELEASE_REASON) AS RELEASE_REASON,
     RESPONSIBLE_DIVISION
   FROM info_to_split_periods_with_supervision_level_changes
 ), staff_caseloads AS (
