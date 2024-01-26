@@ -359,6 +359,7 @@ ON
     COALESCE(JSON_EXTRACT_SCALAR(viol.violation_metadata, '$.ViolationType'), '') = 'INFERRED' as violation_is_inferred,
     COUNT(DISTINCT c.referral_date)
         OVER (PARTITION BY a.person_id, a.start_date) AS prior_treatment_referrals_1y,
+    css.compartment_level_2 AS latest_active_supervision_type,
 FROM
     `{project_id}.sessions.compartment_level_1_super_sessions_materialized` a
 -- Get treatment referrals within 1 year of incarceration
@@ -378,14 +379,28 @@ LEFT JOIN
 ON
     d.person_id = viol.person_id
     AND d.most_severe_violation_id = viol.supervision_violation_id
+LEFT JOIN
+    `{project_id}.sessions.compartment_level_1_super_sessions_materialized` s
+ON s.person_id = a.person_id
+  --join to the previous super session precedeing the incarceration start if it's a supervision super session  
+    AND a.compartment_level_1_super_session_id = s.compartment_level_1_super_session_id +1 
+    AND s.compartment_level_1 = "SUPERVISION"
+LEFT JOIN 
+    `{project_id}.sessions.compartment_sessions_materialized` css
+ON css.person_id = s.person_id
+    AND css.session_id BETWEEN s.session_id_start AND s.session_id_end
+    --only join active compartment level 2 values 
+    AND css.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT")
+    --the incarceration start should be after the active compartment starts 
+    AND a.start_date >= css.start_date
 WHERE
     a.compartment_level_1 = "INCARCERATION"
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY a.person_id, a.start_date
-    -- Prioritize the first known violation type 
+    -- Prioritize the first known violation type and the latest active supervision type 
     ORDER BY
         IF(COALESCE(d.most_severe_violation_type, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN", 0, 1),
-        d.admission_date
+        d.admission_date, css.start_date DESC
 ) = 1""",
         attribute_cols=[
             "inflow_from_level_1",
@@ -396,6 +411,7 @@ QUALIFY ROW_NUMBER() OVER (
             "violation_is_inferred",
             "prior_treatment_referrals_1y",
             "is_discretionary",
+            "latest_active_supervision_type",
         ],
         event_date_col="start_date",
     ),
@@ -707,6 +723,7 @@ WHERE compartment_level_1 = "SUPERVISION"
     c.termination_date AS most_severe_violation_type_termination_date,
     COUNT(DISTINCT d.referral_date)
         OVER (PARTITION BY a.person_id, a.end_date_exclusive) AS prior_treatment_referrals_1y,
+    css.compartment_level_2 AS latest_active_supervision_type,
 FROM
     `{{project_id}}.sessions.compartment_sessions_materialized` a
 LEFT JOIN
@@ -717,6 +734,20 @@ ON
     -- during the remainder of that supervision compartment super session. Otherwise,
     -- it takes the next compartment level 1 super session.
     AND a.end_date_exclusive BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
+LEFT JOIN
+    `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` s
+ON
+    a.person_id = s.person_id
+    -- get the compartment_level_1_super_session that includes the supervision compartment that ends unsuccessfully
+    AND a.end_date BETWEEN s.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
+LEFT JOIN 
+    `{{project_id}}.sessions.compartment_sessions_materialized` css
+ON css.person_id = s.person_id
+    AND css.session_id BETWEEN s.session_id_start AND s.session_id_end
+    --only join active compartment level 2 values 
+    AND css.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT")
+    --the unsuccessful termination should be after the active compartment starts 
+    AND a.end_date >= css.start_date
 LEFT JOIN
     `{{project_id}}.dataflow_metrics_materialized.most_recent_supervision_termination_metrics_materialized` c
 ON
@@ -739,10 +770,10 @@ WHERE
     AND a.outflow_to_level_1 != "INCARCERATION"
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY a.person_id, a.end_date_exclusive
-    -- Prioritize the first known violation type 
+    -- Prioritize the first known violation type and the latest active supervision type 
     ORDER BY 
         IF(COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN", 0, 1), 
-        c.termination_date
+        c.termination_date, css.start_date DESC
 ) = 1
 """,
         attribute_cols=[
@@ -755,6 +786,7 @@ QUALIFY ROW_NUMBER() OVER (
             "most_severe_violation_type_termination_date",
             "prior_treatment_referrals_1y",
             "is_discretionary",
+            "latest_active_supervision_type",
         ],
         event_date_col="end_date_exclusive",
     ),
