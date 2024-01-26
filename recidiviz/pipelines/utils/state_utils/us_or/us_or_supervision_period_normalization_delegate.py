@@ -15,6 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_OR implementation of the StateSpecificSupervisionNormalizationDelegate."""
+from typing import List, Optional
+
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -24,3 +31,21 @@ class UsOrSupervisionNormalizationDelegate(
     StateSpecificSupervisionNormalizationDelegate
 ):
     """US_OR implementation of the StateSpecificSupervisionNormalizationDelegate."""
+
+    def supervision_type_override(
+        self,
+        supervision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """US_OR specific logic for determining supervision type of ABSCONSION from start_reasons of ABSCONSION,
+        making this change only for open periods of absconsion since previous ones are recorded erroneously in OR ."""
+
+        sp = sorted_supervision_periods[supervision_period_list_index]
+
+        if supervision_period_list_index == 0 or sp.start_date is None:
+            return sp.supervision_type
+
+        if sp.admission_reason == StateSupervisionPeriodAdmissionReason.ABSCONSION:
+            sp.supervision_type = StateSupervisionPeriodSupervisionType.ABSCONSION
+
+        return sp.supervision_type
