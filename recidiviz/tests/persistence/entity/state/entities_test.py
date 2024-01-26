@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, LedgerEntity
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
@@ -43,6 +43,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateTaskDeadline,
 )
+from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
@@ -387,6 +388,7 @@ class TestStateEntities(TestCase):
             due_date=date(2015, 7, 10),
             update_datetime=datetime(2022, 4, 8, 0, 0, 0),
             task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            sequence_num=None,
         )
 
     def test_post_attrs_state_task_deadline_eligible_before_due(self) -> None:
@@ -401,6 +403,7 @@ class TestStateEntities(TestCase):
                 due_date=date(2012, 7, 10),
                 update_datetime=datetime(2022, 4, 8, 0, 0, 0),
                 task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+                sequence_num=None,
             )
 
 
@@ -416,7 +419,7 @@ class TestStateLedgerEntities(TestCase):
 
     def test_all_ledger_entities_have_start_datetime_field(self):
         for cls in get_all_entity_classes_in_module(entities):
-            if not issubclass(cls, LedgerEntity):
+            if not issubclass(cls, LedgerEntityMixin):
                 continue
             self.assertIsNotNone(cls.get_ledger_datetime_field())
             self.assertIsNotNone(
@@ -428,23 +431,27 @@ class TestStateLedgerEntities(TestCase):
             status_update_datetime=self.ledger_time,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
             _ = StateSentenceStatusSnapshot(
                 status_update_datetime=self.the_future,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 state_code=self.state_code,
+                sequence_num=None,
             )
 
     def test_ledger_datetime_is_not_future_StateSentenceLength(self) -> None:
         _ = StateSentenceLength(
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
             _ = StateSentenceLength(
                 length_update_datetime=self.the_future,
                 state_code=self.state_code,
+                sequence_num=None,
             )
 
     def test_ledger_datetime_is_not_future_StateSentenceGroup(self) -> None:
@@ -452,12 +459,14 @@ class TestStateLedgerEntities(TestCase):
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
             _ = StateSentenceGroup(
                 group_update_datetime=self.the_future,
                 state_code=self.state_code,
                 external_id=self.external_id,
+                sequence_num=None,
             )
 
     def test_enforced_datetime_pairs_StateSentenceLength(self) -> None:
@@ -467,6 +476,7 @@ class TestStateLedgerEntities(TestCase):
             projected_parole_release_date_external=self.after,
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -477,6 +487,7 @@ class TestStateLedgerEntities(TestCase):
                 projected_parole_release_date_external=self.before,
                 length_update_datetime=self.ledger_time,
                 state_code=self.state_code,
+                sequence_num=None,
             )
         # "parole_eligibility_date_external" before "projected_completion_date_min_external"
         _ = StateSentenceLength(
@@ -484,6 +495,7 @@ class TestStateLedgerEntities(TestCase):
             projected_completion_date_min_external=self.after,
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -494,6 +506,7 @@ class TestStateLedgerEntities(TestCase):
                 projected_completion_date_min_external=self.before,
                 length_update_datetime=self.ledger_time,
                 state_code=self.state_code,
+                sequence_num=None,
             )
         # "parole_eligibility_date_external" before "projected_completion_date_max_external"
         _ = StateSentenceLength(
@@ -501,6 +514,7 @@ class TestStateLedgerEntities(TestCase):
             projected_completion_date_max_external=self.after,
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -511,6 +525,7 @@ class TestStateLedgerEntities(TestCase):
                 projected_completion_date_max_external=self.before,
                 length_update_datetime=self.ledger_time,
                 state_code=self.state_code,
+                sequence_num=None,
             )
         # "projected_parole_release_date_external" before "projected_completion_date_min_external"
         _ = StateSentenceLength(
@@ -518,6 +533,7 @@ class TestStateLedgerEntities(TestCase):
             projected_completion_date_min_external=self.after,
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -528,6 +544,7 @@ class TestStateLedgerEntities(TestCase):
                 projected_completion_date_min_external=self.before,
                 length_update_datetime=self.ledger_time,
                 state_code=self.state_code,
+                sequence_num=None,
             )
         # "projected_parole_release_date_external" before "projected_completion_date_max_external"
         _ = StateSentenceLength(
@@ -535,6 +552,7 @@ class TestStateLedgerEntities(TestCase):
             projected_completion_date_max_external=self.after,
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -545,6 +563,7 @@ class TestStateLedgerEntities(TestCase):
                 projected_completion_date_max_external=self.before,
                 length_update_datetime=self.ledger_time,
                 state_code=self.state_code,
+                sequence_num=None,
             )
         # "projected_completion_date_min_external" before "projected_completion_date_max_external"
         _ = StateSentenceLength(
@@ -552,6 +571,7 @@ class TestStateLedgerEntities(TestCase):
             projected_completion_date_max_external=self.after,
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -562,6 +582,7 @@ class TestStateLedgerEntities(TestCase):
                 projected_completion_date_max_external=self.before,
                 length_update_datetime=self.ledger_time,
                 state_code=self.state_code,
+                sequence_num=None,
             )
 
     def test_enforced_datetime_pairs_StateSentenceGroup(self) -> None:
@@ -572,6 +593,7 @@ class TestStateLedgerEntities(TestCase):
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -583,6 +605,7 @@ class TestStateLedgerEntities(TestCase):
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
                 external_id=self.external_id,
+                sequence_num=None,
             )
         # "parole_eligibility_date_external" before "projected_full_term_release_date_min_external"
         _ = StateSentenceGroup(
@@ -591,6 +614,7 @@ class TestStateLedgerEntities(TestCase):
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -602,6 +626,7 @@ class TestStateLedgerEntities(TestCase):
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
                 external_id=self.external_id,
+                sequence_num=None,
             )
         # "parole_eligibility_date_external" before "projected_full_term_release_date_max_external"
         _ = StateSentenceGroup(
@@ -610,6 +635,7 @@ class TestStateLedgerEntities(TestCase):
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -621,6 +647,7 @@ class TestStateLedgerEntities(TestCase):
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
                 external_id=self.external_id,
+                sequence_num=None,
             )
         # "projected_parole_release_date_min_external" before "projected_full_term_release_date_min_external"
         _ = StateSentenceGroup(
@@ -629,6 +656,7 @@ class TestStateLedgerEntities(TestCase):
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -640,6 +668,7 @@ class TestStateLedgerEntities(TestCase):
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
                 external_id=self.external_id,
+                sequence_num=None,
             )
         # "projected_parole_release_date_min_external" before "projected_full_term_release_date_max_external"
         _ = StateSentenceGroup(
@@ -648,6 +677,7 @@ class TestStateLedgerEntities(TestCase):
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -659,6 +689,7 @@ class TestStateLedgerEntities(TestCase):
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
                 external_id=self.external_id,
+                sequence_num=None,
             )
         # "projected_full_term_release_date_min_external" before "projected_full_term_release_date_max_external"
         _ = StateSentenceGroup(
@@ -667,6 +698,7 @@ class TestStateLedgerEntities(TestCase):
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
+            sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -678,4 +710,5 @@ class TestStateLedgerEntities(TestCase):
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
                 external_id=self.external_id,
+                sequence_num=None,
             )

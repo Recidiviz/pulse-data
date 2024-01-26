@@ -3240,6 +3240,14 @@ class StateTaskDeadline(StateBase, _ReferencesStatePersonSharedColumns):
         comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
         "this task deadline.",
     )
+    sequence_num = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "The ordinal position of this observation in the sequence of "
+            "StateTaskDeadline observations for this observation's StatePerson"
+        ),
+    )
 
 
 class StateStaff(StateBase):
@@ -4073,6 +4081,14 @@ class StateSentenceStatusSnapshot(StateBase, _ReferencesStatePersonSharedColumns
         ForeignKey("state_sentence.sentence_id", deferrable=True, initially="DEFERRED"),
         comment="Unique internal ID for a state sentence.",
     )
+    sequence_num = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "The ordinal position of this observation in the sequence of "
+            "StateSentenceStatusSnapshot observations for this observation's StateSentence"
+        ),
+    )
 
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)
@@ -4162,6 +4178,14 @@ class StateSentenceLength(StateBase, _ReferencesStatePersonSharedColumns):
             " after having completed all sentences in the term."
         ),
     )
+    sequence_num = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "The ordinal position of this observation in the sequence of "
+            "StateSentenceLength observations for this observation's StateSentence"
+        ),
+    )
 
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)
@@ -4230,5 +4254,13 @@ class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
         comment=(
             "The latest date on which a person is projected to be released to liberty"
             " after having completed all sentences in the term."
+        ),
+    )
+    sequence_num = Column(
+        Integer,
+        nullable=True,
+        comment=(
+            "The ordinal position of this observation in the sequence of "
+            "StateSentenceGroup observations for this observation's StateSentence"
         ),
     )

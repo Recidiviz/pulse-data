@@ -16,8 +16,7 @@
 # ============================================================================
 """Base class for all entity types"""
 import abc
-import datetime
-from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
 from more_itertools import one
@@ -25,7 +24,6 @@ from more_itertools import one
 # TODO(#1885): Enforce all ForwardRef attributes on an Entity are optional
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
-from recidiviz.common.date import assert_datetime_less_than
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.utils import environment
 
@@ -176,38 +174,6 @@ class RootEntity:
         entity, which connects that non-root entity back to the root entity (e.g.
         'person' or 'staff').
         """
-
-
-class LedgerEntity:
-    """Mixin interface for 'ledgers' — periods of time relating back to another entity, where we
-    initially have the start date/datetime for each period.
-
-    Ledger entities must have a date/datetime field for the 'start' of the ledger that cannot be in the future.
-    They may also have one or more pairs of date/datetime fields, where the first date/datetime of the pair
-    must be before the second.
-    """
-
-    @classmethod
-    @abc.abstractmethod
-    def get_ledger_datetime_field(cls) -> str:
-        """A ledger entity has a single field denoting a 'start' or 'update' of its period of time. Return it here."""
-        raise NotImplementedError("Must define a start datetime field")
-
-    def assert_datetime_less_than(
-        self,
-        before: Optional[Union[datetime.date, datetime.datetime]],
-        after: Optional[Union[datetime.date, datetime.datetime]],
-    ) -> None:
-        """Raises a ValueError if the given "before" date/datetime is after the "after" one.
-        Both field names must be datetime.datetime or datetime.date fields.
-        """
-        try:
-            assert_datetime_less_than(before, after)
-        # The class name is helpful in ingest, so catching and re-raising with that info.
-        except ValueError as exc:
-            raise ValueError(
-                f"Found {self.__class__.__name__} with datetime {before} after datetime {after}."
-            ) from exc
 
 
 # TODO(#1894): Write unit tests for entity graph equality that reference the

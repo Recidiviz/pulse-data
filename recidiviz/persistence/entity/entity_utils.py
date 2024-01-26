@@ -54,7 +54,6 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
-    LedgerEntity,
     RootEntity,
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
@@ -63,6 +62,7 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
+from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.types import non_optional
@@ -257,7 +257,7 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 ExternalIdEntity,
                 HasMultipleExternalIdsEntity,
                 EnumEntity,
-                LedgerEntity,
+                LedgerEntityMixin,
             ) and issubclass(attribute, Entity):
                 expected_classes.add(attribute)
 
