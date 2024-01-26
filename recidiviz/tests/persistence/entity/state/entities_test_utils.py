@@ -547,6 +547,7 @@ def generate_full_graph_state_person(
         eligible_date=datetime.date(2020, 9, 11),
         update_datetime=datetime.datetime(2023, 2, 1, 11, 19),
         task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+        sequence_num=None,
     )
     person.task_deadlines = [task_deadline]
 

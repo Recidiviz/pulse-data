@@ -18,11 +18,8 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for base_entity.py"""
-import datetime
 import unittest
-from typing import List, Optional, Tuple, Union, no_type_check
-
-import attr
+from typing import no_type_check
 
 from recidiviz.persistence.entity import base_entity
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, entity_graph_eq
@@ -70,70 +67,6 @@ class TestBaseEntities(unittest.TestCase):
             # These should not crash
             entity_class.get_enum_field_name()
             entity_class.get_raw_text_field_name()
-
-
-class TestLedgerEntity(unittest.TestCase):
-    """Tests the setup and validation of LedgerEntity"""
-
-    def test_ledger_entity_validation(self):
-        @attr.s(eq=False, kw_only=True)
-        class ExampleLedger(base_entity.LedgerEntity):
-            start = attr.ib()
-            end = attr.ib()
-
-            @classmethod
-            def get_ledger_datetime_field(cls) -> str:
-                return "start"
-
-            def __attrs_post_init__(self):
-                self.assert_datetime_less_than(self.start, self.end)
-
-        _ = ExampleLedger(
-            start=datetime.datetime(2022, 1, 1), end=datetime.datetime(2022, 1, 3)
-        )
-
-        with self.assertRaises(ValueError):
-            _ = ExampleLedger(
-                start=datetime.datetime(2022, 1, 1), end=datetime.datetime(2001, 1, 1)
-            )
-
-    def test_ledger_entity_validation_multiple_after_dates(self):
-        @attr.s(eq=False, kw_only=True)
-        class ExampleLedger(base_entity.LedgerEntity):
-            START = attr.ib()
-            END_1 = attr.ib()
-            END_2 = attr.ib()
-
-            @classmethod
-            def get_ledger_datetime_field(cls) -> str:
-                """A ledger entity has a single field denoting the 'start' of its period of time. Return it here."""
-                return "START"
-
-            def __attrs_post_init__(self):
-                """A ledger entity may have one or more datetime fields that are strictly after the 'start' datetime field.
-                Return them here."""
-                self.assert_datetime_less_than(self.START, self.END_1)
-                self.assert_datetime_less_than(self.START, self.END_2)
-
-        _ = ExampleLedger(
-            START=datetime.datetime(2022, 1, 1),
-            END_1=datetime.datetime(2022, 1, 3),
-            END_2=datetime.datetime(2022, 1, 6),
-        )
-
-        with self.assertRaises(ValueError):
-            _ = ExampleLedger(
-                START=datetime.datetime(2022, 1, 1),
-                END_1=datetime.datetime(2001, 1, 1),
-                END_2=datetime.datetime(2022, 1, 6),
-            )
-
-        with self.assertRaises(ValueError):
-            _ = ExampleLedger(
-                START=datetime.datetime(2022, 1, 1),
-                END_1=datetime.datetime(2022, 1, 3),
-                END_2=datetime.datetime(1999, 1, 1),
-            )
 
 
 # TODO(#1894): Write unit tests for entity graph equality that reference the

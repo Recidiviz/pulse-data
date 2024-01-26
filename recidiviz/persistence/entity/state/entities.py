@@ -131,11 +131,11 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
-    LedgerEntity,
     RootEntity,
     UniqueConstraint,
 )
 from recidiviz.persistence.entity.state import entity_field_validators
+from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 
 # **** Entity Types for convenience *****:
 PeriodType = TypeVar(
@@ -1968,7 +1968,7 @@ class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateTaskDeadline(LedgerEntity, BuildableAttr, DefaultableAttr, Entity):
+class StateTaskDeadline(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity):
     """The StateTaskDeadline object represents a single task that should be performed as
     part of someone’s supervision or incarceration term, along with an associated date
     that task can be started and/or a deadline when that task must be completed.
@@ -2553,7 +2553,9 @@ class StateChargeV2(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSentenceStatusSnapshot(LedgerEntity, BuildableAttr, DefaultableAttr, Entity):
+class StateSentenceStatusSnapshot(
+    LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
+):
     """Represents a historical snapshot for when a given sentence had a given status."""
 
     state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -2590,7 +2592,7 @@ class StateSentenceStatusSnapshot(LedgerEntity, BuildableAttr, DefaultableAttr, 
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSentenceLength(LedgerEntity, BuildableAttr, DefaultableAttr, Entity):
+class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity):
     """Represents a historical ledger of time attributes for a single sentence,
     including sentence length, accrued amount of days earned off, key dates, etc."""
 
@@ -2682,7 +2684,7 @@ class StateSentenceLength(LedgerEntity, BuildableAttr, DefaultableAttr, Entity):
 
 @attr.s(eq=False, kw_only=True)
 class StateSentenceGroup(
-    LedgerEntity, BuildableAttr, DefaultableAttr, HasExternalIdEntity
+    LedgerEntityMixin, BuildableAttr, DefaultableAttr, HasExternalIdEntity
 ):
     """Represents a historical ledger of attributes relating to a state designated group of sentences."""
 
