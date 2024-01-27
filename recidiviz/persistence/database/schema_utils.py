@@ -285,15 +285,6 @@ def get_state_database_association_with_names(
     )
 
 
-def schema_type_for_schema_module(module: ModuleType) -> SchemaType:
-    if module == state_schema:
-        return SchemaType.STATE
-    if module == operations_schema:
-        return SchemaType.OPERATIONS
-
-    raise ValueError(f"Unsupported module: {module}")
-
-
 def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
     if isinstance(schema_object, JusticeCountsBase):
         return SchemaType.JUSTICE_COUNTS

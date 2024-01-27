@@ -17,7 +17,6 @@
 
 """Basic tests that migrations are working properly."""
 
-import abc
 from collections import defaultdict
 from typing import Dict, Set
 from unittest.case import TestCase
@@ -54,7 +53,9 @@ class MigrationsTestBase(TestCase):
 
     def setUp(self) -> None:
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(self.schema_type)
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(
+            self.schema_type()
+        )
         self.overridden_env_vars = (
             local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
@@ -65,6 +66,9 @@ class MigrationsTestBase(TestCase):
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
+
+    def expected_missing_indices(self) -> Set[str]:
+        return set()
 
     def fetch_all_enums(self) -> Dict[str, Set[str]]:
         engine = create_engine(
@@ -145,9 +149,8 @@ class MigrationsTestBase(TestCase):
             }
         )
 
-    @property
-    @abc.abstractmethod
-    def schema_type(self) -> SchemaType:
+    @classmethod
+    def schema_type(cls) -> SchemaType:
         raise NotImplementedError
 
     def test_constraints_match_schema(self) -> None:
@@ -233,29 +236,34 @@ class MigrationsTestBase(TestCase):
             raise ValueError(
                 f"Found indices defined in migrations but not in schema.py: {indices_not_in_schema}."
             )
-        # TODO(#17979): Remove `etl_clients_pkey` from exemption below once duplicates from `etl_clients`
-        # are removed or the table itself is deleted.
+
         indices_not_in_migrations = (
-            set(schema_indices) - set(migration_indices) - {"etl_clients_pkey"}
+            set(schema_indices)
+            - set(migration_indices)
+            - self.expected_missing_indices()
         )
         if indices_not_in_migrations:
             raise ValueError(
-                f"Found indices defined in schema.py but not in migrations: {indices_not_in_migrations}"
+                f"Found indices defined in schema.py but not in migrations. If you are "
+                f"*sure* that you don't want a migration defined for this index (e.g. "
+                f"if the specific table's schema is managed by a process outside of "
+                f"alembic), you can add it to the `expected_missing_indices` list for "
+                f"this test class. Missing indices: {indices_not_in_migrations}"
             )
 
         for (
             index_name,
             schema_index_definition,
         ) in schema_indices.items():
-            # TODO(#17979): Remove `etl_clients_pkey` from exemption below once duplicates from `etl_clients`
-            # are removed or the table itself is deleted.
-            if index_name != "etl_clients_pkey":
-                migration_index_definition = migration_indices[index_name]
-                self.assertEqual(
-                    migration_index_definition,
-                    schema_index_definition,
-                    f"Found index {index_name} with conflicting definitions in migrations and schema.py definition",
-                )
+            if index_name in self.expected_missing_indices():
+                continue
+
+            migration_index_definition = migration_indices[index_name]
+            self.assertEqual(
+                migration_index_definition,
+                schema_index_definition,
+                f"Found index {index_name} with conflicting definitions in migrations and schema.py definition",
+            )
 
         # Cleanup needed for this method.
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -366,16 +374,21 @@ class MigrationsTestBase(TestCase):
 class TestCaseTriageMigrations(MigrationsTestBase):
     __test__ = True
 
-    @property
-    def schema_type(self) -> SchemaType:
+    @classmethod
+    def schema_type(cls) -> SchemaType:
         return SchemaType.CASE_TRIAGE
+
+    def expected_missing_indices(self) -> Set[str]:
+        # TODO(#17979): Remove `etl_clients_pkey` from exemption below once duplicates
+        #  from `etl_clients` are removed or the table itself is deleted.
+        return {"etl_clients_pkey"}
 
 
 class TestJusticeCountsMigrations(MigrationsTestBase):
     __test__ = True
 
-    @property
-    def schema_type(self) -> SchemaType:
+    @classmethod
+    def schema_type(cls) -> SchemaType:
         return SchemaType.JUSTICE_COUNTS
 
 
@@ -384,8 +397,8 @@ class TestOperationsMigrations(MigrationsTestBase):
 
     __test__ = True
 
-    @property
-    def schema_type(self) -> SchemaType:
+    @classmethod
+    def schema_type(cls) -> SchemaType:
         return SchemaType.OPERATIONS
 
     def test_direct_ingest_instance_status_contains_data_for_all_states(
@@ -449,6 +462,96 @@ class TestOperationsMigrations(MigrationsTestBase):
 class TestStateMigrations(MigrationsTestBase):
     __test__ = True
 
-    @property
-    def schema_type(self) -> SchemaType:
+    @classmethod
+    def schema_type(cls) -> SchemaType:
         return SchemaType.STATE
+
+
+class TestOutliersMigrations(MigrationsTestBase):
+    __test__ = True
+
+    @classmethod
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.OUTLIERS
+
+    def expected_missing_indices(self) -> Set[str]:
+        # We don't manage the schemas of some of the Outliers tables via alembic
+        # migrations because they are loaded to our Pathways DB via a separate ETL
+        # process. For indices on these tables, we're ok if they are not defined in
+        # migrations.
+        # TODO(#27159): Consider fully managing the Outliers schema via Alembic
+        return {
+            "supervision_officer_metrics_pkey",
+            "supervision_officer_supervisors_pkey",
+            "supervision_district_managers_pkey",
+            "supervision_districts_pkey",
+            "supervision_clients_pkey",
+            "supervision_client_events_pkey",
+            "metric_benchmarks_pkey",
+            "supervision_officer_outlier_status_pkey",
+            "supervision_state_metrics_pkey",
+            "supervision_officers_pkey",
+        }
+
+
+class TestPathwaysMigrations(MigrationsTestBase):
+    __test__ = True
+
+    @classmethod
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.PATHWAYS
+
+    def expected_missing_indices(self) -> Set[str]:
+        # We don't manage the schemas of some of the Pathways tables via alembic
+        # migrations because they are loaded to our Pathways DB via a separate ETL
+        # process. For indices on these tables, we're ok if they are not defined in
+        # migrations.
+        # TODO(#27159): Consider fully managing the Pathways schema via Alembic
+        return {
+            "liberty_to_prison_transitions_pkey",
+            "prison_population_by_dimension_admission_reason",
+            "prison_population_by_dimension_age_group",
+            "prison_population_by_dimension_facility",
+            "prison_population_by_dimension_gender",
+            "prison_population_by_dimension_pk",
+            "prison_population_by_dimension_pkey",
+            "prison_population_by_dimension_race",
+            "prison_population_over_time_pk",
+            "prison_population_over_time_pkey",
+            "prison_population_over_time_time_series",
+            "prison_population_over_time_watermark",
+            "prison_population_person_level_pkey",
+            "prison_population_projection_pkey",
+            "prison_to_supervision_transitions_pkey",
+            "supervision_population_by_dimension_pk",
+            "supervision_population_by_dimension_pkey",
+            "supervision_population_by_dimension_race",
+            "supervision_population_by_dimension_supervision_district",
+            "supervision_population_by_dimension_supervision_level",
+            "supervision_population_over_time_pk",
+            "supervision_population_over_time_pkey",
+            "supervision_population_over_time_time_series",
+            "supervision_population_over_time_watermark",
+            "supervision_population_projection_pkey",
+            "supervision_to_liberty_transitions_pkey",
+            "supervision_to_prison_transitions_pkey",
+            "us_tn_compliant_reporting_workflows_impact_pkey",
+        }
+
+
+class MigrationsTestTest(TestCase):
+    """Tests that any new schema added has migration tests defined."""
+
+    def test_all_schemas_have_tests(self) -> None:
+        schemas_with_coverage = {
+            test_case_cls.schema_type()
+            for test_case_cls in MigrationsTestBase.__subclasses__()
+        }
+
+        all_schemas = set(SchemaType)
+
+        if missing_coverage := all_schemas - schemas_with_coverage:
+            raise ValueError(
+                f"Found schema types with missing migrations test coverage: "
+                f"{missing_coverage}."
+            )
