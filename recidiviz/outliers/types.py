@@ -114,6 +114,10 @@ class OutliersClientEvent:
 
 @attr.s(eq=False)
 class OutliersMetricConfig:
+    """
+    Represents all information needed for a single metric in the Outliers products
+    """
+
     name: str = attr.ib()
 
     outcome_type: MetricOutcome = attr.ib()
@@ -175,6 +179,9 @@ class OutliersBackendConfig:
 
     # List of metrics that are relevant for this state,
     # where each element corresponds to a column name in an aggregated_metrics views
+    # NOTE: if you are removing an existing metric, i.e. replacing it or deleting it,
+    # add the metric to the deprecated_metrics field and create a ticket to remove it
+    # once the metric changes are propogated through to production.
     metrics: List[OutliersMetricConfig] = attr.ib()
 
     # URL that methodology/FAQ links can be pointed to
@@ -207,6 +214,11 @@ class OutliersBackendConfig:
     # A string representing the filters to apply for the state's supervision officer aggregated metrics
     supervision_officer_metric_exclusions: str = attr.ib(default=None)
 
+    # List of metrics that were previously configured. This list is maintained in order
+    # to prevent completely omitting a metric from the webtool when metrics are being
+    # changed or replaced. Context here: https://paper.dropbox.com/doc/Design-Doc-Outliers-Metric-Race-Condition--CIFSxbs7iv0jEUQqZZHsNwqCAg-Mpf1Bq5VbYyxqJyW0jHhb
+    deprecated_metrics: List[OutliersMetricConfig] = attr.ib(default=[])
+
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
@@ -225,6 +237,9 @@ class OutliersBackendConfig:
         )
         c.register_unstructure_hook(OutliersBackendConfig, unst_hook)
         return c.unstructure(self)
+
+    def get_all_metrics(self) -> List[OutliersMetricConfig]:
+        return self.metrics + self.deprecated_metrics
 
 
 @attr.s

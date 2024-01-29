@@ -194,6 +194,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_state_configuration_success(self, mock_config: MagicMock) -> None:
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_1],
+            deprecated_metrics=[TEST_METRIC_3],
             client_events=[TEST_CLIENT_EVENT],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
@@ -215,7 +216,15 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         "name": "incarceration_starts_and_inferred",
                         "outcomeType": "ADVERSE",
                         "titleDisplayName": "Incarceration Rate (CPVs & TPVs)",
-                    }
+                    },
+                    {
+                        "bodyDisplayName": "absconsion rate",
+                        "eventName": "absconsions",
+                        "eventNameSingular": "absconsion",
+                        "name": "absconsions_bench_warrants",
+                        "outcomeType": "ADVERSE",
+                        "titleDisplayName": "Absconsion Rate",
+                    },
                 ],
                 "clientEvents": [
                     {"name": "violation_responses", "displayName": "Sanctions"}
