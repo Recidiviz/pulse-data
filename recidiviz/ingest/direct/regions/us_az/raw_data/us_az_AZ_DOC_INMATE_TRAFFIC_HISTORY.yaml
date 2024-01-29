@@ -17,6 +17,8 @@ columns:
     description: |-
       Date movement took place
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: MOVEMENT_CODE_ID
     description: |-
       ID of the movement code.  FK to AZ_DOC_MOVEMENT_CODES
@@ -55,6 +57,8 @@ columns:
     description: |-
       Date record was created
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: UPDT_USERID
     description: |-
       User_id of person who last updated the record
@@ -63,6 +67,8 @@ columns:
     description: |-
       Date record was last updated
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: CHANGE_ID
     description: |-
       Change_id links to change_history for audit purposes
