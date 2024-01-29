@@ -50,12 +50,6 @@ METRIC_TO_URL = {
 }
 logger = logging.getLogger(__name__)
 
-sentry_sdk.init(
-    dsn=JUSTICE_COUNTS_SENTRY_DSN,
-    # Enable performance monitoring
-    enable_tracing=True,
-)
-
 
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
@@ -162,6 +156,11 @@ def upload_file(filename: str) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
     args = create_parser().parse_args()
     for global_metric, global_url in METRIC_TO_URL.items():
         get_new_mexico_courts_data(

@@ -59,12 +59,6 @@ SUPERAGENCY_SPREADSHEET_ID = "1-w-ZY9uCrbEBX9R6MHRY0Ukv86KuP_aYZx6Bs9ZCqKw"
 
 logger = logging.getLogger(__name__)
 
-sentry_sdk.init(
-    dsn=JUSTICE_COUNTS_SENTRY_DSN,
-    # Enable performance monitoring
-    enable_tracing=True,
-)
-
 
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
@@ -143,6 +137,11 @@ def generate_superagency_summary(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
     args = create_parser().parse_args()
     if args.project_id is not None:
         # When running locally, point to JSON file with service account credentials.

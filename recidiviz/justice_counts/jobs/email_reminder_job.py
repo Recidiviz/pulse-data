@@ -42,12 +42,6 @@ from recidiviz.utils.params import str_to_bool
 
 logger = logging.getLogger(__name__)
 
-sentry_sdk.init(
-    dsn=JUSTICE_COUNTS_SENTRY_DSN,
-    # Enable performance monitoring
-    enable_tracing=True,
-)
-
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
@@ -74,6 +68,11 @@ def send_reminder_emails_to_all_agencies(engine: Engine, dry_run: bool) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
     database_key = SQLAlchemyDatabaseKey.for_schema(
         SchemaType.JUSTICE_COUNTS,
     )
