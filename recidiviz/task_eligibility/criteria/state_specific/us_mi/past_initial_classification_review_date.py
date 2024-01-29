@@ -250,6 +250,9 @@ critical_date_spans AS (
     --start date can equal end date when classification reviews are done on the same day a supervision session starts
     --these sessions should be excluded from critical date spans have passed
     WHERE start_date != {nonnull_end_date_clause('end_date')}
+    --for overlapping spans that have different start dates (Ie the supervision start vs. the SAI start)
+    --spans should be deduped again so that there is only one critical date associated with each span 
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date ORDER BY priority_level, critical_date DESC)=1
 ),
 {critical_date_has_passed_spans_cte()}
 SELECT
