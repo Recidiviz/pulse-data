@@ -44,11 +44,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 
 logger = logging.getLogger(__name__)
-sentry_sdk.init(
-    dsn=JUSTICE_COUNTS_SENTRY_DSN,
-    # Enable performance monitoring
-    enable_tracing=True,
-)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -102,6 +97,11 @@ def create_new_reports(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
     known_args, _ = parse_arguments(sys.argv)
     validate_input(known_args.start_month, known_args.end_month_inclusive)
 
