@@ -16,17 +16,15 @@
 # =============================================================================
 """ Entrypoints for the ingest DAG Lock Management """
 import argparse
+from typing import Dict
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 
-INGEST_LOCK_EXPIRATION_OVERRIDES = {
-    # TODO(#25752): remove this once the IX views has been rewritten
-    StateCode.US_IX: 60
-    * 180,  # 180 minutes
-}
+# TODO(#20930): Remove this once IID is shipped to all states
+INGEST_LOCK_EXPIRATION_OVERRIDES: Dict[StateCode, int] = {}
 
 
 class IngestAcquireLockEntrypoint(EntrypointInterface):

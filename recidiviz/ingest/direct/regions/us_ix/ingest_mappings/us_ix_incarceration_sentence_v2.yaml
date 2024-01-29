@@ -7,12 +7,10 @@ input_columns:
   - SentenceDate
   - EffectiveDate
   - DpedApprovedDate
-  - FtrdApprovedDate
   - SentenceOrderEventTypeName
   - Sequence
   - ChargeId
   - relationships
-  - CorrectionsCompactEndDate
   - SegmentMaxYears
   - SegmentMaxMonths
   - SegmentMaxDays
@@ -25,11 +23,12 @@ input_columns:
   - SegmentDays
   - OffenseSentenceTypeId
   - SentenceStatusId
+  - FtrdApprovedDate
+  - CorrectionsCompactEndDate
   - OffenseSortingOrder
 unused_columns: []
 launch_env:
-  $not:
-    $env: is_dataflow_pipeline
+  $env: is_dataflow_pipeline
 variables:
   # FtrdApprovedDate is sometimes empty in the case of interstate compact sentences so we'll proxy it using CorrectionsCompactEndDate
   # However, note that FtrdApprovedDate is on the term level while CorrectionsCompactEndDate is at the sentence level
@@ -127,30 +126,3 @@ output:
                     - OffenseSortingOrder
               relationships: relationships
               term_PED: DpedApprovedDate
-    task_deadlines:
-      - StateTaskDeadline:
-          task_type: $literal_enum(StateTaskType.TRANSFER_TO_SUPERVISION_FROM_INCARCERATION)
-          eligible_date: SegmentPED
-          update_datetime:
-            $env: results_update_datetime
-          task_metadata:
-            $json_dict:
-              external_id:
-                $concat:
-                  $values:
-                    - OffenderId
-                    - SentenceId
-              sentence_type: $literal("INCARCERATION")
-      - StateTaskDeadline:
-          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
-          eligible_date: $variable(proj_completion_date_var)
-          update_datetime:
-            $env: results_update_datetime
-          task_metadata:
-            $json_dict:
-              external_id:
-                $concat:
-                  $values:
-                    - OffenderId
-                    - SentenceId
-              sentence_type: $literal("INCARCERATION")

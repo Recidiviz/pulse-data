@@ -25,8 +25,7 @@ input_columns:
   - OffenseSortingOrder
 unused_columns: []
 launch_env:
-  $not:
-    $env: is_dataflow_pipeline
+  $env: is_dataflow_pipeline
 output:
   StatePerson:
     external_ids:
@@ -118,17 +117,3 @@ output:
                     - Sequence
                     - OffenseSortingOrder
               relationships: relationships
-    task_deadlines:
-      - StateTaskDeadline:
-          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
-          eligible_date: EndDate
-          update_datetime:
-            $env: results_update_datetime
-          task_metadata:
-            $json_dict:
-              external_id:
-                $concat:
-                  $values:
-                    - OffenderId # Enforced to never be null in query
-                    - SentenceId # Never null in scl_Sentence table
-              sentence_type: $literal("SUPERVISION")
