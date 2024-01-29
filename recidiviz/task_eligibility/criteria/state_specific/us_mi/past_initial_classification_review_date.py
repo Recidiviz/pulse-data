@@ -68,6 +68,7 @@ WITH supervision_starts_with_assessments AS (
     AND sss.person_id = sap.person_id 
     AND sap.assessment_date BETWEEN sss.start_date AND {nonnull_end_date_exclusive_clause('sss.end_date_exclusive')}
   WHERE sss.state_code = "US_MI"
+    AND sss.compartment_level_1 = 'SUPERVISION'
   --only choose the first assessment score within a supervision super session
   QUALIFY ROW_NUMBER() OVER(PARTITION BY sss.state_code, sss.person_id, sss.start_date, sss.end_date ORDER BY sap.assessment_date)=1
 ),
@@ -221,12 +222,23 @@ critical date spans for the supervision super session end when the first classif
   WHERE meets_criteria
   QUALIFY ROW_NUMBER() OVER(PARTITION BY sai.state_code, sai.person_id, sai.start_date, sai.end_date ORDER BY completion_event_date)=1
 ),
+critical_date_spans_all_deduped AS (
 /* For clients that have overlapping spans with different classification review dates, the review date is deduped
 according to the following priority: 
     - a: 12 months required for sex offense and corresponding risk/level 
     - b: 4 months required if on SAI 
     - z: otherwise, 6 months required  */
-{create_sub_sessions_with_attributes('critical_date_spans_all')},
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        critical_date,
+    FROM critical_date_spans_all
+    --each supervision start should only have one critical date assigned 
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date ORDER BY priority_level, critical_date DESC)=1
+),
+{create_sub_sessions_with_attributes('critical_date_spans_all_deduped')},
 critical_date_spans AS (
     SELECT
         state_code,
@@ -238,7 +250,6 @@ critical_date_spans AS (
     --start date can equal end date when classification reviews are done on the same day a supervision session starts
     --these sessions should be excluded from critical date spans have passed
     WHERE start_date != {nonnull_end_date_clause('end_date')}
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date ORDER BY priority_level, critical_date DESC)=1
 ),
 {critical_date_has_passed_spans_cte()}
 SELECT
