@@ -54,11 +54,6 @@ from recidiviz.utils.params import str_to_bool
 
 logger = logging.getLogger(__name__)
 
-sentry_sdk.init(
-    dsn=JUSTICE_COUNTS_SENTRY_DSN,
-    # Enable performance monitoring
-    enable_tracing=True,
-)
 
 # Sheet Title: Agency Dashboard Pull
 # Link: https://docs.google.com/spreadsheets/d/1TcskbQat7a3OA7X-KRra74qBcXZMZVg5nOfdRFa9-64/edit#gid=251741843
@@ -214,6 +209,11 @@ def pull_agencies_with_published_capacity_and_cost_data(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
     args = create_parser().parse_args()
     if args.run_as_script is True:
         environment_str = (

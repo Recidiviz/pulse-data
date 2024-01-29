@@ -42,12 +42,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 
 logger = logging.getLogger(__name__)
 
-sentry_sdk.init(
-    dsn=JUSTICE_COUNTS_SENTRY_DSN,
-    # Enable performance monitoring
-    enable_tracing=True,
-)
-
 
 def main(engine: Engine) -> None:
     """For each agency, this function checks if a monthly report exists for the most recent previous
@@ -149,6 +143,12 @@ def main(engine: Engine) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
+
     database_key = SQLAlchemyDatabaseKey.for_schema(
         SchemaType.JUSTICE_COUNTS,
     )
