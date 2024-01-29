@@ -397,10 +397,12 @@ def get_admin_blueprint(
     def copy_metric_config_to_child_agencies(super_agency_id: int) -> Response:
         """Copies metric settings from a super agency to its child agencies via a Cloud Run Job."""
         request_json = assert_type(request.json, dict)
+        agency_name = assert_type(request_json.get("agency_name"), str)
         user_email = assert_type(request_json.get("user_email"), str)
         metric_definition_key_subset = (
             assert_type(request_json.get("metric_definition_key_subset"), list) or []
         )
+        metric_definition_key_subset_as_string = ",".join(metric_definition_key_subset)
         project_id = (
             GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
             if in_gcp_production() is True
@@ -422,8 +424,10 @@ def get_admin_blueprint(
                         "recidiviz.justice_counts.jobs.copy_superagency_metric_settings_to_child_agencies",
                         "--super_agency_id",
                         str(super_agency_id),
+                        "--agency_name",
+                        str(agency_name),
                         "--metric_definition_key_subset",
-                        str(metric_definition_key_subset),
+                        metric_definition_key_subset_as_string,
                         "--user_email",
                         str(user_email),
                     ]

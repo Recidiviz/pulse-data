@@ -19,28 +19,212 @@
 Cloud Run Job script that copies all metric settings from a super agency to its 
 child agencies, and sends the requesting user an email confirmation upon the success
 of the job.
+
+If child agencies have existing settings that conflict with the super agency,
+they will be overwritten. If the child agency has existing settings that do not
+conflict with the super agency, then they will not be affected.
+
+The following are a list of metric definition keys grouped by system. 
+These can be passed into the metric_definition_key_subset flag to 
+update a subset of metrics.
+
+COURTS: 
+- COURTS_AND_PRETRIAL_FUNDING
+- COURTS_AND_PRETRIAL_EXPENSES
+- COURTS_AND_PRETRIAL_TOTAL_STAFF
+- COURTS_AND_PRETRIAL_PRETRIAL_RELEASES
+- COURTS_AND_PRETRIAL_CASES_FILED
+- COURTS_AND_PRETRIAL_CASES_DISPOSED
+- COURTS_AND_PRETRIAL_SENTENCES
+- COURTS_AND_PRETRIAL_ARRESTS_ON_PRETRIAL_RELEASE
+
+DEFENSE:
+- DEFENSE_FUNDING
+- DEFENSE_EXPENSES
+- DEFENSE_TOTAL_STAFF
+- DEFENSE_CASELOADS_PEOPLE
+- DEFENSE_CASELOADS_STAFF
+- DEFENSE_CASES_APPOINTED_COUNSEL
+- DEFENSE_CASES_DISPOSED
+- DEFENSE_COMPLAINTS_SUSTAINED
+
+JAILS:
+- JAILS_FUNDING
+- JAILS_EXPENSES
+- JAILS_TOTAL_STAFF
+- JAILS_PRE_ADJUDICATION_ADMISSIONS
+- JAILS_POST_ADJUDICATION_ADMISSIONS
+- JAILS_PRE_ADJUDICATION_POPULATION
+- JAILS_POST_ADJUDICATION_POPULATION
+- JAILS_PRE_ADJUDICATION_RELEASES
+- JAILS_POST_ADJUDICATION_RELEASES
+- JAILS_READMISSIONS
+- JAILS_USE_OF_FORCE_INCIDENTS 
+- JAILS_GRIEVANCES_UPHELD
+
+LAW_ENFORCEMENT:
+- LAW_ENFORCEMENT_FUNDING
+- LAW_ENFORCEMENT_EXPENSES
+- LAW_ENFORCEMENT_TOTAL_STAFF
+- LAW_ENFORCEMENT_CALLS_FOR_SERVICE
+- LAW_ENFORCEMENT_ARRESTS
+- LAW_ENFORCEMENT_REPORTED_CRIME
+- LAW_ENFORCEMENT_USE_OF_FORCE_INCIDENTS
+- LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED
+
+PRISONS:
+- PRISONS_FUNDING
+- PRISONS_EXPENSES
+- PRISONS_TOTAL_STAFF
+- PRISONS_ADMISSIONS
+- PRISONS_POPULATION
+- PRISONS_RELEASES
+- PRISONS_READMISSIONS
+- PRISONS_USE_OF_FORCE_INCIDENTS
+- PRISONS_GRIEVANCES_UPHELD
+
+PROSECUTION: 
+- PROSECUTION_FUNDING
+- PROSECUTION_EXPENSES
+- PROSECUTION_TOTAL_STAFF
+- PROSECUTION_CASELOADS_PEOPLE
+- PROSECUTION_CASELOADS_STAFF
+- PROSECUTION_CASES REFERRED
+- PROSECUTION_CASES_DECLINED
+- PROSECUTION_CASES_DIVERTED
+- PROSECUTION_CASES_PROSECUTED
+- PROSECUTION_CASES_DISPOSED
+- PROSECUTION_VIOLATIONS_WITH_DISCIPLINARY_ACTION
+
+SUPERVISION: 
+- SUPERVISION_FUNDING
+- SUPERVISION_EXPENSES
+- SUPERVISION_TOTAL_STAFF
+- SUPERVISION_CASELOADS_PEOPLE
+- SUPERVISION_CASELOADS_STAFF
+- SUPERVISION_SUPERVISION_STARTS
+- SUPERVISION_POPULATION
+- SUPERVISION_SUPERVISION_TERMINATIONS
+- SUPERVISION_SUPERVISION_VIOLATIONS
+- SUPERVISION_REVOCATIONS
+- SUPERVISION_RECONVICTIONS
+
+Note: If you need to copy over metrics for a supervision subsystem, replace the SUPERVISION 
+in the metric name with the name of the subsystem (i.e SUPERVISION_FUNDING -> PAROLE_FUNDING).
 """
 
 import argparse
 import logging
+from typing import List
 
-from recidiviz.justice_counts.utils.constants import UNSUBSCRIBE_GROUP_ID
+import sentry_sdk
+from sqlalchemy.orm import Session
+
+from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.utils.constants import (
+    JUSTICE_COUNTS_SENTRY_DSN,
+    UNSUBSCRIBE_GROUP_ID,
+)
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
-
-# from recidiviz.tools.justice_counts.copy_over_metric_settings_to_child_agencies import (
-#     copy_metric_settings,
-# )
 from recidiviz.utils.params import str_to_list
 
 logger = logging.getLogger(__name__)
 
+
+def copy_metric_settings(
+    super_agency_id: int,
+    dry_run: bool,
+    metric_definition_key_subset: List[str],
+    current_session: Session,
+) -> None:
+    """Copies all (or a subset of) metric settings from a super agency to its child agencies"""
+
+    if dry_run is True:
+        logger.info("DRY RUN! THE FOLLOWING CHANGES WILL NOT BE COMMITTED.")
+    super_agency_list = AgencyInterface.get_agencies_by_id(
+        session=current_session, agency_ids=[super_agency_id]
+    )
+
+    if len(super_agency_list) == 0:
+        logger.info(
+            "No agency was found with the super_agency_id provided. Please check that you are running the script in the right environment"
+        )
+        raise JusticeCountsServerError(
+            code="superagency_not_found",
+            description=f"No agency with id {super_agency_id} was found.",
+        )
+
+    super_agency = super_agency_list.pop()
+
+    child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
+        session=current_session, agency_ids=[super_agency_id]
+    )
+    super_agency_metric_settings = DatapointInterface.get_metric_settings_by_agency(
+        session=current_session,
+        agency=super_agency,
+    )
+
+    for child_agency in child_agencies:
+        logger.info("Child Agency: %s", child_agency.name)
+        for metric_setting in super_agency_metric_settings:
+            if "ALL" in set(
+                metric_definition_key_subset
+            ) or metric_setting.metric_definition.key in set(
+                metric_definition_key_subset
+            ):
+                logger.info("Metric %s, is being updated", metric_setting.key)
+                if metric_setting.metric_definition.key not in METRIC_KEY_TO_METRIC:
+                    logger.info(
+                        "Metric deprecated: %s, skipping",
+                        metric_setting.metric_definition.key,
+                    )
+                DatapointInterface.add_or_update_agency_datapoints(
+                    session=current_session,
+                    agency=child_agency,
+                    agency_metric=metric_setting,
+                )
+
+    if dry_run is False:
+        current_session.commit()
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
+
+    database_key = SQLAlchemyDatabaseKey.for_schema(
+        SchemaType.JUSTICE_COUNTS,
+    )
+    justice_counts_engine = SQLAlchemyEngineManager.init_engine(
+        database_key=database_key,
+        secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+    )
+    session = Session(bind=justice_counts_engine)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--super_agency_id",
         type=int,
         help="The id of the super_agency you want to copy agency settings from.",
+        required=True,
+    )
+    parser.add_argument(
+        "--agency_name",
+        type=str,
+        help="The name of the superagency.",
         required=True,
     )
     parser.add_argument(
@@ -52,30 +236,38 @@ if __name__ == "__main__":
     parser.add_argument(
         "--metric_definition_key_subset",
         type=str_to_list,
-        help="List of metrics definition keys that should be copied over. To find a list of metric definition keys for all systems check the script (copy_over_metric_settings_to_child_agencies.py).",
-        required=False,
+        help="List of metrics definition keys that should be copied over.",
+        required=True,
     )
     args = parser.parse_args()
 
-    # TODO(#1056) - Debug/refactor to get `copy_metric_settings` working
-    # with local_project_id_override(args.project_id):
-    #     copy_metric_settings(
-    #         dry_run=True,
-    #         super_agency_id=args.super_agency_id,
-    #         metric_definition_key_subset=args.metric_definition_key_subset,
-    # )
-
-    # Send confirmation email once metrics have been successfully copied over
     send_grid_client = SendGridClientWrapper(key_type="justice_counts")
     try:
+        copy_metric_settings(
+            dry_run=False,
+            super_agency_id=args.super_agency_id,
+            metric_definition_key_subset=args.metric_definition_key_subset,
+            current_session=session,
+        )
+    except Exception as e:
+        logging.exception("Failed to copy metric settings: %s", e)
         send_grid_client.send_message(
             to_email=args.user_email,
             from_email="no-reply@justice-counts.org",
             from_email_name="Justice Counts",
-            subject=f"Your request to copy superagency {args.super_agency_id}'s metric settings to its child agencies has been completed.",
-            html_content=f"""<p>All of the metric settings from superagency {args.super_agency_id} have been successfully copied over to all of its child agencies.</p>""",
+            subject=f"Unfortunately, your request to copy {args.agency_name}'s (ID: {args.super_agency_id}) metric settings to its child agencies could not be completed.",
+            html_content=f"""<p>Sorry, something went wrong while attempting to copy all of the metric settings from {args.agency_name} (ID: {args.super_agency_id}). Please reach out to a member of the Recidiviz team to help troubleshoot.</p>""",
             disable_link_click=True,
             unsubscribe_group_id=UNSUBSCRIBE_GROUP_ID,
         )
-    except Exception as e:
-        logging.exception("Failed to send confirmation email: %s", e)
+    else:
+        # Send confirmation email once metrics have been successfully copied over
+        send_grid_client.send_message(
+            to_email=args.user_email,
+            from_email="no-reply@justice-counts.org",
+            from_email_name="Justice Counts",
+            subject=f"Your request to copy {args.agency_name}'s (ID: {args.super_agency_id}) metric settings to its child agencies has been completed.",
+            html_content=f"""<p>Success! All of the metric settings from {args.agency_name} (ID: {args.super_agency_id}) have been copied over to all of its child agencies.</p>""",
+            disable_link_click=True,
+            unsubscribe_group_id=UNSUBSCRIBE_GROUP_ID,
+        )
