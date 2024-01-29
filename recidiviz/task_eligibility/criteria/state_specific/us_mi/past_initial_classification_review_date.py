@@ -234,6 +234,7 @@ according to the following priority:
         start_date,
         end_date,
         critical_date,
+        priority_level
     FROM critical_date_spans_all
     --each supervision start should only have one critical date assigned 
     QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date ORDER BY priority_level, critical_date DESC)=1
