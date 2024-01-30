@@ -23,6 +23,8 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+INCARCERATION_ASSESSMENT_TYPES = ["CAF", "ORAS_PRISON_INTAKE"]
+
 ASSESSMENT_SCORE_SESSIONS_VIEW_NAME = "assessment_score_sessions"
 
 ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
@@ -44,6 +46,9 @@ WITH state_assessment AS (
         CASE
             WHEN assessment_type LIKE "ORAS%" THEN "ORAS"
             ELSE assessment_type END AS assessment_type_short,
+        -- Flags assessments that are only used in facilities, not supervision. Some instruments,
+        -- e.g. LSIR can be used in both supervision and incarceration settings
+        assessment_type IN ('{incarceration_assessment}') AS is_incarceration_only_assessment_type,
         assessment_class,
         assessment_score,
         assessment_level,
@@ -92,6 +97,7 @@ SELECT
         PARTITION BY person_id, assessment_type_short ORDER BY assessment_date ASC
     ) AS score_end_date,
     assessment_type,
+    is_incarceration_only_assessment_type,
     assessment_class,
     assessment_score,
     assessment_level,
@@ -109,6 +115,7 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
+    incarceration_assessment="', '".join(INCARCERATION_ASSESSMENT_TYPES),
     should_materialize=True,
 )
 

@@ -93,8 +93,23 @@ VIOLATION_RESPONSES_QUERY_TEMPLATE = """
             violations.response_date,
             ARRAY_AGG(CONCAT(violation_type,'-',violation_type_subtype)) AS violations_array,
             ARRAY_AGG(DISTINCT violations.violation_date IGNORE NULLS) AS violation_dates_array,
+            -- Any value because most_severe_sanction_level is already unique at the person-response date level
+            ANY_VALUE(most_severe_sanction_level) AS most_severe_sanction_level,
             MAX(violations.violation_date) AS most_recent_violation_date,
         FROM `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized` violations
+        LEFT JOIN (
+            -- The SanctionLevel metadata is only in use for TN for now. For a given person_id and response_date, over 98%
+            -- of the sanctions have the same Sanction Level. When that is not true, we take the most severe sanction level
+            SELECT state_code, 
+                    person_id,
+                    response_date,
+                    -- An empty string for SanctionLevel indicates that it was associated with a higher, zero-tolerance
+                    -- sanction
+                    MAX(CAST(NULLIF(JSON_EXTRACT_SCALAR(violation_response_metadata,'$.SanctionLevel'),'') AS INT64)) AS most_severe_sanction_level
+            FROM `{project_id}.{normalized_state_dataset}.state_supervision_violation_response`
+            GROUP BY 1,2,3
+            )
+        USING(person_id, state_code, response_date)
         GROUP BY 1,2,3
     ),
     violations_cte AS (
@@ -170,6 +185,7 @@ VIOLATION_RESPONSES_QUERY_TEMPLATE = """
         violations.* EXCEPT(rn),
         violations_array,
         violation_dates_array,
+        most_severe_sanction_level,
         most_recent_violation_date,
         current_session.session_id AS current_session_id,
         most_recent_supervision_session.session_id AS most_recent_supervision_session_id,

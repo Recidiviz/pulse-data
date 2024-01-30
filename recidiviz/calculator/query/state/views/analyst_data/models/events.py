@@ -341,7 +341,7 @@ ON
     EventQueryBuilder(
         event_type=EventType.INCARCERATION_START,
         description="Transitions to incarceration",
-        sql_source="""SELECT
+        sql_source=f"""SELECT
     a.state_code,
     a.person_id,
     a.start_date,
@@ -359,40 +359,58 @@ ON
     COALESCE(JSON_EXTRACT_SCALAR(viol.violation_metadata, '$.ViolationType'), '') = 'INFERRED' as violation_is_inferred,
     COUNT(DISTINCT c.referral_date)
         OVER (PARTITION BY a.person_id, a.start_date) AS prior_treatment_referrals_1y,
-    css.compartment_level_2 AS latest_active_supervision_type,
+    css_active.compartment_level_2 AS latest_active_supervision_type,
+    css_active.correctional_level_end AS latest_active_supervision_level,
+    asmt.assessment_level AS latest_assessment_level,
 FROM
-    `{project_id}.sessions.compartment_level_1_super_sessions_materialized` a
+    `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` a
 -- Get treatment referrals within 1 year of incarceration
 LEFT JOIN
-    `{project_id}.normalized_state.state_program_assignment` c
+    `{{project_id}}.normalized_state.state_program_assignment` c
 ON
     a.person_id = c.person_id
     AND DATE_SUB(a.start_date, INTERVAL 365 DAY) <= c.referral_date
 -- Get all incarceration commitments during the super session
 LEFT JOIN
-    `{project_id}.dataflow_metrics_materialized.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` d
+    `{{project_id}}.dataflow_metrics_materialized.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` d
 ON
     a.person_id = d.person_id
-    AND d.admission_date BETWEEN a.start_date AND COALESCE(a.end_date, "9999-01-01")
+    AND d.admission_date BETWEEN a.start_date AND {nonnull_end_date_clause("a.end_date")}
 LEFT JOIN
-    `{project_id}.normalized_state.state_supervision_violation` viol
+    `{{project_id}}.normalized_state.state_supervision_violation` viol
 ON
     d.person_id = viol.person_id
     AND d.most_severe_violation_id = viol.supervision_violation_id
 LEFT JOIN
-    `{project_id}.sessions.compartment_level_1_super_sessions_materialized` s
+    `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` s
 ON s.person_id = a.person_id
-  --join to the previous super session precedeing the incarceration start if it's a supervision super session  
-    AND a.compartment_level_1_super_session_id = s.compartment_level_1_super_session_id +1 
+  --join to the previous super session preceding the incarceration start if it's a supervision super session  
+    AND a.compartment_level_1_super_session_id = s.compartment_level_1_super_session_id + 1 
     AND s.compartment_level_1 = "SUPERVISION"
+-- This join with compartment sessions brings active compartments from the previous SUPERVISION super session
 LEFT JOIN 
-    `{project_id}.sessions.compartment_sessions_materialized` css
-ON css.person_id = s.person_id
-    AND css.session_id BETWEEN s.session_id_start AND s.session_id_end
-    --only join active compartment level 2 values 
-    AND css.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT")
+    `{{project_id}}.sessions.compartment_sessions_materialized` css_active
+ON css_active.person_id = s.person_id
+    AND css_active.session_id BETWEEN s.session_id_start AND s.session_id_end
+    --only keep active compartment level 2 values
+    AND css_active.compartment_level_2 IN ("PAROLE", "PROBATION", "INFORMAL_PROBATION", "DUAL", "COMMUNITY_CONFINEMENT") 
     --the incarceration start should be after the active compartment starts 
-    AND a.start_date >= css.start_date
+    AND a.start_date >= css_active.start_date
+LEFT JOIN
+    `{{project_id}}.sessions.system_sessions_materialized` ss
+ON
+    a.person_id = ss.person_id
+    AND css_active.session_id BETWEEN ss.session_id_start AND ss.session_id_end
+LEFT JOIN 
+    `{{project_id}}.sessions.assessment_score_sessions_materialized` asmt
+ON
+    asmt.person_id = a.person_id
+    -- Pull assessment session during incarceration start
+    AND a.start_date BETWEEN asmt.assessment_date AND {nonnull_end_date_exclusive_clause("asmt.score_end_date")}    
+    -- Ensure assessment is within the same system session
+    AND asmt.assessment_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause("ss.end_date_exclusive")}
+    -- Filter out incarceration-only assessments
+    AND NOT asmt.is_incarceration_only_assessment_type
 WHERE
     a.compartment_level_1 = "INCARCERATION"
 QUALIFY ROW_NUMBER() OVER (
@@ -400,7 +418,9 @@ QUALIFY ROW_NUMBER() OVER (
     -- Prioritize the first known violation type and the latest active supervision type 
     ORDER BY
         IF(COALESCE(d.most_severe_violation_type, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN", 0, 1),
-        d.admission_date, css.start_date DESC
+        d.admission_date,
+        css_active.start_date DESC,
+        asmt.assessment_date DESC 
 ) = 1""",
         attribute_cols=[
             "inflow_from_level_1",
@@ -412,6 +432,8 @@ QUALIFY ROW_NUMBER() OVER (
             "prior_treatment_referrals_1y",
             "is_discretionary",
             "latest_active_supervision_type",
+            "latest_active_supervision_level",
+            "latest_assessment_level",
         ],
         event_date_col="start_date",
     ),
@@ -715,6 +737,7 @@ WHERE compartment_level_1 = "SUPERVISION"
     a.compartment_level_1,
     a.compartment_level_2,
     a.end_reason,
+    a.correctional_level_end AS previous_supervision_level,
     TRUE AS is_discretionary,
     -- Get the first non-null violation type among supervision terminations occurring during the super session
     COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
@@ -724,6 +747,8 @@ WHERE compartment_level_1 = "SUPERVISION"
     COUNT(DISTINCT d.referral_date)
         OVER (PARTITION BY a.person_id, a.end_date_exclusive) AS prior_treatment_referrals_1y,
     css.compartment_level_2 AS latest_active_supervision_type,
+    css.correctional_level_end AS latest_active_supervision_level,
+    asmt.assessment_level AS latest_assessment_level,
 FROM
     `{{project_id}}.sessions.compartment_sessions_materialized` a
 LEFT JOIN
@@ -764,6 +789,21 @@ LEFT JOIN
 ON
     a.person_id = d.person_id
     AND DATE_SUB(a.end_date_exclusive, INTERVAL 365 DAY) <= d.referral_date
+LEFT JOIN
+    `{{project_id}}.sessions.system_sessions_materialized` ss
+ON
+    a.person_id = ss.person_id
+    AND a.session_id BETWEEN ss.session_id_start AND ss.session_id_end
+LEFT JOIN 
+    `{{project_id}}.sessions.assessment_score_sessions_materialized` asmt
+ON
+    asmt.person_id = a.person_id
+    -- Pull assessment session during supervision termination
+    AND a.end_date_exclusive BETWEEN asmt.assessment_date AND {nonnull_end_date_exclusive_clause("asmt.score_end_date")}
+    -- Ensure assessment is within the same system session
+    AND asmt.assessment_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause("ss.end_date_exclusive")}
+    -- Filter out incarceration-only assessments
+    AND NOT asmt.is_incarceration_only_assessment_type
 WHERE
     a.compartment_level_1 = "SUPERVISION"
     AND a.end_reason IN ("ADMITTED_TO_INCARCERATION", "REVOCATION")
@@ -773,7 +813,9 @@ QUALIFY ROW_NUMBER() OVER (
     -- Prioritize the first known violation type and the latest active supervision type 
     ORDER BY 
         IF(COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN", 0, 1), 
-        c.termination_date, css.start_date DESC
+        c.termination_date,
+        css.start_date DESC,
+        asmt.assessment_date DESC
 ) = 1
 """,
         attribute_cols=[
@@ -787,6 +829,8 @@ QUALIFY ROW_NUMBER() OVER (
             "prior_treatment_referrals_1y",
             "is_discretionary",
             "latest_active_supervision_type",
+            "latest_active_supervision_level",
+            "latest_assessment_level",
         ],
         event_date_col="end_date_exclusive",
     ),
@@ -889,9 +933,9 @@ FROM
     EventQueryBuilder(
         event_type=EventType.VIOLATION,
         description="Violations",
-        sql_source="""SELECT
-    state_code,
-    person_id,
+        sql_source=f"""SELECT
+    v.state_code,
+    v.person_id,
     IFNULL(violation_date, response_date) AS event_date,
     COALESCE(violation_type, "INTERNAL_UNKNOWN") AS violation_type,
     violation_type_subtype,
@@ -902,11 +946,17 @@ FROM
     violation_date IS NULL AS is_inferred_violation_date,
     -- Deduplicates to the earliest response date associated with the violation date
     #TODO(#27010) remove once support for custom units of analysis are implemented 
-    gender,
-    prioritized_race_or_ethnicity,
-    MIN(response_date) AS response_date
+    v.gender,
+    v.prioritized_race_or_ethnicity,
+    MIN(response_date) AS response_date,
+    -- This should already be unique since we're pulling from sub-sessions
+    ANY_VALUE(css.correctional_level) AS supervision_level,
 FROM
-    `{project_id}.dataflow_metrics_materialized.most_recent_violation_with_response_metrics_materialized`
+    `{{project_id}}.dataflow_metrics_materialized.most_recent_violation_with_response_metrics_materialized` v
+LEFT JOIN
+    `{{project_id}}.sessions.compartment_sub_sessions_materialized` css
+ON v.person_id = css.person_id
+AND IFNULL(violation_date, response_date) BETWEEN css.start_date AND {nonnull_end_date_exclusive_clause("css.end_date_exclusive")}
 WHERE
     IFNULL(violation_date, response_date) IS NOT NULL
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
@@ -922,6 +972,7 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
             "is_inferred_violation_date",
             "gender",
             "prioritized_race_or_ethnicity",
+            "supervision_level",
         ],
         event_date_col="event_date",
     ),
@@ -938,6 +989,7 @@ WHERE
             "most_serious_violation_type",
             "most_serious_violation_sub_type",
             "most_severe_response_decision",
+            "most_severe_sanction_level",
         ],
         event_date_col="response_date",
     ),
