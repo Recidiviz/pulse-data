@@ -25,6 +25,7 @@ from airflow.providers.google.cloud.hooks.dataflow import (
     DataflowHook,
     DataflowJobStatus,
 )
+from airflow.providers.google.cloud.links.dataflow import DataflowJobLink
 from airflow.providers.google.cloud.operators.dataflow import (
     DataflowStartFlexTemplateOperator,
 )
@@ -93,10 +94,18 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
                 )
                 return self.get_job()
 
+            # This adds a button in the Airflow UI that links directly to the Dataflow job.
+            def set_current_job(current_job: Dict[Any, Any]) -> None:
+                self.job = current_job
+                DataflowJobLink.persist(
+                    self, context, self.project_id, self.location, self.job.get("id")
+                )
+
             return hook.start_flex_template(
                 location=self.location,
                 project_id=self.project_id,
                 body=self.body,
+                on_new_job_callback=set_current_job,
             )
         # Dataflow `wait_for_done` methods do not raise an `Exception` subclass, they raise an `Exception` on failure
         except Exception as e:
