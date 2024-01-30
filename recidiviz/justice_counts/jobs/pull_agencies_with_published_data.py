@@ -28,6 +28,7 @@ python -m recidiviz.justice_counts.jobs.pull_agencies_with_published_data \
 import argparse
 import datetime
 import logging
+import urllib.parse
 from collections import defaultdict
 from typing import Any, Dict, Set, Tuple
 
@@ -146,7 +147,8 @@ def calculate_columns_helper(
         if environment == "STAGING"
         else "https://dashboard-demo.justice-counts.org/agency/"
     )
-    link = site + agency_name.replace(" ", "-").lower()
+    # Encode agency name as URI
+    link = site + urllib.parse.quote(agency_name).lower()
     num_time_periods_reported = str(len(agency_id_to_time_periods[agency_id]))
     return link, num_time_periods_reported
 
