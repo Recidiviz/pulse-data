@@ -72,7 +72,7 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
             AND s.person_id = e.person_id
             AND s.state_code = e.state_code
         WHERE 
-            s.state_code = "US_IX"
+            s.state_code IN ("US_IX", "US_AR")
             AND s.compartment_level_0 = "SUPERVISION"
         GROUP BY 1, 2, 3
     )
