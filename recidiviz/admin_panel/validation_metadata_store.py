@@ -176,7 +176,7 @@ def validation_error_table_query(
     limit: int,
 ) -> str:
     return f"""
-SELECT * FROM {project_id}.{validation_address.dataset_id}.{validation_address.table_id}
+SELECT * FROM `{project_id}.{validation_address.dataset_id}.{validation_address.table_id}`
 WHERE region_code = "{region_code}"
 LIMIT {limit}
 """
@@ -188,7 +188,7 @@ def validation_error_table_count_query(
     region_code: str,
 ) -> str:
     return f"""
-    SELECT COUNT(*) as count FROM {project_id}.{validation_address.dataset_id}.{validation_address.table_id}
+    SELECT COUNT(*) as count FROM `{project_id}.{validation_address.dataset_id}.{validation_address.table_id}`
     WHERE region_code = "{region_code}"
     """
 

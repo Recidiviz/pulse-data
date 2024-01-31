@@ -40,18 +40,13 @@ from recidiviz.view_registry.deployed_views import (
     deployed_view_builders,
 )
 
-# Regex to find datasets that are referenced directly in a query template, rather that
-# being injected via a query argument. E.g. if the query contains
-# `{project_id}.my_dataset.my_table` instead of `{project_id}.{dataset}.my_table`.
-DIRECTLY_REFERENCED_DATASET_ID_REGEX = re.compile(
-    r"`[a-z_{}]+\.([a-zA-Z_\d]+)\.[a-zA-Z_\d]+`"
-)
 
-
-@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
 class DeployedViewsTest(unittest.TestCase):
     """Tests the deployed views configuration"""
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
     def test_unique_addresses(self) -> None:
         view_addresses: Dict[BigQueryAddress, BigQueryViewBuilder] = {}
         for view_builder in all_deployed_view_builders():
@@ -78,6 +73,9 @@ class DeployedViewsTest(unittest.TestCase):
 
             self.fail(f"Two different view builders defined with address [{address}].")
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
     def test_deployed_views(self) -> None:
         all_view_builders = all_deployed_view_builders()
         staging_view_builders = deployed_view_builders(GCP_PROJECT_STAGING)
@@ -102,6 +100,9 @@ class DeployedViewsTest(unittest.TestCase):
         self.assertGreater(len(prod_view_builders), 0)
         self.assertLessEqual(len(prod_view_builders), len(all_view_builders))
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
     def test_build_all_views_perf(self) -> None:
         all_view_builders = all_deployed_view_builders()
         # some view builders are constants (which run logic on import, which happens before the test starts)
@@ -117,6 +118,9 @@ class DeployedViewsTest(unittest.TestCase):
         # about .28 seconds).
         self.assertLessEqual(total_seconds, 5)
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
     def test_view_descriptions(self) -> None:
         for view_builder in all_deployed_view_builders():
             view = view_builder.build()
@@ -126,6 +130,9 @@ class DeployedViewsTest(unittest.TestCase):
             if view.materialized_address:
                 _ = view.materialized_table_bq_description
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
     def test_views_have_valid_parents(self) -> None:
         for project_id in GCP_PROJECTS:
             views = build_views_to_update(
@@ -152,6 +159,32 @@ class DeployedViewsTest(unittest.TestCase):
                     raise ValueError(
                         f"Found view {view.address.to_str()} that references parent tables that"
                         f"are neither registered views nor tables in a valid source table dataset: {parent_strs}"
+                    )
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456")
+    )
+    def test_table_references_conform_to_expected_format(self) -> None:
+        project_id = "recidiviz-456"
+        regex = re.compile(
+            r"(?P<leading_char>.)recidiviz-456\.(?P<dataset_id>[\w-]*)\.(?P<table_id>[\w-]*)(?P<trailing_char>.?)"
+        )
+
+        views = build_views_to_update(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=deployed_view_builders(project_id),
+            address_overrides=None,
+        )
+        for view in views:
+            view_query = view.view_query
+            table_refs = re.findall(regex, view_query)
+            for leading_char, dataset_id, table_id, trailing_char in table_refs:
+                if leading_char != "`" and trailing_char != "`":
+                    self.fail(
+                        f"Found view [{view.address.to_str()}] with table/view "
+                        f"dependency [{dataset_id}.{table_id}] which is not properly "
+                        f"formatted. All table and view references should be surrounded "
+                        f"by backticks, e.g. `{{project_id}}.{dataset_id}.{table_id}`."
                     )
 
 
