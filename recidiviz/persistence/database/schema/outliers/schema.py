@@ -22,6 +22,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     Date,
+    DateTime,
     Float,
     ForeignKeyConstraint,
     Identity,
@@ -256,7 +257,7 @@ class Configuration(OutliersBase):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     updated_by = Column(String, nullable=False)
-    updated_at = Column(Date, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
     status = Column(String, nullable=False)
     feature_variant = Column(String)
     supervision_officer_label = Column(String)
