@@ -26,11 +26,7 @@ from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
-    IngestViewManifest,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    INGEST_VIEW_RESULTS_UPDATE_DATETIME,
     IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -51,10 +47,7 @@ from recidiviz.persistence.entity.generate_primary_key import (
     generate_primary_key,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
-from recidiviz.pipelines.ingest.pipeline_parameters import (
-    IngestPipelineParameters,
-    MaterializationMethod,
-)
+from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.state.associate_with_primary_keys import (
     MERGED_ROOT_ENTITIES_WITH_DATES,
     PRIMARY_KEYS,
@@ -85,18 +78,6 @@ from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
-
-
-def materialization_method_for_ingest_view(
-    ingest_view_manifest: IngestViewManifest,
-    default_materialization_method: MaterializationMethod,
-) -> MaterializationMethod:
-    return (
-        MaterializationMethod.ORIGINAL
-        if INGEST_VIEW_RESULTS_UPDATE_DATETIME
-        in ingest_view_manifest.output.env_properties_referenced()
-        else default_materialization_method
-    )
 
 
 def get_pipeline_output_tables(expected_output_entities: Set[str]) -> Set[str]:
@@ -138,9 +119,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         field_index = CoreEntityFieldIndex()
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
         state_code = StateCode(self.pipeline_parameters.state_code)
-        default_materialization_method = MaterializationMethod(
-            self.pipeline_parameters.materialization_method
-        )
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
 
         region = direct_ingest_regions.get_direct_ingest_region(
@@ -197,11 +175,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     else None
                 )
 
-            materialization_method = materialization_method_for_ingest_view(
-                ingest_manifest_collector.ingest_view_to_manifest[ingest_view],
-                default_materialization_method=default_materialization_method,
-            )
-
             ingest_view_results: beam.PCollection[
                 Dict[str, Any]
             ] = p | f"Materialize {ingest_view} results" >> GenerateIngestViewResults(
@@ -210,7 +183,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 ingest_view_name=ingest_view,
                 raw_data_tables_to_upperbound_dates=raw_data_tables_to_upperbound_dates,
                 ingest_instance=ingest_instance,
-                materialization_method=materialization_method,
             )
 
             _ = (

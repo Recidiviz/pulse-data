@@ -57,6 +57,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    INGEST_VIEW_RESULTS_UPDATE_DATETIME,
     IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
@@ -959,3 +960,32 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                                 f"that do not correspond to any input fixture files in [{os.path.join(raw_data_fixtures_directory, raw_data_dependency)}]: "
                                 f"extra file: {file}, files in ingest view: {file_name_to_ingest_view_folder[ingest_view]}, files in raw data: {raw_file_fixtures}",
                             )
+
+    def test_ingest_views_do_not_reference_result_update_datetime_for_dataflow(
+        self,
+    ) -> None:
+        for region_code in get_existing_direct_ingest_states():
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=region_code.value
+            )
+            ingest_view_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IngestViewManifestCompilerDelegateImpl(
+                    region=region, schema_type=SchemaType.STATE
+                ),
+            )
+            for ingest_instance in DirectIngestInstance:
+                for (
+                    ingest_view
+                ) in ingest_view_manifest_collector.launchable_ingest_views(
+                    ingest_instance, is_dataflow_pipeline=True
+                ):
+                    manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
+                        ingest_view
+                    ]
+                    self.assertFalse(
+                        INGEST_VIEW_RESULTS_UPDATE_DATETIME
+                        in manifest.output.env_properties_referenced(),
+                        f"Found reference to {INGEST_VIEW_RESULTS_UPDATE_DATETIME} in {ingest_view} for {region_code} for {ingest_instance}. "
+                        "This is not allowed in Dataflow pipelines - consider refactoring to use @ALL in your ingest view instead.",
+                    )

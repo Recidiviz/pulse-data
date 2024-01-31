@@ -36,7 +36,6 @@ Examples:
         --state_code US_CA \
         --sandbox_prefix my_prefix \
         --ingest_instance SECONDARY \
-        --materialization_method original \
         --ingest_view_results_only True \
         --skip_build True \
         --ingest_views_to_run "person staff" \
@@ -78,7 +77,6 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.pipelines.ingest.pipeline_parameters import (
     INGEST_PIPELINE_NAME,
     IngestPipelineParameters,
-    MaterializationMethod,
 )
 from recidiviz.pipelines.ingest.pipeline_utils import ingest_pipeline_name
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
@@ -269,12 +267,6 @@ def main() -> None:
         f"[{params.project}] which will output to datasets "
         f"[{params.ingest_view_results_output}] and [{params.output}] - continue?"
     )
-
-    if params.materialization_method == MaterializationMethod.ORIGINAL.value:
-        prompt_for_confirmation(
-            "Pipeline will use materialization method ORIGINAL which can be very "
-            "expensive (>$100 per run) - continue?"
-        )
 
     with local_project_id_override(params.project):
         bq_client = BigQueryClientImpl()

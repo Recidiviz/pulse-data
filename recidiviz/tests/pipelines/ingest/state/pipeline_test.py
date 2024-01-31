@@ -15,13 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the state ingest pipeline."""
-from datetime import date, datetime
+from datetime import date
 from typing import List
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state import pipeline
@@ -137,53 +136,6 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         )
         person_3.external_ids = [external_id_3_1, external_id_3_2]
 
-        # IngestTaskDeadline
-        person_4 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
-        )
-        external_id_4 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
-            external_id="1",
-            id_type="US_DD_ID_TYPE",
-            person=person_4,
-        )
-        person_4.external_ids = [external_id_4]
-
-        task_deadline_1 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 1),
-            update_datetime=datetime(2023, 7, 1, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        task_deadline_2 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 2),
-            update_datetime=datetime(2023, 7, 2, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        task_deadline_3 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 3),
-            update_datetime=datetime(2023, 7, 3, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        task_deadline_4 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 4),
-            update_datetime=datetime(2023, 7, 4, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        person_4.task_deadlines = [
-            task_deadline_1,
-            task_deadline_2,
-            task_deadline_3,
-            task_deadline_4,
-        ]
-
         # IngestMultipleParents
         external_id_5 = entities.StatePersonExternalId.new_with_defaults(
             state_code=self.region_code().value,
@@ -289,7 +241,6 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             person_1,
             person_2,
             person_3,
-            person_4,
             person_5,
         ]
 
@@ -313,7 +264,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
     def test_state_ingest_pipeline_ingest_views_to_run_subset(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name=INGEST_INTEGRATION)
-        subset_of_ingest_views = ["ingest12", "ingestTaskDeadline"]
+        subset_of_ingest_views = ["ingest12"]
         expected_ingest_view_output = {
             ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name=INGEST_INTEGRATION
@@ -349,54 +300,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         )
         external_id_2.person = person_2
 
-        # IngestTaskDeadline
-        person_4 = entities.StatePerson.new_with_defaults(
-            state_code=self.region_code().value,
-        )
-        external_id_4 = entities.StatePersonExternalId.new_with_defaults(
-            state_code=self.region_code().value,
-            external_id="1",
-            id_type="US_DD_ID_TYPE",
-            person=person_4,
-        )
-        person_4.external_ids = [external_id_4]
-
-        task_deadline_1 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 1),
-            update_datetime=datetime(2023, 7, 1, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        task_deadline_2 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 2),
-            update_datetime=datetime(2023, 7, 2, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        task_deadline_3 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 3),
-            update_datetime=datetime(2023, 7, 3, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        task_deadline_4 = entities.StateTaskDeadline.new_with_defaults(
-            state_code=self.region_code().value,
-            due_date=date(2023, 8, 4),
-            update_datetime=datetime(2023, 7, 4, 0, 0, 0),
-            task_type=StateTaskType.INTERNAL_UNKNOWN,
-            person=person_4,
-        )
-        person_4.task_deadlines = [
-            task_deadline_1,
-            task_deadline_2,
-            task_deadline_3,
-            task_deadline_4,
-        ]
-
-        expected_root_entities: List[RootEntity] = [person_1, person_2, person_4]
+        expected_root_entities: List[RootEntity] = [person_1, person_2]
 
         self.run_test_state_pipeline(
             expected_ingest_view_output,

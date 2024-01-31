@@ -26,9 +26,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
-    MaterializationMethod,
-)
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BQ_EMULATOR_PROJECT_ID,
 )
@@ -79,40 +76,10 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
                 "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
             },
             ingest_instance=DirectIngestInstance.SECONDARY,
-            materialization_method=MaterializationMethod.ORIGINAL,
         )
         assert_that(
             output,
             self.validate_ingest_view_results(expected_ingest_view_output, "ingest12"),
-        )
-        self.test_pipeline.run()
-
-    def test_materialize_ingest_view_results_latest_materialization_method(
-        self,
-    ) -> None:
-        self.setup_single_ingest_view_raw_data_bq_tables(
-            ingest_view_name="ingest12", test_name="ingest12_latest"
-        )
-        expected_latest_ingest_view_output = self.get_ingest_view_results_from_fixture(
-            ingest_view_name="ingest12", test_name="ingest12_latest"
-        )
-
-        output = self.test_pipeline | pipeline.GenerateIngestViewResults(
-            project_id=BQ_EMULATOR_PROJECT_ID,
-            state_code=self.region_code(),
-            ingest_view_name="ingest12",
-            raw_data_tables_to_upperbound_dates={
-                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
-                "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
-            },
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            materialization_method=MaterializationMethod.LATEST,
-        )
-        assert_that(
-            output,
-            self.validate_ingest_view_results(
-                expected_latest_ingest_view_output, "ingest12"
-            ),
         )
         self.test_pipeline.run()
 
@@ -128,7 +95,6 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
                 "table6": None,
             },
             ingest_instance=DirectIngestInstance.SECONDARY,
-            materialization_method=MaterializationMethod.ORIGINAL,
         )
         assert_that(output, equal_to([]))
         self.test_pipeline.run()
@@ -155,24 +121,15 @@ class TestGenerateDateBoundTuplesQuery(StateIngestPipelineTestCase):
         )
         expected = """
 SELECT
-    LAG(max_dt_on_date) OVER (
-        ORDER BY update_date
-    ) AS __lower_bound_datetime_exclusive,
-    max_dt_on_date AS __upper_bound_datetime_inclusive,
+    MAX(update_datetime) AS __upper_bound_datetime_inclusive,
+    CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
 FROM (
-    SELECT
-        update_date AS update_date,
-        MAX(update_datetime) AS max_dt_on_date
-    FROM (
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
         FROM `test-project.us_dd_raw_data_secondary.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
 UNION ALL
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
         FROM `test-project.us_dd_raw_data_secondary.table2` WHERE update_datetime <= '2023-07-05T00:00:00'
-    )
-    GROUP BY update_date
-)
-ORDER BY 1;"""
+);"""
         self.assertEqual(result, expected)
 
     def test_generate_date_bound_tuples_query_with_missing_raw_data_upperbounds(
@@ -189,144 +146,6 @@ ORDER BY 1;"""
         )
         expected = """
 SELECT
-    LAG(max_dt_on_date) OVER (
-        ORDER BY update_date
-    ) AS __lower_bound_datetime_exclusive,
-    max_dt_on_date AS __upper_bound_datetime_inclusive,
-FROM (
-    SELECT
-        update_date AS update_date,
-        MAX(update_datetime) AS max_dt_on_date
-    FROM (
-        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data_secondary.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
-UNION ALL
-        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data_secondary.table2` LIMIT 0
-    )
-    GROUP BY update_date
-)
-ORDER BY 1;"""
-        self.maxDiff = None
-        self.assertEqual(result, expected)
-
-    def test_generate_date_bound_tuples_query_returns_correct_data(self) -> None:
-        date_1 = datetime.fromisoformat("2023-07-01:00:00:00")
-        date_2 = datetime.fromisoformat("2023-07-02:00:00:00")
-        date_3 = datetime.fromisoformat("2023-07-03:00:00:00")
-        date_4 = datetime.fromisoformat("2023-07-04:00:00:00")
-
-        table_1_data = [
-            # fmt: off
-           {"column1": "value1", "file_id": "1", "update_datetime": date_1,},
-           {"column1": "value1", "file_id": "1", "update_datetime": date_3,},
-        ]
-        address_1 = BigQueryAddress(
-            dataset_id="us_dd_raw_data_secondary", table_id="table1"
-        )
-
-        table_2_data = [
-            # fmt: off
-            {"column2": "value2", "file_id": "2", "update_datetime": date_2,},
-            {"column2": "value2", "file_id": "2", "update_datetime": date_4,},
-        ]
-        address_2 = BigQueryAddress(
-            dataset_id="us_dd_raw_data_secondary", table_id="table2"
-        )
-
-        self.bq_client.delete_table(address_1.dataset_id, address_1.table_id)
-        self.bq_client.delete_table(address_2.dataset_id, address_2.table_id)
-        self.create_mock_table(
-            address=address_1,
-            schema=[
-                schema_field_for_type("column1", str),
-                schema_field_for_type("file_id", str),
-                schema_field_for_type("update_datetime", datetime),
-            ],
-        )
-        self.create_mock_table(
-            address=address_2,
-            schema=[
-                schema_field_for_type("column2", str),
-                schema_field_for_type("file_id", str),
-                schema_field_for_type("update_datetime", datetime),
-            ],
-        )
-
-        self.load_rows_into_table(address=address_1, data=table_1_data)
-        self.load_rows_into_table(address=address_2, data=table_2_data)
-
-        expected_results: Iterable[Dict[str, Optional[datetime]]] = [
-            {
-                "__lower_bound_datetime_exclusive": None,
-                "__upper_bound_datetime_inclusive": date_1,
-            },
-            {
-                "__lower_bound_datetime_exclusive": date_1,
-                "__upper_bound_datetime_inclusive": date_2,
-            },
-            {
-                "__lower_bound_datetime_exclusive": date_2,
-                "__upper_bound_datetime_inclusive": date_3,
-            },
-            {
-                "__lower_bound_datetime_exclusive": date_3,
-                "__upper_bound_datetime_inclusive": date_4,
-            },
-        ]
-
-        self.run_query_test(
-            query_str=pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
-                BQ_EMULATOR_PROJECT_ID,
-                self.region_code(),
-                self.ingest_instance(),
-                {
-                    "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
-                    "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
-                },
-            ),
-            expected_result=expected_results,
-        )
-
-    def test_generate_date_bound_tuples_query_latest_method(self) -> None:
-        result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
-            project_id="test-project",
-            state_code=self.region_code(),
-            ingest_instance=self.ingest_instance(),
-            raw_data_tables_to_upperbound_dates={
-                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
-                "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
-            },
-            materialization_method=MaterializationMethod.LATEST,
-        )
-        expected = """
-SELECT
-    MAX(update_datetime) AS __upper_bound_datetime_inclusive,
-    CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
-FROM (
-        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data_secondary.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
-UNION ALL
-        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data_secondary.table2` WHERE update_datetime <= '2023-07-05T00:00:00'
-);"""
-        self.assertEqual(result, expected)
-
-    def test_generate_date_bound_tuples_query_latest_method_query_with_missing_raw_data_upperbounds(
-        self,
-    ) -> None:
-        result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
-            project_id="test-project",
-            state_code=self.region_code(),
-            ingest_instance=self.ingest_instance(),
-            raw_data_tables_to_upperbound_dates={
-                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
-                "table2": None,
-            },
-            materialization_method=MaterializationMethod.LATEST,
-        )
-        expected = """
-SELECT
     MAX(update_datetime) AS __upper_bound_datetime_inclusive,
     CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
 FROM (
@@ -338,7 +157,7 @@ UNION ALL
 );"""
         self.assertEqual(result, expected)
 
-    def test_generate_date_bound_tuples_query_latest_method_returns_correct_data(
+    def test_generate_date_bound_tuples_query_returns_correct_data(
         self,
     ) -> None:
         date_1 = datetime.fromisoformat("2023-07-01:00:00:00")
@@ -401,7 +220,6 @@ UNION ALL
                     "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
                     "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
                 },
-                MaterializationMethod.LATEST,
             ),
             expected_result=expected_results,
         )
