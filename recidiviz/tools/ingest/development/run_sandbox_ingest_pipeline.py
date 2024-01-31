@@ -62,6 +62,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegateImpl,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -70,6 +73,8 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.pipelines.ingest.pipeline_parameters import (
     INGEST_PIPELINE_NAME,
     IngestPipelineParameters,
@@ -79,10 +84,12 @@ from recidiviz.pipelines.ingest.pipeline_utils import ingest_pipeline_name
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     create_or_update_ingest_output_sandbox,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
     run_sandbox_dataflow_pipeline,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -90,6 +97,13 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to start a sandbox pipeline to a Namespace."""
     parser = argparse.ArgumentParser()
 
+    parser.add_argument(
+        "--project",
+        type=str,
+        help="ID of the GCP project.",
+        choices=GCP_PROJECTS,
+        required=True,
+    )
     parser.add_argument(
         "--state_code",
         help="The state code that the export should occur for",
@@ -129,7 +143,10 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
 
 
 def get_extra_pipeline_parameter_args(
-    state_code: StateCode, ingest_instance: DirectIngestInstance, sandbox_prefix: str
+    project: str,
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+    sandbox_prefix: str,
 ) -> List[str]:
     """Returns additional pipeline command-line args that can be inferred from the
     state code, instance and sandbox prefix.
@@ -173,14 +190,36 @@ def get_extra_pipeline_parameter_args(
         launchable_ingest_views,
     )
 
-    # TODO(#24519) Update to use Cloud SQL proxy and reuse query from raw file metadata.
+    raw_table_dependencies = {
+        raw_data_dependency.raw_file_config.file_tag
+        for ingest_view in launchable_ingest_views
+        for raw_data_dependency in view_collector.get_query_builder_by_view_name(
+            ingest_view
+        ).raw_table_dependency_configs
+    }
+
+    with local_project_id_override(project), cloudsql_proxy_control.connection(
+        schema_type=SchemaType.OPERATIONS
+    ), SessionFactory.for_proxy(
+        SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+    ) as session:
+        raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            state_code.value, ingest_instance
+        )
+        raw_data_max_upper_bounds = raw_file_metadata_manager.get_max_update_datetimes(
+            session
+        )
+
     raw_data_upper_bound_dates_json = json.dumps(
         {
-            raw_data_dependency.raw_file_config.file_tag: right_now.isoformat()
-            for ingest_view in launchable_ingest_views
-            for raw_data_dependency in view_collector.get_query_builder_by_view_name(
-                ingest_view
-            ).raw_table_dependency_configs
+            file_tag: (
+                right_now.isoformat()
+                if file_tag not in raw_data_max_upper_bounds
+                else raw_data_max_upper_bounds[file_tag].strftime(
+                    "%Y-%m-%d %H:%M:%S.%f"
+                )
+            )
+            for file_tag in raw_table_dependencies
         }
     )
 
@@ -189,6 +228,8 @@ def get_extra_pipeline_parameter_args(
         #  likely won't need this arg.
         "--pipeline",
         INGEST_PIPELINE_NAME,
+        "--project",
+        project,
         "--state_code",
         state_code.value,
         "--job_name",
@@ -208,11 +249,19 @@ def main() -> None:
     """
     known_args, remaining_args = parse_run_arguments()
     remaining_args += get_extra_pipeline_parameter_args(
-        known_args.state_code, known_args.ingest_instance, known_args.sandbox_prefix
+        known_args.project,
+        known_args.state_code,
+        known_args.ingest_instance,
+        known_args.sandbox_prefix,
     )
 
     params = IngestPipelineParameters.parse_from_args(
         remaining_args, sandbox_pipeline=True
+    )
+
+    logging.info(
+        "Using raw data watermarks from latest run: %s",
+        params.raw_data_upper_bound_dates_json,
     )
 
     prompt_for_confirmation(

@@ -776,3 +776,46 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             self.assertEqual(
                 fixed_datetime + timedelta(hours=2), result.update_datetime
             )
+
+    def test_get_max_update_datetimes(self) -> None:
+        day_1 = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=pytz.UTC)
+        day_2 = datetime.datetime(2022, 10, 2, 0, 0, 0, tzinfo=pytz.UTC)
+        day_3 = datetime.datetime(2022, 10, 3, 0, 0, 0, tzinfo=pytz.UTC)
+
+        file_tag_1_path = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_1.csv",
+            dt=day_1,
+        )
+        file_tag_1_path_2 = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_1.csv", dt=day_3
+        )
+        file_tag_2_path = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_2.csv",
+            dt=day_2,
+        )
+        file_tag_3_path = _make_unprocessed_raw_data_path(
+            path_str="bucket/file_tag_3.csv",
+            dt=day_3,
+        )
+
+        self.raw_metadata_manager.mark_raw_file_as_discovered(file_tag_1_path)
+        self.raw_metadata_manager.mark_raw_file_as_discovered(file_tag_1_path_2)
+        self.raw_metadata_manager.mark_raw_file_as_discovered(file_tag_2_path)
+        self.raw_metadata_manager.mark_raw_file_as_discovered(file_tag_3_path)
+
+        self.raw_metadata_manager.mark_raw_file_as_processed(file_tag_1_path)
+        self.raw_metadata_manager.mark_raw_file_as_processed(file_tag_1_path_2)
+        self.raw_metadata_manager.mark_raw_file_as_processed(file_tag_2_path)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            results: Dict[
+                str, datetime.datetime
+            ] = self.raw_metadata_manager.get_max_update_datetimes(session)
+
+        self.assertDictEqual(
+            {
+                "file_tag_1": day_3,
+                "file_tag_2": day_2,
+            },
+            results,
+        )
