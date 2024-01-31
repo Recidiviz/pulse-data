@@ -88,7 +88,7 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
         h.BN_LRM AS room_number,
         h.BN_COM AS complex_number,
         h.BN_LOC AS building_number
-    FROM {project_id}.{raw_dataset}.LBAKRDTA_TAK017_latest h
+    FROM `{project_id}.{raw_dataset}.LBAKRDTA_TAK017_latest` h
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` p
     ON
         h.BN_DOC = p.external_id
