@@ -3,8 +3,6 @@ file_tag: OFFENDERNAMEALIAS
 file_description: |-
   Offender Name or Alias
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 no_valid_primary_keys: True
 primary_key_cols: []
 columns:

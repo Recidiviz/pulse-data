@@ -45,5 +45,3 @@ columns:
     description: |-
       Staff last updated
     is_pii: True
-encoding: cp1252
-separator: "‡"

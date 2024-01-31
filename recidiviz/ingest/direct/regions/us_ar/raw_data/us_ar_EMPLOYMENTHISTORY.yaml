@@ -89,5 +89,3 @@ table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:
       - EMPLOYMENTHISTORY.OFFENDERID = OFFENDERPROFILE.OFFENDERID
-encoding: cp1252
-separator: "‡"

@@ -3,8 +3,6 @@ file_tag: ADDRESS
 file_description: |-
   Address Information
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 primary_key_cols:
   - ADDRESSID
 columns:

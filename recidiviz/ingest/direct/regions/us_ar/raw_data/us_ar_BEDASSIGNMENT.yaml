@@ -156,5 +156,3 @@ table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:
       - BEDASSIGNMENT.OFFENDERID = OFFENDERPROFILE.OFFENDERID
-encoding: cp1252
-separator: "‡"

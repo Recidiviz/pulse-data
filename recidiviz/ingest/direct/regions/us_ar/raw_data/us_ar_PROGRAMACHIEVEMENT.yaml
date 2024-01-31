@@ -45,8 +45,6 @@ columns:
   - name: GTOVERRIDE
     description: |-
       Good time override
-encoding: cp1252
-separator: "‡"
 table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:

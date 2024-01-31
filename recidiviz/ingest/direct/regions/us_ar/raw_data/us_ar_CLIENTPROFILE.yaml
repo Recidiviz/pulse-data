@@ -3,8 +3,6 @@ file_tag: CLIENTPROFILE
 file_description: |-
   P&P Client Profile
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 primary_key_cols:
   - OFFENDERID
 columns:

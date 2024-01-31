@@ -162,5 +162,3 @@ columns:
   - name: POPCNTNBRSTTG
     description: |-
       Population in BR STTG (?)
-encoding: cp1252
-separator: "‡"

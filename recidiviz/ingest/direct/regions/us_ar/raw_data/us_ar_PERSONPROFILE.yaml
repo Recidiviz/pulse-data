@@ -3,8 +3,6 @@ file_tag: PERSONPROFILE
 file_description: |-
   Person Profile
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 primary_key_cols:
   - PARTYID
 columns:

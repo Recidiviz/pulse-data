@@ -3,8 +3,6 @@ file_tag: OFFENDERPROFILE
 file_description: |-
   Offender Profile
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 primary_key_cols:
   - OFFENDERID
 is_primary_person_table: True

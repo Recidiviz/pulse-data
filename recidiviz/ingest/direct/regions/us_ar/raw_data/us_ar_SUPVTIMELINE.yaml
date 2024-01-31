@@ -121,5 +121,3 @@ table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:
       - SUPVTIMELINE.OFFENDERID = OFFENDERPROFILE.OFFENDERID
-encoding: cp1252
-separator: "‡"
