@@ -61,11 +61,6 @@ INGEST_VIEW_ORDER_EXEMPTIONS: Dict[StateCode, List[str]] = {
         "supervision_staff_role_period",
         "supervision_staff_caseload_type_period",
     ],
-    StateCode.US_IX: [
-        "transfer_to_supervision_deadline",
-        "discharge_from_supervision_deadline",
-        "discharge_from_incarceration_deadline",
-    ],
     StateCode.US_MO: [
         "tak001_offender_identification",
         "oras_assessments_weekly_v2",
@@ -80,7 +75,6 @@ INGEST_VIEW_ORDER_EXEMPTIONS: Dict[StateCode, List[str]] = {
         "incarceration_incident",
         "program_assignment",
     ],
-    StateCode.US_ME: ["supervision_task_deadline", "incarceration_task_deadline"],
     StateCode.US_ND: [
         # Elite - incarceration-focused
         "elite_offenderidentifier",

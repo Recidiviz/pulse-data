@@ -42,26 +42,8 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.pipelines.ingest.pipeline_parameters import MaterializationMethod
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import ReadFromBigQuery
 from recidiviz.utils.string import StrictStringFormatter
-
-INGEST_VIEW_DATE_BOUND_TUPLES_QUERY_TEMPLATE = f"""
-SELECT
-    LAG(max_dt_on_date) OVER (
-        ORDER BY update_date
-    ) AS {LOWER_BOUND_DATETIME_COL_NAME},
-    max_dt_on_date AS {UPPER_BOUND_DATETIME_COL_NAME},
-FROM (
-    SELECT
-        update_date AS update_date,
-        MAX(update_datetime) AS max_dt_on_date
-    FROM (
-        {{raw_data_tables}}
-    )
-    GROUP BY update_date
-)
-ORDER BY 1;"""
 
 INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE = f"""
 SELECT
@@ -111,7 +93,6 @@ class GenerateIngestViewResults(beam.PTransform):
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
         ingest_instance: DirectIngestInstance,
-        materialization_method: MaterializationMethod,
     ) -> None:
         super().__init__()
 
@@ -120,7 +101,6 @@ class GenerateIngestViewResults(beam.PTransform):
         self.ingest_view_name = ingest_view_name
         self.raw_data_tables_to_upperbound_dates = raw_data_tables_to_upperbound_dates
         self.ingest_instance = ingest_instance
-        self.materialization_method = materialization_method
 
     def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
         return (
@@ -132,7 +112,6 @@ class GenerateIngestViewResults(beam.PTransform):
                     state_code=self.state_code,
                     ingest_instance=self.ingest_instance,
                     raw_data_tables_to_upperbound_dates=self.raw_data_tables_to_upperbound_dates,
-                    materialization_method=self.materialization_method,
                 )
             )
             | f"Generate date diff queries for {self.ingest_view_name} based on date pairs."
@@ -152,7 +131,6 @@ class GenerateIngestViewResults(beam.PTransform):
         state_code: StateCode,
         ingest_instance: DirectIngestInstance,
         raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
-        materialization_method: MaterializationMethod = MaterializationMethod.ORIGINAL,
     ) -> str:
         """Returns a SQL query that will return a list of upper and lower bound date tuples
         which can each be used to generate an individual ingest view query."""
@@ -182,9 +160,7 @@ class GenerateIngestViewResults(beam.PTransform):
             raw_data_table_sql_statements
         )
         raw_date_pairs_query = StrictStringFormatter().format(
-            INGEST_VIEW_DATE_BOUND_TUPLES_QUERY_TEMPLATE
-            if materialization_method == MaterializationMethod.ORIGINAL
-            else INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE,
+            INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE,
             raw_data_tables=raw_data_tables_sql,
         )
         logging.info("Raw date pairs query: %s", raw_date_pairs_query)

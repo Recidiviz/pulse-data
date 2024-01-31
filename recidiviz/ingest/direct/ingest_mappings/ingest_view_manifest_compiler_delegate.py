@@ -104,12 +104,14 @@ class IngestViewManifestCompilerDelegate:
 _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 
 # Supported $env properties
+# TODO(#20930): Remove this property when ingest in Dataflow has been fully shipped.
 IS_DATAFLOW_PIPELINE_PROPERTY_NAME = "is_dataflow_pipeline"
 IS_LOCAL_PROPERTY_NAME = "is_local"
 IS_STAGING_PROPERTY_NAME = "is_staging"
 IS_PRODUCTION_PROPERTY_NAME = "is_production"
 IS_PRIMARY_INSTANCE_PROPERTY_NAME = "is_primary_instance"
 IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
+# TODO(#20930): Remove this property when ingest in Dataflow has been fully shipped.
 INGEST_VIEW_RESULTS_UPDATE_DATETIME = "results_update_datetime"
 
 

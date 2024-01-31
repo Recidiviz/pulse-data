@@ -76,7 +76,6 @@ from recidiviz.persistence.persistence import (
     ENUM_THRESHOLD,
     OVERALL_THRESHOLD,
 )
-from recidiviz.pipelines.ingest.pipeline_parameters import MaterializationMethod
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     LOWER_BOUND_DATETIME_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
@@ -131,7 +130,6 @@ class FakeGenerateIngestViewResults(GenerateIngestViewResults):
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
         ingest_instance: DirectIngestInstance,
-        materialization_method: MaterializationMethod,
         fake_ingest_view_results: Iterable[Dict[str, Any]],
     ) -> None:
         super().__init__(
@@ -140,7 +138,6 @@ class FakeGenerateIngestViewResults(GenerateIngestViewResults):
             ingest_view_name,
             raw_data_tables_to_upperbound_dates,
             ingest_instance,
-            materialization_method,
         )
         self.fake_ingest_view_results = fake_ingest_view_results
 
@@ -583,7 +580,6 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
         ingest_instance: DirectIngestInstance,
-        materialization_method: MaterializationMethod,
     ) -> FakeGenerateIngestViewResults:
         """Returns a constructor that generates ingest view results for a given ingest view assuming a single date."""
         return FakeGenerateIngestViewResults(
@@ -592,7 +588,6 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
             ingest_view_name,
             raw_data_tables_to_upperbound_dates,
             ingest_instance,
-            materialization_method,
             self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view_name,
                 test_name=ingest_view_name,

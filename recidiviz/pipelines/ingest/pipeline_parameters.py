@@ -16,7 +16,6 @@
 # =============================================================================
 """Class for ingest pipeline parameters"""
 import json
-from enum import Enum
 from typing import Dict, List, Optional
 
 import attr
@@ -32,16 +31,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 INGEST_PIPELINE_NAME = "ingest"
-
-
-class MaterializationMethod(Enum):
-    # The latest materialization method produces one date per ingest view which is the
-    # latest date amongst all of the raw data tables for that ingest view.
-    LATEST = "latest"
-    # The original materialization method produces individual date diffs between all dates
-    # for an ingest view. This is the default method.
-    # TODO(#22365) Deprecate the original materialization method for latest.
-    ORIGINAL = "original"
 
 
 @attr.define(kw_only=True)
@@ -64,10 +53,6 @@ class IngestPipelineParameters(PipelineParameters):
         return ingest_view_materialization_results_dataflow_dataset(
             StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
         )
-
-    materialization_method: str = attr.ib(
-        default=MaterializationMethod.LATEST.value, validator=attr_validators.is_str
-    )
 
     ingest_view_results_only: bool = attr.ib(
         default=False,

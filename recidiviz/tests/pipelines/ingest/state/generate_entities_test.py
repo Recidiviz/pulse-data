@@ -49,7 +49,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
     def test_generate_entities(self) -> None:
         expected_output = [
             (
-                datetime.fromisoformat("2022-07-02T00:00:00").timestamp(),
+                datetime.fromisoformat("2022-07-04T00:00:00").timestamp(),
                 StatePerson(
                     state_code="US_DD",
                     external_ids=[
