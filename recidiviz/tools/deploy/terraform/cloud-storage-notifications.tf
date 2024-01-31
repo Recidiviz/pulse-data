@@ -4,7 +4,7 @@ module "dashboard_data" {
   bucket_name                = module.dashboard-event-level-data.name
   push_endpoint              = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_pathways"
   service_account_email      = google_service_account.application_data_import_cloud_run.email
-  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\")"
+  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\") AND NOT hasPrefix(attributes.objectId, \"sandbox/\")"
   minimum_backoff            = "180s"
   maximum_backoff            = "600s"
   message_retention_duration = "86400s"
@@ -46,7 +46,7 @@ module "import_ingested_product_users" {
   service_account_email = data.google_app_engine_default_service_account.default.email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
   oidc_audience = local.app_engine_iap_client
-  filter        = "NOT hasPrefix(attributes.objectId, \"staging/\")"
+  filter        = "NOT hasPrefix(attributes.objectId, \"staging/\") AND NOT hasPrefix(attributes.objectId, \"sandbox/\")"
 }
 
 module "handle_workflows_firestore_etl" {
