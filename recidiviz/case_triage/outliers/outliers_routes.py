@@ -88,8 +88,9 @@ def create_outliers_api_blueprint() -> Blueprint:
         response.vary = "Origin"
         response.access_control_allow_origin = request.origin
         response.access_control_allow_headers = parse_set_header(
-            "authorization, sentry-trace"
+            "authorization, sentry-trace, baggage, content-type"
         )
+        response.access_control_allow_methods = parse_set_header("GET, PATCH")
         # Cache preflight responses for 2 hours
         response.access_control_max_age = 2 * 60 * 60
         return response
