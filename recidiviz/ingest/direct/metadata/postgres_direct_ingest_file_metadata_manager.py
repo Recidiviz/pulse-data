@@ -18,11 +18,11 @@
 Postgres table.
 """
 import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import pytz
 import sqlalchemy
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -39,6 +39,7 @@ from recidiviz.persistence.database.schema_entity_converter.schema_entity_conver
     convert_schema_object_to_entity,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
@@ -276,6 +277,30 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 )
             )
             session.execute(update_query)
+
+    def get_max_update_datetimes(
+        self, session: Session
+    ) -> Dict[str, datetime.datetime]:
+        """Returns the max update datetime for all processed file tags from direct_ingest_raw_file_metadata."""
+        results = (
+            session.query(
+                schema.DirectIngestRawFileMetadata.file_tag,
+                func.max(schema.DirectIngestRawFileMetadata.update_datetime).label(
+                    "max_update_datetime"
+                ),
+            )
+            .filter(
+                schema.DirectIngestRawFileMetadata.region_code == self.region_code,
+                schema.DirectIngestRawFileMetadata.raw_data_instance
+                == self.raw_data_instance.value,
+                # pylint: disable=singleton-comparison
+                schema.DirectIngestRawFileMetadata.is_invalidated == False,
+                schema.DirectIngestRawFileMetadata.file_processed_time.is_not(None),
+            )
+            .group_by(schema.DirectIngestRawFileMetadata.file_tag)
+            .all()
+        )
+        return {result.file_tag: result.max_update_datetime for result in results}
 
     @environment.test_only
     def mark_file_as_invalidated(self, path: GcsfsFilePath) -> None:
