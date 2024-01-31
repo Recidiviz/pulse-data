@@ -21,10 +21,11 @@ import os
 from datetime import date
 from typing import Dict, List, Optional
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
+from recidiviz.case_triage.outliers.user_context import UserContext
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -48,6 +49,7 @@ from recidiviz.outliers.types import (
     UserInfo,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    Configuration,
     MetricBenchmark,
     OutliersBase,
     SupervisionClientEvent,
@@ -157,6 +159,8 @@ class TestOutliersQuerier(TestCase):
                 session.add(SupervisionClients(**client))
             for metadata in load_model_fixture(UserMetadata):
                 session.add(UserMetadata(**metadata))
+            for config in load_model_fixture(Configuration):
+                session.add(Configuration(**config))
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -856,3 +860,58 @@ class TestOutliersQuerier(TestCase):
         self.assertEqual(
             result, UserInfo(entity=None, role=None, has_seen_onboarding=True)
         )
+
+    def test_get_configuration_for_user_no_fv(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        user_context = None
+        result = querier.get_configuration_for_user(user_context)
+
+        self.assertEqual(result.id, 1)
+
+    def test_get_configuration_for_user_fv(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        user_context = UserContext(
+            state_code_str="US_PA",
+            user_external_id="id",
+            pseudonymized_id="hash",
+            can_access_all_supervisors=True,
+            feature_variants={"fv1": {}, "random": {}},
+        )
+        result = querier.get_configuration_for_user(user_context)
+
+        self.assertEqual(result.id, 3)
+
+    def test_get_configuration_for_user_no_fv_match(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        user_context = UserContext(
+            state_code_str="US_PA",
+            user_external_id="id",
+            pseudonymized_id="hash",
+            can_access_all_supervisors=True,
+            feature_variants={"randomfv": {}},
+        )
+        result = querier.get_configuration_for_user(user_context)
+
+        self.assertEqual(result.id, 1)
+
+    def test_get_configuration_for_user_multiple_fv(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        user_context = UserContext(
+            state_code_str="US_PA",
+            user_external_id="id",
+            pseudonymized_id="hash",
+            can_access_all_supervisors=True,
+            feature_variants={"fv1": {}, "fv2": {}},
+        )
+
+        with patch("logging.Logger.error") as mock_logger:
+            result = querier.get_configuration_for_user(user_context)
+
+            self.assertEqual(result.id, 1)
+            mock_logger.assert_has_calls(
+                [
+                    call(
+                        "Multiple configurations and feature variants may apply to this user, however only one should apply. The default configuration will be shown instead."
+                    )
+                ]
+            )

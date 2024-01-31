@@ -52,6 +52,11 @@ class OutliersMetricValueType(Enum):
     RATE = "RATE"
 
 
+class ConfigurationStatus(Enum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+
 def _optional_name_converter(name: Optional[str]) -> Optional[str]:
     return None if name is None else person_name_case(name)
 

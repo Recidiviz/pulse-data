@@ -31,10 +31,12 @@ from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
+from recidiviz.case_triage.outliers.user_context import UserContext
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import DEFAULT_NUM_LOOKBACK_PERIODS
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.outliers.types import (
+    ConfigurationStatus,
     MetricContext,
     MetricOutcome,
     OfficerMetricEntity,
@@ -53,6 +55,7 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
     StateSegmentedDatabaseManager,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    Configuration,
     MetricBenchmark,
     SupervisionClientEvent,
     SupervisionClients,
@@ -1010,3 +1013,45 @@ class OutliersQuerier:
             if user_metadata
             else False,
         )
+
+    def get_configuration_for_user(
+        self, user_context: Optional[UserContext]
+    ) -> Configuration:
+        """
+        Gets the relevant Configuration database entity for the user.
+
+        Note: there is no UserContext object created when generating emails. Thus,
+        emails will always use the latest, active Configuration object set for the
+        entire state, i.e. there is no feature variant.
+        """
+        with self.database_session() as session:
+            user_feature_variants = (
+                list(user_context.feature_variants.keys()) if user_context else []
+            )
+
+            # Get all active configurations
+            active_configs_query = session.query(Configuration).filter(
+                Configuration.status == ConfigurationStatus.ACTIVE.value,
+            )
+
+            if user_feature_variants:
+                # Get all active configurations with feature variants that line up with the user's feature variants
+                fv_configs = active_configs_query.filter(
+                    Configuration.feature_variant.in_(user_feature_variants)
+                ).all()
+
+                if len(fv_configs) > 1:
+                    # If there are multiple active configurations relevant to the user's feature
+                    # variants, log an error and return the default configuration.
+                    logging.error(
+                        "Multiple configurations and feature variants may apply to this user, however only one should apply. The default configuration will be shown instead."
+                    )
+                elif len(fv_configs) == 1:
+                    # If there is a single match, return the configuration
+                    return fv_configs[0]
+
+            default_config = active_configs_query.filter(
+                Configuration.feature_variant.is_(None)
+            ).one()
+
+            return default_config
