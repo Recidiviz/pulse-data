@@ -29,3 +29,4 @@ class UserContext:
     user_external_id: str
     pseudonymized_id: Optional[str]
     can_access_all_supervisors: bool
+    feature_variants: dict

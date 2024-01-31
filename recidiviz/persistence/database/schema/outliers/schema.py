@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Define the ORM schema objects that map directly to the database, for Outliers related entities."""
+
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -256,6 +257,7 @@ class Configuration(OutliersBase):
     id = Column(Integer, primary_key=True, autoincrement=True)
     updated_by = Column(String, nullable=False)
     updated_at = Column(Date, nullable=False)
+    status = Column(String, nullable=False)
     feature_variant = Column(String)
     supervision_officer_label = Column(String)
     supervision_district_label = Column(String)

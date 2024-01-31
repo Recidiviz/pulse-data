@@ -62,6 +62,7 @@ def on_successful_authorization(
     )
     user_pseudonymized_id = app_metadata.get("pseudonymizedId", None)
     routes = app_metadata.get("routes", {})
+    feature_variants = app_metadata.get("featureVariants", {})
 
     g.user_context = UserContext(
         state_code_str=user_state_code,
@@ -70,6 +71,7 @@ def on_successful_authorization(
         can_access_all_supervisors=is_recidiviz_or_csg
         # TODO(Recidiviz/recidiviz-dashboards#4520): don't hard-code this string
         or routes.get("insights_supervision_supervisors-list", False),
+        feature_variants=feature_variants,
     )
 
     # If the user is a recidiviz user, skip endpoint checks
