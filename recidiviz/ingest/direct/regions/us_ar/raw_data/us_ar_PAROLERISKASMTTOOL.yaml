@@ -3,8 +3,6 @@ file_tag: PAROLERISKASMTTOOL
 file_description: |-
   Parole risk assessment tool
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 primary_key_cols:
   - OFFENDERID
   - PAROLERISKASMTDATE

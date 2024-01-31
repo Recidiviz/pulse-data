@@ -98,5 +98,3 @@ table_relationships:
   - foreign_table: PERSONPROFILE
     join_logic:
       - SPECIALCONDITION.PLACEDBYSTAFF = PERSONPROFILE.PARTYID
-encoding: cp1252
-separator: "‡"

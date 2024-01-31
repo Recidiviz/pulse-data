@@ -84,5 +84,3 @@ table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:
       - PAROLERISKASMNT.OFFENDERID = OFFENDERPROFILE.OFFENDERID
-encoding: cp1252
-separator: "‡"

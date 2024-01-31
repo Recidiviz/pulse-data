@@ -486,5 +486,3 @@ table_relationships:
   - foreign_table: PERSONPROFILE
     join_logic:
       - SUPERVISIONCONTACT.CONTACTSTAFF = PERSONPROFILE.PARTYID
-encoding: cp1252
-separator: "‡"

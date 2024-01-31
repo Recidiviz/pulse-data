@@ -61,8 +61,6 @@ columns:
     description: |-
       Incentive status date
     field_type: datetime
-encoding: cp1252
-separator: "‡"
 table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:

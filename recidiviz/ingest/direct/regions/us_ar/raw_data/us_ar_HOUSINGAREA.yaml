@@ -65,5 +65,3 @@ columns:
   - name: INVENTORYLOCATION
     description: |-
       Inventory location
-encoding: cp1252
-separator: "‡"

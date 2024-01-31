@@ -98,5 +98,3 @@ table_relationships:
   - foreign_table: PERSONPROFILE
     join_logic:
       - JOBPROGRAMASGMT.WORKASSIGNMENTAUTHBY = PERSONPROFILE.PARTYID
-encoding: cp1252
-separator: "‡"

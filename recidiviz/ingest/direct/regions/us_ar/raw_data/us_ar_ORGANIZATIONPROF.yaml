@@ -76,5 +76,3 @@ columns:
   - name: ORGNAMESOUNDEXCODE
     description: |-
       Soundex code
-encoding: cp1252
-separator: "‡"

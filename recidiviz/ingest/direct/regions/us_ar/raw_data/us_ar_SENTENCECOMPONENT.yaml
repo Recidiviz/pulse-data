@@ -3,8 +3,6 @@ file_tag: SENTENCECOMPONENT
 file_description: |-
   Sentence Component
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 primary_key_cols:
   - OFFENDERID
   - COMMITMENTPREFIX

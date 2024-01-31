@@ -41,5 +41,3 @@ columns:
   - name: RECORDUPDATECOUNT
     description: |-
       Number of updates to record
-encoding: cp1252
-separator: "‡"

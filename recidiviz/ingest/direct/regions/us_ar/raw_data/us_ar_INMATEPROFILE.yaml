@@ -395,8 +395,6 @@ columns:
   - name: CURRENTCCCTRACK
     description: |-
       Current CCC (?) track
-encoding: cp1252
-separator: "‡"
 table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:

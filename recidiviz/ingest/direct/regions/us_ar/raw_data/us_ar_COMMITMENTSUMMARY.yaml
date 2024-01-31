@@ -3,8 +3,6 @@ file_tag: COMMITMENTSUMMARY
 file_description: |-
   Court Commitment Summary
 data_classification: source
-encoding: cp1252
-separator: "‡"
 primary_key_cols:
   - OFFENDERID
   - COMMITMENTPREFIX

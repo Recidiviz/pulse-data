@@ -3,8 +3,6 @@ file_tag: RELATEDPARTY
 file_description: |-
   Related Party
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 primary_key_cols:
   - PARTYID
   - PARTYRELTYPE

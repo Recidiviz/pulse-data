@@ -646,8 +646,6 @@ columns:
     description: |-
       TODO(#26262)
     field_type: datetime
-encoding: cp1252
-separator: "‡"
 table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:

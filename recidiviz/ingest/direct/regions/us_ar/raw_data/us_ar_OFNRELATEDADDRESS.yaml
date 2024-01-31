@@ -3,8 +3,6 @@ file_tag: OFNRELATEDADDRESS
 file_description: |-
   Offender Related Address
 data_classification: source
-encoding: WINDOWS-1252
-separator: ‡
 no_valid_primary_keys: True
 primary_key_cols: []
 columns:
