@@ -14,6 +14,7 @@ services:
       - justice_counts_db
     ports:
       - "5001:5000"
+      - "5678:5678"
     # Running with threads and no debugger seems to improve latency on first request
     command: pipenv run flask run -h 0.0.0.0  --with-threads --no-debugger
     environment:

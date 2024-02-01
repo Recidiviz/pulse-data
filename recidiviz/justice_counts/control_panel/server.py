@@ -36,6 +36,9 @@ from recidiviz.justice_counts.control_panel.error_handlers import (
 from recidiviz.justice_counts.control_panel.routes.admin import get_admin_blueprint
 from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
+from recidiviz.justice_counts.control_panel.utils import (
+    initialize_flask_server_debugger,
+)
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
@@ -80,6 +83,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
     )
 
     if in_development():
+        initialize_flask_server_debugger()
+
         # Set the project to recidiviz-staging if we are running the application locallly.
         set_development_project_id_override(GCP_PROJECT_STAGING)
 
