@@ -46,6 +46,7 @@ def generate_bulk_upload_template(
     session: Session,
     agency: schema.Agency,
     is_single_page_template: bool = False,
+    is_generic_template: bool = False,  # a template with all of the metric sheets
 ) -> None:
     """Generates a Bulk Upload template for a particular agency."""
 
@@ -79,9 +80,8 @@ def generate_bulk_upload_template(
 
         enabled_status = metric_interface.is_metric_enabled
 
-        if enabled_status is not True:
+        if is_generic_template is False and enabled_status is not True:
             continue
-
         reporting_frequency = (
             metric_interface.custom_reporting_frequency.frequency
             if metric_interface.custom_reporting_frequency.frequency is not None
