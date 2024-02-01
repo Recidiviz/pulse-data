@@ -270,3 +270,34 @@ def format_spreadsheet_rows(
 
 def is_demo_agency(agency_name: str) -> bool:
     return "[DEMO]" in agency_name or agency_name == "Department of Corrections"
+
+
+# Only initialize this in a dev environment.
+def initialize_flask_server_debugger() -> None:
+    """
+    Configure the flask app to communicate with the VSCode debugger. Use this to set
+    breakpoints in local deployments.
+    """
+    # pylint: disable=import-outside-toplevel
+    import multiprocessing
+
+    # In debug mode Flask uses a first process (with pid==1) to start child processes
+    # that handle connections. If the code below this line is executed by the main
+    # process, the debugging port is taken and subsequent child processes can't use the
+    # same port and are attributed a random port which prevents connections.
+    if int(multiprocessing.current_process().pid or 0) == 1:
+        return
+
+    import debugpy
+
+    # Host/port should match launch.json host and port.
+    debugpy.listen(("0.0.0.0", 5678))  # nosec
+    print("VS Code debugger can now be attached, press F5 in VS Code.", flush=True)
+
+    # Debugpy enables you to connect to the debugger at any point while the flask
+    # app is running. If connecting in the earlier stages of flask initialization is
+    # desired, uncommenting wait_for_client() below will pause the flask app until
+    # the debugger is attached.
+
+    # debugpy.wait_for_client()
+    return
