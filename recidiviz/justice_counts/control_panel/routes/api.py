@@ -1741,8 +1741,8 @@ def get_api_blueprint(
                 "No agency ID was provided in the request.",
                 500,
             )
-
         is_single_page_template = request.args.get("singlePage") == "true"
+        is_generic_template = request.args.get("isGeneric") == "true"
 
         system_enum = schema.System[system]
 
@@ -1757,6 +1757,7 @@ def get_api_blueprint(
                 session=current_session,
                 agency=agency,
                 is_single_page_template=is_single_page_template,
+                is_generic_template=is_generic_template,
             )
             try:
                 return send_file(file_path, as_attachment=True)
