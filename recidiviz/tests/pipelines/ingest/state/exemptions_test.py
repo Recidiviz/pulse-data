@@ -157,11 +157,6 @@ class TestExemptions(unittest.TestCase):
             ordered_views,
         ) in INGEST_VIEW_ORDER_EXEMPTIONS.items():
             self.assertTrue(state_code in state_code_to_ingest_view_rank_list)
-            if state_code in [
-                StateCode.US_ND,
-            ]:
-                # US_ND is the only state with ordered views that has an ingest view enabled only in Dataflow
-                continue
             self.assertListEqual(
                 ordered_views, state_code_to_ingest_view_rank_list[state_code]
             )
