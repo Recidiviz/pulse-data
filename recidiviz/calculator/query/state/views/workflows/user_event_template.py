@@ -26,11 +26,25 @@ def user_event_template(
     table_name: str,
     add_columns: Optional[List[str]] = None,
     should_check_client_id: bool = True,
+    should_lookup_user_from_staff_record: bool = True,
 ) -> str:
     if add_columns is None:
         add_columns = []
 
-    # TODO(#17297): Remove frontend_referral_form_copied_to_clipboard conditional once these events are fired with justice_involved_person_id
+    # If should_lookup_user_from_staff_record is false, then users will only be loaded from the
+    # product roster. The external_ids and districts may not be as complete, but dropping the staff_record
+    # dependency means that this query can be used in views that staff_record depends on (many of them)
+    rdu = (
+        "`{project_id}.{workflows_views_dataset}.reidentified_dashboard_users`"
+        if should_lookup_user_from_staff_record
+        else """(  SELECT
+                        IF(state_code = "US_ID", "US_IX", state_code) as state_code,
+                        user_hash AS user_id,
+                        external_id AS user_external_id,
+                        district,
+                    FROM `{project_id}.{reference_views_dataset}.product_roster_materialized`)"""
+    )
+
     return f"""
     WITH 
     -- reidentifies clients from hash
@@ -82,7 +96,7 @@ def user_event_template(
         QUALIFY ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
     ) events
     -- inner join to filter out recidiviz users and others unidentified (if any)
-    INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users` rdu
+    INNER JOIN {rdu} rdu
         ON events.user_id = rdu.user_id
             -- Handle events from before https://github.com/Recidiviz/pulse-data/pull/20056
             OR (STARTS_WITH(rdu.user_id, "_")
