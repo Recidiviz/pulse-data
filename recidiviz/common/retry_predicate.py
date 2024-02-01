@@ -22,7 +22,7 @@ from requests.exceptions import SSLError
 
 
 def google_api_retry_predicate(
-    exception: BaseException,
+    exception: Exception,
 ) -> bool:
     """A function that will determine whether we should retry a given Google exception."""
     return (
