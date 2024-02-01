@@ -7,8 +7,6 @@ input_columns:
   - Term_Curr_Cust_Rel_Date
   - update_datetime
 unused_columns: []
-launch_env:
-  $env: is_dataflow_pipeline
 output:
   StatePerson:
     external_ids:
