@@ -65,6 +65,7 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     ix_general_case_notes,
     ix_offender_alerts_case_notes,
     program_enrollment_query,
+    victim_alert_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -184,6 +185,11 @@ WITH current_incarcerated_population AS (
 
         -- Program Enrollment
     {program_enrollment_query()}
+
+        UNION ALL
+
+        -- Victim alerts
+    {victim_alert_notes()}
     ),
 
     array_case_notes_cte AS (
