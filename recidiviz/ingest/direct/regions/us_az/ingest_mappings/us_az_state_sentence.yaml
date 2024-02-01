@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - external_id
+  - is_life
+  - is_capital
+  - parole_possible
+  - imposed_date
+  - person_id
+  - county_code
+unused_columns: []
+launch_env:
+  $env: is_dataflow_pipeline
+variables:
+  - life_bool:
+      $equal:
+        - is_life
+        - $literal("1")
+  - is_capital_bool:
+      $equal:
+        - is_capital
+        - $literal("1")
+  - is_parole_bool:
+      $equal:
+        - parole_possible
+        - $literal("1")
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: person_id
+          id_type: $literal("US_AZ_PERSON_ID")
+    sentences:
+      - StateSentence:
+          county_code: county_code
+          imposed_date: imposed_date
+          is_life: $variable(life_bool)
+          is_capital_punishment: $variable(is_capital_bool)
+          external_id: external_id
+          parole_possible: $variable(is_parole_bool)
+          #set to internal unkown until we know how to map sentence type
+          sentence_type: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
