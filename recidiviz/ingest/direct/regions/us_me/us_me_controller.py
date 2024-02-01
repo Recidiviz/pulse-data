@@ -47,8 +47,10 @@ class UsMeController(BaseDirectIngestController):
             "supervision_periods",
             "assessments",
             "supervision_violations",
-            "incarceration_sentences",
-            "supervision_sentences",
+            "incarceration_sentences_v2",
+            "supervision_sentences_v2",
             "supervision_staff",
             "supervision_staff_role_period",
+            "incarceration_task_deadline",
+            "supervision_task_deadline",
         ]

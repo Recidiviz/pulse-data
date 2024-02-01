@@ -9,8 +9,6 @@ input_columns:
   - update_datetime
   - Term_Comm_Rel_Date
 unused_columns: []
-launch_env:
-  $env: is_dataflow_pipeline
 output:
   StatePerson:
     external_ids:
