@@ -621,3 +621,20 @@ def program_enrollment_query() -> str:
     WHERE 
         ce.OfdEnrollmentStatusId IN ('1', '2', '3')
     """
+
+
+def victim_alert_notes() -> str:
+    """
+    Returns a SQL query that selects information about victim alerts.
+    """
+
+    return """
+    SELECT
+        OffenderId AS external_id,
+        'Victim Alerts' AS criteria,
+        'Attention' AS note_title,
+        Notes AS note_body,
+        SAFE_CAST(LEFT(StartDate, 10) AS DATE) AS event_date
+    FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ind_Offender_Alert_latest`
+    -- Victim alerts
+    WHERE AlertId = '133'"""
