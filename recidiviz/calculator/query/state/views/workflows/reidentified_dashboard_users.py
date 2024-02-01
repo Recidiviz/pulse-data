@@ -39,6 +39,7 @@ SELECT
     COALESCE(staff.district, users.district) AS district,
 FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` users
 LEFT JOIN `{project_id}.{workflows_views_dataset}.staff_record_materialized` staff
+    -- TODO(#27254) Get this data from somewhere that's not staff_record
     -- The roster only has US_ID and the staff record only has US_IX
     ON (users.state_code = staff.state_code OR (users.state_code = "US_ID" AND staff.state_code = "US_IX"))
     AND LOWER(users.email_address) = LOWER(staff.email)
