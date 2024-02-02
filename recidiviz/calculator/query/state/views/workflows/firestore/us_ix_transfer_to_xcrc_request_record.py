@@ -96,8 +96,8 @@ WITH current_crc_population AS (
     ),
 
     case_notes_cte AS (
-        -- Offender alerts
-    {ix_offender_alerts_case_notes()}
+        -- Offender alerts (excluding victims)
+    {ix_offender_alerts_case_notes(where_clause = "WHERE AlertId != '133'")}
 
         UNION ALL
 
