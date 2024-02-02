@@ -374,20 +374,21 @@ def join_on_columns_fragment(columns: Iterable[str], table1: str, table2: str) -
 
 
 def date_diff_in_full_months(
-    date_column: str,
-    time_zone: str = "US/Pacific",
+    first_date_column: str,
+    second_date_column: str,
+    # time_zone: str = "US/Pacific",
 ) -> str:
     """Returns a string fragment to calculate the number of full months between a date
             and the current date.
 
     Args:
-        date_column (str): The name of the date column to calculate the difference from.
-        time_zone (str, optional): The time zone to use for the current date.
+        first_date_column (str): The name of the date column to calculate the difference from.
+        second_date_column (str, optional): The time zone to use for the current date.
             Defaults to "US/Pacific".
     """
 
-    return f"""  DATE_DIFF({date_column}, CURRENT_DATE('{time_zone}'), MONTH)
-          - IF(EXTRACT(DAY FROM CURRENT_DATE('{time_zone}')) > EXTRACT(DAY FROM {date_column}), 
+    return f"""  DATE_DIFF({first_date_column}, {second_date_column}, MONTH)
+          - IF(EXTRACT(DAY FROM {second_date_column}) > EXTRACT(DAY FROM {first_date_column}), 
                 1, 0)"""
 
 
