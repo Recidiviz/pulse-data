@@ -259,6 +259,33 @@ info_to_split_periods_with_supervision_level_changes AS (
   LEFT JOIN staff_caseloads cl
   USING (RECORD_KEY)
 ), 
+supervision_levels_prior_to_supervision_start AS (
+SELECT b.*
+ FROM (
+  SELECT
+    np.RECORD_KEY,
+    PERIOD_ID,
+    CURRENT_STATUS,
+    LOCATION_TYPE, 
+    MOVE_IN_DATE,
+    MOVE_OUT_DATE,
+    COUNTY,
+    LOCATION_NAME,
+    FACILITY,
+    IFNULL(np.RISK_LEVEL, sc.RISK_LEVEL) AS RISK_LEVEL,
+    ADMISSION_REASON,
+    RELEASE_REASON,
+    RESPONSIBLE_DIVISION,
+    CASELOAD, 
+    ROW_NUMBER() OVER (PARTITION BY np.RECORD_KEY, period_id ORDER BY EFFECTIVE_DATE DESC) as seq
+  FROM new_periods np
+  LEFT JOIN supervision_changes sc
+  ON np.RECORD_KEY = sc.RECORD_KEY
+  AND period_id = 1
+  AND (DATE(sc.EFFECTIVE_DATE)) BETWEEN DATE_SUB(DATE(MOVE_IN_DATE), INTERVAL 30 DAY) AND (DATE(MOVE_IN_DATE))
+ ) b
+ WHERE seq = 1
+),
 final AS (
   # Carrying custody level over periods and adding a return from court release reason. 
   SELECT 
@@ -276,7 +303,7 @@ final AS (
     RELEASE_REASON,
     RESPONSIBLE_DIVISION, 
     CASELOAD
-  FROM new_periods
+  FROM supervision_levels_prior_to_supervision_start
   WINDOW periods_for_person AS (PARTITION BY RECORD_KEY ORDER BY PERIOD_ID)
 )
 SELECT * FROM final
