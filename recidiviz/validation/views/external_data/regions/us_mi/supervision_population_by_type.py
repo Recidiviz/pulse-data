@@ -57,6 +57,7 @@ US_MI_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id="supervision_population_by_type",
     description="A unified view of MI supervision population counts by type based on CB971 reports",
     view_query_template=VIEW_QUERY_TEMPLATE,
+    should_materialize=True,
     us_mi_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_MI
     ),

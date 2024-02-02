@@ -46,6 +46,7 @@ US_IX_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_id="incarceration_release_person_level",
     description="A view detailing the incarceration releases at the person level for Idaho in 2020.",
     view_query_template=VIEW_QUERY_TEMPLATE,
+    should_materialize=True,
     us_ix_validation_oneoff_dataset=dataset_config.validation_oneoff_dataset_for_state(
         StateCode.US_IX
     ),

@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     BigQueryViewBuilderType,
 )
+from recidiviz.utils import metadata
 
 
 def default_builder_to_select_statement(
@@ -99,16 +100,28 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         select_queries = []
         query_format_args: Dict[str, str] = {}
 
-        filtered_parent_view_builders = [
+        parent_view_builders_in_project = [
             vb
             for vb in self.parent_view_builders
+            if vb.should_deploy_in_project(metadata.project_id())
+        ]
+
+        if not parent_view_builders_in_project:
+            raise ValueError(
+                f"Found no valid parent views for UNION ALL composite view "
+                f"[{self.address.to_str()}]"
+            )
+
+        filtered_parent_view_builders = [
+            vb
+            for vb in parent_view_builders_in_project
             if self.parent_address_filter is None
             or vb.address in self.parent_address_filter
         ]
 
         if not filtered_parent_view_builders:
             logging.warning(
-                "No parent views for UNION_ALL composite view [%s.%s] in the "
+                "No parent views for UNION ALL composite view [%s.%s] in the "
                 "list of view filters. Selecting ALL parents.",
                 self.address.dataset_id,
                 self.address.table_id,
@@ -119,13 +132,11 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             select_statement = self.builder_to_select_statement(vb)
             if not vb.materialized_address:
                 raise ValueError(f"Expected view [{vb.address}] to be materialized.")
-            address = vb.materialized_address
-            query = f"{select_statement} FROM `{{project_id}}.{{{address.dataset_id}_dataset}}.{address.table_id}`"
-            query_format_args = {
-                **query_format_args,
-                f"{address.dataset_id}_dataset": address.dataset_id,
-            }
-            select_queries.append(query)
+            select_queries.append(
+                vb.materialized_address.select_query_template(
+                    select_statement=select_statement
+                )
+            )
 
         view_query_template = "\nUNION ALL\n".join(select_queries)
 

@@ -47,6 +47,7 @@ US_ND_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuild
     view_id="supervision_population_person_level",
     description="A view detailing supervision population at the person level for North Datokta",
     view_query_template=VIEW_QUERY_TEMPLATE,
+    should_materialize=True,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
