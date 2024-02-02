@@ -426,7 +426,7 @@ def me_time_left_in_sentence_in_categories() -> str:
             -- Grab the day difference between today and the expected release date
             SELECT 
                 *,
-                {date_diff_in_full_months(date_column='expected_release_date', time_zone='US/Eastern')} AS month_diff,
+                {date_diff_in_full_months(first_date_column='expected_release_date', second_date_column="CURRENT_DATE('US/Eastern')")} AS month_diff,
                 DATE_DIFF(expected_release_date, CURRENT_DATE('US/Eastern'), DAY) day_diff
             FROM (
                 -- Grab the expected release date

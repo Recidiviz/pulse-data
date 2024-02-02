@@ -20,6 +20,7 @@ normalized_state dataset.
 from typing import List, Optional
 
 from recidiviz.calculator.query.bq_utils import (
+    date_diff_in_full_months,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
@@ -409,4 +410,120 @@ def sentence_attributes() -> str:
         effective_date AS start_date,
         IFNULL(completion_date, {nonnull_end_date_clause('projected_completion_date_max')}) AS end_date,
     FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+    """
+
+
+def participated_in_programming_for_X_to_Y_months(x_months: int, y_months: int) -> str:
+    """
+    Returns a query which returns spans of time where someone has participated in any
+    program for X to Y months. Example: if x_months is 6 and y_months is 8, then the
+    criteria is met if there is a span of time where someone has participated in any
+    program for 6 to 8 months.
+
+    Args:
+        x_months (int): Number of months to add to the start_date.
+        y_months (int): Number of months to add to the start_date.
+
+    Returns:
+        str: SQL query as a string.
+    """
+    return f"""
+WITH program_assignments_ongoing_for_X_months AS (
+  SELECT
+      pa.state_code,
+      pa.person_id,
+      pa.start_date as program_start_date,
+      pa.discharge_date as program_end_date,
+      pa.program_id
+  FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` pa
+  WHERE {date_diff_in_full_months(nonnull_end_date_clause('pa.discharge_date'), 'pa.start_date')} BETWEEN {x_months} AND {y_months}
+),
+probation_and_parole_sessions AS (
+  -- Compartment sessions for probation, parole or DUAL
+  SELECT 
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    compartment_level_1,
+    compartment_level_2,
+  FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+  WHERE compartment_level_1 = 'SUPERVISION'
+    AND compartment_level_2 IN ('PAROLE', 'PROBATION', 'DUAL')
+  ORDER BY 1,2,3
+),
+probation_and_parole_sessions_agg AS (
+    -- Aggregate adjacent probation and parole sessions. This means if a probation 
+    --      session ends and it is immediately followed by a parole session, we don't 
+    --      restart the clock for violations.
+    SELECT *,
+    FROM ({aggregate_adjacent_spans(table_name='probation_and_parole_sessions',
+                                    end_date_field_name="end_date")})
+),
+critical_date_spans AS (
+    -- Combine previous CTEs and calculate critical date as x months after start date
+    --      or violation date, whichever is later.
+    SELECT 
+        pps.state_code,
+        pps.person_id,
+        pps.start_date AS start_datetime,
+        LEAST(
+            {nonnull_end_date_clause('pps.end_date')},
+            {nonnull_end_date_clause('pa.program_end_date')}
+        ) AS end_datetime,
+        DATE_ADD(pa.program_start_date, INTERVAL {x_months} MONTH) AS critical_date,
+        pa.program_start_date,
+        pa.program_end_date,
+        pa.program_id
+    FROM probation_and_parole_sessions_agg pps
+    -- This join ensures we box the programming days within known periods of
+    -- supervision.  This means if someone is returned to incarceration, their
+    -- programming will be ended as far as this milestone goes. There is an open UXR
+    -- question about if this is a correct assumption.
+    LEFT JOIN program_assignments_ongoing_for_X_months pa
+        ON pa.state_code = pps.state_code
+            AND pa.person_id = pps.person_id
+            AND pa.program_start_date BETWEEN pps.start_date AND {nonnull_end_date_clause('pps.end_date')}
+            -- Join in any programs that are on-going or completed during a valid period of supervision
+            AND (pa.program_end_date IS NULL OR pa.program_end_date BETWEEN pps.start_date AND {nonnull_end_date_clause('pps.end_date')})
+),
+{critical_date_has_passed_spans_cte(attributes = ['program_start_date', 'program_end_date', 'program_id'])},
+
+-- We only need true spans -- if someone is participating in multiple programs,
+-- this person meets this criteria as long they have participated in any of those
+-- programs for X to Y months
+only_true_critical_date_spans AS (
+    SELECT * 
+    FROM critical_date_has_passed_spans
+    WHERE critical_date_has_passed
+),
+
+{create_sub_sessions_with_attributes(
+    table_name="only_true_critical_date_spans",
+)},
+
+deduped_sub_sessions_with_attributes AS (
+    -- Dedupe sub-sessions with attributes. If a person has multiple sub-sessions,
+    --      only if all of them have critical_date_has_passed = True, then the person
+    --      meets the criteria. We also store the last violation date for the reason blob.
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        true AS meets_criteria, -- See only_true_critical_date_spans CTE.
+        ARRAY_AGG(STRUCT(program_id, program_start_date, program_end_date)) AS programs
+    FROM sub_sessions_with_attributes
+    GROUP BY state_code, person_id, start_date, end_date
+)
+-- Only surface folks as eligible for Y months after X months of the last violation date
+--      or start date.
+SELECT 
+    * EXCEPT(end_date, programs),
+    LEAST(
+        DATE_ADD(start_date, INTERVAL {y_months-x_months} MONTH),
+        {nonnull_end_date_clause('end_date')}
+    ) AS end_date,
+    TO_JSON(programs) AS reason
+FROM deduped_sub_sessions_with_attributes
     """
