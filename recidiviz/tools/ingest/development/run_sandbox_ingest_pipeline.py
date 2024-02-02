@@ -61,8 +61,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegateImpl,
 )
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -201,7 +201,7 @@ def get_extra_pipeline_parameter_args(
     ), SessionFactory.for_proxy(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
     ) as session:
-        raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+        raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
             state_code.value, ingest_instance
         )
         raw_data_max_upper_bounds = raw_file_metadata_manager.get_max_update_datetimes(

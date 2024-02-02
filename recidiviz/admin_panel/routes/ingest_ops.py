@@ -69,11 +69,11 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManagerImpl,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
@@ -1088,7 +1088,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=ingest_instance,
             )
@@ -1121,12 +1121,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            raw_data_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_data_manager = DirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=src_ingest_instance,
             )
 
-            new_instance_manager = PostgresDirectIngestRawFileMetadataManager(
+            new_instance_manager = DirectIngestRawFileMetadataManager(
                 region_code=state_code.value,
                 raw_data_instance=dest_ingest_instance,
             )

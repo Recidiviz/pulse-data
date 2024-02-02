@@ -59,14 +59,12 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManagerImpl,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
@@ -183,7 +181,7 @@ class IngestOperationsStore(AdminPanelStore):
     def _verify_clean_secondary_raw_data_state(self, state_code: StateCode) -> None:
         """Confirm that all raw file metadata / data has been invalidated and the BQ raw data dataset is clean in
         SECONDARY."""
-        raw_data_manager = PostgresDirectIngestRawFileMetadataManager(
+        raw_data_manager = DirectIngestRawFileMetadataManager(
             region_code=state_code.value,
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
@@ -570,7 +568,7 @@ class IngestOperationsStore(AdminPanelStore):
         """Returns the raw file metadata summary for all file tags
         in a given state_code in the operations DB
         """
-        raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+        raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
             region_code=state_code.value,
             raw_data_instance=ingest_instance,
         )

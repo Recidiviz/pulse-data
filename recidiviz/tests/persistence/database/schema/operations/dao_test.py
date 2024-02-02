@@ -33,19 +33,17 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_path,
 )
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema.operations import dao, schema
 from recidiviz.persistence.database.schema.operations.dao import (
     stale_secondary_raw_data,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
@@ -78,73 +76,6 @@ class TestDao(TestCase):
             cls.temp_db_dir
         )
 
-    # TODO(#14198): move operations/dao.py functionality into DirectIngestRawFileMetadataManager and migrate tests
-    # to postgres_direct_ingest_file_metadata_manager_test.
-
-    def test_get_raw_file_metadata_for_file_id(self) -> None:
-        self.add_raw_file_metadata(
-            file_id=10,
-            region_code="US_XX",
-            file_tag="file_tag_1",
-            normalized_file_name="normalized_file_tag_1",
-        )
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            # If this call doesn't raise an exception, it means that the correct metadata row was retrieved.
-            metadata = dao.get_raw_file_metadata_for_file_id(
-                session=session,
-                region_code="US_XX",
-                file_id=10,
-                raw_data_instance=DirectIngestInstance.PRIMARY,
-            )
-            self.assertEqual(metadata.file_id, 10)
-
-    def test_raw_file_metadata_mark_as_invalidated(self) -> None:
-        self.add_raw_file_metadata(
-            file_id=10,
-            region_code="US_XX",
-            file_tag="file_tag_1",
-            normalized_file_name="normalized_file_tag_1",
-        )
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            dao.mark_raw_file_as_invalidated(
-                session=session,
-                region_code="US_XX",
-                file_id=10,
-                raw_data_instance=DirectIngestInstance.PRIMARY,
-            )
-            metadata = dao.get_raw_file_metadata_for_file_id(
-                session=session,
-                region_code="US_XX",
-                file_id=10,
-                raw_data_instance=DirectIngestInstance.PRIMARY,
-            )
-            self.assertEqual(metadata.is_invalidated, True)
-
-    def add_raw_file_metadata(
-        self, file_id: int, region_code: str, file_tag: str, normalized_file_name: str
-    ) -> None:
-        """Used for testing purposes. Add a new row in the direct_ingest_raw_file_metadata table using the
-        parameters."""
-        with SessionFactory.using_database(self.database_key) as session:
-            now = datetime.datetime.now(tz=pytz.UTC)
-            session.add(
-                schema.DirectIngestRawFileMetadata(
-                    region_code=region_code,
-                    file_tag=file_tag,
-                    file_id=file_id,
-                    normalized_file_name=normalized_file_name,
-                    file_discovery_time=now,
-                    file_processed_time=None,
-                    update_datetime=now,
-                    raw_data_instance=DirectIngestInstance.PRIMARY.value,
-                    is_invalidated=False,
-                )
-            )
-
     # TODO(#20930): Delete this test once ingest in dataflow is enabled for all states
     def test_stale_secondary_raw_data_no_primary_file_after_frozen_discovery_date_legacy(
         self,
@@ -171,7 +102,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -210,7 +141,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -241,7 +172,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -254,7 +185,7 @@ class TestDao(TestCase):
                 secondary_normalized_path_str
             )
 
-            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            secondary_raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.SECONDARY,
             )
@@ -293,7 +224,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -306,7 +237,7 @@ class TestDao(TestCase):
                 secondary_normalized_path_str
             )
 
-            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            secondary_raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.SECONDARY,
             )
@@ -348,7 +279,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -385,7 +316,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -398,7 +329,7 @@ class TestDao(TestCase):
                 secondary_normalized_path_str
             )
 
-            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            secondary_raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.SECONDARY,
             )
@@ -440,7 +371,7 @@ class TestDao(TestCase):
                 normalized_path_str
             )
 
-            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             )
@@ -453,7 +384,7 @@ class TestDao(TestCase):
                 secondary_normalized_path_str
             )
 
-            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            secondary_raw_metadata_manager = DirectIngestRawFileMetadataManager(
                 region_code="us_xx",
                 raw_data_instance=DirectIngestInstance.SECONDARY,
             )

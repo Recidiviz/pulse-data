@@ -31,11 +31,11 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManagerImpl,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -132,7 +132,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         materialize_raw_data_table_views: bool = False,
         ingest_view_name: Optional[str] = None,
     ) -> IngestViewMaterializationArgsGenerator:
-        raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+        raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
             region.region_code, DirectIngestInstance.PRIMARY
         )
         ingest_view_name = ingest_view_name or "ingest_view"
