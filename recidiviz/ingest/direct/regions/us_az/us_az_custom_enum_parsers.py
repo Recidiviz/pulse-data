@@ -24,6 +24,11 @@ my_enum_field:
 """
 from typing import Optional
 
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitCategory,
+    StateIncarcerationPeriodHousingUnitType,
+)
 from recidiviz.common.constants.state.state_person import StateEthnicity
 
 
@@ -49,3 +54,158 @@ def parse_ethnicity(
             return StateEthnicity.HISPANIC
         return StateEthnicity.NOT_HISPANIC
     return StateEthnicity.INTERNAL_UNKNOWN
+
+
+def parse_housing_unit_category(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitCategory]:
+    """Parse housing unit categories based on current use and custody level of housing unit.
+    TODO(#27201): Clarify housing unit, custody level, and "current use" specifics with AZ."""
+    if raw_text:
+        if raw_text in (
+            "Detention-Medical",
+            "Detention-Detention",
+            "Close-Detention",
+            "Intake-Detention",
+            "Maximum-Detention",
+            "Detention-Mental Health",
+            "Close-Protective Custody",
+            "Medium-Protective Custody",
+            "Maximum-Protective Custody",
+            "Minimum-Protective Custody",
+            "Detention-Transitory",
+        ):
+            return StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT
+        return StateIncarcerationPeriodHousingUnitCategory.GENERAL
+    return None
+
+
+def parse_housing_unit_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitType]:
+    """Parse housing types categories based on current use and custody level of housing unit.
+    TODO(#27201): Clarify housing unit, custody level, and "current use" specifics with AZ.
+    """
+    if raw_text:
+        if raw_text in (
+            "Intake-Transitory",  # Temporary solitary confinement?
+            "Close-Close Management",
+            "Close-Sex Offender",
+            "Close-Transitory",  # Temporary solitary confinement?
+            "Close-Mental Health",  # Mental health solitary confinement?
+            "Close-General Population",
+            "Minimum-Sex Offender",
+            "Minimum-Transitory",  # Temporary solitary confinement?
+            "Minimum-DUI",
+            "Minimum-General Population",
+            "Maximum-General Population",
+            "Medium-Transitory",  # Temporary solitary confinement?
+            "Medium-Sex Offender",
+            "Maximum-Sex Offender",
+            "Maximum-Return to Custody",
+            "Maximum-Transitory",  # Temporary solitary confinement?
+            "Medium-General Population",
+            "Maximum-Mental Health",  # Mental health solitary confinement?
+            "Medium-Mental Health",  # Mental health solitary confinement?
+        ):
+            return StateIncarcerationPeriodHousingUnitType.GENERAL
+
+        if raw_text in (
+            "Close-Medical",
+            "Medium-Medical",
+            "Maximum-Medical",
+            "Detention-Medical",
+        ):
+            return StateIncarcerationPeriodHousingUnitType.HOSPITAL
+
+        if raw_text in (
+            "Detention-Detention",
+            "Close-Detention",
+            "Intake-Detention",
+            "Maximum-Detention",
+        ):
+            return (
+                StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT
+            )
+        if raw_text == "Detention-Mental Health":
+            return (
+                StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT
+            )
+        if raw_text in (
+            "Close-Protective Custody",
+            "Medium-Protective Custody",
+            "Maximum-Protective Custody",
+            "Minimum-Protective Custody",
+        ):
+            return StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY
+
+        if raw_text == "Detention-Transitory":
+            return (
+                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT
+            )
+        return StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN
+    return None
+
+
+def parse_custody_level(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodCustodyLevel]:
+    """Parse custody level based on current use and documented custody level of housing unit."""
+    if raw_text:
+        if raw_text == "Intake-Transitory":
+            return StateIncarcerationPeriodCustodyLevel.INTAKE
+        if raw_text in (
+            "Minimum-Sex Offender",
+            "Minimum-Transitory",
+            "Minimum-DUI",
+            "Minimum-General Population",
+        ):
+            return StateIncarcerationPeriodCustodyLevel.MINIMUM
+
+        if raw_text in (
+            "Medium-Transitory",
+            "Medium-Medical",
+            "Medium-Mental Health",
+            "Medium-General Population",
+            "Medium-Sex Offender",
+        ):
+            return StateIncarcerationPeriodCustodyLevel.MEDIUM
+        if raw_text in (
+            "Maximum-Sex Offender",
+            "Maximum-Medical",
+            "Maximum-Return to Custody",
+            "Maximum-Mental Health",
+            "Maximum-Transitory",
+            "Maximum-General Population",
+        ):
+            return StateIncarcerationPeriodCustodyLevel.MAXIMUM
+        if raw_text in (
+            "Close-Close Management",
+            "Close-Sex Offender",
+            "Close-Transitory",
+            "Close-Mental Health",
+            "Close-Medical",
+            "Close-General Population",
+        ):
+            return StateIncarcerationPeriodCustodyLevel.CLOSE
+
+        if raw_text in (
+            "Detention-Medical",
+            "Detention-Detention",
+            "Close-Detention",
+            "Intake-Detention",
+            "Maximum-Detention",
+            "Detention-Mental Health",
+            "Close-Protective Custody",
+            "Medium-Protective Custody",
+            "Maximum-Protective Custody",
+            "Minimum-Protective Custody",
+            "Detention-Transitory",
+        ):
+            # This relies on the assumption that a documented custody level of "detention"
+            # OR a unit's current use being "Detention" or "Protective Custody"
+            # means a person in that unit is in restrictive housing (solitary).
+            # TODO(#27201): Confirm with AZ.
+            return StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT
+        return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
+    return None
