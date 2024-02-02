@@ -50,5 +50,6 @@ class UsCaController(BaseDirectIngestController):
             "staff",
             "assessments",
             "employment_period",
-            "program_assignment",
+            "ARMS_program_assignment",
+            "PVDTS_program_assignment",
         ]
