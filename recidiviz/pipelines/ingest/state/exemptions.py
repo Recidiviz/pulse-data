@@ -81,7 +81,7 @@ INGEST_VIEW_ORDER_EXEMPTIONS: Dict[StateCode, List[str]] = {
         "elite_offenders",
         "elite_alias",
         "elite_offenderbookingstable",
-        "elite_externalmovements_incarceration_periods",
+        "elite_movements_incarceration_periods",
         "elite_offense_in_custody_and_pos_report_data",
         # Docstars - supervision-focused
         "docstars_offenders",

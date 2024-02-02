@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing external movements information."""
+"""
+Query containing movement information, both external (into/out of/between facilities)
+and internal (unit/bed assignments within facilities).
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -35,7 +38,8 @@ VIEW_QUERY_TEMPLATE = """
         WHEN TO_AGY_LOC_ID IS NULL AND FROM_AGY_LOC_ID IS NOT NULL THEN FROM_AGY_LOC_ID
     END AS facility,
     CAST(NULL AS STRING) AS custody_level,
-    CAST(NULL AS STRING) AS override_reason
+    CAST(NULL AS STRING) AS override_reason,
+    CAST(NULL AS STRING) AS bed_assignment
   FROM {elite_externalmovements}
 
   UNION ALL 
@@ -45,11 +49,12 @@ VIEW_QUERY_TEMPLATE = """
     CAST(ASSESSMENT_DATE AS DATETIME) AS ASSESSMENT_DATE,
     REPLACE(REPLACE(ASSESSMENT_SEQ,',',''), '.00', '') AS ASSESSMENT_SEQ,
     'STATUS_CHANGE' AS MOVEMENT_REASON_CODE,
-    'STATUS_CHANGE' AS DIRECTION_CODE,
+    'INTERNAL_MOVEMENT' AS DIRECTION_CODE,
     CAST(NULL AS STRING) AS facility,
     IF(REVIEW_SUP_LEVEL_TYPE='',CALC_SUP_LEVEL_TYPE, REVIEW_SUP_LEVEL_TYPE) AS custody_level,
     -- Trim to 200 characters to avoid exceeding the 255 character limit on the column
-    LEFT(COALESCE(ASSESS_COMMENT_TEXT, OVERRIDE_REASON), 200) AS override_reason
+    LEFT(COALESCE(ASSESS_COMMENT_TEXT, OVERRIDE_REASON), 200) AS override_reason,
+    CAST(NULL AS STRING) AS bed_assignment
   FROM {recidiviz_elite_OffenderAssessments}
   WHERE ASSESSMENT_TYPE_ID IN (
     '1,008.00', -- INITIAL ASSESSMENT	
@@ -77,6 +82,22 @@ VIEW_QUERY_TEMPLATE = """
     '114,566.00', -- INITAL CLASSIFICATION - FEMALE - 60 MOS OR LESS	
     '114,938.00' -- RECLASSIFICATION - FEMALE - 60 MOS OR LESS	
   )
+
+  UNION ALL 
+
+  SELECT DISTINCT
+    REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
+    CAST(ASSIGNMENT_DATE AS DATETIME) AS ASSIGNMENT_DATE,
+    bed_assignments.BED_ASSIGN_SEQ,
+    'BED_ASSIGNMENT_CHANGE' AS MOVEMENT_REASON_CODE,
+    'INTERNAL_MOVEMENT' AS DIRECTION_CODE,
+    CAST(NULL AS STRING) AS facility,
+    CAST(NULL AS STRING) AS custody_level,
+    CAST(NULL AS STRING) AS override_reason,
+    ref.DESCRIPTION AS bed_assignment,
+  FROM {elite_bedassignmenthistory} bed_assignments
+  LEFT JOIN {elite_livingunits} ref
+  USING(LIVING_UNIT_ID)
 )
 , dates_with_all_attributes AS (
   SELECT 
@@ -88,13 +109,14 @@ VIEW_QUERY_TEMPLATE = """
     LAST_VALUE(facility ignore nulls) OVER (person_window range between UNBOUNDED preceding and current row) AS facility,
     LAST_VALUE(custody_level ignore nulls) OVER (person_window range between UNBOUNDED preceding and current row) AS custody_level,
     LAST_VALUE(override_reason ignore nulls) OVER (person_window range between UNBOUNDED preceding and current row) AS override_reason,
+    LAST_VALUE(bed_assignment ignore nulls) OVER (person_window range between UNBOUNDED preceding and current row) AS bed_assignment,
   FROM critical_dates
   -- MOVEMENT_REASON_CODE is a part of the ordering here to deterministically sort movements and assessments that
   -- happened on the same day. It sorts admissions and transfers before status changes; status changes that follow OUT
   -- movements are excluded later anyway.
   WINDOW person_window AS (
     PARTITION BY OFFENDER_BOOK_ID 
-    ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE)
+    ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE, DIRECTION_CODE)
 ), full_periods AS (
   SELECT 
     ROW_NUMBER() OVER person_window AS period_sequence, 
@@ -112,14 +134,15 @@ FROM (
         LEAD(MOVEMENT_REASON_CODE) OVER person_window AS release_reason_code,
         custody_level,
         override_reason,
+        bed_assignment
     FROM dates_with_all_attributes
     WINDOW person_window AS (
       PARTITION BY OFFENDER_BOOK_ID 
-      ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE)
+      ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE, DIRECTION_CODE)
     ) sub
     WHERE facility != 'OUT'
      -- Exclude rows that begin with a release or escape
-    AND NOT (DIRECTION_CODE = 'OUT' AND NEXT_DIRECTION_CODE = 'STATUS_CHANGE')
+    AND NOT (DIRECTION_CODE = 'OUT' AND NEXT_DIRECTION_CODE = 'INTERNAL_MOVEMENT')
     AND admission_reason_code != 'ESCP'
     -- Exclude rows with a probation violation as the release reason. This is a result 
     -- of the way movements are tracked in this scenario: a person is admitted to either
@@ -134,7 +157,7 @@ FROM (
       PARTITION BY OFFENDER_BOOK_ID 
       ORDER BY start_date, CAST(MOVEMENT_SEQ AS INT), admission_reason_code)
 ), 
-infer_missing_custody_levels AS (
+infer_missing_attributes AS (
   SELECT 
     period_sequence,
     OFFENDER_BOOK_ID as offender_book_id,
@@ -148,17 +171,22 @@ infer_missing_custody_levels AS (
       WHEN custody_level IS NULL AND period_sequence !=1 THEN 'INFERRED-UNCLASS'
       ELSE custody_level
     END AS custody_level,
-    override_reason
+    override_reason,
+    CASE
+      WHEN bed_assignment IS NULL AND period_sequence = 1 THEN 'UNKNOWN-INTAKE'
+      WHEN bed_assignment IS NULL AND period_sequence !=1 THEN 'UNKNOWN-UNKNOWN'
+      ELSE bed_assignment
+    END AS bed_assignment
   FROM full_periods
 )
 SELECT 
   *
-FROM infer_missing_custody_levels
+FROM infer_missing_attributes
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
-    ingest_view_name="elite_externalmovements_incarceration_periods",
+    ingest_view_name="elite_movements_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="offender_book_id, period_sequence",
 )
