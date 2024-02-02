@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    not_in_treatment_in_prison,
     not_serving_for_sexual_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
@@ -59,6 +60,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # TODO(#24043) - remove this criteria and add one where we only filter out those already on wr
         not_in_crc_facility.VIEW_BUILDER,
         crc_work_release_time_based_criteria.VIEW_BUILDER,
+        not_in_treatment_in_prison.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )

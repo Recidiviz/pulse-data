@@ -27,6 +27,7 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
+    not_in_treatment_in_prison,
     not_serving_for_sexual_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
@@ -58,6 +59,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
         not_in_crc_facility.VIEW_BUILDER,
         crc_resident_worker_time_based_criteria.VIEW_BUILDER,
+        not_in_treatment_in_prison.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
 )
