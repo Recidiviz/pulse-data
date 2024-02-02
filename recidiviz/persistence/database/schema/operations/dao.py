@@ -20,8 +20,8 @@ import logging
 import sqlalchemy
 from more_itertools import one
 
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -36,7 +36,7 @@ def stale_secondary_raw_data(
     a given normalized_file_name that exists in PRIMARY after the timestamp of the start of a secondary rerun that
     does not exist in SECONDARY."""
     region_code_upper = region_code.upper()
-    secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+    secondary_status_manager = DirectIngestInstanceStatusManager(
         region_code=region_code,
         ingest_instance=DirectIngestInstance.SECONDARY,
         is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,

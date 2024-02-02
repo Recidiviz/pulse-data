@@ -747,7 +747,7 @@ class TestDirectIngestControl(unittest.TestCase):
         "recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskQueueManagerImpl"
     )
     @patch(
-        f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
+        f"{BaseDirectIngestController.__module__}.DirectIngestInstanceStatusManager",
     )
     def test_ensure_all_raw_file_paths_normalized_actual_regions(
         self,

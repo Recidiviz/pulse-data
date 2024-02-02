@@ -44,11 +44,11 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -148,24 +148,24 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
         """
 
         ingest_in_dataflow_enabled = False
-        us_xx_primary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_xx_primary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
             ingest_in_dataflow_enabled,
         )
 
-        us_xx_secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_xx_secondary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
             ingest_in_dataflow_enabled,
         )
-        us_yy_primary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_primary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
             ingest_in_dataflow_enabled,
         )
 
-        us_yy_secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_secondary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
             ingest_in_dataflow_enabled,
@@ -227,24 +227,24 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
         """
 
         ingest_in_dataflow_enabled = True
-        us_xx_primary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_xx_primary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
             ingest_in_dataflow_enabled,
         )
 
-        us_xx_secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_xx_secondary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
             ingest_in_dataflow_enabled,
         )
-        us_yy_primary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_primary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
             ingest_in_dataflow_enabled,
         )
 
-        us_yy_secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_secondary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
             ingest_in_dataflow_enabled,

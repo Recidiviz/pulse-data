@@ -22,8 +22,8 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -35,7 +35,7 @@ def _verify_raw_data_flashing_not_in_progress(
     Checks the raw data processing status for the given state code and ingest instance.
      Raises an exception if the raw data flashing is in progress.
     """
-    status_manager = PostgresDirectIngestInstanceStatusManager(
+    status_manager = DirectIngestInstanceStatusManager(
         region_code=state_code.value,
         ingest_instance=ingest_instance,
         is_ingest_in_dataflow_enabled=True,

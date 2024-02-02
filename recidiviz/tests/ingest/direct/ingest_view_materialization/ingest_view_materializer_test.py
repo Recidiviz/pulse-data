@@ -37,7 +37,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
     InstanceIngestViewContents,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManagerImpl,
+    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -284,7 +284,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             region=region,
             ingest_instance=self.ingest_instance,
             raw_data_source_instance=self.raw_data_source_instance,
-            metadata_manager=DirectIngestViewMaterializationMetadataManagerImpl(
+            metadata_manager=DirectIngestViewMaterializationMetadataManager(
                 region_code=region.region_code, ingest_instance=self.ingest_instance
             ),
             ingest_view_contents=self.mock_ingest_view_contents,

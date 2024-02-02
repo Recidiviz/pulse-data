@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements tests for the PostgresDirectIngestInstanceStatusManager."""
+"""Implements tests for the DirectIngestInstanceStatusManager."""
 import abc
 import datetime
 from datetime import timedelta
@@ -34,12 +34,10 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
     get_human_intervention_statuses,
     get_invalid_statuses,
     get_valid_current_status_transitions,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -49,8 +47,8 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
 
 
 @pytest.mark.uses_db
-class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
-    """Implements tests for PostgresDirectIngestInstanceStatusManager."""
+class DirectIngestInstanceStatusManagerTest(TestCase):
+    """Implements tests for DirectIngestInstanceStatusManager."""
 
     # We set __test__ to False to tell `pytest` not to collect this class for running tests
     # (as successful runs rely on the implementation of an abstract method).
@@ -66,7 +64,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
     @staticmethod
     def _add_instance_statuses_in_hour_increments(
         start_timestamp: datetime.datetime,
-        status_manager: PostgresDirectIngestInstanceStatusManager,
+        status_manager: DirectIngestInstanceStatusManager,
         statuses: List[DirectIngestStatus],
     ) -> None:
         for i, status in enumerate(statuses):
@@ -86,12 +84,12 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
-        self.us_xx_primary_manager = PostgresDirectIngestInstanceStatusManager(
+        self.us_xx_primary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),
         )
-        self.us_xx_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+        self.us_xx_secondary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -147,7 +145,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
         self.assertEqual(len(secondary_differences), 0)
 
     @patch(
-        f"{PostgresDirectIngestInstanceStatusManager.__module__}.PostgresDirectIngestInstanceStatusManager.get_raw_data_source_instance"
+        f"{DirectIngestInstanceStatusManager.__module__}.DirectIngestInstanceStatusManager.get_raw_data_source_instance"
     )
     def test_change_status_to_invalid_transitions(
         self, mock_get_raw_data_source_instance: mock.MagicMock
@@ -162,7 +160,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             valid_status_transitions = get_valid_current_status_transitions(
                 instance, self.is_ingest_in_dataflow_enabled()
             )
-            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
+            us_yy_manager = DirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance, self.is_ingest_in_dataflow_enabled()
             )
             for new_status, valid_previous_statuses in valid_status_transitions.items():
@@ -197,7 +195,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             invalid_statuses = get_invalid_statuses(
                 instance, self.is_ingest_in_dataflow_enabled()
             )
-            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
+            us_yy_manager = DirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance, self.is_ingest_in_dataflow_enabled()
             )
             us_yy_manager.add_initial_status()
@@ -212,7 +210,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
 
     def test_validate_statuses_transition_to_themselves(self) -> None:
         for instance in DirectIngestInstance:
-            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
+            us_yy_manager = DirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance, self.is_ingest_in_dataflow_enabled()
             )
 
@@ -257,7 +255,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
     ) -> None:
         # Use a new status manager for US_YY that doesn't have initial statuses added
         # in setUp.
-        us_yy_primary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_primary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -270,7 +268,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
     def test_duplicate_statuses_are_not_added_twice(
         self,
     ) -> None:
-        us_yy_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -292,9 +290,9 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
 
 # TODO(#20930): Delete this test class when ingest in dataflow is enabled for all states
 class LegacyIngestPostgresDirectIngestStatusManagerTest(
-    PostgresDirectIngestInstanceStatusManagerTest
+    DirectIngestInstanceStatusManagerTest
 ):
-    """Tests for PostgresDirectIngestInstanceStatusManager where
+    """Tests for DirectIngestInstanceStatusManager where
     is_ingest_in_dataflow_enabled is False.
     """
 
@@ -306,7 +304,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
 
     def _run_test_for_status_transitions(
         self,
-        manager: PostgresDirectIngestInstanceStatusManager,
+        manager: DirectIngestInstanceStatusManager,
         statuses: List[DirectIngestStatus],
         expected_raw_data_source: Optional[DirectIngestInstance] = None,
     ) -> None:
@@ -329,7 +327,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
                     )
 
     def test_do_not_allow_empty_status(self) -> None:
-        us_ww_manager = PostgresDirectIngestInstanceStatusManager(
+        us_ww_manager = DirectIngestInstanceStatusManager(
             StateCode.US_WW.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -709,7 +707,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
         # Flashing could start when ingest is at any point in PRIMARY - it doesn't
         # matter because everything in PRIMARY will be overwritten.
         for i in range(1, len(primary_standard_flow_statuses)):
-            us_xx_primary_manager = PostgresDirectIngestInstanceStatusManager(
+            us_xx_primary_manager = DirectIngestInstanceStatusManager(
                 StateCode.US_XX.value,
                 DirectIngestInstance.PRIMARY,
                 self.is_ingest_in_dataflow_enabled(),
@@ -750,7 +748,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
             )
         )
         for status in valid_secondary_statuses:
-            us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+            us_yy_secondary_manager = DirectIngestInstanceStatusManager(
                 StateCode.US_YY.value,
                 DirectIngestInstance.SECONDARY,
                 self.is_ingest_in_dataflow_enabled(),
@@ -795,7 +793,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
         start_timestamp = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, pytz.UTC)
         statuses = [DirectIngestStatus.NO_RERUN_IN_PROGRESS]
         # Create a new us_yy manager that does not have any pre-seeded data.
-        us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_secondary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -828,7 +826,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
             DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
             DirectIngestStatus.READY_TO_FLASH,
         ]
-        us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_secondary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -856,7 +854,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
             DirectIngestStatus.FLASH_COMPLETED,
             DirectIngestStatus.UP_TO_DATE,
         ]
-        us_yy_primary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_primary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -889,7 +887,7 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
             DirectIngestStatus.FLASH_COMPLETED,
             DirectIngestStatus.UP_TO_DATE,
         ]
-        us_yy_primary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_primary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -929,9 +927,9 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
 # TODO(#20930): Merge this test class back with the base test class once ingest in
 #  dataflow has shipped for all states.
 class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
-    PostgresDirectIngestInstanceStatusManagerTest
+    DirectIngestInstanceStatusManagerTest
 ):
-    """Tests for PostgresDirectIngestInstanceStatusManager where
+    """Tests for DirectIngestInstanceStatusManager where
     is_ingest_in_dataflow_enabled is False.
     """
 
@@ -943,7 +941,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
 
     def _run_test_for_status_transitions(
         self,
-        manager: PostgresDirectIngestInstanceStatusManager,
+        manager: DirectIngestInstanceStatusManager,
         statuses: List[DirectIngestStatus],
     ) -> None:
         for status in statuses:
@@ -951,7 +949,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             self.assertEqual(status, manager.get_current_status())
 
     def test_do_not_allow_empty_status(self) -> None:
-        us_ww_manager = PostgresDirectIngestInstanceStatusManager(
+        us_ww_manager = DirectIngestInstanceStatusManager(
             StateCode.US_WW.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -1071,7 +1069,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
         # Flashing could start when ingest is at any point in PRIMARY - it doesn't
         # matter because everything in PRIMARY will be overwritten.
         for i in range(1, len(primary_standard_flow_statuses)):
-            us_xx_primary_manager = PostgresDirectIngestInstanceStatusManager(
+            us_xx_primary_manager = DirectIngestInstanceStatusManager(
                 StateCode.US_XX.value,
                 DirectIngestInstance.PRIMARY,
                 self.is_ingest_in_dataflow_enabled(),
@@ -1100,7 +1098,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             )
         )
         for status in valid_secondary_statuses:
-            us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+            us_yy_secondary_manager = DirectIngestInstanceStatusManager(
                 StateCode.US_YY.value,
                 DirectIngestInstance.SECONDARY,
                 self.is_ingest_in_dataflow_enabled(),
@@ -1118,7 +1116,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
         start_timestamp = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, pytz.UTC)
         statuses = [DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS]
         # Create a new us_yy manager that does not have any pre-seeded data.
-        us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_secondary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -1149,7 +1147,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
             DirectIngestStatus.READY_TO_FLASH,
         ]
-        us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_secondary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
             self.is_ingest_in_dataflow_enabled(),
@@ -1180,7 +1178,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             DirectIngestStatus.FLASH_COMPLETED,
             DirectIngestStatus.RAW_DATA_UP_TO_DATE,
         ]
-        us_yy_primary_manager = PostgresDirectIngestInstanceStatusManager(
+        us_yy_primary_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
             self.is_ingest_in_dataflow_enabled(),

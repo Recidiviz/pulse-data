@@ -18,7 +18,6 @@
 completed ingest view materialization jobs to disk.
 """
 
-import abc
 import datetime
 from typing import Dict, List, Optional, Union
 
@@ -90,84 +89,6 @@ class IngestViewMaterializationSummary:
 
 
 class DirectIngestViewMaterializationMetadataManager:
-    """A interface for a class that handles writing metadata about pending and completed
-    ingest view materialization jobs to disk.
-    """
-
-    @property
-    @abc.abstractmethod
-    def region_code(self) -> str:
-        """The region code to manage metadata for."""
-
-    @property
-    @abc.abstractmethod
-    def ingest_instance(self) -> DirectIngestInstance:
-        """The ingest instance to manage metadata for."""
-
-    @abc.abstractmethod
-    def register_ingest_materialization_job(
-        self, job_args: IngestViewMaterializationArgs
-    ) -> DirectIngestViewMaterializationMetadata:
-        """Writes a new row to the ingest view metadata table with the expected path
-        once the export job completes.
-        """
-
-    @abc.abstractmethod
-    def get_job_completion_time_for_args(
-        self, job_args: IngestViewMaterializationArgs
-    ) -> Optional[datetime.datetime]:
-        """Returns the completion time of the materialization job represented by the
-        provided args.
-        """
-
-    @abc.abstractmethod
-    def mark_ingest_view_materialized(
-        self, job_args: IngestViewMaterializationArgs
-    ) -> None:
-        """Commits the current time as the materialization_time for the given ingest
-        view materialization job.
-        """
-
-    @abc.abstractmethod
-    def get_most_recent_registered_job(
-        self, ingest_view_name: str
-    ) -> Optional[DirectIngestViewMaterializationMetadata]:
-        """Returns most recently created materialization metadata row where
-        is_invalidated is False, or None if there are no metadata rows for this ingest
-        view for this manager's region / ingest instance.
-        """
-
-    @abc.abstractmethod
-    def get_jobs_pending_completion(
-        self,
-    ) -> List[DirectIngestViewMaterializationMetadata]:
-        """Returns metadata for all ingest view materialization jobs that have not yet
-        been completed.
-        """
-
-    @abc.abstractmethod
-    def mark_instance_data_invalidated(self) -> None:
-        """Sets the is_invalidated on all rows for the state/instance"""
-
-    @abc.abstractmethod
-    def transfer_metadata_to_new_instance(
-        self,
-        new_instance_manager: "DirectIngestViewMaterializationMetadataManager",
-    ) -> None:
-        """Take all rows where `is_invalidated=False` and transfer to the instance associated with
-        the new_instance_manager
-        """
-
-    @abc.abstractmethod
-    def get_instance_summaries(self) -> Dict[str, IngestViewMaterializationSummary]:
-        """Returns a map with a summary of the status of pending / completed
-        materialization jobs for each ingest view.
-        """
-
-
-class DirectIngestViewMaterializationMetadataManagerImpl(
-    DirectIngestViewMaterializationMetadataManager
-):
     """Writes metadata about pending and completed ingest view materialization jobs to a
     postgres database.
     """
@@ -179,10 +100,12 @@ class DirectIngestViewMaterializationMetadataManagerImpl(
 
     @property
     def region_code(self) -> str:
+        """The region code to manage metadata for."""
         return self._region_code
 
     @property
     def ingest_instance(self) -> DirectIngestInstance:
+        """The ingest instance to manage metadata for."""
         return self._ingest_instance
 
     def register_ingest_materialization_job(

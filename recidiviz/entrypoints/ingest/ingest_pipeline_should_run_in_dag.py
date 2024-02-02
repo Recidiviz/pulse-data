@@ -37,8 +37,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IS_SECONDARY_INSTANCE_PROPERTY_NAME,
     IngestViewManifestCompilerDelegateImpl,
 )
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -53,7 +53,7 @@ def _secondary_has_raw_data_changes(state_code: StateCode) -> bool:
     ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
         state_code, DirectIngestInstance.SECONDARY
     )
-    instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+    instance_status_manager = DirectIngestInstanceStatusManager(
         region_code=state_code.value.lower(),
         ingest_instance=DirectIngestInstance.SECONDARY,
         is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,

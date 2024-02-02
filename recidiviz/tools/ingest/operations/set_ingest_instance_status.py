@@ -38,8 +38,8 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
@@ -104,7 +104,7 @@ def main(
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
     with cloudsql_proxy_control.connection(schema_type=schema_type):
         with SessionFactory.for_proxy(database_key) as session:
-            manager = PostgresDirectIngestInstanceStatusManager(
+            manager = DirectIngestInstanceStatusManager(
                 region_code=state_code.value,
                 ingest_instance=ingest_instance,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(

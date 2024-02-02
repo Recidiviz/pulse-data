@@ -58,8 +58,8 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -313,7 +313,7 @@ class MoveFilesFromStorageController:
             ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
                 self.state_code, DirectIngestInstance.SECONDARY
             )
-            secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+            secondary_status_manager = DirectIngestInstanceStatusManager(
                 self.state_code.value,
                 DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,

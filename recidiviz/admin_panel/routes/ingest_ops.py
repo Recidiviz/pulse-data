@@ -69,14 +69,14 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManagerImpl,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -657,7 +657,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             ingest_view_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManagerImpl(
+                DirectIngestViewMaterializationMetadataManager(
                     region_code=state_code.value, ingest_instance=ingest_instance
                 )
             )
@@ -691,12 +691,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             ingest_view_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManagerImpl(
+                DirectIngestViewMaterializationMetadataManager(
                     region_code=state_code.value, ingest_instance=src_ingest_instance
                 )
             )
 
-            new_instance_manager = DirectIngestViewMaterializationMetadataManagerImpl(
+            new_instance_manager = DirectIngestViewMaterializationMetadataManager(
                 region_code=state_code.value,
                 ingest_instance=dest_ingest_instance,
             )
@@ -761,9 +761,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             jsonify(
                 {
                     instance_state_code.value: {
-                        instance.value.lower(): curr_status_info.for_api()
-                        if curr_status_info
-                        else None
+                        instance.value.lower(): (
+                            curr_status_info.for_api() if curr_status_info else None
+                        )
                         for instance, curr_status_info in instances.items()
                     }
                     for instance_state_code, instances in all_instance_statuses.items()
@@ -837,7 +837,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
-        status_manager = PostgresDirectIngestInstanceStatusManager(
+        status_manager = DirectIngestInstanceStatusManager(
             state_code.value,
             ingest_instance,
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
@@ -868,7 +868,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         if ingest_in_dataflow_enabled:
             return (jsonify({"instance": ingest_instance.value}), HTTPStatus.OK)
 
-        status_manager = PostgresDirectIngestInstanceStatusManager(
+        status_manager = DirectIngestInstanceStatusManager(
             state_code.value,
             ingest_instance,
             is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
@@ -887,9 +887,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return (
             jsonify(
                 {
-                    "instance": raw_data_source_instance.value
-                    if raw_data_source_instance is not None
-                    else None
+                    "instance": (
+                        raw_data_source_instance.value
+                        if raw_data_source_instance is not None
+                        else None
+                    )
                 }
             ),
             HTTPStatus.OK,
@@ -911,7 +913,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
-        status_manager = PostgresDirectIngestInstanceStatusManager(
+        status_manager = DirectIngestInstanceStatusManager(
             state_code.value,
             ingest_instance,
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
@@ -942,7 +944,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            status_manager = PostgresDirectIngestInstanceStatusManager(
+            status_manager = DirectIngestInstanceStatusManager(
                 state_code.value,
                 ingest_instance,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
@@ -969,7 +971,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
-        status_manager = PostgresDirectIngestInstanceStatusManager(
+        status_manager = DirectIngestInstanceStatusManager(
             state_code.value,
             DirectIngestInstance.PRIMARY,
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
