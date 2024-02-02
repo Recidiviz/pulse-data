@@ -158,7 +158,9 @@ _QUERY_TEMPLATE = f"""
         end_date,
         -- if any sentence is eligible, we consider the person to be eligible
         LOGICAL_OR(is_eligible) AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(reason IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences)) AS reason,
+        -- split out eligible and ineligible sentences
+        TO_JSON(STRUCT(ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
+                       ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences)) AS reason,
     FROM sub_sessions_with_attributes_with_reasons
     GROUP BY 1, 2, 3, 4
 """
