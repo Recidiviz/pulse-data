@@ -15,20 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Mixin classes for entities in the state dataset."""
-import abc
-import datetime
-from typing import Optional, TypeVar, Union
+from typing import List, Optional, TypeVar
 
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.common.date import assert_datetime_less_than
+from recidiviz.common.date import DateOrDateTime, assert_datetime_less_than
 from recidiviz.persistence.entity.state.entity_field_validators import pre_norm_opt
 
 
 @attr.s(eq=False)
 class SequencedEntityMixin:
-    """Set of attributes for a normalized entity that can be ordered in a sequence."""
+    """Set of attributes for an entity that can be ordered in a sequence."""
 
     sequence_num: Optional[int] = attr.ib(
         default=None, validator=pre_norm_opt(attr_validators.is_int)
@@ -43,20 +41,36 @@ class LedgerEntityMixin(SequencedEntityMixin):
     initially have the start date/datetime for each period.
 
     Ledger entities must have a date/datetime field for the 'start' of the ledger that cannot be in the future.
-    They may also have one or more pairs of date/datetime fields, where the first date/datetime of the pair
-    must be before the second.
+    They may also have:
+       - one or more pairs of date/datetime fields, where the first of the pair must be before the second
+       - a string that uniquely identifies this entity when combined with the datetime field and sequence number
     """
 
-    @classmethod
-    @abc.abstractmethod
-    def get_ledger_datetime_field(cls) -> str:
+    @property
+    def ledger_datetime_field(self) -> DateOrDateTime:
         """A ledger entity has a single field denoting a 'start' or 'update' of its period of time. Return it here."""
         raise NotImplementedError("Must define a start datetime field")
 
+    @property
+    def ledger_partition_columns(self) -> List[str]:
+        """A list of field names that uniquely partition this entity before sorting.
+        These fields will be combined with ledger_datetime_field and sequence_num so that we can correctly
+        determine end dates for each ledger entity in a later normalization step.
+        """
+        return []
+
+    @property
+    def partition_key(self) -> str:
+        """Builds a string to uniquely identify this entity."""
+        partition_string = "-".join(
+            str(getattr(self, field)) for field in self.ledger_partition_columns
+        )
+        return f"{self.ledger_datetime_field.isoformat()}-{self.sequence_num}-{partition_string}"
+
     def assert_datetime_less_than(
         self,
-        before: Optional[Union[datetime.date, datetime.datetime]],
-        after: Optional[Union[datetime.date, datetime.datetime]],
+        before: Optional[DateOrDateTime],
+        after: Optional[DateOrDateTime],
     ) -> None:
         """Raises a ValueError if the given "before" date/datetime is after the "after" one.
         Both field names must be datetime.datetime or datetime.date fields.
@@ -68,3 +82,6 @@ class LedgerEntityMixin(SequencedEntityMixin):
             raise ValueError(
                 f"Found {self.__class__.__name__} with datetime {before} after datetime {after}."
             ) from exc
+
+
+LedgerEntityMixinT = TypeVar("LedgerEntityMixinT", bound=LedgerEntityMixin)

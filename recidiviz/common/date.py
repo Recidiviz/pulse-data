@@ -24,12 +24,11 @@ from typing import Iterable, Iterator, List, Optional, Tuple, TypeVar, Union
 import attr
 import pandas as pd
 
+DateOrDateTime = Union[datetime.date, datetime.datetime]
 # Date Parsing
 
 
-def as_datetime(
-    value: Union[datetime.date, datetime.datetime],
-) -> datetime.datetime:
+def as_datetime(value: DateOrDateTime) -> datetime.datetime:
     """Returns the given value as a datetime to be compared against other datetimes."""
     if isinstance(value, datetime.datetime):
         return value
@@ -37,8 +36,8 @@ def as_datetime(
 
 
 def assert_datetime_less_than(
-    before: Optional[Union[datetime.date, datetime.datetime]],
-    after: Optional[Union[datetime.date, datetime.datetime]],
+    before: Optional[DateOrDateTime],
+    after: Optional[DateOrDateTime],
 ) -> None:
     """Raises a ValueError if the given "before" date/datetime is after the given "after" one.
     Both field names must be datetime.datetime or datetime.date fields.

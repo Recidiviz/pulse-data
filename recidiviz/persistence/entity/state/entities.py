@@ -124,7 +124,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.common.date import DateRange, DurationMixin
+from recidiviz.common.date import DateOrDateTime, DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -135,6 +135,7 @@ from recidiviz.persistence.entity.base_entity import (
     UniqueConstraint,
 )
 from recidiviz.persistence.entity.state import entity_field_validators
+from recidiviz.persistence.entity.state.entity_field_validators import pre_norm_opt
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 
 # **** Entity Types for convenience *****:
@@ -2027,10 +2028,14 @@ class StateTaskDeadline(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entit
             )
         ]
 
-    @classmethod
-    def get_ledger_datetime_field(cls) -> str:
+    @property
+    def ledger_partition_columns(self) -> List[str]:
+        return ["task_type", "task_subtype", "task_metadata"]
+
+    @property
+    def ledger_datetime_field(self) -> DateOrDateTime:
         """StateTaskDeadline ledger updates happen on update_datetime."""
-        return "update_datetime"
+        return self.update_datetime
 
     def __attrs_post_init__(self):
         """StateTaskDeadlines have an eligible date before a due date."""
@@ -2312,8 +2317,10 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # The date this sentence was imposed, e.g. the date of actual sentencing,
     # but not necessarily the date the person started serving the sentence.
+    # Optional only for parsing
+    # TODO(#26870) have an ingest validation check this is not None post entity merge
     imposed_date: datetime.date = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
+        default=None, validator=pre_norm_opt(attr_validators.is_date)
     )
 
     # The amount of any time already served (in days) at time of sentence imposition,
@@ -2323,8 +2330,11 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     )
 
     # The type of sentence INCARCERATION, PROBATION, etc.
+    # Only optional for parsing
+    # TODO(#26870) have an ingest validation check this is not None post entity merge
     sentence_type: StateSentenceType = attr.ib(
-        validator=attr.validators.instance_of(StateSentenceType),
+        default=None,
+        validator=pre_norm_opt(attr.validators.instance_of(StateSentenceType)),
     )
 
     # Raw text indicating whether a sentence is supervision/incarceration/etc
@@ -2586,9 +2596,9 @@ class StateSentenceStatusSnapshot(
     person: Optional["StatePerson"] = attr.ib(default=None)
     sentence: Optional["StateSentence"] = attr.ib(default=None)
 
-    @classmethod
-    def get_ledger_datetime_field(cls):
-        return "status_update_datetime"
+    @property
+    def ledger_datetime_field(self) -> DateOrDateTime:
+        return self.status_update_datetime
 
 
 @attr.s(eq=False, kw_only=True)
@@ -2649,9 +2659,9 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
     person: Optional["StatePerson"] = attr.ib(default=None)
     sentence: Optional["StateSentence"] = attr.ib(default=None)
 
-    @classmethod
-    def get_ledger_datetime_field(cls):
-        return "length_update_datetime"
+    @property
+    def ledger_datetime_field(self) -> DateOrDateTime:
+        return self.length_update_datetime
 
     def __attrs_post_init__(self):
         """Ensures that parole eligibility is before potential completions and
@@ -2752,6 +2762,10 @@ class StateSentenceGroup(
             self.projected_full_term_release_date_max_external,
         )
 
-    @classmethod
-    def get_ledger_datetime_field(cls) -> str:
-        return "group_update_datetime"
+    @property
+    def ledger_partition_columns(self) -> List[str]:
+        return ["external_id"]
+
+    @property
+    def ledger_datetime_field(self) -> DateOrDateTime:
+        return self.group_update_datetime

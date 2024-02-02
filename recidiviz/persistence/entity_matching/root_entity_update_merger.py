@@ -43,9 +43,10 @@ from recidiviz.persistence.entity.entity_utils import (
     is_reference_only_entity,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePersonAlias,
-    StateTaskDeadline,
+from recidiviz.persistence.entity.state.entities import StatePersonAlias
+from recidiviz.persistence.entity.state.state_entity_mixins import (
+    LedgerEntityMixin,
+    LedgerEntityMixinT,
 )
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
@@ -64,15 +65,9 @@ def state_person_alias_key(alias: StatePersonAlias) -> str:
     return f"{type(alias)}#{alias.full_name}|{alias.alias_type}"
 
 
-def state_task_deadline_key(deadline: StateTaskDeadline) -> str:
-    key_parts = [
-        deadline.task_type.value,
-        deadline.task_subtype or "",
-        deadline.update_datetime.isoformat(),
-        deadline.task_metadata or "",
-    ]
-
-    return f"{type(deadline)}#{'|'.join(key_parts)}"
+def ledger_entity_key(ledger: LedgerEntityMixinT) -> str:
+    """Returns the ledger's partition key (pylint wouldn't let us store a lambda function)"""
+    return ledger.partition_key
 
 
 def _to_set_assert_no_dupes(item_list: Iterable[T]) -> Set[T]:
@@ -175,8 +170,8 @@ class RootEntityUpdateMerger:
                     key_fn = external_id_key
                 elif issubclass(child_cls, StatePersonAlias):
                     key_fn = state_person_alias_key
-                elif issubclass(child_cls, StateTaskDeadline):
-                    key_fn = state_task_deadline_key
+                elif issubclass(child_cls, LedgerEntityMixin):
+                    key_fn = ledger_entity_key
                 else:
                     raise ValueError(f"Unexpected leaf node class [{child_cls}]")
 
