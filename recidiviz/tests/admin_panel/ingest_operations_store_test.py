@@ -44,8 +44,8 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
 )
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
@@ -325,7 +325,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         super().tearDown()
 
     def test_get_ingest_file_processing_status_returns_expected_list(self) -> None:
-        manager = PostgresDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -355,7 +355,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 break
 
     def test_get_ingest_file_processing_status_returns_processed_list(self) -> None:
-        manager = PostgresDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -391,7 +391,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_with_files_in_bucket(
         self,
     ) -> None:
-        manager = PostgresDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
@@ -429,7 +429,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
     def test_get_ingest_file_processing_status_returns_list_multiple_file_tags(
         self,
     ) -> None:
-        manager = PostgresDirectIngestRawFileMetadataManager(
+        manager = DirectIngestRawFileMetadataManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )

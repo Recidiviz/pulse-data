@@ -32,12 +32,14 @@ from google.cloud import exceptions
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema.operations import dao
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -201,6 +203,9 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
 
     bq_client: BigQueryClient = BigQueryClientImpl()
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+    raw_data_metadata_manager = DirectIngestRawFileMetadataManager(
+        state_code.value, DirectIngestInstance.PRIMARY
+    )
 
     with SessionFactory.for_proxy(database_key) as session:
         file_tag_to_min_and_max_update_datetimes: Dict[
@@ -292,11 +297,8 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                     len(file_ids_to_delete),
                 )
                 for file_id in file_ids_to_delete:
-                    dao.mark_raw_file_as_invalidated(
-                        session,
-                        state_code.value,
-                        file_id,
-                        DirectIngestInstance.PRIMARY,
+                    raw_data_metadata_manager.mark_file_as_invalidated_by_file_id(
+                        session, file_id
                     )
 
 

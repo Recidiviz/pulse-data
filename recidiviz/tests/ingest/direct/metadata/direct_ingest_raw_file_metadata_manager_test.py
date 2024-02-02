@@ -31,11 +31,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
@@ -74,8 +72,8 @@ def _make_processed_raw_data_path(path_str: str) -> GcsfsFilePath:
 
 
 @pytest.mark.uses_db
-class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
-    """Tests for PostgresDirectIngestRawFileMetadataManager."""
+class DirectIngestRawFileMetadataManagerTest(unittest.TestCase):
+    """Tests for DirectIngestRawFileMetadataManager."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -88,22 +86,18 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+        self.raw_metadata_manager = DirectIngestRawFileMetadataManager(
             region_code="us_xx",
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
-        self.raw_metadata_manager_secondary = (
-            PostgresDirectIngestRawFileMetadataManager(
-                region_code="us_xx",
-                raw_data_instance=DirectIngestInstance.SECONDARY,
-            )
+        self.raw_metadata_manager_secondary = DirectIngestRawFileMetadataManager(
+            region_code="us_xx",
+            raw_data_instance=DirectIngestInstance.SECONDARY,
         )
 
-        self.raw_metadata_manager_other_region = (
-            PostgresDirectIngestRawFileMetadataManager(
-                region_code="us_yy",
-                raw_data_instance=DirectIngestInstance.PRIMARY,
-            )
+        self.raw_metadata_manager_other_region = DirectIngestRawFileMetadataManager(
+            region_code="us_yy",
+            raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
         self.entity_eq_patcher = patch(
@@ -300,6 +294,64 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             datetime.datetime(2015, 1, 2, 3, 5, 6, 7, tzinfo=pytz.UTC),
             metadata.file_processed_time,
         )
+
+    def test_get_raw_file_metadata_for_file_id(self) -> None:
+        self.add_raw_file_metadata(
+            file_id=10,
+            region_code="US_XX",
+            file_tag="file_tag_1",
+            normalized_file_name="normalized_file_tag_1",
+        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # If this call doesn't raise an exception, it means that the correct metadata row was retrieved.
+            metadata = self.raw_metadata_manager._get_raw_file_metadata_for_file_id(  # pylint: disable=protected-access
+                session=session,
+                file_id=10,
+            )
+            self.assertEqual(metadata.file_id, 10)
+
+    def test_raw_file_metadata_mark_as_invalidated(self) -> None:
+        self.add_raw_file_metadata(
+            file_id=10,
+            region_code="US_XX",
+            file_tag="file_tag_1",
+            normalized_file_name="normalized_file_tag_1",
+        )
+        with SessionFactory.using_database(self.database_key) as session:
+            self.raw_metadata_manager.mark_file_as_invalidated_by_file_id(
+                session=session,
+                file_id=10,
+            )
+            with self.assertRaisesRegex(
+                ValueError, r"Unexpected number of metadata results for file_id=10.*"
+            ):
+                _ = self.raw_metadata_manager._get_raw_file_metadata_for_file_id(  # pylint: disable=protected-access
+                    session=session,
+                    file_id=10,
+                )  # This means it was properly invalidated
+
+    def add_raw_file_metadata(
+        self, file_id: int, region_code: str, file_tag: str, normalized_file_name: str
+    ) -> None:
+        """Used for testing purposes. Add a new row in the direct_ingest_raw_file_metadata table using the
+        parameters."""
+        with SessionFactory.using_database(self.database_key) as session:
+            now = datetime.datetime.now(tz=pytz.UTC)
+            session.add(
+                schema.DirectIngestRawFileMetadata(
+                    region_code=region_code,
+                    file_tag=file_tag,
+                    file_id=file_id,
+                    normalized_file_name=normalized_file_name,
+                    file_discovery_time=now,
+                    file_processed_time=None,
+                    update_datetime=now,
+                    raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                    is_invalidated=False,
+                )
+            )
 
     def test_get_metadata_for_raw_files_discovered_after_datetime_empty(self) -> None:
         self.assertEqual(
@@ -634,11 +686,9 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             raw_unprocessed_path_1
         )
 
-        self.raw_metadata_manager_dif_state = (
-            PostgresDirectIngestRawFileMetadataManager(
-                region_code="us_yy",
-                raw_data_instance=DirectIngestInstance.SECONDARY,
-            )
+        self.raw_metadata_manager_dif_state = DirectIngestRawFileMetadataManager(
+            region_code="us_yy",
+            raw_data_instance=DirectIngestInstance.SECONDARY,
         )
 
         dif_state = (
@@ -679,7 +729,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
     def test_get_unprocessed_raw_files_eligible_for_import_when_secondary_db(
         self,
     ) -> None:
-        enabled_secondary_import_manager = PostgresDirectIngestRawFileMetadataManager(
+        enabled_secondary_import_manager = DirectIngestRawFileMetadataManager(
             region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
         )
         # Arrange

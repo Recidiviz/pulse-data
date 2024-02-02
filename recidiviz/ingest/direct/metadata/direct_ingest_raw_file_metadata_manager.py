@@ -20,21 +20,19 @@ Postgres table.
 import datetime
 from typing import Dict, List, Optional
 
+import attr
 import pytz
 import sqlalchemy
-from sqlalchemy import and_, func
+from more_itertools import one
+from sqlalchemy import and_, case, func
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
-    DirectIngestRawFileMetadataManager,
-    DirectIngestRawFileMetadataSummary,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema.operations import dao, schema
+from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
 )
@@ -46,7 +44,17 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestRawFile
 from recidiviz.utils import environment
 
 
-class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataManager):
+@attr.define()
+class DirectIngestRawFileMetadataSummary:
+    file_tag: str
+    num_unprocessed_files: int
+    num_processed_files: int
+    latest_discovery_time: datetime.datetime
+    latest_processed_time: Optional[datetime.datetime]
+    latest_update_datetime: Optional[datetime.datetime]
+
+
+class DirectIngestRawFileMetadataManager:
     """An implementation for a class that handles writing metadata about each raw data
     direct ingest file to the operations Postgres table.
     """
@@ -61,6 +69,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         self.raw_data_instance = raw_data_instance
 
     def has_raw_file_been_discovered(self, path: GcsfsFilePath) -> bool:
+        """Checks whether the file at this path has already been marked as discovered."""
         try:
             _ = self.get_raw_file_metadata(path)
         except ValueError:
@@ -69,6 +78,8 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         return True
 
     def mark_raw_file_as_discovered(self, path: GcsfsFilePath) -> None:
+        """Writes a new row to the appropriate metadata table for a new, unprocessed raw file, or updates the existing
+        metadata row for this path with the appropriate file discovery time."""
         if not path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX):
             raise ValueError("Expect only unprocessed paths in this function.")
 
@@ -87,18 +98,64 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 )
             )
 
+    def _get_raw_file_metadata_for_path(
+        self, session: Session, path: GcsfsFilePath
+    ) -> schema.DirectIngestRawFileMetadata:
+        """Returns metadata information for the provided path, throws if it doesn't exist."""
+        results = (
+            session.query(schema.DirectIngestRawFileMetadata)
+            .filter_by(
+                region_code=self.region_code,
+                normalized_file_name=path.file_name,
+                is_invalidated=False,
+                raw_data_instance=self.raw_data_instance.value,
+            )
+            .all()
+        )
+
+        if len(results) != 1:
+            raise ValueError(
+                f"Unexpected number of metadata results for path {path.abs_path()}: [{len(results)}]"
+            )
+
+        return one(results)
+
+    def _get_raw_file_metadata_for_file_id(
+        self, session: Session, file_id: int
+    ) -> schema.DirectIngestRawFileMetadata:
+        """Returns metadata information for the provided file id, throws if it doesn't exist."""
+        results = (
+            session.query(schema.DirectIngestRawFileMetadata)
+            .filter_by(
+                region_code=self.region_code,
+                file_id=file_id,
+                is_invalidated=False,
+                raw_data_instance=self.raw_data_instance.value,
+            )
+            .all()
+        )
+
+        if len(results) != 1:
+            raise ValueError(
+                f"Unexpected number of metadata results for file_id={file_id}: [{len(results)}]"
+            )
+
+        return one(results)
+
     def get_raw_file_metadata(self, path: GcsfsFilePath) -> DirectIngestRawFileMetadata:
+        """Returns metadata information for the provided path. If the file has not yet been registered in the
+        appropriate metadata table, this function will generate a file_id to return with the metadata.
+        """
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            metadata = dao.get_raw_file_metadata_row_for_path(
-                session, self.region_code, path, self.raw_data_instance
-            )
+            metadata = self._get_raw_file_metadata_for_path(session, path)
             return convert_schema_object_to_entity(
                 metadata, DirectIngestRawFileMetadata
             )
 
     def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
+        """Checks whether the file at this path has already been marked as processed."""
         try:
             metadata = self.get_raw_file_metadata(path)
         except ValueError:
@@ -109,10 +166,9 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         return metadata.file_processed_time is not None
 
     def mark_raw_file_as_processed(self, path: GcsfsFilePath) -> None:
+        """Marks the file represented by the |metadata| as processed in the appropriate metadata table."""
         with SessionFactory.using_database(self.database_key) as session:
-            metadata = dao.get_raw_file_metadata_row_for_path(
-                session, self.region_code, path, self.raw_data_instance
-            )
+            metadata = self._get_raw_file_metadata_for_path(session, path)
 
             metadata.file_processed_time = datetime.datetime.now(tz=pytz.UTC)
 
@@ -121,16 +177,23 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         raw_file_tag: str,
         discovery_time_lower_bound_exclusive: Optional[datetime.datetime],
     ) -> List[DirectIngestRawFileMetadata]:
+        """Returns metadata for all raw files with a given tag that have been updated after the provided date."""
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            results = dao.get_metadata_for_raw_files_discovered_after_datetime(
-                session=session,
+            query = session.query(schema.DirectIngestRawFileMetadata).filter_by(
                 region_code=self.region_code,
-                raw_file_tag=raw_file_tag,
-                discovery_time_lower_bound_exclusive=discovery_time_lower_bound_exclusive,
-                raw_data_instance=self.raw_data_instance,
+                file_tag=raw_file_tag,
+                is_invalidated=False,
+                raw_data_instance=self.raw_data_instance.value,
             )
+            if discovery_time_lower_bound_exclusive:
+                query = query.filter(
+                    schema.DirectIngestRawFileMetadata.file_discovery_time
+                    > discovery_time_lower_bound_exclusive
+                )
+
+            results = query.all()
 
             return [
                 convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata)
@@ -140,14 +203,66 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
     def get_metadata_for_all_raw_files_in_region(
         self,
     ) -> List[DirectIngestRawFileMetadataSummary]:
+        """Returns all operations DB raw file metadata rows for the given region."""
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            return dao.get_all_raw_file_metadata_rows_for_region(
-                session=session,
-                region_code=self.region_code,
-                raw_data_instance=self.raw_data_instance,
+            results = (
+                session.query(
+                    schema.DirectIngestRawFileMetadata.file_tag.label("file_tag"),
+                    func.count(1)
+                    .filter(
+                        schema.DirectIngestRawFileMetadata.file_processed_time.isnot(
+                            None
+                        )
+                    )
+                    .label("num_processed_files"),
+                    func.count(1)
+                    .filter(
+                        schema.DirectIngestRawFileMetadata.file_processed_time.is_(None)
+                    )
+                    .label("num_unprocessed_files"),
+                    func.max(
+                        schema.DirectIngestRawFileMetadata.file_processed_time
+                    ).label("latest_processed_time"),
+                    func.max(
+                        schema.DirectIngestRawFileMetadata.file_discovery_time
+                    ).label("latest_discovery_time"),
+                    func.max(
+                        case(
+                            [
+                                (
+                                    schema.DirectIngestRawFileMetadata.file_processed_time.is_(
+                                        None
+                                    ),
+                                    None,
+                                )
+                            ],
+                            else_=schema.DirectIngestRawFileMetadata.update_datetime,
+                        )
+                    ).label("latest_update_datetime"),
+                )
+                .filter_by(
+                    region_code=self.region_code,
+                    is_invalidated=False,
+                    raw_data_instance=self.raw_data_instance.value,
+                )
+                .group_by(schema.DirectIngestRawFileMetadata.file_tag)
+                .all()
             )
+            return [
+                DirectIngestRawFileMetadataSummary(
+                    file_tag=result.file_tag,
+                    num_processed_files=result.num_processed_files,
+                    num_unprocessed_files=result.num_unprocessed_files,
+                    latest_processed_time=result.latest_processed_time,
+                    latest_discovery_time=result.latest_discovery_time,
+                    latest_update_datetime=result.latest_update_datetime
+                    if not isinstance(result.latest_update_datetime, str)
+                    else datetime.datetime.fromisoformat(result.latest_update_datetime),
+                )
+                for result in results
+            ]
 
     def get_unprocessed_raw_files_eligible_for_import(
         self,
@@ -195,6 +310,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             ]
 
     def get_non_invalidated_files(self) -> List[DirectIngestRawFileMetadata]:
+        """Get metadata for all files that are not invalidated."""
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -230,7 +346,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
 
     def transfer_metadata_to_new_instance(
         self,
-        new_instance_manager: "PostgresDirectIngestRawFileMetadataManager",
+        new_instance_manager: "DirectIngestRawFileMetadataManager",
     ) -> None:
         """Take all rows where `is_invalidated=False` and transfer to the instance associated with
         the new_instance_manager
@@ -305,7 +421,11 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
     @environment.test_only
     def mark_file_as_invalidated(self, path: GcsfsFilePath) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            metadata = dao.get_raw_file_metadata_row_for_path(
-                session, self.region_code, path, self.raw_data_instance
-            )
+            metadata = self._get_raw_file_metadata_for_path(session, path)
             metadata.is_invalidated = True
+
+    def mark_file_as_invalidated_by_file_id(
+        self, session: Session, file_id: int
+    ) -> None:
+        metadata = self._get_raw_file_metadata_for_file_id(session, file_id)
+        metadata.is_invalidated = True

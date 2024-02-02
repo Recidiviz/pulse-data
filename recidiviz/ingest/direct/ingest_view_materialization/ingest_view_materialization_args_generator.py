@@ -25,7 +25,7 @@ from typing import Dict, List, Optional, Tuple
 import attr
 
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (

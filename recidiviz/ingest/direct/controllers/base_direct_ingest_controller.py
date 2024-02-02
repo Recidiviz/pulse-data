@@ -84,11 +84,11 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
+    DirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManagerImpl,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusChangeListener,
@@ -194,7 +194,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         #  ingest_instance everywhere.
         self._raw_data_source_instance: Optional[DirectIngestInstance] = None
         self._raw_file_metadata_manager: Optional[
-            PostgresDirectIngestRawFileMetadataManager
+            DirectIngestRawFileMetadataManager
         ] = None
 
         # TODO(#20930): Initialize this in the constructor when ingest in dataflow is
@@ -225,7 +225,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         return self._raw_data_source_instance
 
     @property
-    def raw_file_metadata_manager(self) -> PostgresDirectIngestRawFileMetadataManager:
+    def raw_file_metadata_manager(self) -> DirectIngestRawFileMetadataManager:
         if not self._raw_file_metadata_manager:
             raise ValueError(
                 "Expected nonnull raw file metadata manager - has "
@@ -333,7 +333,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         # TODO(#20930): Set self._raw_file_metadata_manager / self._raw_file_import_manager
         #  directly in the constructor once ingest in dataflow is enabled for all states.
         # Update all fields to rely on the new raw_data_source_instance.
-        self._raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+        self._raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
             raw_data_instance=self._raw_data_source_instance,
         )
