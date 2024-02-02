@@ -83,6 +83,7 @@ US_IX_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBui
     view_id="incarceration_population_person_level",
     description="A view detailing the incarceration population at the person level for Idaho.",
     view_query_template=VIEW_QUERY_TEMPLATE,
+    should_materialize=True,
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),

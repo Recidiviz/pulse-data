@@ -53,6 +53,24 @@ class TestBigQueryAddress(unittest.TestCase):
 
         self.assertEqual(address_1, BigQueryAddress.from_list_item(list_item))
 
+        self.assertEqual(
+            "SELECT * FROM `{project_id}.my_dataset.my_table`",
+            address_1.select_query_template(),
+        )
+        self.assertEqual(
+            "SELECT * FROM `{project_id}.my_dataset.my_table_2`",
+            address_2.select_query_template(),
+        )
+        self.assertEqual(
+            "SELECT foo, bar FROM `{project_id}.my_dataset.my_table_2`",
+            address_2.select_query_template(select_statement="SELECT foo, bar"),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Any custom select_statement must start with SELECT"
+        ):
+            address_2.select_query_template(select_statement="foo, bar")
+
     def test_project_specific_big_query_address(self) -> None:
         address_1 = ProjectSpecificBigQueryAddress(
             project_id="recidiviz-456", dataset_id="my_dataset", table_id="my_table"
@@ -80,6 +98,16 @@ class TestBigQueryAddress(unittest.TestCase):
             "SELECT * FROM `recidiviz-789.my_dataset.my_table_2`",
             address_2.select_query(),
         )
+
+        self.assertEqual(
+            "SELECT foo, bar FROM `recidiviz-789.my_dataset.my_table_2`",
+            address_2.select_query(select_statement="SELECT foo, bar"),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, r"Any custom select_statement must start with SELECT"
+        ):
+            address_2.select_query(select_statement="foo, bar")
 
         # Ensure they are hashable
         self.assertEqual(

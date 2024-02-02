@@ -38,6 +38,15 @@ class BigQueryAddress:
     def to_str(self) -> str:
         return f"{self.dataset_id}.{self.table_id}"
 
+    def select_query_template(self, select_statement: str = "SELECT *") -> str:
+        if not select_statement.startswith("SELECT"):
+            raise ValueError(
+                f"Any custom select_statement must start with SELECT. Attempting to "
+                f"build a SELECT query for [{self.to_str()}] with statement "
+                f"[{select_statement}]"
+            )
+        return f"{select_statement} FROM `{{project_id}}.{self.to_str()}`"
+
     def to_project_specific_address(
         self, project_id: str
     ) -> "ProjectSpecificBigQueryAddress":
@@ -74,8 +83,14 @@ class ProjectSpecificBigQueryAddress:
     def format_address_for_query(self) -> str:
         return f"`{self.to_str()}`"
 
-    def select_query(self) -> str:
-        return f"SELECT * FROM {self.format_address_for_query()}"
+    def select_query(self, select_statement: str = "SELECT *") -> str:
+        if not select_statement.startswith("SELECT"):
+            raise ValueError(
+                f"Any custom select_statement must start with SELECT. Attempting to "
+                f"build a SELECT query for [{self.to_str()}] with statement "
+                f"[{select_statement}]"
+            )
+        return f"{select_statement} FROM {self.format_address_for_query()}"
 
     @property
     def dataset_reference(self) -> DatasetReference:

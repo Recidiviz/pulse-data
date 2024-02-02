@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for the UnionAllBigQueryViewBuilder."""
 import unittest
-from unittest.mock import Mock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -24,9 +23,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
+from recidiviz.utils.metadata import local_project_id_override
 
 
-@patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
 class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
     """Tests for the UnionAllBigQueryViewBuilder."""
 
@@ -46,6 +45,14 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
                 view_query_template="SELECT * FROM `{project_id}.my_dataset.table_bar`",
                 should_materialize=True,
             ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="parent_dataset_3",
+                view_id="parent_table_3",
+                description="parent_table_3 description",
+                view_query_template="SELECT * FROM `{project_id}.my_dataset.table_baz`",
+                should_materialize=True,
+                projects_to_deploy={"recidiviz-789"},
+            ),
         ]
 
     def test_one_view(self) -> None:
@@ -56,7 +63,8 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             parent_view_builders=self.view_builders[0:1],
         )
 
-        view = builder.build()
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build()
 
         self.assertEqual(
             "SELECT * FROM `recidiviz-456.parent_dataset_1.parent_table_1_materialized`",
@@ -71,11 +79,48 @@ class TestUnionAllBigQueryViewBuilder(unittest.TestCase):
             parent_view_builders=self.view_builders[0:2],
         )
 
-        view = builder.build()
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build()
 
         expected_view_query = """SELECT * FROM `recidiviz-456.parent_dataset_1.parent_table_1_materialized`
 UNION ALL
 SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
+        self.assertEqual(
+            expected_view_query,
+            view.view_query,
+        )
+
+    def test_multiple_views_one_should_not_deploy(self) -> None:
+        builder = UnionAllBigQueryViewBuilder(
+            dataset_id="my_union_dataset",
+            view_id="my_union_all_view",
+            description="All data together",
+            parent_view_builders=self.view_builders[0:3],
+        )
+
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build()
+
+        # The third view shouldn't be deployed in recidiviz-456 test project, so it
+        # doesn't get pulled into the UNION.
+        expected_view_query = """SELECT * FROM `recidiviz-456.parent_dataset_1.parent_table_1_materialized`
+UNION ALL
+SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
+        self.assertEqual(
+            expected_view_query,
+            view.view_query,
+        )
+
+        with local_project_id_override("recidiviz-789"):
+            view = builder.build()
+
+        # ... however it is deployed in recidiviz-789 so it gets included when building
+        #  for that project.
+        expected_view_query = """SELECT * FROM `recidiviz-789.parent_dataset_1.parent_table_1_materialized`
+UNION ALL
+SELECT * FROM `recidiviz-789.parent_dataset_2.parent_table_2_materialized`
+UNION ALL
+SELECT * FROM `recidiviz-789.parent_dataset_3.parent_table_3_materialized`"""
         self.assertEqual(
             expected_view_query,
             view.view_query,
@@ -94,7 +139,8 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             .register_sandbox_override_for_entire_dataset("parent_dataset_1")
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build(address_overrides=address_overrides)
 
         expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`
 UNION ALL
@@ -125,7 +171,8 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             .register_sandbox_override_for_entire_dataset("my_union_dataset")
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build(address_overrides=address_overrides)
 
         expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`
 UNION ALL
@@ -159,7 +206,8 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             .register_sandbox_override_for_entire_dataset("parent_dataset_1")
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build(address_overrides=address_overrides)
 
         expected_view_query = """SELECT * FROM `recidiviz-456.my_prefix_parent_dataset_1.parent_table_1_materialized`"""
         self.assertEqual(
@@ -186,7 +234,8 @@ SELECT * FROM `recidiviz-456.parent_dataset_2.parent_table_2_materialized`"""
             .register_sandbox_override_for_entire_dataset("parent_dataset_1")
             .build()
         )
-        view = builder.build(address_overrides=address_overrides)
+        with local_project_id_override("recidiviz-456"):
+            view = builder.build(address_overrides=address_overrides)
 
         # If the filter does not overlap with any of the queried views, we default to
         # querying all views.

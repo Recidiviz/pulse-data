@@ -22,6 +22,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
+# TODO(#27269): Update this to build the query by collecting files
 _QUERY_TEMPLATE = """
 SELECT * FROM `{project_id}.{us_ix_validation_dataset}.incarceration_population_by_facility`
 UNION ALL
