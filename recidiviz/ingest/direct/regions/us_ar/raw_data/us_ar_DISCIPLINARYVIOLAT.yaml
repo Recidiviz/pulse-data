@@ -3,9 +3,6 @@ file_tag: DISCIPLINARYVIOLAT
 file_description: |-
   Disciplinary Violation
 data_classification: source
-encoding: cp1252
-# TODO(#27172): Remove the encoding override once this table is included in SFTP, since
-# it will then use the default encoding of UTF-8.
 primary_key_cols:
   - OFFENDERID
   - DISCIPLINARYVIOLATIONDATE
