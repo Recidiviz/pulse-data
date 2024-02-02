@@ -33,11 +33,11 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_path,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.dao import (
@@ -83,13 +83,13 @@ class TestDao(TestCase):
         is_ingest_in_dataflow_enabled = False
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
         with freeze_time(discovery_date):
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
             ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
@@ -122,13 +122,13 @@ class TestDao(TestCase):
         is_ingest_in_dataflow_enabled = True
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
         with freeze_time(discovery_date):
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
             ).add_instance_status(DirectIngestStatus.INITIAL_STATE)
 
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
@@ -195,7 +195,7 @@ class TestDao(TestCase):
 
         with freeze_time(rerun_start_before_discovery_date):
             # Start a secondary raw data import rerun BEFORE the discovery_date
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
@@ -247,7 +247,7 @@ class TestDao(TestCase):
 
         with freeze_time(rerun_start_before_discovery_date):
             # Start a secondary raw data import rerun BEFORE the discovery_date
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
@@ -287,7 +287,7 @@ class TestDao(TestCase):
 
         with freeze_time(rerun_start_before_discovery_date):
             # Start a secondary standard BEFORE the discovery_date
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
@@ -343,7 +343,7 @@ class TestDao(TestCase):
             )
 
         with freeze_time(rerun_start_before_discovery_date):
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
@@ -398,7 +398,7 @@ class TestDao(TestCase):
             )
 
         with freeze_time(rerun_start_before_discovery_date):
-            PostgresDirectIngestInstanceStatusManager(
+            DirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,

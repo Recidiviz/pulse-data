@@ -60,8 +60,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     INGEST_VIEW_RESULTS_UPDATE_DATETIME,
     IngestViewManifestCompilerDelegateImpl,
 )
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
@@ -176,7 +176,7 @@ class DirectIngestRegionDirStructureBase:
         """Builds a controller for the given region code and ingest instance."""
         state_code = StateCode(region_code.upper())
         # Seed the DB with an initial status
-        PostgresDirectIngestInstanceStatusManager(
+        DirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(

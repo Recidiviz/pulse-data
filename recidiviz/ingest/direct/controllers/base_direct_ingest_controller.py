@@ -84,15 +84,15 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusChangeListener,
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManagerImpl,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusChangeListener,
-    PostgresDirectIngestInstanceStatusManager,
+    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -146,7 +146,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         )
         self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
 
-        self.ingest_instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+        self.ingest_instance_status_manager = DirectIngestInstanceStatusManager(
             region_code=self.region.region_code,
             ingest_instance=self.ingest_instance,
             change_listener=self,
@@ -165,7 +165,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
 
             self.view_materialization_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManagerImpl(
+                DirectIngestViewMaterializationMetadataManager(
                     region_code=self.region_code(),
                     ingest_instance=self.ingest_instance,
                 )
@@ -297,7 +297,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     def on_ingest_instance_status_change(
         self, previous_status: DirectIngestStatus, new_status: DirectIngestStatus
     ) -> None:
-        """Listener method called by the PostgresDirectIngestInstanceStatusManager every time a status changes."""
+        """Listener method called by the DirectIngestInstanceStatusManager every time a status changes."""
         if DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS in (
             previous_status,
             new_status,
@@ -314,7 +314,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     def on_raw_data_source_instance_change(
         self, raw_data_source_instance: Optional[DirectIngestInstance]
     ) -> None:
-        """Listener method called by the PostgresDirectIngestInstanceStatusManager
+        """Listener method called by the DirectIngestInstanceStatusManager
         every time the raw_data_source_instance changes.
         """
         # Do nothing if the raw data source hasn't changed.

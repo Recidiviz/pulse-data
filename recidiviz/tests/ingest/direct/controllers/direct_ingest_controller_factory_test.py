@@ -35,8 +35,8 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
@@ -96,7 +96,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                     state_code, ingest_instance
                 )
 
-                PostgresDirectIngestInstanceStatusManager(
+                DirectIngestInstanceStatusManager(
                     region_code=region_code,
                     ingest_instance=ingest_instance,
                     is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
@@ -126,7 +126,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                     state_code, ingest_instance
                 )
                 if not ingest_in_dataflow_enabled:
-                    PostgresDirectIngestInstanceStatusManager(
+                    DirectIngestInstanceStatusManager(
                         region_code=region_code,
                         ingest_instance=ingest_instance,
                         is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
@@ -157,7 +157,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             )
 
             # Update so a reimport has now started in SECONDARY
-            status_manager = PostgresDirectIngestInstanceStatusManager(
+            status_manager = DirectIngestInstanceStatusManager(
                 region_code=region_code,
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,

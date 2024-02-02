@@ -47,12 +47,10 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusChangeListener,
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -298,6 +296,8 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
 
 
 class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderCollector):
+    """A test version of DirectIngestViewQueryBuilderCollector"""
+
     def __init__(self, region: DirectIngestRegion, expected_ingest_views: List[str]):
         super().__init__(region, expected_ingest_views)
 
@@ -306,12 +306,14 @@ class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderColl
             DirectIngestViewQueryBuilder(
                 region=self.region.region_code,
                 ingest_view_name=tag,
-                view_query_template=f"SELECT * FROM {{{tag}}}"
-                # TODO(#20930): Delete tagMoreBasicData_legacy and this logic once all
-                # states have been shipped to ingest in Dataflow and we remove the
-                # $env: is_dataflow_pipeline logic from our mappings.
-                if tag != "tagMoreBasicData_legacy"
-                else "SELECT * FROM {tagMoreBasicData}",
+                view_query_template=(
+                    f"SELECT * FROM {{{tag}}}"
+                    # TODO(#20930): Delete tagMoreBasicData_legacy and this logic once all
+                    # states have been shipped to ingest in Dataflow and we remove the
+                    # $env: is_dataflow_pipeline logic from our mappings.
+                    if tag != "tagMoreBasicData_legacy"
+                    else "SELECT * FROM {tagMoreBasicData}"
+                ),
                 order_by_cols="",
             )
             for tag in self.expected_ingest_views
@@ -434,8 +436,8 @@ def build_fake_direct_ingest_controller(
         ingest_instance: DirectIngestInstance,
         change_listener: DirectIngestInstanceStatusChangeListener,
         is_ingest_in_dataflow_enabled: bool,
-    ) -> PostgresDirectIngestInstanceStatusManager:
-        status_manager = PostgresDirectIngestInstanceStatusManager(
+    ) -> DirectIngestInstanceStatusManager:
+        status_manager = DirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
@@ -469,7 +471,7 @@ def build_fake_direct_ingest_controller(
         f"{BaseDirectIngestController.__module__}.InstanceIngestViewContentsImpl",
         FakeInstanceIngestViewContents,
     ), patch(
-        f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
+        f"{BaseDirectIngestController.__module__}.DirectIngestInstanceStatusManager",
         mock_build_status_manager,
     ):
         task_manager = (

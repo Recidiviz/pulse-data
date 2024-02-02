@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManagerImpl,
+    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -139,7 +139,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         return IngestViewMaterializationArgsGenerator(
             region=region,
             raw_file_metadata_manager=raw_file_metadata_manager,
-            metadata_manager=DirectIngestViewMaterializationMetadataManagerImpl(
+            metadata_manager=DirectIngestViewMaterializationMetadataManager(
                 region.region_code, self.ingest_instance
             ),
             view_collector=FakeSingleIngestViewCollector(  # type: ignore[arg-type]

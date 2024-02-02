@@ -59,15 +59,15 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManagerImpl,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
+    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -113,11 +113,13 @@ class IngestOperationsStore(AdminPanelStore):
     ) -> None:
         jobs_dict = {
             state_code.value: {
-                instance.value: attr_to_json_dict(
-                    job,  # type: ignore[arg-type]
+                instance.value: (
+                    attr_to_json_dict(
+                        job,  # type: ignore[arg-type]
+                    )
+                    if job
+                    else None
                 )
-                if job
-                else None
                 for instance, job in responses_by_instance.items()
             }
             for state_code, responses_by_instance in latest_jobs.items()
@@ -219,9 +221,7 @@ class IngestOperationsStore(AdminPanelStore):
         # Confirm that all metadata about ingest view materialization has been
         # invalidated for this instance.
         ingest_view_materialization_manager = (
-            DirectIngestViewMaterializationMetadataManagerImpl(
-                state_code.value, instance
-            )
+            DirectIngestViewMaterializationMetadataManager(state_code.value, instance)
         )
 
         # If instance summaries is empty, that means that all ingest view
@@ -358,7 +358,7 @@ class IngestOperationsStore(AdminPanelStore):
 
         # Validation that a rerun is a valid status transition is handled within the
         # instance manager.
-        instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+        instance_status_manager = DirectIngestInstanceStatusManager(
             region_code=formatted_state_code,
             ingest_instance=instance,
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
@@ -402,7 +402,7 @@ class IngestOperationsStore(AdminPanelStore):
 
         self._verify_clean_secondary_raw_data_state(state_code)
 
-        instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+        instance_status_manager = DirectIngestInstanceStatusManager(
             region_code=formatted_state_code,
             ingest_instance=instance,
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
@@ -515,12 +515,16 @@ class IngestOperationsStore(AdminPanelStore):
                     "numberUnprocessedFiles": summary.num_unprocessed_files,
                     "numberProcessedFiles": summary.num_processed_files,
                     "latestDiscoveryTime": summary.latest_discovery_time.isoformat(),
-                    "latestProcessedTime": summary.latest_processed_time.isoformat()
-                    if summary.latest_processed_time
-                    else None,
-                    "latestUpdateDatetime": summary.latest_update_datetime.isoformat()
-                    if summary.latest_update_datetime
-                    else None,
+                    "latestProcessedTime": (
+                        summary.latest_processed_time.isoformat()
+                        if summary.latest_processed_time
+                        else None
+                    ),
+                    "latestUpdateDatetime": (
+                        summary.latest_update_datetime.isoformat()
+                        if summary.latest_update_datetime
+                        else None
+                    ),
                 }
             all_file_tag_metadata.append(file_tag_metadata)
 
@@ -614,11 +618,9 @@ class IngestOperationsStore(AdminPanelStore):
             "Getting instance [%s] ingest view materialization summaries",
             ingest_instance.value,
         )
-        materialization_job_summaries = (
-            DirectIngestViewMaterializationMetadataManagerImpl(
-                state_code.value, ingest_instance
-            ).get_instance_summaries()
-        )
+        materialization_job_summaries = DirectIngestViewMaterializationMetadataManager(
+            state_code.value, ingest_instance
+        ).get_instance_summaries()
 
         ingest_view_contents = InstanceIngestViewContentsImpl(
             big_query_client=BigQueryClientImpl(),
@@ -674,7 +676,7 @@ class IngestOperationsStore(AdminPanelStore):
                 DirectIngestInstance, DirectIngestInstanceStatus
             ] = {}
             for i_instance in DirectIngestInstance:  # new direct ingest instance
-                status_manager = PostgresDirectIngestInstanceStatusManager(
+                status_manager = DirectIngestInstanceStatusManager(
                     region_code=state_code.value,
                     ingest_instance=i_instance,
                     is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
