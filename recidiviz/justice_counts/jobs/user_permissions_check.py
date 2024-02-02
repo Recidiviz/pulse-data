@@ -29,6 +29,7 @@ from typing import Any, List, Optional
 import sentry_sdk
 from google.oauth2.service_account import Credentials
 from oauth2client.client import GoogleCredentials
+from sqlalchemy import not_
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -159,6 +160,18 @@ def write_non_csg_recidiviz_production_sheet(
     about access/permissions for non-CSG and non-Recidiviz users in production.
     """
     users = UserAccountInterface.get_non_csg_and_recidiviz_users(session=session)
+    child_agencies = (
+        session.query(schema.Agency)
+        .filter(not_(schema.Agency.super_agency_id.is_(None)))
+        .all()
+    )
+
+    super_agency_id_to_child_agency_ids = defaultdict(list)
+    for child_agency in child_agencies:
+        super_agency_id_to_child_agency_ids[child_agency.super_agency_id].append(
+            child_agency.id
+        )
+
     rows: List[List[str]] = [
         [
             """
@@ -166,7 +179,7 @@ def write_non_csg_recidiviz_production_sheet(
             
             Multiple States: User has access to agencies across multiple states.
 
-            No Child Agency: User has access to a superagency but no child agencies. 
+            Missing Child Agencies: User has access to a superagency but not all of its child agencies. 
 
             No Superagency, > 1 Agency: User does not have access to a superagency but has access to 2 or more individual agencies.
             
@@ -181,7 +194,7 @@ def write_non_csg_recidiviz_production_sheet(
             "User Id",
             "Agencies",
             "Multiple States",
-            "No Child Agency",
+            "Missing Child Agencies",
             "No Superagency, > 1 Agency",
             "> 10 Agencies",
         ],
@@ -196,7 +209,7 @@ def write_non_csg_recidiviz_production_sheet(
             user_to_states[user].add(agency_assoc.agency.state_code)
             user_to_agency_names[user].append(agency_assoc.agency.name)
             if agency_assoc.agency.is_superagency is True:
-                user_to_super_agencies[user].append(agency_assoc.agency.name)
+                user_to_super_agencies[user].append(agency_assoc.agency)
             elif agency_assoc.agency.super_agency_id is not None:
                 user_to_child_agencies[user].append(agency_assoc.agency)
             else:
@@ -220,15 +233,24 @@ def write_non_csg_recidiviz_production_sheet(
         else:
             row.append("No")
 
-        # No Child Agency Column
-        if (
-            len(user_to_super_agencies[user]) >= 1
-            and len(user_to_child_agencies[user]) == 0
-        ):
-            row.append("Yes")
+        # Missing Child Agencies
+        missing_child_agencies_col_val = "No"
+        user_child_agency_ids = {
+            child_agency.id for child_agency in user_to_child_agencies[user]
+        }
+        for super_agency in user_to_super_agencies[user]:
+            if set(super_agency_id_to_child_agency_ids[super_agency.id]).issubset(
+                user_child_agency_ids
+            ):
+                continue
+
+            # If a user is part of a super agency but not all of the child agencies,
+            # add YES to the `Missing Child Agencies` column
+            missing_child_agencies_col_val = "Yes"
             add_user_to_table = True
-        else:
-            row.append("No")
+            break
+
+        row.append(missing_child_agencies_col_val)
 
         # No Superagency, > 1 Agency Column
         if (
