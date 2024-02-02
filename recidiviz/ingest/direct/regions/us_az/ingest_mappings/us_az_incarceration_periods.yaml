@@ -1,0 +1,252 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_person` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_dataflow_pipeline
+input_columns:
+  - DOC_ID
+  - PERSON_ID
+  - admission_date
+  - admission_reason
+  - release_date
+  - release_reason
+  - custody_level
+  - housing_unit
+  - county_jail_location
+  - hospital_location
+  - facility
+  - period_seq
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - PERSON_ID
+                - DOC_ID
+                - period_seq
+          admission_date: admission_date
+          admission_reason:
+            $enum_mapping:
+              $raw_text: admission_reason
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - New Commitment
+                  - Recommitment
+                  - Intake New Offender
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - Return from AWOL
+                  - Return from Escape
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - Return from Escorted Leave
+                  - Temporary Release Return
+                  - Return from Unescorted Compassionate Leave
+                  - Return from Court
+                  - Return from Hospital
+                  - Return from Bond
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - Parole Revoked-Regular
+                  - Provisional Rel Rescinded/Revoked
+                  - Home Arrest Rescinded/Revoked
+                  - Parole Revoked/41.1604.11K
+                  - Discretionary Release Returnee
+                  - Drug Transition Violated
+                  - TIS Release Return
+                  - ERCD Release Return
+                  - Mandatory Release Res/Rev
+                  - Received CC/CS
+                  - Return from Abscond
+                  - SB1291 Violated
+                  - Revocation
+                  - SHOCK Incarceration Violator
+                  - Work Furlough Rescinded/Revoked
+                  - Condition of Probation
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - Close Supervision Episode - Active Inmate
+                  - Close Supervision Episode - Leave Prison Episode Active
+                  - Received After 20 Days
+                  - STATUS_CHANGE
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                  - Temporary Placement
+                  - SHOCK Incarceration Commitment
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - Received From
+                  - Received from Overcrowding
+                  - Transfer In - Prison/CIP Arrival
+                  - Transfer In - Unit Arrival
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - ISC Commitment
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
+                  - Release in Error Return
+                  - Deactivated in Error
+                  - Reopen Last Prison Episode
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - Duplicate ADC Number Activation
+                  - Return from WICC/ICC
+                  - Return Deport 1/2 Term
+                  - RTRN CUSTDY ITP
+                  - Transit Driver
+                  - Rule 11
+          release_date: release_date
+          release_reason:
+            $enum_mapping:
+              $raw_text: release_reason
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.COMMUTED:
+                  - Commutation
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - Home Arrest 41-1604.13
+                  - Provisional Release
+                  - WK F 41-160411C # Work Furlough
+                  - Discretionary Release
+                  - Flat Discretionary Release
+                StateIncarcerationPeriodReleaseReason.COMPASSIONATE:
+                  - Unescorted Compassionate Leave
+                StateIncarcerationPeriodReleaseReason.COURT_ORDER:
+                  - Release by Court
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - Death
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - Escaped
+                  - AWOL/Abscond
+                  - Releasee Abscond
+                StateIncarcerationPeriodReleaseReason.EXECUTION:
+                  - Execution
+                StateIncarcerationPeriodReleaseReason.PARDONED:
+                  - Full Pardon
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION:
+                  - Activated In Error
+                  - Return to Custody in Error (Inactive)
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
+                  - Shock Incarceration Release
+                  - SHOCK Incarceration End
+                StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
+                  - Deactivated in Error
+                  - Supervision Closed in Error
+                  - Release in Error Return
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - Community Supervision Release
+                  - Correctional Release Center
+                  - Correctional Release Center Release
+                  - DC to Probation
+                  - Drug Transition Release
+                  - Parole (Early/Emergency)
+                  - Paroled - Regular
+                  - Regular Parole - Juvenile
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - Absolute Discharge
+                  - Close Prison Episode
+                  - Community Supervision End Date
+                  - End of Supervision
+                  - Mandatory Release
+                  - NEW CODE - Earned Release
+                  - OLD/NEW CODE - Expiration
+                  - Standard Transition Release
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - Close Supervision Episode - Leave Prison Episode Active
+                  - In Custody - Other
+                  - STATUS_CHANGE
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                  - Out to Court
+                  - Out on Bond
+                  - Out to Hospital
+                  - Temporary Placement
+                  - Temporary Release
+                  - Escorted Leave
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - ISC Commitment
+                  - Overcrowding
+                  - Transferred To
+                  - Transfer Out - Prison/CIP Departure
+                  - Transfer Out - Unit Departure
+                  - Transfer WICC/ICC
+                  - Transfer/Return Interstate
+                  - Transfer In - Unit Arrival
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - In Transit T
+                  - Out of State/Federal
+                  - Release ISC
+                StateIncarcerationPeriodReleaseReason.VACATED:
+                  - Admin Action Case Closed
+                  - Warrant Quashed
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  # These are often admission reasons, and they appear as release reasons
+                  # because the certain admissions are regularly duplicated in the data. These
+                  # account for .7% of release reasons in the last 10 years, with at most 2% of
+                  # mini-span release reasons appearing in this list in any of the last
+                  # 10 years.
+                  - Assign to Central Office
+                  - Community Supervision Revoked
+                  - Condition of Probation
+                  - Deport 1/2 Term
+                  - Discretionary Release Returnee
+                  - Drug Transition Violated
+                  - ERCD Release Return
+                  - Home Arrest Rescinded/Revoked
+                  - Mandatory Release Res/Rev
+                  - New Commitment
+                  - Parole Revoked-Regular
+                  - Parole Revoked/41.1604.11K
+                  - Provisional Rel Rescinded/Revoked
+                  - Transit Driver
+                  - 41-1604.16 Revoked
+                  - REIN FROM SUSP.
+                  - Received CC/CS
+                  - Received From
+                  - Received from Overcrowding
+                  - Recommitment
+                  - Reinstated - RUAP
+                  - Reopen Last Prison Episode
+                  - Return Community Service
+                  - Return Deport 1/2 Term
+                  - Return from AWOL
+                  - Return from Abscond
+                  - Return from Bond
+                  - Return from Court
+                  - Return from Escape
+                  - Return from Escorted Leave
+                  - Return from Hospital
+                  - Return from Unescorted Compassionate Leave
+                  - Return from WICC/ICC
+                  - Rule 11
+                  - SB1291 Violated
+                  - TIS Release Return
+                  - Temporary Release Return
+                  - Work Furlough Rescinded/Revoked
+                  - SHOCK Incarceration Commitment
+          facility: facility
+          housing_unit: housing_unit
+          # All housing and custody level mapings rely on the assumption that a documented
+          # custody level of "detention" OR a unit's current use being "Detention" or
+          # "Protective Custody" means a person in that unit is in restrictive housing (solitary).
+          # TODO(#27201): Clarify housing unit, custody level, and "current use" specifics with AZ.
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: custody_level
+              $custom_parser: us_az_custom_enum_parsers.parse_housing_unit_category
+          housing_unit_type:
+            $conditional:
+              - $if:
+                  $not_null: hospital_location
+                $then: $literal_enum(StateIncarcerationPeriodHousingUnitType.HOSPITAL)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: custody_level
+                    $custom_parser: us_az_custom_enum_parsers.parse_housing_unit_type
+          custody_level:
+            $enum_mapping:
+              $raw_text: custody_level
+              $custom_parser: us_az_custom_enum_parsers.parse_custody_level
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $not_null: county_jail_location
+                $then: $literal_enum(StateCustodialAuthority.COUNTY)
+              - $else: $literal_enum(StateCustodialAuthority.STATE_PRISON)
