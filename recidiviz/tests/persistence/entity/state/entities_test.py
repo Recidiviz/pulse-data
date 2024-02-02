@@ -417,22 +417,111 @@ class TestStateLedgerEntities(TestCase):
     external_id = "EXTERNAL-ID"
     state_code = "US_XX"
 
-    def test_all_ledger_entities_have_start_datetime_field(self):
+    def test_all_ledgers_have_is_not_future_test(self):
+        """Tests that all ledger entities have a test checking their ledger datetimes are not in the future."""
+        test_prefix = "test_ledger_datetime_is_not_future_"
+        tests = {func for func in dir(self) if func.startswith(test_prefix)}
         for cls in get_all_entity_classes_in_module(entities):
             if not issubclass(cls, LedgerEntityMixin):
                 continue
-            self.assertIsNotNone(cls.get_ledger_datetime_field())
-            self.assertIsNotNone(
-                getattr(cls.__attrs_attrs__, cls.get_ledger_datetime_field())
+            test_name = test_prefix + cls.__name__
+            self.assertIn(
+                test_name,
+                tests,
+                msg=(
+                    f"This test suite should have a test named {test_name} that tests "
+                    f"ledger_datetime for {cls.__name__} is not in the future."
+                ),
+            )
+
+    def test_all_ledgers_have_partition_key_test(self):
+        """Tests that all ledger entities have a test that checks that they have a well-defined partition key."""
+        test_prefix = "test_ledger_partition_key_"
+        tests = {func for func in dir(self) if func.startswith(test_prefix)}
+        for cls in get_all_entity_classes_in_module(entities):
+            if not issubclass(cls, LedgerEntityMixin):
+                continue
+            test_name = test_prefix + cls.__name__
+            self.assertIn(
+                test_name,
+                tests,
+                msg=f"This test suite should have a test named {test_name} that tests partition_key for {cls.__name__}.",
+            )
+
+    def test_ledger_partition_key_StateTaskDeadline(self) -> None:
+        ledger = StateTaskDeadline(
+            update_datetime=self.ledger_time,
+            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        self.assertEqual(
+            ledger.partition_key,
+            "2023-01-01T00:00:00-None-StateTaskType.DISCHARGE_FROM_SUPERVISION-None-None",
+        )
+        ledger = StateTaskDeadline(
+            update_datetime=self.ledger_time,
+            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            state_code=self.state_code,
+            sequence_num=1,
+            task_subtype="SUB",
+            task_metadata="META",
+        )
+        self.assertEqual(
+            ledger.partition_key,
+            "2023-01-01T00:00:00-1-StateTaskType.DISCHARGE_FROM_SUPERVISION-SUB-META",
+        )
+
+    def test_ledger_partition_key_StateSentenceStatusSnapshot(self) -> None:
+        ledger = StateSentenceStatusSnapshot(
+            status_update_datetime=self.ledger_time,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            state_code=self.state_code,
+            sequence_num=0,
+        )
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-0-")
+
+    def test_ledger_partition_key_StateSentenceLength(self) -> None:
+        ledger = StateSentenceLength(
+            length_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
+
+    def test_ledger_partition_key_StateSentenceGroup(self) -> None:
+        ledger = StateSentenceGroup(
+            group_update_datetime=self.ledger_time,
+            state_code=self.state_code,
+            external_id=self.external_id,
+            sequence_num=None,
+        )
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-EXTERNAL-ID")
+
+    def test_ledger_datetime_is_not_future_StateTaskDeadline(self) -> None:
+        ledger = StateTaskDeadline(
+            update_datetime=self.ledger_time,
+            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            state_code=self.state_code,
+            sequence_num=None,
+        )
+        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
+        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
+            _ = StateTaskDeadline(
+                update_datetime=self.the_future,
+                task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+                state_code=self.state_code,
+                sequence_num=None,
             )
 
     def test_ledger_datetime_is_not_future_StateSentenceStatusSnapshot(self) -> None:
-        _ = StateSentenceStatusSnapshot(
+        ledger = StateSentenceStatusSnapshot(
             status_update_datetime=self.ledger_time,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=self.state_code,
             sequence_num=None,
         )
+        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
             _ = StateSentenceStatusSnapshot(
                 status_update_datetime=self.the_future,
@@ -442,11 +531,12 @@ class TestStateLedgerEntities(TestCase):
             )
 
     def test_ledger_datetime_is_not_future_StateSentenceLength(self) -> None:
-        _ = StateSentenceLength(
+        ledger = StateSentenceLength(
             length_update_datetime=self.ledger_time,
             state_code=self.state_code,
             sequence_num=None,
         )
+        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
             _ = StateSentenceLength(
                 length_update_datetime=self.the_future,
@@ -455,12 +545,13 @@ class TestStateLedgerEntities(TestCase):
             )
 
     def test_ledger_datetime_is_not_future_StateSentenceGroup(self) -> None:
-        _ = StateSentenceGroup(
+        ledger = StateSentenceGroup(
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id=self.external_id,
             sequence_num=None,
         )
+        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
             _ = StateSentenceGroup(
                 group_update_datetime=self.the_future,

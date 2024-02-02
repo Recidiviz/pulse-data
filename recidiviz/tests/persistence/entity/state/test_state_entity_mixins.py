@@ -20,6 +20,7 @@ import unittest
 
 import attr
 
+from recidiviz.common.date import DateOrDateTime
 from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 
 
@@ -32,9 +33,9 @@ class TestLedgerEntity(unittest.TestCase):
             start = attr.ib()
             end = attr.ib()
 
-            @classmethod
-            def get_ledger_datetime_field(cls) -> str:
-                return "start"
+            @property
+            def ledger_datetime_field(self) -> DateOrDateTime:
+                return self.start
 
             def __attrs_post_init__(self):
                 self.assert_datetime_less_than(self.start, self.end)
@@ -62,10 +63,9 @@ class TestLedgerEntity(unittest.TestCase):
             END_1 = attr.ib()
             END_2 = attr.ib()
 
-            @classmethod
-            def get_ledger_datetime_field(cls) -> str:
-                """A ledger entity has a single field denoting the 'start' of its period of time. Return it here."""
-                return "START"
+            @property
+            def ledger_datetime_field(self) -> DateOrDateTime:
+                return self.START
 
             def __attrs_post_init__(self):
                 """A ledger entity may have one or more datetime fields that are strictly after the 'start' datetime field.
