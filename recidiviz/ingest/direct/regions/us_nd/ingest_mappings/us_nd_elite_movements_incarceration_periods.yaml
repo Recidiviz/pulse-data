@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 # This file associates the columns outputted from the query in
-# `view_elite_externalmovements_incarceration_periods` to the corresponding
+# `view_elite_movements_incarceration_periods` to the corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
@@ -13,6 +13,7 @@ input_columns:
   - release_reason_code
   - end_date
   - override_reason
+  - bed_assignment
 unused_columns: []
 output:
   StatePerson:
@@ -51,15 +52,21 @@ output:
                 StateIncarcerationType.EXTERNAL_UNKNOWN:
                   # Could be a county jail or another state's facility
                   - NTAD
+                StateIncarcerationType.INTERNAL_UNKNOWN:
+                  # Other state facilities can be county jails or prisons; only the state is documented
+                  # in these cases, not the facility type.
+                  - OS
+                  - OOS
+                  - OUT
                 StateIncarcerationType.STATE_PRISON:
                   - BTC
-                  - BTCWTR
                   - CONT
                   - CPP
                   - DWCRC
-                  - DWCRC1
                   - FTPFAR
                   - FTPMND
+                  - BTCWTR
+                  - DWCRC1
                   - GFC
                   - HACTC
                   - HRCC
@@ -72,7 +79,6 @@ output:
                   - MTPMND
                   - NCCRC
                   - NDSP
-                  - OUT
                   - PREA
                   - PROB
                   # TODO(#10432): We don't know what facility "TABLET" is - ask ND how
@@ -83,8 +89,6 @@ output:
                   - TRN
                   - YCC
                   - JRMU
-                  - OS
-                  - OOS
                   # Each of these only appears once, likely MN and SD
                   - MINN
                   - SD
@@ -123,8 +127,6 @@ output:
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR:
                   - ADM ERROR
-                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
-                  - ERR
                 StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                   - OTHER
                   - PREA
@@ -160,22 +162,24 @@ output:
                   - PROG
                   - RB
                   - SUPL
-                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
-                  - OOS
                   - TRN
                 StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
                   - STATUS_CHANGE
+                  - BED_ASSIGNMENT_CHANGE
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - OOS
           release_reason:
             $enum_mapping:
               $raw_text: release_reason_code
               $ignore:
                 - ADMN
                 - CONT
+                - READMN
+                - ADM ERROR
                 - CONV
                 - REC
                 - "4139"
-                - READMN
-                - ADM ERROR # This appears exactly once because of a data entry error
               $mappings:
                 StateIncarcerationPeriodReleaseReason.ESCAPE:
                   - ESC
@@ -183,17 +187,6 @@ output:
                   - ABSC
                 StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
                   - ERR
-                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
-                  # These codes appear as a result of the way ingest is run historically, and
-                  # are typically overwritten by newer data later on. They must be mapped for
-                  # ingest to progress to the point where the entity will have a meaningful
-                  # release reason (once these codes are overwritten in raw data).
-                  #
-                  # These codes are present in the historical raw data for 21 people, 7 of
-                  # whom are currently incarcerated.
-                  - NPROB
-                  - DEF
-                  - PREA
                 StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
                   - OTHER
                 StateIncarcerationPeriodReleaseReason.COMMUTED:
@@ -225,11 +218,21 @@ output:
                   - PROG
                   - RB
                   - SUPL
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
+                  # Temporary static adm/rel reason for internal movements from elite_bedassignmenthistory
+                  - STATUS_CHANGE
+                  - BED_ASSIGNMENT_CHANGE
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - TRN
-                  - OOS
-                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
-                  - STATUS_CHANGE
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: bed_assignment
+              $custom_parser: us_nd_custom_enum_parsers.parse_housing_unit_category
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: bed_assignment
+              $custom_parser: us_nd_custom_enum_parsers.parse_housing_unit_type
+          housing_unit: bed_assignment
           custody_level:
             $enum_mapping:
               $raw_text:

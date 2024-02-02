@@ -50,9 +50,9 @@ class UsNdController(BaseDirectIngestController):
             "elite_offenders",
             "elite_alias",
             "elite_offenderbookingstable",
-            "elite_externalmovements_incarceration_periods",
-            "elite_offense_in_custody_and_pos_report_data",
+            "elite_movements_incarceration_periods",
             # Docstars - supervision-focused
+            "elite_offense_in_custody_and_pos_report_data",
             "docstars_offenders",
             "docstars_offendercasestable_with_officers",
             "docstars_offensestable",
@@ -67,6 +67,4 @@ class UsNdController(BaseDirectIngestController):
             "docstars_staff_caseload_type_periods",
             "elite_incarceration_sentences",
         ]
-
-        # TODO(#1918): Integrate bed assignment / location history
         return tags

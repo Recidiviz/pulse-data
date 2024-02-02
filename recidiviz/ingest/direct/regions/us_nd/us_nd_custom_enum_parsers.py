@@ -30,6 +30,8 @@ from recidiviz.common.constants.state.state_charge import StateChargeClassificat
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitCategory,
+    StateIncarcerationPeriodHousingUnitType,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
@@ -48,6 +50,79 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 from recidiviz.common.str_field_utils import parse_datetime
 
+# TODO(#18625): Clarify that these assumptions are correct with ND.
+SOLITARY_UNIT_CODES = list(
+    [
+        "AS",
+        "BIU",
+        "BTC",
+        "ADMIN",
+        "SECURE",
+        "NDSH",
+        "HOLD",
+        "JRMUHOLD",
+        "HOLDJRMU",
+        "SU",
+    ]
+)
+HOSPITAL_UNIT_CODES = list(["HOSP", "INF", "TU", "MTU", "HSU"])
+STATE_CODES = list(
+    [
+        "AL",
+        "AK",
+        "AZ",
+        "AR",
+        "CA",
+        "CO",
+        "CT",
+        "DE",
+        "DC",
+        "FL",
+        "GA",
+        "HI",
+        "ID",
+        "IL",
+        "IN",
+        "IA",
+        "KS",
+        "KY",
+        "LA",
+        "ME",
+        "MD",
+        "MA",
+        "MI",
+        "MN",
+        "MS",
+        "MO",
+        "MT",
+        "NE",
+        "NV",
+        "NH",
+        "NJ",
+        "NM",
+        "NY",
+        "NC",
+        "ND",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "PR",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UT",
+        "VT",
+        "VA",
+        "VI",
+        "WA",
+        "WV",
+        "WI",
+        "WY",
+    ]
+)
 OTHER_STATE_FACILITY = ("OOS", "OS", "MINN", "SD")
 
 POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
@@ -317,6 +392,56 @@ def supervision_contact_method_mapper(raw_text: str) -> StateSupervisionContactM
     if "OC" in codes:  # Offender Communication
         return StateSupervisionContactMethod.VIRTUAL
     return StateSupervisionContactMethod.INTERNAL_UNKNOWN
+
+
+def parse_housing_unit_category(
+    raw_text: str,
+) -> StateIncarcerationPeriodHousingUnitCategory:
+    """Parses the category of a housing unit given a bed assignment."""
+    if raw_text:
+        codes = raw_text.split("-")
+        # TODO(#18625): Clarify whether or not infirmary/treatment units should be classified
+        # as solitary confinement with ND.
+        if codes[1] in SOLITARY_UNIT_CODES:
+            return StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT
+        if codes[1] in STATE_CODES or codes[1] in OTHER_STATE_FACILITY:
+            # Housing location provided is an unspecified out-of-state facility.
+            return StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN
+        if len(codes) > 2:
+            if codes[2] in SOLITARY_UNIT_CODES:
+                return StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT
+            if codes[2] in STATE_CODES:
+                return StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN
+        return StateIncarcerationPeriodHousingUnitCategory.GENERAL
+    return StateIncarcerationPeriodHousingUnitCategory.EXTERNAL_UNKNOWN
+
+
+def parse_housing_unit_type(
+    raw_text: str,
+) -> StateIncarcerationPeriodHousingUnitType:
+    """Parses the type of a housing unit given a bed assignment.
+    TODO(#26928): Add granularity to these housing types using assessments data
+    if and when it becomes necessary."""
+    if raw_text:
+        codes = raw_text.split("-")
+        if codes[1] in HOSPITAL_UNIT_CODES:
+            return StateIncarcerationPeriodHousingUnitType.HOSPITAL
+        if codes[1] in ("AS", "ADMIN"):
+            return (
+                StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT
+            )
+        if codes[1] in ("HOLD", "JMRUHOLD", "HOLDJMRU"):
+            return (
+                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT
+            )
+        if any((code in SOLITARY_UNIT_CODES) for code in codes):
+            # Temporarily map all remaining bed assignments that indicate a person is in solitary
+            # to OTHER_SOLITARY_CONFINEMENT until we can clarify with ND how to join the
+            # elite_offenderprogramprofiles table to this view to get more information
+            # about the nature of the assignment.
+            return StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT
+        return StateIncarcerationPeriodHousingUnitType.GENERAL
+    return StateIncarcerationPeriodHousingUnitType.EXTERNAL_UNKNOWN
 
 
 def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
