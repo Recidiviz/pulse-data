@@ -158,3 +158,15 @@ resource "google_iap_web_backend_service_iam_policy" "admin_panel_policy" {
     module.admin_panel_load_balancer
   ]
 }
+
+data "google_service_account" "auth0_actions" {
+  account_id = "auth0-actions-service-account"
+}
+
+resource "google_cloud_run_service_iam_member" "admin-panel-auth0-actions" {
+  location = google_cloud_run_service.admin_panel.location
+  project  = google_cloud_run_service.admin_panel.project
+  service  = google_cloud_run_service.admin_panel.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${data.google_service_account.auth0_actions.email}"
+}
