@@ -18,11 +18,11 @@
 their subsequent classification review date.
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
-from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.dataset_config import (
-    completion_event_state_specific_dataset,
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -49,7 +49,7 @@ SELECT
     COALESCE(LEAD(completion_event_date) OVER
              (PARTITION BY ce.person_id, sss.start_date ORDER BY completion_event_date), sss.end_date_exclusive) AS end_datetime,
     DATE_ADD(completion_event_date, INTERVAL 6 MONTH) AS critical_date
-FROM `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
+FROM `{{project_id}}.{{analyst_views_dataset}}.us_mi_supervision_classification_review_materialized` ce
 INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` sss
     ON sss.state_code = ce.state_code
     AND sss.person_id = ce.person_id 
@@ -75,7 +75,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        completion_dataset=completion_event_state_specific_dataset(StateCode.US_MI),
+        analyst_views_dataset=ANALYST_VIEWS_DATASET,
         sessions_dataset=SESSIONS_DATASET,
     )
 )
