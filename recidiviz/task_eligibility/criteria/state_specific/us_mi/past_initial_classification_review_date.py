@@ -25,10 +25,12 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
-    completion_event_state_specific_dataset,
     task_eligibility_criteria_state_specific_dataset,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -198,7 +200,7 @@ critical date spans for the supervision super session end when the first classif
     sp.priority_level,
    FROM ({aggregate_adjacent_spans(table_name='critical_date_sub_session_spans', 
                                   attribute=['critical_date', 'priority_level', 'super_session_start_date', 'super_session_end_date'])}) sp
-   LEFT JOIN `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
+   LEFT JOIN `{{project_id}}.{{analyst_views_dataset}}.us_mi_supervision_classification_review_materialized` ce
         ON sp.person_id = ce.person_id
         AND sp.state_code = ce.state_code
         AND ce.completion_event_date BETWEEN sp.super_session_start_date AND {nonnull_end_date_clause('sp.super_session_end_date')}
@@ -215,7 +217,7 @@ critical date spans for the supervision super session end when the first classif
      DATE_ADD(sai.start_date, INTERVAL 4 MONTH) AS critical_date,
      'b_priority' AS priority_level
   FROM `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
-  LEFT JOIN `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
+  LEFT JOIN `{{project_id}}.{{analyst_views_dataset}}.us_mi_supervision_classification_review_materialized` ce
         ON sai.person_id = ce.person_id 
         AND sai.state_code = ce.state_code
         AND ce.completion_event_date BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause('sai.end_date')}
@@ -278,7 +280,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_dataset=task_eligibility_criteria_state_specific_dataset(
             StateCode.US_MI
         ),
-        completion_dataset=completion_event_state_specific_dataset(StateCode.US_MI),
+        analyst_views_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 if __name__ == "__main__":

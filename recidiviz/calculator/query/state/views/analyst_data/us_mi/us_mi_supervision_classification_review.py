@@ -16,23 +16,27 @@
 # =============================================================================
 """Defines a view that shows all classification review dates for clients in Michigan.
 """
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    StateSpecificTaskCompletionEventBigQueryViewBuilder,
-    TaskCompletionEventType,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all classification review dates for clients in Michigan. Classification
+US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_NAME = (
+    "us_mi_supervision_classification_review"
+)
+
+US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_DESCRIPTION = """Defines a view that shows all classification review dates for clients in Michigan. Classification
 reviews happen every 6 months after the initial classification review and should result in a supervision level 
 downgrade unless there are extenuating circumstances. 
 """
 
-_QUERY_TEMPLATE = """
+US_MI_SUPERVISION_CLASSIFICATION_REVIEW_QUERY_TEMPLATE = """
 /* OMNI */ 
 SELECT DISTINCT
     pei.state_code,
@@ -69,20 +73,19 @@ AND Completed_date IS NOT NULL
 AND CAST(SAFE_CAST(Completed_date AS DATETIME) AS DATE) >= "2023-08-14"
 """
 
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
-    StateSpecificTaskCompletionEventBigQueryViewBuilder(
+US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=ANALYST_VIEWS_DATASET,
+    view_id=US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_NAME,
+    description=US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_DESCRIPTION,
+    view_query_template=US_MI_SUPERVISION_CLASSIFICATION_REVIEW_QUERY_TEMPLATE,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI,
-        completion_event_type=TaskCompletionEventType.SUPERVISION_CLASSIFICATION_REVIEW,
-        description=_DESCRIPTION,
-        completion_event_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MI,
-            instance=DirectIngestInstance.PRIMARY,
-        ),
-    )
+        instance=DirectIngestInstance.PRIMARY,
+    ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        VIEW_BUILDER.build_and_print()
+        US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_BUILDER.build_and_print()

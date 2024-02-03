@@ -22,7 +22,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
-    supervision_classification_review,
+    supervision_level_downgrade_after_initial_classification_review_date,
 )
 from recidiviz.task_eligibility.criteria.general import supervision_level_is_not_limited
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
@@ -55,7 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_minimum_low.VIEW_BUILDER,
         supervision_level_is_not_modified.VIEW_BUILDER,
     ],
-    completion_event_builder=supervision_classification_review.VIEW_BUILDER,
+    completion_event_builder=supervision_level_downgrade_after_initial_classification_review_date.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
