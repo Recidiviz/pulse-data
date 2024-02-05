@@ -14,3 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Test init file that imports another module"""
+
+from recidiviz.tests.tools.fixtures.a.b.i import test_function_i
+
+
+def test_function_init() -> None:
+    test_function_i()

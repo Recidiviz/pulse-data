@@ -35,18 +35,20 @@ python -m recidiviz.tools.airflow.environment_control update_files
        --files recidiviz/airflow/dags/calculation_dag.py recidiviz/airflow/dags/operators/recidiviz_dataflow_operator.py
 """
 import argparse
-import ast
 import logging
 import os
-from collections import deque
 from glob import glob
 from multiprocessing.pool import ThreadPool
-from typing import Deque, List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 import yaml
 
 import recidiviz
 from recidiviz.common.file_system import is_valid_code_path
+from recidiviz.tools.file_dependencies import (
+    EntrypointDependencies,
+    convert_path_to_recidiviz_module,
+)
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -59,136 +61,6 @@ SOURCE_FILE_YAML_PATH = os.path.join(
     ROOT,
     "tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml",
 )
-
-
-def _get_file_module_dependencies(
-    file_path: str,
-    root_modules_to_include: Set[str],
-) -> Set[str]:
-    """
-    Returns a set of all modules that the given file depends on. It does this by
-    parsing the file and looking for import statements.
-    """
-    with open(file_path, encoding="utf-8") as fh:
-        root = ast.parse(fh.read(), file_path)
-
-    module_dependencies: Set[str] = set()
-    for node in ast.iter_child_nodes(root):
-        if not (
-            isinstance(node, ast.ImportFrom)
-            and node.module
-            and any(
-                {
-                    node.module.startswith(root_module)
-                    for root_module in root_modules_to_include
-                }
-            )
-        ):
-            continue
-
-        module_path = _convert_module_to_path(node.module)
-        if os.path.isdir(module_path):
-            for name in node.names:
-                module_dependencies.add(f"{node.module}.{name.name}")
-        else:
-            module_dependencies.add(node.module)
-
-    return module_dependencies
-
-
-def _convert_module_to_path(module_dependency: str) -> str:
-    return module_dependency.replace(".", "/").replace("recidiviz", ROOT, 1)
-
-
-def _get_init_file_paths_for_module_dependency(
-    module_path: str,
-    all_path_dependencies: Set[str],
-    root_module: str,
-) -> Set[str]:
-    """
-    Returns a set of all __init__.py files that the given module depends on that hasn't already been explored.
-    """
-    dependency_paths: Set[str] = set()
-    init_path = os.path.join(module_path, "__init__.py")
-    if init_path not in all_path_dependencies:
-        dependency_paths.add(init_path)
-        if not module_path.endswith(root_module):
-            dependency_paths.update(
-                _get_init_file_paths_for_module_dependency(
-                    os.path.dirname(module_path),
-                    all_path_dependencies,
-                    root_module,
-                )
-            )
-    return dependency_paths
-
-
-def _convert_modules_to_paths(
-    module_dependencies: Set[str],
-    all_path_dependencies: Set[str],
-) -> Set[str]:
-    """
-    Converts a set of modules to a set of paths including all __init__.py files
-    that the module depends on.
-    """
-    dependency_paths: Set[str] = set()
-    for module_dependency in module_dependencies:
-        module_dependency_path = _convert_module_to_path(module_dependency)
-        root_module = module_dependency.split(".")[0]
-
-        if os.path.isdir(module_dependency_path):
-            dependency_paths.update(
-                _get_init_file_paths_for_module_dependency(
-                    module_dependency_path,
-                    all_path_dependencies & dependency_paths,
-                    root_module,
-                )
-            )
-        else:
-            dependency_path = module_dependency_path + ".py"
-            dependency_paths.update(
-                _get_init_file_paths_for_module_dependency(
-                    os.path.dirname(dependency_path),
-                    all_path_dependencies & dependency_paths,
-                    root_module,
-                )
-            )
-            dependency_paths.add(dependency_path)
-
-    return dependency_paths
-
-
-# TODO(#23809): Update function to be usable by `validate_source_visibility.py` to determine source visibility
-def add_file_module_dependencies_to_set(path: str, dependencies: Set[str]) -> Set[str]:
-    """
-    Returns a set of all files that the given file depends on. It does this by
-    parsing the file and looking for recidiviz package import statements. It then
-    repeats the process on each of the dependencies it finds. It modifies the given
-    dependencies set by adding all the dependencies it finds to it.
-
-    Dependencies passed in will be considered already visited and will not be
-    explored again.
-    """
-    dependencies_not_visited: Deque[str] = deque([path])
-
-    while len(dependencies_not_visited) > 0:
-        current_file = dependencies_not_visited.popleft()
-
-        module_dependencies = _get_file_module_dependencies(
-            current_file,
-            root_modules_to_include={"recidiviz"},
-        )
-
-        module_dependency_paths = _convert_modules_to_paths(
-            module_dependencies, dependencies
-        )
-
-        for dependency_path in module_dependency_paths:
-            if dependency_path not in dependencies:
-                dependencies_not_visited.append(dependency_path)
-                dependencies.add(dependency_path)
-
-    return dependencies
 
 
 def gcloud_path_for_local_path(local_path: str) -> str:
@@ -225,22 +97,21 @@ def get_airflow_source_file_paths() -> List[str]:
                 _get_paths_list_from_file_pattern(file_pattern)
             )
 
-    explored_python_dependencies: Set[str] = set()
+    dependencies = EntrypointDependencies()
     for dag_file in dag_files:
-        explored_python_dependencies = add_file_module_dependencies_to_set(
-            dag_file, explored_python_dependencies
+        dependencies.add_dependencies_for_entrypoint(
+            convert_path_to_recidiviz_module(dag_file)
         )
 
     for explicitly_listed_dependency_file in explicitly_listed_dependency_files:
         if explicitly_listed_dependency_file.endswith(".py"):
-            explored_python_dependencies = add_file_module_dependencies_to_set(
-                explicitly_listed_dependency_file, explored_python_dependencies
+            dependencies.add_dependencies_for_entrypoint(
+                convert_path_to_recidiviz_module(explicitly_listed_dependency_file)
             )
 
     return (
-        dag_files
+        list(dependencies.all_module_dependency_source_files)
         + explicitly_listed_dependency_files
-        + list(explored_python_dependencies)
     )
 
 

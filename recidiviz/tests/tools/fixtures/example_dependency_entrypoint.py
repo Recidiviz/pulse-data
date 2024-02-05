@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,3 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Example script used to test validate source visibility functionality."""
+
+import requests
+
+from recidiviz.common.date import today_in_iso
+from recidiviz.utils import secrets
+
+
+def main(usefile: bool) -> None:
+    params = secrets.get_secret("params")
+
+    request = requests.get("https://www.google.com", params, timeout=60)
+    request.raise_for_status()
+
+    if usefile:
+        import tempfile  # pylint: disable=import-outside-toplevel
+
+        with tempfile.TemporaryFile() as file:
+            file.write(request.content)
+
+    else:
+        print(today_in_iso())
+        print(request.text)
+
+
+if __name__ == "__main__":
+    main(True)
