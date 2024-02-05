@@ -39,3 +39,12 @@ OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES = [
     "164415",
     "167017",
 ]
+
+# supervision types ineligible for EDIS (see OR ingest mappings to see all types)
+OR_EARNED_DISCHARGE_INELIGIBLE_SUPERVISION_TYPES = [
+    "CD",  # not yet convicted (& won't be if sup. is completed successfully)
+    "DV",  # not yet convicted (& won't be if sup. is completed successfully)
+    "PA",  # parole
+    "PS",  # post-parole
+    "SL",  # Second Look juveniles
+]

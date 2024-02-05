@@ -25,6 +25,7 @@ from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.state_specific.us_or import (
     no_supervision_sanctions_within_6_months,
     sentence_eligible,
+    supervision_type_eligible,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -40,9 +41,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     # TODO(#26891): Revisit candidate population for this opportunity, because many
     # people are getting dropped from the population due to missing correctional levels.
+    # TODO(#27324): If we change how we ingest sup. types, we may need to adjust
+    # candidate pop. query accordingly.
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         no_supervision_sanctions_within_6_months.VIEW_BUILDER,
+        supervision_type_eligible.VIEW_BUILDER,
         sentence_eligible.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
