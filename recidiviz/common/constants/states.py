@@ -20,6 +20,7 @@ import enum
 import re
 import typing
 from abc import abstractmethod
+from functools import lru_cache
 from typing import Any, Dict, Optional
 
 import us
@@ -44,7 +45,7 @@ class _SharedStateCode(enum.Enum):
         return None
 
     def get_state(self) -> us.states.State:
-        return self._state_info_map()[self.value]
+        return self._state_info_map()[self.value]  # type: ignore[index]
 
     def get_state_fips_mask(self, places: int = 12) -> int:
         # The FIPS code is always a two-digit code for states
@@ -57,6 +58,7 @@ class _SharedStateCode(enum.Enum):
         pass
 
     @classmethod
+    @lru_cache(maxsize=None)
     def _state_info_map(cls) -> Dict[str, us.states.State]:
         info_map = {}
         for e in cls:
