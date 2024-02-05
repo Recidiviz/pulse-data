@@ -20,7 +20,7 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
+    get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
@@ -41,7 +41,7 @@ def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
                 raw_data_source_instance=instance,
             ).collect_view_builders()
             for instance in DirectIngestInstance
-            for state_code in get_direct_ingest_states_existing_in_env()
+            for state_code in get_existing_direct_ingest_states()
         )
     )
 
