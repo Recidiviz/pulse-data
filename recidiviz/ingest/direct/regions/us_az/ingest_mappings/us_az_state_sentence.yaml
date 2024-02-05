@@ -8,6 +8,7 @@ input_columns:
   - imposed_date
   - person_id
   - county_code
+  - jail_credit_days
 unused_columns: []
 launch_env:
   $env: is_dataflow_pipeline
@@ -38,5 +39,6 @@ output:
           is_capital_punishment: $variable(is_capital_bool)
           external_id: external_id
           parole_possible: $variable(is_parole_bool)
+          initial_time_served_days: jail_credit_days
           #set to internal unkown until we know how to map sentence type
           sentence_type: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
