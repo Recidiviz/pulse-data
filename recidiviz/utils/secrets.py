@@ -26,7 +26,7 @@ from google.cloud import exceptions
 from google.cloud.secretmanager_v1 import SecretManagerServiceClient
 
 from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import in_development, in_test
+from recidiviz.utils.environment import in_ci, in_development, in_test
 
 __sm = None
 
@@ -55,7 +55,7 @@ def get_secret(secret_id: str) -> Optional[str]:
 
     Returns None if the secret could not be found.
     """
-    if in_development() or in_test():
+    if in_development() or in_test() or in_ci():
         try:
             return get_secret_from_local_directory(secret_id=secret_id)
         except OSError:
