@@ -163,6 +163,12 @@ class SpreadsheetUploader:
         child_agency_ids = [
             self.child_agency_name_to_agency[child_agency_name].id
             for child_agency_name in agency_name_to_rows.keys()
+            if len(child_agency_name) > 0
+            # When the agency column does not have a value or has the name of a
+            # child agency that does not exist, the child_agency_name is saved as "".
+            # We do not want to ingest data for those columns so we  skip them.
+            # An "Agency Name Not Recognized" error has already been added to the
+            # metric_key_to_errors dictionary in _get_agency_name_to_rows.
         ]
 
         # get agency_datapoints specific to child agency
