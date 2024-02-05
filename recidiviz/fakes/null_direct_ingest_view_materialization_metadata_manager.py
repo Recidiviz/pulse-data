@@ -41,6 +41,7 @@ class NullDirectIngestViewMaterializationMetadataManager(
     """
 
     def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
+        super().__init__(region_code, ingest_instance)
         self._region_code = region_code.upper()
         self._ingest_instance = ingest_instance
 
