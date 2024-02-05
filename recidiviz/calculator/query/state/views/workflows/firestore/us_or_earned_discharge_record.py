@@ -17,6 +17,7 @@
 """Query for relevant metadata needed to support Earned Discharge in Oregon
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
@@ -62,7 +63,7 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
     )
     ,
     -- Collect all sentence-level information for the surfaced group of people
-    eligible_sentences AS (
+    eligible_and_ineligible_sentences AS (
         SELECT
             sp.person_id,
             sp.state_code,
@@ -80,13 +81,19 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
             JSON_EXTRACT_SCALAR(sp.sentence_metadata, '$.COURT_CASE_NUMBER') AS court_case_number,
             JSON_EXTRACT_SCALAR(sc.judge_full_name, '$.full_name') AS judge_full_name,
             cc.conditions,
+            COALESCE(sentence_eligibility_spans.is_eligible, FALSE) AS is_eligible,
         FROM `{{project_id}}.sessions.sentences_preprocessed_materialized` sp
         LEFT JOIN `{{project_id}}.normalized_state.state_charge` sc
         USING(charge_id)
         LEFT JOIN current_conditions cc 
         ON
             JSON_EXTRACT_SCALAR(sp.sentence_metadata, '$.COURT_CASE_NUMBER') = cc.court_case_number
-        -- TODO(#25442): Select only eligible sentences
+        LEFT JOIN `{{project_id}}.analyst_data.us_or_earned_discharge_sentence_eligibility_spans_materialized` sentence_eligibility_spans
+        ON
+            sp.person_id = sentence_eligibility_spans.person_id
+            AND sp.sentence_id = sentence_eligibility_spans.sentence_id
+            AND sp.state_code = sentence_eligibility_spans.state_code
+            AND CURRENT_DATE('US/Pacific') BETWEEN sentence_eligibility_spans.start_date AND {nonnull_end_date_clause('sentence_eligibility_spans.end_date')}
         WHERE 
             sp.person_id IN (SELECT DISTINCT person_id FROM base_query)
             AND sp.state_code = 'US_OR'
@@ -95,7 +102,7 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
     )
     ,
     -- Aggregate sentences by person, to surface all eligible sentences for each eligible person
-    sentences_by_person AS (
+    eligible_sentences_by_person AS (
         SELECT
             person_id,
             ARRAY_AGG(STRUCT(
@@ -111,7 +118,30 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
                 judge_full_name,
                 conditions
             ) ORDER BY sentence_start_date DESC, sentence_id ASC) AS eligible_sentences,
-        FROM eligible_sentences
+        FROM eligible_and_ineligible_sentences sentences
+        WHERE is_eligible
+        GROUP BY 1
+    )
+    ,
+    -- Aggregate sentences by person, to surface all ineligible sentences for each eligible person
+    ineligible_sentences_by_person AS (
+        SELECT
+            person_id,
+            ARRAY_AGG(STRUCT(
+                sentence_id,
+                court_case_number,
+                sentence_statute,
+                sentence_sub_type,
+                sentence_imposed_date,
+                sentence_start_date,
+                sentence_end_date,
+                sentence_county,
+                charge_county,
+                judge_full_name,
+                conditions
+            ) ORDER BY sentence_start_date DESC, sentence_id ASC) AS ineligible_sentences,
+        FROM eligible_and_ineligible_sentences sentences
+        WHERE NOT is_eligible
         GROUP BY 1
     )
     ,
@@ -160,14 +190,15 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
         base.is_eligible,
         base.ineligible_criteria,
         TO_JSON(IFNULL(programming.programs, [])) AS metadata_programs,
-        -- TODO(#25442): sentence_by_person should never be null, since someone wouldn't be surfaced
-        -- without eligible sentences
-        TO_JSON(IFNULL(sentences_by_person.eligible_sentences, [])) AS metadata_eligible_sentences,
+        TO_JSON(eligible_sentences_by_person.eligible_sentences) AS metadata_eligible_sentences,
+        TO_JSON(IFNULL(ineligible_sentences_by_person.ineligible_sentences, [])) AS metadata_ineligible_sentences,
         current_supervision_type.supervision_type AS metadata_supervision_type,
     FROM base_query_with_or_id base
     LEFT JOIN programming
     USING (external_id)
-    LEFT JOIN sentences_by_person
+    LEFT JOIN eligible_sentences_by_person
+    USING (person_id)
+    LEFT JOIN ineligible_sentences_by_person
     USING (person_id)
     LEFT JOIN current_supervision_type
     USING (state_code, person_id)
