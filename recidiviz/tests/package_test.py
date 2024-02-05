@@ -38,10 +38,16 @@ class TestPackages(unittest.TestCase):
             return False
 
         bad_packages = []
+        found_missing_init = False
         for path, _directory_names, file_names in os.walk(python_root_dir):
             if "__init__.py" in file_names:
                 continue
             if not has_python_files(path):
+                continue
+
+            if path.endswith("recidiviz/tests/tools/fixtures/missing_init"):
+                # This is specifically to test behavior when an init is missing
+                found_missing_init = True
                 continue
 
             bad_packages.append(path)
@@ -51,3 +57,5 @@ class TestPackages(unittest.TestCase):
             self.fail(
                 f"Found python code directories with no __init__.py file:\n{bad_packages_str}",
             )
+
+        self.assertTrue(found_missing_init)

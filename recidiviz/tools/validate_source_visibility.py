@@ -26,16 +26,13 @@ from higher-level application code, consider pulling these constants out into a
 shared module instead of importing persistence logic into this server.
 """
 import sys
-from importlib.util import find_spec
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
 import pygtrie
 
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_modules
-from recidiviz.vendor.modulefinder import modulefinder
-
-RECIDIVIZ_MODULE = "recidiviz"
+from recidiviz.tools.file_dependencies import Callsite, EntrypointDependencies
 
 
 def make_module_matcher(modules: Iterable[str]) -> pygtrie.PrefixSet:
@@ -44,45 +41,29 @@ def make_module_matcher(modules: Iterable[str]) -> pygtrie.PrefixSet:
     )
 
 
-def module_is_package(module_name: str) -> bool:
-    spec = find_spec(module_name)
-    if spec is None:
-        raise ImportError(f"No module named {module_name}")
-    return spec.submodule_search_locations is not None
-
-
-def is_invalid_recidiviz_dependency(
-    name: str,
+def is_valid_module_dependency(
+    module_name: str,
     valid_module_prefixes: pygtrie.PrefixSet,
 ) -> bool:
-    return (
-        name.startswith(RECIDIVIZ_MODULE)
-        and not module_is_package(name)
-        and name not in valid_module_prefixes
-    )
+    # Checks if module or a prefix of this module is allowed
+    if module_name in valid_module_prefixes:
+        return True
 
-
-def is_invalid_package_dependency(
-    name: str,
-    explicitly_invalid_package_dependencies: List[str],
-) -> bool:
-    return name in explicitly_invalid_package_dependencies and module_is_package(name)
+    # Checks if a child of this module is allowed
+    children = list(valid_module_prefixes.iter(prefix=module_name))
+    return len(children) > 0
 
 
 @attr.s(frozen=True, kw_only=True)
 class DependencyAnalysisResult:
-    invalid_modules: Dict[str, List[str]] = attr.ib()
-    missing_modules: Dict[str, List[str]] = attr.ib()
-
+    invalid_modules: Dict[str, List[Tuple[str, Callsite]]] = attr.ib()
     unused_valid_module_prefixes: Set[str] = attr.ib()
-    unused_allowed_missing_module_prefixes: Set[str] = attr.ib()
 
 
 def get_invalid_dependencies_for_entrypoint(
-    entrypoint_file: str,
+    entrypoint_module: str,
     valid_module_prefixes: pygtrie.PrefixSet,
     explicitly_invalid_package_dependencies: Optional[List[str]] = None,
-    allowed_missing_module_prefixes: Optional[pygtrie.PrefixSet] = None,
 ) -> DependencyAnalysisResult:
     """Gets the transitive dependencies for the entrypoints and checks their validity.
 
@@ -90,112 +71,106 @@ def get_invalid_dependencies_for_entrypoint(
     call chain that includes them. The second is a list of dependency prefixes that
     were explicitly allowed but that no actual dependencies relied on.
     """
-    if allowed_missing_module_prefixes is None:
-        allowed_missing_module_prefixes = make_module_matcher(set())
-
-    m = modulefinder.ModuleFinder()
-    m.run_script(entrypoint_file)
+    dependencies = EntrypointDependencies().add_dependencies_for_entrypoint(
+        entrypoint_module
+    )
 
     valid_dependencies: Set[str] = set()
-    invalid_dependencies: Dict[str, List[str]] = {}
-    missing_dependencies: Dict[str, List[str]] = {}
+    invalid_dependencies: Dict[str, List[Tuple[str, Callsite]]] = {}
 
-    name: str
-    for name in m.modules:
-        if is_invalid_recidiviz_dependency(name, valid_module_prefixes):
-            call_chain = m.call_chain_for_name(name)
-            if len(call_chain) < 1:
-                raise ValueError(
-                    f"invalid {name} module has empty call_chain for file '{entrypoint_file}'"
-                )
-            if not is_invalid_recidiviz_dependency(
-                call_chain[0],
-                valid_module_prefixes,
-            ):
-                invalid_dependencies[name] = call_chain
-        elif explicitly_invalid_package_dependencies and is_invalid_package_dependency(
-            name, explicitly_invalid_package_dependencies
+    for module_name, callers in dependencies.modules.items():
+        if module_name == entrypoint_module or is_valid_module_dependency(
+            module_name, valid_module_prefixes
         ):
-            call_chain = m.call_chain_for_package(name, RECIDIVIZ_MODULE)
-            if not is_invalid_recidiviz_dependency(
-                call_chain[0],
-                valid_module_prefixes,
-            ):
-                invalid_dependencies[name] = call_chain
-        else:
-            valid_dependencies.add(name)
+            valid_dependencies.add(module_name)
+            continue
 
-    for name in m.badmodules:
-        # All non-recidiviz dependencies will be missing, we ignore these for now. In
-        # the future we could attempt to check if they are actually in the dependency
-        # file for the given endpoint (Pipfile, setup.py, Airflow dependencies, etc.).
+        if not callers:
+            raise ValueError(
+                f"Found dependency module [{module_name}] of entrypoint "
+                f"[{entrypoint_module}] with no callers. This should not be possible."
+            )
+
+        valid_callers = [
+            c for c in callers if is_valid_module_dependency(c, valid_module_prefixes)
+        ]
+
+        if valid_callers:
+            # If this module is directly imported by a module that is a valid
+            # dependency, arbitrarily pick one of the of those parent modules and store
+            # the full call chain for display later.
+            caller = valid_callers[0]
+            invalid_dependencies[module_name] = [
+                (caller, callers[caller][0])
+            ] + dependencies.sample_call_chain_for_module(caller)
+        # Otherwise, this module is not called directly by any valid module. We assume
+        # that one of its invalid parents in the call chain has a valid caller, so an
+        # error will be collected via the block above.
+
+    for package_name, callers in dependencies.packages.items():
         if (
-            name.startswith(RECIDIVIZ_MODULE)
-            and name not in allowed_missing_module_prefixes
+            not explicitly_invalid_package_dependencies
+            or package_name not in explicitly_invalid_package_dependencies
         ):
-            missing_dependencies[name] = m.call_chain_for_name(name)
-        else:
-            valid_dependencies.add(name)
+            valid_dependencies.add(package_name)
+            continue
+
+        if not callers:
+            raise ValueError(
+                f"Found dependency package [{package_name}] of entrypoint "
+                f"[{entrypoint_module}] with no callers. This should not be possible."
+            )
+
+        valid_callers = [
+            c for c in callers if is_valid_module_dependency(c, valid_module_prefixes)
+        ]
+
+        if valid_callers:
+            # If this packages is directly imported by a module that is a valid
+            # dependency, arbitrarily pick one of the of those parent modules and store
+            # the full call chain for display later.
+            caller = valid_callers[0]
+            invalid_dependencies[package_name] = [
+                (caller, callers[caller][0])
+            ] + dependencies.sample_call_chain_for_module(caller)
 
     unused_valid = valid_module_prefixes - valid_dependencies
-    unused_allowed_missing = allowed_missing_module_prefixes - valid_dependencies
 
     return DependencyAnalysisResult(
         invalid_modules=invalid_dependencies,
-        missing_modules=missing_dependencies,
         unused_valid_module_prefixes={"".join(entry) for entry in unused_valid},
-        unused_allowed_missing_module_prefixes={
-            "".join(entry) for entry in unused_allowed_missing
-        },
     )
 
 
 def check_dependencies_for_entrypoint(
-    entrypoint_file: str,
+    entrypoint_module: str,
     valid_module_prefixes: pygtrie.PrefixSet,
     explicitly_invalid_package_dependencies: Optional[List[str]] = None,
-    allowed_missing_module_prefixes: Optional[pygtrie.PrefixSet] = None,
 ) -> bool:
     """Analyzes dependencies for a given entrypoint prints information about failures.
 
     Returns True for success and False for failure.
     """
     dependency_result = get_invalid_dependencies_for_entrypoint(
-        entrypoint_file,
+        entrypoint_module,
         valid_module_prefixes=valid_module_prefixes,
         explicitly_invalid_package_dependencies=explicitly_invalid_package_dependencies,
-        allowed_missing_module_prefixes=allowed_missing_module_prefixes,
     )
 
     result = True
 
     if dependency_result.invalid_modules:
-        print(f"Invalid dependencies for {entrypoint_file}:")
+        print(f"Invalid dependencies for {entrypoint_module}:")
         for dependency, call_chain in sorted(dependency_result.invalid_modules.items()):
             print(f"\t{dependency}")
-            for caller in call_chain:
-                print(f"\t\t{caller}")
-        result = False
-
-    if dependency_result.missing_modules:
-        print(f"Missing internal dependencies for {entrypoint_file}:")
-        print("Is this missing an __init__.py file to make it a valid module?")
-        for dependency, call_chain in sorted(dependency_result.missing_modules.items()):
-            print(f"\t{dependency}")
-            for caller in call_chain:
-                print(f"\t\t{caller}")
+            for caller, callsite in call_chain:
+                print(
+                    f"\t\t{caller} ({callsite.filepath}:{callsite.lineno}:{callsite.col_offset})"
+                )
         result = False
 
     if dependency_result.unused_valid_module_prefixes:
-        print(f"Unused valid dependency prefixes for {entrypoint_file}:")
-        for dependency in sorted(dependency_result.unused_valid_module_prefixes):
-            print(f"\t{dependency}")
-        result = False
-
-    if dependency_result.unused_allowed_missing_module_prefixes:
-        print(
-            f"Dependencies allowed to be missing but are found or not imported for {entrypoint_file}:"
-        )
+        print(f"Unused valid dependency prefixes for {entrypoint_module}:")
         for dependency in sorted(dependency_result.unused_valid_module_prefixes):
             print(f"\t{dependency}")
         result = False
@@ -283,13 +258,14 @@ def main() -> int:
                 }
             )
         success &= check_dependencies_for_entrypoint(
-            pipeline.__file__,
+            pipeline.__name__,
             valid_module_prefixes=make_module_matcher(valid_prefixes),
         )
 
     valid_calculation_dag_prefixes = {
         "recidiviz.airflow.dags",
         "recidiviz.calculator.query.state.dataset_config",
+        "recidiviz.big_query",
         "recidiviz.common",
         "recidiviz.cloud_storage",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
@@ -299,22 +275,21 @@ def main() -> int:
         "recidiviz.pipelines",
         "recidiviz.tools.utils.script_helpers",
         "recidiviz.utils",
-        "recidiviz.big_query",
     }
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/airflow/dags/calculation_dag.py",
+        "recidiviz.airflow.dags.calculation_dag",
         valid_module_prefixes=make_module_matcher(valid_calculation_dag_prefixes),
-        allowed_missing_module_prefixes=make_module_matcher(set()),
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/airflow/tests/calculation_dag_test.py",
+        "recidiviz.airflow.tests.calculation_dag_test",
         valid_module_prefixes=make_module_matcher(
             {
+                "recidiviz.airflow.tests",
+                "recidiviz.tests.pipelines",
+                "recidiviz.tools.postgres.local_postgres_helpers",
                 *valid_calculation_dag_prefixes,
-                "recidiviz.airflow",
-                "recidiviz.tools.postgres",
             }
         ),
     )
@@ -334,13 +309,12 @@ def main() -> int:
         "recidiviz.utils.types",
     }
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/airflow/dags/sftp_dag.py",
+        "recidiviz.airflow.dags.sftp_dag",
         valid_module_prefixes=make_module_matcher(valid_sftp_dag_prefixes),
-        allowed_missing_module_prefixes=make_module_matcher(set()),
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/airflow/tests/sftp_dag_test.py",
+        "recidiviz.airflow.tests.sftp_dag_test",
         valid_module_prefixes=make_module_matcher(
             {
                 *valid_sftp_dag_prefixes,
@@ -352,12 +326,12 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/cloud_functions/main.py",
-        valid_module_prefixes=make_module_matcher(set()),
+        "recidiviz.cloud_functions.main",
+        valid_module_prefixes=make_module_matcher({"recidiviz.cloud_functions.main"}),
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/server.py",
+        "recidiviz.server",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.admin_panel",
@@ -382,6 +356,7 @@ def main() -> int:
                 "recidiviz.persistence",
                 "recidiviz.workflows",
                 "recidiviz.reporting",
+                "recidiviz.server",
                 "recidiviz.server_blueprint_registry",
                 "recidiviz.server_config",
                 "recidiviz.task_eligibility",
@@ -397,7 +372,7 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/case_triage/server.py",
+        "recidiviz.case_triage.server",
         valid_module_prefixes=make_module_matcher(
             {
                 # TODO(#24506): Clean up this dependency
@@ -425,7 +400,7 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/justice_counts/control_panel/server.py",
+        "recidiviz.justice_counts.control_panel.server",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.justice_counts",
@@ -441,7 +416,7 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/entrypoints/monitoring/report_metric_export_timeliness.py",
+        "recidiviz.entrypoints.monitoring.report_metric_export_timeliness",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.common",
@@ -469,7 +444,7 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/admin_panel/server.py",
+        "recidiviz.admin_panel.server",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.admin_panel",

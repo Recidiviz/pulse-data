@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ This is a test file. """
-from recidiviz.tests.tools.airflow.fixtures.a.c import test_function_c
+from recidiviz.tests.tools.fixtures.a.b.e import test_function_e
 
 
-def test_function_a() -> None:
-    test_function_c()
+def test_function_b() -> None:
+    test_function_e()

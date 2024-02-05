@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,13 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" This is a test file. """
-import os
-
-from recidiviz.tests.tools.airflow.fixtures.a.b.b import test_function_b
-
-C_TEXT_PATH = os.path.join(os.path.dirname(__file__), "c.txt")
-
-
-def test_function_c() -> None:
-    test_function_b()
