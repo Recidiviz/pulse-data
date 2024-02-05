@@ -35,12 +35,15 @@ class TestSecrets:
         self.in_test_patcher = patch(
             "recidiviz.utils.secrets.in_test", return_value=False
         )
+        self.in_ci_patcher = patch("recidiviz.utils.secrets.in_ci", return_value=False)
         self.in_test_patcher.start()
+        self.in_ci_patcher.start()
 
     def teardown_method(self, _test_method: Callable) -> None:
         secrets.clear_sm()
         secrets.CACHED_SECRETS.clear()
         self.in_test_patcher.stop()
+        self.in_ci_patcher.stop()
 
     @patch("recidiviz.utils.metadata.project_id")
     def test_get_in_cache(self, mock_project_id: MagicMock) -> None:
