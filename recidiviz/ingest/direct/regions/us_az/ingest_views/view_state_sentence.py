@@ -23,7 +23,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
     SELECT
-        off.OFFENSE_ID as external_id,
+        off.OFFENSE_ID AS external_id,
         CASE
             WHEN life.DESCRIPTION IN ('Life (35 to Life)', 'Life (25 to Life)', 'Life', 'Natural Life')
             THEN 1
@@ -41,7 +41,8 @@ VIEW_QUERY_TEMPLATE = """
         END AS parole_possible,
         commit.SENTENCED_DTM AS imposed_date,
         county.DESCRIPTION AS county_code,
-        doc.PERSON_ID as person_id
+        doc.PERSON_ID AS person_id,
+        off.NUM_JAIL_CREDIT_DAYS AS jail_credit_days
     FROM {AZ_DOC_SC_OFFENSE} off
     LEFT JOIN {LOOKUPS} life ON life.LOOKUP_ID = off.LIFE_OR_DEATH_ID
     LEFT JOIN {LOOKUPS} parole ON parole.LOOKUP_ID = off.PAROLE_ELIGIBILITY_ID
