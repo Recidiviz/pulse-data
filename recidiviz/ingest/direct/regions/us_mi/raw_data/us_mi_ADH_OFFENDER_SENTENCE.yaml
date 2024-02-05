@@ -92,6 +92,10 @@ columns:
   - name: max_credits_end_date
   - name: pmx_sgt_max_date
   - name: amx_rgt_max_date
+    description: AMX max date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: consecutive_flag
   - name: controlling_sent_code_id
     description: reference code for whether this sentence is a controlling sentence and if so what type (reference table = ADH_REFERENCE_CODE)
