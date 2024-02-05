@@ -35,9 +35,7 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
     DirectIngestRawDataTableLatestViewCollector,
 )
-from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
-    FakeDirectIngestRegionRawFileConfig,
-)
+from recidiviz.tests.ingest.direct import fake_regions
 
 NON_HISTORICAL_LATEST_VIEW_QUERY = """
 WITH filtered_rows AS (
@@ -137,6 +135,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             region_code="us_xx",
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=self.raw_file_config,
+            regions_module=fake_regions,
         ).build(address_overrides=None)
 
         self.assertEqual(self.project_id, view.project)
@@ -159,6 +158,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             region_code="us_xx",
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=raw_file_config,
+            regions_module=fake_regions,
         ).build(address_overrides=None)
 
         self.assertEqual(self.project_id, view.project)
@@ -192,6 +192,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 region_code="us_xx",
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
+                regions_module=fake_regions,
             ).build(address_overrides=None)
 
     def test_build_primary_keys_nonempty_no_throw(self) -> None:
@@ -205,6 +206,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             region_code="us_xx",
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=raw_file_config,
+            regions_module=fake_regions,
         ).build(address_overrides=None)
 
     def test_build_primary_keys_throw(self) -> None:
@@ -247,6 +249,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 region_code="us_xx",
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
+                regions_module=fake_regions,
             ).build(address_overrides=None)
 
     def test_build_no_columns_throws(self) -> None:
@@ -265,6 +268,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
                 region_code="us_xx",
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
+                regions_module=fake_regions,
             ).build(address_overrides=None)
 
 
@@ -281,28 +285,27 @@ class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
         self.metadata_patcher.stop()
 
     def test_collect_latest_view_builders(self) -> None:
-        with patch(
-            "recidiviz.ingest.direct.views.direct_ingest_latest_view_collector.DirectIngestRegionRawFileConfig",
-        ) as config_cls:
-            config_cls.return_value = FakeDirectIngestRegionRawFileConfig(
-                StateCode.US_XX.value
-            )
-            collector = DirectIngestRawDataTableLatestViewCollector(
-                StateCode.US_XX.value, DirectIngestInstance.PRIMARY
-            )
+        collector = DirectIngestRawDataTableLatestViewCollector(
+            StateCode.US_XX.value,
+            DirectIngestInstance.PRIMARY,
+            regions_module=fake_regions,
+        )
 
-            builders = collector.collect_view_builders()
+        builders = collector.collect_view_builders()
         self.assertCountEqual(
             [
-                "tagFullyEmptyFile_latest",
-                "tagHeadersNoContents_latest",
+                "file_tag_first_latest",
+                "file_tag_second_latest",
+                "multipleColPrimaryKeyHistorical_latest",
+                "singlePrimaryKey_latest",
                 "tagBasicData_latest",
+                "tagCustomLineTerminatorNonUTF8_latest",
+                "tagDoubleDaggerWINDOWS1252_latest",
+                "tagFullHistoricalExport_latest",
+                "tagInvalidCharacters_latest",
                 "tagMoreBasicData_latest",
-                # TODO(#20930): Delete tagMoreBasicData_legacy once all states have been
-                # shipped to ingest in Dataflow and we remove the
-                # $env: is_dataflow_pipeline logic from our mappings.
-                "tagMoreBasicData_legacy_latest",
-                # Excludes tagWeDoNotIngest which has no documented columns
+                "tagNormalizationConflict_latest",
+                "tagPipeSeparatedNonUTF8_latest",
             ],
             [b.view_id for b in builders],
         )
