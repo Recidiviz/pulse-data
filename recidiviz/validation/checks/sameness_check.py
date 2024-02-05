@@ -26,6 +26,7 @@ from google.cloud.bigquery.table import Row
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
     DataValidationCheck,
@@ -152,10 +153,9 @@ class SamenessDataValidationCheck(DataValidationCheck):
 
     @property
     def error_view_builder(self) -> SimpleBigQueryViewBuilder:
-        # TODO(#8646): Build a way for view builders to depend on other view *builders*
-        #  so that we don't have to build the view query for the parent view while we
-        #  are constructing the builder for the error rows view here.
-        validation_view_query = self.view_builder.build().select_query
+        validation_view_query = (
+            self.view_builder.table_for_query.select_query_template()
+        )
 
         view_id = self.view_builder.view_id
         if self.validation_name_suffix is not None:
@@ -164,11 +164,13 @@ class SamenessDataValidationCheck(DataValidationCheck):
         return SimpleBigQueryViewBuilder(
             dataset_id=self.view_builder.dataset_id,
             view_id=f"{view_id}_errors",
-            view_query_template=ERROR_ROWS_VIEW_BUILDER_TEMPLATE,
+            view_query_template=StrictStringFormatter().format(
+                ERROR_ROWS_VIEW_BUILDER_TEMPLATE,
+                validation_view=validation_view_query,
+                validation_check=self.get_checker().get_validation_query_str(self),
+            ),
             description=self.view_builder.description,
-            validation_view=validation_view_query,
             should_materialize=True,
-            validation_check=self.get_checker().get_validation_query_str(self),
         )
 
     def updated_for_region(
