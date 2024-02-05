@@ -159,8 +159,14 @@ resource "google_iap_web_backend_service_iam_policy" "admin_panel_policy" {
   ]
 }
 
+# Service account used by auth0 actions
 data "google_service_account" "auth0_actions" {
   account_id = "auth0-actions-service-account"
+}
+
+# Service account used by recidiviz-dashboards node backend
+data "google_service_account" "dashboard_metrics" {
+  account_id = "dashboard-metrics-${var.project_id == "recidiviz-123" ? "production" : "staging"}"
 }
 
 resource "google_cloud_run_service_iam_member" "admin-panel-auth0-actions" {
@@ -169,4 +175,12 @@ resource "google_cloud_run_service_iam_member" "admin-panel-auth0-actions" {
   service  = google_cloud_run_service.admin_panel.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${data.google_service_account.auth0_actions.email}"
+}
+
+resource "google_cloud_run_service_iam_member" "admin-panel-dashboard-metrics" {
+  location = google_cloud_run_service.admin_panel.location
+  project  = google_cloud_run_service.admin_panel.project
+  service  = google_cloud_run_service.admin_panel.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${data.google_service_account.dashboard_metrics.email}"
 }
