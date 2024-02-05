@@ -291,4 +291,4 @@ output:
                         - ZSS # SUSPENDED SUPV PAROLE
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
-
+                        - 4EI # TODO(#27330): Adjust mapping based on actual definition
