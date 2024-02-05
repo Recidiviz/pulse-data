@@ -185,6 +185,7 @@ columns:
   - name: dental_id
   - name: dental_release_date
   - name: mental_health_id
+    description: Reference code for mental health status (links with ADH_REFERENCE_CODE)
   - name: mental_health_release_date
   - name: sa_file_review_employee_id
   - name: sa_file_review_date
