@@ -50,17 +50,15 @@ _QUERY_TEMPLATE = """
     QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderId, CAFDate ORDER BY CAST(ClassificationSequenceNumber AS INT64) DESC) = 1
 """
 
-VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
-    StateSpecificTaskCompletionEventBigQueryViewBuilder(
-        state_code=StateCode.US_TN,
-        completion_event_type=TaskCompletionEventType.ANNUAL_ASSESSMENT_COMPLETED,
-        description=_DESCRIPTION,
-        completion_event_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
-        ),
-    )
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
+    state_code=StateCode.US_TN,
+    completion_event_type=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
+    description=_DESCRIPTION,
+    completion_event_query_template=_QUERY_TEMPLATE,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
 )
 
 if __name__ == "__main__":
