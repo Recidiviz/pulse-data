@@ -24,10 +24,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_me import (
-    annual_assessment_completed,
+    incarceration_assessment_completed,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
-    classification_is_due,
+    past_incarceration_annual_classification_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -45,9 +45,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        classification_is_due.VIEW_BUILDER,
+        past_incarceration_annual_classification_date.VIEW_BUILDER,
     ],
-    completion_event_builder=annual_assessment_completed.VIEW_BUILDER,
+    completion_event_builder=incarceration_assessment_completed.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

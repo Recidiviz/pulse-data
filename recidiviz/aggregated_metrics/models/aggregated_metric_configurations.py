@@ -63,7 +63,7 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_collector i
 
 # List of incarceration-specific Workflows opportunities
 _TASK_TYPE_NAME_INCARCERATION = [
-    "ANNUAL_ASSESSMENT_COMPLETED",
+    "INCARCERATION_ASSESSMENT_COMPLETED",
     "CUSTODY_LEVEL_DOWNGRADE",
     "RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION",
     "RELEASE_TO_PAROLE",
