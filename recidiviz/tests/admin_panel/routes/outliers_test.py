@@ -17,31 +17,169 @@
 """Tests for insights-specific routes in admin_panel/routes/line_staff_tools.py"""
 
 
+import json
 from http import HTTPStatus
+from typing import Any, Dict, Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from flask import Blueprint, Flask
+import flask
+import pytest
+from flask import Flask
+from flask_smorest import Api
 
-from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
+from recidiviz.admin_panel.all_routes import admin_panel_blueprint
+from recidiviz.admin_panel.routes.outliers import outliers_blueprint
+from recidiviz.persistence.database.schema.outliers.schema import Configuration
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.outliers.querier_test import load_model_fixture
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
+@pytest.mark.uses_db
 class OutliersAdminPanelEndpointTests(TestCase):
     """Tests of our Flask endpoints"""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
     def setUp(self) -> None:
+        # Set up app
         self.app = Flask(__name__)
-        blueprint = Blueprint("outliers_test", __name__)
+        self.app.register_blueprint(admin_panel_blueprint)
+        api = Api(
+            self.app,
+            spec_kwargs={
+                "title": "default",
+                "version": "1.0.0",
+                "openapi_version": "3.1.0",
+            },
+        )
+        api.register_blueprint(outliers_blueprint, url_prefix="/admin/outliers")
         self.client = self.app.test_client()
 
-        add_line_staff_tools_routes(blueprint)
-        self.app.register_blueprint(blueprint)
+        self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
+
+        with self.app.test_request_context():
+            self.enabled_states = flask.url_for(
+                "outliers.EnabledStatesAPI",
+            )
+            self.configurations = flask.url_for(
+                "outliers.ConfigurationsAPI", state_code_str="US_PA"
+            )
+
+        # Set up database
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            for config in load_model_fixture(Configuration):
+                session.add(Configuration(**config))
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def tearDown(self) -> None:
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    ########
+    # GET /outliers/enabled_state_codes
+    ########
 
     @patch(
-        "recidiviz.admin_panel.routes.line_staff_tools.get_outliers_enabled_states",
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
     )
     def test_enabled_states(self, mock_enabled_states: MagicMock) -> None:
         mock_enabled_states.return_value = ["US_MI"]
-        response = self.client.get("/api/line_staff_tools/outliers/enabled_state_codes")
+
+        response = self.client.get(
+            self.enabled_states,
+            headers=self.headers,
+        )
+
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.json, [{"code": "US_MI", "name": "Michigan"}])
+
+    ########
+    # GET /outliers/<state_code_str>/configurations
+    ########
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_get_configurations(self, mock_enabled_states: MagicMock) -> None:
+        mock_enabled_states.return_value = ["US_PA"]
+        response = self.client.get(self.configurations, headers=self.headers)
+
+        expected = [
+            {
+                "featureVariant": None,
+                "id": 1,
+                "learnMoreUrl": "fake.com",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-26T13:30:00",
+                "updatedBy": "alexa@recidiviz.org",
+            },
+            {
+                "featureVariant": "fv2",
+                "id": 4,
+                "learnMoreUrl": "fake.com",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:03",
+                "updatedBy": "dana2@recidiviz.org",
+            },
+            {
+                "featureVariant": "fv1",
+                "id": 3,
+                "learnMoreUrl": "fake.com",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:02",
+                "updatedBy": "dana1@recidiviz.org",
+            },
+            {
+                "featureVariant": None,
+                "id": 2,
+                "learnMoreUrl": "fake.com",
+                "status": "INACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:01",
+                "updatedBy": "fake@recidiviz.org",
+            },
+        ]
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(json.loads(response.data), expected)

@@ -29,6 +29,7 @@ from werkzeug import Response
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
+from recidiviz.admin_panel.routes.outliers import outliers_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import users_blueprint
 from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
@@ -78,6 +79,7 @@ api = Api(
 app.register_blueprint(admin_panel_blueprint, url_prefix="/admin")
 app.register_blueprint(auth_endpoint_blueprint, url_prefix="/auth")
 app.register_blueprint(users_blueprint, url_prefix="/auth/users")
+app.register_blueprint(outliers_blueprint, url_prefix="/admin/outliers")
 
 if environment.in_development():
     # We set the project to recidiviz-staging
