@@ -436,7 +436,7 @@ WITH program_assignments_ongoing_for_X_months AS (
       pa.discharge_date as program_end_date,
       pa.program_id
   FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` pa
-  WHERE {date_diff_in_full_months(nonnull_end_date_clause('pa.discharge_date'), 'pa.start_date')} BETWEEN {x_months} AND {y_months}
+  WHERE {date_diff_in_full_months("IFNULL(pa.discharge_date, CURRENT_DATE('US/Pacific'))", 'pa.start_date')} BETWEEN {x_months} AND {y_months}
 ),
 probation_and_parole_sessions AS (
   -- Compartment sessions for probation, parole or DUAL
