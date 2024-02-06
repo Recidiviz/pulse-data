@@ -342,6 +342,12 @@ def _add_rows_for_super_agency(
     is_single_page_template: bool,
 ) -> List[Dict[str, str]]:
     """Updates rows with a `agency` column for super agency templates."""
+
+    if len(child_agencies) == 0:
+        # If an agency is provisioned without super agencies,
+        # do not add an agency column in the template
+        return rows
+
     new_rows: List[Dict[str, str]] = []
     for row in rows:
         if is_single_page_template is True:
