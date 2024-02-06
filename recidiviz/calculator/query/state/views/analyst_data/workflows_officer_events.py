@@ -190,6 +190,15 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         has_status=False,
         should_get_context_page=False,
     ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_milestones_congratulations_sent",
+        officer_event_name=EventType.WORKFLOWS_ACTION,
+        workflows_event_type="MILESTONES_CONGRATULATIONS_SENT",
+        has_person_external_id=True,
+        has_opportunity_type=False,
+        has_status=False,
+        should_get_context_page=False,
+    ),
 ]
 
 
