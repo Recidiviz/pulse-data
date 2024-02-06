@@ -2,6 +2,7 @@
 file_tag: ADH_OFFENDER_SCHEDULE
 file_description: OMNI table that records tasks that should be completed for each JII in the MDOC system
 data_classification: source
+always_historical_export: False
 primary_key_cols:
   - offender_schedule_id
 columns:
