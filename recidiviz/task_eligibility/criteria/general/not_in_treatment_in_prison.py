@@ -40,6 +40,7 @@ SELECT
 FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
 WHERE compartment_level_1 = 'INCARCERATION'
   AND compartment_level_2 = 'TREATMENT_IN_PRISON'
+  AND start_date != end_date
 GROUP BY 1,2,3,4
 """
 
