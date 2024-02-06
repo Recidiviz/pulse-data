@@ -915,3 +915,10 @@ class TestOutliersQuerier(TestCase):
                     )
                 ]
             )
+
+    def test_get_configurations(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_configurations()
+        print(result)
+
+        self.assertListEqual([config.id for config in result], [1, 4, 3, 2])

@@ -1,5 +1,5 @@
 id,updated_by,updated_at,status,feature_variant,supervision_officer_label,supervision_district_label,supervision_unit_label,supervision_supervisor_label,supervision_district_manager_label,supervision_jii_label,learn_more_url
-1,alexa@recidiviz.org,2024-01-26,ACTIVE,,officer,district,unit,supervisor,district manager,client,fake.com
-2,fake@recidiviz.org,2024-01-01,INACTIVE,,officer,district,unit,supervisor,district manager,client,fake.com
-3,dana1@recidiviz.org,2024-01-01,ACTIVE,fv1,officer,district,unit,supervisor,district manager,client,fake.com
-4,dana2@recidiviz.org,2024-01-01,ACTIVE,fv2,officer,district,unit,supervisor,district manager,client,fake.com
+1,alexa@recidiviz.org,2024-01-26 13:30:00,ACTIVE,,officer,district,unit,supervisor,district manager,client,fake.com
+2,fake@recidiviz.org,2024-01-01 13:30:01,INACTIVE,,officer,district,unit,supervisor,district manager,client,fake.com
+3,dana1@recidiviz.org,2024-01-01 13:30:02,ACTIVE,fv1,officer,district,unit,supervisor,district manager,client,fake.com
+4,dana2@recidiviz.org,2024-01-01 13:30:03,ACTIVE,fv2,officer,district,unit,supervisor,district manager,client,fake.com

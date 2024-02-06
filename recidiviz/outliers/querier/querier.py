@@ -1055,3 +1055,20 @@ class OutliersQuerier:
             ).one()
 
             return default_config
+
+    def get_configurations(
+        self,
+    ) -> List[Configuration]:
+        """
+        Gets all of the Configuration database entities for the state in reverse
+        time order.
+        """
+        with self.database_session() as session:
+            # Get all configurations
+            configs = (
+                session.query(Configuration)
+                .order_by(Configuration.updated_at.desc())
+                .all()
+            )
+
+            return configs
