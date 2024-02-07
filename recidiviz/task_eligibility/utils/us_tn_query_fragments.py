@@ -30,8 +30,11 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 
 # TODO(#20870) - Deprecate this in favor of better long term solution to excluding these levels
+# These are DRC (Day Reporting Centers) and PSU (Sex Offense Unit) supervision levels that we map to Medium/High, but
+# that are usually excluded from various supervision side opportunities like compliant reporting, downgrades based on
+# risk assessments, etc
 EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "6P4", "3D3"]
-EXCLUDED_HIGH_RAW_TEXT = ["2D2"]
+EXCLUDED_HIGH_RAW_TEXT = ["1D1", "2D2"]
 
 
 def detainers_cte() -> str:
