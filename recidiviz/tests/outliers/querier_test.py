@@ -102,6 +102,11 @@ TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     body_display_name="incarceration rate",
     event_name="incarcerations",
     event_name_singular="incarceration",
+    event_name_past_tense="were incarcerated",
+    description_markdown="""Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
 )
 
 TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
@@ -110,6 +115,7 @@ TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
     body_display_name="Limited Supervision Unit transfer rate(s)",
     event_name="LSU transfers",
     event_name_singular="LSU transfer",
+    event_name_past_tense="were transferred to LSU",
 )
 
 TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
@@ -118,6 +124,7 @@ TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
     body_display_name="absconsion rate",
     event_name="absconsions",
     event_name_singular="absconsion",
+    event_name_past_tense="absconded",
 )
 
 TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
@@ -299,6 +306,11 @@ class TestOutliersQuerier(TestCase):
                         "body_display_name": "incarceration rate",
                         "event_name": "incarcerations",
                         "event_name_singular": "incarceration",
+                        "event_name_past_tense": "were incarcerated",
+                        "description_markdown": """Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
                     },
                     {
                         "name": "task_completions_transfer_to_limited_supervision",
@@ -307,6 +319,8 @@ class TestOutliersQuerier(TestCase):
                         "body_display_name": "Limited Supervision Unit transfer rate(s)",
                         "event_name": "LSU transfers",
                         "event_name_singular": "LSU transfer",
+                        "event_name_past_tense": "were transferred to LSU",
+                        "description_markdown": None,
                     },
                 ],
                 "recipient_email_address": "manager3@recidiviz.org",
@@ -322,6 +336,8 @@ class TestOutliersQuerier(TestCase):
                             "body_display_name": "Limited Supervision Unit transfer rate(s)",
                             "event_name": "LSU transfers",
                             "event_name_singular": "LSU transfer",
+                            "event_name_past_tense": "were transferred to LSU",
+                            "description_markdown": None,
                         },
                         "target": 0.008,
                         "other_officers": {
@@ -356,6 +372,11 @@ class TestOutliersQuerier(TestCase):
                         "body_display_name": "incarceration rate",
                         "event_name": "incarcerations",
                         "event_name_singular": "incarceration",
+                        "event_name_past_tense": "were incarcerated",
+                        "description_markdown": """Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
                     }
                 ],
                 "recipient_email_address": "supervisor2@recidiviz.org",
@@ -374,6 +395,11 @@ class TestOutliersQuerier(TestCase):
                             "body_display_name": "incarceration rate",
                             "event_name": "incarcerations",
                             "event_name_singular": "incarceration",
+                            "event_name_past_tense": "were incarcerated",
+                            "description_markdown": """Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
                         },
                         "target": 0.13,
                         "other_officers": {
@@ -422,6 +448,8 @@ class TestOutliersQuerier(TestCase):
                         "body_display_name": "Limited Supervision Unit transfer rate(s)",
                         "event_name": "LSU transfers",
                         "event_name_singular": "LSU transfer",
+                        "event_name_past_tense": "were transferred to LSU",
+                        "description_markdown": None,
                     }
                 ],
                 "recipient_email_address": "supervisor1@recidiviz.org",

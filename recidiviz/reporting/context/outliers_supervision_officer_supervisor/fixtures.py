@@ -43,6 +43,7 @@ metric_fixtures = {
         body_display_name="incarceration rate",
         event_name="incarcerations",
         event_name_singular="incarceration",
+        event_name_past_tense="were incarcerated",
     ),
     ABSCONSIONS_BENCH_WARRANTS: OutliersMetricConfig.build_from_metric(
         metric=ABSCONSIONS_BENCH_WARRANTS,
@@ -50,6 +51,7 @@ metric_fixtures = {
         body_display_name="absconsion rate",
         event_name="absconsions",
         event_name_singular="absconsion",
+        event_name_past_tense="absconded",
     ),
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE: OutliersMetricConfig.build_from_metric(
         metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
@@ -57,6 +59,7 @@ metric_fixtures = {
         body_display_name="successful completion rate",
         event_name="successful completions",
         event_name_singular="successful completion",
+        event_name_past_tense="successfully completed",
     ),
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION: OutliersMetricConfig.build_from_metric(
         metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
@@ -64,6 +67,7 @@ metric_fixtures = {
         body_display_name="Limited Supervision Unit transfer rate",
         event_name="LSU transfers",
         event_name_singular="LSU transfer",
+        event_name_past_tense="transferred to LSU",
     ),
     EARLY_DISCHARGE_REQUESTS: OutliersMetricConfig.build_from_metric(
         metric=EARLY_DISCHARGE_REQUESTS,
@@ -71,6 +75,7 @@ metric_fixtures = {
         body_display_name="earned discharge request rate",
         event_name="earned discharge requests",
         event_name_singular="earned discharge request",
+        event_name_past_tense="requested earned discharge",
     ),
     INCARCERATION_STARTS_TECHNICAL_VIOLATION: OutliersMetricConfig.build_from_metric(
         metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
@@ -78,6 +83,7 @@ metric_fixtures = {
         body_display_name="technical incarceration rate",
         event_name="technical incarcerations",
         event_name_singular="technical incarceration",
+        event_name_past_tense="had a technical incarceration",
     ),
 }
 

@@ -65,6 +65,11 @@ TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     body_display_name="incarceration rate",
     event_name="incarcerations",
     event_name_singular="incarceration",
+    event_name_past_tense="were incarcerated",
+    description_markdown="""Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
 )
 
 TEST_CLIENT_EVENT = OutliersClientEventConfig.build(
@@ -198,6 +203,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             client_events=[TEST_CLIENT_EVENT],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
+            none_are_outliers_label="are outliers on any metrics",
         )
 
         response = self.test_client.get(
@@ -213,17 +219,24 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         "bodyDisplayName": "incarceration rate",
                         "eventName": "incarcerations",
                         "eventNameSingular": "incarceration",
+                        "eventNamePastTense": "were incarcerated",
                         "name": "incarceration_starts_and_inferred",
                         "outcomeType": "ADVERSE",
                         "titleDisplayName": "Incarceration Rate (CPVs & TPVs)",
+                        "descriptionMarkdown": """Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
                     },
                     {
                         "bodyDisplayName": "absconsion rate",
                         "eventName": "absconsions",
                         "eventNameSingular": "absconsion",
+                        "eventNamePastTense": "absconded",
                         "name": "absconsions_bench_warrants",
                         "outcomeType": "ADVERSE",
                         "titleDisplayName": "Absconsion Rate",
+                        "descriptionMarkdown": None,
                     },
                 ],
                 "clientEvents": [
@@ -235,6 +248,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 "supervisionOfficerLabel": "officer",
                 "supervisionSupervisorLabel": "supervisor",
                 "supervisionUnitLabel": "unit",
+                "noneAreOutliersLabel": "are outliers on any metrics",
+                "worseThanRateLabel": "worse",
+                "exclusionReasonDescription": None,
             }
         }
 
