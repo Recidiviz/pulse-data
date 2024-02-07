@@ -20,9 +20,10 @@ from datetime import date
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_database_entity_by_table_name,
-    get_state_table_classes,
 )
 from recidiviz.validation.views.state.stable_counts.entity_by_column_count_stable_counts import (
     exemptions_string_builder,
@@ -37,7 +38,9 @@ class TestStableCountsValidations(unittest.TestCase):
     are valid"""
 
     def test_valid_expected_entities(self) -> None:
-        found_tables = [key.name for key in get_state_table_classes()]
+        found_tables = [
+            key.name for key in get_all_table_classes_in_schema(SchemaType.STATE)
+        ]
         for entity, _ in ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME.items():
             self.assertIn(entity, found_tables)
 

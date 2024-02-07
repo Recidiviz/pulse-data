@@ -36,8 +36,8 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_database_entities_by_association_table,
-    get_state_table_classes,
     is_association_table,
 )
 from recidiviz.persistence.entity.base_entity import RootEntity
@@ -83,7 +83,7 @@ from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQue
 def get_pipeline_output_tables(expected_output_entities: Set[str]) -> Set[str]:
     """Returns the set of tables that the pipeline will output to."""
     expected_output_tables: Set[str] = set()
-    for table in get_state_table_classes():
+    for table in get_all_table_classes_in_schema(SchemaType.STATE):
         if is_association_table(table.name):
             parent_member, child_member = get_database_entities_by_association_table(
                 state_schema, table.name

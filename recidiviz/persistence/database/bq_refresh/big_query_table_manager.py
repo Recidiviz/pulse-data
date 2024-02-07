@@ -35,7 +35,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     is_association_table,
     schema_has_region_code_query_support,
-    schema_type_to_schema_base,
 )
 
 
@@ -46,7 +45,7 @@ def bq_schema_for_sqlalchemy_table(
     to any association table.
     """
     add_state_code_field = schema_has_region_code_query_support(
-        schema_type_to_schema_base(schema_type)
+        schema_type
     ) and is_association_table(table.name)
 
     return schema_for_sqlalchemy_table(table, add_state_code_field=add_state_code_field)

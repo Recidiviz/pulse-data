@@ -70,8 +70,8 @@ BQ_TYPES = {
 
 
 def get_all_table_classes() -> Iterator[Table]:
-    for module in _SCHEMA_MODULES:
-        yield from get_all_table_classes_in_module(module)
+    for schema_type in SchemaType:
+        yield from get_all_table_classes_in_schema(schema_type)
 
 
 def get_foreign_key_constraints(table: Table) -> List[ForeignKeyConstraint]:
@@ -82,73 +82,40 @@ def get_foreign_key_constraints(table: Table) -> List[ForeignKeyConstraint]:
     ]
 
 
-def get_table_class_by_name(table_name: str, tables: List[Table]) -> Table:
+def get_table_class_by_name(table_name: str, schema_type: SchemaType) -> Table:
     """Return a Table class object by its table_name"""
-    for table in tables:
+    for table in get_all_table_classes_in_schema(schema_type):
         if table.name == table_name:
             return table
     raise ValueError(f"{table_name}: Table name not found in list of tables.")
 
 
-def get_region_code_col(metadata_base: DeclarativeMeta, table: Table) -> str:
-    if metadata_base == StateBase:
+def get_region_code_col(schema_type: SchemaType, table: Table) -> str:
+    if schema_type is SchemaType.STATE:
         if hasattr(table.c, "state_code") or is_association_table(table.name):
             return "state_code"
-    if metadata_base == OperationsBase:
+    if schema_type is SchemaType.OPERATIONS:
         if hasattr(table.c, "region_code"):
             return "region_code"
     raise ValueError(f"Unexpected table is missing a region code field: [{table.name}]")
 
 
-def schema_has_region_code_query_support(metadata_base: DeclarativeMeta) -> bool:
+def schema_has_region_code_query_support(schema_type: SchemaType) -> bool:
     """NOTE: The CloudSQL -> BQ refresh must run once without any filtered region codes for each newly added SchemaType.
     This ensures the region_code column is added to tables that are missing it before a query tries to
     filter for that column.
     """
-    return metadata_base in (StateBase, OperationsBase)
+    return schema_type in (SchemaType.STATE, SchemaType.OPERATIONS)
 
 
 def is_association_table(table_name: str) -> bool:
     return table_name.endswith("_association")
 
 
-def get_all_table_classes_in_module(module: ModuleType) -> Iterator[Type[Table]]:
-    all_members_in_current_module = inspect.getmembers(sys.modules[module.__name__])
-    for _, member in all_members_in_current_module:
-        if isinstance(member, Table):
-            yield member
-        elif _is_database_entity_subclass(member):
-            if "__tablename__" in member.__dict__:
-                # When using SQLAlchemy's single table inheritance (https://docs.sqlalchemy.org/en/14/orm/inheritance.html#single-table-inheritance)
-                # we define a class in our schema that extends from another class, and will look like its own table,
-                # but is actually not. Instances of this subclass will actually exist as rows in the parent class's table.
-                # The way we can distinguish this case is that the subclass does not have a "__tablename__" attribute.
-                yield member.__table__
-
-
-def get_justice_counts_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(justice_counts_schema)
-
-
-def get_state_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(state_schema)
-
-
-def get_state_entity_names() -> Iterator[str]:
-    for state_table_class in get_all_table_classes_in_module(state_schema):
-        yield state_table_class.name
-
-
-def get_operations_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(operations_schema)
-
-
-def get_case_triage_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(case_triage_schema)
-
-
-def get_pathways_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(pathways_schema)
+def get_all_table_classes_in_schema(schema_type: SchemaType) -> Iterator[Table]:
+    metadata_base = schema_type_to_schema_base(schema_type)
+    for table in metadata_base.metadata.sorted_tables:
+        yield table
 
 
 def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:
@@ -157,10 +124,6 @@ def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:
 
 def get_outliers_database_entities() -> List[Type[DatabaseEntity]]:
     return list(get_all_database_entities_in_module(outliers_schema))
-
-
-def get_outliers_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(outliers_schema)
 
 
 def get_state_database_entities() -> List[Type[DatabaseEntity]]:
@@ -241,12 +204,12 @@ def _is_database_entity_subclass(member: Any) -> bool:
         inspect.isclass(member)
         and issubclass(member, DatabaseEntity)
         and member is not DatabaseEntity
-        and member is not JusticeCountsBase
-        and member is not StateBase
-        and member is not OperationsBase
-        and member is not CaseTriageBase
-        and member is not PathwaysBase
-        and member is not OutliersBase
+        and (
+            member
+            not in (
+                schema_type_to_schema_base(schema_type) for schema_type in SchemaType
+            )
+        )
     )
 
 

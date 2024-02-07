@@ -42,9 +42,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
 from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_pathways_database_entities,
-    get_pathways_table_classes,
 )
 
 dimension_possible_values: Dict[str, Sequence] = {
@@ -361,7 +362,7 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         type=str,
         choices=[
             table.name
-            for table in get_pathways_table_classes()
+            for table in get_all_table_classes_in_schema(SchemaType.PATHWAYS)
             if not table.name.endswith("projection")
         ],
         nargs="*",

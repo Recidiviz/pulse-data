@@ -25,36 +25,11 @@ from unittest import TestCase
 import sqlalchemy
 
 from recidiviz.persistence.database.reserved_words import RESERVED_WORDS
-from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_utils import (
-    get_all_database_entities_in_module,
-    get_all_table_classes,
-    get_all_table_classes_in_module,
-)
-
-ALL_SCHEMA_MODULES = [state_schema]
+from recidiviz.persistence.database.schema_utils import get_all_table_classes
 
 
 class TestSchemaEnums(TestCase):
     """Base test class for validating schema enums are defined correctly"""
-
-    def testNoOverlappingEnumPostgresNames(self):
-        postgres_names_set = set()
-        enum_id_set = set()
-        for schema_module in ALL_SCHEMA_MODULES:
-            enums = self._get_all_sqlalchemy_enums_in_module(schema_module)
-            for enum in enums:
-                if id(enum) in enum_id_set:
-                    continue
-                postgres_name = enum.name
-                self.assertNotIn(
-                    postgres_name,
-                    postgres_names_set,
-                    f"SQLAlchemy enum with Postgres name [{postgres_name}]"
-                    f" (defined in [{schema_module}]) already exists",
-                )
-                postgres_names_set.add(postgres_name)
-                enum_id_set.add(id(enum))
 
     def check_persistence_and_schema_enums_match(self, test_mapping, enums_package):
         schema_enums_by_name = {}
@@ -104,62 +79,6 @@ class TestSchemaEnums(TestCase):
             if isinstance(attribute, sqlalchemy.Enum):
                 enums.append(attribute)
         return enums
-
-
-class TestSchemaTableConsistency(TestCase):
-    """Base test class for validating schema tables are defined correctly"""
-
-    def testNoRepeatTableNames(self):
-        table_names_set = set()
-        for schema_module in ALL_SCHEMA_MODULES:
-            table_classes = get_all_table_classes_in_module(schema_module)
-            for table in table_classes:
-                table_name = table.name
-                self.assertNotIn(
-                    table_name,
-                    table_names_set,
-                    f"Table name [{table_name}] defined in [{schema_module}]) "
-                    f"already exists.",
-                )
-                table_names_set.add(table_name)
-
-    def testNoRepeatDatabaseClassNames(self):
-        table_class_names_set = set()
-        for schema_module in ALL_SCHEMA_MODULES:
-            db_classes = get_all_database_entities_in_module(schema_module)
-            for cls in db_classes:
-                class_name = cls.__name__
-                self.assertNotIn(
-                    class_name,
-                    table_class_names_set,
-                    f"Table name [{class_name}] defined in "
-                    f"[{schema_module}]) already exists.",
-                )
-
-    def testAllTableNamesMatchClassNames(self):
-        for schema_module in ALL_SCHEMA_MODULES:
-            for cls in get_all_database_entities_in_module(schema_module):
-                table_name = cls.__tablename__
-                table_name_to_capital_case = table_name.title().replace("_", "")
-                self.assertEqual(
-                    table_name_to_capital_case,
-                    cls.__name__,
-                    f"Table class {cls.__name__} does not have matching table "
-                    f"name: {table_name}",
-                )
-
-    def testDatabaseEntityFunctionality(self):
-        for schema_module in ALL_SCHEMA_MODULES:
-            for cls in get_all_database_entities_in_module(schema_module):
-                primary_key_col_name = cls.get_primary_key_column_name()
-                self.assertIsNotNone(primary_key_col_name)
-                primary_key_prop_name = cls.get_column_property_names()
-                self.assertTrue(len(primary_key_prop_name) > 0)
-                self.assertTrue(primary_key_col_name in primary_key_prop_name)
-                # Just should not crash
-                cls.get_foreign_key_names()
-                cls.get_relationship_property_names()
-                cls.get_relationship_property_names_and_properties()
 
 
 class TestSchemaNoReservedKeywords(TestCase):

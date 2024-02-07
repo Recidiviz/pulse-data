@@ -46,17 +46,17 @@ class SchemaTableRegionFilteredQueryBuilder:
 
         Usage:
             # Returns a query that selects all columns to include from table.
-            QueryBuilder(metadata_base, table, columns_to_include).full_query()
-            QueryBuilder(metadata_base, table, columns_to_include, region_codes_to_exclude=[]).full_query()
+            QueryBuilder(schema_type, table, columns_to_include).full_query()
+            QueryBuilder(schema_type, table, columns_to_include, region_codes_to_exclude=[]).full_query()
 
             # Returns a query that will return zero rows.
-            QueryBuilder(metadata_base, table, columns_to_include, region_codes_to_include=[]).full_query()
+            QueryBuilder(schema_type, table, columns_to_include, region_codes_to_include=[]).full_query()
 
             # Returns a query that will return rows matching the provided region_codes
-            QueryBuilder(metadata_base, table, columns_to_include, region_codes_to_include=['US_ND']).full_query()
+            QueryBuilder(schema_type, table, columns_to_include, region_codes_to_include=['US_ND']).full_query()
 
             # Returns a query that will return rows that do NOT match the provided region codes
-            QueryBuilder(metadata_base, table, columns_to_include, region_codes_to_exclude=['US_ID']).full_query()
+            QueryBuilder(schema_type, table, columns_to_include, region_codes_to_exclude=['US_ID']).full_query()
     """
 
     def __init__(
@@ -98,10 +98,10 @@ class SchemaTableRegionFilteredQueryBuilder:
         return bool(self.region_codes_to_include or self.region_codes_to_exclude)
 
     def _get_region_code_col(self) -> Optional[str]:
-        if not schema_has_region_code_query_support(self.metadata_base):
+        if not schema_has_region_code_query_support(self.schema_type):
             return None
         table = self._get_region_code_table()
-        return get_region_code_col(self.metadata_base, table)
+        return get_region_code_col(self.schema_type, table)
 
     def _get_region_code_table(self) -> Table:
         if self._join_to_get_region_code():
@@ -120,7 +120,7 @@ class SchemaTableRegionFilteredQueryBuilder:
     def _get_association_join_table(self) -> Table:
         constraint = self._get_association_foreign_key_constraint()
         join_table = get_table_class_by_name(
-            constraint.referred_table.name, self.sorted_tables
+            constraint.referred_table.name, self.schema_type
         )
         return join_table
 
@@ -135,7 +135,7 @@ class SchemaTableRegionFilteredQueryBuilder:
     def select_clause(self) -> str:
         formatted_columns = self._formatted_columns_for_select_clause()
 
-        if schema_has_region_code_query_support(self.metadata_base):
+        if schema_has_region_code_query_support(self.schema_type):
             region_code_col = self._get_region_code_col()
             if region_code_col not in self.columns_to_include:
                 region_code_table = self._get_region_code_table()
@@ -240,7 +240,7 @@ class BaseCloudSqlSchemaTableRegionFilteredQueryBuilder(
 
     def _join_to_get_region_code(self) -> bool:
         return schema_has_region_code_query_support(
-            self.metadata_base
+            self.schema_type
         ) and is_association_table(self.table_name)
 
 

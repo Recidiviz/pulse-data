@@ -39,9 +39,9 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_entities_to_schema,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_association_with_names,
-    get_state_table_classes,
     get_table_class_by_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -476,9 +476,7 @@ def bq_schema_for_normalized_state_entity(
 
     return (
         schema_for_sqlalchemy_table(
-            get_table_class_by_name(
-                base_schema_class.__tablename__, list(get_state_table_classes())
-            )
+            get_table_class_by_name(base_schema_class.__tablename__, SchemaType.STATE)
         )
         + schema_fields_for_additional_fields
     )
