@@ -343,11 +343,6 @@ def _add_rows_for_super_agency(
 ) -> List[Dict[str, str]]:
     """Updates rows with a `agency` column for super agency templates."""
 
-    if len(child_agencies) == 0:
-        # If an agency is provisioned without super agencies,
-        # do not add an agency column in the template
-        return rows
-
     new_rows: List[Dict[str, str]] = []
     for row in rows:
         if is_single_page_template is True:
@@ -356,24 +351,44 @@ def _add_rows_for_super_agency(
             month = row.pop("month")
             # Columns will be `metric`, `year`, `month`, `agency`,
             # `system`, `breakdown_category`, `breakdown`, `value`
-            for agency in child_agencies:
+            if len(child_agencies) > 0:
+                for agency in child_agencies:
+                    new_rows.append(
+                        {
+                            "metric": metric,
+                            "year": year,
+                            "month": month,
+                            "agency": agency.name,
+                            **row,
+                        }
+                    )
+            else:
                 new_rows.append(
                     {
                         "metric": metric,
                         "year": year,
                         "month": month,
-                        "agency": agency.name,
+                        "agency": "",
                         **row,
                     }
                 )
         else:
             row.pop("value")  # move last column
             # Columns will be `year`, `month`, `agency`, `value`
-            for agency in child_agencies:
+            if len(child_agencies) > 0:
+                for agency in child_agencies:
+                    new_rows.append(
+                        {
+                            **row,
+                            "agency": agency.name,
+                            "value": "",
+                        }
+                    )
+            else:
                 new_rows.append(
                     {
                         **row,
-                        "agency": agency.name,
+                        "agency": "",
                         "value": "",
                     }
                 )
