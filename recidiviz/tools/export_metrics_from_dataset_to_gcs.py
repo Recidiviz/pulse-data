@@ -49,17 +49,13 @@ from recidiviz.view_registry.address_overrides_factory import (
 
 
 def export_metrics_from_dataset_to_gcs(
-    project_id: str,
-    export_name: str,
-    state_code: Optional[str],
-    sandbox_dataset_prefix: Optional[str],
+    export_name: str, state_code: Optional[str], sandbox_dataset_prefix: Optional[str]
 ) -> None:
     """Exports metric files into a sandbox GCS bucket."""
     sandbox_address_overrides = None
     if sandbox_dataset_prefix:
         sandbox_address_overrides = address_overrides_for_deployed_view_datasets(
-            project_id=project_id,
-            view_dataset_override_prefix=sandbox_dataset_prefix,
+            view_dataset_override_prefix=sandbox_dataset_prefix
         )
 
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
@@ -132,7 +128,6 @@ if __name__ == "__main__":
         )
 
         export_metrics_from_dataset_to_gcs(
-            known_args.project_id,
             known_args.export_name,
             known_args.state_code,
             known_args.sandbox_dataset_prefix,

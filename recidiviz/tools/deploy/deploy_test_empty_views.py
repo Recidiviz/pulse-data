@@ -61,16 +61,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
-def deploy_test_empty_views(
-    project_id: str,
-) -> None:
+def deploy_test_empty_views() -> None:
     """Deploys a temporary "test" version of all views on top
     of empty source tables to test for query compilation errors.
     """
 
-    view_builders_to_update: Sequence[BigQueryViewBuilder] = deployed_view_builders(
-        project_id
-    )
+    view_builders_to_update: Sequence[BigQueryViewBuilder] = deployed_view_builders()
 
     test_dataset_prefix = f"deploy_{str(uuid.uuid4())[:6]}"
     logging.info("Creating view tree with prefix: '%s'", test_dataset_prefix)
@@ -110,9 +106,7 @@ if __name__ == "__main__":
 
     with local_project_id_override(known_args.project_id):
         interactive_prompt_retry_on_exception(
-            fn=lambda: deploy_test_empty_views(
-                known_args.project_id,
-            ),
+            fn=deploy_test_empty_views,
             input_text="failed to deploy all views - retry?",
             accepted_response_override="yes",
             exit_on_cancel=False,

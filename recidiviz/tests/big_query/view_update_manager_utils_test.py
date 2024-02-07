@@ -230,6 +230,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
+        self.bq_client_patcher.stop()
 
     def test_get_managed_views_for_dataset_map_empty_list(self) -> None:
         # Arrange

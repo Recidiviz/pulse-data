@@ -27,6 +27,16 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.union_all_big_query_view_builder import (
+    UnionAllBigQueryViewBuilder,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    raw_data_pruning_enabled_in_state_and_instance,
+)
+from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
+    DirectIngestRawDataTableLatestViewBuilder,
+)
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
@@ -34,6 +44,7 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     GCP_PROJECTS,
 )
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
@@ -44,9 +55,103 @@ from recidiviz.view_registry.deployed_views import (
 class DeployedViewsTest(unittest.TestCase):
     """Tests the deployed views configuration"""
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
-    )
+    def test_view_builders_can_be_collected_without_a_project_id_set(self) -> None:
+        """Tests that view *builder* collection should not crash when there is no
+        metadata.project_id() value configured.
+        """
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"May not be called from test, should this have a local override\?",
+        ):
+            # Confirm that no project id is set before we run the actual test.
+            project_id = metadata.project_id()
+            raise ValueError(
+                f"Found project_id [{project_id}] when no project_id should be set "
+                f"for this test."
+            )
+        _ = all_deployed_view_builders()
+
+    def test_view_builders_do_not_change_between_projects(self) -> None:
+        """Tests that if view builders are collected when a project_id is set, the list
+        of builders does not differ between projects, nor do the query templates of the
+        built views.
+        """
+        with local_project_id_override(GCP_PROJECT_STAGING):
+            staging_builders = {b.address: b for b in all_deployed_view_builders()}
+        self.assertGreater(len(staging_builders), 0)
+
+        with local_project_id_override(GCP_PROJECT_PRODUCTION):
+            prod_builders = {b.address: b for b in all_deployed_view_builders()}
+        self.assertGreater(len(prod_builders), 0)
+
+        staging_builder_addresses = set(staging_builders)
+        prod_builder_addresses = set(prod_builders)
+        if staging_not_prod := staging_builder_addresses - prod_builder_addresses:
+            raise ValueError(
+                f"Found view builders that are returned only in staging. The list of"
+                f"builders / addresses should be the same across projects. "
+                f"Staging-only addresses: {staging_not_prod}"
+            )
+
+        if prod_not_staging := prod_builder_addresses - staging_builder_addresses:
+            raise ValueError(
+                f"Found view builders that are returned only in prod. The list of"
+                f"builders / addresses should be the same across projects. "
+                f"Prod-only addresses: {prod_not_staging}"
+            )
+
+        for address, staging_builder in staging_builders.items():
+            prod_builder = prod_builders[address]
+
+            if staging_builder.__class__ != prod_builder.__class__:
+                raise ValueError(
+                    f"Builders for {address.to_str()} have different types between "
+                    f"projects. Staging type: [{staging_builder.__class__}]. Prod "
+                    f"type: [{staging_builder.__class__}]."
+                )
+
+            # Make sure the builder builds for either project
+            with local_project_id_override(GCP_PROJECT_STAGING):
+                staging_view = staging_builder.build()
+            with local_project_id_override(GCP_PROJECT_PRODUCTION):
+                prod_view = prod_builder.build()
+
+            # Skip the check for identical templates for UnionAllBigQueryViewBuilders.
+            # We expect the list of parent views unioned together by these builders
+            # to vary by project, so the view template may change.
+            if isinstance(staging_builder, UnionAllBigQueryViewBuilder):
+                continue
+
+            # Skip the check for identical templates on latest views where raw data
+            # pruning gating is different between projects. That feature flag helps
+            # determine the latest view query structure.
+            # TODO(#12390): Delete once raw data pruning is live and the pruning feature
+            #  gate can be deleted.
+            if isinstance(staging_builder, DirectIngestRawDataTableLatestViewBuilder):
+                state_code = StateCode(staging_builder.region_code.upper())
+                instance = staging_builder.raw_data_source_instance
+                with local_project_id_override(GCP_PROJECT_STAGING):
+                    staging_is_pruning_enabled = (
+                        raw_data_pruning_enabled_in_state_and_instance(
+                            state_code, instance
+                        )
+                    )
+                with local_project_id_override(GCP_PROJECT_PRODUCTION):
+                    prod_is_pruning_enabled = (
+                        raw_data_pruning_enabled_in_state_and_instance(
+                            state_code, instance
+                        )
+                    )
+                if staging_is_pruning_enabled != prod_is_pruning_enabled:
+                    continue
+
+            self.assertEqual(
+                staging_view.view_query_template,
+                prod_view.view_query_template,
+                f"Found view [{address.to_str()}] whose view template differs between "
+                f"projects",
+            )
+
     def test_unique_addresses(self) -> None:
         view_addresses: Dict[BigQueryAddress, BigQueryViewBuilder] = {}
         for view_builder in all_deployed_view_builders():
@@ -72,33 +177,6 @@ class DeployedViewsTest(unittest.TestCase):
                 )
 
             self.fail(f"Two different view builders defined with address [{address}].")
-
-    @patch(
-        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
-    )
-    def test_deployed_views(self) -> None:
-        all_view_builders = all_deployed_view_builders()
-        staging_view_builders = deployed_view_builders(GCP_PROJECT_STAGING)
-        prod_view_builders = deployed_view_builders(GCP_PROJECT_PRODUCTION)
-
-        self.assertGreater(len(all_view_builders), 0)
-
-        combined_view_builder_view_ids = {
-            builder.view_id for builder in staging_view_builders + prod_view_builders
-        }
-
-        all_view_builder_view_ids = {builder.view_id for builder in all_view_builders}
-
-        self.assertSetEqual(
-            combined_view_builder_view_ids,
-            all_view_builder_view_ids,
-        )
-
-        self.assertGreater(len(staging_view_builders), 0)
-        self.assertLessEqual(len(staging_view_builders), len(all_view_builders))
-
-        self.assertGreater(len(prod_view_builders), 0)
-        self.assertLessEqual(len(prod_view_builders), len(all_view_builders))
 
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
@@ -130,16 +208,16 @@ class DeployedViewsTest(unittest.TestCase):
             if view.materialized_address:
                 _ = view.materialized_table_bq_description
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
-    )
     def test_views_have_valid_parents(self) -> None:
         for project_id in GCP_PROJECTS:
-            views = build_views_to_update(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=deployed_view_builders(project_id),
-                address_overrides=None,
-            )
+            with local_project_id_override(project_id):
+                candidate_view_builders = deployed_view_builders()
+
+                views = build_views_to_update(
+                    view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                    candidate_view_builders=candidate_view_builders,
+                    address_overrides=None,
+                )
             view_addresses = set()
             for view in views:
                 view_addresses.add(view.address)
@@ -165,14 +243,13 @@ class DeployedViewsTest(unittest.TestCase):
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456")
     )
     def test_table_references_conform_to_expected_format(self) -> None:
-        project_id = "recidiviz-456"
         regex = re.compile(
             r"(?P<leading_char>.)recidiviz-456\.(?P<dataset_id>[\w-]*)\.(?P<table_id>[\w-]*)(?P<trailing_char>.?)"
         )
 
         views = build_views_to_update(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            candidate_view_builders=deployed_view_builders(project_id),
+            candidate_view_builders=deployed_view_builders(),
             address_overrides=None,
         )
         for view in views:
@@ -197,7 +274,7 @@ class ViewDagInvariantTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-456"):
-            view_builders = deployed_view_builders(metadata.project_id())
+            view_builders = deployed_view_builders()
             views = build_views_to_update(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 candidate_view_builders=view_builders,

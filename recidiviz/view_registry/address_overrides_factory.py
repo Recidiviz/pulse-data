@@ -31,9 +31,7 @@ from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
 def address_overrides_for_deployed_view_datasets(
-    project_id: str,
-    view_dataset_override_prefix: str,
-    dataflow_dataset_override: Optional[str] = None,
+    view_dataset_override_prefix: str, dataflow_dataset_override: Optional[str] = None
 ) -> BigQueryAddressOverrides:
     """Returns a class that provides a mapping of table/view addresses to the address
     they should be replaced with for all views that are regularly deployed by our
@@ -47,7 +45,7 @@ def address_overrides_for_deployed_view_datasets(
     """
 
     all_view_builders = []
-    for builder in deployed_view_builders(project_id):
+    for builder in deployed_view_builders():
         if (
             builder.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
             and dataflow_dataset_override is None

@@ -244,7 +244,7 @@ def _get_validations_jobs(
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> List[DataValidationJob]:
-    view_builders = deployed_view_builders(metadata.project_id())
+    view_builders = deployed_view_builders()
 
     sandbox_address_overrides = None
     if sandbox_dataset_prefix:

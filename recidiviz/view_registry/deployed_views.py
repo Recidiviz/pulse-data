@@ -46,7 +46,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.task_eligibility.view_config import (
     get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
 )
-from recidiviz.utils import environment
+from recidiviz.utils import environment, metadata
 from recidiviz.validation.views.view_config import (
     METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_METADATA_VIEW_BUILDERS,
 )
@@ -73,11 +73,14 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
     )
 
 
-def deployed_view_builders(project_id: str) -> List[BigQueryViewBuilder]:
+def deployed_view_builders() -> List[BigQueryViewBuilder]:
+    """Returns the set of view builders which can/should be deployed to the current
+    project (as defined by metadata.project_id()).
+    """
     return [
         builder
         for builder in _all_deployed_view_builders()
-        if builder.should_deploy_in_project(project_id)
+        if builder.should_deploy_in_project(metadata.project_id())
     ]
 
 
