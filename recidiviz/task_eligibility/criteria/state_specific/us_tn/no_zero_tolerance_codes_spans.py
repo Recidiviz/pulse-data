@@ -143,20 +143,23 @@ _QUERY_TEMPLATE = f"""
         GROUP BY 1,2,3,4
     )
     SELECT
-        state_code,
-        person_id,
-        start_date,
+        g.state_code,
+        g.person_id,
+        g.start_date,
         IF(
-            MAX({nonnull_end_date_exclusive_clause('end_date')}) OVER(PARTITION BY person_id) = {nonnull_end_date_exclusive_clause('end_date')},
+            MAX({nonnull_end_date_exclusive_clause('g.end_date')}) OVER(PARTITION BY g.person_id) = {nonnull_end_date_exclusive_clause('g.end_date')},
             NULL,
-            end_date
+            g.end_date
         ) AS end_date,
         -- Someone meets the criteria if there are no zero tolerance contact codes in a given span, unless they are on parole
         CASE WHEN supervision_type = 'PAROLE' THEN TRUE ELSE NOT critical_date_has_passed END AS meets_criteria,
         CASE WHEN supervision_type = 'PAROLE' THEN NULL ELSE reason END AS reason,
-    FROM grouped_dates
-    LEFT JOIN reason_blob
-        USING(state_code, person_id, start_date, end_date)
+    FROM grouped_dates g
+    LEFT JOIN reason_blob r
+        ON g.state_code = r.state_code
+        AND g.person_id = r.person_id
+        AND g.start_date = r.start_date
+        AND {nonnull_end_date_exclusive_clause('g.end_date')} = {nonnull_end_date_exclusive_clause('r.end_date')} 
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
