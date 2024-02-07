@@ -291,4 +291,8 @@ output:
                         - ZSS # SUSPENDED SUPV PAROLE
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
-                        - 4EI # TODO(#27330): Adjust mapping based on actual definition
+                          # TODO(#27330): Move these 3 to more appropriate mappings once
+                          # they're better understood.
+                        - 1EI # ENHANCED INCENTIVE
+                        - 3EI # MEDIUM INCENTIVE
+                        - 4EI # MINIMUM INCENTIVE
