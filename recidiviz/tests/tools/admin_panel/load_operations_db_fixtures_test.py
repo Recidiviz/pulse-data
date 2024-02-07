@@ -29,7 +29,7 @@ from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestInstanceStatus,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_operations_table_classes
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.admin_panel.load_operations_db_fixtures import (
@@ -76,7 +76,7 @@ class TestOperationsLoadFixtures(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as read_session:
-            for fixture_class in get_operations_table_classes():
+            for fixture_class in get_all_table_classes_in_schema(SchemaType.OPERATIONS):
                 # TODO(#10214): Add admin panel fixtures for the SFTP table.
                 if "sftp" in fixture_class.name:
                     continue

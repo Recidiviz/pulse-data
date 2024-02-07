@@ -36,10 +36,7 @@ from typing import List
 
 from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_table_class_by_name,
-    schema_type_to_schema_base,
-)
+from recidiviz.persistence.database.schema_utils import get_table_class_by_name
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import EnumEntity
 from recidiviz.tools.utils.migration_script_helpers import (
@@ -113,10 +110,7 @@ def main() -> None:
     parser = _create_parser()
     args = parser.parse_args()
 
-    table_class = get_table_class_by_name(
-        args.primary_table,
-        tables=schema_type_to_schema_base(SchemaType.STATE).metadata.sorted_tables,
-    )
+    table_class = get_table_class_by_name(args.primary_table, SchemaType.STATE)
 
     all_column_names = [col.name for col in table_class.columns]
     if args.column not in all_column_names:

@@ -65,14 +65,11 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_all_database_entities_in_module,
-    get_all_table_classes_in_module,
+    get_all_table_classes_in_schema,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.persistence.database.schema.schema_test import (
-    TestSchemaEnums,
-    TestSchemaTableConsistency,
-)
+from recidiviz.tests.persistence.database.schema.schema_test import TestSchemaEnums
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_assessment,
     generate_charge,
@@ -170,11 +167,11 @@ class TestStateSchemaEnums(TestSchemaEnums):
             self.assertIn(enum_canonical_strings.external_unknown, enum.enums)
 
 
-class TestStateSchemaTableConsistency(TestSchemaTableConsistency):
+class TestStateSchemaTableConsistency(unittest.TestCase):
     """Test class for validating state schema tables are defined correctly"""
 
     def testAllTableNamesPrefixedWithState(self):
-        for cls in get_all_table_classes_in_module(schema):
+        for cls in get_all_table_classes_in_schema(SchemaType.STATE):
             self.assertTrue(cls.name.startswith("state_"))
 
     def testAllDatabaseEntityNamesPrefixedWithState(self):

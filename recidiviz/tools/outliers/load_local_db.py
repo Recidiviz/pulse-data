@@ -59,8 +59,8 @@ from recidiviz.persistence.database.schema.outliers import schema
 from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_database_entity_by_table_name,
-    get_outliers_table_classes,
 )
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -190,8 +190,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="Space-separated tables to load data into. If unset, loads data into all tables.",
         type=str,
         nargs="*",
-        choices=[table.name for table in get_outliers_table_classes()],
-        default=[table.name for table in get_outliers_table_classes()],
+        choices=[
+            table.name for table in get_all_table_classes_in_schema(SchemaType.OUTLIERS)
+        ],
+        default=[
+            table.name for table in get_all_table_classes_in_schema(SchemaType.OUTLIERS)
+        ],
     )
 
     parser.add_argument(

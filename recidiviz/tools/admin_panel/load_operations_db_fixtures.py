@@ -37,7 +37,7 @@ import os
 from sqlalchemy.engine import Engine
 
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_operations_table_classes
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -53,7 +53,7 @@ def reset_operations_db_fixtures(engine: Engine) -> None:
         # TODO(#10214): Add admin panel fixtures for the SFTP table.
         tables=[
             table
-            for table in get_operations_table_classes()
+            for table in get_all_table_classes_in_schema(SchemaType.OPERATIONS)
             if "sftp" not in table.name
         ],
         fixture_directory=os.path.join(

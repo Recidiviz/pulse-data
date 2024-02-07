@@ -63,12 +63,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_database_entities_by_association_table,
     get_database_entity_by_table_name,
     get_state_database_association_with_names,
-    get_state_entity_names,
-    get_state_table_classes,
-    get_table_class_by_name,
     is_association_table,
 )
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
@@ -433,6 +431,9 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
             # TODO(#24080) Transition to using entities.py to get the expected column names
             schema: List[bigquery.SchemaField] = []
 
+            tables_by_name = {
+                t.name: t for t in get_all_table_classes_in_schema(SchemaType.STATE)
+            }
             if is_association_table(output_table):
                 child_cls, parent_cls = get_database_entities_by_association_table(
                     state_schema, output_table
@@ -443,12 +444,8 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                     ),
                     add_state_code_field=True,
                 )
-            elif output_table in get_state_entity_names():
-                schema = schema_for_sqlalchemy_table(
-                    get_table_class_by_name(
-                        output_table, list(get_state_table_classes())
-                    )
-                )
+            elif output_table in tables_by_name:
+                schema = schema_for_sqlalchemy_table(tables_by_name[output_table])
 
             expected_column_names = {field.name for field in schema}
             for output_dict in output:

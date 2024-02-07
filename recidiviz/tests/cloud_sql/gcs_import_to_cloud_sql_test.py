@@ -41,10 +41,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 from recidiviz.persistence.database.schema.outliers.schema import SupervisionClientEvent
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_outliers_table_classes,
-    get_pathways_table_classes,
-)
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -574,14 +571,14 @@ class TestModelSQL(TestCase):
 
     def test_temporary_table_integration(self) -> None:
         """All pathways tables should be able to be successfully built / renamed"""
-        for table in get_pathways_table_classes():
+        for table in get_all_table_classes_in_schema(SchemaType.PATHWAYS):
             model_sql = ModelSQL(table=build_temporary_sqlalchemy_table(table))
             rename_queries = model_sql.build_rename_ddl_queries("new_base_name")
             self.assertGreater(len(rename_queries), 0)
 
     def test_outliers_temporary_table_integration(self) -> None:
         """All outlier tables should be able to be successfully built / renamed"""
-        for table in get_outliers_table_classes():
+        for table in get_all_table_classes_in_schema(SchemaType.OUTLIERS):
             model_sql = ModelSQL(table=build_temporary_sqlalchemy_table(table))
             rename_queries = model_sql.build_rename_ddl_queries("new_base_name")
             self.assertGreater(len(rename_queries), 0)

@@ -45,10 +45,11 @@ from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_database_entities_by_association_table,
     get_database_entity_by_table_name,
-    get_state_table_classes,
     is_association_table,
 )
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -809,6 +810,8 @@ def filter_results(
 def check_field_exists_in_table(table_name: str, field_name: str) -> None:
     if table_name in {
         # These are tables read by pipelines that are not in the sqlalchemy schema - skip this check
+        # TODO(#22528): We should be able to remove these exemptions once dataflow pipelines run
+        #  these reference queries directly.
         "us_mo_sentence_statuses",
         "persons_to_recent_county_of_residence",
         "state_race_ethnicity_population_counts",
@@ -821,7 +824,9 @@ def check_field_exists_in_table(table_name: str, field_name: str) -> None:
         return
 
     matching_tables = {
-        table for table in get_state_table_classes() if table.name == table_name
+        table
+        for table in get_all_table_classes_in_schema(SchemaType.STATE)
+        if table.name == table_name
     }
     if not matching_tables:
         raise ValueError(f"No valid table with name: [{table_name}]")

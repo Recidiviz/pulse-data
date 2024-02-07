@@ -60,8 +60,8 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_table_class_by_name,
-    schema_type_to_schema_base,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -90,8 +90,7 @@ class CloudSqlToBQConfig:
             region_codes_to_exclude = []
         self.direct_ingest_instance = direct_ingest_instance
         self.schema_type = schema_type
-        self.metadata_base = schema_type_to_schema_base(schema_type)
-        self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
+        self.sorted_tables = list(get_all_table_classes_in_schema(schema_type))
         self.region_codes_to_exclude = [
             region_code.upper() for region_code in region_codes_to_exclude
         ]
@@ -292,7 +291,7 @@ class CloudSqlToBQConfig:
                 "Cannot be used with a schema that ever excludes region codes"
             )
 
-        table = get_table_class_by_name(table_name, self.sorted_tables)
+        table = get_table_class_by_name(table_name, self.schema_type)
         columns = self._get_table_columns_to_export(table)
 
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(

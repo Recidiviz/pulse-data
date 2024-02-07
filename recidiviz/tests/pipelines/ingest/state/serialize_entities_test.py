@@ -21,7 +21,8 @@ from apache_beam.pipeline_test import TestPipeline, assert_that
 from apache_beam.testing.util import is_not_empty
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_utils import get_state_entity_names
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
@@ -48,7 +49,9 @@ class TestSerializeEntities(StateIngestPipelineTestCase):
             ),
             generate_full_graph_state_staff(set_back_edges=True, set_ids=True),
         ]
-        state_tables = get_state_entity_names()
+        state_table_names = [
+            t.name for t in get_all_table_classes_in_schema(SchemaType.STATE)
+        ]
 
         output = (
             self.test_pipeline
@@ -57,8 +60,15 @@ class TestSerializeEntities(StateIngestPipelineTestCase):
                 pipeline.SerializeEntities(
                     state_code=StateCode.US_DD, field_index=self.field_index
                 )
-            ).with_outputs(*state_tables)
+            ).with_outputs(*state_table_names)
         )
-        for state_table in state_tables:
-            assert_that(getattr(output, state_table), is_not_empty())
+
+        # Checks that we produced output for every single table in the schema
+        for state_table in state_table_names:
+            assert_that(
+                getattr(output, state_table),
+                is_not_empty(),
+                label=f"{state_table} is not empty",
+            )
+
         self.test_pipeline.run()

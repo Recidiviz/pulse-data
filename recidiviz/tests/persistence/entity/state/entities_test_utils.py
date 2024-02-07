@@ -103,8 +103,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    get_state_table_classes,
+    get_all_table_classes_in_schema,
     is_association_table,
 )
 from recidiviz.persistence.database.session import Session
@@ -811,7 +812,7 @@ class TestFullEntityGraph(unittest.TestCase):
         """
         state_table_names = {
             t.name
-            for t in get_state_table_classes()
+            for t in get_all_table_classes_in_schema(SchemaType.STATE)
             if not is_association_table(t.name)
         }
 

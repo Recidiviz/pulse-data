@@ -28,8 +28,8 @@ from recidiviz.persistence.database.schema.outliers.schema import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_outliers_database_entities,
-    get_outliers_table_classes,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -90,7 +90,7 @@ class TestLoadLocalDb(TestCase):
         with SessionFactory.using_database(
             self.db_key, autocommit=False
         ) as read_session:
-            for fixture_class in get_outliers_table_classes():
+            for fixture_class in get_all_table_classes_in_schema(SchemaType.OUTLIERS):
                 self.assertTrue(len(read_session.query(fixture_class).all()) > 0)
 
     def test_create_dbs(self) -> None:

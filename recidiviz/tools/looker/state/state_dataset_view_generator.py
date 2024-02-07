@@ -44,9 +44,10 @@ from recidiviz.looker.lookml_view_field_parameter import (
 )
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     get_primary_key_column_name,
-    get_state_table_classes,
 )
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 
@@ -173,7 +174,7 @@ def generate_state_views(looker_dir: str) -> None:
     remove_lookml_files_from(state_dir)
     # TODO(#23292): Either auto-generate or don't delete the person_periods view
 
-    for table in get_state_table_classes():
+    for table in get_all_table_classes_in_schema(SchemaType.STATE):
         lookml_view = get_lookml_view_table(table=table)
         lookml_view.write(state_dir, source_script_path=__file__)
     # TODO(#23292): Add `actions` dimension to state_person view
