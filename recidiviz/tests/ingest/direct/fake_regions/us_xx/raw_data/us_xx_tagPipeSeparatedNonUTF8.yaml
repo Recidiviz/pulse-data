@@ -16,3 +16,4 @@ encoding: ISO-8859-1
 separator: "|"
 ignore_quotes: True
 custom_line_terminator: "\n"
+update_cadence: DAILY

@@ -26,6 +26,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -236,6 +237,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
 
     def test_basic_sparse_config(self) -> None:
@@ -697,6 +699,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
 
     def test_missing_configs_for_region(self) -> None:
@@ -1117,6 +1120,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             default_config.default_separator,
         )
         self.assertEqual("|", file_config.separator)
+        self.assertEqual(RawDataFileUpdateCadence.DAILY, file_config.update_cadence)
 
         # This file is always a historical export
         file_config = self.us_xx_region_config.raw_file_configs[

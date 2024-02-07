@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -89,6 +90,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
         # Raw file that is a primary person table
         self.primary_person_table_config = attr.evolve(

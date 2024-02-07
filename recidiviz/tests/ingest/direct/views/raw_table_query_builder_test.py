@@ -26,6 +26,7 @@ from mock import Mock, patch
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -89,6 +90,7 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
         self.query_builder = RawTableQueryBuilder(
             project_id="recidiviz-456",

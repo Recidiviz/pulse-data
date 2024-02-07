@@ -188,6 +188,7 @@ def update_parsers_in_region(
                 default_config.default_always_historical_export,
                 default_config.default_no_valid_primary_keys,
                 default_config.default_line_terminator,
+                default_config.default_update_cadence,
             )
             print(f"File {original_config.file_tag}: Updates persisted")
 

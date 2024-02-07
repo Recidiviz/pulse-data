@@ -44,28 +44,6 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
     statusLoading,
     ingestRawFileProcessingStatus,
   }) => {
-    const allFilesLatestDiscoveryTime: Date | undefined =
-      ingestRawFileProcessingStatus
-        .filter((a) => a.latestDiscoveryTime !== null)
-        .map(({ latestDiscoveryTime: x }) => new Date(x as string))
-        .reduce(
-          (a: Date | undefined, b: Date) => (a && a > b ? a : b),
-          undefined
-        );
-
-    const isTooFarBeforeLatestDiscoveryTime: {
-      [key: string]: boolean | undefined;
-    } = ingestRawFileProcessingStatus.reduce(
-      (previousValue, currentValue, i, all) => ({
-        ...previousValue,
-        [currentValue.fileTag]: calculateIsTooFarBeforeLatestDiscoveryTime(
-          currentValue,
-          allFilesLatestDiscoveryTime
-        ),
-      }),
-      {}
-    );
-
     const columns: ColumnsType<IngestRawFileProcessingStatus> = [
       {
         title: "Raw Data File Tag",
@@ -76,9 +54,8 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         ),
         sorter: {
           compare: (a, b) => a.fileTag.localeCompare(b.fileTag),
-          multiple: 1,
         },
-        defaultSortOrder: "ascend",
+
         filters: ingestRawFileProcessingStatus.map(({ fileTag }) => ({
           text: fileTag,
           value: fileTag,
@@ -91,28 +68,13 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         dataIndex: "latestDiscoveryTime",
         key: "latestDiscoveryTime",
         render: (_, record) =>
-          renderLatestDiscoveryTime(
-            record,
-            isTooFarBeforeLatestDiscoveryTime[record.fileTag]
-          ),
-        sorter: (a, b) =>
-          optionalStringSort(a.latestDiscoveryTime, b.latestDiscoveryTime),
-      },
-      {
-        title: "Received 24 Hours Before Latest",
-        key: "pastLatest",
-        render: (_, record) =>
-          renderIsTooFarBeforeLatestDiscoveryTime(
-            isTooFarBeforeLatestDiscoveryTime[record.fileTag]
-          ),
+          renderLatestDiscoveryTime(record, record.isStale),
         sorter: {
           compare: (a, b) =>
-            optionalBooleanSort(
-              isTooFarBeforeLatestDiscoveryTime[a.fileTag],
-              isTooFarBeforeLatestDiscoveryTime[b.fileTag]
-            ),
-          multiple: 3,
+            optionalBooleanSort(a.isStale, b.isStale) &&
+            optionalStringSort(a.latestDiscoveryTime, b.latestDiscoveryTime),
         },
+        sortOrder: "descend",
       },
       {
         title: "Last Processed",
@@ -137,9 +99,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
               a.numberUnprocessedFiles,
               b.numberUnprocessedFiles
             ),
-          multiple: 2,
         },
-        defaultSortOrder: "descend",
       },
       {
         title: "# Files in GCS Bucket",
@@ -160,9 +120,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         ),
         sorter: {
           compare: (a, b) => booleanSort(a.hasConfig, b.hasConfig),
-          multiple: 4,
         },
-        defaultSortOrder: "ascend",
       },
     ];
 
@@ -194,31 +152,4 @@ function renderLatestDiscoveryTime(
       {status.latestDiscoveryTime}
     </div>
   );
-}
-
-function renderIsTooFarBeforeLatestDiscoveryTime(status: boolean | undefined) {
-  if (typeof status !== "boolean") {
-    return <div>N/A</div>;
-  }
-  return <div>{status ? "Yes" : "No"}</div>;
-}
-
-function calculateIsTooFarBeforeLatestDiscoveryTime(
-  status: IngestRawFileProcessingStatus,
-  allFilesLatestDiscoveryTime: Date | undefined
-): boolean | undefined {
-  if (!status.latestDiscoveryTime) {
-    return;
-  }
-
-  if (!allFilesLatestDiscoveryTime) {
-    return;
-  }
-
-  const discoveryTime = new Date(status.latestDiscoveryTime);
-
-  const tooFarPastLatestDiscoveryTime =
-    allFilesLatestDiscoveryTime.getTime() - discoveryTime.getTime() >
-    1000 * 60 * 60 * 24; // over 24 hours past latest discovery time
-  return tooFarPastLatestDiscoveryTime;
 }
