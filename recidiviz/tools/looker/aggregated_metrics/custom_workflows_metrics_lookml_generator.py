@@ -14,20 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A script for building and writing a set of LookML views that support custom aggregated metrics
-in Looker.
+"""A script for building and writing a set of LookML views that support custom metrics
+in Looker relevant to workflows impact measurement.
 
 Run the following to write views to the specified directory DIR:
-python -m recidiviz.tools.looker.aggregated_metrics.custom_aggregated_metrics_lookml_generator --save_views_to_dir [DIR]
+python -m recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_lookml_generator --save_views_to_dir [DIR]
 
 """
 
 import argparse
 import os
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRICS_BY_POPULATION_TYPE,
-)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
@@ -35,9 +32,15 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    DEDUPED_TASK_COMPLETION_EVENT_VB,
 )
+from recidiviz.common.str_field_utils import snake_to_title
+from recidiviz.looker.lookml_view_field import (
+    LookMLFieldParameter,
+    ParameterLookMLViewField,
+)
+from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     generate_assignment_event_metric_view,
     generate_assignment_span_metric_view,
@@ -45,6 +48,21 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     generate_period_event_metric_view,
     generate_period_span_metric_view,
 )
+from recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configurations import (
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER,
+    DAYS_ELIGIBLE_AT_TASK_COMPLETION_LOOKER,
+    PERSON_DAYS_TASK_ELIGIBLE_LOOKER,
+    TASK_COMPLETIONS_LOOKER,
+    TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER,
+)
+
+WORKFLOWS_IMPACT_LOOKER_METRICS = [
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER,
+    DAYS_ELIGIBLE_AT_TASK_COMPLETION_LOOKER,
+    PERSON_DAYS_TASK_ELIGIBLE_LOOKER,
+    TASK_COMPLETIONS_LOOKER,
+    TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER,
+]
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -62,13 +80,37 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main(output_directory: str, view_name: str) -> None:
+def main(
+    output_directory: str,
+    view_name: str,
+) -> None:
     """Builds and writes views required to build person-level metrics in Looker"""
-    metrics = METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION]
+    metrics = WORKFLOWS_IMPACT_LOOKER_METRICS
     if output_directory:
         output_directory = os.path.join(output_directory, view_name)
         # Create subdirectory for all subquery views
         output_subdirectory = os.path.join(output_directory, "subqueries")
+
+        task_type_parameter_field = ParameterLookMLViewField(
+            field_name="task_type",
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.description(
+                    "Used to select the workflows task type"
+                ),
+                LookMLFieldParameter.view_label("Workflows Filters"),
+                *[
+                    LookMLFieldParameter.allowed_value(
+                        snake_to_title(builder.task_type_name),
+                        builder.task_type_name,
+                    )
+                    for builder in DEDUPED_TASK_COMPLETION_EVENT_VB
+                ],
+                LookMLFieldParameter.default_value(
+                    DEDUPED_TASK_COMPLETION_EVENT_VB[0].task_type_name
+                ),
+            ],
+        )
 
         generate_custom_metrics_view(
             [
@@ -77,7 +119,7 @@ def main(output_directory: str, view_name: str) -> None:
                 if not isinstance(metric, MiscAggregatedMetric)
             ],
             view_name,
-            additional_view_fields=[],
+            additional_view_fields=[task_type_parameter_field],
         ).write(output_directory, source_script_path=__file__)
         generate_period_span_metric_view(
             [
@@ -118,4 +160,4 @@ def main(output_directory: str, view_name: str) -> None:
 
 if __name__ == "__main__":
     args = parse_arguments()
-    main(args.save_dir, "custom_metrics")
+    main(args.save_dir, view_name="workflows_impact_metrics")
