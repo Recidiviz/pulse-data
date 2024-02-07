@@ -21,7 +21,7 @@ Usage:
     python -m recidiviz.tools.find_unused_bq_views
 """
 
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -79,6 +79,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_funnel import (
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_max_stays import (
+    US_TN_MAX_STAYS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
+    US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.external_reference.state_resident_populations import (
     STATE_RESIDENT_POPULATIONS_VIEW_BUILDER,
 )
@@ -87,6 +93,9 @@ from recidiviz.calculator.query.state.views.external_reference.state_resident_po
 )
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
+    COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.custody_level_raw_text_sessions import (
     CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
@@ -123,18 +132,16 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.task_eligibility.criteria.state_specific.us_me.six_years_remaining_on_sentence import (
+    VIEW_BUILDER as US_ME_SIX_YEARS_REMAINING_VIEW_BUILDER,
+)
+from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
 )
 from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_walker
-
-# List of views that are definitely not referenced in Looker (as of 11/29/23). This list
-# is # incomplete and you should add to this list / update the date in this comment as
-# you work with this script.
-CONFIRMED_NOT_IN_LOOKER_ADDRESSES: set[BigQueryAddress] = set()
 
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
 # incomplete and you should add to this list / update the date in this comment as you
@@ -156,7 +163,7 @@ LOOKER_REFERENCED_ADDRESSES = {
 # listed along with the reason we still need to keep them. Please be as descriptive
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
-OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
+UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER.address: (
         "This view was created relatively recently (5/31/23) and may still be in use "
         "for ad-hoc analysis."
@@ -289,6 +296,21 @@ OTHER_ADDRESSES_TO_KEEP_WITH_REASON = {
     PSA_RISK_SCORES_VIEW_BUILDER.address: (
         "Past intern work may be picked up so this view should be kept. See #26726. (Damini Sharma 1/22/24)"
     ),
+    COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER.address: (
+        "Not currently referenced but is used in downstream analytical work for which "
+        "we are interested in aggregating across in state and out of state (Andrew Gaidus 1/25/24)"
+    ),
+    US_TN_MAX_STAYS_VIEW_BUILDER.address: (
+        "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
+        "#21518 is completed (Damini Sharma 1/25/24)"
+    ),
+    US_TN_SEGREGATION_STAYS_VIEW_BUILDER.address: (
+        "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
+        "#21518 is completed (Damini Sharma 1/25/24)"
+    ),
+    US_ME_SIX_YEARS_REMAINING_VIEW_BUILDER.address: (
+        "Will be used for future workflows (Hugo S 2/5/24)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
@@ -355,27 +377,31 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
         "all_candidate_populations",
     }:
         return True
+
     return False
 
 
-def get_unused_addresses_from_all_views_dag(
-    all_views_dag_walker: BigQueryViewDagWalker,
-) -> Set[BigQueryAddress]:
-    """Returns the addresses of all views that are either"""
-    if intersection := LOOKER_REFERENCED_ADDRESSES.intersection(
-        CONFIRMED_NOT_IN_LOOKER_ADDRESSES
-    ):
-        raise ValueError(
-            f"Found addresses listed both in LOOKER_REFERENCED_ADDRESSES and "
-            f"CONFIRMED_NOT_IN_LOOKER_ADDRESSES: {intersection}"
-        )
-
-    all_in_use_addresses = (
+def get_product_referenced_addresses() -> Set[BigQueryAddress]:
+    return (
         _get_all_metric_export_addresses()
         | _get_all_dataflow_pipeline_referenced_addresses()
-        | LOOKER_REFERENCED_ADDRESSES
-        | set(OTHER_ADDRESSES_TO_KEEP_WITH_REASON)
     )
+
+
+def _get_single_project_unused_addresses(
+    all_views_dag_walker: BigQueryViewDagWalker, ignore_exemptions: bool
+) -> Set[BigQueryAddress]:
+    """Returns views that are unused within a single project. The
+    `metadata.project_id()` must be set before this function is called.
+    """
+
+    all_in_use_addresses = (
+        get_product_referenced_addresses() | LOOKER_REFERENCED_ADDRESSES
+    )
+    if not ignore_exemptions:
+        all_in_use_addresses = all_in_use_addresses | set(
+            UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON
+        )
 
     def is_view_used(v: BigQueryView, child_results: Dict[BigQueryView, bool]) -> bool:
         if v.address in all_in_use_addresses:
@@ -397,26 +423,51 @@ def get_unused_addresses_from_all_views_dag(
     }
 
 
-def main() -> None:
-    dag_walker = build_all_deployed_views_dag_walker()
-    unused_addresses = get_unused_addresses_from_all_views_dag(dag_walker)
+def get_unused_across_all_projects_addresses_from_all_views_dag(
+    ignore_exemptions: bool = False,
+) -> Set[BigQueryAddress]:
+    """Returns the addresses of all views that are not referenced by a product, Looker,
+    or marked as used via the UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON exemptions
+    list. If |ignore_exemptions| is True, will return ALL views that are unused, even if
+    that view or one of its children is exempted in
+    UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON.
+    """
+    unused_addresses: Optional[Set[BigQueryAddress]] = None
+    for project in GCP_PROJECTS:
+        with local_project_id_override(project):
+            project_dag_walker = build_all_deployed_views_dag_walker()
+            if len(project_dag_walker.views) == 0:
+                raise ValueError(f"Failed to collect views for project {project}.")
+
+            unused_addresses_in_project = _get_single_project_unused_addresses(
+                project_dag_walker, ignore_exemptions=ignore_exemptions
+            )
+            if unused_addresses is None:
+                unused_addresses = unused_addresses_in_project
+                continue
+            # Only keep addresses that were unused in all previous projects
+            unused_addresses = unused_addresses.intersection(
+                unused_addresses_in_project
+            )
+    if unused_addresses is None:
+        raise ValueError(f"Expected nonnull {unused_addresses} at this point.")
+    return unused_addresses
+
+
+def find_unused_views() -> None:
+    print("\nLooking for views that are unused across all projects ... ")
+    unused_addresses = get_unused_across_all_projects_addresses_from_all_views_dag()
 
     if not unused_addresses:
         print("✅ Found no unused BQ views that are eligible for deletion")
         return
 
     print(
-        f"⚠️ Found {len(unused_addresses)} BQ views that may be eligible for deletion:\n"
+        f"⚠️ Found {len(unused_addresses)} BQ views that are not used in any project "
+        f"and may be eligible for deletion:\n"
     )
     for address in sorted(unused_addresses):
-        is_leaf = dag_walker.nodes_by_address[address].is_leaf
-        is_leaf_str = " [*** LEAF NODE ***]" if is_leaf else ""
-        not_in_looker_str = (
-            " [*** CONFIRMED NOT IN LOOKER ***]"
-            if address in CONFIRMED_NOT_IN_LOOKER_ADDRESSES
-            else ""
-        )
-        print(f"{address.to_str()}{is_leaf_str}{not_in_looker_str}")
+        print(address.to_str())
 
     print(
         "\n⚠️ PLEASE NOTE ⚠️: The information this script has is incomplete. Please "
@@ -426,5 +477,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        main()
+    find_unused_views()
