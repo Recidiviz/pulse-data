@@ -2398,6 +2398,9 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     sentence_lengths: List["StateSentenceLength"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    sentence_serving_periods: List["StateSentenceServingPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:
