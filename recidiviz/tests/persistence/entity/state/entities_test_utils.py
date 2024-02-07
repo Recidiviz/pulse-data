@@ -17,6 +17,7 @@
 """Test utils for generating state CoreEntity/Entity classes."""
 
 import datetime
+import unittest
 from collections import defaultdict
 from typing import Dict, List, Optional, Sequence, Type
 
@@ -33,8 +34,16 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeV2ClassificationType,
     StateChargeV2Status,
 )
+from recidiviz.common.constants.state.state_drug_screen import (
+    StateDrugScreenResult,
+    StateDrugScreenSampleType,
+)
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
+)
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+    StateEmploymentPeriodEndReason,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
@@ -46,6 +55,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
+from recidiviz.common.constants.state.state_person_address_period import (
+    StatePersonAddressType,
+)
+from recidiviz.common.constants.state.state_person_housing_status_period import (
+    StatePersonHousingStatusType,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -83,24 +98,29 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
+    StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema_utils import (
+    get_state_table_classes,
+    is_association_table,
+)
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
+    get_all_entities_from_tree,
     get_entities_by_type,
     print_entity_tree,
+    set_backedges,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationIncidentOutcome,
-    StateProgramAssignment,
-)
+from recidiviz.persistence.entity.state.entities import StateProgramAssignment
+from recidiviz.utils.types import assert_type
 
 
 def clear_db_ids(
@@ -343,7 +363,6 @@ def generate_full_graph_state_person(
         contacting_staff_external_id="EMP2",
         contacting_staff_external_id_type="US_XX_STAFF_ID",
     )
-
     person.supervision_contacts = [supervision_contact]
 
     supervision_violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
@@ -356,6 +375,17 @@ def generate_full_graph_state_person(
 
     supervision_violation.supervision_violation_responses = [
         supervision_violation_response
+    ]
+
+    violation_response_decision = (
+        entities.StateSupervisionViolationResponseDecisionEntry(
+            state_code="US_XX",
+            decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+            decision_raw_text="PR",
+        )
+    )
+    supervision_violation_response.supervision_violation_response_decisions = [
+        violation_response_decision
     ]
 
     incarceration_sentence = entities.StateIncarcerationSentence.new_with_defaults(
@@ -578,96 +608,96 @@ def generate_full_graph_state_person(
     )
     sentence.charges = [charge_v2]
 
-    if set_back_edges:
-        incarceration_sentence_children: Sequence[Entity] = (
-            *incarceration_sentence.charges,
-            *incarceration_sentence.early_discharges,
-        )
-
-        for child in incarceration_sentence_children:
-            if hasattr(child, "incarceration_sentences"):
-                child.incarceration_sentences = [incarceration_sentence]  # type: ignore[attr-defined]
-            else:
-                child.incarceration_sentence = incarceration_sentence  # type: ignore[attr-defined]
-
-        supervision_sentence_children: Sequence[Entity] = (
-            *supervision_sentence.charges,
-            *supervision_sentence.early_discharges,
-        )
-
-        for child in supervision_sentence_children:
-            if hasattr(child, "supervision_sentences"):
-                child.supervision_sentences = [supervision_sentence]  # type: ignore[attr-defined]
-            else:
-                child.supervision_sentence = supervision_sentence  # type: ignore[attr-defined]
-
-        incarceration_incident_children: List[
-            StateIncarcerationIncidentOutcome
-        ] = incarceration_incident.incarceration_incident_outcomes
-
-        for child in incarceration_incident_children:
-            child.incarceration_incident = incarceration_incident
-
-        supervision_period_children: Sequence[Entity] = (
-            *supervision_period.case_type_entries,
-        )
-        for child in supervision_period_children:
-            if hasattr(child, "supervision_periods"):
-                child.supervision_periods = [supervision_period]  # type: ignore[attr-defined]
-            else:
-                child.supervision_period = supervision_period  # type: ignore[attr-defined]
-
-        supervision_violation_response.supervision_violation = supervision_violation
-
-        for violation_type in supervision_violation.supervision_violation_types:
-            violation_type.supervision_violation = supervision_violation
-
-        for violated_condition in supervision_violation.supervision_violated_conditions:
-            violated_condition.supervision_violation = supervision_violation
-
-        # TODO(#26676) Add sentence ledger entities here!
-        sentence_children: Sequence[Entity] = (*sentence.charges,)
-        for child in sentence_children:
-            if hasattr(child, "sentences"):
-                child.sentences = [sentence]  # type: ignore[attr-defined]
-            else:
-                child.sentence = sentence  # type: ignore[attr-defined]
-
-    all_entities: Sequence[Entity] = (
-        *[person],
-        *person.external_ids,
-        *person.races,
-        *person.aliases,
-        *person.ethnicities,
-        *person.assessments,
-        *person.program_assignments,
-        *person.incarceration_incidents,
-        *person.supervision_violations,
-        *person.supervision_contacts,
-        *person.incarceration_sentences,
-        *person.supervision_sentences,
-        *person.incarceration_periods,
-        *person.supervision_periods,
-        *person.task_deadlines,
-        *person.sentences,
-        *incarceration_sentence.charges,
-        *incarceration_sentence.early_discharges,
-        *supervision_sentence.early_discharges,
-        *incarceration_incident.incarceration_incident_outcomes,
-        *supervision_period.case_type_entries,
-        *supervision_violation.supervision_violation_responses,
-        *supervision_violation.supervision_violation_types,
-        *supervision_violation.supervision_violated_conditions,
-        *sentence.charges,
+    sentence_serving_period = entities.StateSentenceServingPeriod(
+        sentence_serving_period_id=None,
+        state_code="US_XX",
+        external_id="SP-001",
+        serving_start_date=datetime.date(2023, 5, 4),
+        serving_end_date=None,
     )
+    sentence.sentence_serving_periods = [sentence_serving_period]
 
-    if include_person_back_edges and set_back_edges:
-        if include_person_back_edges:
-            for entity in all_entities:
-                if isinstance(entity, entities.StatePerson):
-                    continue
+    sentence_status_snapshot = entities.StateSentenceStatusSnapshot(
+        state_code="US_XX",
+        status=StateSentenceStatus.SERVING,
+        status_update_datetime=datetime.datetime(2023, 1, 1),
+        sequence_num=None,
+    )
+    sentence.sentence_status_snapshots = [sentence_status_snapshot]
 
-                entity.set_field("person", person)
+    sentence_length = entities.StateSentenceLength(
+        state_code="US_XX",
+        length_update_datetime=datetime.datetime(2023, 1, 1),
+        sequence_num=None,
+    )
+    sentence.sentence_lengths = [sentence_length]
+
+    sentence_group = entities.StateSentenceGroup(
+        external_id="SENTENCE-GROUP-LEDGER-ID",
+        state_code="US_XX",
+        group_update_datetime=datetime.datetime(2023, 1, 1),
+        sequence_num=None,
+    )
+    person.sentence_groups = [sentence_group]
+
+    drug_screen = entities.StateDrugScreen(
+        state_code="US_XX",
+        external_id="12356",
+        drug_screen_date=datetime.date(2022, 5, 8),
+        drug_screen_result=StateDrugScreenResult.NEGATIVE,
+        drug_screen_result_raw_text="DRUN",
+        sample_type=StateDrugScreenSampleType.BREATH,
+        sample_type_raw_text="BREATH",
+        drug_screen_metadata='{"DRUGTYPE": "METH"}',
+    )
+    person.drug_screens = [drug_screen]
+
+    employment_period = entities.StateEmploymentPeriod(
+        state_code="US_XX",
+        external_id="12356",
+        start_date=datetime.date(2022, 5, 8),
+        end_date=datetime.date(2022, 5, 10),
+        last_verified_date=datetime.date(2022, 5, 1),
+        employment_status=StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME,
+        employment_status_raw_text="PT",
+        end_reason=StateEmploymentPeriodEndReason.QUIT,
+        end_reason_raw_text="PERSONAL",
+        employer_name="ACME, INC.",
+        employer_address="123 FAKE ST, ANYTOWN, XX, 00000",
+        job_title=None,
+    )
+    person.employment_periods = [employment_period]
+
+    address_period = entities.StatePersonAddressPeriod(
+        state_code="US_XX",
+        address_line_1="123 SANTA STREET",
+        address_line_2="APT 4",
+        address_city="NORTH POLE",
+        address_zip="10000",
+        address_county="GLACIER COUNTY",
+        address_type=StatePersonAddressType.PHYSICAL_RESIDENCE,
+    )
+    person.address_periods = [address_period]
+
+    housing_status_period = entities.StatePersonHousingStatusPeriod(
+        state_code="US_XX",
+        housing_status_start_date=datetime.date(year=2006, month=7, day=2),
+        housing_status_end_date=datetime.date(year=2007, month=7, day=2),
+        housing_status_type=StatePersonHousingStatusType.PERMANENT_RESIDENCE,
+    )
+    person.housing_status_periods = [housing_status_period]
+
+    field_index = CoreEntityFieldIndex()
+    if set_back_edges:
+        set_backedges(person, field_index=field_index)
+
+    all_entities = get_all_entities_from_tree(person, field_index=field_index)
+
+    if not include_person_back_edges and set_back_edges:
+        for entity in all_entities:
+            if isinstance(entity, entities.StatePerson):
+                continue
+            entity.set_field("person", None)
 
     if set_ids:
         for entity in all_entities:
@@ -695,9 +725,6 @@ def generate_full_graph_state_staff(
         set_back_edges: explicitly sets all the back edges on the graph
             that will get automatically filled in when this entity graph is
             written to the DB.
-        include_person_back_edges: If set_back_edges is set to True, whether or not to
-            set the back edges to StatePerson. This is usually False when testing
-            calculation pipelines that do not hydrate this edge.
         set_ids: It True, sets a value on the entity id field (primary key) of each
             entity.
 
@@ -712,7 +739,6 @@ def generate_full_graph_state_staff(
             state_code="US_XX",
             external_id="123",
             id_type="US_XX_STAFF",
-            staff=staff if set_back_edges else None,
         )
     ]
     staff.role_periods = [
@@ -725,7 +751,6 @@ def generate_full_graph_state_staff(
             role_type_raw_text="SUP_OF",
             role_subtype=StateStaffRoleSubtype.SUPERVISION_OFFICER,
             role_subtype_raw_text="SUP_OF",
-            staff=staff if set_back_edges else None,
         )
     ]
     staff.supervisor_periods = [
@@ -736,7 +761,6 @@ def generate_full_graph_state_staff(
             end_date=datetime.date(2023, 6, 1),
             supervisor_staff_external_id="S1",
             supervisor_staff_external_id_type="SUPERVISOR",
-            staff=staff if set_back_edges else None,
         )
     ]
     staff.location_periods = [
@@ -746,7 +770,6 @@ def generate_full_graph_state_staff(
             start_date=datetime.date(2023, 1, 1),
             end_date=datetime.date(2023, 6, 1),
             location_external_id="L1",
-            staff=staff if set_back_edges else None,
         )
     ]
     staff.caseload_type_periods = [
@@ -757,21 +780,17 @@ def generate_full_graph_state_staff(
             caseload_type_raw_text="O",
             start_date=datetime.date(2023, 1, 1),
             end_date=datetime.date(2023, 6, 1),
-            staff=staff if set_back_edges else None,
         )
     ]
 
-    all_entities: Sequence[Entity] = (
-        *[staff],
-        *staff.external_ids,
-        *staff.role_periods,
-        *staff.supervisor_periods,
-        *staff.location_periods,
-        *staff.caseload_type_periods,
-    )
+    field_index = CoreEntityFieldIndex()
+    if set_back_edges:
+        set_backedges(staff, field_index=field_index)
 
     if set_ids:
-        for entity in all_entities:
+        for entity in get_all_entities_from_tree(
+            staff, field_index=CoreEntityFieldIndex()
+        ):
             if entity.get_id():
                 raise ValueError(
                     f"Found entity [{entity}] with already set id field."
@@ -782,3 +801,38 @@ def generate_full_graph_state_staff(
             entity.set_field(id_name, id(entity))
 
     return staff
+
+
+class TestFullEntityGraph(unittest.TestCase):
+    def test_full_entity_graph_coverage(self) -> None:
+        """Tests that the generate_full_graph_state_person() and
+        generate_full_graph_state_staff() functions cover all entities in the STATE
+        schema.
+        """
+        state_table_names = {
+            t.name
+            for t in get_state_table_classes()
+            if not is_association_table(t.name)
+        }
+
+        field_index = CoreEntityFieldIndex()
+        all_entities = [
+            e
+            for re in [
+                generate_full_graph_state_person(
+                    set_back_edges=True, include_person_back_edges=True, set_ids=True
+                ),
+                generate_full_graph_state_staff(set_back_edges=True, set_ids=True),
+            ]
+            for e in get_all_entities_from_tree(
+                assert_type(re, Entity), field_index=field_index
+            )
+        ]
+        entity_names = {e.get_entity_name() for e in all_entities}
+
+        missing_in_entity_graph = state_table_names - entity_names
+        if missing_in_entity_graph:
+            raise ValueError(
+                f"Found entities defined in the STATE schema which are not included in "
+                f"one of the generate_full_graph* functions: {missing_in_entity_graph}"
+            )

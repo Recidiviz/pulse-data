@@ -3821,6 +3821,9 @@ class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
     sentence_lengths = relationship(
         "StateSentenceLength", backref="sentence", lazy="selectin"
     )
+    sentence_serving_periods = relationship(
+        "StateSentenceServingPeriod", backref="sentence", lazy="selectin"
+    )
 
 
 class StateSentenceServingPeriod(StateBase, _ReferencesStatePersonSharedColumns):
@@ -3888,7 +3891,6 @@ class StateSentenceServingPeriod(StateBase, _ReferencesStatePersonSharedColumns)
 
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)
-    sentence = relationship("StateSentence", uselist=False)
 
 
 class StateChargeV2(StateBase, _ReferencesStatePersonSharedColumns):
