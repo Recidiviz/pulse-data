@@ -61,7 +61,7 @@ legal_status_periods_with_investigation_cte AS (
                     COALESCE(
                         LEAD(LegalStatus_StartDate) OVER (
                             PARTITION BY OffenderId
-                            ORDER BY LegalStatus_StartDate
+                            ORDER BY LegalStatus_StartDate, LegalStatus_EndDate
                         ),
                         -- If the above LEAD returns null it means there are no
                         -- following legal status periods and this is an open investigation
@@ -278,11 +278,16 @@ periods_with_attributes AS (
         sa.FirstName,
         sa.MiddleName,
         sa.LastName,
+        sa.StartDate as sa_StartDate,
+        sa.EndDate as sa_EndDate,
 
         sl.RequestedSupervisionAssignmentLevel,
+        sl.DecisionDate,
 
         pl.PhysicalLocationTypeDesc,
         pl.LocationName,
+        pl.LocationChangeStartDate,
+        pl.LocationChangeEndDate,
 
         bw.bw_status
 
@@ -341,16 +346,36 @@ supervision_periods AS (
         bw_status,
         ROW_NUMBER() OVER (
             PARTITION BY OffenderId
-            -- Include StaffId since there can be multiple
-            -- values for these fields during a given period
             ORDER BY
                 start_date,
-                end_date,
-                StaffId
+                end_date
         ) AS period_id
     FROM (
         SELECT *,
-            MIN(CAST(Priority as INT64)) OVER(PARTITION BY OffenderId, start_date, end_date, StaffId) as lowest_priority
+            ROW_NUMBER() OVER(
+                PARTITION BY 
+                    OffenderId, 
+                    start_date, 
+                    end_date
+                ORDER BY
+                    -- In cases where there are multiple legal statuses attached to the same period start - end, 
+                    -- keep the legal status with the lowest priority as defined by Idaho
+                    CAST(Priority as INT64) ASC,
+                    -- In cases where there are multiple staff members assigned to the same period start - end,
+                    -- prioritize Primary > Secondary > Temporary assignments and then keep the staff person 
+                    -- with the most recent assignment start date (and then sort deterministically by EmployeeId)
+                    SupervisionAssignmentTypeDesc ASC,
+                    sa_StartDate DESC,
+                    EmployeeId,
+                    -- In cases where there are multiple locations associated the same period start - end,
+                    -- keep the location with the most recent start date (and then sort deterministically by LocationName)
+                    LocationChangeStartDate DESC,
+                    LocationName,
+                    -- In cases where there are multiple levels associated the same period start - end,
+                    -- keep the level with the most decision start date (and then sort deterministically by RequestedSupervisionAssignmentLevel)
+                    DecisionDate DESC,
+                    RequestedSupervisionAssignmentLevel
+            ) as keep_priority
         FROM periods_with_attributes
         -- Use transfer data as the source of truth for when someone is actually on supervision
         -- to prevent mistakenly open supervision periods. The one exception is for Investigation
@@ -358,9 +383,7 @@ supervision_periods AS (
         WHERE DOCLocationToName IS NOT NULL
             OR LegalStatusDesc = 'Investigation'
     ) subquery1
-    -- In cases where there are multiple legal statuses attached to the same period start - end, 
-    -- keep the legal status with the lowest priority as defined by Idaho
-    WHERE CAST(Priority as INT64) = lowest_priority or Priority is NULL
+    WHERE keep_priority = 1
 )
 
 SELECT *

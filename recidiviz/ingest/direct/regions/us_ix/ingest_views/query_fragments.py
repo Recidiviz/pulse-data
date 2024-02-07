@@ -168,11 +168,11 @@ supervision_level_changes_cte AS (
         CAST(DecisionDate AS DATETIME) AS DecisionDate,
         CAST(IFNULL(LEAD(DecisionDate) OVER (
             PARTITION BY OffenderId
-            ORDER BY CAST(DecisionDate AS DATETIME)
+            ORDER BY CAST(DecisionDate AS DATETIME), CAST(s.UpdateDate AS DATETIME), SupervisionLevelChangeRequestId
         ), '9999-12-31') AS DATETIME) AS NextDecisionDate,
         p.SupervisionAssignmentLevelDesc AS PreviousSupervisionAssignmentLevelDesc,
         r.SupervisionAssignmentLevelDesc AS RequestedSupervisionAssignmentLevel,
-    FROM {sup_SupervisionLevelChangeRequest}
+    FROM {sup_SupervisionLevelChangeRequest} s
     LEFT JOIN {scl_MasterTerm}
         USING (MasterTermId)
     LEFT JOIN {sup_SupervisionAssignmentLevel} p
