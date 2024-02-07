@@ -65,6 +65,31 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
         dataset_id="aggregated_metrics",
         table_id="supervision_unit_aggregated_metrics",
     ): (60 * 10),
+    # TODO(#25452) Improve performance of supervision_remaining_sentences
+    BigQueryAddress(
+        dataset_id="population_projection_data",
+        table_id="supervision_remaining_sentences",
+    ): (60 * 10),
+    # TODO(#20930) cloudsql_connection views will go away post IID cleanup
+    BigQueryAddress(
+        dataset_id="state_v2_us_mi_primary_cloudsql_connection",
+        table_id="us_mi_state_drug_screen",
+    ): (60 * 10),
+    # TODO(#20930) cloudsql_connection views will go away post IID cleanup
+    BigQueryAddress(
+        dataset_id="state_v2_us_tn_primary_cloudsql_connection",
+        table_id="us_tn_state_incarceration_period",
+    ): (60 * 20),
+    # TODO(#20930) cloudsql_connection views will go away post IID cleanup
+    BigQueryAddress(
+        dataset_id="state_v2_us_mi_primary_cloudsql_connection",
+        table_id="us_mi_state_assessment",
+    ): (60 * 10),
+    # TODO(#20930) cloudsql_connection views will go away post IID cleanup
+    BigQueryAddress(
+        dataset_id="state_v2_us_mi_primary_cloudsql_connection",
+        table_id="us_mi_state_supervision_period",
+    ): (60 * 10),
 }
 
 
