@@ -78,7 +78,7 @@ latest_system_session AS ( # get latest system session date to bring in relevant
   */ 
 relevant_codes AS (
     SELECT *
-    FROM `{{project_id}}.analyst_data.us_tn_tepe_relevant_codes_materialized`
+    FROM `{{project_id}}.analyst_data.us_tn_relevant_contact_codes_materialized`
 ),
 comments_clean AS (
     SELECT *

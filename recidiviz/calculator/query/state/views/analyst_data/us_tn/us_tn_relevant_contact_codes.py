@@ -27,13 +27,13 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TN_TEPE_RELEVANT_CODES_VIEW_NAME = "us_tn_tepe_relevant_codes"
+US_TN_RELEVANT_CONTACT_CODES_VIEW_NAME = "us_tn_relevant_contact_codes"
 
-US_TN_TEPE_RELEVANT_CODES_VIEW_DESCRIPTION = (
+US_TN_RELEVANT_CONTACT_CODES_VIEW_DESCRIPTION = (
     """Materialized view for Contact Codes in TN relevant for TEPE form"""
 )
 
-US_TN_TEPE_RELEVANT_CODES_QUERY_TEMPLATE = """
+US_TN_RELEVANT_CONTACT_CODES_QUERY_TEMPLATE = """
     WITH latest_system_session AS ( # get latest system session date to bring in relevant codes only for this time on supervision
       SELECT person_id,
              start_date AS latest_system_session_start_date
@@ -54,7 +54,7 @@ US_TN_TEPE_RELEVANT_CODES_QUERY_TEMPLATE = """
   WHERE CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) >= latest_system_session_start_date
      AND (
            ContactNoteType LIKE '%PSE%'
-           OR ContactNoteType IN ('VRPT','VWAR','COHC','ARRP')
+           OR ContactNoteType IN ('VRPT','VWAR','COHC','ARRP','PWAR')
            OR ContactNoteType LIKE "%ABS%"
            OR ContactNoteType IN ('DRUN','DRUP','DRUM','DRUX')
            OR ContactNoteType LIKE "%FSW%"
@@ -68,12 +68,12 @@ US_TN_TEPE_RELEVANT_CODES_QUERY_TEMPLATE = """
      )
 """
 
-US_TN_TEPE_RELEVANT_CODES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    view_id=US_TN_TEPE_RELEVANT_CODES_VIEW_NAME,
-    description=US_TN_TEPE_RELEVANT_CODES_VIEW_DESCRIPTION,
-    view_query_template=US_TN_TEPE_RELEVANT_CODES_QUERY_TEMPLATE,
+    view_id=US_TN_RELEVANT_CONTACT_CODES_VIEW_NAME,
+    description=US_TN_RELEVANT_CONTACT_CODES_VIEW_DESCRIPTION,
+    view_query_template=US_TN_RELEVANT_CONTACT_CODES_QUERY_TEMPLATE,
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
@@ -82,4 +82,4 @@ US_TN_TEPE_RELEVANT_CODES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_TEPE_RELEVANT_CODES_VIEW_BUILDER.build_and_print()
+        US_TN_RELEVANT_CONTACT_CODES_VIEW_BUILDER.build_and_print()
