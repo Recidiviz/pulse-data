@@ -142,6 +142,7 @@ def _update_enum_known_values(
         import_chunk_size_rows=original_config.import_chunk_size_rows,
         infer_columns_from_config=original_config.infer_columns_from_config,
         table_relationships=original_config.table_relationships,
+        update_cadence=original_config.update_cadence,
     )
 
 
@@ -188,6 +189,7 @@ def main(
             default_config.default_always_historical_export,
             default_config.default_no_valid_primary_keys,
             default_config.default_line_terminator,
+            default_config.default_update_cadence,
         )
 
 

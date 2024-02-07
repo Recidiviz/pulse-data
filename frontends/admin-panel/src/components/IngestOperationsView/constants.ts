@@ -132,6 +132,7 @@ export type IngestRawFileProcessingStatus = {
   latestDiscoveryTime: string | null;
   latestProcessedTime: string | null;
   latestUpdateDatetime: string | null;
+  isStale: boolean;
 };
 
 export type StateCodeInfo = {

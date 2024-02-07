@@ -21,6 +21,7 @@ from typing import List, Optional
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -102,6 +103,7 @@ class RawDataConfigWriter:
         default_always_historical_export: bool,
         default_no_valid_primary_keys: bool,
         default_line_terminator: Optional[str],
+        default_update_cadence: Optional[RawDataFileUpdateCadence],
     ) -> None:
         """Writes a yaml config file to the given path for a given raw file config"""
         file_description_string = "\n  ".join(
@@ -151,6 +153,8 @@ class RawDataConfigWriter:
                 raw_file_config.custom_line_terminator
             ).strip("'")
             config += f'custom_line_terminator: "{custom_line_terminator_for_yaml}"\n'
+        if raw_file_config.update_cadence != default_update_cadence:
+            config += f"update_cadence: {raw_file_config.update_cadence.value}\n"
 
         if raw_file_config.table_relationships:
             table_relationships_lines = ["table_relationships:"]

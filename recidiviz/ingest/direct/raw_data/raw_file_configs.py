@@ -71,6 +71,19 @@ class RawTableColumnFieldType(Enum):
     STAFF_EXTERNAL_ID = "staff_external_id"
 
 
+class RawDataFileUpdateCadence(Enum):
+    """Defines an expected ingest cadence for a raw file."""
+
+    # There is no defined ingest cadence or the ingest cadence is expected to be irregular
+    IRREGULAR = "IRREGULAR"
+
+    # The file is expected to be ingested once a week
+    WEEKLY = "WEEKLY"
+
+    # The file is expected to be ingested once per day
+    DAILY = "DAILY"
+
+
 @attr.s
 class ColumnEnumValueInfo:
     # The literal enum value
@@ -218,6 +231,10 @@ class DirectIngestRawFileDefaultConfig:
     default_always_historical_export: bool = attr.ib(validator=attr_validators.is_bool)
     # The default value for whether tables in a region have valid primary keys
     default_no_valid_primary_keys: bool = attr.ib(validator=attr_validators.is_bool)
+    # The default value for the expected ingest update cadence for files from this region
+    default_update_cadence: RawDataFileUpdateCadence = attr.ib(
+        validator=attr.validators.instance_of(RawDataFileUpdateCadence),
+    )
     # The default line terminator for raw files from this region
     default_line_terminator: Optional[str] = attr.ib(
         default=None,
@@ -241,6 +258,9 @@ class DirectIngestRawFileConfig:
 
     # Description of the raw data file contents
     file_description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+    # The cadence at which we expect to receive this raw data file
+    update_cadence: RawDataFileUpdateCadence = attr.ib()
 
     # Data classification of this raw file
     data_classification: RawDataClassification = attr.ib()
@@ -492,6 +512,7 @@ class DirectIngestRawFileConfig:
         default_encoding: str,
         default_separator: str,
         default_line_terminator: Optional[str],
+        default_update_cadence: RawDataFileUpdateCadence,
         default_ignore_quotes: bool,
         default_always_historical_export: bool,
         default_no_valid_primary_keys: bool,
@@ -501,6 +522,7 @@ class DirectIngestRawFileConfig:
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop("primary_key_cols", list)
         file_description = file_config_dict.pop("file_description", str)
+        update_cadence = file_config_dict.pop_optional("update_cadence", str)
         data_class = file_config_dict.pop("data_classification", str)
         column_infos: List[RawTableColumnInfo] = []
         for column in file_config_dict.pop_dicts("columns"):
@@ -596,6 +618,9 @@ class DirectIngestRawFileConfig:
             file_tag=file_tag,
             file_path=file_path,
             file_description=file_description,
+            update_cadence=RawDataFileUpdateCadence(
+                update_cadence if update_cadence is not None else default_update_cadence
+            ),
             data_classification=RawDataClassification(data_class),
             primary_key_cols=primary_key_cols,
             columns=column_infos,
@@ -712,6 +737,8 @@ class DirectIngestRegionRawFileConfig:
         default_line_terminator = default_contents.pop_optional(
             "default_line_terminator", str
         )
+        default_update_cadence_str = default_contents.pop("default_update_cadence", str)
+        default_update_cadence = RawDataFileUpdateCadence(default_update_cadence_str)
         default_ignore_quotes = default_contents.pop("default_ignore_quotes", bool)
         default_always_historical_export = default_contents.pop(
             "default_always_historical_export", bool
@@ -732,6 +759,7 @@ class DirectIngestRegionRawFileConfig:
             default_infer_columns_from_config=default_infer_columns_from_config,
             default_always_historical_export=default_always_historical_export,
             default_no_valid_primary_keys=default_no_valid_primary_keys,
+            default_update_cadence=default_update_cadence,
         )
 
     def get_datetime_parsers(self) -> Set[str]:
@@ -822,6 +850,7 @@ class DirectIngestRegionRawFileConfig:
                 default_config.default_encoding,
                 default_config.default_separator,
                 default_config.default_line_terminator,
+                default_config.default_update_cadence,
                 default_config.default_ignore_quotes,
                 default_config.default_always_historical_export,
                 default_config.default_no_valid_primary_keys,

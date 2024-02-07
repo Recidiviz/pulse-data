@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -125,6 +126,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
 
     def tearDown(self) -> None:

@@ -19,9 +19,10 @@ import json
 import logging
 from collections import Counter, defaultdict
 from concurrent import futures
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
+import pytz
 from google.cloud import tasks_v2
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
@@ -71,6 +72,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+    RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -476,10 +478,12 @@ class IngestOperationsStore(AdminPanelStore):
         operations_db_file_tag_summaries = self._get_raw_file_metadata_summaries(
             state_code, ingest_instance
         )
-        tags_with_configs = DirectIngestRegionRawFileConfig(
+        region_config = DirectIngestRegionRawFileConfig(
             region_code=region.region_code,
             region_module=region.region_module,
-        ).raw_file_tags
+        )
+
+        tags_with_configs = region_config.raw_file_tags
 
         all_file_tags = {
             *ingest_bucket_file_tag_counts.keys(),
@@ -498,11 +502,11 @@ class IngestOperationsStore(AdminPanelStore):
                 "latestDiscoveryTime": None,
                 "latestProcessedTime": None,
                 "latestUpdateDatetime": None,
+                "isStale": False,
             }
 
             if file_tag in tags_with_configs:
                 file_tag_metadata["hasConfig"] = True
-
             if file_tag in ingest_bucket_file_tag_counts:
                 file_tag_metadata[
                     "numberFilesInBucket"
@@ -510,6 +514,13 @@ class IngestOperationsStore(AdminPanelStore):
 
             if file_tag in operations_db_file_tag_summaries:
                 summary = operations_db_file_tag_summaries[file_tag]
+
+                if file_tag in region_config.raw_file_configs:
+                    raw_file_config = region_config.raw_file_configs[file_tag]
+                    file_tag_metadata["isStale"] = self.calculate_if_file_is_stale(
+                        summary.latest_discovery_time, raw_file_config.update_cadence
+                    )
+
                 file_tag_metadata = {
                     **file_tag_metadata,
                     "numberUnprocessedFiles": summary.num_unprocessed_files,
@@ -708,3 +719,25 @@ class IngestOperationsStore(AdminPanelStore):
             ingest_statuses[state_code] = instance_to_status_dict
 
         return ingest_statuses
+
+    @staticmethod
+    def calculate_if_file_is_stale(
+        latest_discovery_time: datetime, update_cadence: RawDataFileUpdateCadence
+    ) -> bool:
+        if update_cadence == RawDataFileUpdateCadence.DAILY:
+            # the file is stale if it has been over one day plus a 12 hour buffer period past the latest discovery time
+            return latest_discovery_time < datetime.now(pytz.utc) - timedelta(
+                days=1
+            ) - timedelta(hours=12)
+
+        if update_cadence == RawDataFileUpdateCadence.WEEKLY:
+            # the file is stale if it has been over one week plus a one day buffer period past the latest discovery time
+            return latest_discovery_time < datetime.now(pytz.utc) - timedelta(days=8)
+
+        if update_cadence == RawDataFileUpdateCadence.IRREGULAR:
+            # file staleness cannot be determined so we always return False if there is an irregular file cadence
+            return False
+
+        raise ValueError(
+            f"update_cadence value is invalid, expected DAILY, WEEKLY, or IRREGULAR. found: {update_cadence}"
+        )

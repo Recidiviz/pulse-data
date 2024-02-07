@@ -60,6 +60,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -141,6 +142,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
                 table_relationships=[],
+                update_cadence=RawDataFileUpdateCadence.WEEKLY,
             ),
             "tagHeadersNoContents": DirectIngestRawFileConfig(
                 file_tag="tagHeadersNoContents",
@@ -166,6 +168,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
                 table_relationships=[],
+                update_cadence=RawDataFileUpdateCadence.WEEKLY,
             ),
             "tagBasicData": DirectIngestRawFileConfig(
                 file_tag="tagBasicData",
@@ -191,6 +194,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
                 table_relationships=[],
+                update_cadence=RawDataFileUpdateCadence.WEEKLY,
             ),
             "tagMoreBasicData": DirectIngestRawFileConfig(
                 file_tag="tagMoreBasicData",
@@ -216,6 +220,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
                 table_relationships=[],
+                update_cadence=RawDataFileUpdateCadence.WEEKLY,
             ),
             "tagMoreBasicData_legacy": DirectIngestRawFileConfig(
                 file_tag="tagMoreBasicData_legacy",
@@ -241,6 +246,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
                 table_relationships=[],
+                update_cadence=RawDataFileUpdateCadence.WEEKLY,
             ),
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
                 file_tag="tagWeDoNotIngest",
@@ -259,6 +265,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
                 table_relationships=[],
+                update_cadence=RawDataFileUpdateCadence.WEEKLY,
             ),
         }
 

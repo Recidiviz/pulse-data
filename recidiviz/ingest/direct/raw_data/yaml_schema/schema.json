@@ -173,6 +173,10 @@
     "infer_columns_from_config": {
       "description": "If true, means that we likely will receive a CSV that does not have a header row and therefore, we will use the columns defined in the config, in the order they are defined in, as the column names. By default, False.",
       "type": "boolean"
+    },
+    "update_cadence": {
+      "description": "The cadence at which we expect to receive this raw data file (e.g. WEEKLY, DAILY, IRREGULAR)",
+      "type": "string"
     }
   },
   "required": [

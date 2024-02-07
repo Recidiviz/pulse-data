@@ -25,6 +25,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -56,6 +57,7 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
             table_relationships=[],
+            update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
         # Some datetime parsers
         self.parsers_list = [
@@ -184,5 +186,5 @@ class HydrateDatetimeSqlParsersTest(unittest.TestCase):
             ],
         )
         fake_region_config_writer.output_to_file.assert_called_with(
-            updated_config, ANY, ANY, ANY, ANY, ANY, ANY, ANY
+            updated_config, ANY, ANY, ANY, ANY, ANY, ANY, ANY, ANY
         )

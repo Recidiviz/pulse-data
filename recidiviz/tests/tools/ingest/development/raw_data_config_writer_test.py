@@ -22,6 +22,7 @@ import unittest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+    RawDataFileUpdateCadence,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
@@ -67,6 +68,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                 config_writer.output_to_file(
                     default_encoding="UTF-8",
                     default_separator=",",
+                    default_update_cadence=RawDataFileUpdateCadence.WEEKLY,
                     default_ignore_quotes=False,
                     default_always_historical_export=False,
                     default_no_valid_primary_keys=False,

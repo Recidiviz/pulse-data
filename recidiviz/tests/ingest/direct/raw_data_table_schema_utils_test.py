@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawDataFileUpdateCadence,
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
@@ -90,6 +91,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
                     ignore_quotes=True,
                     import_chunk_size_rows=200,
                     table_relationships=[],
+                    update_cadence=RawDataFileUpdateCadence.WEEKLY,
                 )
             },
         )

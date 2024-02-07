@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Implements tests for the IngestOperationsStore."""
+import unittest
 from datetime import datetime
 from typing import Dict, Optional
 from unittest import mock
@@ -52,6 +53,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+    RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -352,6 +354,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNotNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
                 self.assertIsNone(status["latestUpdateDatetime"])
+                self.assertIsNotNone(status["isStale"])
                 break
 
     def test_get_ingest_file_processing_status_returns_processed_list(self) -> None:
@@ -386,6 +389,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNotNone(status["latestDiscoveryTime"])
                 self.assertIsNotNone(status["latestProcessedTime"])
                 self.assertIsNotNone(status["latestUpdateDatetime"])
+                self.assertIsNotNone(status["isStale"])
                 break
 
     def test_get_ingest_file_processing_status_returns_list_with_files_in_bucket(
@@ -424,6 +428,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNotNone(status["latestDiscoveryTime"])
                 self.assertIsNotNone(status["latestProcessedTime"])
                 self.assertIsNotNone(status["latestUpdateDatetime"])
+                self.assertIsNotNone(status["isStale"])
                 break
 
     def test_get_ingest_file_processing_status_returns_list_multiple_file_tags(
@@ -491,6 +496,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
                 self.assertIsNone(status["latestUpdateDatetime"])
+                self.assertFalse(result[0]["isStale"])
 
     def test_get_ingest_file_processing_status_returns_list_with_secondary_instance(
         self,
@@ -509,6 +515,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         self.assertIsNone(result[0]["latestDiscoveryTime"])
         self.assertIsNone(result[0]["latestProcessedTime"])
         self.assertIsNone(result[0]["latestUpdateDatetime"])
+        self.assertFalse(result[0]["isStale"])
 
     def test_get_ingest_file_processing_status_catches_file_in_subdir(
         self,
@@ -539,6 +546,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
                 self.assertIsNone(status["latestUpdateDatetime"])
+                self.assertFalse(status["isStale"])
 
     def test_get_ingest_file_processing_status_catches_unnormalized_file(
         self,
@@ -569,6 +577,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
                 self.assertIsNone(status["latestUpdateDatetime"])
+                self.assertFalse(status["isStale"])
 
 
 class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
@@ -667,3 +676,41 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
             },
         }
         self.assertEqual(expected, statuses_map)
+
+
+class FileStalenessTest(unittest.TestCase):
+    """Tests for calculating file staleness"""
+
+    def test_weekly_file_stale(self) -> None:
+        with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
+            discovery_time = datetime(year=2020, month=1, day=1, tzinfo=pytz.UTC)
+            self.assertFalse(
+                IngestOperationsStore.calculate_if_file_is_stale(
+                    discovery_time, RawDataFileUpdateCadence.WEEKLY
+                )
+            )
+
+        with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
+            discovery_time = datetime(year=2019, month=12, day=25, tzinfo=pytz.UTC)
+            self.assertTrue(
+                IngestOperationsStore.calculate_if_file_is_stale(
+                    discovery_time, RawDataFileUpdateCadence.WEEKLY
+                )
+            )
+
+    def test_daily_file_stale(self) -> None:
+        with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
+            discovery_time = datetime(year=2020, month=1, day=2, tzinfo=pytz.UTC)
+            self.assertFalse(
+                IngestOperationsStore.calculate_if_file_is_stale(
+                    discovery_time, RawDataFileUpdateCadence.DAILY
+                )
+            )
+
+        with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
+            discovery_time = datetime(year=2019, month=1, day=1, tzinfo=pytz.UTC)
+            self.assertTrue(
+                IngestOperationsStore.calculate_if_file_is_stale(
+                    discovery_time, RawDataFileUpdateCadence.DAILY
+                )
+            )
