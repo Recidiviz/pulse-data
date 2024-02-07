@@ -47,6 +47,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="incarceration rate",
                 event_name="incarcerations",
                 event_name_singular="incarceration",
+                event_name_past_tense="were incarcerated",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
@@ -54,6 +55,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="absconsion & bench warrant rate",
                 event_name="absconsions & bench warrants",
                 event_name_singular="absconsion/bench warrant",
+                event_name_past_tense="absconded or had a bench warrant",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
@@ -61,6 +63,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="successful discharge rate",
                 event_name="successful discharges",
                 event_name_singular="successful discharge",
+                event_name_past_tense="were successfully discharged",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
@@ -68,6 +71,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="Limited Supervision Unit transfer rate",
                 event_name="LSU transfers",
                 event_name_singular="LSU transfer",
+                event_name_past_tense="were transferred to LSU",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=EARLY_DISCHARGE_REQUESTS,
@@ -75,6 +79,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="earned discharge request rate",
                 event_name="earned discharge requests",
                 event_name_singular="earned discharge request",
+                event_name_past_tense="requested earned discharge",
             ),
         ],
         supervision_officer_label="officer",
@@ -92,6 +97,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="incarceration rate",
                 event_name="incarcerations",
                 event_name_singular="incarceration",
+                event_name_past_tense="were incarcerated",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
@@ -99,6 +105,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="technical incarceration rate",
                 event_name="technical incarcerations",
                 event_name_singular="technical incarceration",
+                event_name_past_tense="had a technical incarceration",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
@@ -106,6 +113,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="absconsion rate",
                 event_name="absconsions",
                 event_name_singular="absconsion",
+                event_name_past_tense="absconded",
             ),
         ],
         supervision_officer_label="agent",
@@ -124,6 +132,11 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="incarceration rate",
                 event_name="all incarcerations",
                 event_name_singular="incarceration",
+                event_name_past_tense="were incarcerated",
+                description_markdown="""All transitions to incarceration (state prison or county jail) from supervision in the given time period, regardless of whether the final decision was a revocation or sanction admission. This also includes transitions from Probation to the Special Alternative for Incarceration (SAI) and transitions from supervision to incarceration due to any “New Commitment” movement reasons from OMNI.
+
+<br />
+Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
@@ -131,6 +144,11 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="absconder warrant rate",
                 event_name="absconder warrants",
                 event_name_singular="absconder warrant",
+                event_name_past_tense="had an absconder warrant",
+                description_markdown="""All reported absconder warrants from supervision in the given time period as captured by the following supervision levels in OMNI and COMS: Probation Absconder Warrant Status,  Parole Absconder Warrant Status, Absconder Warrant Status. Additionally, we use the following movement reasons from OMNI: Absconder from Parole, Absconder from Probation, and the COMS modifier Absconded.
+
+<br />
+Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
@@ -138,6 +156,15 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="technical incarceration rate",
                 event_name="technical incarcerations",
                 event_name_singular="technical incarceration",
+                event_name_past_tense="had a technical incarceration",
+                description_markdown="""We consider the movement reason from OMNI to identify whether a Technical or New Crime violation was the reason for returning to prison of all transitions to incarceration from supervision, regardless of whether the final decision was a revocation or sanction admission.
+
+<br />
+There are instances where we observe New Crime violation movement reasons entered after the Technical violation. This appears to be rare and in these cases, the incarceration start would be classified as a Technical violation. 
+For incarceration transitions where we don’t find this information in the movement reasons, we determine whether the most serious violation type among all violations occurring between 14 days after and 24 months before was a technical violation. 
+
+<br />
+Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
         ],
         client_events=[
@@ -149,6 +176,8 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
             ),
         ],
         supervision_officer_label="agent",
+        none_are_outliers_label="are outliers on any metrics",
+        exclusion_reason_description="We've excluded agents from this list with particularly large or small average daily caseloads (larger than 150 or smaller than 10). We also excluded agents who didn’t have a caseload of at least 10 clients for at least 75% of the observation period.",
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75
@@ -165,13 +194,23 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="incarceration rate",
                 event_name="all incarcerations",
                 event_name_singular="incarceration",
+                event_name_past_tense="were incarcerated",
+                description_markdown="""The numerator is transitions to incarceration from supervision in the given time period (12 months), regardless of whether the final decision was a revocation or sanction admission. Any returns to incarceration for weekend confinement are excluded.  This includes supervision plan updates to IN CUSTODY or DETAINER status. Returns to incarceration entered as SPLIT confinement are also included - some of these will be results of pre-determined sentencing decisions rather than the result of supervision violations.
+
+<br />
+Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
-                title_display_name="Absconsion & Bench Warrant Rate",
-                body_display_name="absconsion & bench warrant rate",
-                event_name="absconsions & bench warrants",
-                event_name_singular="absconsion/bench warrant",
+                title_display_name="Absconsion Rate",
+                body_display_name="absconsion rate",
+                event_name="absconsions",
+                event_name_singular="absconsion",
+                event_name_past_tense="absconded",
+                description_markdown="""All reported absconsions, as captured in the data we receive by supervision levels "9AB", "ZAB", "ZAC", "ZAP" or supervision type "ABS" for absconsions, in a given time period.
+
+<br />
+Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
@@ -179,6 +218,13 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 body_display_name="technical incarceration rate",
                 event_name="technical incarcerations",
                 event_name_singular="technical incarceration",
+                event_name_past_tense="had a technical incarceration",
+                description_markdown="""Transitions to incarceration from supervision due to technical violations, regardless of whether the final decision was a revocation or sanction admission. It is considered a technical incarceration only if the most serious violation type across all violations in the prior 24 months was a technical violation. We use this logic even if someone’s return to prison is labeled a “new admission”, as long as they were previously on supervision. For incarceration transitions where we don’t find any associated violations, we infer violations and their type by looking at admission reasons implying a Technical or New Crime reason for returning to prison.
+
+There are situations where we are unable to find a violation to match an incarceration we see in the data. For example, if there are no violations entered because of data entry reasons or because someone was previously in a CCC who did not use TOMIS, we will either not know the cause of the reincarceration or be associating the incarceration with an erroneous violation type.
+
+<br />
+Denominator is the average daily caseload for the officer over the given time period, including people on both active and admin supervision levels.""",
             ),
         ],
         client_events=[
@@ -194,6 +240,8 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
         supervision_supervisor_label="manager",
         supervision_unit_label="unit",
         supervision_district_manager_label="district director",
+        worse_than_rate_label="higher",
+        exclusion_reason_description="We've excluded officers from this list with particularly large or small average daily caseloads (larger than 175 or smaller than 10). We also excluded officers who didn’t have a caseload of at least 10 clients for at least 75% of the observation period.",
         supervision_officer_metric_exclusions="""
     --TODO(#25695): Revisit this after excluding admin supervision levels    
     AND avg_daily_population BETWEEN 10 AND 175

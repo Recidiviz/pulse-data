@@ -139,6 +139,14 @@ class OutliersMetricConfig:
     # Event name in the singular form corresponding to the metric
     event_name_singular: str = attr.ib()
 
+    # Event name in the past participle form corresponding to the metric, to be put into sentences
+    # of the form "the number of JII who {event_name_past_tense}"
+    event_name_past_tense: str = attr.ib()
+
+    # A description of how the metric for this event type is calculated, formatted in markdown and
+    # displayed when a user clicks on the info icon next to the metric.
+    description_markdown: str | None = attr.ib(default=None)
+
     # The query fragment to use to filter analyst_data.person_events for this metric's events
     metric_event_conditions_string: str = attr.ib(default=None)
 
@@ -150,6 +158,8 @@ class OutliersMetricConfig:
         body_display_name: str,
         event_name: str,
         event_name_singular: str,
+        event_name_past_tense: str,
+        description_markdown: str | None = None,
     ) -> "OutliersMetricConfig":
         return cls(
             metric.name,
@@ -158,6 +168,8 @@ class OutliersMetricConfig:
             body_display_name,
             event_name,
             event_name_singular,
+            event_name_past_tense,
+            description_markdown,
             metric.metric_event_conditions_string,
         )
 
@@ -209,6 +221,16 @@ class OutliersBackendConfig:
 
     # The string that represents what a state calls a justice-impacted individual on supervision, e.g. "client"
     supervision_jii_label: str = attr.ib(default="client")
+
+    # The string that goes in "None of the X on Y's unit ______. Keep checking back" when there are no outliers
+    # TODO(#27414): Allow for template strings in copy and replace this with a template that has more of the string.
+    none_are_outliers_label: str = attr.ib(default="are outliers")
+
+    # The string that describes a metric that is worse than the statewide rate
+    worse_than_rate_label: str = attr.ib(default="worse")
+
+    # A description of why some officers may be excluded from the list.
+    exclusion_reason_description: str | None = attr.ib(default=None)
 
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
