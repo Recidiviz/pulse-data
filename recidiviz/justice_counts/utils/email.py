@@ -204,10 +204,6 @@ def send_reminder_emails(
     # Send reminder email to all users that belong to the agency
     # except for CSG users
     for user_email in subscribed_user_emails:
-        # TODO(#26282): Filter out Recidiviz Emails. For playtesting, only recidiviz email
-        # addresses will get reminder emails
-        if "@recidiviz.org" not in user_email:
-            continue
         try:
             if dry_run is True:
                 logger.info("DRY_RUN: Would send email to %s", user_email)
