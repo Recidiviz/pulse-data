@@ -142,6 +142,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         super().setUp()
 
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.project_id_patcher.stop()
+        self.fs_patcher.stop()
+        self.client_patcher.stop()
+        self.secrets_patcher.stop()
+
     def get_engine(self) -> Engine:
         return self.session.get_bind()
 

@@ -74,7 +74,6 @@ NUM_SLOW_VIEWS_TO_LOG = 25
 
 @gcp_only
 def execute_update_all_managed_views(
-    project_id: str,
     sandbox_prefix: Optional[str],
     dataset_ids_to_load: Optional[List[str]] = None,
     clean_managed_datasets: bool = True,
@@ -86,9 +85,7 @@ def execute_update_all_managed_views(
     """
     start = datetime.datetime.now()
 
-    all_view_builders_in_dag: List[BigQueryViewBuilder] = deployed_view_builders(
-        project_id
-    )
+    all_view_builders_in_dag: List[BigQueryViewBuilder] = deployed_view_builders()
 
     if dataset_ids_to_load:
         logging.info(

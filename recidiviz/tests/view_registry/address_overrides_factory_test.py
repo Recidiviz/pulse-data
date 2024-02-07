@@ -139,13 +139,11 @@ class TestAddressOverrides(unittest.TestCase):
     def test_address_overrides_for_deployed_view_datasets(self) -> None:
         prefix = "my_prefix"
         with local_project_id_override(GCP_PROJECT_STAGING):
-            overrides = address_overrides_for_deployed_view_datasets(
-                GCP_PROJECT_STAGING, prefix
-            )
+            overrides = address_overrides_for_deployed_view_datasets(prefix)
 
             self.assert_has_overrides_for_all_builders(
                 overrides,
-                deployed_view_builders(GCP_PROJECT_STAGING),
+                deployed_view_builders(),
                 prefix,
                 expected_skipped_datasets={DATAFLOW_METRICS_MATERIALIZED_DATASET},
             )
@@ -157,12 +155,12 @@ class TestAddressOverrides(unittest.TestCase):
         dataflow_dataset_override = "test_dataflow"
         with local_project_id_override(GCP_PROJECT_STAGING):
             overrides = address_overrides_for_deployed_view_datasets(
-                GCP_PROJECT_STAGING, prefix, dataflow_dataset_override
+                prefix, dataflow_dataset_override
             )
 
             self.assert_has_overrides_for_all_builders(
                 overrides,
-                deployed_view_builders(GCP_PROJECT_STAGING),
+                deployed_view_builders(),
                 prefix,
                 expected_skipped_datasets=set(),
             )

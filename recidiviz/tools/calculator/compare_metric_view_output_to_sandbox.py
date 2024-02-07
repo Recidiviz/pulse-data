@@ -84,7 +84,7 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.load_views_to_sandbox import load_all_views_to_sandbox
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override, project_id
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
@@ -173,7 +173,7 @@ def compare_metric_view_output_to_sandbox(
     query_jobs: List[Tuple[QueryJob, str]] = []
     skipped_views: List[str] = []
 
-    for view_builder in deployed_view_builders(project_id()):
+    for view_builder in deployed_view_builders():
         # Only compare output of metric views
         if not isinstance(view_builder, MetricBigQueryViewBuilder):
             continue

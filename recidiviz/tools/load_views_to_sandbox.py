@@ -120,7 +120,7 @@ class _AllButSomeBigQueryViewsCollector(BigQueryViewCollector[BigQueryViewBuilde
         self.datasets_to_exclude = datasets_to_exclude
 
     def collect_view_builders(self) -> List[BigQueryViewBuilder]:
-        all_deployed_builders = deployed_view_builders(project_id())
+        all_deployed_builders = deployed_view_builders()
         return [
             builder
             for builder in all_deployed_builders
@@ -227,7 +227,7 @@ def _load_manually_filtered_views_to_sandbox(
         else None
     )
 
-    view_builders = deployed_view_builders(project_id())
+    view_builders = deployed_view_builders()
 
     collector = BigQueryViewSubDagCollector(
         view_builders_in_full_dag=view_builders,
@@ -434,7 +434,7 @@ def _load_views_changed_on_branch_to_sandbox(
     """
     _confirm_rebased_on_latest_deploy()
 
-    view_builders_in_full_dag = deployed_view_builders(project_id())
+    view_builders_in_full_dag = deployed_view_builders()
 
     all_views = build_views_to_update(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,

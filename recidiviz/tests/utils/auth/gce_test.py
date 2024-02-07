@@ -30,18 +30,26 @@ class TestAuthenticateRequest:
     """Tests for the Compute Engine auth decorator."""
 
     def setup_method(self, _test_method: Callable) -> None:
+        """Setup that runs before each test."""
         self.project_id_patcher = patch(
             "recidiviz.utils.metadata.project_id", Mock(return_value="test-project")
-        ).start()
+        )
+        self.project_id_patcher.start()
+
         self.project_number_patcher = patch(
             "recidiviz.utils.metadata.project_number", Mock(return_value="123456789")
-        ).start()
+        )
+        self.project_number_patcher.start()
+
         self.get_secret_patcher = patch(
             "recidiviz.utils.auth.gce.get_secret", Mock(return_value="987654321")
-        ).start()
+        )
+        self.get_secret_patcher.start()
+
         self.validate_iap_jwt_patcher = patch(
             "recidiviz.utils.validate_jwt.validate_iap_jwt_from_compute_engine"
-        ).start()
+        )
+        self.mock_validate_iap_jwt = self.validate_iap_jwt_patcher.start()
 
         dummy_app = Flask(__name__)
 
@@ -62,14 +70,14 @@ class TestAuthenticateRequest:
         self.validate_iap_jwt_patcher.stop()
 
     def test_authenticate_request_from_iap(self) -> None:
-        self.validate_iap_jwt_patcher.return_value = ("user", "email", None)
+        self.mock_validate_iap_jwt.return_value = ("user", "email", None)
 
         response = self.client.get("/", headers={"x-goog-iap-jwt-assertion": "0"})
         assert response.status_code == 200
         assert response.get_data().decode() == BEST_ALBUM
 
     def test_authenticate_request_from_iap_invalid(self) -> None:
-        self.validate_iap_jwt_patcher.return_value = (None, None, "INVALID TOKEN")
+        self.mock_validate_iap_jwt.return_value = (None, None, "INVALID TOKEN")
 
         response = self.client.get("/", headers={"x-goog-iap-jwt-assertion": "0"})
         assert response.status_code == 401

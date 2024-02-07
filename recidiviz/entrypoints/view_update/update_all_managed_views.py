@@ -20,7 +20,6 @@ import argparse
 
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.utils.metadata import project_id
 from recidiviz.utils.params import str_to_bool, str_to_list
 
 
@@ -59,7 +58,6 @@ class UpdateAllManagedViewsEntrypoint(EntrypointInterface):
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
         execute_update_all_managed_views(
-            project_id(),
             sandbox_prefix=args.sandbox_prefix,
             dataset_ids_to_load=args.dataset_ids_to_load,
             clean_managed_datasets=args.clean_managed_datasets,
