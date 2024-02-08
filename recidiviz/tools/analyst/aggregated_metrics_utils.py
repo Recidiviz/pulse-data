@@ -171,11 +171,11 @@ FROM
 , period_event_metrics AS (
     {period_event_cte}
 )"""
-        all_joins_query_template += """
+        all_joins_query_template += f"""
 LEFT JOIN
     period_event_metrics
 USING
-    (state_code, start_date, end_date)"""
+    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date)"""
 
     assignment_event_metrics = [
         m for m in metrics if isinstance(m, AssignmentEventAggregatedMetric)
@@ -191,11 +191,11 @@ USING
 , assignment_event_metrics AS (
     {assignment_event_cte}
 )"""
-        all_joins_query_template += """
+        all_joins_query_template += f"""
 LEFT JOIN
     assignment_event_metrics
 USING
-    (state_code, start_date, end_date)"""
+    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date)"""
 
     assignment_span_metrics = [
         m for m in metrics if isinstance(m, AssignmentSpanAggregatedMetric)
@@ -211,11 +211,11 @@ USING
 , assignment_span_metrics AS (
     {assignment_span_cte}
 )"""
-        all_joins_query_template += """
+        all_joins_query_template += f"""
 LEFT JOIN
     assignment_span_metrics
 USING
-    (state_code, start_date, end_date)"""
+    ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date)"""
 
     query_template = f"""
 
