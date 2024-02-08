@@ -363,8 +363,8 @@ def aggregate_adjacent_spans_postgres(
                     (
                     SELECT 
                         *,
-                        SUM(CAST(session_boundary as int)) OVER {partition_with_attributes_str} AS {session_id_output_name},
-                        SUM(CAST(date_gap as int)) OVER {partition_str} AS date_gap_id,
+                        SUM(CAST(session_boundary AS INT64)) OVER {partition_with_attributes_str} AS {session_id_output_name},
+                        SUM(CAST(date_gap AS INT64)) OVER {partition_str} AS date_gap_id,
                     FROM
                         (
                         SELECT
