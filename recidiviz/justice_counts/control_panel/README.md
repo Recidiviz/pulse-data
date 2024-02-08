@@ -186,6 +186,30 @@ To determine what commits will be included in a deploy to production, run the fo
 ./recidiviz/tools/deploy/justice_counts/commits_to_be_deployed.sh -v v1.0.0
 ```
 
+### Deploy to Playtest using our Github Action
+
+1. Click on the Actions tab in Github.
+
+<img width="1183" alt="Screenshot 2024-02-08 at 10 03 48 AM" src="https://github.com/Recidiviz/pulse-data/assets/130382407/2861b26a-510e-4731-a3c2-285c3e4dbb7a">
+
+2. Click on Deploy to JC Playtest on the left side bar.
+
+3. Click on the Run workflow drop down on the right side.
+
+<img width="1362" alt="Screenshot 2024-02-08 at 10 08 37 AM" src="https://github.com/Recidiviz/pulse-data/assets/130382407/5a7c5cae-dc67-44ae-af25-d46ddb6972c7">
+
+4. Select the workflow parameters for the deployment:
+
+- `Use workflow from`: The branch to deploy.
+- `Service name`: The service to deploy to (either "publisher-web" or "agency-dashboard-web").
+- `Playtest URL tag`: The tag for the playtest URL. This tag must be registered as an allowed URL in Auth0 under the Publisher application.
+
+5. Select the green `Run workflow` to trigger the deploy.
+
+6. The Recidiviz Helper bot will post a comment on the PR containing the playtesting link (or a failure report). Note that the playtest deploy may take up to 10 minutes after the bot posts the link.
+
+Deploying to playtesting is available for both the backend `pulse-data` repository and the frontend `justice-counts` repository. If deploying from a `pulse-data` PR, the deployment uses the version of `justice-counts` stored on main. And if deploying from a `justice-counts` PR, the deployment uses the version of `pulse-data` stored on main.
+
 ## Creating Users and Agencies
 
 1. Visit the Admin Panel at [go/admin](https://recidiviz-staging.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (staging) or [go/admin-prod](https://recidiviz-123.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (production)
