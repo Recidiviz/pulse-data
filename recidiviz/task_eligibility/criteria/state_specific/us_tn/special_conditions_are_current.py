@@ -59,6 +59,10 @@ _QUERY_TEMPLATE = f"""
             c.person_id,
             contact_date AS start_date,
             contact_date,
+            LAG(IF(contact_type='SPEC',contact_date,NULL))
+                OVER (PARTITION BY c.person_id 
+                      ORDER BY contact_date ASC)
+                AS most_recent_spec_date,
             LEAD(contact_date)
                 OVER (PARTITION BY c.person_id 
                       ORDER BY contact_date ASC)
@@ -81,12 +85,16 @@ _QUERY_TEMPLATE = f"""
                 pei.state_code = 'US_TN'
             WHERE
                 -- SPEC means SPECIAL CONDITIONS MONITORED AS DESCRIBED IN COMMENTS 
-                -- SPET means ALL SPECIAL CONDITIONS MONITORING TERMINATED 
-                ContactNoteType IN ('SPEC','SPET')
-            -- If someone has a SPEC and SPET on the same day, we want to prioritize the SPET because it means their
-            -- special conditions have been terminated and don't need to be checked again
+                -- SPET means ALL SPECIAL CONDITIONS MONITORING TERMINATED
+                -- XSPE means SPECIAL CONDITIONS NOT VERIFIED, SEE COMMENTS
+                ContactNoteType IN ('SPEC','SPET','XSPE')
+            /* Prioritize SPET > SPEC > XSPE. If someone has a SPET on the same day as a SPEC, their 
+                special conditions have been terminated and don't need to be checked again. If they have a SPEC
+                and XSPE on the same day, we want to prioritize the contact that was able to verify special conditions */
             QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, contact_date
-                                 ORDER BY CASE WHEN contact_type = "SPET" THEN 0 ELSE 1 END ASC) = 1
+                                 ORDER BY CASE WHEN contact_type = "SPET" THEN 0 
+                                                WHEN contact_type = "SPEC" THEN 1
+                                                ELSE 2 END ASC) = 1
             ) c
     )
     ,
@@ -101,6 +109,7 @@ _QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
+            most_recent_spec_date,
             end_date,
             contact_date,
             contact_type,
@@ -114,6 +123,7 @@ _QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
+            NULL AS most_recent_spec_date,
             end_date_exclusive AS end_date,
             NULL AS contact_date,
             NULL AS contact_type,
@@ -131,6 +141,7 @@ _QUERY_TEMPLATE = f"""
                 state_code, 
                 start_date, 
                 end_date, 
+                MAX(most_recent_spec_date) AS most_recent_spec_date,
                 MAX(contact_date) AS contact_date,
                 MAX(contact_type) AS contact_type,
                 MAX(supervision_level) AS supervision_level,
@@ -149,7 +160,7 @@ _QUERY_TEMPLATE = f"""
             contact_type,
             supervision_level,
             supervision_level_raw_text,
-            -- If contact_type = SPET then another contact is not needed so critical date is left null
+            -- If contact_type = SPET then another contact is not needed so critical date is left null.
             CASE WHEN contact_type = 'SPEC' THEN (
                 CASE
                     WHEN supervision_level = "MINIMUM" 
@@ -158,18 +169,38 @@ _QUERY_TEMPLATE = f"""
                         THEN LAST_DAY(DATE_ADD(contact_date, INTERVAL {US_TN_MEDIUM_SPE_NOTE_CONTACT_STANDARD} MONTH))
                     END
             )
+                WHEN contact_type = 'XSPE' THEN (
+                    CASE
+                        WHEN supervision_level = "MINIMUM" 
+                            THEN LAST_DAY(
+                                    DATE_ADD(
+                                        COALESCE(most_recent_spec_date,contact_date), 
+                                        INTERVAL {US_TN_MINIMUM_SPE_NOTE_CONTACT_STANDARD} MONTH
+                                        )
+                                    )
+                        WHEN supervision_level = "MEDIUM" AND supervision_level_raw_text NOT IN ('{{exclude_medium}}') 
+                            THEN LAST_DAY(
+                                    DATE_ADD(
+                                        COALESCE(most_recent_spec_date,contact_date),
+                                        INTERVAL {US_TN_MEDIUM_SPE_NOTE_CONTACT_STANDARD} MONTH
+                                        )
+                                    )
+                        END
+            ) 
             END AS critical_date,
         FROM
             priority_levels
     ),
-    {critical_date_has_passed_spans_cte(attributes=['supervision_level_raw_text'])}
+    {critical_date_has_passed_spans_cte(attributes=['contact_type','supervision_level_raw_text'])}
     SELECT
         state_code,
         person_id,
         start_date,
         end_date,
-        -- If critical date has passed, the SPE note is overdue
+        -- If critical date has passed, the SPE note is overdue. And if the note was XSPE, the criteria 
+        -- is not met - not because the note is overdue but because conditions have not been verified
         CASE WHEN supervision_level_raw_text IN ('{{exclude_medium}}') THEN FALSE
+             WHEN contact_type = 'XSPE' THEN FALSE
              ELSE NOT critical_date_has_passed
              END AS meets_criteria,
         TO_JSON(STRUCT(
