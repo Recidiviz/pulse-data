@@ -192,6 +192,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
                                 ORDER BY contact_date DESC,
                                     CASE WHEN contact_type = 'SPET' THEN 0
                                          WHEN contact_type = 'SPEC' THEN 1
+                                         ELSE 2
                                          END) = 1
     ),
     pivoted_contacts AS (

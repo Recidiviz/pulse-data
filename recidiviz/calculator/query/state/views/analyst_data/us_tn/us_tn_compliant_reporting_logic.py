@@ -130,7 +130,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = f"""
                 standards.Last_DRU_Type AS last_drug_screen_result,
                 standards.Region as district,
                 -- Criteria: Special Conditions are up to date
-                CASE WHEN SPE_Note_Due <= current_date('US/Eastern') THEN 0 ELSE 1 END AS spe_conditions_not_overdue_flag,
+                CASE WHEN SPE_Note_Due <= current_date('US/Eastern') OR NOT COALESCE(spe_tes.meets_criteria, TRUE) THEN 0 
+                    ELSE 1 
+                    END AS spe_conditions_not_overdue_flag,
                 pei.person_id,
                 latest_system_session_start_date,
                 earliest_supervision_start_date_in_latest_system,
@@ -210,6 +212,12 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = f"""
                 WHERE CURRENT_DATE('US/Eastern') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
             ) arrp_tes
                 ON pei.person_id = arrp_tes.person_id
+            LEFT JOIN (
+                SELECT *
+                FROM `{{project_id}}.{{task_eligibility_dataset}}.special_conditions_are_current_materialized` tes
+                WHERE CURRENT_DATE('US/Eastern') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
+            ) spe_tes
+                ON pei.person_id = spe_tes.person_id
             WHERE date_of_standards = (
                 SELECT MAX(date_of_standards)
                 FROM `{{project_id}}.{{static_reference_dataset}}.us_tn_standards_due`
