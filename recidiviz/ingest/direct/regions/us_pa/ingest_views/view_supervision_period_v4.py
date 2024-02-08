@@ -85,7 +85,7 @@ parole_count_id_level_info_base AS (
         hr.HReGradeSup as supervision_level,
         hr.HReDo as most_recent_district_office,
         1 AS is_history_row,
-        CAST(HReleaseId AS INT) as release_id
+        CAST(HReleaseId AS INT64) as release_id
       FROM {dbo_Hist_Release} hr
     ) as releases
   ) as releases_with_priority
