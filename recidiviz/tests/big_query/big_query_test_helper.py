@@ -21,10 +21,16 @@ import datetime
 import logging
 from typing import Dict, List, Type, Union
 
+import db_dtypes
+import numpy
 import pandas as pd
 from more_itertools import one
 from pandas._testing import assert_frame_equal
 
+DTYPES = {
+    "integer": {int, pd.Int64Dtype, numpy.dtypes.Int64DType, numpy.int64},
+    "bool": {bool, pd.BooleanDtype, numpy.dtypes.BoolDType, numpy.bool_},
+}
 
 # TODO(#15020): Get rid of this interface once the postgres implementation is deleted.
 class BigQueryTestHelper:
@@ -92,13 +98,23 @@ class BigQueryTestHelper:
             raise ValueError("Found empty dimensions")
 
         for col in df.columns:
-            if data_types.get(col) == bool and df[col].dtype != bool:
+            if (
+                data_types.get(col) in DTYPES["bool"]
+                and type(df[col].dtype) not in DTYPES["bool"]
+            ):
                 # Pandas interprets "true" and "false" string values as truthy, so will
                 # convert these incorrectly when converting the column to a bool type.
                 # We map here to boolean True/False values so that the column type can
                 # be converted properly.
                 df[col] = df[col].map(
-                    {"true": True, "false": False, "True": True, "False": False}
+                    {
+                        "true": True,
+                        "false": False,
+                        "True": True,
+                        "False": False,
+                        True: True,
+                        False: False,
+                    }
                 )
 
         # Convert values in dataframe to specified types.
@@ -135,9 +151,8 @@ class BigQueryTestHelper:
         )
 
         if len(column_value_types) == 0:
-            # There are no values in this column so we can't conclude what the type
-            # is.
-            return object
+            # There are no values in this column, defer decision to results dataframe
+            column_value_types.add(type(df.dtypes[column]))
 
         if len(column_value_types) > 1:
             raise ValueError(
@@ -147,13 +162,17 @@ class BigQueryTestHelper:
 
         python_type = one(column_value_types)
 
-        if python_type == int:
-            return int
-
         if python_type == float:
             return float
 
-        if python_type == bool:
+        if python_type in DTYPES["integer"]:
+            # Columns that contain NaN cannot be coerced to integer, must use float
+            if has_null_values:
+                return float
+
+            return int
+
+        if python_type in DTYPES["bool"]:
             if has_null_values:
                 # Pandas does not allow null values in boolean columns - nulls will get
                 # converted to False. If we want to mimic a NULLABLE boolean column, we
@@ -170,11 +189,14 @@ class BigQueryTestHelper:
             datetime.datetime,
             datetime.date,
             pd.Timestamp,
+            db_dtypes.DateDtype,
+            numpy.dtypes.ObjectDType,
             # Collection types are not hashable so there are issues with setting
             # collection type columns as index columns.
             list,
             set,
             dict,
+            int,
         ):
             print(f"PYTHON TYPE for {column}: {python_type}")
             return pd.StringDtype()

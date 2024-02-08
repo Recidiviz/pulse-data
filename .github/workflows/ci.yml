@@ -298,7 +298,7 @@ jobs:
         run: |
           docker run -d -p 9050:9050 \
             --name=recidiviz-bq-emulator \
-            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.1 \
+            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.2 \
             /bin/bigquery-emulator \
             --project=recidiviz-bq-emulator-project \
             --log-level=info

@@ -101,14 +101,9 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
             )
 
     def query(self, query: str) -> pd.DataFrame:
-        query_job = self.bq_client.run_query_async(
+        return self.bq_client.run_query_async(
             query_str=query, use_query_cache=True
-        )
-        contents_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
-            query_job
-        ).get_contents_iterator()
-
-        return pd.DataFrame(contents_iterator)
+        ).to_dataframe()
 
     def run_query_test(
         self, query_str: str, expected_result: Iterable[Dict[str, Any]]

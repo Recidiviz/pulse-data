@@ -158,6 +158,10 @@ class IngestViewQueryTester:
 
             results.to_csv(expected_output_fixture_path, index=False)
 
+        pd.options.display.width = 9999
+        pd.options.display.max_columns = 999
+        pd.options.display.max_rows = 999
+        pd.options.display.max_colwidth = 999
         self.compare_results_to_fixture(results, expected_output_fixture_path)
 
     @staticmethod
