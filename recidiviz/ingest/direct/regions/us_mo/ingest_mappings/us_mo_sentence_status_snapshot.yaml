@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+launch_env:
+  $env: is_dataflow_pipeline
+input_columns:
+  - BS_DOC
+  - BS_CYC
+  - BS_SEO
+  - BW_SSO
+  - BS_SCF
+  - BW_SCD
+  - BW_SY
+unused_columns: []
+variables:
+  - sentence_external_id:
+      $concat:
+        $values:
+          - BS_DOC
+          - BS_CYC
+          - BS_SEO
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: BS_DOC
+          id_type: $literal("US_MO_DOC")
+    sentences:
+      - StateSentence:
+          external_id: $variable(sentence_external_id)
+          sentence_status_snapshots:
+            - StateSentenceStatusSnapshot:
+                status_update_datetime: BW_SY # Status Code Change Date
+                sequence_num: BW_SSO
+                status:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - BW_SCD # Status Code
+                          - BS_SCF # Y if sentence is completed, N if not
+                    $custom_parser: us_mo_custom_enum_parsers.get_recidiviz_sentence_status
