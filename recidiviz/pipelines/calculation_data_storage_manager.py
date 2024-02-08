@@ -23,7 +23,7 @@ from http import HTTPStatus
 from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import flask
-from google.cloud.bigquery import WriteDisposition, CopyJob, QueryJob
+from google.cloud.bigquery import CopyJob, QueryJob, WriteDisposition
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import one
 
@@ -84,6 +84,7 @@ calculation_data_storage_manager_blueprint = flask.Blueprint(
 )
 
 
+# TODO(#27436) Speed up this endpoint and lower the allowed attempt deadline
 @calculation_data_storage_manager_blueprint.route("/prune_old_dataflow_data")
 @requires_gae_auth
 def prune_old_dataflow_data() -> Tuple[str, HTTPStatus]:
@@ -323,7 +324,7 @@ SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
           LIMIT {day_count_limit})
         ON created_on = keep_created_date"""
 
-
+# TODO(#27436) Speed up this process and lower the allowed attempt deadline
 def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
     """Moves old output in Dataflow metrics tables to tables in a cold storage dataset.
     We only keep the MAX_DAYS_IN_DATAFLOW_METRICS_TABLE days worth of data in a Dataflow

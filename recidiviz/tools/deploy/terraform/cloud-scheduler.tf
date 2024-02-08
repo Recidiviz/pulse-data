@@ -66,11 +66,12 @@ resource "google_cloud_scheduler_job" "schedule_ingest_dag_run_topic" {
 }
 
 resource "google_cloud_scheduler_job" "prune_old_dataflow_data" {
-  name             = "prune-old-dataflow-data"
-  schedule         = "0 0 * * *" # Every day at 00:00
-  description      = "Move old Dataflow metric output to cold storage"
-  time_zone        = "America/Los_Angeles"
-  attempt_deadline = "600s" # 10 minutes
+  name        = "prune-old-dataflow-data"
+  schedule    = "0 0 * * *" # Every day at 00:00
+  description = "Move old Dataflow metric output to cold storage"
+  time_zone   = "America/Los_Angeles"
+  # TODO(#27436) Speed up pruning and lower the attempt_deadline
+  attempt_deadline = "900s" # 15 minutes
 
   retry_config {
     min_backoff_duration = "2.500s"
