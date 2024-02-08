@@ -39,6 +39,25 @@ WITH
             REGEXP_REPLACE(ToLocationID, r'[^A-Z0-9]', '') as ToLocationID,
          FROM {OffenderMovement}
     ),
+    find_max_offender_discharge_movement_date AS (
+    -- It is a known data issue that some people will have a final movement of Discharge in OffenderMovement, but we will 
+    -- still see them having unit movements in CellBedAssignment or Custody Level info in Clssification. This CTE finds 
+    -- people whose last movement in OffenderMovement is a Discharge and then sets the MaxDischargeDate so that we don't 
+    -- add in info from CellBedAssignment or Classification that would create open periods when the person's should be closed out. 
+    -- If someone's most recent movement in OffenderMovement is NOT a discharge, we don't restrict any data, ensuring that all updates 
+    -- for actively incarcerated are tracked. 
+        SELECT 
+            OffenderID, 
+            CASE WHEN MovementType LIKE '%DI' THEN MovementDateTime ELSE NULL END as MaxDischargeDate
+        FROM (
+            SELECT 
+            OffenderID,
+            MovementType,
+            MovementDateTime,
+            ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementDateTime DESC) as max_movement_entry
+            FROM {OffenderMovement}) AS a
+        WHERE max_movement_entry = 1 AND RIGHT(MovementType, 2) = 'DI'
+    ),
     classification_filter AS (	
         SELECT DISTINCT 	
             OffenderId, ClassificationDecisionDate, RecommendedCustody, ClassificationDecision, ClassificationSequenceNumber,	
@@ -50,8 +69,10 @@ WITH
             WHEN RecommendedCustody = 'MID' THEN 5  	
             WHEN RecommendedCustody = 'MIT' THEN 6  END)) AS CustLevel --Should all have unique Seq Number for date, but adding this to handle when they dont	
         FROM {Classification}
+        LEFT JOIN find_max_offender_discharge_movement_date USING (OffenderID)
         WHERE ClassificationDecision = 'A'  # denotes final custody level	
         AND EXTRACT(YEAR FROM CAST(ClassificationDecisionDate AS DATETIME)) > 2002  # Data is not reliable before 	
+        AND ClassificationDecisionDate <= COALESCE(MaxDischargeDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
     ), 
     cell_bed_assignment_setup AS (
             SELECT DISTINCT
@@ -64,8 +85,10 @@ WITH
             RequestedUnitID AS HousingUnit,
             LAG(RequestedUnitID) OVER(PARTITION BY OFFENDERID ORDER BY AssignmentDateTime) AS LastHousingUnit
         FROM {CellBedAssignment}
-        WHERE RequestedUnitID IS NOT NULL
-        AND EXTRACT(YEAR FROM CAST(AssignmentDateTime AS DATETIME)) > 2002  # Data is not reliable before
+        LEFT JOIN find_max_offender_discharge_movement_date USING (OffenderID)
+        WHERE RequestedUnitID IS NOT NULL and AssignmentDateTime <= COALESCE(MaxDischargeDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
+        AND EXTRACT(YEAR FROM CAST(AssignmentDateTime AS DATETIME)) > 2002  # Data is not reliable before 2002
+    
     ),
     filter_to_only_incarceration as (
         SELECT
@@ -78,8 +101,10 @@ WITH
             null AS RecommendedCustody,
             null AS HousingUnit
         FROM remove_extraneous_chars
-        -- Filter to only rows that are to/from with incarceration facilities.
-        WHERE RIGHT(MovementType, 2) IN ('FA', 'FH', 'CT') OR LEFT(MovementType, 2) IN ('FA', 'FH', 'CT')
+        -- Filter to only rows that are to/from/within incarceration facilities. There are a few cases from pre-1993 where 
+        -- someone follows unintuitive OffenderMovements and we do not see them transfer from FA to supervision but then see 
+        -- a movement for supervision to discharge (such as PADI). We include 'DI' movements then to ensure that all these periods are properly closed out.
+        WHERE RIGHT(MovementType, 2) IN ('FA', 'FH', 'CT','DI') OR LEFT(MovementType, 2) IN ('FA', 'FH', 'CT') 
 
         UNION ALL # to pull in custody level changes as periods	
 
@@ -156,8 +181,8 @@ WITH
         WHERE MovementReason not in ('CLASP', 'CLAST', 'APPDI')
     ),
     filter_out_movements_after_death_date AS (
-        SELECT *,
-          CASE WHEN FromLocationID != ToLocationID THEN ToLocationID ELSE Null END as current_facility_location #To determine erroneous seg periods after someone has left a facility, we need to capture when their official facility location has changed 
+        SELECT 
+            *
         FROM initial_setup
         WHERE 
             (DeathDate IS NULL
@@ -168,7 +193,6 @@ WITH
     all_official_facility_info_to_all_periods AS (
     SELECT 
         *,
-        LAST_VALUE(current_facility_location IGNORE NULLS) OVER (PARTITION BY OffenderID ORDER BY MovementDateTime ASC, MovementReason ASC) as confirmed_facility_location,
         ROW_NUMBER() OVER 
         (PARTITION BY OffenderID 
             ORDER BY 
@@ -227,11 +251,6 @@ WITH
             DeathDate,
             CustodyLevel,
             HousingUnit
-            -- CASE  ### No longer need this since not inferring general with this joining
-            --     WHEN StartMovementReason = 'CELL_END' AND NextMovementReason != 'CELL_START' THEN 'GENERAL' 
-            --     WHEN NextMovementReason = 'CELL_END' AND StartMovementReason != 'CELL_START' THEN LAST_VALUE(SegUnit IGNORE NULLS) OVER person_sequence
-            --     ELSE HousingUnit 
-            --     END as HousingUnit
         FROM append_next_movement_information_and_death_dates
         WINDOW person_sequence AS (PARTITION BY OffenderID ORDER BY MovementSequenceNumber)
     ),
@@ -287,7 +306,12 @@ SELECT
     StartMovementReason,
     CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementType END AS EndMovementType,
     CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementReason END AS EndMovementReason,
-    CustodyLevel,
+    # When someone transfers from an incarceration facility to Jail or other SiteType, the CustodyLevel from their previous 
+    # assessment no longer applies so we do not want to carry over that CustodyLevel when it is no longer relevant. 
+    # Therefore, we apply logic here to only attach the CustodyLevel to periods when someone 
+    # is in an incarceration facility (SiteType = 'IN'). We may need to revisit this choice in the future if we decide to 
+    # include other SiteTypes that the CustodyLevel still applies to. 
+    CASE WHEN SiteType = 'IN' THEN CustodyLevel ELSE Null END AS CustodyLevel, 
     HousingUnit,
     ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationPeriodSequenceNumber
 FROM all_incarceration_periods

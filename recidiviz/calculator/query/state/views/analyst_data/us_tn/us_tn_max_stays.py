@@ -44,7 +44,7 @@ US_TN_MAX_STAYS_QUERY_TEMPLATE = """
         USING(person_id, state_code)
      INNER JOIN `{project_id}.normalized_state.state_person`
         USING(person_id, state_code)
-     -- TODO(#25107): Remove this join when custody level information aligns with location information
+     -- TODO(#27428): Remove this join when custody level information aligns with location information
      INNER JOIN (
         SELECT
             OffenderID AS external_id,
