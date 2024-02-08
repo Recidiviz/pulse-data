@@ -166,7 +166,7 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
     housing_unit AS (
       SELECT
         person_id,
-        -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
         CAST(NULL AS STRING) AS facility_id,
         housing_unit AS unit_id
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
@@ -179,7 +179,7 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
 
       SELECT
         person_id,
-        -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
         CAST(NULL AS STRING) AS facility_id,
         IF(complex_number=building_number, complex_number, complex_number || " " || building_number) AS unit_id
       FROM current_bed_stay
@@ -189,7 +189,7 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
       --TODO(#24959): Deprecate usage when re-run is over
       SELECT
         person_id,
-        -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
         COALESCE(RequestedSiteID, ActualSiteID, AssignedSiteID) AS facility_id,
         COALESCE(RequestedUnitID, ActualUnitID, AssignedUnitID) AS unit_id,
       FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CellBedAssignment_latest` c
@@ -271,7 +271,7 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
             ic.person_id,
             ic.person_external_id,
             officer_id,
-            -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+            -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
             CASE WHEN ic.state_code = 'US_TN' THEN hu.facility_id ELSE ic.facility_id END AS facility_id,
             unit_id,
             custody_level.custody_level,

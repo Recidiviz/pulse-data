@@ -60,7 +60,7 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
         INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON s.OffenderID = pei.external_id
             AND pei.state_code = 'US_TN'
-        -- TODO(#25107): Remove this join when custody level information aligns with location information
+        -- TODO(#27428): Remove this join when custody level information aligns with location information
         LEFT JOIN (
             SELECT
                 OffenderID AS external_id,
