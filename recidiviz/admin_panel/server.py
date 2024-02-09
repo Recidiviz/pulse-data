@@ -29,6 +29,7 @@ from werkzeug import Response
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
+from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 from recidiviz.admin_panel.routes.outliers import outliers_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import users_blueprint
@@ -54,7 +55,7 @@ app = Flask(__name__)
 instrument_flask_app(app=app)
 
 requires_authorization = build_compute_engine_auth_decorator(
-    backend_service_id_secret_name="iap_admin_panel_load_balancer_service_id"  # nosec
+    backend_service_id_secret_name=LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 )
 
 

@@ -16,6 +16,7 @@
 # =============================================================================
 """Marshmallow API schemas for Outliers endpoints at admin_panel/routes/line_staff_tools.py."""
 
+
 from marshmallow import fields
 
 from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
@@ -27,10 +28,6 @@ class ConfigurationSchema(CamelCaseSchema):
     return a Configuration or list of Configurations
     """
 
-    id = fields.Int(required=True)
-    updated_by = fields.Email(required=True)
-    updated_at = fields.DateTime(required=True)
-    status = fields.Str(required=True)
     feature_variant = fields.Str(allow_none=True)
     supervision_officer_label = fields.Str(allow_none=True)
     supervision_district_label = fields.Str(allow_none=True)
@@ -39,6 +36,13 @@ class ConfigurationSchema(CamelCaseSchema):
     supervision_district_manager_label = fields.Str(allow_none=True)
     supervision_jii_label = fields.Str(allow_none=True)
     learn_more_url = fields.Str(allow_none=True)
+
+
+class FullConfigurationSchema(ConfigurationSchema):
+    id = fields.Int(required=True)
+    updated_by = fields.Email(required=True)
+    updated_at = fields.DateTime(required=True)
+    status = fields.Str(required=True)
 
 
 class StateCodeSchema(CamelCaseSchema):

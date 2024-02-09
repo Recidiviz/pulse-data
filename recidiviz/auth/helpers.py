@@ -23,6 +23,7 @@ from typing import Any, Optional, Tuple
 
 from flask import request
 
+from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 from recidiviz.utils import metadata, validate_jwt
 
 _UNKNOWN_USER = "unknown"
@@ -63,12 +64,14 @@ def format_user_info(user: Any) -> dict[str, str]:
         "district": user.district,
         "firstName": user.first_name,
         "lastName": user.last_name,
-        "allowedSupervisionLocationIds": user.district
-        if user.state_code == "US_MO"
-        else "",
-        "allowedSupervisionLocationLevel": "level_1_supervision_location"
-        if user.state_code == "US_MO" and user.district is not None
-        else "",
+        "allowedSupervisionLocationIds": (
+            user.district if user.state_code == "US_MO" else ""
+        ),
+        "allowedSupervisionLocationLevel": (
+            "level_1_supervision_location"
+            if user.state_code == "US_MO" and user.district is not None
+            else ""
+        ),
         "routes": user.routes,
         "featureVariants": user.feature_variants,
         "blocked": user.blocked,
@@ -81,13 +84,17 @@ def get_authenticated_user_email() -> Tuple[str, Optional[str]]:
     if not jwt:
         return (_UNKNOWN_USER, None)
 
-    project_id = metadata.project_id()
     project_number = metadata.project_number()
+    if not project_number:
+        raise RuntimeError("Expected project_number to be set")
+
     (
         _user_id,
         user_email,
         error_str,
-    ) = validate_jwt.validate_iap_jwt_from_app_engine(jwt, project_number, project_id)
+    ) = validate_jwt.validate_iap_jwt_from_compute_engine(
+        jwt, project_number, LOAD_BALANCER_SERVICE_ID_SECRET_NAME
+    )
     return user_email or _UNKNOWN_USER, error_str
 
 

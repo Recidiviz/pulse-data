@@ -19,7 +19,7 @@ import logging
 from copy import copy
 from datetime import date
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -325,9 +325,9 @@ class OutliersQuerier:
                     rate=rate,
                     target_status=TargetStatus(target_status),
                     prev_rate=prev_rate,
-                    prev_target_status=TargetStatus(prev_target_status)
-                    if prev_target_status
-                    else None,
+                    prev_target_status=(
+                        TargetStatus(prev_target_status) if prev_target_status else None
+                    ),
                     supervisor_external_id=officer_metric_record.supervisor_external_id,
                     supervision_district=officer_metric_record.supervision_district,
                 )
@@ -942,14 +942,16 @@ class OutliersQuerier:
                         supervisor_external_id=record.supervisor_external_id,
                         district=record.supervision_district,
                         caseload_type=record.specialized_caseload_type,
-                        outlier_metrics=[
-                            {
-                                "metric_id": record.metric_id,
-                                "statuses_over_time": record.statuses_over_time,
-                            }
-                        ]
-                        if is_outlier
-                        else [],
+                        outlier_metrics=(
+                            [
+                                {
+                                    "metric_id": record.metric_id,
+                                    "statuses_over_time": record.statuses_over_time,
+                                }
+                            ]
+                            if is_outlier
+                            else []
+                        ),
                     )
 
             return officer_external_id_to_entity
@@ -1009,9 +1011,9 @@ class OutliersQuerier:
         return UserInfo(
             entity=supervisor_entity,
             role="supervision_officer_supervisor" if supervisor_entity else None,
-            has_seen_onboarding=user_metadata.has_seen_onboarding
-            if user_metadata
-            else False,
+            has_seen_onboarding=(
+                user_metadata.has_seen_onboarding if user_metadata else False
+            ),
         )
 
     def get_configuration_for_user(
@@ -1072,3 +1074,51 @@ class OutliersQuerier:
             )
 
             return configs
+
+    def add_configuration(self, config_dict: Dict[str, Any]) -> Configuration:
+        """
+        Adds an active Configuration entity and deactivates any active entity that shares
+        the feature variant of the new entity.
+        """
+        with self.database_session() as session:
+            try:
+                # Deserialize the new Configuration entity
+                config = Configuration(**config_dict)
+
+                # Deactivate active configurations with the same feature variant
+                feature_variant = config.feature_variant
+                if feature_variant is None:
+                    config_query = session.query(Configuration).filter(
+                        Configuration.feature_variant.is_(None)
+                    )
+                else:
+                    config_query = session.query(Configuration).filter(
+                        Configuration.feature_variant == feature_variant
+                    )
+
+                configs_to_deactivate = config_query.filter(
+                    Configuration.status == ConfigurationStatus.ACTIVE.value
+                ).all()
+
+                for c in configs_to_deactivate:
+                    c.status = ConfigurationStatus.INACTIVE.value
+
+                # Add the new Configuration object
+                session.add(config)
+            except:
+                session.rollback()
+                raise
+
+            session.commit()
+            return config
+
+    def get_configuration(self, config_id: int) -> Configuration:
+        """
+        Gets a configuration by id.
+        """
+        with self.database_session() as session:
+            config = (
+                session.query(Configuration).filter(Configuration.id == config_id).one()
+            )
+
+            return config
