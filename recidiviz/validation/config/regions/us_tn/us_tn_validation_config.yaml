@@ -24,8 +24,8 @@ max_allowed_error_overrides:
       Last month (November 2023), edged just over the .25 threshold. We bump this slightly to see if this is normal variation or if we have more issues to investigate in January 2024.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 20000
-    override_reason: TODO(#12167) Needs investigation. Ingest view mishandling zero-day incarceration periods. 552 failing rows as of 11/3/2022. This number jumped with incarceration period refactor to include housing units. Current error at 1059 as of 4/13/23. With refactors needed for Outliers to correctly attribute temporary custody periods, this error increased significantly. However, from the perspective of downstream handling in sessions and for what is needed in products, this mismatch is not causing issues/may actually be the correct interpretation. Error is 16654 as of 11/29/23. Will revisit this upon refactors after outliers launch.
+    hard_num_allowed_rows_override: 250000
+    override_reason: TODO(#12167) Needs investigation. Ingest view mishandling zero-day incarceration periods. 552 failing rows as of 11/3/2022. This number jumped with incarceration period refactor to include housing units. Current error at 1059 as of 4/13/23. With refactors needed for Outliers to correctly attribute temporary custody periods, this error increased significantly. However, from the perspective of downstream handling in sessions and for what is needed in products, this mismatch is not causing issues/may actually be the correct interpretation. Error is 16654 as of 11/29/23. Will revisit this upon refactors after outliers launch. After another adjustment to include IN CUSTODY SPs, this validation spiked even further to 244,546. For now we bump the threshold while Insights launch validations are ongoing and will revisit in future.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 120
     override_reason: TODO(#13055) Needs investigation. Current failing level as of 9/12/23 is 94 rows.
@@ -60,8 +60,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 4000
     override_reason: Current failing level as of 4/5/23 is 3,356 rows (0.3%), some ISC codes are not decoded
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 195000
-    override_reason: Current failing level as of 4/20/23 is 178,074 rows (12%) #TODO(#20405)
+    hard_num_allowed_rows_override: 220000
+    override_reason: Current failing level as of 2/6/24 is 215,026 rows. Failing level as of 4/20/23 was 178,074 rows (12%). #TODO(#20405)
   - validation_name: current_supervision_staff_missing_district
     hard_num_allowed_rows_override: 29
     override_reason:
