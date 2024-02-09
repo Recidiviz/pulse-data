@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_person` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - start_date
+  - end_date
+  - custody_grade
+  - HOUSINGAREANAME
+  - bed_type
+  - entry_code
+  - entry_reason
+  - exit_code
+  - exit_reason
+  - ORGANIZATIONNAME
+  - ORGANIZATIONTYPE
+  - ORGCOUNTYCODE
+  - SEQ
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - SEQ
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: ORGANIZATIONTYPE
+              $custom_parser: us_ar_custom_enum_parsers.parse_incarceration_type
+          admission_date: start_date
+          release_date: end_date
+          county_code: ORGCOUNTYCODE
+          facility: ORGANIZATIONNAME
+          housing_unit: HOUSINGAREANAME
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: bed_type
+              $custom_parser: us_ar_custom_enum_parsers.parse_housing_category
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: bed_type
+              $custom_parser: us_ar_custom_enum_parsers.parse_housing_type
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: ORGANIZATIONTYPE
+              $custom_parser: us_ar_custom_enum_parsers.parse_custodial_authority
+          admission_reason:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - entry_code
+                    - entry_reason
+              $custom_parser: us_ar_custom_enum_parsers.parse_admission_reason
+          release_reason:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: exit_code
+                    - $not_null: exit_reason
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - exit_code
+                          - exit_reason
+                    $custom_parser: us_ar_custom_enum_parsers.parse_release_reason
+          custody_level:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: custody_grade
+                    $options:
+                      - $literal("UN") # Unassigned
+                $then:
+                  $enum_mapping:
+                    $raw_text: custody_grade
+                    $mappings:
+                      StateIncarcerationPeriodCustodyLevel.MINIMUM: "C2" # Minimum (Trusty)
+                      StateIncarcerationPeriodCustodyLevel.MEDIUM: "C3" # Medium
+                      StateIncarcerationPeriodCustodyLevel.MAXIMUM: "C4" # Maximum
+                      StateIncarcerationPeriodCustodyLevel.CLOSE: "C5" # High Security
+                      StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
+                        - "C1" # Work Release
+                        - "SK" # Safekeeper (Death Row)
