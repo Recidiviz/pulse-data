@@ -312,7 +312,7 @@ const App = (): JSX.Element => {
             path={OnCall.ON_CALL_BASE_ROUTE}
             component={OnCallLogsReview}
           />
-          <Redirect from="/" to={IngestOperations.INGEST_ACTIONS_ROUTE} />
+          <Redirect from="/" to={IngestOperations.INGEST_DATAFLOW_ROUTE} />
         </Switch>
       </div>
     </Layout>

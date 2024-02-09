@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 export const INGEST_OPERATIONS_BASE = "/admin/ingest_operations";
+
+// TODO(#20930): Delete INGEST_ACTIONS_ROUTE entirely once IID is launched to all states.
 export const INGEST_ACTIONS_ROUTE = `${INGEST_OPERATIONS_BASE}/key_actions`;
 export const INGEST_ACTIONS_WITH_STATE_CODE_ROUTE = `${INGEST_OPERATIONS_BASE}/key_actions/:stateCode`;
 export const INGEST_ACTIONS_INGEST_QUEUES_ROUTE = `${INGEST_ACTIONS_WITH_STATE_CODE_ROUTE}/ingest_queues`;
