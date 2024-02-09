@@ -240,7 +240,8 @@ Denominator is the average daily caseload for the officer over the given time pe
         supervision_supervisor_label="manager",
         supervision_unit_label="unit",
         supervision_district_manager_label="district director",
-        worse_than_rate_label="higher",
+        worse_than_rate_label="Much higher than statewide rate",
+        slightly_worse_than_rate_label="Slightly higher than statewide rate",
         exclusion_reason_description="We've excluded officers from this list with particularly large or small average daily caseloads (larger than 175 or smaller than 10). We also excluded officers who didn’t have a caseload of at least 10 clients for at least 75% of the observation period.",
         supervision_officer_metric_exclusions="""
     --TODO(#25695): Revisit this after excluding admin supervision levels    
