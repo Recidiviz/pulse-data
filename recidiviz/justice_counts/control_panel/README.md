@@ -119,6 +119,62 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 
 7. You should see the application running on `localhost:3000`!
 
+### Debugging Locally
+
+The VSCode debugger integrates with our locally-built docker container using Python's `debugpy` package.
+
+This enables us to set breakpoints in the codebase which are acknowledged by a locally running Justice Counts flask app.
+
+To enable the flask app to listen for VSCode breakpoints:
+
+1. Start up a local instance of the JC app. You should see docker-compose logs indicating that the debugger can now be attached.
+
+2. Set the desired breakpoints in VSCode.
+
+3. Start a debug session by opening the `Run and Debug` tab and pressing the green `Start Debugging` arrow (or press `F5` as a shortcut).
+
+Your local app should now be attached and listening to the VSCode debugger!
+
+See [this walkthrough](https://www.loom.com/share/8c45a1f8632a449492287abf6ca1d9dc).
+
+#### Attach Configuration
+
+Note, you will need a launch.json attach configuration to tell the VS Code debugger how to connect to an app that is already running. Our Flask app is configured to listen to `0.0.0.0:5678`. Check your launch.json file for a configuration of type `attach` which points to `0.0.0.0:5678`.
+
+The attach configuration should look like
+
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Remote Attach",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "0.0.0.0",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/app"
+                }
+            ]
+        }
+    ]
+}
+```
+
+If this configuration is not present, you can generate it using the following steps:
+
+1. Open the Command Palette.
+2. Select `Debug: Add Configuration...`.
+3. In the dropdown, select `Python Debugger`, and then `Remote Attach`.
+4. Enter `0.0.0.0` for the IP address.
+5. Enter `5678` for the port number.
+6. Modify the `remoteRoot` field from `"."` to `"/app"` (this is the Docker container's root).
+
 ## Databases
 
 ### Connect to the local Postgres database
