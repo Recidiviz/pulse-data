@@ -871,9 +871,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_delivered(
         self,
@@ -917,9 +915,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_failed(
         self,
@@ -968,9 +964,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_segment_update_opt_out(
         self,
@@ -1016,9 +1010,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_segment_update_opt_out_changed(
         self,
@@ -1068,9 +1060,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_segment_update_opt_out_recipient_not_found(
         self,
@@ -1101,9 +1091,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_segment_unchanged_opt_out(
         self,
@@ -1145,9 +1133,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_failed_with_exception(
         self,
@@ -1202,9 +1188,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_sending(
         self,
@@ -1247,9 +1231,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_handle_twilio_status_segment_tracks_new_success_status(
         self,
@@ -1289,9 +1271,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_handle_twilio_status_segment_tracks_new_failed_status(
         self,
@@ -1332,9 +1312,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
-    @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
-    )
+    @patch("recidiviz.case_triage.helpers.TwilioValidator.validate")
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_handle_twilio_status_segment_unchanged_status(
         self,

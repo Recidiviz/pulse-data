@@ -19,6 +19,7 @@ import os
 import socket
 import sys
 from datetime import date
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -134,3 +135,8 @@ def to_json_serializable(value: Any) -> str:
     if isinstance(value, date):
         return value.isoformat()
     return value
+
+
+class MessageType(Enum):
+    INITIAL_TEXT = "INITIAL_TEXT"
+    ELIGIBILITY_TEXT = "ELIGIBILITY_TEXT"

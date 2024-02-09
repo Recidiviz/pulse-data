@@ -17,7 +17,6 @@
 """Implements routes to support external requests from Workflows."""
 import datetime
 import logging
-import re
 import uuid
 from http import HTTPStatus
 from typing import Optional
@@ -27,10 +26,14 @@ import werkzeug.wrappers
 from flask import Blueprint, Response, current_app, g, jsonify, make_response, request
 from flask_wtf.csrf import generate_csrf
 from twilio.rest import Client as TwilioClient
-from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
+from recidiviz.case_triage.helpers import (
+    add_cors_headers_helper,
+    validate_cors_helper,
+    validate_request_helper,
+)
 from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
     WorkflowsEnqueueSmsRequestSchema,
@@ -46,12 +49,11 @@ from recidiviz.case_triage.workflows.interface import (
     WorkflowsUsNdExternalRequestInterface,
     WorkflowsUsTnExternalRequestInterface,
 )
-from recidiviz.case_triage.workflows.twilio_validation import WorkflowsTwilioValidator
 from recidiviz.case_triage.workflows.utils import (
     TWILIO_CRITICAL_ERROR_CODES,
     allowed_twilio_dev_recipient,
+    get_consolidated_status,
     get_sms_request_firestore_path,
-    get_workflows_consolidated_status,
     get_workflows_texting_error_message,
     jsonify_response,
 )
@@ -85,17 +87,6 @@ else:
 
 WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE = "workflows-external-system-requests-queue"
 
-WORKFLOWS_ALLOWED_ORIGINS = [
-    r"http\://localhost:3000",
-    r"http\://localhost:5000",
-    r"https\://dashboard-staging\.recidiviz\.org$",
-    r"https\://dashboard-demo\.recidiviz\.org$",
-    r"https\://dashboard\.recidiviz\.org$",
-    r"https\://recidiviz-dashboard-stag-e1108--[^.]+?\.web\.app$",
-    r"https\://app-staging\.recidiviz\.org$",
-    cloud_run_metadata.url,
-]
-
 LOCALHOST_URL = "http://localhost:5000"
 STAGING_URL = "https://app-staging.recidiviz.org"
 PRODUCTION_URL = "https://app.recidiviz.org"
@@ -106,11 +97,6 @@ OPT_OUT_MESSAGE = "To stop receiving these texts, reply: STOP."
 def create_workflows_api_blueprint() -> Blueprint:
     """Creates the API blueprint for Workflows"""
     workflows_api = Blueprint("workflows", __name__)
-    proxy_endpoint = "workflows.proxy"
-    webhook_endpoints = [
-        "workflows.handle_twilio_status",
-        "workflows.handle_twilio_incoming_message",
-    ]
 
     handle_authorization = build_authorization_handler(
         on_successful_authorization, "dashboard_auth0"
@@ -118,59 +104,23 @@ def create_workflows_api_blueprint() -> Blueprint:
     handle_recidiviz_only_authorization = build_authorization_handler(
         on_successful_authorization_recidiviz_only, "dashboard_auth0"
     )
-    twilio_validator = WorkflowsTwilioValidator()
 
     @workflows_api.before_request
     def validate_request() -> None:
-        if request.method == "OPTIONS":
-            return
-        if request.endpoint in webhook_endpoints:
-            logging.info("Twilio webhook endpoint request origin: [%s]", request.origin)
-
-            signature = request.headers["X-Twilio-Signature"]
-            params = request.values.to_dict()
-            twilio_validator.validate(
-                url=request.url, params=params, signature=signature
-            )
-            return
-        if request.endpoint == proxy_endpoint:
-            handle_recidiviz_only_authorization()
-            return
-        handle_authorization()
+        validate_request_helper(
+            handle_authorization=handle_authorization,
+            handle_recidiviz_only_authorization=handle_recidiviz_only_authorization,
+        )
 
     @workflows_api.before_request
     def validate_cors() -> Optional[Response]:
-        if request.endpoint in [proxy_endpoint] + webhook_endpoints:
-            # Proxy or webhook requests will generally be sent from a developer's machine or Twilio server
-            # and not a browser, so there is no origin to check against.
-            return None
-
-        is_allowed = any(
-            re.match(allowed_origin, request.origin)
-            for allowed_origin in WORKFLOWS_ALLOWED_ORIGINS
-        )
-
-        if not is_allowed:
-            response = make_response()
-            response.status_code = HTTPStatus.FORBIDDEN
-            return response
-
-        return None
+        return validate_cors_helper()
 
     @workflows_api.after_request
     def add_cors_headers(
         response: werkzeug.wrappers.Response,
     ) -> werkzeug.wrappers.Response:
-        # Don't cache access control headers across origins
-        response.vary = "Origin"
-        response.access_control_allow_origin = request.origin
-        response.access_control_allow_headers = parse_set_header(
-            "authorization, sentry-trace, x-csrf-token, content-type"
-        )
-        response.access_control_allow_credentials = True
-        # Cache preflight responses for 2 hours
-        response.access_control_max_age = 2 * 60 * 60
-        return response
+        return add_cors_headers_helper(response=response)
 
     @workflows_api.route("/<state>/init")
     def init(state: str) -> Response:  # pylint: disable=unused-argument
@@ -569,7 +519,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 segment_client.track_milestones_message_status(
                     user_hash=milestonesMessage.get("userHash", ""),
                     twilioRawStatus=status,
-                    status=get_workflows_consolidated_status(status),
+                    status=get_consolidated_status(status),
                     error_code=error_code,
                     error_message=error_message,
                 )
@@ -579,7 +529,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
 
             doc_update = {
-                "status": get_workflows_consolidated_status(status),
+                "status": get_consolidated_status(status),
                 "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
                 "rawStatus": status,
             }
