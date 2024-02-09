@@ -18,12 +18,13 @@
 import csv
 import json
 import os
-from datetime import date
+from datetime import date, datetime
 from typing import Dict, List, Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from recidiviz.case_triage.outliers.user_context import UserContext
 from recidiviz.common.constants.states import StateCode
@@ -35,6 +36,7 @@ from recidiviz.outliers.constants import (
 )
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
+    ConfigurationStatus,
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
@@ -148,6 +150,9 @@ class TestOutliersQuerier(TestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with SessionFactory.using_database(self.database_key) as session:
+            # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
+            session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
+
             for officer in load_model_fixture(SupervisionOfficer):
                 session.add(SupervisionOfficer(**officer))
             for status in load_model_fixture(SupervisionOfficerOutlierStatus):
@@ -947,6 +952,78 @@ Incarceration rate denominator description""",
     def test_get_configurations(self) -> None:
         querier = OutliersQuerier(StateCode.US_PA)
         result = querier.get_configurations()
-        print(result)
 
         self.assertListEqual([config.id for config in result], [1, 4, 3, 2])
+
+    def test_add_configuration_no_fv(self) -> None:
+        new_datetime = datetime(2024, 2, 1)
+        config_to_add = {
+            "updated_at": new_datetime,
+            "feature_variant": None,
+            "updated_by": "alexa@recidiviz.org",
+            "supervision_district_label": "district",
+            "supervision_supervisor_label": "supervisor",
+            "supervision_jii_label": "client",
+            "supervision_officer_label": "officer",
+            "supervision_unit_label": "unit",
+            "supervision_district_manager_label": "district manager",
+            "learn_more_url": "fake.com",
+            "status": ConfigurationStatus.ACTIVE.value,
+        }
+
+        querier = OutliersQuerier(StateCode.US_PA)
+        querier.add_configuration(config_to_add)
+
+        results = querier.get_configurations()
+        self.assertEqual(results[0].feature_variant, None)
+        self.assertEqual(results[0].updated_by, "alexa@recidiviz.org")
+        # Assumes that the first non-header row in configurations.csv has feature_variant=None
+        self.assertEqual(
+            querier.get_configuration(1).status, ConfigurationStatus.INACTIVE.value
+        )
+
+    def test_add_configuration_fv(self) -> None:
+        config_to_add = {
+            "updated_at": datetime(2024, 2, 1),
+            "feature_variant": "fv1",
+            "updated_by": "alexa@recidiviz.org",
+            "supervision_district_label": "district",
+            "supervision_supervisor_label": "supervisor",
+            "supervision_jii_label": "client",
+            "supervision_officer_label": "officer",
+            "supervision_unit_label": "unit",
+            "supervision_district_manager_label": "district manager",
+            "learn_more_url": "fake.com",
+            "status": ConfigurationStatus.ACTIVE.value,
+        }
+
+        querier = OutliersQuerier(StateCode.US_PA)
+        querier.add_configuration(config_to_add)
+
+        results = querier.get_configurations()
+        self.assertEqual(results[0].feature_variant, "fv1")
+        self.assertEqual(results[0].updated_by, "alexa@recidiviz.org")
+        # Assumes that the third non-header row in configurations.csv has feature_variant=fv1
+        self.assertEqual(
+            querier.get_configuration(3).status, ConfigurationStatus.INACTIVE.value
+        )
+
+    def test_add_configuration_error(self) -> None:
+        config_to_add = {
+            "updated_at": datetime(2024, 2, 1),
+            "feature_variant": "fv1",
+            "supervision_district_label": "district",
+            "supervision_supervisor_label": "supervisor",
+            "supervision_jii_label": "client",
+            "supervision_officer_label": "officer",
+            "supervision_unit_label": "unit",
+            "supervision_district_manager_label": "district manager",
+            "learn_more_url": "fake.com",
+            "status": ConfigurationStatus.ACTIVE.value,
+        }
+
+        with self.assertRaises(IntegrityError):
+            querier = OutliersQuerier(StateCode.US_PA)
+            querier.add_configuration(config_to_add)
+            # Assert the latest entity is the first non-header row in configurations.csv
+            self.assertEqual(querier.get_configurations()[0].id, 1)

@@ -18,12 +18,14 @@
 
 
 import json
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Dict, Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import flask
+import freezegun
 import pytest
 from flask import Flask
 from flask_smorest import Api
@@ -38,6 +40,10 @@ from recidiviz.tests.outliers.querier_test import load_model_fixture
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
+@patch(
+    "recidiviz.admin_panel.routes.outliers.get_authenticated_user_email",
+    MagicMock(return_value=("test-user@recidiviz.org", None)),
+)
 @pytest.mark.uses_db
 class OutliersAdminPanelEndpointTests(TestCase):
     """Tests of our Flask endpoints"""
@@ -75,6 +81,9 @@ class OutliersAdminPanelEndpointTests(TestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with SessionFactory.using_database(self.database_key) as session:
+            # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
+            session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
+
             for config in load_model_fixture(Configuration):
                 session.add(Configuration(**config))
 
@@ -183,3 +192,130 @@ class OutliersAdminPanelEndpointTests(TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(json.loads(response.data), expected)
+
+    ########
+    # POST /outliers/<state_code_str>/configurations
+    ########
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
+    def test_add_configuration(self, mock_enabled_states: MagicMock) -> None:
+        mock_enabled_states.return_value = ["US_PA"]
+
+        expected = [
+            {
+                "featureVariant": "fv1",
+                "id": 5,
+                "learnMoreUrl": "fake.com",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-02-01T00:00:00",
+                "updatedBy": "test-user@recidiviz.org",
+            },
+            {
+                "featureVariant": None,
+                "id": 1,
+                "learnMoreUrl": "fake.com",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-26T13:30:00",
+                "updatedBy": "alexa@recidiviz.org",
+            },
+            {
+                "featureVariant": "fv2",
+                "id": 4,
+                "learnMoreUrl": "fake.com",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:03",
+                "updatedBy": "dana2@recidiviz.org",
+            },
+            {
+                "featureVariant": "fv1",
+                "id": 3,
+                "learnMoreUrl": "fake.com",
+                "status": "INACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:02",
+                "updatedBy": "dana1@recidiviz.org",
+            },
+            {
+                "featureVariant": None,
+                "id": 2,
+                "learnMoreUrl": "fake.com",
+                "status": "INACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:01",
+                "updatedBy": "fake@recidiviz.org",
+            },
+        ]
+
+        self.client.post(
+            self.configurations,
+            headers=self.headers,
+            json={
+                "featureVariant": "fv1",
+                "supervisionDistrictLabel": "district",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionUnitLabel": "unit",
+                "supervisionDistrictManagerLabel": "district manager",
+                "learnMoreUrl": "fake.com",
+            },
+        )
+
+        response = self.client.get(self.configurations, headers=self.headers)
+
+        self.assertEqual(json.loads(response.data), expected)
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_add_configuration_bad_request(
+        self, mock_enabled_states: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_PA"]
+        result = self.client.post(
+            self.configurations,
+            headers=self.headers,
+            json={
+                # incorrect type
+                "featureVariant": 1,
+                "supervisionDistrictLabel": "district",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionUnitLabel": "unit",
+                "supervisionDistrictManagerLabel": "district manager",
+                "learnMoreUrl": "fake.com",
+            },
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
