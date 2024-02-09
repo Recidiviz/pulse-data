@@ -29,15 +29,24 @@ WITH
         *, 
         ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime DESC) as RecencyRank
     FROM {Staff@ALL}
+    ),
+    most_recent_staff_email_information AS (
+    SELECT *
+    FROM  
+        (SELECT 
+        *, 
+        ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime DESC) as RecencyRank
+        FROM {StaffEmailByAlias@ALL} ) AS a
+    WHERE RecencyRank = 1
     )
     SELECT 
         REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
         LastName,
         FirstName,
         OutlookEmail
-    FROM most_recent_staff_information
-    LEFT JOIN {StaffEmailByAlias} USING (StaffID)
-    WHERE StaffID IS NOT NULL AND RecencyRank = 1
+    FROM most_recent_staff_information si
+    LEFT JOIN most_recent_staff_email_information sei USING (StaffID)
+    WHERE StaffID IS NOT NULL AND si.RecencyRank = 1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
