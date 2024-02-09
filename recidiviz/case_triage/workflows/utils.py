@@ -58,7 +58,7 @@ def get_sms_request_firestore_path(state: str, recipient_external_id: str) -> st
     return f"clientUpdatesV2/{client_firestore_id}/milestonesMessages/{month_code}"
 
 
-def get_workflows_consolidated_status(status: Optional[str]) -> str:
+def get_consolidated_status(status: Optional[str]) -> str:
     if status and status.lower() in ["undelivered", "failed", "canceled"]:
         return ExternalSystemRequestStatus.FAILURE.value
     if status and status.lower() in ["delivered", "read"]:
@@ -93,3 +93,24 @@ def get_workflows_texting_error_message(error_code: Optional[str]) -> Optional[s
     if error_code in ["21610"]:
         return "The message could not be delivered because the recipient has opted out of receiving messages from this number. Consider congratulating the client in person or through some other way."
     return "The message could not be delivered at this time. Consider congratulating the client in person or through some other way."
+
+
+def get_jii_texting_error_message(error_code: Optional[str]) -> Optional[str]:
+    # Most common Twillio error code descriptions:
+    # https://www.twilio.com/docs/sms/troubleshooting/debugging-tools#error-codes
+    if error_code is None:
+        return None
+    error_code_to_message = {
+        "30001": "Queue overflow",
+        "30002": "Account suspended",
+        "30003": "Unreachable destination handset",
+        "30004": "Message blocked",
+        "30005": "Unknown destination handset",
+        "30006": "Landline or unreachable carrier",
+        "30007": "Carrier violation",
+        "30008": "Unknown error",
+        "30009": "Missing segment",
+        "30010": "Message price exceeds max price.",
+    }
+
+    return error_code_to_message.get(error_code)

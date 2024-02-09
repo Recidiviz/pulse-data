@@ -142,6 +142,9 @@ class FirestoreClientImpl(FirestoreClient):
     def set_document(self, document_path: str, data: Dict, merge: bool = False) -> None:
         self.client.document(document_path).set(data, merge=merge)
 
+    def add_document(self, collection_path: str, data: Dict) -> None:
+        self.client.collection(collection_path).add(data)
+
     def update_document(self, document_path: str, data: Dict) -> None:
         self.client.document(document_path).update(data)
 

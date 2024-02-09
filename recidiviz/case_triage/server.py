@@ -33,6 +33,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
     PATHWAYS_OFFLINE_DEMO_STATE,
 )
 from recidiviz.case_triage.error_handlers import register_error_handlers
+from recidiviz.case_triage.jii.id_lsu_routes import create_jii_api_blueprint
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
 from recidiviz.case_triage.util import (
@@ -77,6 +78,7 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
 register_error_handlers(app)
 
+jii_api_blueprint = create_jii_api_blueprint()
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -157,12 +159,14 @@ csrf = CSRFProtect(app)
 # https://security.stackexchange.com/questions/170388/do-i-need-csrf-token-if-im-using-bearer-jwt
 csrf.exempt(workflows_blueprint)
 csrf.exempt(outliers_api_blueprint)
+csrf.exempt(jii_api_blueprint)
 
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
 # Only the pathways endpoints are accessible in offline mode
 if not in_offline_mode():
     app.register_blueprint(workflows_blueprint, url_prefix="/workflows")
     app.register_blueprint(outliers_api_blueprint, url_prefix="/outliers")
+    app.register_blueprint(jii_api_blueprint, url_prefix="/jii")
 
     @app.route("/")
     def index() -> Response:

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Validation interface for Workflows-related external requests from Twilio"""
+"""Validation interface for Workflows and JII related external requests from Twilio"""
 import logging
 from typing import Dict
 
@@ -24,8 +24,8 @@ from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.secrets import get_secret
 
 
-class WorkflowsTwilioValidator:
-    """Validation interface for Workflows-related external requests from Twilio"""
+class TwilioValidator:
+    """Validation interface for Workflows and JII related external requests from Twilio"""
 
     def validate(self, url: str, signature: str, params: Dict[str, str]) -> None:
         validation_secret = get_secret("twilio_auth_token")
@@ -34,7 +34,7 @@ class WorkflowsTwilioValidator:
         validator = RequestValidator(validation_secret)
 
         logging.info(
-            "Workflows Twilio Validator for url: [%s], params: [%s], signature: [%s]",
+            "Twilio Validator for url: [%s], params: [%s], signature: [%s]",
             url,
             params,
             signature,
@@ -43,9 +43,7 @@ class WorkflowsTwilioValidator:
         # Check if the incoming signature is valid for the application URL and the incoming parameters
         validation_result = validator.validate(url, params, signature)
 
-        logging.info(
-            "Workflows Twilio Validator validation result: [%s]", validation_result
-        )
+        logging.info("Twilio Validator validation result: [%s]", validation_result)
 
         if not validation_result:
             raise AuthorizationError(
