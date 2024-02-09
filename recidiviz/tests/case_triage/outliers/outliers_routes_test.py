@@ -204,6 +204,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
             none_are_outliers_label="are outliers on any metrics",
+            worse_than_rate_label="Much worse than statewide rate",
         )
 
         response = self.test_client.get(
@@ -249,7 +250,9 @@ Incarceration rate denominator description""",
                 "supervisionSupervisorLabel": "supervisor",
                 "supervisionUnitLabel": "unit",
                 "noneAreOutliersLabel": "are outliers on any metrics",
-                "worseThanRateLabel": "worse",
+                "worseThanRateLabel": "Much worse than statewide rate",
+                "slightlyWorseThanRateLabel": "Slightly worse than statewide rate",
+                "atOrBelowRateLabel": "At or below statewide rate",
                 "exclusionReasonDescription": None,
             }
         }

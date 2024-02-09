@@ -226,8 +226,16 @@ class OutliersBackendConfig:
     # TODO(#27414): Allow for template strings in copy and replace this with a template that has more of the string.
     none_are_outliers_label: str = attr.ib(default="are outliers")
 
-    # The string that describes a metric that is worse than the statewide rate
-    worse_than_rate_label: str = attr.ib(default="worse")
+    # The string that describes a metric that is far worse than the statewide rate
+    worse_than_rate_label: str = attr.ib(default="Far worse than statewide rate")
+
+    # The string that describes a metric that is slightly worse than the statewide rate
+    slightly_worse_than_rate_label: str = attr.ib(
+        default="Slightly worse than statewide rate"
+    )
+
+    # The string that describes a metric that is at or below the statewide rate
+    at_or_below_rate_label: str = attr.ib(default="At or below statewide rate")
 
     # A description of why some officers may be excluded from the list.
     exclusion_reason_description: str | None = attr.ib(default=None)
