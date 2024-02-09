@@ -118,7 +118,7 @@ def generate_bulk_upload_template(
                 is_single_page_template=is_single_page_template,
             )
 
-        if agency.is_superagency is True:
+        if agency.is_superagency is True and system != schema.System.SUPERAGENCY:
             rows = _add_rows_for_super_agency(
                 rows=rows,
                 child_agencies=child_agencies,

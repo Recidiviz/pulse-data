@@ -41,7 +41,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.constants import UploadMethod
+from recidiviz.justice_counts.utils.constants import INVALID_CHILD_AGENCY, UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -103,7 +103,10 @@ class SpreadsheetUploader:
         This is indicated by the `system` column. In this case, we break up
         the rows by system, and then ingest one system at a time."""
 
-        if len(self.child_agency_name_to_agency) > 0:
+        if (
+            len(self.child_agency_name_to_agency) > 0
+            and self.system != schema.System.SUPERAGENCY
+        ):
             agency_name_to_rows = self._get_agency_name_to_rows(
                 rows=rows,
                 metric_key_to_errors=metric_key_to_errors,
@@ -163,7 +166,7 @@ class SpreadsheetUploader:
         child_agency_ids = [
             self.child_agency_name_to_agency[child_agency_name].id
             for child_agency_name in agency_name_to_rows.keys()
-            if len(child_agency_name) > 0
+            if child_agency_name != INVALID_CHILD_AGENCY
             # When the agency column does not have a value or has the name of a
             # child agency that does not exist, the child_agency_name is saved as "".
             # We do not want to ingest data for those columns so we  skip them.
@@ -184,6 +187,10 @@ class SpreadsheetUploader:
             # Child Agency 1 can report data monthly while Child Agency 2 can report data
             # annually. So the same sheet may have a 'month' column filled out for some
             # child agencies, and not for others.
+
+            if curr_agency_name == INVALID_CHILD_AGENCY:
+                continue
+
             current_rows = (
                 pd.DataFrame(current_rows).dropna(axis=1).to_dict(orient="records")
             )
@@ -535,7 +542,10 @@ class SpreadsheetUploader:
             )
         if metric_definition.system.value == "SUPERVISION":
             expected_columns.add("system")
-        if len(self.child_agency_name_to_agency) > 0:
+        if (
+            len(self.child_agency_name_to_agency) > 0
+            and self.system != schema.System.SUPERAGENCY
+        ):
             expected_columns.add("agency")
         unexpected_columns = actual_columns.difference(expected_columns)
         for unexpected_col in unexpected_columns:
@@ -566,9 +576,11 @@ class SpreadsheetUploader:
                 warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}. The {unexpected_col} column is not aligned with the Technical Implementation Guides."
             unexpected_column_warning = JusticeCountsBulkUploadException(
                 title=warning_title,
-                message_type=BulkUploadMessageType.WARNING
-                if unexpected_col != "agency"
-                else BulkUploadMessageType.ERROR,
+                message_type=(
+                    BulkUploadMessageType.WARNING
+                    if unexpected_col != "agency"
+                    else BulkUploadMessageType.ERROR
+                ),
                 description=warning_description,
             )
             if unexpected_col == "agency":
@@ -704,7 +716,7 @@ class SpreadsheetUploader:
                             message_type=BulkUploadMessageType.ERROR,
                         )
                     )
-                return ""
+                return INVALID_CHILD_AGENCY
             normalized_agency_name = agency_name.strip().lower()
             if (
                 normalized_agency_name not in self.child_agency_name_to_agency
@@ -723,13 +735,14 @@ class SpreadsheetUploader:
                             message_type=BulkUploadMessageType.ERROR,
                         )
                     )
-                return ""
+                return INVALID_CHILD_AGENCY
 
             return normalized_agency_name
 
         agency_name_to_rows = {}
         try:
             # This try/except block is meant to catch errors thrown in the get_agency_name method.
+
             agency_name_to_rows = {
                 k: list(v)
                 for k, v in groupby(
@@ -817,9 +830,11 @@ class SpreadsheetUploader:
                 title="Unexpected Error",
                 message_type=BulkUploadMessageType.ERROR,
                 sheet_name=sheet_name,
-                description=e.message  # type: ignore[attr-defined]
-                if hasattr(e, "message")
-                else "",
+                description=(
+                    e.message  # type: ignore[attr-defined]
+                    if hasattr(e, "message")
+                    else INVALID_CHILD_AGENCY
+                ),
             )
         e.sheet_name = sheet_name
         return e
