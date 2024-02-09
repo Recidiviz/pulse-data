@@ -421,8 +421,8 @@ def create_calculation_dag() -> None:
             ManagedViewUpdateType.REFERENCE_VIEWS_ONLY
         )  # TODO(#22528): Remove this once pipelines implicitly get the latest views.
         >> bq_refresh
-        >> manage_trigger_ingest_dag()
     )
+    state_bq_refresh_completion >> manage_trigger_ingest_dag()
 
     trigger_update_all_views = update_managed_views_operator(ManagedViewUpdateType.ALL)
 
