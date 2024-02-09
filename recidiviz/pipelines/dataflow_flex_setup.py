@@ -39,6 +39,7 @@ REQUIRED_PACKAGES = [
     "google-api-core",
     "google-api-python-client",
     "google-cloud-monitoring",
+    "google-cloud-profiler",
     "google-cloud-secret-manager",
     "google-cloud-storage",
     "google-cloud-logging",
