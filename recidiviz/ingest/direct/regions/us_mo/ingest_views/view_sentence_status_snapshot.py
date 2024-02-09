@@ -42,13 +42,13 @@ SELECT
     sent_status.BW_SY                             -- status code change date
 FROM 
     {LBAKRDTA_TAK022} AS base_sentence
-LEFT JOIN 
+JOIN 
     {LBAKRDTA_TAK025} AS sent_crossref
 ON 
     base_sentence.BS_DOC = sent_crossref.BV_DOC AND 
     base_sentence.BS_CYC = sent_crossref.BV_CYC AND 
     base_sentence.BS_SEO = sent_crossref.BV_SEO 
-LEFT JOIN 
+JOIN 
     {LBAKRDTA_TAK026} AS sent_status
 ON 
     sent_crossref.BV_DOC = sent_status.BW_DOC AND 
