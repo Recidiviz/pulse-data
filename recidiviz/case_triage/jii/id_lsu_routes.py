@@ -23,7 +23,7 @@ from typing import Optional
 
 import werkzeug.wrappers
 from flask import Blueprint, Response, jsonify, make_response, request
-from google.cloud.firestore_v1 import FieldFilter
+from google.cloud.firestore_v1 import ArrayUnion, FieldFilter
 
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.helpers import (
@@ -164,7 +164,7 @@ def create_jii_api_blueprint() -> Blueprint:
         )
         phone_number = get_str_param_value("From", request.values, preserve_case=True)
 
-        if not opt_out_type or not phone_number:
+        if not phone_number:
             return make_response(jsonify(), HTTPStatus.OK)
 
         # recipient phone numbers are prefixed with +1 in the request, but do not contain that prefix in Firestore
@@ -185,9 +185,35 @@ def create_jii_api_blueprint() -> Blueprint:
             if jii_doc is None:
                 continue
 
+            # Store the individual's response and the datetime of their response
+            jii_response = get_str_param_value(
+                "Body", request.values, preserve_case=True
+            )
+            logging.info(
+                "Storing jii response for doc: [%s]",
+                jii_doc_snapshot.reference.path,
+            )
+            response_update = {
+                "responses": ArrayUnion(
+                    [
+                        {
+                            "response": jii_response,
+                            "response_date": datetime.datetime.now(
+                                datetime.timezone.utc
+                            ),
+                        },
+                    ]
+                ),
+            }
+            firestore_client.update_document(
+                jii_doc_snapshot.reference.path,
+                response_update,
+            )
+
             # This endpoint may be hit multiple times per recipient, so check here if this is a new
             # opt out type from what we already have in Firestore.
-            # Opt out types are: STOP, START, and HELP
+            # OptOutType key words include: (cancel, end, quit, stop, stopall, unsubscribe, start,
+            # unstop, yes, help, info)
             if opt_out_type and opt_out_type != jii_doc.get("opt_out_type"):
                 logging.info(
                     "Updating Twilio opt-out type for doc: [%s] with type: [%s]",
