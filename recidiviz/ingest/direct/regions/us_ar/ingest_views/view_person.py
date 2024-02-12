@@ -30,13 +30,16 @@ op_cleaned AS (
   WHERE REGEXP_CONTAINS(OFFENDERID, r'^[[:alnum:]]+$')
 ),
 aliases AS (
-  SELECT 
+  SELECT
     OFFENDERID,
     TO_JSON_STRING(ARRAY_AGG(STRUCT<alias_type string,first string,middle string,last string,suffix string>(OFFNNAMETYPE,OFFNFIRSTNAME,OFFNMIDDLENAME,OFFNLASTNAME,OFFNNAMESUFFIX) ORDER BY OFFNNAMETYPE,OFFNFIRSTNAME,OFFNMIDDLENAME,OFFNLASTNAME,OFFNNAMESUFFIX)) AS alias_list,
   FROM (
     SELECT DISTINCT 
       OFFENDERID,
-      OFFNNAMETYPE,
+      -- Name types 5, 6, 7, and 9 are all mapped to INTERNAL_UNKNOWN as they don't fit into our schema.
+      -- Here, these name types are all grouped into a single category, which avoids duplicate aliases
+      -- from being ingested when 2 aliases in this category have the same information but different OFFNAMETYPE.
+      CASE WHEN OFFNNAMETYPE IN ('5','6','7','9') THEN 'SPECIAL_TYPE' ELSE OFFNNAMETYPE END AS OFFNNAMETYPE,
       OFFNFIRSTNAME,
       OFFNMIDDLENAME,
       OFFNLASTNAME,
