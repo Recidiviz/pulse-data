@@ -54,6 +54,8 @@ ON
     sent_crossref.BV_DOC = sent_status.BW_DOC AND 
     sent_crossref.BV_CYC = sent_status.BW_CYC AND 
     sent_crossref.BV_SSO = sent_status.BW_SSO
+WHERE 
+    CAST(sent_status.BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
