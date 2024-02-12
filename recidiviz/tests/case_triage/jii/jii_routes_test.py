@@ -127,8 +127,8 @@ class TestJIIRoutes(JIIBlueprintTestCase):
             "twilio_messages/us_id_999999999/lsu_eligibility_messages/eligibility_01_2023",
             {
                 "status": "SUCCESS",
-                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "rawStatus": "delivered",
+                "status_last_updated": datetime.datetime.now(datetime.timezone.utc),
+                "raw_status": "delivered",
             },
             merge=True,
         )
@@ -171,9 +171,9 @@ class TestJIIRoutes(JIIBlueprintTestCase):
             {
                 "status": "FAILURE",
                 "errors": ["Message blocked"],
-                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "rawStatus": "failed",
-                "errorCode": "30004",
+                "status_last_updated": datetime.datetime.now(datetime.timezone.utc),
+                "raw_status": "failed",
+                "error_code": "30004",
             },
             merge=True,
         )
@@ -217,9 +217,9 @@ class TestJIIRoutes(JIIBlueprintTestCase):
             {
                 "status": "FAILURE",
                 "errors": ["Queue overflow"],
-                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "rawStatus": "failed",
-                "errorCode": error_code,
+                "status_last_updated": datetime.datetime.now(datetime.timezone.utc),
+                "raw_status": "failed",
+                "error_code": error_code,
             },
             merge=True,
         )
@@ -265,8 +265,8 @@ class TestJIIRoutes(JIIBlueprintTestCase):
             "twilio_messages/999999999/lsu_eligibility_messages/eligibility_01_2023",
             {
                 "status": "IN_PROGRESS",
-                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "rawStatus": "sending",
+                "status_last_updated": datetime.datetime.now(datetime.timezone.utc),
+                "raw_status": "sending",
             },
             merge=True,
         )
@@ -280,11 +280,9 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         mock_firestore: MagicMock,
     ) -> None:
         doc = MagicMock()
-        doc.to_dict.return_value = {"recipient": "5555555555", "userHash": "test-123"}
-        doc.reference.path = (
-            "twilio_messages/999999999/lsu_eligibility_messages/eligibility_01_2023"
-        )
-        mock_firestore.return_value.get_collection_group.return_value.where.return_value.stream.return_value = [
+        doc.to_dict.return_value = {"phone_numbers": ["5555555555"]}
+        doc.reference.path = "twilio_messages/999999999"
+        mock_firestore.return_value.get_collection.return_value.where.return_value.stream.return_value = [
             doc
         ]
         mock_twilio_validator.return_value = True
@@ -303,10 +301,10 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "twilio_messages/999999999/lsu_eligibility_messages/eligibility_01_2023",
+            "twilio_messages/999999999",
             {
-                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "optOutType": opt_out_type,
+                "last_opt_out_update": datetime.datetime.now(datetime.timezone.utc),
+                "opt_out_type": opt_out_type,
             },
             merge=True,
         )
@@ -321,14 +319,11 @@ class TestJIIRoutes(JIIBlueprintTestCase):
     ) -> None:
         doc = MagicMock()
         doc.to_dict.return_value = {
-            "recipient": "5555555555",
-            "userHash": "test-123",
-            "optOutType": "START",
+            "phone_numbers": ["5555555555"],
+            "opt_out_type": "START",
         }
-        doc.reference.path = (
-            "twilio_messages/999999999/lsu_eligibility_messages/eligibility_01_2023"
-        )
-        mock_firestore.return_value.get_collection_group.return_value.where.return_value.stream.return_value = [
+        doc.reference.path = "twilio_messages/999999999"
+        mock_firestore.return_value.get_collection.return_value.where.return_value.stream.return_value = [
             doc
         ]
         mock_twilio_validator.return_value = True
@@ -347,10 +342,10 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "twilio_messages/999999999/lsu_eligibility_messages/eligibility_01_2023",
+            "twilio_messages/999999999",
             {
-                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "optOutType": opt_out_type,
+                "last_opt_out_update": datetime.datetime.now(datetime.timezone.utc),
+                "opt_out_type": opt_out_type,
             },
             merge=True,
         )
@@ -363,7 +358,7 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         mock_twilio_validator: MagicMock,
         mock_firestore: MagicMock,
     ) -> None:
-        mock_firestore.return_value.get_collection_group.return_value.where.return_value.stream.return_value = (
+        mock_firestore.return_value.get_collection.return_value.where.return_value.stream.return_value = (
             []
         )
         mock_twilio_validator.return_value = True
