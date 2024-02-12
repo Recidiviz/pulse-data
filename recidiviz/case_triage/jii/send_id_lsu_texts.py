@@ -27,9 +27,10 @@ python -m recidiviz.case_triage.jii.send_id_lsu_texts \
 
 import argparse
 import datetime
+import logging
 from typing import Optional
 
-from google.cloud.firestore_v1 import ArrayUnion
+from google.cloud.firestore_v1 import ArrayUnion, FieldFilter
 from twilio.rest import Client as TwilioClient
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -85,6 +86,10 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# Opt-In and Opt-Out Keywords can be configered via the Twilio Console (Opt-Out Management page)
+OPT_OUT_KEY_WORDS = ["CANCEL", "END", "QUIT", "STOP", "STOPALL", "UNSUBSCRIBE"]
+
+
 def send_id_lsu_texts(
     bigquery_view: Optional[str],
     test_phone_number: Optional[str],
@@ -127,7 +132,7 @@ def send_id_lsu_texts(
             message_type = MessageType.ELIGIBILITY_TEXT.value
 
         if dry_run is False:
-            # send text messages
+            state_code = StateCode.US_ID.value.lower()
             # COMMENTING THIS OUT NOW FOR TEST PURPOSES
             # for external_id, phone_num_to_text_dict in external_id_to_phone_num_to_text_dict.items():
             # for phone_number, text_body in phone_num_to_text_dict.items():
@@ -136,10 +141,33 @@ def send_id_lsu_texts(
             if test_phone_number is not None:
                 external_id = 999999999
                 phone_number = test_phone_number
+                document_id = f"{state_code}_{external_id}"
 
                 firestore_client = FirestoreClientImpl(project_id="jii-pilots")
 
-                print("Twilio send SMS gcp environment: [%s]", get_gcp_environment())
+                # Get all document_ids for individuals who have opted-out
+                opt_out_document_ids = set()
+                twilio_ref = firestore_client.get_collection(
+                    collection_path="twilio_messages"
+                )
+                doc_query = twilio_ref.where(
+                    filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
+                )
+                jii_update_docs = doc_query.stream()
+                for jii_doc in jii_update_docs:
+                    opt_out_document_ids.add(jii_doc.id)
+
+                # Check that current document_id has not opted-out
+                if document_id in opt_out_document_ids:
+                    logging.info(
+                        "JII with document id %s has opted-out of receiving texts. Will not attempt to send message.",
+                        document_id,
+                    )
+                    return
+
+                logging.info(
+                    "Twilio send SMS gcp environment: [%s]", get_gcp_environment()
+                )
                 base_url = STAGING_URL
                 if get_gcp_environment() == "production":
                     base_url = PRODUCTION_URL
@@ -159,12 +187,8 @@ def send_id_lsu_texts(
                 )
 
                 # Update the individual's subcollection
-                state_code = StateCode.US_ID.value.lower()
-
                 # First, store the individual's phone number in their individual level doc
-                firestore_individual_path = (
-                    f"twilio_messages/{state_code}_{external_id}"
-                )
+                firestore_individual_path = f"twilio_messages/{document_id}"
                 firestore_client.update_document(
                     document_path=firestore_individual_path,
                     data={
@@ -176,7 +200,7 @@ def send_id_lsu_texts(
                 )
 
                 # Next, update their message level doc
-                firestore_message_path = f"twilio_messages/{state_code}_{external_id}/lsu_eligibility_messages/eligibility_{batch_id}"
+                firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{batch_id}"
                 firestore_client.set_document(
                     document_path=firestore_message_path,
                     data={
