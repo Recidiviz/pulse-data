@@ -41,7 +41,7 @@ class UsIxSupervisionTaskQueryConfig:
 
 CLIENT_RECORD_JOIN = """
     INNER JOIN `{project_id}.{workflows_views}.client_record_materialized` client
-    USING(person_external_id)
+    USING(person_external_id, state_code)
 """
 
 ASSESSMENT_SCORE_JOIN = """
@@ -109,7 +109,7 @@ def get_case_compliance_task_ctes() -> str:
             FROM `{{project_id}}.{{dataflow_metrics_materialized}}.most_recent_supervision_case_compliance_metrics_materialized` cc
 
             INNER JOIN `{{project_id}}.{{workflows_views}}.client_record_materialized` client
-            USING(person_external_id)
+            USING(person_external_id, state_code)
     
             {config.task_details_joins}
             
