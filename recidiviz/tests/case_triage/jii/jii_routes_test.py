@@ -25,6 +25,7 @@ from unittest.mock import MagicMock, patch
 from flask import Flask
 from flask.testing import FlaskClient
 from freezegun import freeze_time
+from google.cloud.firestore_v1 import ArrayUnion
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.jii.id_lsu_routes import create_jii_api_blueprint
@@ -297,9 +298,25 @@ class TestJIIRoutes(JIIBlueprintTestCase):
             data={
                 "From": "+15555555555",
                 "OptOutType": opt_out_type,
+                "Body": opt_out_type,
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
+        mock_firestore.return_value.update_document.assert_called_once_with(
+            "twilio_messages/999999999",
+            {
+                "responses": ArrayUnion(
+                    [
+                        {
+                            "response": opt_out_type,
+                            "response_date": datetime.datetime.now(
+                                datetime.timezone.utc
+                            ),
+                        }
+                    ]
+                )
+            },
+        )
         mock_firestore.return_value.set_document.assert_called_once_with(
             "twilio_messages/999999999",
             {
@@ -338,9 +355,25 @@ class TestJIIRoutes(JIIBlueprintTestCase):
             data={
                 "From": "+15555555555",
                 "OptOutType": opt_out_type,
+                "Body": opt_out_type,
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
+        mock_firestore.return_value.update_document.assert_called_once_with(
+            "twilio_messages/999999999",
+            {
+                "responses": ArrayUnion(
+                    [
+                        {
+                            "response": opt_out_type,
+                            "response_date": datetime.datetime.now(
+                                datetime.timezone.utc
+                            ),
+                        }
+                    ]
+                )
+            },
+        )
         mock_firestore.return_value.set_document.assert_called_once_with(
             "twilio_messages/999999999",
             {
@@ -373,7 +406,9 @@ class TestJIIRoutes(JIIBlueprintTestCase):
             data={
                 "From": "+12222222222",
                 "OptOutType": opt_out_type,
+                "Body": opt_out_type,
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
+        mock_firestore.return_value.update_document.assert_not_called()
         mock_firestore.return_value.set_document.assert_not_called()
