@@ -120,7 +120,7 @@ def create_jii_api_blueprint() -> Blueprint:
 
             # This endpoint will be hit multiple times per message, so check here if this is a new status change from
             # what we already have in Firestore.
-            if jii_message.get("rawStatus", "") != message_status:
+            if jii_message.get("raw_status", "") != message_status:
                 logging.info(
                     "Updating Twilio message status for doc: [%s] with status: [%s]",
                     doc.reference.path,
@@ -128,11 +128,11 @@ def create_jii_api_blueprint() -> Blueprint:
                 )
                 doc_update = {
                     "status": get_consolidated_status(message_status),
-                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                    "rawStatus": message_status,
+                    "status_last_updated": datetime.datetime.now(datetime.timezone.utc),
+                    "raw_status": message_status,
                 }
                 if error_code:
-                    doc_update["errorCode"] = error_code
+                    doc_update["error_code"] = error_code
                     error_message = get_jii_texting_error_message(error_code)
                     doc_update["errors"] = [error_message]
                 firestore_client.set_document(
@@ -162,42 +162,44 @@ def create_jii_api_blueprint() -> Blueprint:
         opt_out_type = get_str_param_value(
             "OptOutType", request.values, preserve_case=True
         )
-        recipient = get_str_param_value("From", request.values, preserve_case=True)
+        phone_number = get_str_param_value("From", request.values, preserve_case=True)
 
-        if not opt_out_type or not recipient:
+        if not opt_out_type or not phone_number:
             return make_response(jsonify(), HTTPStatus.OK)
 
-        firestore_client = FirestoreClientImpl(project_id="jii-pilots")
-        jii_messages_ref = firestore_client.get_collection_group(
-            collection_path="lsu_eligibility_messages"
-        )
         # recipient phone numbers are prefixed with +1 in the request, but do not contain that prefix in Firestore
-        query = jii_messages_ref.where(
-            filter=FieldFilter("recipient", "==", recipient[2:])
+        phone_number = phone_number[2:]
+
+        firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+        twilio_message_ref = firestore_client.get_collection(
+            collection_path="twilio_messages"
         )
-        jii_updates_docs = query.stream()
+        query = twilio_message_ref.where(
+            filter=FieldFilter("phone_numbers", "array_contains", phone_number)
+        )
+        jii_update_docs = query.stream()
 
-        for doc in jii_updates_docs:
-            jii_message = doc.to_dict()
+        for jii_doc_snapshot in jii_update_docs:
+            jii_doc = jii_doc_snapshot.to_dict()
 
-            if not jii_message:
+            if jii_doc is None:
                 continue
 
             # This endpoint may be hit multiple times per recipient, so check here if this is a new
             # opt out type from what we already have in Firestore.
             # Opt out types are: STOP, START, and HELP
-            if opt_out_type and opt_out_type != jii_message.get("optOutType"):
+            if opt_out_type and opt_out_type != jii_doc.get("opt_out_type"):
                 logging.info(
                     "Updating Twilio opt-out type for doc: [%s] with type: [%s]",
-                    doc.reference.path,
+                    jii_doc_snapshot.reference.path,
                     opt_out_type,
                 )
                 doc_update = {
-                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                    "optOutType": opt_out_type,
+                    "last_opt_out_update": datetime.datetime.now(datetime.timezone.utc),
+                    "opt_out_type": opt_out_type,
                 }
                 firestore_client.set_document(
-                    doc.reference.path,
+                    jii_doc_snapshot.reference.path,
                     doc_update,
                     merge=True,
                 )

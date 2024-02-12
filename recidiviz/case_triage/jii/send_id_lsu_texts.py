@@ -22,13 +22,14 @@ python -m recidiviz.case_triage.jii.send_id_lsu_texts \
     --bigquery-view recidiviz-staging.hsalas_scratch.ix_lsu_jii_query \
     --phone-number XXXXXXXXXX \
     --dry-run True \
-    --message-type initial
+    --message-type initial_text
 """
 
 import argparse
 import datetime
 from typing import Optional
 
+from google.cloud.firestore_v1 import ArrayUnion
 from twilio.rest import Client as TwilioClient
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -159,14 +160,30 @@ def send_id_lsu_texts(
 
                 # Update the individual's subcollection
                 state_code = StateCode.US_ID.value.lower()
-                firestore_path = f"twilio_messages/{state_code}_{external_id}/lsu_eligibility_messages/eligibility_{batch_id}"
+
+                # First, store the individual's phone number in their individual level doc
+                firestore_individual_path = (
+                    f"twilio_messages/{state_code}_{external_id}"
+                )
+                firestore_client.update_document(
+                    document_path=firestore_individual_path,
+                    data={
+                        "last_phone_num_update": datetime.datetime.now(
+                            datetime.timezone.utc
+                        ),
+                        "phone_numbers": ArrayUnion([phone_number]),
+                    },
+                )
+
+                # Next, update their message level doc
+                firestore_message_path = f"twilio_messages/{state_code}_{external_id}/lsu_eligibility_messages/eligibility_{batch_id}"
                 firestore_client.set_document(
-                    document_path=firestore_path,
+                    document_path=firestore_message_path,
                     data={
                         "timestamp": datetime.datetime.now(datetime.timezone.utc),
                         "message_sid": response.sid,
                         "body": text_body,
-                        "recipient": phone_number,
+                        "phone_number": phone_number,
                         "message_type": message_type,
                     },
                     merge=True,
