@@ -46,10 +46,7 @@ output:
                     StatePersonAliasType.NICKNAME: "4" # Nickname
                     StatePersonAliasType.AFFILIATION_NAME: "8" # Moniker
                     StatePersonAliasType.INTERNAL_UNKNOWN:
-                      - "5" # Marital
-                      - "6" # Adopted
-                      - "7" # TRUE (?)
-                      - "9" # Clemency Application (?)
+                      - SPECIAL_TYPE # 5: Marital, 6: Adopted, 7: TRUE (?), 9: Clemency Application
               full_name:
                 $person_name:
                   $given_names:
