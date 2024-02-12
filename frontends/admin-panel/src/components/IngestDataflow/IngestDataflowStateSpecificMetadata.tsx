@@ -38,7 +38,9 @@ import { StateCodeInfo } from "../general/constants";
 import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
+  ANCHOR_INGEST_LOGS,
   ANCHOR_INGEST_RAW_DATA,
+  ANCHOR_INGEST_RESOURCES,
 } from "./constants";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -69,6 +71,14 @@ const items: MenuProps["items"] = [
       "Raw Data",
       `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_INGEST_RAW_DATA}`
     ),
+    getItem(
+      "Raw Data Resources",
+      `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_INGEST_RESOURCES}`
+    ),
+    getItem(
+      "Raw Data Logs",
+      `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_INGEST_LOGS}`
+    ),
   ]),
   getItem("Secondary Instance", INGEST_DATAFLOW_SECONDARY_ROUTE, null, [
     getItem(
@@ -78,6 +88,14 @@ const items: MenuProps["items"] = [
     getItem(
       "Raw Data",
       `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_INGEST_RAW_DATA}`
+    ),
+    getItem(
+      "Raw Data Resources",
+      `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_INGEST_RESOURCES}`
+    ),
+    getItem(
+      "Raw Data Logs",
+      `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_INGEST_LOGS}`
     ),
   ]),
 ];

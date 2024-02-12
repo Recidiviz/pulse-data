@@ -109,8 +109,8 @@ const ENVIRONMENT_OPTIONS: Map<EnvironmentType, EnvironmentOption> = new Map([
 
 const items: MenuProps["items"] = [
   getItem("Ingest", "ingest_group", null, [
-    getItem("Ingest Status", IngestOperations.INGEST_ACTIONS_ROUTE),
-    getItem("Ingest Pipelines Status", IngestOperations.INGEST_DATAFLOW_ROUTE),
+    getItem("Ingest Status (Legacy)", IngestOperations.INGEST_ACTIONS_ROUTE),
+    getItem("Ingest Status", IngestOperations.INGEST_DATAFLOW_ROUTE),
     getItem("Flash Databases", IngestOperations.FLASH_DB_CHECKLIST_ROUTE),
     getItem(
       "Sandbox Raw Data Import",
