@@ -18,6 +18,8 @@
 Utilities for generating and analyzing aggregated metrics in python notebooks
 """
 
+import json
+import os
 from datetime import datetime
 from typing import List, Optional
 
@@ -33,10 +35,12 @@ from recidiviz.aggregated_metrics.assignment_span_aggregated_metrics import (
     get_assignment_span_time_specific_cte,
 )
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.aggregated_metrics.models import aggregated_metric_configurations as amc
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
+    EventMetricConditionsMixin,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
@@ -49,6 +53,7 @@ from recidiviz.aggregated_metrics.period_event_aggregated_metrics import (
 from recidiviz.aggregated_metrics.period_span_aggregated_metrics import (
     get_period_span_time_specific_cte,
 )
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
@@ -250,3 +255,153 @@ def get_custom_aggregated_metrics(
     if print_query_template:
         print(query_template)
     return pd.read_gbq(query_template, project_id=project_id, progress_bar_type="tqdm")
+
+
+def get_event_attrs(ea: str, e: str) -> str:
+    "Returns the value for the relevant event attribute"
+
+    try:
+        return json.loads(ea)[e]
+    except ValueError:
+        return ""
+
+
+def get_person_events(
+    state_code: str,
+    metrics: list[str],
+    project_id: str = "recidiviz-staging",
+    min_date: datetime = datetime(2020, 1, 1),
+    max_date: datetime = datetime(2023, 1, 1),
+    parse_attributes: bool = False,
+    output_file_path: str = "",
+    supervisor_id: str = "",
+    officer_ids: Optional[list[str]] = None,
+) -> pd.DataFrame:
+    """
+    Returns a dataframe for all the person_events that contribute to a given metric in aggregated metrics, along with
+    information on the attributes and officers associated with the event. Useful for data validation, particularly
+    at the officer/supervisor level
+
+    state_code: string to filter to relevant state
+    metrics: list of event types we want to pull events for
+    min_date: start of time range we want to pull events for
+    max_date: end of time range we want to pull events for (inclusive)
+    parse_attributes: boolean specifying whether the output df should parse `event_attributes`
+    output_excel: boolean for whether an excel output is desired (note this will contain person level information and
+        should only be run in recidiviz-research, uploaded to Google drive, and then shredded)
+    output_file_path: File path for output
+    supervisor_id: If the events are being pulled for a set of officers associated with a supervisor, the ID can be
+        included in the output name
+    officer_ids: If the events are being pulled for a set of officers, provide their external ids
+
+    Args:
+        officer_ids (object):
+    """
+
+    if not metrics:
+        raise ValueError("Must provide at least one metric - none provided.")
+    # If filtering to specific officers, this formats the necessary filter for the query
+    officer_ids_filter = ""
+    if officer_ids:
+        officer_ids_sql = list_to_query_string(officer_ids, quoted=True)
+        officer_ids_filter = f"""
+            AND officer_id IN ({officer_ids_sql})
+        """
+
+    min_date_str = f'"{min_date.strftime("%Y-%m-%d")}"'
+    max_date_str = (
+        f'"{max_date.strftime("%Y-%m-%d")}"'
+        if max_date
+        else 'CURRENT_DATE("US/Eastern")'
+    )
+
+    # Iterate through the provided list of metrics
+    metric_dfs = []
+    for metric_set_str in metrics:
+        metric_set = getattr(amc, metric_set_str)
+        # For a single metric, the output from  getattr should not be a list. But for a metric with some kind of
+        # disaggregation (e.g. by violation type), the output will be a list
+        if not isinstance(metric_set, list):
+            metric_set = [metric_set]
+        for metric in metric_set:
+            if not isinstance(metric, EventMetricConditionsMixin):
+                raise ValueError(
+                    "Must be a metric related to events such as EventCountMetrics or AssignmentEvent Metric."
+                )
+            if not isinstance(metric, AggregatedMetric):
+                raise ValueError("Must be an AggregatedMetric.")
+            print(metric.name)
+
+            query = f"""
+                    SELECT
+                        e.state_code,
+                        e.person_id,
+                        pei.external_id,
+                        e.event,
+                        e.event_date,
+                        e.event_attributes,
+                        s.officer_id,
+                        s.assignment_date,
+                        s.end_date_exclusive,
+                    FROM `analyst_data.person_events_materialized` e
+                    INNER JOIN `aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` s
+                        ON e.person_id = s.person_id
+                        AND (e.event_date between s.assignment_date and COALESCE(s.end_date,'9999-01-01'))
+                        AND e.state_code = '{state_code}' 
+                    LEFT JOIN `normalized_state.state_person_external_id` pei
+                        ON e.person_id = pei.person_id
+                        AND e.state_code = pei.state_code
+                    WHERE {' AND '.join(metric.get_metric_conditions())}
+                    {officer_ids_filter}
+                    AND e.event_date BETWEEN {min_date_str} AND {max_date_str}
+
+                """
+
+            metric_df = pd.read_gbq(
+                query,
+                project_id=project_id,
+                progress_bar_type="tqdm_notebook",
+            )
+            metric_df["metric"] = metric.name
+
+            keep_cols = [
+                "person_id",
+                "external_id",
+                "event",
+                "metric",
+                "event_date",
+                "officer_id",
+            ]
+            # Some wrangling if the output needs to separate out the event attributes
+            if parse_attributes:
+                try:
+                    event_attributes_example = metric_df[
+                        metric_df["event_attributes"] != "{}"
+                    ].event_attributes.iloc[0]
+                    event_attributes = json.loads(event_attributes_example).keys()
+                    for e in event_attributes:
+                        metric_df[e] = metric_df["event_attributes"].apply(
+                            get_event_attrs, e=e
+                        )
+                except IndexError:
+                    print("No attributes to parse")
+
+            if not parse_attributes:
+                metric_df = metric_df[keep_cols]
+
+            metric_dfs.append(metric_df)
+
+    # Concatenate the different dfs
+    events = pd.concat(metric_dfs, ignore_index=True)
+
+    # Tag duplicates that might occur across metrics (especially true for inferred starts)
+    events["duplicated"] = events.duplicated(["external_id", "event_date"], keep=False)
+    events = events.sort_values(by=["person_id", "metric"])
+
+    if output_file_path != "":
+        events.to_excel(
+            os.path.join(output_file_path, f"metrics_events_{supervisor_id}.xlsx"),
+            index=False,
+        )
+
+    return events
