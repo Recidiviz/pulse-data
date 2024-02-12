@@ -19,11 +19,9 @@ import { Alert, Button, Form, Input, Modal } from "antd";
 import { rem } from "polished";
 import * as React from "react";
 import { useState } from "react";
-import {
-  DirectIngestInstance,
-  GCP_STORAGE_BASE_URL,
-} from "../IngestOperationsView/constants";
+import { DirectIngestInstance } from "../IngestDataflow/constants";
 import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
+import { GCP_STORAGE_BASE_URL } from "../general/constants";
 
 export enum RegionAction {
   // TODO(#24652): remove ingest rerun action once dataflow is fully enabled

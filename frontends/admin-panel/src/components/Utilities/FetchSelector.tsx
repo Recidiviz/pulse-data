@@ -17,7 +17,7 @@
 import { Select } from "antd";
 import * as React from "react";
 import { useFetchedDataJSON } from "../../hooks";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
+import { StateCodeInfo } from "../general/constants";
 
 interface StateSelectorProps {
   /** fetch function to initialize the list of states */

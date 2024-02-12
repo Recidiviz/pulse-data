@@ -19,11 +19,11 @@ import { Alert, Breadcrumb, Layout } from "antd";
 import { FC } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  addStateCodeQueryToLink,
   VALIDATION_STATUS_ROUTE,
+  addStateCodeQueryToLink,
 } from "../../navigation/DatasetMetadata";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
+import { StateCodeInfo } from "../general/constants";
 import ValidationDetails from "./ValidationDetails";
 
 interface MatchParams {

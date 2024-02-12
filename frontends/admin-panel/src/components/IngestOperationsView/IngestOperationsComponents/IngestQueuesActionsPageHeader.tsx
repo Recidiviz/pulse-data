@@ -18,16 +18,16 @@
 import { SyncOutlined } from "@ant-design/icons";
 import { Button, PageHeader } from "antd";
 import classNames from "classnames";
-import {
-  RegionAction,
-  regionActionNames,
-} from "../../Utilities/ActionRegionConfirmationForm";
-import { QueueMetadata } from "../constants";
+import { QueueMetadata } from "../../IngestDataflow/constants";
 import {
   getIngestQueuesCumalativeState,
   getQueueColor,
   removeUnderscore,
-} from "../ingestStatusUtils";
+} from "../../IngestDataflow/ingestStatusUtils";
+import {
+  RegionAction,
+  regionActionNames,
+} from "../../Utilities/ActionRegionConfirmationForm";
 import IngestActionButton from "./IngestActionButton";
 
 interface IngestQueuesActionsPageHeaderProps {

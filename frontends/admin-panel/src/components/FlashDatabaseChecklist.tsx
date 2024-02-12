@@ -54,12 +54,13 @@ import {
   runIngestDAGForState,
   transferRawDataMetadataToNewInstance,
 } from "../AdminPanelAPI/IngestOperations";
+import { StateCodeInfo } from "./general/constants";
 import {
   DirectIngestInstance,
   IngestRawFileProcessingStatus,
   QueueState,
-  StateCodeInfo,
-} from "./IngestOperationsView/constants";
+} from "./IngestDataflow/constants";
+
 import NewTabLink from "./NewTabLink";
 import {
   fetchCurrentIngestInstanceStatus,

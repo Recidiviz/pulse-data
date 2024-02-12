@@ -30,23 +30,18 @@ import {
   INGEST_DATAFLOW_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
-import {
-  DirectIngestInstance,
-  IngestInstanceDataflowEnabledStatusResponse,
-  IngestInstanceStatusResponse,
-  StateCodeInfo,
-} from "../IngestOperationsView/constants";
-import {
-  getStatusSortedOrder,
-  renderStatusCell,
-} from "../IngestOperationsView/ingestStatusUtils";
+import { IngestInstanceDataflowEnabledStatusResponse } from "../IngestOperationsView/constants";
 import NewTabLink from "../NewTabLink";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
+import { StateCodeInfo } from "../general/constants";
 import {
   DataflowIngestPipelineJobResponse,
   DataflowIngestPipelineStatus,
+  DirectIngestInstance,
+  IngestInstanceStatusResponse,
   JobState,
 } from "./constants";
+import { getStatusSortedOrder, renderStatusCell } from "./ingestStatusUtils";
 
 export interface IngestDataflowJobCellFormattingInfo {
   color: string;

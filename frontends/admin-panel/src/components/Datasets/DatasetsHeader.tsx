@@ -15,11 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Layout, Breadcrumb } from "antd";
+import { Breadcrumb, Layout } from "antd";
 import { FC, ReactNode } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
+import { StateCodeInfo } from "../general/constants";
 
 interface DatasetsHeaderProps {
   title: string;

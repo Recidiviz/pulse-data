@@ -20,27 +20,27 @@ import {
   Empty,
   Form,
   Input,
-  message,
-  Modal,
   List,
+  Modal,
   PageHeader,
   Select,
   Spin,
+  message,
 } from "antd";
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import { fetchIngestStateCodes } from "../AdminPanelAPI";
 import {
   importRawDataToSandbox,
-  listSandboxBuckets,
   listRawFilesInSandboxBucket,
+  listSandboxBuckets,
 } from "../AdminPanelAPI/IngestOperations";
-import ImportSandboxFileStatusTable from "./DirectSandboxImport/ImportSandboxFileStatusTable";
 import FileUploadDatesTable from "./DirectSandboxImport/FileUploadDatesTable";
-import { fetchIngestStateCodes } from "../AdminPanelAPI";
+import ImportSandboxFileStatusTable from "./DirectSandboxImport/ImportSandboxFileStatusTable";
 import { FileStatus, FileUploadInfo } from "./DirectSandboxImport/constants";
-import { StateCodeInfo } from "./IngestOperationsView/constants";
-import StateSelector from "./Utilities/StateSelector";
 import { layout, tailLayout } from "./POEmails/constants";
+import StateSelector from "./Utilities/StateSelector";
+import { StateCodeInfo } from "./general/constants";
 
 interface SandboxFormData {
   sandboxDatasetPrefix: string;

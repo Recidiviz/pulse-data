@@ -16,8 +16,8 @@
 // =============================================================================
 import { Table } from "antd";
 import * as React from "react";
+import { QueueMetadata } from "../IngestDataflow/constants";
 import NewTabLink from "../NewTabLink";
-import { QueueMetadata } from "./constants";
 
 interface IngestQueueStatusCardProps {
   projectId: string;

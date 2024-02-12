@@ -22,7 +22,7 @@ import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations"
 import { useFetchedDataJSON } from "../../hooks";
 import IngestInstanceCard from "./IngestInstanceCard";
 import IngestInstanceActionsPageHeader from "./IngestOperationsComponents/IngestInstanceActionsPageHeader";
-import { DirectIngestInstance } from "./constants";
+import { DirectIngestInstance } from "../IngestDataflow/constants";
 
 const instances = [
   DirectIngestInstance.PRIMARY,

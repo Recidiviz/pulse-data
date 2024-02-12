@@ -37,17 +37,17 @@ import {
   INGEST_ACTIONS_SECONDARY_ROUTE,
   INGEST_ACTIONS_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
-import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
-import IngestStateSpecificInstanceMetadata from "./IngestStateSpecificInstanceMetadata";
-import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
 import {
   ANCHOR_INGEST_LOGS,
   ANCHOR_INGEST_RAW_DATA,
   ANCHOR_INGEST_RESOURCES,
-  ANCHOR_INGEST_VIEWS,
   DirectIngestInstance,
-  StateCodeInfo,
-} from "./constants";
+} from "../IngestDataflow/constants";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
+import { StateCodeInfo } from "../general/constants";
+import IngestStateSpecificInstanceMetadata from "./IngestStateSpecificInstanceMetadata";
+import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
+import { ANCHOR_INGEST_VIEWS } from "./constants";
 
 type MenuItem = Required<MenuProps>["items"][number];
 

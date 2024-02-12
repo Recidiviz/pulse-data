@@ -17,12 +17,12 @@
 import { Alert, Col, PageHeader, Row, Space } from "antd";
 import { useState } from "react";
 import { fetchEmailStateCodes } from "../AdminPanelAPI/LineStaffTools";
-import { StateCodeInfo } from "./IngestOperationsView/constants";
 import GenerateEmails from "./POEmails/GenerateEmails";
 import ListBatches from "./POEmails/ListBatches";
 import ReportTypeSelector from "./POEmails/ReportTypeSelector";
 import SendEmails from "./POEmails/SendEmails";
 import StateSelector from "./Utilities/StateSelector";
+import { StateCodeInfo } from "./general/constants";
 
 const POEmailsView = (): JSX.Element => {
   const [reportType, setReportType] = useState<string | undefined>(undefined);

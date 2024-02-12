@@ -21,8 +21,8 @@ import { useParams } from "react-router-dom";
 import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import IngestInstanceCard from "../IngestOperationsView/IngestInstanceCard";
-import { DirectIngestInstance } from "../IngestOperationsView/constants";
 import IngestDataflowInstanceCard from "./IngestDataflowInstanceCard";
+import { DirectIngestInstance } from "./constants";
 
 const instances = [
   DirectIngestInstance.PRIMARY,
@@ -70,6 +70,8 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
           env={env}
           stateCode={stateCode}
         />
+        {/* TODO(#20930): Delete the the IngestInstanceCard and move all relevant 
+           post-IID components into the IngestDataflowInstanceCard above. */}
         <IngestInstanceCard
           instance={directInstance}
           env={env}

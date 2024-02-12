@@ -23,13 +23,16 @@ import {
   updateIngestQueuesState,
 } from "../../../AdminPanelAPI";
 import { startRawDataReimport } from "../../../AdminPanelAPI/IngestOperations";
+import {
+  DirectIngestInstance,
+  QueueState,
+} from "../../IngestDataflow/constants";
 import ActionRegionConfirmationForm, {
   RegionAction,
   RegionActionContext,
   StartIngestRerunContext,
   regionActionNames,
 } from "../../Utilities/ActionRegionConfirmationForm";
-import { DirectIngestInstance, QueueState } from "../constants";
 
 interface IngestActionButtonProps {
   action: RegionAction;

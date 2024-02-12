@@ -37,13 +37,13 @@ import {
   ValidationStatusRecords,
 } from "../../../recidiviz/admin_panel/models/validation_pb";
 import { MetadataRecord } from "../../../types";
-import { StateCodeInfo } from "../../IngestOperationsView/constants";
 import {
   formatDatetime,
   scrollToAnchor,
 } from "../../Utilities/GeneralUtilities";
 import uniqueStates from "../../Utilities/UniqueStates";
 import StateSelectorPageHeader from "../../general/StateSelectorPageHeader";
+import { StateCodeInfo } from "../../general/constants";
 import {
   ANCHOR_VALIDATION_FAILURE_SUMMARY,
   ANCHOR_VALIDATION_FULL_RESULTS,

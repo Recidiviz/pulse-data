@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2021 Recidiviz, Inc.
+// Copyright (C) 2022 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,29 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { StateCodeInfo } from "../general/constants";
+export const GCP_STORAGE_BASE_URL = `https://console.cloud.google.com/storage/browser/`;
 
-export const layout = {
-  labelCol: { span: 8 },
-  wrapperCol: { span: 14 },
+export type StateCodeInfo = {
+  code: string;
+  name: string;
 };
-
-export const tailLayout = {
-  wrapperCol: { offset: 8, span: 14 },
-};
-
-export interface BatchInfoDict {
-  sentDate: string;
-  totalDelivered: string;
-  redirectAddress: string;
-}
-
-export type BatchInfoType = {
-  batchId: string;
-  sendResults: BatchInfoDict[];
-};
-
-export interface POEmailsFormProps {
-  stateInfo: StateCodeInfo | undefined;
-  reportType: string | undefined;
-}

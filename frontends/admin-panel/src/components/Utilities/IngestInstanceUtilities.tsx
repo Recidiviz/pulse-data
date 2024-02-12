@@ -22,7 +22,7 @@ import {
   getRawDataSourceInstance,
 } from "../../AdminPanelAPI";
 import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
-import { DirectIngestInstance } from "../IngestOperationsView/constants";
+import { DirectIngestInstance } from "../IngestDataflow/constants";
 
 export const fetchCurrentIngestInstanceStatus = async (
   stateCode: string,

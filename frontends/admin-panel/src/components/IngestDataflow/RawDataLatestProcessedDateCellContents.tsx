@@ -15,13 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import NewTabLink from "../../NewTabLink";
 import {
   FILE_TAG_IGNORED_IN_SUBDIRECTORY,
   FILE_TAG_UNNORMALIZED,
-  IngestRawFileProcessingStatus,
-} from "../constants";
-import { getGCPBucketURL } from "../ingestStatusUtils";
+} from "../IngestOperationsView/constants";
+import NewTabLink from "../NewTabLink";
+import { IngestRawFileProcessingStatus } from "./constants";
+import { getGCPBucketURL } from "./ingestStatusUtils";
 
 interface RawDataLatestProcessedDateCellContentsProps {
   status: IngestRawFileProcessingStatus;

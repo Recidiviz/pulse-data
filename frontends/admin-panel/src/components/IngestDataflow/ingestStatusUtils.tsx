@@ -17,7 +17,8 @@
 
 import classNames from "classnames";
 import moment from "moment";
-import { GCP_STORAGE_BASE_URL, QueueMetadata, QueueState } from "./constants";
+import { GCP_STORAGE_BASE_URL } from "../general/constants";
+import { QueueMetadata, QueueState } from "./constants";
 
 export interface DirectIngestStatusFormattingInfo {
   status: string;
