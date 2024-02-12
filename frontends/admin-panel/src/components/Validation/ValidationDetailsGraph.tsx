@@ -33,11 +33,15 @@ import XYFrame from "semiotic/lib/XYFrame";
 import {
   IngestInstanceStatusInfo,
   IngestStatus,
-  IngestStatusRefreshInfo,
-} from "../IngestOperationsView/constants";
+} from "../IngestDataflow/constants";
+
 import ColorLegend from "../Utilities/ColorLegend";
 import { formatDatetime } from "../Utilities/GeneralUtilities";
-import { ValidationDetailsGraphProps } from "./constants";
+import {
+  IngestStatusRefreshInfo,
+  ValidationDetailsGraphProps,
+} from "./constants";
+
 import { formatDate, formatStatusAmount } from "./utils";
 
 const filterToRefreshesDuringWindow = (

@@ -29,7 +29,6 @@ import {
   getLatestRunStateDatasetRowCounts,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
-import { DirectIngestInstance } from "../IngestOperationsView/constants";
 import NewTabLink from "../NewTabLink";
 import { formatDatetimeFromTimestamp } from "../Utilities/GeneralUtilities";
 import {
@@ -37,6 +36,7 @@ import {
   DataflowIngestPipelineAdditionalMetadata,
   DataflowIngestPipelineStatus,
   DataflowIngestRawDataWatermarks,
+  DirectIngestInstance,
   IngestViewResultRowCounts,
   JobState,
   StateDatasetRowCounts,

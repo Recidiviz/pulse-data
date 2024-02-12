@@ -15,32 +15,49 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { IngestRawFileProcessingStatus, SPECIAL_FILE_TAGS } from "../constants";
+import classNames from "classnames";
+import { SPECIAL_FILE_TAGS } from "../IngestOperationsView/constants";
+import NewTabLink from "../NewTabLink";
+import { IngestRawFileProcessingStatus } from "./constants";
+import { getGCPBucketURL } from "./ingestStatusUtils";
 
-interface RenderRawDataFileTagProps {
+interface RenderHasConfigFileProps {
   status: IngestRawFileProcessingStatus;
+  ingestBucketPath: string | undefined;
 }
 
-const RawDataHasConfigFileCellContents: React.FC<RenderRawDataFileTagProps> = ({
+const RawDataFileTagContents: React.FC<RenderHasConfigFileProps> = ({
   status,
+  ingestBucketPath,
 }) => {
   const { fileTag, hasConfig } = status;
   const isSpecialTag = SPECIAL_FILE_TAGS.includes(fileTag);
   if (isSpecialTag) {
-    return <div>{fileTag}</div>;
+    return <div>N/A</div>;
+  }
+
+  let content;
+  if (hasConfig) {
+    content = "Yes";
+  } else if (ingestBucketPath) {
+    content = (
+      <NewTabLink href={getGCPBucketURL(ingestBucketPath, fileTag)}>
+        No Raw Config File Available
+      </NewTabLink>
+    );
+  } else {
+    content = "No Raw Config File Available";
   }
 
   return (
-    <div>
-      {hasConfig ? (
-        fileTag
-      ) : (
-        <>
-          {fileTag} <em>(unrecognized)</em>
-        </>
-      )}
+    <div
+      className={classNames({
+        "ingest-caution": !hasConfig,
+      })}
+    >
+      {content}
     </div>
   );
 };
 
-export default RawDataHasConfigFileCellContents;
+export default RawDataFileTagContents;

@@ -18,7 +18,7 @@
 import { PageHeader } from "antd";
 import { fetchIngestStateCodes } from "../../AdminPanelAPI";
 import StateSelector from "../Utilities/StateSelector";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
+import { StateCodeInfo } from "./constants";
 
 interface StateSelectorPageHeaderProps {
   title: string;

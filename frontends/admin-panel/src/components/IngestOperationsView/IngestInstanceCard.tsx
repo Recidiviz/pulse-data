@@ -22,22 +22,23 @@ import {
   getIngestInstanceResources,
   getIngestRawFileProcessingStatus,
 } from "../../AdminPanelAPI/IngestOperations";
-import NewTabLink from "../NewTabLink";
-import { scrollToAnchor } from "../Utilities/GeneralUtilities";
-import { isAbortException } from "../Utilities/exceptions";
-import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
-import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
-import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
+import IngestRawFileProcessingStatusTable from "../IngestDataflow/IngestRawFileProcessingStatusTable";
+import InstanceRawFileMetadata from "../IngestDataflow/InstanceRawFileMetadata";
 import {
   ANCHOR_INGEST_LOGS,
   ANCHOR_INGEST_RAW_DATA,
   ANCHOR_INGEST_RESOURCES,
-  ANCHOR_INGEST_VIEWS,
   DirectIngestInstance,
-  GCP_STORAGE_BASE_URL,
   IngestInstanceResources,
   IngestRawFileProcessingStatus,
-} from "./constants";
+} from "../IngestDataflow/constants";
+import NewTabLink from "../NewTabLink";
+import { scrollToAnchor } from "../Utilities/GeneralUtilities";
+import { isAbortException } from "../Utilities/exceptions";
+import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
+import { ANCHOR_INGEST_VIEWS } from "./constants";
+
+import { GCP_STORAGE_BASE_URL } from "../general/constants";
 
 interface IngestInstanceCardProps {
   instance: DirectIngestInstance;

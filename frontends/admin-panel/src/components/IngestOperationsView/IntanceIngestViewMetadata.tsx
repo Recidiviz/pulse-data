@@ -22,11 +22,11 @@ import { getIngestViewSummaries } from "../../AdminPanelAPI/IngestOperations";
 import { optionalStringSort } from "../Utilities/GeneralUtilities";
 import { isAbortException } from "../Utilities/exceptions";
 import {
-  DirectIngestInstance,
   IngestViewContentsSummary,
   IngestViewMaterializationSummary,
   IngestViewSummaries,
 } from "./constants";
+import { DirectIngestInstance } from "../IngestDataflow/constants";
 
 interface InstanceIngestViewMetadataProps {
   instance: DirectIngestInstance;

@@ -41,17 +41,16 @@ import {
   ValidationStatusRecord,
   ValidationStatusRecords,
 } from "../../recidiviz/admin_panel/models/validation_pb";
-import {
-  IngestInstanceStatusInfo,
-  IngestStatusRefreshInfo,
-} from "../IngestOperationsView/constants";
+import { IngestInstanceStatusInfo } from "../IngestDataflow/constants";
 import { gcpEnvironment } from "../Utilities/EnvironmentUtilities";
 import { formatDatetime } from "../Utilities/GeneralUtilities";
 import {
+  IngestStatusRefreshInfo,
   RecordStatus,
   ValidationDetailsProps,
   ValidationErrorTableData,
 } from "./constants";
+
 import SamenessPerRowDetails from "./SamenessPerRowDetails";
 import SamenessPerViewDetails from "./SamenessPerViewDetails";
 import {

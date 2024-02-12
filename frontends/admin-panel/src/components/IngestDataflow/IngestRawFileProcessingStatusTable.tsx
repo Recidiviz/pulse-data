@@ -24,9 +24,9 @@ import {
   optionalNumberSort,
   optionalStringSort,
 } from "../Utilities/GeneralUtilities";
-import RawDataFileTagContents from "./IngestOperationsComponents/RawDataFileTagContents";
-import RawDataHasConfigFileCellContents from "./IngestOperationsComponents/RawDataHasConfigFileCellContents";
-import RawDataLatestProcessedDateCellContents from "./IngestOperationsComponents/RawDataLatestProcessedDateCellContents";
+import RawDataFileTagContents from "./RawDataFileTagContents";
+import RawDataHasConfigFileCellContents from "./RawDataHasConfigFileCellContents";
+import RawDataLatestProcessedDateCellContents from "./RawDataLatestProcessedDateCellContents";
 import {
   IngestInstanceResources,
   IngestRawFileProcessingStatus,

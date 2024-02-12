@@ -20,15 +20,18 @@ import classNames from "classnames";
 import { useEffect, useState } from "react";
 import { getCurrentIngestInstanceStatusInformation } from "../../../AdminPanelAPI/IngestOperations";
 import {
-  RegionAction,
-  regionActionNames,
-} from "../../Utilities/ActionRegionConfirmationForm";
-import { DirectIngestInstance, IngestInstanceStatusInfo } from "../constants";
+  DirectIngestInstance,
+  IngestInstanceStatusInfo,
+} from "../../IngestDataflow/constants";
 import {
   getStatusBoxColor,
   getStatusMessage,
   removeUnderscore,
-} from "../ingestStatusUtils";
+} from "../../IngestDataflow/ingestStatusUtils";
+import {
+  RegionAction,
+  regionActionNames,
+} from "../../Utilities/ActionRegionConfirmationForm";
 import IngestActionButton from "./IngestActionButton";
 
 interface IngestActionsPageHeaderProps {

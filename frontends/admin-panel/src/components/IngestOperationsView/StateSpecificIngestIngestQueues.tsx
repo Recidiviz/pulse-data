@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getIngestQueuesState } from "../../AdminPanelAPI";
-import { QueueMetadata } from "./constants";
+import { QueueMetadata } from "../IngestDataflow/constants";
 import IngestQueuesActionsPageHeader from "./IngestOperationsComponents/IngestQueuesActionsPageHeader";
 import IngestQueuesTable from "./IngestQueuesTable";
 

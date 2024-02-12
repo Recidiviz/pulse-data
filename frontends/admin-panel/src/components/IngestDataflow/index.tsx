@@ -23,6 +23,8 @@ import {
 import IngestDataflowCurrentStatusSummary from "./IngestDataflowCurrentStatusSummary";
 import IngestDataflowStateSpecificMetadata from "./IngestDataflowStateSpecificMetadata";
 
+// TODO(#20930): Rename this component / directory to IngestStatusView once the legacy
+//  view has been deleted. This page shows more than Dataflow pipeline information.
 const IngestDataflowView = (): JSX.Element => {
   return (
     <Layout style={{ height: "100%", width: "100%" }}>

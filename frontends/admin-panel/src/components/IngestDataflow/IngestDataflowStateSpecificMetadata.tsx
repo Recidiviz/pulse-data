@@ -33,13 +33,13 @@ import {
   INGEST_DATAFLOW_SECONDARY_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
-import {
-  ANCHOR_INGEST_RAW_DATA,
-  StateCodeInfo,
-} from "../IngestOperationsView/constants";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
+import { StateCodeInfo } from "../general/constants";
 import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
-import { ANCHOR_DATAFLOW_LATEST_JOB } from "./constants";
+import {
+  ANCHOR_DATAFLOW_LATEST_JOB,
+  ANCHOR_INGEST_RAW_DATA,
+} from "./constants";
 
 type MenuItem = Required<MenuProps>["items"][number];
 

@@ -30,18 +30,21 @@ import {
   INGEST_ACTIONS_PRIMARY_ROUTE,
   INGEST_ACTIONS_ROUTE,
 } from "../../navigation/IngestOperations";
-import NewTabLink from "../NewTabLink";
-import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
-  IngestInstanceDataflowEnabledStatusResponse,
   IngestInstanceStatusInfo,
   IngestInstanceStatusResponse,
-  IngestInstanceStatusTableInfo,
   QueueMetadata,
   QueueState,
-  StateCodeInfo,
   StateIngestQueuesStatuses,
+} from "../IngestDataflow/constants";
+import NewTabLink from "../NewTabLink";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
+import { StateCodeInfo } from "../general/constants";
+import {
+  IngestInstanceDataflowEnabledStatusResponse,
+  IngestInstanceStatusTableInfo,
 } from "./constants";
+
 import {
   getDataflowEnabledSortedOrder,
   getIngestQueuesCumalativeState,
@@ -49,7 +52,7 @@ import {
   getQueueStatusSortedOrder,
   getStatusSortedOrder,
   renderStatusCell,
-} from "./ingestStatusUtils";
+} from "../IngestDataflow/ingestStatusUtils";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   const history = useHistory();
