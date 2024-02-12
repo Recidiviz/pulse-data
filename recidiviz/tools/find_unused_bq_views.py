@@ -46,6 +46,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     REFERENCE_VIEWS_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
+from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibility_spans import (
+    ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
 )
@@ -310,6 +313,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     ),
     US_ME_SIX_YEARS_REMAINING_VIEW_BUILDER.address: (
         "Will be used for future workflows (Hugo S 2/5/24)"
+    ),
+    ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER.address: (
+        "Will be referenced by a funnel status sessions view to support Workflows impact dashboards"
+        " (see #26453) (Mayuka Sarukkai 2/8/24)"
     ),
 }
 
