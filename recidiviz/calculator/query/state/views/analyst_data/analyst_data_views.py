@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibility_spans import (
+    ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.consecutive_payments_preprocessed import (
     CONSECUTIVE_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -234,6 +237,7 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_officer_event
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
+    ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER,
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,

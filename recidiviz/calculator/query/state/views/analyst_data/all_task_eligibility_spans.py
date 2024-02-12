@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,16 +35,23 @@ ALL_TASK_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
         state_code,
         person_id,
         task_name,
+        completion_event_type AS task_type,
         start_date,
         end_date,
         is_eligible,
-    FROM `{{project_id}}.task_eligibility.all_tasks_materialized`
+        #TODO(#21350): Refactor once almost eligible flag is available in all_tasks.
+        FALSE AS is_almost_eligible,
+    FROM
+        `{{project_id}}.task_eligibility.all_tasks_materialized`
+    INNER JOIN
+        `{{project_id}}.reference_views.task_to_completion_event`
+    USING (task_name)
     )
     ,
     sessionized_cte AS
     (
     {aggregate_adjacent_spans(table_name='all_task_cte',
-                       attribute=['task_name','is_eligible'],
+                       attribute=['task_name', 'task_type', 'is_eligible', 'is_almost_eligible'],
                        session_id_output_name='task_eligibility_span_id',
                        end_date_field_name='end_date')}
     )
