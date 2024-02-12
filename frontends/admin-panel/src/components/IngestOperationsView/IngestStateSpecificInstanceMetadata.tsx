@@ -29,6 +29,7 @@ const instances = [
   DirectIngestInstance.SECONDARY,
 ];
 
+// TODO(#24652): delete once dataflow is fully enabled
 const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
   const { stateCode, instance } =
