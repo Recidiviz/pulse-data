@@ -1209,7 +1209,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             user_id=auth0_user.get("user_id"),
             name=new_name,
             email=new_email_address,
-            email_verified=False,
+            email_verified=None,
         )
         self.test_auth0_client.send_verification_email.assert_called_once_with(
             user_id=auth0_user.get("user_id")
@@ -1780,9 +1780,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
-                    list(d.dimension_identifier_to_member.values())[0]
-                    if d.dimension_identifier_to_member is not None
-                    else None,
+                    (
+                        list(d.dimension_identifier_to_member.values())[0]
+                        if d.dimension_identifier_to_member is not None
+                        else None
+                    ),
                 ): d
                 for d in agency_datapoints
             }
@@ -1851,9 +1853,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
-                    list(d.dimension_identifier_to_member.values())[0]
-                    if d.dimension_identifier_to_member is not None
-                    else None,
+                    (
+                        list(d.dimension_identifier_to_member.values())[0]
+                        if d.dimension_identifier_to_member is not None
+                        else None
+                    ),
                 ): d
                 for d in agency_datapoints
             }

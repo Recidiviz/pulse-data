@@ -70,6 +70,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 name="User",
                 auth0_user_id="id0",
                 email="test@email.com",
+                auth0_client=self.test_auth0_client,
             )
 
     def test_create_or_update_user(self) -> None:
@@ -80,6 +81,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id="auth0|user2",
                 name="Test User 2",
                 email="test@email.com",
+                auth0_client=self.test_auth0_client,
             )
             agency = AgencyInterface.get_agency_by_name(
                 session=session, name="Agency Gamma"
@@ -95,6 +97,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 auth0_user_id=user.auth0_user_id,
                 name="Test User 3",
+                auth0_client=self.test_auth0_client,
             )
 
             user_account_association = (

@@ -19,7 +19,6 @@ from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
 
-from auth0.exceptions import Auth0Error
 from flask import Blueprint, Response, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from google.cloud import run_v2
@@ -169,28 +168,13 @@ def get_admin_blueprint(
 
             auth0_user_id = user.auth0_user_id if user is not None else None
 
-            if user is None:
-                # If there is no existing user, create user in auth0
-                try:
-                    auth0_user = auth0_client.create_JC_user(name=name, email=email)
-                    auth0_user_id = auth0_user["user_id"]
-
-                except Auth0Error as e:
-                    if e.message == "The user already exists.":
-                        auth0_users = auth0_client.get_all_users_by_email_addresses(
-                            email_addresses=[email]
-                        )
-                        auth0_user = auth0_users[0]
-                        auth0_user_id = auth0_user["user_id"]
-                    else:
-                        raise e
-
             # Create/Update user in our DB
             user = UserAccountInterface.create_or_update_user(
                 session=current_session,
                 name=name,
                 auth0_user_id=auth0_user_id,
                 email=email,
+                auth0_client=auth0_client,
             )
 
             agencies = AgencyInterface.get_agencies_by_id(
