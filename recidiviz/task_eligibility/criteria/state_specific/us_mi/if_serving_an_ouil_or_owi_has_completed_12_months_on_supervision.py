@@ -21,6 +21,8 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -49,11 +51,10 @@ SELECT DISTINCT
     UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
       USING (state_code, person_id, sentences_preprocessed_id)
+    INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`e
+        ON e.statute_code = sent.statute
     WHERE span.state_code = "US_MI"
-    --exclude all subsections of 257.625 except for (2) and (10), and exclude all codes like 257.625M or 257.625B
-    --which are separate mcl codes and not subsections of 257.625
-    AND sent.statute LIKE '257.625%'
-    AND REGEXP_CONTAINS(REGEXP_REPLACE(sent.statute, r'257.625', ''), r'^[13456789][a-zA-Z]*([^0a-zA-Z]|$)|^$')
+    AND CAST(is_owi_ouil AS BOOL)
 ),
  owi_ouil_aggregated_spans AS (
  /* Sentence spans are aggregated here so that sub sessions later on can be identified as falling into owi/ouil
@@ -176,6 +177,10 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
         meets_criteria_default=True,
     )
 )
