@@ -257,7 +257,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   return (
     <>
       <StateSelectorPageHeader
-        title="Ingest Status Summary"
+        title="Ingest Status Summary (Legacy)"
         stateCode={null}
         onChange={stateCodeChange}
       />
