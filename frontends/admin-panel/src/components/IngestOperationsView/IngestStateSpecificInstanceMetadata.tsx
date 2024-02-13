@@ -20,9 +20,9 @@ import { useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
-import IngestInstanceCard from "./IngestInstanceCard";
-import IngestInstanceActionsPageHeader from "./IngestOperationsComponents/IngestInstanceActionsPageHeader";
+import IngestInstanceActionsPageHeader from "../IngestDataflow/IngestInstanceActionsPageHeader";
 import { DirectIngestInstance } from "../IngestDataflow/constants";
+import IngestInstanceCard from "./IngestInstanceCard";
 
 const instances = [
   DirectIngestInstance.PRIMARY,

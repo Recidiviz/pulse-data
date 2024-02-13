@@ -18,9 +18,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getIngestQueuesState } from "../../AdminPanelAPI";
-import { QueueMetadata } from "../IngestDataflow/constants";
-import IngestQueuesActionsPageHeader from "./IngestOperationsComponents/IngestQueuesActionsPageHeader";
+import IngestQueuesActionsPageHeader from "./IngestQueuesActionsPageHeader";
 import IngestQueuesTable from "./IngestQueuesTable";
+import { QueueMetadata } from "./constants";
 
 const StateSpecificIngestQueues = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";

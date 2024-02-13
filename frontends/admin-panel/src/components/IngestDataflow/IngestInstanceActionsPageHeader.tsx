@@ -18,21 +18,18 @@
 import { PageHeader, Popover, Tag } from "antd";
 import classNames from "classnames";
 import { useEffect, useState } from "react";
-import { getCurrentIngestInstanceStatusInformation } from "../../../AdminPanelAPI/IngestOperations";
+import { getCurrentIngestInstanceStatusInformation } from "../../AdminPanelAPI/IngestOperations";
 import {
-  DirectIngestInstance,
-  IngestInstanceStatusInfo,
-} from "../../IngestDataflow/constants";
+  RegionAction,
+  regionActionNames,
+} from "../Utilities/ActionRegionConfirmationForm";
+import IngestActionButton from "./IngestActionButton";
+import { DirectIngestInstance, IngestInstanceStatusInfo } from "./constants";
 import {
   getStatusBoxColor,
   getStatusMessage,
   removeUnderscore,
-} from "../../IngestDataflow/ingestStatusUtils";
-import {
-  RegionAction,
-  regionActionNames,
-} from "../../Utilities/ActionRegionConfirmationForm";
-import IngestActionButton from "./IngestActionButton";
+} from "./ingestStatusUtils";
 
 interface IngestActionsPageHeaderProps {
   stateCode: string;
