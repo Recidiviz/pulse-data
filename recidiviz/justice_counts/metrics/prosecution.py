@@ -275,7 +275,7 @@ cases_declined = MetricDefinition(
     metric_type=MetricType.CASES_DECLINED,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Cases Declined",
-    description="The number of criminal cases referred to the office.",
+    description="The number of criminal cases referred to the office for review and declined for prosecution.",
     measurement_type=MeasurementType.DELTA,
     includes_excludes=[
         IncludesExcludesSet(
