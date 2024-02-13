@@ -17,9 +17,11 @@
 """This criteria view builder defines spans of time where clients are not on LIMITED
 supervision level as tracked by our `sessions` dataset.
 """
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    custody_or_supervision_level_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -29,26 +31,13 @@ _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_NOT_LIMITED"
 _DESCRIPTION = """This criteria view builder defines spans of time where clients are not on LIMITED
 supervision level as tracked by our `sessions` dataset."""
 
-_QUERY_TEMPLATE = """
-#TODO(#22511) refactor to build off of a general criteria view builder
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date_exclusive AS end_date,
-    FALSE as meets_criteria,
-    TO_JSON(STRUCT(start_date AS limited_start_date)) AS reason,
-FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
-WHERE supervision_level = "LIMITED" 
-"""
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    custody_or_supervision_level_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
+        levels_lst=["LIMITED"],
+        start_date_name_in_reason_blob="start_date AS limited_start_date",
+        level_meets_criteria="FALSE",
     )
 )
 

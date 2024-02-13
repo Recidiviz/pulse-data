@@ -17,10 +17,11 @@
 """This criteria view builder defines spans of time where residents are not on MAXIMUM custody level
 as tracked by our `sessions` dataset.
 """
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    custody_or_supervision_level_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,38 +32,14 @@ _DESCRIPTION = """This criteria view builder defines spans of time where residen
 as tracked by our `sessions` dataset.
 """
 
-_QUERY_TEMPLATE = f"""
-#TODO(#22511) refactor to build off of a general criteria view builder
-WITH max_spans AS (
-    SELECT
-            state_code,
-            person_id,
-            start_date,
-            end_date_exclusive AS end_date,
-    FROM
-        `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
-    WHERE
-        custody_level = 'MAXIMUM' 
-)
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        FALSE AS meets_criteria,
-        TO_JSON(STRUCT(TRUE AS custody_level_is_max)) AS reason,
-    FROM 
-        ({aggregate_adjacent_spans(table_name='max_spans')})
-"""
-
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = custody_or_supervision_level_criteria_builder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    levels_lst=["MAXIMUM"],
+    level_in_reason_blob="custody_level AS custody_level, TRUE AS custody_level_is_max",
+    start_date_name_in_reason_blob="start_date AS custody_level_start_date",
+    level_meets_criteria="FALSE",
+    compartment_level_1_filter="INCARCERATION",
 )
 
 if __name__ == "__main__":

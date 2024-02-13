@@ -21,7 +21,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    get_custody_level_is_criteria_query,
+    custody_or_supervision_level_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,10 +33,14 @@ MINIMUM custody level as tracked by our `sessions` dataset.
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    get_custody_level_is_criteria_query(
+    custody_or_supervision_level_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        custody_levels=["MINIMUM"],
+        levels_lst=["MINIMUM"],
+        level_in_reason_blob="custody_level AS custody_level",
+        start_date_name_in_reason_blob="start_date AS custody_level_start_date",
+        level_meets_criteria="TRUE",
+        compartment_level_1_filter="INCARCERATION",
     )
 )
 
