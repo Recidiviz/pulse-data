@@ -31,7 +31,9 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
+    clients_eligible,
     json_to_array_cte,
+    one_criteria_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import lsir_spans
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -62,17 +64,35 @@ current_lsir_span AS (
         *
     FROM lsir_spans
     WHERE CURRENT_DATE BETWEEN score_span_start_date AND score_span_end_date
-)
+),
+
+eligible_and_almost_eligible AS (
+    -- ELIGIBLE
+    {clients_eligible(from_cte = 'current_task_eligibility_spans_with_peid')}
+
+    UNION ALL
+
+    -- ALMOST ELIGIBLE (missing negative drug screen within 90 days)
+    {one_criteria_away_from_eligibility(criteria_name='NEGATIVE_UA_WITHIN_90_DAYS',
+                                        from_cte_table_name = "json_to_array_cte")}
+
+    UNION ALL
+
+    -- ALMOST ELIGIBLE (missing employment verification within 90 days)
+    {one_criteria_away_from_eligibility(criteria_name='US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS',
+                                        from_cte_table_name = "json_to_array_cte")})
 
 SELECT
-    jta.external_id,
-    jta.state_code,
-    jta.ineligible_criteria,
-    jta.is_eligible,
+    eae.external_id,
+    eae.state_code,
+    eae.ineligible_criteria,
+    eae.is_eligible,
     jta.array_reasons,
     cls.lsir_level,
-FROM json_to_array_cte jta
+FROM eligible_and_almost_eligible eae
 LEFT JOIN current_lsir_span cls
+    USING(person_id)
+LEFT JOIN json_to_array_cte jta
     USING(person_id)"""
 
 US_IX_TRANSFER_TO_LIMITED_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
