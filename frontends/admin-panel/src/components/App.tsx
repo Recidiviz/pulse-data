@@ -34,6 +34,7 @@ import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as OnCall from "../navigation/OnCall";
 import "../style/App.css";
+import InsightsConfigurationsView from "./ConfigurationsView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
 import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
@@ -144,6 +145,10 @@ const items: MenuProps["items"] = [
       LineStaffTools.STATE_ROLE_DEFAULT_PERMISSIONS_ROUTE
     ),
     getItem("Demo App Management", LineStaffTools.DEMO_APP_MANAGEMENT_ROUTE),
+    getItem(
+      "Insights Configuration",
+      LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE
+    ),
   ]),
   getItem("Justice Counts", "justice_counts_group", null, [
     getItem(
@@ -311,6 +316,10 @@ const App = (): JSX.Element => {
           <Route
             path={OnCall.ON_CALL_BASE_ROUTE}
             component={OnCallLogsReview}
+          />
+          <Route
+            path={LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE}
+            component={InsightsConfigurationsView}
           />
           <Redirect from="/" to={IngestOperations.INGEST_DATAFLOW_ROUTE} />
         </Switch>
