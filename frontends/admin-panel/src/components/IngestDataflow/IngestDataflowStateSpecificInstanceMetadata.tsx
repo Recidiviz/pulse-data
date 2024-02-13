@@ -15,8 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert, PageHeader } from "antd";
+import { Alert, Spin } from "antd";
+import { useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
+import { useFetchedDataJSON } from "../../hooks";
+import IngestInstanceActionsPageHeader from "../IngestOperationsView/IngestOperationsComponents/IngestInstanceActionsPageHeader";
 import IngestDataflowInstanceCard from "./IngestDataflowInstanceCard";
 import { DirectIngestInstance } from "./constants";
 
@@ -31,14 +35,49 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
     useParams<{ stateCode: string; instance: string }>();
 
   const directInstance = getInstance(instance);
+  const fetchDataflowEnabled = useCallback(async () => {
+    if (directInstance === undefined) {
+      throw new Error("Invalid instance");
+    }
+    return isIngestInDataflowEnabled(stateCode, directInstance);
+  }, [stateCode, directInstance]);
+  const { loading, data: dataflowEnabled } =
+    useFetchedDataJSON<boolean>(fetchDataflowEnabled);
 
   if (!directInstance) {
     return <Alert message="Invalid instance" type="error" />;
   }
 
+  if (loading) {
+    return (
+      <div className="center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (dataflowEnabled === undefined) {
+    return <Alert message="Unable to load dataflow gating info" type="error" />;
+  }
+
   return (
     <>
-      <PageHeader title={instance} />
+      <IngestInstanceActionsPageHeader
+        instance={directInstance}
+        stateCode={stateCode}
+        dataflowEnabled={dataflowEnabled}
+      />
+      {env === "development" ? (
+        <>
+          <Alert
+            style={{ margin: "6px 24px" }}
+            message="The Operations Database information is inaccurate. Users are unable to hit a live database
+          from a local machine"
+            type="warning"
+            showIcon
+          />
+        </>
+      ) : null}
       <div
         style={{ height: "95%" }}
         className="main-content content-side-padding"

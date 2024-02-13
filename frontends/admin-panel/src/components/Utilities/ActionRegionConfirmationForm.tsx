@@ -20,8 +20,8 @@ import { rem } from "polished";
 import * as React from "react";
 import { useState } from "react";
 import { DirectIngestInstance } from "../IngestDataflow/constants";
-import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
 import { GCP_STORAGE_BASE_URL } from "../general/constants";
+import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
 
 export enum RegionAction {
   // TODO(#24652): remove ingest rerun action once dataflow is fully enabled
@@ -40,12 +40,15 @@ export enum RegionAction {
 }
 
 export const regionActionNames = {
+  // TODO(#20930): Rename to "Trigger Raw Data Import Scheduler" once IID is shipped
+  // to all states.
   [RegionAction.TriggerTaskScheduler]: "Trigger Task Scheduler",
   // TODO(#24652): remove ingest rerun action once dataflow is fully enabled
   [RegionAction.StartIngestRerun]: "Start Ingest Rerun",
   [RegionAction.PauseIngestQueues]: "Pause Queues",
   [RegionAction.ResumeIngestQueues]: "Resume Queues",
 
+  // TODO(#24652): Remove import/export actions once dataflow is fully enabled
   [RegionAction.ExportToGCS]: "Export to GCS",
   [RegionAction.ImportFromGCS]: "Import from GCS",
 
