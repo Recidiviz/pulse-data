@@ -18,10 +18,9 @@ max_allowed_error_overrides:
       numbers will get "worse" as time goes on and we get more accurate data about movements.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
     hard_max_allowed_error_override: 0.05
-    soft_max_allowed_error_override: 0.01
-    override_reason: Here we make the threshold stricter than the default of 0.02. TODO(#9738) - needs investigation.
+    override_reason: TODO(#9738) - needs investigation.
   - validation_name: supervision_termination_person_level_external_comparison
-    hard_max_allowed_error_override: 0.1
+    hard_max_allowed_error_override: 0.05
     override_reason: We have a slightly higher error rate (~3%) than we
       usually allow for our person-level supervision terminations comparison. This is
       due to a methodology discrepancy between ourselves and US_PA regarding counting a
@@ -32,42 +31,37 @@ max_allowed_error_overrides:
       the ~3% error rate.
   - validation_name: incarceration_admission_person_level_external_comparison
     hard_max_allowed_error_override: 0.06
-    override_reason: Needs investigation.
+    override_reason: Needs investigation. TODO(#27538)
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
-    hard_max_allowed_error_override: 0.0353
-    override_reason: Needs investigation.
+    hard_max_allowed_error_override: 0.02
+    override_reason: Needs investigation. TODO(#27537)
   - validation_name: incarceration_population_person_level_external_comparison
     hard_max_allowed_error_override: 0.03
-    override_reason: Needs investigation.
+    override_reason: Needs investigation. TODO(#27539)
   - validation_name: incarceration_release_person_level_external_comparison
-    hard_max_allowed_error_override: 0.2
-    override_reason: Needs investigation.
+    hard_max_allowed_error_override: 0.1
+    override_reason: Needs investigation. TODO(#27540)
   - validation_name: state_supervision_violation_by_violation_date_stable_counts
-    hard_max_allowed_error_override: 0.6
-    override_reason: |-
-      TODO(#26313) - Only compare months that are both complete. 
-      We're expecting .28 is standard variation.
+    hard_max_allowed_error_override: 0.3
+    override_reason: We're expecting .28 is standard variation.
   - validation_name: state_supervision_period_by_termination_date_stable_counts
-    hard_max_allowed_error_override: 0.6
-    override_reason: |-
-      TODO(#26313) - Only compare months that are both complete. 
-      We're expecting .28 is standard variation.
+    hard_max_allowed_error_override: 0.3
+    override_reason: We're expecting .28 is standard variation.
   - validation_name: state_incarceration_period_by_release_date_stable_counts
-    hard_max_allowed_error_override: 0.6
-    override_reason: |-
-      TODO(#26313) - Only compare months that are both complete.
+    hard_max_allowed_error_override: 0.3
+    override_reason: We're expecting .28 is standard variation.
   - validation_name: state_incarceration_period_by_admission_date_stable_counts
-    hard_max_allowed_error_override: 0.6
-    override_reason: |-
-      TODO(#26313) - Only compare months that are both complete.
+    hard_max_allowed_error_override: 0.3
+    override_reason: We're expecting .28 is standard variation.
   - validation_name: state_supervision_period_by_start_date_stable_counts
-    hard_max_allowed_error_override: 1.0
-    override_reason:
-      Actively investigating a near-total disappearance of supervision periods
-      raw data. TODO(#25991)
+    hard_max_allowed_error_override: 0.3
+    override_reason: We're expecting .28 is standard variation.
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
-    hard_max_allowed_error_override: .60
-    override_reason: TODO(#26313) - Only compare months that are both complete.
+    hard_max_allowed_error_override: 0.3
+    override_reason: We're expecting .28 is standard variation.
+  - validation_name: outliers_staff_count_percent_change
+    hard_max_allowed_error_override: 0.03
+    override_reason: We're expecting .026 is standard variation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 1450
@@ -75,46 +69,26 @@ num_allowed_rows_overrides:
       There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
       tables. This value was 12 as of 3/5/2021 and we expect that it may slowly grow
-      over time as new data is added. TODO(#9734) - need to investigate increase due to
-      CCC ingest. Rerun on 02/15/2022 did not improve these. There are 866 as of 03/01/2022.
-      This number continues to grow over time. Error is 1404 as of 7/14/2023.
+      over time as new data is added. Current failing level as of 2/13/24 is 1,316 rows.
+      TODO(#9734) - need to investigate increase due to CCC ingest.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 150000
     override_reason:
       There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
-      tables. This value was 133 as of 3/5/2021 and we expect that it may slowly grow
-      over time as new data is added. TODO(#9736) - need to investgate CCC ingest overlaps
-  - validation_name: incarceration_release_prior_to_admission
-    hard_num_allowed_rows_override: 5
-    override_reason: TODO(#9735) - needs investigation
+      tables. Current failing level as of 2/13/24 is 110,726 rows and we expect that it
+      may slowly grow over time as new data is added.
+      TODO(#9736) - need to investgate CCC ingest overlaps
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 1500
+    hard_num_allowed_rows_override: 800
     override_reason:
       TODO(#6253) - Likely a rare edge case related to ordering movements
-      in the PA supervision_period ingest view. Rerun on 02/15/2022 did not improve these.
-      There were 645 of these as of 03/01/2022. There are 1100 as of 07/01/2022.
-  - validation_name: supervision_period_dates_existence
-    hard_num_allowed_rows_override: 75
-    override_reason:
-      There are currently two ingested supervision periods that have empty
-      date fields, evidenced at the ingest view layer as well. This is likely due to a specific edge case where a
-      person's last supervision period start edge is a PO transfer with no end date and the subsequent period matching joins the edges twice,
-      causing a supervision type mismatch between start and ends (such as 04 and 04,04) and therefore 2 periods that should
-      actually be one. This will also cause an error for the other half of the duplicated period in
-      superivision_termination_reason_no_date. For now, we will set the threshold at 50 as of 9/15/2022 and add the task
-      into the PA backlog list. Error at 54 as of 12/29/2022. TODO(#14683) Fix supervision periods ingest view to be corrected to account for this edge case in order to prevent it happening again
-      in the future.
-  - validation_name: supervision_termination_reason_no_date
-    hard_num_allowed_rows_override: 75
-    override_reason:
-      See supervision_period_dates_existence description above for issue with open periods and duplication for
-      superivision types. Error at 52 as of 12/29/2022. TODO(#14683) - Fix supervision periods ingest view to be corrected to account for this edge case
+      in the PA supervision_period ingest view. Current failing level as of 2/13/24 is 627 rows.
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 5000
     override_reason:
       TODO(#10625) - Need to be handled in IP pre-processing. Rerun on 02/15/2022 did not improve these.
-      There are 4271 of these as of 03/01/2022. 4769 as of 1/11/23.
+      Current failing level as of 2/13/24 is 4,368 rows.
   - validation_name: multiple_supervision_info_for_commitment_admission
     hard_num_allowed_rows_override: 5
     override_reason:
@@ -125,19 +99,19 @@ num_allowed_rows_overrides:
       different dates to be used for identifying SPs associated with an admission.
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 415000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 379,539 rows #TODO(#16224)
+    override_reason: Needs investigation.  Current failing level as of 2/13/24 is 394,749 rows #TODO(#16224)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 200000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 158,092 rows #TODO(#16235)
+    override_reason: Needs investigation.  Current failing level as of 2/13/24 is 186,044 rows #TODO(#16235)
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 200000
-    override_reason: Needs investigation.  Current failing level as of 11/2 is 192,868 rows #TODO(#16435)
+    hard_num_allowed_rows_override: 120000
+    override_reason: Needs investigation.  Current failing level as of 2/13/24 is 102,288 rows #TODO(#16435)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 25000
-    override_reason: Current failing level as of 1/24/23 is 24,112 rows #TODO(#18436)
+    hard_num_allowed_rows_override: 17500
+    override_reason: Current failing level as of 2/13/24 is 15,665 rows #TODO(#27541)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 50
-    override_reason: Current failing level as of 4/5/23 is 0 rows
+    hard_num_allowed_rows_override: 25
+    override_reason: Current failing level as of 2/13/24 is 2 rows
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 225000
-    override_reason: Current failing level as of 4/20/23 is 191,745 rows (19%) #TODO(#20404)
+    hard_num_allowed_rows_override: 180000
+    override_reason: Current failing level as of 2/13/24 is 176,927 rows #TODO(#20404)
