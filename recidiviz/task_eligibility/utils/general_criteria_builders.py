@@ -21,7 +21,6 @@ from typing import List, Optional
 
 from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
     join_sentence_spans_to_compartment_sessions,
 )
@@ -42,11 +41,11 @@ def raise_error_if_invalid_compartment_level_1_filter(
 ) -> None:
     """Raises a ValueError if the compartment_level_1_filter is not valid"""
 
-    compartment_level_1 = compartment_level_1_filter.lower()
+    compartment_level_1 = compartment_level_1_filter.upper()
 
-    if compartment_level_1 not in ("supervision", "incarceration"):
+    if compartment_level_1 not in ("SUPERVISION", "INCARCERATION"):
         raise ValueError(
-            "'compartment_level_1_filter` only accepts values of `SUPERVISION` or `INCARCERATION`"
+            "'compartment_level_1_filter' only accepts two values: `SUPERVISION` or `INCARCERATION`"
         )
 
 
@@ -191,25 +190,44 @@ def get_minimum_time_served_criteria_query(
     )
 
 
-def get_supervision_level_is_not_criteria_query(
+def custody_or_supervision_level_criteria_builder(
     criteria_name: str,
     description: str,
-    supervision_level: str,
-    start_date_name_in_reason_blob: str,
+    levels_lst: list,
+    level_in_reason_blob: str = "supervision_level AS supervision_level",
+    start_date_name_in_reason_blob: str = "start_date AS supervision_level_start_date",
+    level_meets_criteria: str = "TRUE",
+    compartment_level_1_filter: str = "SUPERVISION",
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
     Args:
         criteria_name (str): Criteria query name
         description (str): Criteria query description
-        supervision_level (str): Supervision level in supervision_level_sessions
+        levels_lst (list): List of supervision/custody levels to include in the criteria
+        level_in_reason_blob (str, optional): Name we will use to pass the supervision_level
+            value in the reason blob. Defaults to "supervision_level AS supervision_level".
         start_date_name_in_json (str): Name we will use to pass the start_date value in
             the reason blob
-
+        level_meets_criteria (str, optional): Value to use for the meets_criteria
+            column. Defaults to "TRUE".
+        compartment_level_1_filter (str, optional): Either 'SUPERVISION' OR
+            'INCARCERATION'. Defaults to "SUPERVISION".
     Returns:
         StateAgnosticTaskCriteriaBigQueryViewBuilder: Returns a state agnostic criteria
-        view builder indicating spans of time when a person is not in supervision_level
-        |supervision_level| as tracked by our `sessions` dataset
+        view builder indicating spans of time when a person is (or not) in a certain
+        supervision_level or custody_level as tracked by our
+        `supervision/custody_level_sessions` table
     """
+
+    raise_error_if_invalid_compartment_level_1_filter(compartment_level_1_filter)
+    #
+    if compartment_level_1_filter.upper() == "INCARCERATION":
+        level_type = "custody"
+    elif compartment_level_1_filter.upper() == "SUPERVISION":
+        level_type = "supervision"
+
+    # Transform list of levels to a string to be used in the query
+    levels_str = "('" + "', '".join(levels_lst) + "')"
 
     criteria_query = f"""
     SELECT
@@ -217,73 +235,25 @@ def get_supervision_level_is_not_criteria_query(
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-        FALSE as meets_criteria,
-        TO_JSON(STRUCT(start_date AS {start_date_name_in_reason_blob}, supervision_level AS supervision_level)) AS reason,
-    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized`
-    WHERE supervision_level = "{supervision_level}"
+        {level_meets_criteria} AS meets_criteria,
+        TO_JSON(STRUCT({start_date_name_in_reason_blob}, 
+                       {level_in_reason_blob})) AS reason,
+    FROM `{{project_id}}.{{sessions_dataset}}.{level_type}_level_raw_text_sessions_materialized`
+    WHERE {level_type}_level IN {levels_str}
     """
+
+    # If meets criteria is always true, then the default view builder should be false
+    if level_meets_criteria.upper() == "TRUE":
+        meets_criteria_default_view_builder = False
+    elif level_meets_criteria.upper() == "FALSE":
+        meets_criteria_default_view_builder = True
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
         description=description,
         criteria_spans_query_template=criteria_query,
         sessions_dataset=SESSIONS_DATASET,
-        meets_criteria_default=True,
-    )
-
-
-def get_custody_level_is_criteria_query(
-    criteria_name: str,
-    description: str,
-    custody_levels: list,
-) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
-    """
-
-    Args:
-        criteria_name (str): Criteria query name
-        description (str): Criteria query description
-        custody_level (list): Custody levels in custody_level_sessions.
-
-    Returns:
-        StateAgnosticTaskCriteriaBigQueryViewBuilder: Returns a state agnostic criteria
-        view builder indicating spans of time when a person is in custody_level
-        |custody_level| as tracked by our `sessions` dataset
-
-
-    """
-
-    custody_levels_str = "('" + "', '".join(custody_levels) + "')"
-
-    criteria_query = f"""
-    WITH custody_level_spans AS (
-        SELECT
-                state_code,
-                person_id,
-                start_date,
-                end_date_exclusive AS end_date,
-                custody_level,
-        FROM
-            `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
-        WHERE
-            custody_level IN {custody_levels_str}
-    )
-        SELECT 
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            TRUE AS meets_criteria,
-            TO_JSON(STRUCT(custody_level AS custody_level)) AS reason,
-        FROM 
-            ({aggregate_adjacent_spans(table_name='custody_level_spans',
-                                       attribute='custody_level')})
-    """
-
-    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
-        criteria_name=criteria_name,
-        description=description,
-        criteria_spans_query_template=criteria_query,
-        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=meets_criteria_default_view_builder,
     )
 
 

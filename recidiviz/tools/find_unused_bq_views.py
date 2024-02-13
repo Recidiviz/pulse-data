@@ -100,9 +100,6 @@ from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses i
 from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.custody_level_raw_text_sessions import (
-    CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
     HOUSING_UNIT_SESSIONS_VIEW_BUILDER,
 )
@@ -220,9 +217,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER.address: (
         "Not currently referenced but captures state-specific logic that may eventually be relevant to "
         "assessment schema and could assist with PSI-shaped work (mayukas 12/21/23)"
-    ),
-    CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER.address: (
-        "Currently unused but may need in future TN work (Damini Sharma 12/21/23)"
     ),
     HOUSING_UNIT_SESSIONS_VIEW_BUILDER.address: (
         "We don't use specific housing unit info in downstream products right now, but "

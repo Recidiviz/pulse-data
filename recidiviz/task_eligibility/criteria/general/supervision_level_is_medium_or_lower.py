@@ -18,9 +18,11 @@
 have a 'MEDIUM' supervision_level or lower ('MEDIUM', 'MINIMUM', 'LIMITED')
 """
 
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    custody_or_supervision_level_criteria_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,35 +32,20 @@ _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_MEDIUM_OR_LOWER"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which clients
 have a 'MEDIUM' supervision_level or lower ('MEDIUM', 'MINIMUM', 'LIMITED')"""
 
-_QUERY_TEMPLATE = """
-SELECT 
-    state_code,
-    person_id,
-    start_date, 
-    end_date_exclusive AS end_date, 
-    TRUE AS meets_criteria, 
-    -- ME specific wording
-    IF(state_code = 'US_ME',
-        TO_JSON(STRUCT(
-            CASE supervision_level
-                WHEN 'MEDIUM' THEN 'Moderate Risk'
-                WHEN 'MINIMUM' THEN 'Low Risk'
-                WHEN 'LIMITED' THEN 'Administrative Risk'
-                END
-            AS supervision_level)),
-        TO_JSON(STRUCT(supervision_level AS supervision_level)))
-    AS reason,
-FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
-WHERE supervision_level IN ('MINIMUM', 'LIMITED', 'MEDIUM')
-"""
+_SUPERVISION_LEVEL_IN_REASON_BLOB = """IF(state_code = 'US_ME',
+                        CASE supervision_level
+                            WHEN 'MEDIUM' THEN 'Moderate Risk'
+                            WHEN 'MINIMUM' THEN 'Low Risk'
+                            WHEN 'LIMITED' THEN 'Administrative Risk'
+                        END, 
+                        supervision_level) AS supervision_level"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder(
+    custody_or_supervision_level_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        meets_criteria_default=False,
-        sessions_dataset=SESSIONS_DATASET,
+        levels_lst=["MINIMUM", "LIMITED", "MEDIUM"],
+        level_in_reason_blob=_SUPERVISION_LEVEL_IN_REASON_BLOB,
     )
 )
 
