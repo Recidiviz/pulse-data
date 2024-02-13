@@ -1110,6 +1110,7 @@ class OutliersQuerier:
                 raise
 
             session.commit()
+            session.refresh(config)
             return config
 
     def get_configuration(self, config_id: int) -> Configuration:
