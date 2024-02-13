@@ -34,10 +34,10 @@ import {
   INGEST_DATAFLOW_SECONDARY_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
-import StateSpecificIngestQueues from "../IngestOperationsView/StateSpecificIngestIngestQueues";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import { StateCodeInfo } from "../general/constants";
 import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
+import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
   ANCHOR_INGEST_LOGS,

@@ -15,8 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { SPECIAL_FILE_TAGS } from "../IngestOperationsView/constants";
-import { IngestRawFileProcessingStatus } from "./constants";
+import { IngestRawFileProcessingStatus, SPECIAL_FILE_TAGS } from "./constants";
 
 interface RenderRawDataFileTagProps {
   status: IngestRawFileProcessingStatus;
