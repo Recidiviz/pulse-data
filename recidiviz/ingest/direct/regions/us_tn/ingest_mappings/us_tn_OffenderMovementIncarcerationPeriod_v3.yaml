@@ -517,6 +517,22 @@ output:
                         - FADI-COURT # Court ordered
                         - FADI-ADMDI # Administrative discharge/court ordered
                         - FADI-EXPDE # Expiration/detainer
+                        # The following are all movements from parole or probation to discharge and are only noted when we
+                        # have unexpected incomplete data from a person showing their transition to parole/probation
+                        # but know they have been discharged which takes ultimate priority.
+                        - PRDI-EXPIR
+                        - PADI-EXPIR
+                        - CCDI-EXPIR
+                        - PRDI-COURT
+                        - PADI-COURT
+                        - CCDI-COURT
+                        - DVDI-COURT
+                        - PRDI-MIVOK
+                        - PRDI-CLINT
+                        - PADI-CLINT
+                        - CCDI-SPTER
+                        - PRDI-SPTER
+                        - PRDI-MIDIS
 
                       StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
                         # Revocations are logged after temporary custody due to a vioation.
