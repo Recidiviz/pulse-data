@@ -38,7 +38,6 @@ someone is not serving ineligible offenses (below) for downgrade to minimum tele
         - not serving a life or commuted sentence
         - not serving probation with delay of sentence
         - not serving for a SORA Offense 
-        - not currently serving for OUIL/OWI
         - not currently serving on a felony offense involving possession or use of a firearm.
 """
 
@@ -60,8 +59,7 @@ _QUERY_TEMPLATE = f"""
     --offenses that are excluded for TR and offenses that requires SO registration 
     AND (sent.statute IN (SELECT statute_code 
                             FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
-                            WHERE (CAST(is_excluded_from_trs AS BOOL) OR CAST(requires_so_registration AS BOOL)
-                            OR CAST(is_owi_ouil AS BOOL))
+                            WHERE (CAST(is_excluded_from_trs AS BOOL) OR CAST(requires_so_registration AS BOOL))
                             )
         OR sent.status = 'COMMUTED'
         OR sent.life_sentence
