@@ -289,14 +289,12 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
 
-            auth0_user = auth0_client.create_JC_user(name=name, email=email)
-            auth0_user_id = auth0_user["user_id"]
-
             user = UserAccountInterface.create_or_update_user(
                 session=session,
                 name=name,
                 email=email,
-                auth0_user_id=auth0_user_id,
+                auth0_user_id=None,
+                auth0_client=auth0_client,
             )
 
             if email is not None and "@csg.org" in email:
@@ -306,9 +304,11 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     session=session,
                     user=user,
                     agencies=all_agencies,
-                    role=schema.UserAccountRole.AGENCY_ADMIN
-                    if in_gcp_staging()
-                    else schema.UserAccountRole.READ_ONLY,
+                    role=(
+                        schema.UserAccountRole.AGENCY_ADMIN
+                        if in_gcp_staging()
+                        else schema.UserAccountRole.READ_ONLY
+                    ),
                 )
 
             return (
@@ -377,6 +377,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 session=session,
                 name=name,
                 auth0_user_id=auth0_user_id,
+                auth0_client=_get_auth0_client(),
             )
 
             return (

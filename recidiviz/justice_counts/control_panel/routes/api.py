@@ -406,24 +406,13 @@ def get_api_blueprint(
                 "onboarding_topics_completed"
             )
 
-            if name is not None or email is not None:
-                auth0_client.update_user(
-                    user_id=auth0_user_id,
-                    name=name,
-                    email=email,
-                    email_verified=email is None,
-                )
-
-            if name is not None:
-                UserAccountInterface.create_or_update_user(
-                    session=current_session,
-                    name=name,
-                    auth0_user_id=auth0_user_id,
-                    email=email,
-                )
-
-            if email is not None:
-                auth0_client.send_verification_email(user_id=auth0_user_id)
+            UserAccountInterface.create_or_update_user(
+                session=current_session,
+                name=name,
+                auth0_user_id=auth0_user_id,
+                email=email,
+                auth0_client=auth0_client,
+            )
 
             if onboarding_topics_completed is not None:
                 auth0_client.update_user_app_metadata(
@@ -446,16 +435,24 @@ def get_api_blueprint(
         we will update the user's invitation_status.
         """
         try:
+            if auth0_client is None:
+                return make_response(
+                    "auth0_client could not be initialized. Environment is not development or gcp.",
+                    500,
+                )
+
             request_dict = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict)
             email = request_dict.get("email")
-            is_email_verified = request_dict.get("email_verified")
+            is_email_verified = request_dict.get("email_verified", False)
 
             user = UserAccountInterface.create_or_update_user(
                 session=current_session,
                 name=request_dict.get("name"),
                 auth0_user_id=auth0_user_id,
                 email=email,
+                auth0_client=auth0_client,
+                is_email_verified=is_email_verified,
             )
             user_id = user.id
 
@@ -588,9 +585,11 @@ def get_api_blueprint(
 
             # Updates a topic status within the `guidance_progress` list of dictionaries with the `updated_topic`
             updated_guidance_progress = [
-                updated_topic
-                if topic.get("topicID") == updated_topic.get("topicID")
-                else topic
+                (
+                    updated_topic
+                    if topic.get("topicID") == updated_topic.get("topicID")
+                    else topic
+                )
                 for topic in current_association.guidance_progress
             ]
 
@@ -1044,9 +1043,9 @@ def get_api_blueprint(
             editor_id_to_json = {
                 user.id: {
                     "name": user.name,
-                    "role": assocs[0].role.value
-                    if assocs[0].role is not None
-                    else None,
+                    "role": (
+                        assocs[0].role.value if assocs[0].role is not None else None
+                    ),
                 }
             }
             report_response = ReportInterface.to_json_response(
@@ -1874,11 +1873,11 @@ def get_api_blueprint(
                 str, List[DatapointJson]
             ] = defaultdict(list)
             # group breakdown datapoints by metric, disaggregation, and dimension.
-            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: DefaultDict[
-                str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
-            ] = defaultdict(
-                lambda: defaultdict(lambda: defaultdict(list))
-            )
+            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: (
+                DefaultDict[
+                    str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
+                ]
+            ) = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
             for datapoint in datapoints:
                 datapoint_json = DatapointInterface.to_json_response(
                     datapoint=datapoint,
@@ -1965,11 +1964,11 @@ def get_api_blueprint(
 
             # Group breakdown datapoints by metric key, disaggregation, and dimension.
             # e.g. map[LAW_ENFORCEMENT_ARRESTS][GENDER][MALE] = <datapoint containing number of male arrests>
-            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: DefaultDict[
-                str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
-            ] = defaultdict(
-                lambda: defaultdict(lambda: defaultdict(list))
-            )
+            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: (
+                DefaultDict[
+                    str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
+                ]
+            ) = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
             agency_datapoints = []
             for datapoint in datapoints:

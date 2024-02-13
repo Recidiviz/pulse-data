@@ -20,7 +20,6 @@ import datetime
 import itertools
 from typing import Dict, List, Optional
 
-from auth0.exceptions import Auth0Error
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.expression import true
 
@@ -66,13 +65,14 @@ class AgencyUserAccountAssociationInterface:
         child_agencies = AgencyInterface.get_child_agencies_for_agency(
             session=session, agency=new_agency
         )
-
+        auth0_user_id = None
         if len(existing_users) == 1:
-            # If there is an existing user, update the users list of agency ids.
             existing_user = existing_users[0]
             existing_agency_ids = {
                 assoc.agency.id for assoc in existing_user.agency_assocs
             }
+            auth0_user_id = existing_user.auth0_user_id
+
             if agency_id in existing_agency_ids:
                 # User already belongs to this agency
                 raise JusticeCountsServerError(
@@ -80,45 +80,22 @@ class AgencyUserAccountAssociationInterface:
                     description=f"A user with the email {email} already belongs to this agency.",
                 )
 
-            # Update our DB
-            UserAccountInterface.add_or_update_user_agency_association(
-                session=session,
-                user=existing_users[0],
-                agencies=[new_agency] + child_agencies,
-                invitation_status=schema.UserAccountInvitationStatus.PENDING,
-            )
+        # Create/Update user in our DB and Auth0
+        user = UserAccountInterface.create_or_update_user(
+            session=session,
+            name=name,
+            auth0_user_id=auth0_user_id,
+            email=email,
+            auth0_client=auth0_client,
+        )
 
-        elif len(existing_users) == 0:
-            # If there is no existing user, create one in Auth0.
-            try:
-                auth0_user = auth0_client.create_JC_user(name=name, email=email)
-                auth0_user_id = auth0_user["user_id"]
-
-            except Auth0Error as e:
-                if e.message == "The user already exists.":
-                    auth0_users = auth0_client.get_all_users_by_email_addresses(
-                        email_addresses=[email]
-                    )
-                    auth0_user = auth0_users[0]
-                    auth0_user_id = auth0_user["user_id"]
-                else:
-                    raise e
-
-            # Create user in our DB
-            user = UserAccountInterface.create_or_update_user(
-                session=session,
-                name=name,
-                auth0_user_id=auth0_user_id,
-                email=email,
-            )
-
-            # Add the user to the agency
-            UserAccountInterface.add_or_update_user_agency_association(
-                session=session,
-                user=user,
-                agencies=[new_agency] + child_agencies,
-                invitation_status=schema.UserAccountInvitationStatus.PENDING,
-            )
+        # Add the user to the agency
+        UserAccountInterface.add_or_update_user_agency_association(
+            session=session,
+            user=user,
+            agencies=[new_agency] + child_agencies,
+            invitation_status=schema.UserAccountInvitationStatus.PENDING,
+        )
 
     @staticmethod
     def remove_user_from_agencies(
@@ -247,10 +224,12 @@ class AgencyUserAccountAssociationInterface:
             assoc = editor_assocs[0]
             editor_json[editor_id] = {
                 # currently this logic is duplicated in get_editor_id_to_json and get_uploader_id_to_json
-                "name": "JC Admin"
-                if assoc.role == schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
-                and user_assoc.role != schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
-                else assoc.user_account.name,
+                "name": (
+                    "JC Admin"
+                    if assoc.role == schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                    and user_assoc.role != schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                    else assoc.user_account.name
+                ),
                 "role": assoc.role.value if assoc.role is not None else None,
             }
 
@@ -323,10 +302,12 @@ class AgencyUserAccountAssociationInterface:
             assoc = assocs[0]
             editor_json[editor_id] = {
                 # currently this logic is duplicated in get_editor_id_to_json and get_uploader_id_to_json
-                "name": "JC Admin"
-                if assoc.role == schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
-                and user_assoc.role != schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
-                else assoc.user_account.name,
+                "name": (
+                    "JC Admin"
+                    if assoc.role == schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                    and user_assoc.role != schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                    else assoc.user_account.name
+                ),
                 "role": assoc.role.value if assoc.role is not None else None,
             }
 

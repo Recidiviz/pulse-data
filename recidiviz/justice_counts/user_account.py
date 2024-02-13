@@ -18,10 +18,12 @@
 
 from typing import List, Optional, Set
 
+from auth0.exceptions import Auth0Error
 from sqlalchemy import and_, not_, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.control_panel.utils import is_demo_agency
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
@@ -59,9 +61,11 @@ class UserAccountInterface:
     @staticmethod
     def create_or_update_user(
         session: Session,
-        auth0_user_id: str,
+        auth0_client: Auth0Client,
         name: Optional[str] = None,
         email: Optional[str] = None,
+        auth0_user_id: Optional[str] = None,
+        is_email_verified: Optional[bool] = None,
     ) -> UserAccount:
         """If there is an existing user in our DB with this Auth0 ID,
         then update their name and/or email. Else, create a new user
@@ -69,16 +73,59 @@ class UserAccountInterface:
         NOTE: This method does not create or update the user's info in Auth0.
         That is handled in api.py via a call to auth0_client.update_user.
         """
-        existing_user = UserAccountInterface.get_user_by_auth0_user_id(
-            session=session, auth0_user_id=auth0_user_id
+
+        existing_user = (
+            UserAccountInterface.get_user_by_auth0_user_id(
+                session=session, auth0_user_id=auth0_user_id
+            )
+            if auth0_user_id is not None
+            else None
         )
 
         if existing_user is not None:
-            if name is not None:
+            new_name = False
+            new_email = False
+            if name is not None and name != existing_user.name:
                 existing_user.name = name
-            if email is not None:
+                new_name = True
+            if email is not None and email != existing_user.email:
                 existing_user.email = email
+                new_email = True
+
+            if new_name is True or new_email is True:
+                auth0_client.update_user(
+                    user_id=auth0_user_id,
+                    name=name,
+                    email=email if new_email is True else None,
+                    # If email is sent in, even if it hasn't changed, auth0_client.update_user will
+                    # set `email_verified` to False. As a result, only pass in email if
+                    # it has been changed
+                    email_verified=(
+                        is_email_verified if is_email_verified is not None else None
+                    ),
+                )
+
+            if new_email is True:
+                auth0_client.send_verification_email(user_id=auth0_user_id)
+
             return existing_user
+
+        # If there is no existing user, create a new user
+        try:
+            auth0_user = auth0_client.create_JC_user(name=name, email=email)
+            auth0_user_id = auth0_user["user_id"]
+            if email is not None:
+                auth0_client.send_verification_email(user_id=auth0_user_id)
+
+        except Auth0Error as e:
+            if e.message == "The user already exists.":
+                auth0_users = auth0_client.get_all_users_by_email_addresses(
+                    email_addresses=[email]
+                )
+                auth0_user = auth0_users[0]
+                auth0_user_id = auth0_user["user_id"]
+            else:
+                raise e
 
         user = UserAccount(
             name=name,

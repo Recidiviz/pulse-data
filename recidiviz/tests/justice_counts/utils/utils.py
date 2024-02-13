@@ -20,7 +20,9 @@ import datetime
 from typing import Any, Dict, List, Optional
 from unittest import TestCase
 
+import mock
 import pytest
+from mock import patch
 from sqlalchemy.engine import Engine
 
 from recidiviz.auth.auth0_client import Auth0User, JusticeCountsAuth0AppMetadata
@@ -65,10 +67,34 @@ class JusticeCountsDatabaseTestCase(TestCase):
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
+    client_patcher: Any
+    test_auth0_client: mock.Mock
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+        def mock_create_JC_user(name: str, email: str) -> Dict[str, str]:
+            return {
+                "name": name,
+                "email": email,
+                "user_id": f"auth0|1234{name}",
+            }
+
+        def mock_delete_JC_user(user_id: str) -> Any:
+            return {
+                "user_id": user_id,
+            }
+
+        mock_auth0_client = mock.Mock()
+        mock_auth0_client.create_JC_user.side_effect = mock_create_JC_user
+        mock_auth0_client.delete_JC_user.side_effect = mock_delete_JC_user
+
+        cls.client_patcher = patch(
+            "recidiviz.auth.auth0_client.Auth0", return_value=mock_auth0_client
+        )
+        cls.client_patcher.start()
+        cls.test_auth0_client = mock_auth0_client
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
@@ -403,13 +429,17 @@ class JusticeCountsSchemaTestObjects:
             original_name=f"{system.value}_metrics.xlsx",
             uploaded_by=user_id,
             uploaded_at=uploaded_at + (datetime.timedelta(upload_offset)),
-            ingested_at=uploaded_at + (datetime.timedelta(upload_offset + 50))
-            if is_ingested
-            else None,
+            ingested_at=(
+                uploaded_at + (datetime.timedelta(upload_offset + 50))
+                if is_ingested
+                else None
+            ),
             ingested_by="auth0_id_B" if is_ingested else None,
-            status=schema.SpreadsheetStatus.INGESTED
-            if is_ingested
-            else schema.SpreadsheetStatus.UPLOADED,
+            status=(
+                schema.SpreadsheetStatus.INGESTED
+                if is_ingested
+                else schema.SpreadsheetStatus.UPLOADED
+            ),
         )
 
     @staticmethod
@@ -423,12 +453,16 @@ class JusticeCountsSchemaTestObjects:
             type=frequency,
             instance=f"generated_instance_id_{starting_month_str}",
             status=schema.ReportStatus.NOT_STARTED,
-            date_range_start=datetime.date.fromisoformat("2022-06-01")
-            if frequency == "MONTHLY"
-            else datetime.date.fromisoformat(f"2022-{starting_month_str}-01"),
-            date_range_end=datetime.date.fromisoformat("2022-07-01")
-            if frequency == "MONTHLY"
-            else datetime.date.fromisoformat(f"2023-{starting_month_str}-01"),
+            date_range_start=(
+                datetime.date.fromisoformat("2022-06-01")
+                if frequency == "MONTHLY"
+                else datetime.date.fromisoformat(f"2022-{starting_month_str}-01")
+            ),
+            date_range_end=(
+                datetime.date.fromisoformat("2022-07-01")
+                if frequency == "MONTHLY"
+                else datetime.date.fromisoformat(f"2023-{starting_month_str}-01")
+            ),
             project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
             acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             created_at=datetime.date.fromisoformat("2022-05-30"),
@@ -444,16 +478,20 @@ class JusticeCountsSchemaTestObjects:
             key=law_enforcement.funding.key,
             value=value,
             is_metric_enabled=True,
-            contexts=[
-                MetricContextData(
-                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                    value="our metrics are different because xyz"
-                    if not nullify_contexts_and_disaggregations
-                    else None,
-                ),
-            ]
-            if include_contexts
-            else [],
+            contexts=(
+                [
+                    MetricContextData(
+                        key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                        value=(
+                            "our metrics are different because xyz"
+                            if not nullify_contexts_and_disaggregations
+                            else None
+                        ),
+                    ),
+                ]
+                if include_contexts
+                else []
+            ),
             aggregated_dimensions=[],
         )
 
@@ -467,25 +505,29 @@ class JusticeCountsSchemaTestObjects:
         return MetricInterface(
             key=law_enforcement.calls_for_service.key,
             is_metric_enabled=is_metric_enabled,
-            contexts=[
-                MetricContextData(
-                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                    value="our metrics are different because xyz",
-                ),
-            ]
-            if include_contexts
-            else [],
-            aggregated_dimensions=[
-                MetricAggregatedDimensionData(
-                    dimension_to_enabled_status={
-                        CallType.EMERGENCY: use_partially_disabled_disaggregation,
-                        CallType.NON_EMERGENCY: False,
-                        CallType.UNKNOWN: False,
-                    }
-                )
-            ]
-            if include_disaggregation is True or is_metric_enabled is False
-            else [],
+            contexts=(
+                [
+                    MetricContextData(
+                        key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                        value="our metrics are different because xyz",
+                    ),
+                ]
+                if include_contexts
+                else []
+            ),
+            aggregated_dimensions=(
+                [
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={
+                            CallType.EMERGENCY: use_partially_disabled_disaggregation,
+                            CallType.NON_EMERGENCY: False,
+                            CallType.UNKNOWN: False,
+                        }
+                    )
+                ]
+                if include_disaggregation is True or is_metric_enabled is False
+                else []
+            ),
         )
 
     @staticmethod
@@ -586,54 +628,62 @@ class JusticeCountsSchemaTestObjects:
                                 {
                                     "key": StaffType.SECURITY.value,
                                     "enabled": False,
-                                    "settings": [
-                                        {
-                                            "key": PrisonSecurityStaffIncludesExcludes.VACANT.name,
-                                            "included": "Yes",
-                                        },
-                                    ]
-                                    if reset_to_default is False
-                                    else [],
+                                    "settings": (
+                                        [
+                                            {
+                                                "key": PrisonSecurityStaffIncludesExcludes.VACANT.name,
+                                                "included": "Yes",
+                                            },
+                                        ]
+                                        if reset_to_default is False
+                                        else []
+                                    ),
                                 },
                                 {
                                     "key": StaffType.MANAGEMENT_AND_OPERATIONS.value,
                                     "enabled": False,
-                                    "settings": [
-                                        {
-                                            "key": PrisonManagementAndOperationsStaffIncludesExcludes.VACANT.name,
-                                            "included": "Yes",
-                                        },
-                                    ]
-                                    if reset_to_default is False
-                                    else [],
+                                    "settings": (
+                                        [
+                                            {
+                                                "key": PrisonManagementAndOperationsStaffIncludesExcludes.VACANT.name,
+                                                "included": "Yes",
+                                            },
+                                        ]
+                                        if reset_to_default is False
+                                        else []
+                                    ),
                                 },
                                 {
                                     "key": StaffType.CLINICAL_AND_MEDICAL.value,
                                     "enabled": True,
-                                    "settings": [
-                                        {
-                                            "key": PrisonClinicalStaffIncludesExcludes.VACANT.name,
-                                            "included": "Yes",
-                                        },
-                                    ]
-                                    if reset_to_default is False
-                                    else [],
+                                    "settings": (
+                                        [
+                                            {
+                                                "key": PrisonClinicalStaffIncludesExcludes.VACANT.name,
+                                                "included": "Yes",
+                                            },
+                                        ]
+                                        if reset_to_default is False
+                                        else []
+                                    ),
                                 },
                                 {
                                     "key": StaffType.PROGRAMMATIC.value,
                                     "enabled": True,
-                                    "settings": [
-                                        {
-                                            "key": PrisonProgrammaticStaffIncludesExcludes.VACANT.name,
-                                            "included": "Yes",
-                                        },
-                                        {
-                                            "key": PrisonProgrammaticStaffIncludesExcludes.VOLUNTEER.name,
-                                            "included": "Yes",
-                                        },
-                                    ]
-                                    if reset_to_default is False
-                                    else [],
+                                    "settings": (
+                                        [
+                                            {
+                                                "key": PrisonProgrammaticStaffIncludesExcludes.VACANT.name,
+                                                "included": "Yes",
+                                            },
+                                            {
+                                                "key": PrisonProgrammaticStaffIncludesExcludes.VOLUNTEER.name,
+                                                "included": "Yes",
+                                            },
+                                        ]
+                                        if reset_to_default is False
+                                        else []
+                                    ),
                                 },
                                 {
                                     "key": StaffType.OTHER.value,
@@ -660,14 +710,16 @@ class JusticeCountsSchemaTestObjects:
                                 {
                                     "key": StaffType.VACANT.value,
                                     "enabled": True,
-                                    "settings": [
-                                        {
-                                            "key": VacantPrisonStaffIncludesExcludes.FILLED.name,
-                                            "included": "Yes",
-                                        }
-                                    ]
-                                    if reset_to_default is False
-                                    else [],
+                                    "settings": (
+                                        [
+                                            {
+                                                "key": VacantPrisonStaffIncludesExcludes.FILLED.name,
+                                                "included": "Yes",
+                                            }
+                                        ]
+                                        if reset_to_default is False
+                                        else []
+                                    ),
                                 },
                             ],
                         }
@@ -836,38 +888,46 @@ class JusticeCountsSchemaTestObjects:
             contexts=[
                 MetricContextData(
                     key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                    value="our metrics are different because xyz"
-                    if not nullify_contexts_and_disaggregations
-                    else None,
+                    value=(
+                        "our metrics are different because xyz"
+                        if not nullify_contexts_and_disaggregations
+                        else None
+                    ),
                 ),
             ],
-            aggregated_dimensions=[
-                MetricAggregatedDimensionData(
-                    dimension_to_value={
-                        CallType.EMERGENCY: emergency_value
-                        if not nullify_contexts_and_disaggregations
-                        else None,
-                        CallType.NON_EMERGENCY: 60
-                        if not nullify_contexts_and_disaggregations
-                        else None,
-                        CallType.OTHER: None,
-                        CallType.UNKNOWN: unknown_value
-                        if not nullify_contexts_and_disaggregations
-                        else None,
-                    },
-                    dimension_to_enabled_status={
-                        CallType.EMERGENCY: None,
-                        CallType.NON_EMERGENCY: None,
-                        CallType.UNKNOWN: None,
-                        CallType.OTHER: None,
-                    },
-                    dimension_to_includes_excludes_member_to_setting={
-                        dimension: {} for dimension in CallType
-                    },
-                )
-            ]
-            if include_disaggregations is True
-            else [],
+            aggregated_dimensions=(
+                [
+                    MetricAggregatedDimensionData(
+                        dimension_to_value={
+                            CallType.EMERGENCY: (
+                                emergency_value
+                                if not nullify_contexts_and_disaggregations
+                                else None
+                            ),
+                            CallType.NON_EMERGENCY: (
+                                60 if not nullify_contexts_and_disaggregations else None
+                            ),
+                            CallType.OTHER: None,
+                            CallType.UNKNOWN: (
+                                unknown_value
+                                if not nullify_contexts_and_disaggregations
+                                else None
+                            ),
+                        },
+                        dimension_to_enabled_status={
+                            CallType.EMERGENCY: None,
+                            CallType.NON_EMERGENCY: None,
+                            CallType.UNKNOWN: None,
+                            CallType.OTHER: None,
+                        },
+                        dimension_to_includes_excludes_member_to_setting={
+                            dimension: {} for dimension in CallType
+                        },
+                    )
+                ]
+                if include_disaggregations is True
+                else []
+            ),
         )
 
     @staticmethod

@@ -102,6 +102,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 auth0_user_id="test_auth0_user",
                 email="test@email.com",
+                auth0_client=self.test_auth0_client,
             )
             gamma_agency = AgencyInterface.create_or_update_agency(
                 session=session,
@@ -165,6 +166,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 auth0_user_id="test_auth0_user",
                 email="test@email.com",
+                auth0_client=self.test_auth0_client,
             )
             super_agency = AgencyInterface.create_or_update_agency(
                 session=session,
