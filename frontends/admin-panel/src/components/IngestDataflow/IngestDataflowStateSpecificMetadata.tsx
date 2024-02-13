@@ -28,11 +28,13 @@ import {
   useRouteMatch,
 } from "react-router-dom";
 import {
+  INGEST_DATAFLOW_INGEST_QUEUES_ROUTE,
   INGEST_DATAFLOW_INSTANCE_ROUTE,
   INGEST_DATAFLOW_PRIMARY_ROUTE,
   INGEST_DATAFLOW_SECONDARY_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
+import StateSpecificIngestQueues from "../IngestOperationsView/StateSpecificIngestIngestQueues";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import { StateCodeInfo } from "../general/constants";
 import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
@@ -62,6 +64,7 @@ function getItem(
 }
 
 const items: MenuProps["items"] = [
+  getItem("Raw Data Queues", INGEST_DATAFLOW_INGEST_QUEUES_ROUTE),
   getItem("Primary Instance", INGEST_DATAFLOW_PRIMARY_ROUTE, null, [
     getItem(
       "Latest Job",
@@ -119,7 +122,7 @@ const IngestDataflowStateSpecificMetadata = (): JSX.Element => {
   return (
     <>
       <StateSelectorPageHeader
-        title="Ingest Dataflow Pipeline Status"
+        title="Ingest Status"
         onChange={stateCodeChange}
         stateCode={stateCode}
       />
@@ -135,6 +138,10 @@ const IngestDataflowStateSpecificMetadata = (): JSX.Element => {
         <Layout className="main-content">
           <Content>
             <Switch>
+              <Route
+                path={INGEST_DATAFLOW_INGEST_QUEUES_ROUTE}
+                component={StateSpecificIngestQueues}
+              />
               <Route
                 path={INGEST_DATAFLOW_INSTANCE_ROUTE}
                 component={IngestDataflowStateSpecificInstanceMetadata}

@@ -19,11 +19,13 @@ import { Alert, Layout, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
 import moment from "moment";
+import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import { getAllIngestInstanceDataflowEnabledStatuses } from "../../AdminPanelAPI";
 import {
   getAllIngestInstanceStatuses,
   getAllLatestDataflowJobs,
+  getIngestQueuesState,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import {
@@ -40,8 +42,17 @@ import {
   DirectIngestInstance,
   IngestInstanceStatusResponse,
   JobState,
+  QueueMetadata,
+  QueueState,
+  StateIngestQueuesStatuses,
 } from "./constants";
-import { getStatusSortedOrder, renderStatusCell } from "./ingestStatusUtils";
+import {
+  getIngestQueuesCumalativeState,
+  getQueueColor,
+  getQueueStatusSortedOrder,
+  getStatusSortedOrder,
+  renderStatusCell,
+} from "./ingestStatusUtils";
 
 export interface IngestDataflowJobCellFormattingInfo {
   color: string;
@@ -61,6 +72,7 @@ export type IngestInstanceDataflowStatusTableInfo = {
   secondaryRawDataStatus: string;
   primaryRawDataTimestamp: string;
   secondaryRawDataTimestamp: string;
+  queueInfo: string | undefined;
 };
 
 const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
@@ -82,6 +94,43 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   } = useFetchedDataJSON<IngestInstanceDataflowEnabledStatusResponse>(
     getAllIngestInstanceDataflowEnabledStatuses
   );
+
+  const [stateIngestQueueStatuses, setStateIngestQueueStatuses] =
+    useState<StateIngestQueuesStatuses | undefined>(undefined);
+  useEffect(() => {
+    if (rawDataStatuses === undefined) {
+      return;
+    }
+    const loadAllStatesQueueStatuses = async (): Promise<void> => {
+      const stateCodes = Object.keys(rawDataStatuses);
+      // For each state code, request info about all ingest queues for that state
+      const queueStatusResponses = await Promise.all(
+        stateCodes.map(async (stateCode) => getIngestQueuesState(stateCode))
+      );
+      // Extract JSON data from each of those responses
+      const queueStatusResponsesJson = await Promise.all(
+        queueStatusResponses.map(
+          async (queueStatusResponse): Promise<QueueMetadata[]> =>
+            queueStatusResponse.json()
+        )
+      );
+      // For each list of queue info objects, collapse into a single summary
+      // QueueState for that state.
+      const queueStatusSummaries: QueueState[] = queueStatusResponsesJson.map(
+        (queueInfos): QueueState => {
+          return getIngestQueuesCumalativeState(queueInfos);
+        }
+      );
+      // Turn lists back into map of stateCode -> QueueStatus
+      const stateCodeToQueueStatus = Object.fromEntries(
+        stateCodes.map((stateCode, index) => {
+          return [stateCode, queueStatusSummaries[index]];
+        })
+      );
+      setStateIngestQueueStatuses(stateCodeToQueueStatus);
+    };
+    loadAllStatesQueueStatuses();
+  }, [rawDataStatuses]);
 
   if (
     dataflowPipelinesLoading ||
@@ -195,6 +244,9 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     dataflowPipelines
   ).map((key) => {
     const stateRawDataStatuses = rawDataStatuses[key];
+    const queueInfo = stateIngestQueueStatuses
+      ? stateIngestQueueStatuses[key]
+      : undefined;
 
     const primaryRawDataStatus: string = stateRawDataStatuses.primary.status;
     const secondaryRawDataStatus: string =
@@ -223,6 +275,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       secondaryRawDataStatus,
       primaryRawDataTimestamp,
       secondaryRawDataTimestamp,
+      queueInfo,
     };
   });
 
@@ -239,6 +292,15 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
           : null}
       </div>
     );
+  };
+
+  const renderIngestQueuesCell = (queueInfo: string | undefined) => {
+    if (queueInfo === undefined) {
+      return <Spin />;
+    }
+    const queueColor = getQueueColor(queueInfo);
+
+    return <div className={classNames(queueColor)}>{queueInfo}</div>;
   };
 
   const columns: ColumnsType<IngestInstanceDataflowStatusTableInfo> = [
@@ -303,6 +365,17 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
         getStatusSortedOrder().indexOf(a.secondaryRawDataStatus) -
         getStatusSortedOrder().indexOf(b.secondaryRawDataStatus),
     },
+    {
+      title: "Queue Status",
+      dataIndex: "queueInfo",
+      key: "queueInfo",
+      render: (queueInfo: string | undefined) => (
+        <span>{renderIngestQueuesCell(queueInfo)}</span>
+      ),
+      sorter: (a, b) =>
+        getQueueStatusSortedOrder(a.queueInfo) -
+        getQueueStatusSortedOrder(b.queueInfo),
+    },
   ];
 
   const stateCodeChange = (value: StateCodeInfo) => {
@@ -314,7 +387,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   return (
     <>
       <StateSelectorPageHeader
-        title="Ingest Pipeline Status Summary"
+        title="Ingest Status Summary"
         stateCode={null}
         onChange={stateCodeChange}
       />

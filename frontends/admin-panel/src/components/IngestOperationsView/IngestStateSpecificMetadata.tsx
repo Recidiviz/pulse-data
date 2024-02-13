@@ -173,7 +173,7 @@ const IngestStateSpecificMetadata = (): JSX.Element => {
   return (
     <>
       <StateSelectorPageHeader
-        title="Ingest Status"
+        title="Ingest Status (Legacy)"
         onChange={stateCodeChange}
         stateCode={stateCode}
       />
