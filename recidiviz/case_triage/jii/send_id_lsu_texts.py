@@ -39,6 +39,7 @@ from recidiviz.case_triage.jii.helpers import (
     generate_initial_text_messages_dict,
 )
 from recidiviz.case_triage.util import MessageType
+from recidiviz.case_triage.workflows.utils import ExternalSystemRequestStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, get_gcp_environment
@@ -120,11 +121,30 @@ def send_id_lsu_texts(
             query_str=query, use_query_cache=True
         )
 
+        firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+
         if message_type == MessageType.INITIAL_TEXT.value.lower():
             external_id_to_phone_num_to_text_dict = generate_initial_text_messages_dict(
                 bq_output=query_job
             )
             message_type = MessageType.INITIAL_TEXT.value
+
+            # Get all document_ids for individuals who already received an initial text
+            initial_text_document_ids = set()
+            message_ref = firestore_client.get_collection_group(
+                collection_path="lsu_eligibility_messages"
+            )
+            message_query = message_ref.where(
+                filter=FieldFilter("message_type", "==", MessageType.INITIAL_TEXT.value)
+            ).where(
+                filter=FieldFilter(
+                    "status", "==", ExternalSystemRequestStatus.SUCCESS.value
+                )
+            )
+            message_docs = message_query.stream()
+            for message_doc in message_docs:
+                individual_id = message_doc.reference.path.split("/")[1]
+                initial_text_document_ids.add(individual_id)
         elif message_type == MessageType.ELIGIBILITY_TEXT.value.lower():
             external_id_to_phone_num_to_text_dict = (
                 generate_eligibility_text_messages_dict(bq_output=query_job)
@@ -142,8 +162,6 @@ def send_id_lsu_texts(
                 external_id = 999999999
                 phone_number = test_phone_number
                 document_id = f"{state_code}_{external_id}"
-
-                firestore_client = FirestoreClientImpl(project_id="jii-pilots")
 
                 # Get all document_ids for individuals who have opted-out
                 opt_out_document_ids = set()
@@ -178,6 +196,16 @@ def send_id_lsu_texts(
                     list(external_id_to_phone_num_to_text_dict.values())[0].values()
                 )[0]
 
+                # If this is an initial/welcome text, and the individual has already
+                # received an initial/welcome text in the past, do not attempt to send
+                # them an initial/welcome text
+                if message_type == MessageType.INITIAL_TEXT.value:
+                    if document_id in initial_text_document_ids:
+                        logging.info(
+                            "Individual with document id [%s] has already received initial text. Do not attempt to send initial text.",
+                            document_id,
+                        )
+                        return
                 # Send text message to individual
                 response = client.messages.create(
                     body=text_body,
