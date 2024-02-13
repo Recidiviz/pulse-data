@@ -15,12 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Cron endpoint for managing long-term Cloud SQL backups"""
-import datetime
+"""Cron endpoint for managing long-term Cloud SQL backups
+
+It uses the sqladmin client from the google api client.
+The methods associated with backupRuns can be found here:
+https://developers.google.com/resources/api-libraries/documentation/sqladmin/v1beta4/python/latest/sqladmin_v1beta4.backupRuns.html
+"""
 import logging
+import sys
 import time
+from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import Tuple
+from typing import List, Tuple
 
 import flask
 import pytz
@@ -31,6 +37,8 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 # Approximately 6 months - with weekly backups, we will always have
 # approximately 26 backups, but there may be extra ones triggered via the
@@ -47,138 +55,195 @@ backup_manager_blueprint = flask.Blueprint("backup_manager", __name__)
 @backup_manager_blueprint.route("/update_long_term_backups")
 @requires_gae_auth
 def update_long_term_backups() -> Tuple[str, HTTPStatus]:
-    """Create manual backups for all cloudsql instances and delete
+    """Creates manual backups for all cloudsql instances and deletes
     manual backups for each instance that are older than _MAX_BACKUP_AGE_DAYS.
+
+    It does this in three steps:
+        1. Start a backup for each instance independently. Wait for all to complete.
+        2. For each instance with a successful backup, get historic backups that are older than _MAX_BACKUP_AGE_DAYS.
+        3. Start deletion of each historic backup that is older than _MAX_BACKUP_AGE_DAYS. Wait for all to complete.
     """
     project_id = metadata.project_id()
-    logging.info("Starting backup of all cloudsql instances in [%s]", project_id)
-    for instance_id in SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids():
-        update_long_term_backups_for_cloudsql_instance(project_id, instance_id)
-
-    logging.info("All backup operations completed successfully")
-    return "", HTTPStatus.OK
+    instance_ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
+    success = make_new_and_remove_old_cloudsql_backups(project_id, instance_ids)
+    return "", HTTPStatus.OK if success else HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-def update_long_term_backups_for_cloudsql_instance(
-    project_id: str, instance_id: str
-) -> None:
-    """Create a new manual backup for the given sqlalchemy instance
-    and delete manual backups for that instance that are older than
-    _MAX_BACKUP_AGE_DAYS.
+def make_new_and_remove_old_cloudsql_backups(
+    project_id: str, instance_ids: List[str], run_locally: bool = False
+) -> bool:
+    """Creates manual backups for all cloudsql instances and deletes
+    manual backups for each instance that are older than _MAX_BACKUP_AGE_DAYS.
+
+    It does this in three steps:
+        1. Start a backup for each instance independently. Wait for all to complete.
+        2. For each instance with a successful backup, get historic backups that are older than _MAX_BACKUP_AGE_DAYS.
+        3. Start deletion of each historic backup that is older than _MAX_BACKUP_AGE_DAYS. Wait for all to complete.
     """
+    success = True
+    # First we start the backup jobs for each instance independently so that they all start.
+    logging.info("Starting backup of all cloudsql instances in [%s]", project_id)
+    backup_job_map = {
+        instance_id: begin_backup_job(project_id, instance_id, run_locally=run_locally)
+        for instance_id in instance_ids
+    }
+    # Now we will check the status of these jobs and wait for them to complete.
+    # Instances that had successful backups will move forward for historic cleanup.
+    logging.info("Checking status of all backup jobs in [%s]", project_id)
+    backup_job_statuses = {
+        instance_id: await_operation(project_id, backup_job_map[instance_id])
+        for instance_id in instance_ids
+    }
+    # Maps an instance_id -> list of historic backups to delete
+    historic_backup_instance_map = {}
+    for instance_id, status in backup_job_statuses.items():
+        if status == "DONE":
+            logging.info(
+                "Backup for instance %s completed successfully. Getting historic backups to delete.",
+                instance_id,
+            )
+            historic_backup_instance_map[instance_id] = get_historic_backups(
+                project_id, instance_id
+            )
+        else:
+            logging.error("Backup for instance %s had error %s", instance_id, status)
+            success = False
 
+    # Kick-off the historic deletions independently
+    historic_deletion_jobs = []
+    for instance_id, backup_ids in historic_backup_instance_map.items():
+        for backup_id in backup_ids:
+            historic_deletion_jobs.append(
+                delete_backup_by_id(project_id, instance_id, backup_id)
+            )
+    # Now report out the success of all deletions
+    for delete_job_id in historic_deletion_jobs:
+        delete_job_status = await_operation(project_id, delete_job_id)
+        if delete_job_status == "DONE":
+            logging.info("Deletion job %s completed successfully.", delete_job_id)
+        else:
+            success = False
+            logging.error(
+                "Deletion job %s completed with status %s.",
+                delete_job_id,
+                delete_job_status,
+            )
+    return success
+
+
+def begin_backup_job(
+    project_id: str, instance_id: str, run_locally: bool = False
+) -> str:
+    """Starts a backup operation for the given instance and returns the operation ID."""
+    description = (
+        "ON_DEMAND run locally from backup_manager.py"
+        if run_locally
+        else "Weekly ON_DEMAND backup from /update_long_term_backups"
+    )
     logging.info("Creating request for backup insert operation on [%s]", instance_id)
     insert_request = (
         sqladmin_client()
         .backupRuns()
-        .insert(project=project_id, instance=instance_id, body={})
+        .insert(
+            project=project_id,
+            instance=instance_id,
+            body={"description": description},
+        )
     )
-
     logging.info("Beginning backup insert operation on [%s]", instance_id)
     insert_operation = insert_request.execute()
-    _await_operation(project_id, insert_operation["name"])
-    _throw_if_error(project_id, insert_operation["name"], "insert")
-    logging.info("Backup insert operation on [%s] completed", instance_id)
+    return insert_operation["name"]
 
+
+def get_historic_backups(project_id: str, instance_id: str) -> List[str]:
+    """Returns a list of ON_DEMAND backups for the given instance OLDER than six months ago."""
+    six_months_ago_date_str = (
+        (datetime.now(tz=pytz.UTC) - timedelta(days=_MAX_BACKUP_AGE_DAYS))
+        .date()
+        .isoformat()
+    )
     logging.info("Creating request for backup list operation on [%s]", instance_id)
     list_request = (
         sqladmin_client().backupRuns().list(project=project_id, instance=instance_id)
     )
-
-    logging.info("Beginning backup list request")
     list_result = list_request.execute()
-    backup_runs = list_result["items"]
-    manual_backup_runs = [
-        backup_run for backup_run in backup_runs if backup_run["type"] == "ON_DEMAND"
+    # startTime is a string with format yyyy-mm-dd
+    return [
+        backup_run["id"]
+        for backup_run in list_result["items"]
+        if backup_run["type"] == "ON_DEMAND"
+        and backup_run["startTime"] < six_months_ago_date_str
     ]
+
+
+def delete_backup_by_id(project_id: str, instance_id: str, backup_id: str) -> str:
+    """Begins deletion of the given backup and returns an operation ID to track success."""
     logging.info(
-        "Backup list request for [%s] completed with [%s] total backup"
-        " runs and [%s] manual backup runs",
+        "Creating request for backup delete operation for backup [%s] of [%s]",
+        backup_id,
         instance_id,
-        str(len(backup_runs)),
-        str(len(manual_backup_runs)),
     )
-
-    # startTime is a string with format yyyy-mm-dd, so sorting it as a
-    # string will give the same result as converting it to a date and then
-    # sorting by date
-    manual_backup_runs.sort(key=lambda backup_run: backup_run["startTime"])
-
-    six_months_ago_datetime = datetime.datetime.now(tz=pytz.UTC) - datetime.timedelta(
-        days=_MAX_BACKUP_AGE_DAYS
+    delete_request = (
+        sqladmin_client()
+        .backupRuns()
+        .delete(project=project_id, instance=instance_id, id=backup_id)
     )
-    six_months_ago_date_str = six_months_ago_datetime.date().isoformat()
-
-    for backup_run in manual_backup_runs:
-        backup_start_date_str = backup_run["startTime"]
-        if backup_start_date_str > six_months_ago_date_str:
-            break
-
-        backup_id = backup_run["id"]
-
-        logging.info(
-            "Creating request for backup delete operation for backup [%s] of [%s]",
-            backup_id,
-            instance_id,
-        )
-        delete_request = (
-            sqladmin_client()
-            .backupRuns()
-            .delete(project=project_id, instance=instance_id, id=backup_id)
-        )
-
-        logging.info(
-            "Beginning backup delete operation for backup [%s] of [%s]",
-            backup_id,
-            instance_id,
-        )
-        delete_operation = delete_request.execute()
-        _await_operation(project_id, delete_operation["name"])
-        _throw_if_error(project_id, delete_operation["name"], "delete")
-        logging.info(
-            "Backup delete operation completed for backup [%s] of [%s]",
-            backup_id,
-            instance_id,
-        )
+    logging.info(
+        "Beginning backup delete operation for backup [%s] of [%s]",
+        backup_id,
+        instance_id,
+    )
+    delete_operation = delete_request.execute()
+    return delete_operation["name"]
 
 
-def _await_operation(project_id: str, operation_id: str) -> None:
-    done = False
-    while True:
-        if done:
-            break
-
-        operation = (
-            sqladmin_client()
-            .operations()
-            .get(project=project_id, operation=operation_id)
-            .execute()
-        )
-        current_status = operation["status"]
-
-        if current_status in {"PENDING", "RUNNING", "UNKNOWN"}:
-            time.sleep(_SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)
-        elif current_status == "DONE":
-            done = True
-        else:
-            raise RuntimeError(f"Unrecognized operation status: {current_status}")
-
-
-def _throw_if_error(project_id: str, operation_id: str, operation_type: str) -> None:
+def get_operation_status(project_id: str, operation_id: str) -> str:
+    """Returns the operation status for the given operation."""
     operation = (
         sqladmin_client()
         .operations()
         .get(project=project_id, operation=operation_id)
         .execute()
     )
-
     if "error" in operation:
         errors = operation["error"].get("errors", [])
-        error_messages = [
+        error_messages = "\n".join(
             f"code: {error['code']}\n message: {error['message']}" for error in errors
-        ]
-        raise RuntimeError(
-            f"Backup {operation_type} operation finished with "
-            f"{len(errors)} errors:\n"
-            "\n".join(error_messages)
         )
+        return (
+            f"ERROR: Operation finished with {len(errors)} errors:\n {error_messages}"
+        )
+    if operation["status"] not in {"PENDING", "RUNNING", "UNKNOWN", "DONE"}:
+        return f"UNRECOGNIZED status: {operation['status']}"
+    return operation["status"]
+
+
+def await_operation(project_id: str, operation_id: str) -> str:
+    """Awaits the given operation to complete with DONE, ERROR, or UNRECOGNIZED and returns the completed status."""
+    while True:
+        current_status = get_operation_status(project_id, operation_id)
+        if current_status in {"PENDING", "RUNNING", "UNKNOWN"}:
+            time.sleep(_SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)
+        elif (
+            current_status == "DONE"
+            or current_status.startswith("ERROR")
+            or current_status.startswith("UNRECOGNIZED")
+        ):
+            return current_status
+        else:
+            # We should never get a status that we haven't marked in one of the above categories,
+            # so ok to break if we somehow get to this point.
+            raise RuntimeError(
+                f"Returned an operation status '{current_status}' for '{operation_id}'"
+            )
+
+
+if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.INFO)
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        project = metadata.project_id()
+        instances = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
+        successful_run = make_new_and_remove_old_cloudsql_backups(
+            project, instances, run_locally=True
+        )
+        sys.exit(not successful_run)
