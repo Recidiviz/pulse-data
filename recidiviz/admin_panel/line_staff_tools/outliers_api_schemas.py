@@ -29,13 +29,18 @@ class ConfigurationSchema(CamelCaseSchema):
     """
 
     feature_variant = fields.Str(allow_none=True)
-    supervision_officer_label = fields.Str(allow_none=True)
-    supervision_district_label = fields.Str(allow_none=True)
-    supervision_unit_label = fields.Str(allow_none=True)
-    supervision_supervisor_label = fields.Str(allow_none=True)
-    supervision_district_manager_label = fields.Str(allow_none=True)
-    supervision_jii_label = fields.Str(allow_none=True)
-    learn_more_url = fields.Str(allow_none=True)
+    supervision_officer_label = fields.Str(required=True)
+    supervision_district_label = fields.Str(required=True)
+    supervision_unit_label = fields.Str(required=True)
+    supervision_supervisor_label = fields.Str(required=True)
+    supervision_district_manager_label = fields.Str(required=True)
+    supervision_jii_label = fields.Str(required=True)
+    learn_more_url = fields.Str(required=True)
+    none_are_outliers_label = fields.Str(required=True)
+    worse_than_rate_label = fields.Str(required=True)
+    exclusion_reason_description = fields.Str(allow_none=True)
+    slightly_worse_than_rate_label = fields.Str(required=True)
+    at_or_below_rate_label = fields.Str(required=True)
 
 
 class FullConfigurationSchema(ConfigurationSchema):
