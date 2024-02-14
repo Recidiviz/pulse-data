@@ -34,9 +34,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager impo
     CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.normalized_state_update_lock_manager import (
-    NormalizedStateUpdateLockManager,
-)
 
 
 class CloudSqlToBQLockManagerTest(unittest.TestCase):
@@ -61,9 +58,6 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 region_code=StateCode.US_XX.value,
                 blocking_locks=[],
                 ingest_instance=DirectIngestInstance.SECONDARY,
-            )
-            self.normalized_state_update_lock_manager = (
-                NormalizedStateUpdateLockManager(DirectIngestInstance.PRIMARY)
             )
 
     def tearDown(self) -> None:
@@ -309,37 +303,6 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                     schema_type, DirectIngestInstance.SECONDARY
                 )
             )
-
-    def test_acquire_state_cannot_proceed_normalized_state_refresh(self) -> None:
-        self.normalized_state_update_lock_manager.acquire_lock(lock_id="lock1")
-        for schema_type in SchemaType:
-            self.lock_manager.acquire_lock(
-                lock_id="lock1",
-                schema_type=schema_type,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-            )
-
-        self.assertFalse(
-            self.lock_manager.can_proceed(
-                SchemaType.STATE, DirectIngestInstance.PRIMARY
-            )
-        )
-        # normalized_state update only blocks the STATE CloudSQL export
-        self.assertTrue(
-            self.lock_manager.can_proceed(
-                SchemaType.OPERATIONS, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            self.lock_manager.can_proceed(
-                SchemaType.PATHWAYS, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            self.lock_manager.can_proceed(
-                SchemaType.CASE_TRIAGE, DirectIngestInstance.PRIMARY
-            )
-        )
 
     def test_can_proceed_without_acquiring(self) -> None:
         with self.assertRaises(GCSPseudoLockDoesNotExist):

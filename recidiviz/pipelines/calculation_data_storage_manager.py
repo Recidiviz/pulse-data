@@ -17,7 +17,6 @@
 """Manages the storage of data produced by calculations."""
 import datetime
 import logging
-import uuid
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Dict, FrozenSet, List, Optional, Tuple
@@ -56,9 +55,6 @@ from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils 
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_association_table,
     bq_schema_for_normalized_state_entity,
-)
-from recidiviz.pipelines.normalized_state_update_lock_manager import (
-    NormalizedStateUpdateLockManager,
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import gcp_only
@@ -141,9 +137,7 @@ def execute_update_normalized_state_dataset(
         else None
     )
     update_normalized_state_dataset(
-        ingest_instance=ingest_instance,
-        state_codes_filter=state_codes_filter_set,
-        address_overrides=address_overrides,
+        state_codes_filter=state_codes_filter_set, address_overrides=address_overrides
     )
 
 
@@ -567,8 +561,12 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
         job.result()  # Wait for the job to complete.
 
 
+# TODO(#25274): If we want to be able to run calc DAGs without a sandbox prefix for
+#  different states at the same time (e.g. refresh just CA and ND), we will need to add
+#  some locking mechanism that prevents this step (and other steps that read/write from
+#  the same state-agnositc datasets) from running at the same time and interfering
+#  with each other.
 def update_normalized_state_dataset(
-    ingest_instance: DirectIngestInstance,
     state_codes_filter: Optional[FrozenSet[StateCode]] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> None:
@@ -583,24 +581,6 @@ def update_normalized_state_dataset(
     `us_xx_normalized_state` for that set of states, instead of all states with
     normalization pipelines.
     """
-    lock_id = str(uuid.uuid4())
-    logging.info("Request lock id: %s", lock_id)
-
-    logging.info(
-        "Acquiring lock on CloudSQL to BQ state refresh to prevent the "
-        "`state` dataset from being updated during this process..."
-    )
-    lock_manager = NormalizedStateUpdateLockManager(ingest_instance)
-    lock_manager.acquire_lock(lock_id=lock_id)
-
-    if not lock_manager.can_proceed():
-        raise AssertionError(
-            "Unable to acquire lock on CloudSQL to BQ state refresh. "
-            "Due to the sequencing of our orchestration, this should not happen. "
-            "Endpoint will need to be manually re-triggered once there are no "
-            "CloudSQL to BQ refreshes in-progress for the state database."
-        )
-
     bq_client = BigQueryClientImpl()
 
     if state_codes_filter is None:
@@ -651,9 +631,6 @@ def update_normalized_state_dataset(
         bq_client.dataset_ref_for_id(temp_normalized_state_dataset_id),
         delete_contents=True,
     )
-
-    logging.info("Releasing lock on CloudSQL to BQ state refresh.")
-    lock_manager.release_lock()
 
 
 def build_address_overrides_for_update(

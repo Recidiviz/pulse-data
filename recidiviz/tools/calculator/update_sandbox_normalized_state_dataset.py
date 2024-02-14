@@ -104,7 +104,6 @@ if __name__ == "__main__":
     with local_project_id_override(args.project_id):
         state_codes = frozenset({args.state_code})
         update_normalized_state_dataset(
-            ingest_instance=args.ingest_instance,
             state_codes_filter=state_codes if args.state_code else None,
             address_overrides=build_address_overrides_for_update(
                 dataset_override_prefix=args.sandbox_dataset_prefix,
