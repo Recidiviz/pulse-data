@@ -122,29 +122,28 @@ def send_id_lsu_texts(
         )
 
         firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+        # Get all document_ids for individuals who already received an initial text
+        initial_text_document_ids = set()
+        message_ref = firestore_client.get_collection_group(
+            collection_path="lsu_eligibility_messages"
+        )
+        message_query = message_ref.where(
+            filter=FieldFilter("message_type", "==", MessageType.INITIAL_TEXT.value)
+        ).where(
+            filter=FieldFilter(
+                "status", "==", ExternalSystemRequestStatus.SUCCESS.value
+            )
+        )
+        message_docs = message_query.stream()
+        for message_doc in message_docs:
+            individual_id = message_doc.reference.path.split("/")[1]
+            initial_text_document_ids.add(individual_id)
 
         if message_type == MessageType.INITIAL_TEXT.value.lower():
             external_id_to_phone_num_to_text_dict = generate_initial_text_messages_dict(
                 bq_output=query_job
             )
             message_type = MessageType.INITIAL_TEXT.value
-
-            # Get all document_ids for individuals who already received an initial text
-            initial_text_document_ids = set()
-            message_ref = firestore_client.get_collection_group(
-                collection_path="lsu_eligibility_messages"
-            )
-            message_query = message_ref.where(
-                filter=FieldFilter("message_type", "==", MessageType.INITIAL_TEXT.value)
-            ).where(
-                filter=FieldFilter(
-                    "status", "==", ExternalSystemRequestStatus.SUCCESS.value
-                )
-            )
-            message_docs = message_query.stream()
-            for message_doc in message_docs:
-                individual_id = message_doc.reference.path.split("/")[1]
-                initial_text_document_ids.add(individual_id)
         elif message_type == MessageType.ELIGIBILITY_TEXT.value.lower():
             external_id_to_phone_num_to_text_dict = (
                 generate_eligibility_text_messages_dict(bq_output=query_job)
@@ -206,6 +205,18 @@ def send_id_lsu_texts(
                             document_id,
                         )
                         return
+
+                # If this is an eligibility text, and the individual has not
+                # received an initial/welcome text in the past, do not attempt to send
+                # them an eligibility text
+                if message_type == MessageType.ELIGIBILITY_TEXT.value:
+                    if document_id not in initial_text_document_ids:
+                        logging.info(
+                            "Individual with document id [%s] has not received initial text. Do not attempt to send eligibility text.",
+                            document_id,
+                        )
+                        return
+
                 # Send text message to individual
                 response = client.messages.create(
                     body=text_body,
