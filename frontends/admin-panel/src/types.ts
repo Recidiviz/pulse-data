@@ -141,4 +141,9 @@ export interface AddConfigurationRequest extends Record<string, unknown> {
   supervisionDistrictManagerLabel: string;
   supervisionJiiLabel: string;
   learnMoreUrl: string;
+  noneAreOutliersLabel: string;
+  worseThanRateLabel: string;
+  slightlyWorseThanRateLabel: string;
+  atOrBelowRateLabel: string;
+  exclusionReasonDescription: string | null;
 }

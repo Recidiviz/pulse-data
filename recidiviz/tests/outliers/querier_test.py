@@ -969,6 +969,11 @@ Incarceration rate denominator description""",
             "supervision_district_manager_label": "district manager",
             "learn_more_url": "fake.com",
             "status": ConfigurationStatus.ACTIVE.value,
+            "none_are_outliers_label": "are outliers",
+            "worse_than_rate_label": "Far worse than statewide rate",
+            "slightly_worse_than_rate_label": "slightly worse than statewide rate",
+            "at_or_below_rate_label": "At or below statewide rate",
+            "exclusion_reason_description": None,
         }
 
         querier = OutliersQuerier(StateCode.US_PA)
@@ -995,6 +1000,11 @@ Incarceration rate denominator description""",
             "supervision_district_manager_label": "district manager",
             "learn_more_url": "fake.com",
             "status": ConfigurationStatus.ACTIVE.value,
+            "none_are_outliers_label": "are outliers",
+            "worse_than_rate_label": "Far worse than statewide rate",
+            "slightly_worse_than_rate_label": "slightly worse than statewide rate",
+            "at_or_below_rate_label": "At or below statewide rate",
+            "exclusion_reason_description": None,
         }
 
         querier = OutliersQuerier(StateCode.US_PA)

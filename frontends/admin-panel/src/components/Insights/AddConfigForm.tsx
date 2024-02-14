@@ -141,6 +141,66 @@ export const AddConfigForm = ({
         >
           <Input />
         </Form.Item>
+        <Form.Item
+          name="noneAreOutliersLabel"
+          label="None are Outliers Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string that goes in "None of the X on Y's unit ______. Keep checking back" when there are no outliers`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="worseThanRateLabel"
+          label="Worse than rate label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string that describes a metric that is far worse than the statewide rate`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="slightlyWorseThanRateLabel"
+          label="Slightly Worse Than Rate Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string that describes a metric that is slightly worse than the statewide rate`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="atOrBelowRateLabel"
+          label="At or Below Rate Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string that describes a metric that is at or below the statewide rate`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="exclusionReasonDescription"
+          label="Exclusion reason description"
+          rules={[
+            {
+              required: true,
+              message: `Please input the description of why some officers may be excluded from the list`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
       </Form>
     </DraggableModal>
   );
