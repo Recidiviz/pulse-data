@@ -94,6 +94,15 @@ from recidiviz.calculator.query.state.views.external_reference.state_resident_po
 from recidiviz.calculator.query.state.views.external_reference.state_resident_populations_combined_race_ethnicity import (
     STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_outlier_status_archive import (
+    SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervisors_archive import (
+    SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_officers_archive import (
+    SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -318,6 +327,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     RECIDIVIZ_USERS_TO_DELETE_FROM_ANALYTICS_VIEW_BUILDER.address: (
         "Ad hoc query which will be used for by another ad hoc query to delete bad analytics events next week"
         "Will be deleted as part of #27568 (Jen Overgaag 2/14/24)"
+    ),
+    SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER.address: (
+        "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
+    ),
+    SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER.address: (
+        "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
+    ),
+    SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER.address: (
+        "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
     ),
 }
 
