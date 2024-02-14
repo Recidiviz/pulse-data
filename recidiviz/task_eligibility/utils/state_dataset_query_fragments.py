@@ -527,3 +527,47 @@ SELECT
     TO_JSON(programs) AS reason
 FROM deduped_sub_sessions_with_attributes
     """
+
+
+def combining_several_criteria_into_one(
+    select_statements_for_criteria_lst: List[str],
+    meets_criteria: str,
+    json_content: str,
+) -> str:
+    """
+    Returns a SQL query that combines several criteria into one view builder.
+
+    Args:
+        select_statements_for_criteria (List[str]): List of select statements for each criteria.
+
+    Returns:
+        str: SQL query as a string.
+    """
+    reformatted_select_statements_for_criteria = "\n\n    UNION ALL \n".join(
+        select_statements_for_criteria_lst
+    )
+
+    query = f"""WITH x_criteria_cte AS ({reformatted_select_statements_for_criteria}
+    ),
+
+    {create_sub_sessions_with_attributes('x_criteria_cte')},
+
+sub_sessions_with_count AS (
+    SELECT 
+        *,
+        COUNT(*) OVER (PARTITION BY state_code, person_id, start_date, end_date) AS num_criteria,
+    FROM sub_sessions_with_attributes
+)
+
+SELECT 
+    state_code, 
+    person_id,
+    start_date, 
+    end_date,
+    {meets_criteria} AS meets_criteria,
+    TO_JSON(STRUCT({json_content})) AS reason,
+FROM sub_sessions_with_count
+GROUP BY 1,2,3,4
+    """
+
+    return query

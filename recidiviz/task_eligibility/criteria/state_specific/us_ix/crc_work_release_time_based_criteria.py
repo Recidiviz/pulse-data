@@ -32,8 +32,8 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    ix_combining_several_criteria_into_one_view_builder,
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    combining_several_criteria_into_one,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -73,7 +73,7 @@ _CRITERIA_QUERY_3 = """
 _JSON_CONTENT = """ARRAY_AGG(reason) AS reasons"""
 
 _QUERY_TEMPLATE = f"""
-{ix_combining_several_criteria_into_one_view_builder(
+{combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2,
                                              _CRITERIA_QUERY_3],
