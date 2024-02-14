@@ -12,17 +12,24 @@ data_classification: source
 primary_key_cols:
   - inmate_number
   - control_number
+is_primary_person_table: True
 columns:
   - name: inmate_number
     is_pii: True
     description: |-
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
+    field_type: person_external_id
+    external_id_type: US_PA_INMATE
+    is_primary_for_external_id_type: True
   - name: control_number
     is_pii: True
-    description: |
+    description: |-
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
+    field_type: person_external_id
+    external_id_type: US_PA_CONT
+    is_primary_for_external_id_type: True
   - name: state_id_num
     is_pii: True
     description: |-

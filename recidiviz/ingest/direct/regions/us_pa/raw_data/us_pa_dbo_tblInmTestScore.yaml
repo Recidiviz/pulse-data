@@ -18,6 +18,8 @@ columns:
     description: |-
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
+    field_type: person_external_id
+    external_id_type: US_PA_CONT
   - name: Test_Desc
     description: |-
       Type of assessment administered.
@@ -26,6 +28,8 @@ columns:
     description: |-
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
+    field_type: person_external_id
+    external_id_type: US_PA_INMATE
   - name: Test_Dt
     field_type: datetime
     description: |-

@@ -168,6 +168,9 @@ columns:
   - name: chkNAContactMadePerPBPP
   - name: ReasonForRejection
   - name: Inmate_Number
+    is_pii: true
+    field_type: person_external_id
+    external_id_type: US_PA_INMATE
   - name: Indictment_Number
   - name: ptype_SIPParole
   - name: ptype_SDTPParole

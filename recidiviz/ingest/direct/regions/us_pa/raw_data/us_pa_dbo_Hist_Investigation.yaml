@@ -41,6 +41,8 @@ columns:
   - name: temp_InvHistUnit
   - name: ParoleNumber
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
   - name: InvHistInvestigationSubType
   - name: InvHistMiscDescription
   - name: InvHistExtension1DueMonth

@@ -8,6 +8,8 @@ primary_key_cols:
 columns:
   - name: ParoleNumber
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
   - name: PA_Drugs
   - name: PA_Alcoholic
   - name: PA_Psychiatric

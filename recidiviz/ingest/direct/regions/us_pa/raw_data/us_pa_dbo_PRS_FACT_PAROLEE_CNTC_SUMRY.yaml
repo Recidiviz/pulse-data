@@ -149,6 +149,8 @@ columns:
     is_pii: True
     description: |-
       Employee number for the parole officer
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP_EMPLOYEE_NUM
   - name: PRL_AGNT_FIRST_NAME
     is_pii: True
     description: |-

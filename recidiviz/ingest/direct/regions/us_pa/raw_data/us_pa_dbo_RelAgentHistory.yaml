@@ -18,6 +18,8 @@ columns:
     is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
   - name: ParoleCountID
     description: |-
       External ID for a particular stint of a particular person under supervision by PADOC.
@@ -41,6 +43,8 @@ columns:
     is_pii: True
     description: |-
       PADOC employee number of the agent.
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP_EMPLOYEE_NUM
   - name: Supervisor_EmpNum
     is_pii: True
     description: |-

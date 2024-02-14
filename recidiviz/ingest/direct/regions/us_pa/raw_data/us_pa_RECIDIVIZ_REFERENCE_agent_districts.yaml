@@ -30,6 +30,8 @@ columns:
   - name: Employ_Num
     is_pii: True
     description: PO's employee ID
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP_EMPLOYEE_NUM
   - name: date_received
     field_type: datetime
     description: Date the record was received by Recidiviz.
