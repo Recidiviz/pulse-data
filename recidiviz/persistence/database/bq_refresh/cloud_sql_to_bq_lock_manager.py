@@ -30,11 +30,11 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
     postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.normalized_state_update_lock_manager import (
-    normalization_lock_name_for_ingest_instance,
-)
 
 
+# TODO(#20930): We should be able to delete this lock manager entirely post-IID since
+#  it is now only checking for the locks created by the legacy extract and merge
+#  process.
 class CloudSqlToBQLockManager:
     """Manages acquiring and releasing the lock for the Cloud SQL -> BQ refresh, as well
     as determining if the refresh can proceed given other ongoing processes.
@@ -96,20 +96,6 @@ class CloudSqlToBQLockManager:
             return True
 
         if schema_type == SchemaType.STATE:
-            # The "update normalized state dataset" process reads from the state dataset
-            # so it cannot be in progress while the BQ refresh is running.
-            if self.lock_manager.is_locked(
-                normalization_lock_name_for_ingest_instance(ingest_instance)
-            ):
-                logging.info(
-                    "Normalized state update lock [%s] is already locked, cannot "
-                    "proceed with lock for [%s] and [%s]",
-                    normalization_lock_name_for_ingest_instance(ingest_instance),
-                    schema_type,
-                    ingest_instance,
-                )
-                return False
-
             blocking_ingest_lock_prefix = (
                 STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX
             )

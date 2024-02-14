@@ -32,9 +32,7 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.dataset_config import raw_data_pruning_new_raw_data_dataset
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -50,9 +48,6 @@ from recidiviz.pipelines.dataflow_orchestration_utils import (
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,
-)
-from recidiviz.pipelines.normalized_state_update_lock_manager import (
-    NormalizedStateUpdateLockManager,
 )
 from recidiviz.tools.calculator.update_sandbox_normalized_state_dataset import (
     build_address_overrides_for_update,
@@ -164,18 +159,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         )
         self.environment_patcher.start()
 
-        self.fs_patcher = mock.patch(
-            "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
-            mock.Mock(return_value=FakeGCSFileSystem()),
-        )
-        self.fs_patcher.start()
-
-        # The FS on this lock manager is mocked but it otherwise operates like a normal
-        # lock manager.
-        self.mock_lock_manager = NormalizedStateUpdateLockManager(
-            DirectIngestInstance.PRIMARY
-        )
-
         app = Flask(__name__)
         app.register_blueprint(calculation_data_storage_manager_blueprint)
         app.config["TESTING"] = True
@@ -188,7 +171,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
         self.dataflow_config_patcher.stop()
-        self.fs_patcher.stop()
 
     def test_move_old_dataflow_metrics_to_cold_storage(self) -> None:
         """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to
@@ -566,9 +548,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             NormalizedStateIncarcerationPeriod
         )
 
-        calculation_data_storage_manager.update_normalized_state_dataset(
-            DirectIngestInstance.PRIMARY
-        )
+        calculation_data_storage_manager.update_normalized_state_dataset()
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
@@ -669,7 +649,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         states = frozenset({StateCode.US_XX})
         calculation_data_storage_manager.update_normalized_state_dataset(
-            DirectIngestInstance.PRIMARY,
             state_codes_filter=states,
             address_overrides=build_address_overrides_for_update(
                 dataset_override_prefix=OVERRIDE_PREFIX, states_to_override=states
@@ -763,9 +742,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             NormalizedStateIncarcerationPeriod
         )
 
-        calculation_data_storage_manager.update_normalized_state_dataset(
-            DirectIngestInstance.PRIMARY
-        )
+        calculation_data_storage_manager.update_normalized_state_dataset()
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
@@ -823,14 +800,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             delete_contents=True,
         )
 
-    def test_update_normalized_state_dataset_locked(self) -> None:
-        self.mock_lock_manager.acquire_lock(lock_id="any_lock_id")
-
-        with self.assertRaises(GCSPseudoLockAlreadyExists):
-            calculation_data_storage_manager.update_normalized_state_dataset(
-                DirectIngestInstance.PRIMARY
-            )
-
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager.update_normalized_state_dataset"
     )
@@ -846,7 +815,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             sandbox_dataset_prefix=None,
         )
         mock_update.assert_called_with(
-            ingest_instance=DirectIngestInstance.PRIMARY,
             address_overrides=None,
             state_codes_filter=None,
         )
@@ -866,7 +834,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             sandbox_dataset_prefix="my_prefix",
         )
         mock_update.assert_called_with(
-            ingest_instance=DirectIngestInstance.SECONDARY,
             address_overrides=mock.ANY,
             state_codes_filter=mock.ANY,
         )
@@ -890,7 +857,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         )
         mock_update.assert_called_with(
             address_overrides=mock.ANY,
-            ingest_instance=DirectIngestInstance.SECONDARY,
             state_codes_filter=frozenset(expected_state_codes_filter),
         )
 
@@ -938,7 +904,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         )
         mock_update.assert_called_with(
             address_overrides=mock.ANY,
-            ingest_instance=DirectIngestInstance.PRIMARY,
             state_codes_filter=states_codes_filter,
         )
 
