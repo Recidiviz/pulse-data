@@ -99,6 +99,11 @@ output:
                         - "048" # Transitional Living Discharge
                         - "049" # Violation Disclosed and Deception Indicated-Sex Offender
                         - "052" # Transitional Living Discharge (Requires AD Review)
+                        # TODO(#27560): Find mapping for the following values, which aren't in the reference table.
+                        - "054" # Unknown
+                        - "055" # Unknown
+                        - "056" # Unknown
+                        - "057" # Unknown
                       StateSupervisionViolationType.EXTERNAL_UNKNOWN:
                         - "X02" # Offense - any violation (or any comb violation)
           supervision_violation_responses:
