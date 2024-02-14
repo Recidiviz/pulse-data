@@ -135,10 +135,13 @@ _QUERY_TEMPLATE = f"""
             state_code,
             start_date,
             end_date,
-            TO_JSON(STRUCT(
-                    ARRAY_AGG(IF(critical_date >= end_date, NULL, critical_date) IGNORE NULLS) AS zero_tolerance_code_dates
-                        )
-                    ) AS reason,
+            TO_JSON(
+              STRUCT(
+                ARRAY_AGG(
+                  IF(critical_date >= end_date, NULL, critical_date) IGNORE NULLS ORDER BY critical_date
+                ) AS zero_tolerance_code_dates
+              )
+            ) AS reason,
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     )
