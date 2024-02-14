@@ -38,6 +38,7 @@ IX_CRC_FACILITIES = [
     "East Boise Community Reentry Center",
     "Idaho Falls Community Reentry Center",
     "Twin Falls Community Work Center",
+    "Twin Falls Community Reentry Center",
     "Treasure Valley Community Reentry Center",
 ]
 
