@@ -70,6 +70,10 @@ class RawTableColumnFieldType(Enum):
     # i.e. values that might hydrate state_staff_external_id
     STAFF_EXTERNAL_ID = "staff_external_id"
 
+    @classmethod
+    def external_id_types(cls) -> Set["RawTableColumnFieldType"]:
+        return {cls.PERSON_EXTERNAL_ID, cls.STAFF_EXTERNAL_ID}
+
 
 class RawDataFileUpdateCadence(Enum):
     """Defines an expected ingest cadence for a raw file."""
@@ -141,9 +145,8 @@ class RawTableColumnInfo:
 
         # Enforce that external_id_type and is_primary_for_external_id_type should only be set
         # if field type is an external id
-        is_external_id_field = self.field_type in (
-            RawTableColumnFieldType.PERSON_EXTERNAL_ID,
-            RawTableColumnFieldType.STAFF_EXTERNAL_ID,
+        is_external_id_field = (
+            self.field_type in RawTableColumnFieldType.external_id_types()
         )
 
         if (
@@ -152,7 +155,9 @@ class RawTableColumnInfo:
             raise ValueError(
                 f"Expected external_id_type to be None and "
                 f"is_primary_for_external_id_type to be False when field_type is "
-                f"{self.field_type.value} for {self.name}"
+                f"{self.field_type.value} for {self.name}. If this field is an "
+                f"external id, you must set the type to one of "
+                f"{list(t.value for t in RawTableColumnFieldType.external_id_types())}"
             )
         if self.is_primary_for_external_id_type and not self.external_id_type:
             raise ValueError(
