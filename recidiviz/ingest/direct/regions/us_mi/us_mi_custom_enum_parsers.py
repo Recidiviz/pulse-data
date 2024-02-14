@@ -25,6 +25,7 @@ my_enum_field:
 import re
 from typing import Optional
 
+from recidiviz.common.constants.state.state_drug_screen import StateDrugScreenResult
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
@@ -561,5 +562,24 @@ def map_custodial_authority_based_on_COMS(
 
     if raw_text:
         return StateCustodialAuthority.OTHER_STATE
+
+    return None
+
+
+def parse_coms_drug_screen_result(
+    raw_text: str,
+) -> Optional[StateDrugScreenResult]:
+
+    sample = raw_text.split("##")[0]
+    satisfactory = raw_text.split("##")[1]
+
+    if sample:
+        if sample in ["Self-Admission", "Tested"]:
+            if satisfactory == "Yes":
+                return StateDrugScreenResult.NEGATIVE
+
+            return StateDrugScreenResult.POSITIVE
+
+        return StateDrugScreenResult.NO_RESULT
 
     return None

@@ -46,7 +46,7 @@ columns:
   - name: Retest_By
     description: Figure out what is entered in this field TODO(#23037)
     is_pii: True # Confirm whether this is someone's ID or name TODO(#23037)
-  - name: Retest_Outdoor_Vendor
+  - name: Retest_Outside_Vendor
     description: Figure out what is entered in this field TODO(#23037)
   - name: Retest_Sent_Date
     description: Date sample for a retest was sent

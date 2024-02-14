@@ -61,6 +61,7 @@ class UsMiController(BaseDirectIngestController):
             "state_staff_supervisor_period",
             "state_leadership_role_period",
             "incarceration_incident",
+            "state_drug_screen_coms",
         ]
 
         return tags
