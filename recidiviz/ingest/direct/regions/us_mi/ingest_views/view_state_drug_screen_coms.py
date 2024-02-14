@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing MDOC state drug screen information."""
+"""Query containing MDOC state drug screen information from COMS."""
 
 # pylint: disable=anomalous-backslash-in-string
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -25,21 +25,23 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
-  abuse.substance_abuse_test_id,
-  abuse.offender_booking_id,
-  abuse.specimen_date,
-  abuse.overall_result_id,
-  abuse.sample_type_id 
-from {ADH_SUBSTANCE_ABUSE_TEST} abuse
-  inner join {ADH_OFFENDER_BOOKING} off on abuse.offender_booking_id = off.offender_booking_id
-where (DATE(abuse.specimen_date)) < DATE(2023,8,14)
+  DISTINCT
+  Security_Standards_Toxin_Id,
+  LTRIM(coms.Offender_Number, '0') as Offender_Number,
+  Security_Standard_Toxin_Type,
+  Conducted_Date,
+  Result_Date,
+  Satisfactory,
+  Sample
+FROM {COMS_Security_Standards_Toxin} coms
+WHERE DATE(Conducted_Date) >= DATE(2023,8,14)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
-    ingest_view_name="state_drug_screen",
+    ingest_view_name="state_drug_screen_coms",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="substance_abuse_test_id",
+    order_by_cols="Security_Standards_Toxin_Id",
 )
 
 if __name__ == "__main__":
