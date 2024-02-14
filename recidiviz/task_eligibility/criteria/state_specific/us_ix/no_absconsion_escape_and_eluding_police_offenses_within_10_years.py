@@ -28,11 +28,11 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    combining_several_criteria_into_one,
     extract_object_from_json,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     IX_STATE_CODE_WHERE_CLAUSE,
-    ix_combining_several_criteria_into_one_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -83,7 +83,7 @@ _JSON_CONTENT = """MAX(most_recent_escape_date) AS most_recent_escape_date,
                    MAX(most_recent_absconded_date) AS most_recent_absconded_date"""
 
 _QUERY_TEMPLATE = f"""
-{ix_combining_several_criteria_into_one_view_builder(
+{combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                             _CRITERIA_QUERY_2,
                                             _CRITERIA_QUERY_3],

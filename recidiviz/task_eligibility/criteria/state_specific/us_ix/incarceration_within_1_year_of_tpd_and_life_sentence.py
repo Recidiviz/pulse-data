@@ -27,11 +27,11 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    combining_several_criteria_into_one,
     extract_object_from_json,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     IX_STATE_CODE_WHERE_CLAUSE,
-    ix_combining_several_criteria_into_one_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -66,7 +66,7 @@ _JSON_CONTENT = f"""MIN(tentative_parole_date) AS tentative_parole_date,
                    '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
-{ix_combining_several_criteria_into_one_view_builder(
+{combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2],
         meets_criteria="(LOGICAL_AND(meets_criteria AND (num_criteria >= 2)))",
