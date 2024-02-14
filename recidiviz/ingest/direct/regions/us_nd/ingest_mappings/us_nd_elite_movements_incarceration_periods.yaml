@@ -179,6 +179,7 @@ output:
                 - ADM ERROR
                 - CONV
                 - REC
+                - NPROB
                 - "4139"
               $mappings:
                 StateIncarcerationPeriodReleaseReason.ESCAPE:
