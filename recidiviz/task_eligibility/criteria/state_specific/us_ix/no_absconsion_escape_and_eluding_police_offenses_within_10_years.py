@@ -87,7 +87,7 @@ _QUERY_TEMPLATE = f"""
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                             _CRITERIA_QUERY_2,
                                             _CRITERIA_QUERY_3],
-        meets_criteria="LOGICAL_AND(num_criteria>=3)",
+        meets_criteria="LOGICAL_AND(num_criteria<3)",
         json_content=_JSON_CONTENT,
     )}
 """
