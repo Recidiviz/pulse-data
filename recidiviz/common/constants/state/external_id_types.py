@@ -75,8 +75,6 @@ US_PA_CONT = "US_PA_CONT"
 US_PA_PBPP = "US_PA_PBPP"
 # PA Inmate Number - associated with a single contiguous incarceration stay
 US_PA_INMATE = "US_PA_INMATE"
-# Legacy type for un-hashed state ID values.
-US_PA_SID = "US_PA_SID"
 # PA PBPP Employee Number - tracks employees of PBPP
 US_PA_PBPP_EMPLOYEE_NUM = "US_PA_PBPP_EMPLOYEE_NUM"
 

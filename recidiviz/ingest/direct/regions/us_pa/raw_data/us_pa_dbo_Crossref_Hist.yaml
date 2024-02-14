@@ -8,9 +8,15 @@ columns:
   - name: prev_inmate_number
     is_pii: True
   - name: prev_control_number
+    is_pii: True
   - name: new_inmate_number
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_PA_INMATE
   - name: new_control_number
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_PA_CONT
   - name: xref_inst
   - name: previnm_deletdt
   - name: newinm_deletdt

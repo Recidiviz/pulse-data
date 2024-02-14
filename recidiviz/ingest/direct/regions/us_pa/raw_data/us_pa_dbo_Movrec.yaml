@@ -12,9 +12,12 @@ primary_key_cols:
   - mov_seq_num
 columns:
   - name: mov_cnt_num
+    is_pii: True
     description: |-
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
+    field_type: person_external_id
+    external_id_type: US_PA_CONT
   - name: mov_seq_num
     description: |-
       Sequence ID of a particular movement for this person within this particular stint of incarceration. This is unique
@@ -27,6 +30,8 @@ columns:
     description: |-
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
+    field_type: person_external_id
+    external_id_type: US_PA_INMATE
   - name: mov_sig_date
     field_type: datetime
     description: |-

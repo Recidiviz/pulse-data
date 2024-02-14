@@ -13,6 +13,8 @@ columns:
     is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
   - name: LsirID
     description: |-
       Sequence ID of a particular LSIR assessment that was conducted for this particular period of supervision.
