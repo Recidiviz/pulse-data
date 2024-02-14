@@ -118,6 +118,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_he
 from recidiviz.calculator.query.state.views.sessions.work_release_sessions import (
     WORK_RELEASE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.adhoc.recidiviz_users_to_delete_from_analytics import (
+    RECIDIVIZ_USERS_TO_DELETE_FROM_ANALYTICS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snoozed import (
     CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER,
 )
@@ -311,6 +314,10 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER.address: (
         "Will be referenced by a funnel status sessions view to support Workflows impact dashboards"
         " (see #26453) (Mayuka Sarukkai 2/8/24)"
+    ),
+    RECIDIVIZ_USERS_TO_DELETE_FROM_ANALYTICS_VIEW_BUILDER.address: (
+        "Ad hoc query which will be used for by another ad hoc query to delete bad analytics events next week"
+        "Will be deleted as part of #27568 (Jen Overgaag 2/14/24)"
     ),
 }
 
