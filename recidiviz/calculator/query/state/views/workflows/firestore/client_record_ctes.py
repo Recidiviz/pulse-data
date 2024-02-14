@@ -524,7 +524,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     person_id,
                     "6+ months violation-free" as milestone_text,
                     "NO_VIOLATION_WITHIN_6_MONTHS" as milestone_type,
-                    1 AS milestone_priority
+                    10 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_6_to_8_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
@@ -536,7 +536,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     person_id,
                     "1+ year violation-free" as milestone_text,
                     "NO_VIOLATION_WITHIN_12_MONTHS" as milestone_type,
-                    1 AS milestone_priority
+                    11 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_12_to_14_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
@@ -548,7 +548,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     person_id,
                     "Found housing" as milestone_text,
                     "HOUSING_TYPE_IS_NOT_TRANSIENT" as milestone_type,
-                    2 AS milestone_priority
+                    21 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_0_to_2_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
@@ -560,7 +560,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     person_id,
                     "Sustainable housing for 6+ months" as milestone_text,
                     "SUSTAINABLE_HOUSING_6_MONTHS" as milestone_type,
-                    2 AS milestone_priority
+                    22 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_6_to_8_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
@@ -572,7 +572,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     person_id,
                     "Sustainable housing for 1+ year" as milestone_text,
                     "SUSTAINABLE_HOUSING_12_MONTHS" as milestone_type,
-                    2 AS milestone_priority
+                    23 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_12_to_14_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
@@ -594,8 +594,8 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     end
                 ) as milestone_text,
                 "GAINED_EMPLOYMENT" as milestone_type,
-                1 AS milestone_priority
-                FROM `task_eligibility_spans_us_ca.kudos_employment_0_to_2_months_materialized`
+                31 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_0_to_2_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
@@ -616,8 +616,8 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     end
                 ) as milestone_text,
                 "EMPLOYED_6_MONTHS" as milestone_type,
-                1 AS milestone_priority
-                FROM `task_eligibility_spans_us_ca.kudos_employment_6_to_8_months_materialized`
+                32 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_6_to_8_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
@@ -638,8 +638,66 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     end
                 ) as milestone_text,
                 "EMPLOYED_12_MONTHS" as milestone_type,
-                1 AS milestone_priority
-                FROM `task_eligibility_spans_us_ca.kudos_employment_12_to_14_months_materialized`
+                33 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_12_to_14_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+            
+            UNION ALL
+                SELECT
+                state_code,
+                person_id,
+                CONCAT( 
+                    -- Generates a string stating how many programs the client has been
+                    -- participating in with slightly different phrasing for folks who
+                    -- are in multiple programs
+                    CASE WHEN ARRAY_LENGTH(JSON_QUERY_ARRAY(reasons[0], '$.reason')) > 1
+                    THEN
+                        "Active in the following " || ARRAY_LENGTH(JSON_QUERY_ARRAY(reasons[0], '$.reason')) || " programs for 6 months: " 
+                    ELSE
+                        "Active in the following program for 6 months: "
+                    END,
+                    (
+                        SELECT 
+                            STRING_AGG(JSON_VALUE(program_reasons, '$.program_id'), ', ')
+                        FROM 
+                            UNNEST(JSON_QUERY_ARRAY(reasons[0], '$.reason')) as program_reasons
+                    )
+                )
+                as milestone_text,
+                "PARTICIPATED_IN_PROGRAMMING_FOR_6_TO_8_MONTHS" as milestone_type,
+                40 as milestone_priority,
+                from `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_program_participation_6_to_8_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
+            UNION ALL
+                SELECT
+                state_code,
+                person_id,
+                CONCAT( 
+                    -- Generates a string stating how many programs the client has been
+                    -- participating in with slightly different phrasing for folks who
+                    -- are in multiple programs
+                    CASE WHEN ARRAY_LENGTH(JSON_QUERY_ARRAY(reasons[0], '$.reason')) > 1
+                    THEN
+                        "Active in the following " || ARRAY_LENGTH(JSON_QUERY_ARRAY(reasons[0], '$.reason')) || " programs for 1 year: " 
+                    ELSE
+                        "Active in the following program for 1 year: "
+                    END,
+                    (
+                        SELECT 
+                            STRING_AGG(JSON_VALUE(program_reasons, '$.program_id'), ', ')
+                        FROM 
+                            UNNEST(JSON_QUERY_ARRAY(reasons[0], '$.reason')) as program_reasons
+                    )
+                )
+                as milestone_text,
+                "PARTICIPATED_IN_PROGRAMMING_FOR_12_TO_14_MONTHS" as milestone_type,
+                41 as milestone_priority,
+                from `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_program_participation_12_to_14_months_materialized`
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
