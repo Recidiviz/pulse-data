@@ -19,8 +19,7 @@
 """
 Usage:
 python -m recidiviz.case_triage.jii.send_id_lsu_texts \
-    --bigquery-view recidiviz-staging.hsalas_scratch.ix_lsu_jii_query \
-    --phone-number XXXXXXXXXX \
+    --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
     --dry-run True \
     --message-type initial_text
 """
@@ -57,18 +56,13 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--bigquery-view",
         help="Name of the BigQuery view that the script will query to get the raw data.",
-        required=False,
+        required=True,
     )
     parser.add_argument(
         "--dry-run",
         default=True,
         type=str_to_bool,
         help="Runs script in dry-run mode. Only prints the operations it would perform.",
-    )
-    parser.add_argument(
-        "--phone-number",
-        required=False,
-        help="If provided, send a text to this phone number and ignore the --bigquery-view parameter. Used for testing purposes.",
     )
     parser.add_argument(
         "--callback-url",
@@ -92,8 +86,7 @@ OPT_OUT_KEY_WORDS = ["CANCEL", "END", "QUIT", "STOP", "STOPALL", "UNSUBSCRIBE"]
 
 
 def send_id_lsu_texts(
-    bigquery_view: Optional[str],
-    test_phone_number: Optional[str],
+    bigquery_view: str,
     dry_run: bool,
     message_type: str,
     callback_url: Optional[str] = None,
@@ -115,64 +108,63 @@ def send_id_lsu_texts(
     client = TwilioClient(account_sid, auth_token)
     batch_id = datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
-    if bigquery_view:
-        query = f"SELECT * FROM {bigquery_view}"
-        query_job = BigQueryClientImpl().run_query_async(
-            query_str=query, use_query_cache=True
+    query = f"SELECT * FROM {bigquery_view}"
+    query_job = BigQueryClientImpl().run_query_async(
+        query_str=query, use_query_cache=True
+    )
+
+    firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+
+    # Get all document_ids for individuals who already received an initial text
+    message_ref = firestore_client.get_collection_group(
+        collection_path="lsu_eligibility_messages"
+    )
+    message_query = message_ref.where(
+        filter=FieldFilter("message_type", "==", MessageType.INITIAL_TEXT.value)
+    ).where(
+        filter=FieldFilter("status", "==", ExternalSystemRequestStatus.SUCCESS.value)
+    )
+    initial_text_document_ids = {
+        message_doc.reference.path.split("/")[1]
+        for message_doc in message_query.stream()
+    }
+
+    # Get all document_ids for individuals who have opted-out
+    twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
+    doc_query = twilio_ref.where(
+        filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
+    )
+    opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
+
+    # Generate the dictionary that maps external ids to phone numbers to text strings
+    if message_type == MessageType.INITIAL_TEXT.value.lower():
+        external_id_to_phone_num_to_text_dict = generate_initial_text_messages_dict(
+            bq_output=query_job
         )
-
-        firestore_client = FirestoreClientImpl(project_id="jii-pilots")
-        # Get all document_ids for individuals who already received an initial text
-        initial_text_document_ids = set()
-        message_ref = firestore_client.get_collection_group(
-            collection_path="lsu_eligibility_messages"
+        message_type = MessageType.INITIAL_TEXT.value
+    elif message_type == MessageType.ELIGIBILITY_TEXT.value.lower():
+        external_id_to_phone_num_to_text_dict = generate_eligibility_text_messages_dict(
+            bq_output=query_job
         )
-        message_query = message_ref.where(
-            filter=FieldFilter("message_type", "==", MessageType.INITIAL_TEXT.value)
-        ).where(
-            filter=FieldFilter(
-                "status", "==", ExternalSystemRequestStatus.SUCCESS.value
-            )
-        )
-        message_docs = message_query.stream()
-        for message_doc in message_docs:
-            individual_id = message_doc.reference.path.split("/")[1]
-            initial_text_document_ids.add(individual_id)
+        message_type = MessageType.ELIGIBILITY_TEXT.value
 
-        if message_type == MessageType.INITIAL_TEXT.value.lower():
-            external_id_to_phone_num_to_text_dict = generate_initial_text_messages_dict(
-                bq_output=query_job
-            )
-            message_type = MessageType.INITIAL_TEXT.value
-        elif message_type == MessageType.ELIGIBILITY_TEXT.value.lower():
-            external_id_to_phone_num_to_text_dict = (
-                generate_eligibility_text_messages_dict(bq_output=query_job)
-            )
-            message_type = MessageType.ELIGIBILITY_TEXT.value
+    if dry_run is True:
+        return
 
-        if dry_run is False:
-            state_code = StateCode.US_ID.value.lower()
-            # COMMENTING THIS OUT NOW FOR TEST PURPOSES
-            # for external_id, phone_num_to_text_dict in external_id_to_phone_num_to_text_dict.items():
-            # for phone_number, text_body in phone_num_to_text_dict.items():
+    state_code = StateCode.US_ID.value.lower()
 
-            # FOR TESTING PURPOSES
-            if test_phone_number is not None:
-                external_id = 999999999
-                phone_number = test_phone_number
+    # FOR TEST PURPOSES
+    if bigquery_view in [
+        "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_playtesting",
+        "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test",
+    ]:
+        # Iterate through the dictionary that maps external ids to phone numbers to text strings
+        for (
+            external_id,
+            phone_num_to_text_dict,
+        ) in external_id_to_phone_num_to_text_dict.items():
+            for phone_number, text_body in phone_num_to_text_dict.items():
                 document_id = f"{state_code}_{external_id}"
-
-                # Get all document_ids for individuals who have opted-out
-                opt_out_document_ids = set()
-                twilio_ref = firestore_client.get_collection(
-                    collection_path="twilio_messages"
-                )
-                doc_query = twilio_ref.where(
-                    filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
-                )
-                jii_update_docs = doc_query.stream()
-                for jii_doc in jii_update_docs:
-                    opt_out_document_ids.add(jii_doc.id)
 
                 # Check that current document_id has not opted-out
                 if document_id in opt_out_document_ids:
@@ -183,17 +175,14 @@ def send_id_lsu_texts(
                     return
 
                 logging.info(
-                    "Twilio send SMS gcp environment: [%s]", get_gcp_environment()
+                    "Twilio send SMS gcp environment: [%s]",
+                    get_gcp_environment(),
                 )
                 base_url = STAGING_URL
                 if get_gcp_environment() == "production":
                     base_url = PRODUCTION_URL
                 if callback_url is not None:
                     base_url = callback_url
-
-                text_body = list(
-                    list(external_id_to_phone_num_to_text_dict.values())[0].values()
-                )[0]
 
                 # If this is an initial/welcome text, and the individual has already
                 # received an initial/welcome text in the past, do not attempt to send
@@ -225,10 +214,9 @@ def send_id_lsu_texts(
                     status_callback=f"{base_url}/jii/webhook/twilio_status",
                 )
 
-                # Update the individual's subcollection
-                # First, store the individual's phone number in their individual level doc
+                # Store the individual's phone number in their individual level doc
                 firestore_individual_path = f"twilio_messages/{document_id}"
-                firestore_client.update_document(
+                firestore_client.set_document(
                     document_path=firestore_individual_path,
                     data={
                         "last_phone_num_update": datetime.datetime.now(
@@ -236,6 +224,7 @@ def send_id_lsu_texts(
                         ),
                         "phone_numbers": ArrayUnion([phone_number]),
                     },
+                    merge=True,
                 )
 
                 # Next, update their message level doc
@@ -259,7 +248,6 @@ if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         send_id_lsu_texts(
             bigquery_view=args.bigquery_view,
-            test_phone_number=args.phone_number,
             dry_run=args.dry_run,
             callback_url=args.callback_url,
             message_type=args.message_type,
