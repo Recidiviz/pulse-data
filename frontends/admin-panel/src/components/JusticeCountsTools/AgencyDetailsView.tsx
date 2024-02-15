@@ -19,6 +19,7 @@ import { Button, Input, message, PageHeader, Select, Space, Table } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
+
 import {
   getAgency,
   updateAgencyUsers,
@@ -50,6 +51,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   };
 
   const getColumnSearchProps = (dataIndex: keyof AgencyTeamMember) => ({
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -82,6 +84,7 @@ const AgencyProvisioningView = (): JSX.Element => {
         </Space>
       </div>
     ),
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterIcon: (filtered: boolean) => (
       <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
     ),

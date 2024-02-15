@@ -15,8 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, PageHeader, Select, Spin, message } from "antd";
+import { Button, message, PageHeader, Select, Spin } from "antd";
 import React, { useState } from "react";
+
 import {
   deleteDemoClientUpdatesV2,
   getStateRoleDefaultPermissions,
@@ -29,8 +30,9 @@ const DemoAppManagementView = (): JSX.Element => {
   const { loading, data } = useFetchedDataJSON<StateRolePermissionsResponse[]>(
     getStateRoleDefaultPermissions
   );
-  const [selectedStateCode, setSelectedStateCode] =
-    useState<string | undefined>();
+  const [selectedStateCode, setSelectedStateCode] = useState<
+    string | undefined
+  >();
   const [messageApi, contextHolder] = message.useMessage();
 
   const env = (window.RUNTIME_GCP_ENVIRONMENT ||

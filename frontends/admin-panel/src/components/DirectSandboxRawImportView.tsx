@@ -21,11 +21,11 @@ import {
   Form,
   Input,
   List,
+  message,
   Modal,
   PageHeader,
   Select,
   Spin,
-  message,
 } from "antd";
 import { useCallback, useEffect, useState } from "react";
 
@@ -35,12 +35,12 @@ import {
   listRawFilesInSandboxBucket,
   listSandboxBuckets,
 } from "../AdminPanelAPI/IngestOperations";
+import { FileStatus, FileUploadInfo } from "./DirectSandboxImport/constants";
 import FileUploadDatesTable from "./DirectSandboxImport/FileUploadDatesTable";
 import ImportSandboxFileStatusTable from "./DirectSandboxImport/ImportSandboxFileStatusTable";
-import { FileStatus, FileUploadInfo } from "./DirectSandboxImport/constants";
+import { StateCodeInfo } from "./general/constants";
 import { layout, tailLayout } from "./POEmails/constants";
 import StateSelector from "./Utilities/StateSelector";
-import { StateCodeInfo } from "./general/constants";
 
 interface SandboxFormData {
   sandboxDatasetPrefix: string;
@@ -50,23 +50,30 @@ interface SandboxFormData {
 
 const DirectSandboxRawImport = (): JSX.Element => {
   const [form] = Form.useForm();
-  const [formData, setFormData] =
-    useState<SandboxFormData | undefined>(undefined);
-  const [stateInfo, setStateInfo] =
-    useState<StateCodeInfo | undefined>(undefined);
-  const [sourceBucketList, setSourceBucketList] =
-    useState<string[] | undefined>(undefined);
-  const [fileStatusList, setFileStatusList] =
-    useState<FileStatus[] | undefined>(undefined);
+  const [formData, setFormData] = useState<SandboxFormData | undefined>(
+    undefined
+  );
+  const [stateInfo, setStateInfo] = useState<StateCodeInfo | undefined>(
+    undefined
+  );
+  const [sourceBucketList, setSourceBucketList] = useState<
+    string[] | undefined
+  >(undefined);
+  const [fileStatusList, setFileStatusList] = useState<
+    FileStatus[] | undefined
+  >(undefined);
   const [statusTableSpinner, setStatusTableSpinner] = useState(false);
   const [rawFilesSpinner, setRawFilesSpinner] = useState(false);
-  const [errorList, setErrorList] =
-    useState<FileStatus[] | undefined>(undefined);
+  const [errorList, setErrorList] = useState<FileStatus[] | undefined>(
+    undefined
+  );
   const [visible, setVisible] = useState(false);
-  const [rawFileUploadList, setRawFileUploadList] =
-    useState<FileUploadInfo[] | undefined>(undefined);
-  const [tempSourceBucket, setTempSourceBucket] =
-    useState<string | undefined>(undefined);
+  const [rawFileUploadList, setRawFileUploadList] = useState<
+    FileUploadInfo[] | undefined
+  >(undefined);
+  const [tempSourceBucket, setTempSourceBucket] = useState<string | undefined>(
+    undefined
+  );
 
   const onFinish = (values?: SandboxFormData | undefined) => {
     setFormData(values);
@@ -316,28 +323,22 @@ const DirectSandboxRawImport = (): JSX.Element => {
         </span>
         <span style={{ width: "60%" }}>
           {fileStatusList ? (
-            <>
-              <Card title="Error Log">
-                <List
-                  pagination={{ pageSize: 1 }}
-                  dataSource={errorList}
-                  style={{ width: "inherit" }}
-                  renderItem={(item) => (
-                    <>
-                      <List.Item>
-                        <Card title={item.fileTag} style={{ width: "100%" }}>
-                          {item.errorMessage?.split("\n")?.map((fail) => (
-                            <>
-                              <p>{fail}</p>
-                            </>
-                          ))}
-                        </Card>
-                      </List.Item>
-                    </>
-                  )}
-                />
-              </Card>
-            </>
+            <Card title="Error Log">
+              <List
+                pagination={{ pageSize: 1 }}
+                dataSource={errorList}
+                style={{ width: "inherit" }}
+                renderItem={(item) => (
+                  <List.Item>
+                    <Card title={item.fileTag} style={{ width: "100%" }}>
+                      {item.errorMessage?.split("\n")?.map((fail) => (
+                        <p>{fail}</p>
+                      ))}
+                    </Card>
+                  </List.Item>
+                )}
+              />
+            </Card>
           ) : null}
         </span>
       </div>

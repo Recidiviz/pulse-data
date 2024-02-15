@@ -19,16 +19,17 @@ import {
   Button,
   Form,
   Input,
+  message,
   PageHeader,
   Select,
   Space,
   Spin,
   Table,
   Typography,
-  message,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
+
 import { getAgencies } from "../../AdminPanelAPI";
 import { updateAgency } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
@@ -75,6 +76,7 @@ const SuperAgencyProvisioningView = (): JSX.Element => {
     ({} as { [index: number]: number[] });
 
   const getColumnSearchProps = (dataIndex: keyof SuperAgencyRecord) => ({
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -107,6 +109,7 @@ const SuperAgencyProvisioningView = (): JSX.Element => {
         </Space>
       </div>
     ),
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterIcon: (filtered: boolean) => (
       <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
     ),

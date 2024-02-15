@@ -20,6 +20,7 @@ import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
 import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
+
 import {
   getAllIngestInstanceDataflowEnabledStatuses,
   getAllIngestInstanceStatuses,
@@ -30,6 +31,8 @@ import {
   INGEST_ACTIONS_PRIMARY_ROUTE,
   INGEST_ACTIONS_ROUTE,
 } from "../../navigation/IngestOperations";
+import { StateCodeInfo } from "../general/constants";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
   IngestInstanceStatusInfo,
   IngestInstanceStatusResponse,
@@ -37,14 +40,6 @@ import {
   QueueState,
   StateIngestQueuesStatuses,
 } from "../IngestDataflow/constants";
-import NewTabLink from "../NewTabLink";
-import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
-import { StateCodeInfo } from "../general/constants";
-import {
-  IngestInstanceDataflowEnabledStatusResponse,
-  IngestInstanceStatusTableInfo,
-} from "./constants";
-
 import {
   getDataflowEnabledSortedOrder,
   getIngestQueuesCumalativeState,
@@ -53,6 +48,11 @@ import {
   getStatusSortedOrder,
   renderStatusCell,
 } from "../IngestDataflow/ingestStatusUtils";
+import NewTabLink from "../NewTabLink";
+import {
+  IngestInstanceDataflowEnabledStatusResponse,
+  IngestInstanceStatusTableInfo,
+} from "./constants";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   const history = useHistory();
@@ -66,8 +66,9 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       getAllIngestInstanceDataflowEnabledStatuses
     );
 
-  const [stateIngestQueueStatuses, setStateIngestQueueStatuses] =
-    useState<StateIngestQueuesStatuses | undefined>(undefined);
+  const [stateIngestQueueStatuses, setStateIngestQueueStatuses] = useState<
+    StateIngestQueuesStatuses | undefined
+  >(undefined);
   useEffect(() => {
     if (ingestInstanceStatuses === undefined) {
       return;
@@ -113,12 +114,10 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
 
   if (ingestInstanceStatuses === undefined) {
     return (
-      <>
-        <Alert
-          message="Failed to load ingest instance summary info."
-          type="error"
-        />
-      </>
+      <Alert
+        message="Failed to load ingest instance summary info."
+        type="error"
+      />
     );
   }
 

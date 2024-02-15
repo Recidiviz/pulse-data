@@ -18,6 +18,7 @@
 import { Card, Empty, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
+
 import { SamenessPerRowValidationResultDetails } from "../../recidiviz/admin_panel/models/validation_pb";
 import { SamenessPerRowDetailsProps } from "./constants";
 import { formatStatusAmount } from "./utils";
@@ -50,7 +51,7 @@ const SamenessPerRowDetails: React.FC<SamenessPerRowDetailsProps> = ({
   });
 
   if (!sortedRows.length) {
-    return <></>;
+    return null;
   }
 
   const firstRow = sortedRows[0];

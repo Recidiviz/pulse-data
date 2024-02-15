@@ -29,6 +29,7 @@ import {
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
+
 import { getAgencies, getUsers } from "../../AdminPanelAPI";
 import {
   createUser,
@@ -139,6 +140,7 @@ const UserProvisioningView = (): JSX.Element => {
   };
 
   const getColumnSearchProps = (dataIndex: keyof User) => ({
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -171,6 +173,7 @@ const UserProvisioningView = (): JSX.Element => {
         </Space>
       </div>
     ),
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterIcon: (filtered: boolean) => (
       <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
     ),

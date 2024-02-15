@@ -16,8 +16,8 @@
 // =============================================================================
 
 import { Layout, List, Menu, MenuProps } from "antd";
-import Sider from "antd/lib/layout/Sider";
 import { Content } from "antd/lib/layout/layout";
+import Sider from "antd/lib/layout/Sider";
 import { FC, useEffect } from "react";
 import {
   Redirect,
@@ -26,6 +26,7 @@ import {
   useHistory,
   useLocation,
 } from "react-router-dom";
+
 import { fetchValidationStatus } from "../../../AdminPanelAPI";
 import { useFetchedDataProtobuf } from "../../../hooks";
 import {
@@ -37,13 +38,13 @@ import {
   ValidationStatusRecords,
 } from "../../../recidiviz/admin_panel/models/validation_pb";
 import { MetadataRecord } from "../../../types";
+import { StateCodeInfo } from "../../general/constants";
+import StateSelectorPageHeader from "../../general/StateSelectorPageHeader";
 import {
   formatDatetime,
   scrollToAnchor,
 } from "../../Utilities/GeneralUtilities";
 import uniqueStates from "../../Utilities/UniqueStates";
-import StateSelectorPageHeader from "../../general/StateSelectorPageHeader";
-import { StateCodeInfo } from "../../general/constants";
 import {
   ANCHOR_VALIDATION_FAILURE_SUMMARY,
   ANCHOR_VALIDATION_FULL_RESULTS,

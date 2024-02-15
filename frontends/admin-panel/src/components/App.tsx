@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import "../style/App.css";
+
 import { Avatar, Layout, Menu, MenuProps, Segmented, Typography } from "antd";
 import { SegmentedLabeledOption, SegmentedValue } from "antd/lib/segmented";
 import classNames from "classnames";
@@ -26,6 +28,7 @@ import {
   useHistory,
   useLocation,
 } from "react-router-dom";
+
 import Nelly from "../favicon-nelly.png";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
@@ -33,7 +36,6 @@ import * as IngestOperations from "../navigation/IngestOperations";
 import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as OnCall from "../navigation/OnCall";
-import "../style/App.css";
 import InsightsConfigurationsView from "./ConfigurationsView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
@@ -50,9 +52,9 @@ import OnCallLogsReview from "./OnCall/LogsReview";
 import POEmailsView from "./POEmailsView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
+import { EnvironmentType } from "./types";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
-import { EnvironmentType } from "./types";
 
 type MenuItem = Required<MenuProps>["items"][number];
 type QueryString = {

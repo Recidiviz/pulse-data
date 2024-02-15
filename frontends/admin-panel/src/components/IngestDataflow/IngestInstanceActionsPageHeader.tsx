@@ -18,13 +18,14 @@
 import { PageHeader, Popover, Tag } from "antd";
 import classNames from "classnames";
 import { useEffect, useState } from "react";
+
 import { getCurrentIngestInstanceStatusInformation } from "../../AdminPanelAPI/IngestOperations";
 import {
   RegionAction,
   regionActionNames,
 } from "../Utilities/ActionRegionConfirmationForm";
-import IngestActionButton from "./IngestActionButton";
 import { DirectIngestInstance, IngestInstanceStatusInfo } from "./constants";
+import IngestActionButton from "./IngestActionButton";
 import {
   getStatusBoxColor,
   getStatusMessage,
@@ -37,100 +38,101 @@ interface IngestActionsPageHeaderProps {
   dataflowEnabled: boolean;
 }
 
-const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
-  ({ stateCode, instance, dataflowEnabled }) => {
-    const [statusInfo, setStatusInfo] =
-      useState<IngestInstanceStatusInfo | undefined>();
+const IngestInstanceActionsPageHeader: React.FC<
+  IngestActionsPageHeaderProps
+> = ({ stateCode, instance, dataflowEnabled }) => {
+  const [statusInfo, setStatusInfo] = useState<
+    IngestInstanceStatusInfo | undefined
+  >();
 
-    useEffect(() => {
-      const setCurrentIngestInstanceStatusInformation = async () => {
-        const response = await getCurrentIngestInstanceStatusInformation(
-          stateCode,
-          instance
-        );
-        const newStatusInfo =
-          (await response.json()) as IngestInstanceStatusInfo;
-        setStatusInfo(newStatusInfo);
-      };
-      setCurrentIngestInstanceStatusInformation();
-    }, [stateCode, instance]);
+  useEffect(() => {
+    const setCurrentIngestInstanceStatusInformation = async () => {
+      const response = await getCurrentIngestInstanceStatusInformation(
+        stateCode,
+        instance
+      );
+      const newStatusInfo = (await response.json()) as IngestInstanceStatusInfo;
+      setStatusInfo(newStatusInfo);
+    };
+    setCurrentIngestInstanceStatusInformation();
+  }, [stateCode, instance]);
 
-    const IngestInstanceStatusPopoverContent = (
-      <div>
-        {statusInfo
-          ? getStatusMessage(statusInfo.status, statusInfo.statusTimestamp)
-          : null}
-      </div>
-    );
+  const IngestInstanceStatusPopoverContent = (
+    <div>
+      {statusInfo
+        ? getStatusMessage(statusInfo.status, statusInfo.statusTimestamp)
+        : null}
+    </div>
+  );
 
-    return (
-      <PageHeader
-        title={instance}
-        tags={[
-          statusInfo ? (
-            <Popover content={IngestInstanceStatusPopoverContent}>
-              <div
-                className={classNames(
-                  "tag",
-                  "tag-with-color",
-                  getStatusBoxColor(statusInfo.status)
-                )}
-              >
-                {removeUnderscore(statusInfo.status)}
-              </div>
-            </Popover>
-          ) : (
-            <></>
-          ),
-          dataflowEnabled ? <Tag color="green">DATAFLOW ENABLED</Tag> : <></>,
-        ]}
-        extra={
-          <>
-            {/* TODO(#20930): Delete button once ingest in dataflow enabled for all states */}
-            {!dataflowEnabled ? (
-              <IngestActionButton
-                style={{ marginRight: 5 }}
-                action={RegionAction.ExportToGCS}
-                buttonText={regionActionNames[RegionAction.ExportToGCS]}
-                instance={instance}
-                stateCode={stateCode}
-              />
-            ) : null}
+  return (
+    <PageHeader
+      title={instance}
+      tags={[
+        ...(statusInfo
+          ? [
+              <Popover content={IngestInstanceStatusPopoverContent}>
+                <div
+                  className={classNames(
+                    "tag",
+                    "tag-with-color",
+                    getStatusBoxColor(statusInfo.status)
+                  )}
+                >
+                  {removeUnderscore(statusInfo.status)}
+                </div>
+              </Popover>,
+            ]
+          : []),
+        ...(dataflowEnabled ? [<Tag color="green">DATAFLOW ENABLED</Tag>] : []),
+      ]}
+      extra={
+        <>
+          {/* TODO(#20930): Delete button once ingest in dataflow enabled for all states */}
+          {!dataflowEnabled ? (
             <IngestActionButton
               style={{ marginRight: 5 }}
-              action={RegionAction.TriggerTaskScheduler}
-              buttonText={regionActionNames[RegionAction.TriggerTaskScheduler]}
+              action={RegionAction.ExportToGCS}
+              buttonText={regionActionNames[RegionAction.ExportToGCS]}
               instance={instance}
               stateCode={stateCode}
-              type="primary"
             />
-            <IngestActionButton
-              style={
-                // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
-                instance === "SECONDARY"
-                  ? { marginRight: 5 }
-                  : { display: "none" }
-              }
-              action={
-                // TODO(#24652): remove rerun condition once dataflow is fully enabled
-                dataflowEnabled
-                  ? RegionAction.StartRawDataReimport
-                  : RegionAction.StartIngestRerun
-              }
-              buttonText={
-                // TODO(#24652): remove rerun condition once dataflow is fully enabled
-                dataflowEnabled
-                  ? regionActionNames[RegionAction.StartRawDataReimport]
-                  : regionActionNames[RegionAction.StartIngestRerun]
-              }
-              instance={instance}
-              stateCode={stateCode}
-              type="primary"
-            />
-          </>
-        }
-      />
-    );
-  };
+          ) : null}
+          <IngestActionButton
+            style={{ marginRight: 5 }}
+            action={RegionAction.TriggerTaskScheduler}
+            buttonText={regionActionNames[RegionAction.TriggerTaskScheduler]}
+            instance={instance}
+            stateCode={stateCode}
+            type="primary"
+          />
+          <IngestActionButton
+            style={
+              // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
+              instance === "SECONDARY"
+                ? { marginRight: 5 }
+                : { display: "none" }
+            }
+            action={
+              // TODO(#24652): remove rerun condition once dataflow is fully enabled
+              dataflowEnabled
+                ? RegionAction.StartRawDataReimport
+                : RegionAction.StartIngestRerun
+            }
+            buttonText={
+              // TODO(#24652): remove rerun condition once dataflow is fully enabled
+              dataflowEnabled
+                ? regionActionNames[RegionAction.StartRawDataReimport]
+                : regionActionNames[RegionAction.StartIngestRerun]
+            }
+            instance={instance}
+            stateCode={stateCode}
+            type="primary"
+          />
+        </>
+      }
+    />
+  );
+};
 
 export default IngestInstanceActionsPageHeader;

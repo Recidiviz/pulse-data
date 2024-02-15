@@ -29,6 +29,7 @@ import {
 } from "antd";
 import * as React from "react";
 import { Link } from "react-router-dom";
+
 import {
   fetchValidationDescription,
   fetchValidationDetails,
@@ -50,7 +51,6 @@ import {
   ValidationDetailsProps,
   ValidationErrorTableData,
 } from "./constants";
-
 import SamenessPerRowDetails from "./SamenessPerRowDetails";
 import SamenessPerViewDetails from "./SamenessPerViewDetails";
 import {
@@ -158,8 +158,9 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   validationName,
   stateCode,
 }) => {
-  const [validationDescription, setValidationDescription] =
-    React.useState<string | undefined>(undefined);
+  const [validationDescription, setValidationDescription] = React.useState<
+    string | undefined
+  >(undefined);
 
   const fetchErrorTable = React.useCallback(() => {
     return fetchValidationErrorTable(validationName, stateCode);
@@ -473,9 +474,7 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
           />
         )}
         {errorTable && !errorTableLoading && (
-          <>
-            <ValidationErrorTable tableData={errorTable} />
-          </>
+          <ValidationErrorTable tableData={errorTable} />
         )}
         {!errorTable && !errorTableLoading && (
           <span>Unable to load any rows.</span>

@@ -14,7 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
+import {
+  AlignLeftOutlined,
+  BookOutlined,
+  CheckCircleOutlined,
+  FileAddOutlined,
+  FileSearchOutlined,
+  MinusCircleOutlined,
+} from "@ant-design/icons";
+import { Loading } from "@recidiviz/design-system";
 import {
   Button,
   Card,
@@ -29,20 +37,13 @@ import {
   Tag,
   Typography,
 } from "antd";
-import {
-  AlignLeftOutlined,
-  BookOutlined,
-  CheckCircleOutlined,
-  FileAddOutlined,
-  FileSearchOutlined,
-  MinusCircleOutlined,
-} from "@ant-design/icons";
-import styled from "styled-components/macro";
-import moment from "moment-timezone";
-import { Loading } from "@recidiviz/design-system";
-import newGithubIssueUrl from "new-github-issue-url";
-import { CheckboxValueType } from "antd/es/checkbox/Group";
 import { CheckboxChangeEvent } from "antd/es/checkbox";
+import { CheckboxValueType } from "antd/es/checkbox/Group";
+import moment from "moment-timezone";
+import newGithubIssueUrl from "new-github-issue-url";
+import * as React from "react";
+import styled from "styled-components/macro";
+
 import { fetchOncallLogs } from "../../AdminPanelAPI/OnCall";
 import { ErrorInstance, RequestTrace } from "./types";
 import {
@@ -157,11 +158,9 @@ const ErrorInstanceInfo = ({ instance }: ErrorInstanceProps) => {
       <Descriptions bordered column={3}>
         {Array.from(url.searchParams.entries()).map(
           ([key, value]: [string, string]) => (
-            <>
-              <Descriptions.Item label={<Text strong>{key}</Text>} span={3}>
-                <samp>{value}</samp>
-              </Descriptions.Item>
-            </>
+            <Descriptions.Item label={<Text strong>{key}</Text>} span={3}>
+              <samp>{value}</samp>
+            </Descriptions.Item>
           )
         )}
       </Descriptions>
@@ -333,7 +332,7 @@ const Component: React.FC = () => {
               "case-triage-web",
             ],
           }}
-          onFinish={requestOnCallLogs}
+          onFinish={() => requestOnCallLogs}
           form={form}
         >
           <Form.Item name="view" label="Services">

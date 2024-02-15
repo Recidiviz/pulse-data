@@ -17,6 +17,7 @@
 import { Card, Descriptions, Empty, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
+
 import { SamenessPerViewValidationResultDetails } from "../../recidiviz/admin_panel/models/validation_pb";
 import { SamenessPerViewDetailsProps } from "./constants";
 

@@ -16,6 +16,7 @@
 // =============================================================================
 import { Table, Tag } from "antd";
 import * as React from "react";
+
 import { FileStatusList } from "./constants";
 
 const ImportSandboxFileStatusTable: React.FC<FileStatusList> = ({
@@ -25,8 +26,9 @@ const ImportSandboxFileStatusTable: React.FC<FileStatusList> = ({
     fileTag?: string | undefined;
     status?: string | undefined;
   }
-  const [tableData, setTableData] =
-    React.useState<TableData[] | undefined>(undefined);
+  const [tableData, setTableData] = React.useState<TableData[] | undefined>(
+    undefined
+  );
 
   const formatTableData = React.useCallback(() => {
     const priorityOrder: { [key: string]: number } = {
@@ -86,19 +88,17 @@ const ImportSandboxFileStatusTable: React.FC<FileStatusList> = ({
   ];
 
   return (
-    <>
-      <Table
-        columns={columns}
-        dataSource={tableData}
-        rowKey="fileTag"
-        pagination={{
-          defaultPageSize: 5,
-          pageSizeOptions: ["5", "10", "20", "50"],
-          size: "small",
-          showSizeChanger: true,
-        }}
-      />
-    </>
+    <Table
+      columns={columns}
+      dataSource={tableData}
+      rowKey="fileTag"
+      pagination={{
+        defaultPageSize: 5,
+        pageSizeOptions: ["5", "10", "20", "50"],
+        size: "small",
+        showSizeChanger: true,
+      }}
+    />
   );
 };
 

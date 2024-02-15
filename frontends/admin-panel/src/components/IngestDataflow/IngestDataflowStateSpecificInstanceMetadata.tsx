@@ -18,11 +18,12 @@
 import { Alert, Spin } from "antd";
 import { useCallback } from "react";
 import { useParams } from "react-router-dom";
+
 import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
+import { DirectIngestInstance } from "./constants";
 import IngestDataflowInstanceCard from "./IngestDataflowInstanceCard";
 import IngestInstanceActionsPageHeader from "./IngestInstanceActionsPageHeader";
-import { DirectIngestInstance } from "./constants";
 
 const instances = [
   DirectIngestInstance.PRIMARY,
@@ -31,8 +32,10 @@ const instances = [
 
 const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
-  const { stateCode, instance } =
-    useParams<{ stateCode: string; instance: string }>();
+  const { stateCode, instance } = useParams<{
+    stateCode: string;
+    instance: string;
+  }>();
 
   const directInstance = getInstance(instance);
   const fetchDataflowEnabled = useCallback(async () => {
@@ -68,15 +71,13 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
         dataflowEnabled={dataflowEnabled}
       />
       {env === "development" ? (
-        <>
-          <Alert
-            style={{ margin: "6px 24px" }}
-            message="The Operations Database information is inaccurate. Users are unable to hit a live database
+        <Alert
+          style={{ margin: "6px 24px" }}
+          message="The Operations Database information is inaccurate. Users are unable to hit a live database
           from a local machine"
-            type="warning"
-            showIcon
-          />
-        </>
+          type="warning"
+          showIcon
+        />
       ) : null}
       <div
         style={{ height: "95%" }}

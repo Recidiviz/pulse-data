@@ -18,19 +18,20 @@ import { Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
 import * as React from "react";
+
 import {
   booleanSort,
   optionalBooleanSort,
   optionalNumberSort,
   optionalStringSort,
 } from "../Utilities/GeneralUtilities";
-import RawDataFileTagContents from "./RawDataFileTagContents";
-import RawDataHasConfigFileCellContents from "./RawDataHasConfigFileCellContents";
-import RawDataLatestProcessedDateCellContents from "./RawDataLatestProcessedDateCellContents";
 import {
   IngestInstanceResources,
   IngestRawFileProcessingStatus,
 } from "./constants";
+import RawDataFileTagContents from "./RawDataFileTagContents";
+import RawDataHasConfigFileCellContents from "./RawDataHasConfigFileCellContents";
+import RawDataLatestProcessedDateCellContents from "./RawDataLatestProcessedDateCellContents";
 
 interface IngestRawFileProcessingStatusTableProps {
   ingestInstanceResources: IngestInstanceResources | undefined;
@@ -38,108 +39,108 @@ interface IngestRawFileProcessingStatusTableProps {
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
 }
 
-const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatusTableProps> =
-  ({
-    ingestInstanceResources,
-    statusLoading,
-    ingestRawFileProcessingStatus,
-  }) => {
-    const columns: ColumnsType<IngestRawFileProcessingStatus> = [
-      {
-        title: "Raw Data File Tag",
-        dataIndex: "fileTag",
-        key: "fileTag",
-        render: (_, record) => (
-          <RawDataHasConfigFileCellContents status={record} />
-        ),
-        sorter: {
-          compare: (a, b) => a.fileTag.localeCompare(b.fileTag),
-        },
+const IngestRawFileProcessingStatusTable: React.FC<
+  IngestRawFileProcessingStatusTableProps
+> = ({
+  ingestInstanceResources,
+  statusLoading,
+  ingestRawFileProcessingStatus,
+}) => {
+  const columns: ColumnsType<IngestRawFileProcessingStatus> = [
+    {
+      title: "Raw Data File Tag",
+      dataIndex: "fileTag",
+      key: "fileTag",
+      render: (_, record) => (
+        <RawDataHasConfigFileCellContents status={record} />
+      ),
+      sorter: {
+        compare: (a, b) => a.fileTag.localeCompare(b.fileTag),
+      },
 
-        filters: ingestRawFileProcessingStatus.map(({ fileTag }) => ({
-          text: fileTag,
-          value: fileTag,
-        })),
-        onFilter: (value, content) => content.fileTag === value,
-        filterSearch: true,
+      filters: ingestRawFileProcessingStatus.map(({ fileTag }) => ({
+        text: fileTag,
+        value: fileTag,
+      })),
+      onFilter: (value, content) => content.fileTag === value,
+      filterSearch: true,
+    },
+    {
+      title: "Last Received",
+      dataIndex: "latestDiscoveryTime",
+      key: "latestDiscoveryTime",
+      render: (_, record) => renderLatestDiscoveryTime(record, record.isStale),
+      sorter: {
+        compare: (a, b) =>
+          optionalBooleanSort(a.isStale, b.isStale) &&
+          optionalStringSort(a.latestDiscoveryTime, b.latestDiscoveryTime),
       },
-      {
-        title: "Last Received",
-        dataIndex: "latestDiscoveryTime",
-        key: "latestDiscoveryTime",
-        render: (_, record) =>
-          renderLatestDiscoveryTime(record, record.isStale),
-        sorter: {
-          compare: (a, b) =>
-            optionalBooleanSort(a.isStale, b.isStale) &&
-            optionalStringSort(a.latestDiscoveryTime, b.latestDiscoveryTime),
-        },
-        sortOrder: "descend",
+      sortOrder: "descend",
+    },
+    {
+      title: "Last Processed",
+      dataIndex: "latestProcessedTime",
+      key: "latestProcessedTime",
+      render: (_, record) => (
+        <RawDataLatestProcessedDateCellContents
+          status={record}
+          storageDirectoryPath={ingestInstanceResources?.storageDirectoryPath}
+        />
+      ),
+      sorter: (a, b) =>
+        optionalStringSort(a.latestProcessedTime, b.latestProcessedTime),
+    },
+    {
+      title: "# Pending Upload",
+      dataIndex: "numberUnprocessedFiles",
+      key: "numberUnprocessedFiles",
+      sorter: {
+        compare: (a, b) =>
+          optionalNumberSort(
+            a.numberUnprocessedFiles,
+            b.numberUnprocessedFiles
+          ),
       },
-      {
-        title: "Last Processed",
-        dataIndex: "latestProcessedTime",
-        key: "latestProcessedTime",
-        render: (_, record) => (
-          <RawDataLatestProcessedDateCellContents
-            status={record}
-            storageDirectoryPath={ingestInstanceResources?.storageDirectoryPath}
-          />
-        ),
-        sorter: (a, b) =>
-          optionalStringSort(a.latestProcessedTime, b.latestProcessedTime),
+    },
+    {
+      title: "# Files in GCS Bucket",
+      dataIndex: "numberFilesInBucket",
+      key: "numberFilesInBucket",
+      sorter: (a, b) =>
+        optionalNumberSort(a.numberFilesInBucket, b.numberFilesInBucket),
+    },
+    {
+      title: "Has Config",
+      dataIndex: "hasConfig",
+      key: "hasConfig",
+      render: (_, record) => (
+        <RawDataFileTagContents
+          status={record}
+          ingestBucketPath={ingestInstanceResources?.ingestBucketPath}
+        />
+      ),
+      sorter: {
+        compare: (a, b) => booleanSort(a.hasConfig, b.hasConfig),
       },
-      {
-        title: "# Pending Upload",
-        dataIndex: "numberUnprocessedFiles",
-        key: "numberUnprocessedFiles",
-        sorter: {
-          compare: (a, b) =>
-            optionalNumberSort(
-              a.numberUnprocessedFiles,
-              b.numberUnprocessedFiles
-            ),
-        },
-      },
-      {
-        title: "# Files in GCS Bucket",
-        dataIndex: "numberFilesInBucket",
-        key: "numberFilesInBucket",
-        sorter: (a, b) =>
-          optionalNumberSort(a.numberFilesInBucket, b.numberFilesInBucket),
-      },
-      {
-        title: "Has Config",
-        dataIndex: "hasConfig",
-        key: "hasConfig",
-        render: (_, record) => (
-          <RawDataFileTagContents
-            status={record}
-            ingestBucketPath={ingestInstanceResources?.ingestBucketPath}
-          />
-        ),
-        sorter: {
-          compare: (a, b) => booleanSort(a.hasConfig, b.hasConfig),
-        },
-      },
-    ];
+    },
+  ];
 
-    return (
-      <Table
-        dataSource={ingestRawFileProcessingStatus}
-        loading={statusLoading}
-        columns={columns}
-        rowKey="fileTag"
-        pagination={{
-          hideOnSinglePage: true,
-          showSizeChanger: true,
-          defaultPageSize: 50,
-          pageSizeOptions: ["25", "50", "100", "500"],
-          size: "small",
-        }}
-      />
-    );
-  };
+  return (
+    <Table
+      dataSource={ingestRawFileProcessingStatus}
+      loading={statusLoading}
+      columns={columns}
+      rowKey="fileTag"
+      pagination={{
+        hideOnSinglePage: true,
+        showSizeChanger: true,
+        defaultPageSize: 50,
+        pageSizeOptions: ["25", "50", "100", "500"],
+        size: "small",
+      }}
+    />
+  );
+};
 
 export default IngestRawFileProcessingStatusTable;
 

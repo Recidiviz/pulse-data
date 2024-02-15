@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Layout, Menu, MenuProps } from "antd";
-import Sider from "antd/lib/layout/Sider";
 import { Content } from "antd/lib/layout/layout";
+import Sider from "antd/lib/layout/Sider";
 import * as React from "react";
 import {
   Redirect,
@@ -27,6 +27,7 @@ import {
   useParams,
   useRouteMatch,
 } from "react-router-dom";
+
 import {
   INGEST_DATAFLOW_INGEST_QUEUES_ROUTE,
   INGEST_DATAFLOW_INSTANCE_ROUTE,
@@ -34,16 +35,16 @@ import {
   INGEST_DATAFLOW_SECONDARY_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
-import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import { StateCodeInfo } from "../general/constants";
-import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
-import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
   ANCHOR_INGEST_LOGS,
   ANCHOR_INGEST_RAW_DATA,
   ANCHOR_INGEST_RESOURCES,
 } from "./constants";
+import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
+import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
 
 type MenuItem = Required<MenuProps>["items"][number];
 

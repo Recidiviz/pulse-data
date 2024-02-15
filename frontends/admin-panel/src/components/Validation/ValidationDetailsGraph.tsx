@@ -30,18 +30,17 @@ import {
 import { scaleTime } from "d3-scale";
 import * as React from "react";
 import XYFrame from "semiotic/lib/XYFrame";
+
 import {
   IngestInstanceStatusInfo,
   IngestStatus,
 } from "../IngestDataflow/constants";
-
 import ColorLegend from "../Utilities/ColorLegend";
 import { formatDatetime } from "../Utilities/GeneralUtilities";
 import {
   IngestStatusRefreshInfo,
   ValidationDetailsGraphProps,
 } from "./constants";
-
 import { formatDate, formatStatusAmount } from "./utils";
 
 const filterToRefreshesDuringWindow = (
