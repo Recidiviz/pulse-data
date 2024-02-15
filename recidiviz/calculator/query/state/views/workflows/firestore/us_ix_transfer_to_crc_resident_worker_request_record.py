@@ -88,9 +88,25 @@ WITH current_incarcerated_population AS (
         tes_task_query_view = 'transfer_to_crc_resident_worker_request_materialized',
         id_type = "'US_IX_DOC'")}),
 
+    current_crc_work_release_eligible AS (
+    -- Get folks eligible for CRC work-release
+        {join_current_task_eligibility_spans_with_external_id(
+            state_code= "'US_IX'", 
+            tes_task_query_view = 'transfer_to_crc_work_release_request_materialized',
+            id_type = "'US_IX_DOC'")}  AND is_eligible),
+
     eligible_and_almost_eligible AS (
         -- ELIGIBLE
     {clients_eligible(from_cte = 'current_incarcerated_population')}
+    ),
+
+    eligible_and_almost_eligible_with_crc_work_release AS (
+    -- Remove folks eligible for work-release from this list
+        SELECT eae.*
+        FROM eligible_and_almost_eligible eae
+        LEFT JOIN current_crc_work_release_eligible wre
+            USING (person_id)
+        WHERE wre.person_id IS NULL
     ),
 
     case_notes_cte AS (
@@ -193,10 +209,10 @@ WITH current_incarcerated_population AS (
     ),
 
     array_case_notes_cte AS (
-    {array_agg_case_notes_by_external_id()}
+    {array_agg_case_notes_by_external_id(from_cte = 'eligible_and_almost_eligible_with_crc_work_release',)}
     )
 
-{opportunity_query_final_select_with_case_notes()}
+{opportunity_query_final_select_with_case_notes(from_cte = 'eligible_and_almost_eligible_with_crc_work_release',)}
 """
 
 US_IX_TRANSFER_TO_CRC_RESIDENT_WORKER_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
