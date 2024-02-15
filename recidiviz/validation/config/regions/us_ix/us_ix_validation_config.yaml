@@ -14,26 +14,26 @@ exclusions:
   - validation_name: incarceration_population_by_facility_external_comparison
     exclusion_type: BROKEN
     exclusion_reason:
-      TODO(#27186) the new data from atlas didn't quite match up with the existing
-      external validaiton data we had. rather than remove this validation, we are
+      TODO(#27607) the new data from atlas didn't quite match up with the existing
+      external validation data we had. rather than remove this validation, we are
       migrating it and marking it as broken with a todo.
   - validation_name: population_projection_monthly_population_external_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason:
-      TODO(#16974), TODO(#27187) TODO(#15942) we haven't launched population projections
+      TODO(#16974), TODO(#15942) we haven't launched population projections
       against Atlas yet (due to an outstanding question about paid beds), so US_IX can't
       be incorporated into this validation yet.
   - validation_name: supervision_termination_person_level_external_comparison
     exclusion_type: BROKEN
     exclusion_reason:
-      TODO(#27188), TODO(#6126) the new data from atlas didn't quite match up with the
-      existing external validaiton data we had. rather than remove this validation, we
+      TODO(#27607), TODO(#6126) the new data from atlas didn't quite match up with the
+      existing external validation data we had. rather than remove this validation, we
       are migrating it and marking it as broken with a todo.
   - validation_name: supervision_start_person_level_external_comparison
     exclusion_type: BROKEN
     exclusion_reason:
-      TODO(#27189) the new data from atlas didn't quite match up with the existing
-      external validaiton data we had. rather than remove this validation, we are
+      TODO(#27607) the new data from atlas didn't quite match up with the existing
+      external validation data we had. rather than remove this validation, we are
       migrating it and marking it as broken with a todo.
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
