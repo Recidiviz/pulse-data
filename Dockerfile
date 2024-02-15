@@ -71,7 +71,7 @@ COPY Pipfile.lock /app/
 RUN pipenv sync --dev --verbose
 EXPOSE 8888
 
-FROM node:14-alpine AS admin-panel-build
+FROM node:20-alpine AS admin-panel-build
 WORKDIR /usr/admin-panel
 COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock /usr/admin-panel/
 COPY ./frontends/admin-panel/tsconfig.json ./frontends/admin-panel/.eslintrc.json /usr/admin-panel/
