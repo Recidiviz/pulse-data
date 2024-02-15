@@ -18,15 +18,16 @@ import { Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import { getIngestViewSummaries } from "../../AdminPanelAPI/IngestOperations";
-import { optionalStringSort } from "../Utilities/GeneralUtilities";
+import { DirectIngestInstance } from "../IngestDataflow/constants";
 import { isAbortException } from "../Utilities/exceptions";
+import { optionalStringSort } from "../Utilities/GeneralUtilities";
 import {
   IngestViewContentsSummary,
   IngestViewMaterializationSummary,
   IngestViewSummaries,
 } from "./constants";
-import { DirectIngestInstance } from "../IngestDataflow/constants";
 
 interface InstanceIngestViewMetadataProps {
   instance: DirectIngestInstance;
@@ -42,8 +43,9 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
 
   const [ingestViewSummariesLoading, setingestViewSummariesLoading] =
     useState<boolean>(true);
-  const [ingestViewSummaries, setingestViewSummaries] =
-    useState<IngestViewSummaries | undefined>(undefined);
+  const [ingestViewSummaries, setingestViewSummaries] = useState<
+    IngestViewSummaries | undefined
+  >(undefined);
 
   const fetchingestViewSummaries = useCallback(async () => {
     if (abortControllerRef.current) {
@@ -92,6 +94,7 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         filterSearch: true,
       },
       {
+        // eslint-disable-next-line react/no-unstable-nested-components
         title: () => {
           return (
             <span title="Number of raw data upload dates with generated results">
@@ -107,6 +110,7 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         ) => a.numCompletedJobs - b.numCompletedJobs,
       },
       {
+        // eslint-disable-next-line react/no-unstable-nested-components
         title: () => {
           return (
             <span title="Number of raw data upload dates without generated results">
@@ -122,6 +126,7 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         ) => a.numPendingJobs - b.numPendingJobs,
       },
       {
+        // eslint-disable-next-line react/no-unstable-nested-components
         title: () => {
           return (
             <span title="Timestamp associated with the raw data in the next pending job">
@@ -160,6 +165,7 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       filterSearch: true,
     },
     {
+      // eslint-disable-next-line react/no-unstable-nested-components
       title: () => {
         return (
           <span title="Number of result rows that have been processed (committed to Postgres) for this view">
@@ -173,6 +179,7 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         a.numProcessedRows - b.numProcessedRows,
     },
     {
+      // eslint-disable-next-line react/no-unstable-nested-components
       title: () => {
         return (
           <span title="Number of result rows that have yet to be processed (committed to Postgres) for this view">
@@ -186,6 +193,7 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         a.numUnprocessedRows - b.numUnprocessedRows,
     },
     {
+      // eslint-disable-next-line react/no-unstable-nested-components
       title: () => {
         return (
           <span title="Date of most recent raw data upload for which any results for this view have been processed (committed to Postgres)">
@@ -202,6 +210,7 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
         ),
     },
     {
+      // eslint-disable-next-line react/no-unstable-nested-components
       title: () => {
         return (
           <span title="Date of earliest raw data upload for which some results for this view have not yet been processed (committed to Postgres)">

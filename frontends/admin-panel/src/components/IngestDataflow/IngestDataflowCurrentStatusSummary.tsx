@@ -21,6 +21,7 @@ import classNames from "classnames";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
+
 import { getAllIngestInstanceDataflowEnabledStatuses } from "../../AdminPanelAPI";
 import {
   getAllIngestInstanceStatuses,
@@ -32,10 +33,10 @@ import {
   INGEST_DATAFLOW_ROUTE,
   INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
+import { StateCodeInfo } from "../general/constants";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import { IngestInstanceDataflowEnabledStatusResponse } from "../IngestOperationsView/constants";
 import NewTabLink from "../NewTabLink";
-import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
-import { StateCodeInfo } from "../general/constants";
 import {
   DataflowIngestPipelineJobResponse,
   DataflowIngestPipelineStatus,
@@ -95,8 +96,9 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     getAllIngestInstanceDataflowEnabledStatuses
   );
 
-  const [stateIngestQueueStatuses, setStateIngestQueueStatuses] =
-    useState<StateIngestQueuesStatuses | undefined>(undefined);
+  const [stateIngestQueueStatuses, setStateIngestQueueStatuses] = useState<
+    StateIngestQueuesStatuses | undefined
+  >(undefined);
   useEffect(() => {
     if (rawDataStatuses === undefined) {
       return;
@@ -146,32 +148,18 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
 
   if (stateDataflowEnabledStatuses === undefined) {
     return (
-      <>
-        <Alert
-          message="Failed to load dataflow enabled statuses."
-          type="error"
-        />
-      </>
+      <Alert message="Failed to load dataflow enabled statuses." type="error" />
     );
   }
 
   if (dataflowPipelines === undefined) {
     return (
-      <>
-        <Alert
-          message="Failed to load ingest pipeline statuses."
-          type="error"
-        />
-      </>
+      <Alert message="Failed to load ingest pipeline statuses." type="error" />
     );
   }
 
   if (rawDataStatuses === undefined) {
-    return (
-      <>
-        <Alert message="Failed to load raw data statuses." type="error" />
-      </>
-    );
+    return <Alert message="Failed to load raw data statuses." type="error" />;
   }
 
   function getCurrentStatus(

@@ -19,6 +19,7 @@ import { Alert, Table } from "antd";
 import { ColumnsType, ColumnType } from "antd/lib/table";
 import * as React from "react";
 import { Link } from "react-router-dom";
+
 import {
   LOOKER_PERSON_DETAILS_PROD,
   LOOKER_PERSON_DETAILS_STAGING,
@@ -124,9 +125,7 @@ const ValidationErrorTable: React.FC<ValidationErrorTableProps> = ({
           type="warning"
           showIcon
         />
-      ) : (
-        <></>
-      )}
+      ) : null}
       <Table
         className="validation-error-table"
         columns={getErrorTableColumns(tableData.rows)}

@@ -27,11 +27,12 @@ import {
   Spin,
   Upload,
 } from "antd";
-import { useState } from "react";
 import moment, { Moment } from "moment";
-import StateSelector from "./Utilities/StateSelector";
+import { useState } from "react";
+
 import { fetchRawFilesStateCodes } from "../AdminPanelAPI";
 import { formLayout } from "./constants";
+import StateSelector from "./Utilities/StateSelector";
 
 const UploadRawFilesView = (): JSX.Element => {
   const [uploadResult, setUploadResult] = useState<AlertProps | void>();

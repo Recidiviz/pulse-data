@@ -18,12 +18,12 @@ import { Card, Descriptions, Spin } from "antd";
 import Title from "antd/lib/typography/Title";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+
 import {
   getIngestInstanceResources,
   getIngestRawFileProcessingStatus,
 } from "../../AdminPanelAPI/IngestOperations";
-import IngestRawFileProcessingStatusTable from "../IngestDataflow/IngestRawFileProcessingStatusTable";
-import InstanceRawFileMetadata from "../IngestDataflow/InstanceRawFileMetadata";
+import { GCP_STORAGE_BASE_URL } from "../general/constants";
 import {
   ANCHOR_INGEST_LOGS,
   ANCHOR_INGEST_RAW_DATA,
@@ -32,13 +32,13 @@ import {
   IngestInstanceResources,
   IngestRawFileProcessingStatus,
 } from "../IngestDataflow/constants";
+import IngestRawFileProcessingStatusTable from "../IngestDataflow/IngestRawFileProcessingStatusTable";
+import InstanceRawFileMetadata from "../IngestDataflow/InstanceRawFileMetadata";
 import NewTabLink from "../NewTabLink";
-import { scrollToAnchor } from "../Utilities/GeneralUtilities";
 import { isAbortException } from "../Utilities/exceptions";
-import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
+import { scrollToAnchor } from "../Utilities/GeneralUtilities";
 import { ANCHOR_INGEST_VIEWS } from "./constants";
-
-import { GCP_STORAGE_BASE_URL } from "../general/constants";
+import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
 
 interface IngestInstanceCardProps {
   instance: DirectIngestInstance;
@@ -58,12 +58,14 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
   const { hash } = useLocation();
   // Uses useRef so abort controller not re-initialized every render cycle.
-  const abortControllerRefResources =
-    useRef<AbortController | undefined>(undefined);
+  const abortControllerRefResources = useRef<AbortController | undefined>(
+    undefined
+  );
   const abortControllerRefRaw = useRef<AbortController | undefined>(undefined);
 
-  const [ingestInstanceResources, setIngestInstanceResources] =
-    useState<IngestInstanceResources | undefined>(undefined);
+  const [ingestInstanceResources, setIngestInstanceResources] = useState<
+    IngestInstanceResources | undefined
+  >(undefined);
 
   const fetchingestInstanceResources = useCallback(async () => {
     if (!instance) {

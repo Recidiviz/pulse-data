@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import "./style/index.css";
+
 import * as ReactDOM from "react-dom";
 import { BrowserRouter } from "react-router-dom";
 
 import App from "./components/App";
-
-import "./style/index.css";
 
 ReactDOM.render(
   <BrowserRouter>

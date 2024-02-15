@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { message } from "antd";
-import assert from "assert";
+
 import {
   getCurrentIngestInstanceStatus,
   getRawDataSourceInstance,
@@ -70,7 +70,17 @@ export const fetchDataflowEnabled = async (
   );
   const isEnabledSecondary = await secondaryResponse.json();
 
-  assert(isEnabledPrimary === true || isEnabledPrimary === false);
-  assert(isEnabledSecondary === true || isEnabledSecondary === false);
+  if (typeof isEnabledPrimary !== "boolean") {
+    throw new Error(
+      "Received non-boolean result for isIngestInDataflowEnabled in PRIMARY"
+    );
+  }
+
+  if (typeof isEnabledSecondary !== "boolean") {
+    throw new Error(
+      "Received non-boolean result for isIngestInDataflowEnabled in SECONDARY"
+    );
+  }
+
   return isEnabledPrimary && isEnabledSecondary;
 };

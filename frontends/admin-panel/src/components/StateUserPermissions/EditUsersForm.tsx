@@ -16,6 +16,7 @@
 // =============================================================================
 import { Button, Form, Input, Popconfirm, Select } from "antd";
 import { useState } from "react";
+
 import {
   StateRolePermissionsResponse,
   StateUserForm,
@@ -24,8 +25,8 @@ import {
 import { DraggableModal } from "../Utilities/DraggableModal";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import ReasonInput from "./ReasonInput";
-import { validateAndFocus } from "./utils";
 import { Note } from "./styles";
+import { validateAndFocus } from "./utils";
 
 export const EditUserForm = ({
   editVisible,
@@ -174,7 +175,7 @@ export const EditUserForm = ({
           label="Use custom permissions"
           labelAlign="left"
         >
-          <Select onChange={showPermissions} allowClear>
+          <Select onChange={() => showPermissions} allowClear>
             <Option value>Add custom permissions</Option>
             <Option value={false}>Delete custom permissions</Option>
           </Select>

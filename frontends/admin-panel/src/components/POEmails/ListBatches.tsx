@@ -19,6 +19,7 @@ import { SyncOutlined } from "@ant-design/icons";
 import { Button, Card, Empty, Space, Spin, Table } from "antd";
 import moment from "moment";
 import * as React from "react";
+
 import { getListBatchInfo } from "../../AdminPanelAPI/LineStaffTools";
 import { BatchInfoType, POEmailsFormProps } from "./constants";
 
@@ -38,8 +39,9 @@ const ListBatches: React.FC<POEmailsFormProps> = ({
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
   const [showSpinner, setShowSpinner] = React.useState(true);
-  const [tableData, setTableData] =
-    React.useState<TableData[] | undefined>(undefined);
+  const [tableData, setTableData] = React.useState<TableData[] | undefined>(
+    undefined
+  );
 
   const formatTableData = React.useCallback((batchInfo: BatchInfoType[]) => {
     const data: TableData[] = batchInfo.map((x) => {

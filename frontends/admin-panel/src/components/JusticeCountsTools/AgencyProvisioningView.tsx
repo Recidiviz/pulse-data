@@ -19,6 +19,7 @@ import {
   Button,
   Form,
   Input,
+  message,
   PageHeader,
   Select,
   Space,
@@ -26,11 +27,11 @@ import {
   Switch,
   Table,
   Typography,
-  message,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
 import {
   deleteAgencyUsers,
@@ -113,6 +114,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   };
 
   const getColumnSearchProps = (dataIndex: keyof AgencyRecord) => ({
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -145,6 +147,7 @@ const AgencyProvisioningView = (): JSX.Element => {
         </Space>
       </div>
     ),
+    // eslint-disable-next-line react/no-unstable-nested-components
     filterIcon: (filtered: boolean) => (
       <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
     ),

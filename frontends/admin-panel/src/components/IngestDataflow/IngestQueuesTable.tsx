@@ -16,6 +16,7 @@
 // =============================================================================
 import { Table } from "antd";
 import * as React from "react";
+
 import NewTabLink from "../NewTabLink";
 import { QueueMetadata } from "./constants";
 

@@ -18,6 +18,7 @@
 import { PresetStatusColorType } from "antd/lib/_util/colors";
 import { History } from "history";
 import { MouseEventHandler } from "react";
+
 import { routeForValidationDetail } from "../../navigation/DatasetMetadata";
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
 import { RecordStatus } from "./constants";

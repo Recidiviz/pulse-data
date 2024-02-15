@@ -17,13 +17,14 @@
 
 import classNames from "classnames";
 import { FC } from "react";
+
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
 import { RecordStatus } from "./constants";
 import {
-  getRecordStatus,
-  getClassNameForRecordStatus,
-  getTextForRecordStatus,
   formatStatusAmount,
+  getClassNameForRecordStatus,
+  getRecordStatus,
+  getTextForRecordStatus,
 } from "./utils";
 
 interface RenderRecordStatusProps {

@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Button, Form, Popconfirm } from "antd";
+
 import { StateRoleForm, StateRolePermissionsResponse } from "../../types";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";

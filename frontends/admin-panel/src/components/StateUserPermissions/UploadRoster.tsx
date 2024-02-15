@@ -17,6 +17,7 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { Alert, Button, Input, message, Select, Space, Upload } from "antd";
 import { useState } from "react";
+
 import { StateRolePermissionsResponse } from "../../types";
 
 type UploadRosterProps = {
@@ -59,97 +60,95 @@ const UploadRoster = ({
     .filter((sc) => !STATES_WITH_INGESTED_ROSTERS.includes(sc));
 
   return (
-    <>
-      <Space direction="vertical">
-        <Select
-          placeholder="Select a state"
-          onChange={(s) => setStateCode(s)}
-          options={stateRoleStateCodes.map((c) => {
-            return { value: c, label: c };
-          })}
-        />
-        <Input
-          name="reason"
-          placeholder="Reason for roster upload"
-          onChange={(
-            e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-          ) => {
-            setReason(e.target.value);
-          }}
-        />
+    <Space direction="vertical">
+      <Select
+        placeholder="Select a state"
+        onChange={(s) => setStateCode(s)}
+        options={stateRoleStateCodes.map((c) => {
+          return { value: c, label: c };
+        })}
+      />
+      <Input
+        name="reason"
+        placeholder="Reason for roster upload"
+        onChange={(
+          e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        ) => {
+          setReason(e.target.value);
+        }}
+      />
 
-        <Alert
-          message="Instructions"
-          description={
-            <Space direction="vertical">
-              <div>{warningMessage}</div>
-              <div>
-                It requires a CSV to be uploaded according to a precise format
-                in order to ensure that the data is imported correctly.
-              </div>
-              <div>
-                The inputted CSV must have a header row with exactly these
-                columns (in any order):
-                <ul>
-                  {columns.map((column) => {
-                    return (
-                      <li key={column}>
-                        <code>{column}</code>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </Space>
+      <Alert
+        message="Instructions"
+        description={
+          <Space direction="vertical">
+            <div>{warningMessage}</div>
+            <div>
+              It requires a CSV to be uploaded according to a precise format in
+              order to ensure that the data is imported correctly.
+            </div>
+            <div>
+              The inputted CSV must have a header row with exactly these columns
+              (in any order):
+              <ul>
+                {columns.map((column) => {
+                  return (
+                    <li key={column}>
+                      <code>{column}</code>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </Space>
+        }
+        type="info"
+        style={{ width: "100%" }}
+        showIcon
+      />
+      <Upload
+        accept=".csv"
+        action={action}
+        method={method}
+        data={{ reason }}
+        maxCount={1}
+        disabled={disabled}
+        onChange={(info) => {
+          if (info.file.status === "uploading" && !uploading) {
+            setUploading(true);
+            setErrorMessage();
+            message.info("Uploading roster...");
+          } else if (info.file.status === "error") {
+            setUploading(false);
+            setErrorMessage(
+              `Response status: ${info.file.error?.status}. Message: ${info.file.response.message}`
+            );
+            message.error("An error occurred.");
+          } else if (info.file.status === "done") {
+            setUploading(false);
+            setErrorMessage();
+            message.success("Roster uploaded successfully!");
           }
-          type="info"
-          style={{ width: "100%" }}
-          showIcon
-        />
-        <Upload
-          accept=".csv"
-          action={action}
-          method={method}
-          data={{ reason }}
-          maxCount={1}
+        }}
+        showUploadList={false}
+        withCredentials
+      >
+        <Button
+          icon={<UploadOutlined />}
+          loading={uploading}
           disabled={disabled}
-          onChange={(info) => {
-            if (info.file.status === "uploading" && !uploading) {
-              setUploading(true);
-              setErrorMessage();
-              message.info("Uploading roster...");
-            } else if (info.file.status === "error") {
-              setUploading(false);
-              setErrorMessage(
-                `Response status: ${info.file.error?.status}. Message: ${info.file.response.message}`
-              );
-              message.error("An error occurred.");
-            } else if (info.file.status === "done") {
-              setUploading(false);
-              setErrorMessage();
-              message.success("Roster uploaded successfully!");
-            }
-          }}
-          showUploadList={false}
-          withCredentials
         >
-          <Button
-            icon={<UploadOutlined />}
-            loading={uploading}
-            disabled={disabled}
-          >
-            Upload Roster
-          </Button>
-        </Upload>
-        {errorMessage && (
-          <Alert
-            message="Upload failed."
-            type="error"
-            description={errorMessage}
-          />
-        )}
-      </Space>
-    </>
+          Upload Roster
+        </Button>
+      </Upload>
+      {errorMessage && (
+        <Alert
+          message="Upload failed."
+          type="error"
+          description={errorMessage}
+        />
+      )}
+    </Space>
   );
 };
 

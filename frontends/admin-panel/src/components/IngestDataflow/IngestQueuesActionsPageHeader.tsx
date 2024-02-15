@@ -18,12 +18,13 @@
 import { SyncOutlined } from "@ant-design/icons";
 import { Button, PageHeader } from "antd";
 import classNames from "classnames";
+
 import {
   RegionAction,
   regionActionNames,
 } from "../Utilities/ActionRegionConfirmationForm";
-import IngestActionButton from "./IngestActionButton";
 import { QueueMetadata } from "./constants";
+import IngestActionButton from "./IngestActionButton";
 import {
   getIngestQueuesCumalativeState,
   getQueueColor,
@@ -41,41 +42,42 @@ const ingestQueueActions = [
   RegionAction.ResumeIngestQueues,
 ];
 
-const IngestQueuesActionsPageHeader: React.FC<IngestQueuesActionsPageHeaderProps> =
-  ({ stateCode, queueStates, onRefreshQueuesData }) => {
-    return (
-      <PageHeader
-        title="Ingest Queues"
-        tags={createIngestQueueStatusTag(queueStates)}
-        extra={ingestQueueActions
-          .map((action) => {
-            return (
-              <IngestActionButton
-                style={{ display: "block", textAlign: "center", width: "auto" }}
-                action={action}
-                stateCode={stateCode}
-                buttonText={regionActionNames[action]}
-                onActionConfirmed={() => {
-                  onRefreshQueuesData();
-                }}
-                block
-                key={action}
-              />
-            );
-          })
-          .concat(
-            ...[
-              <Button
-                type="primary"
-                shape="circle"
-                icon={<SyncOutlined />}
-                onClick={() => onRefreshQueuesData()}
-              />,
-            ]
-          )}
-      />
-    );
-  };
+const IngestQueuesActionsPageHeader: React.FC<
+  IngestQueuesActionsPageHeaderProps
+> = ({ stateCode, queueStates, onRefreshQueuesData }) => {
+  return (
+    <PageHeader
+      title="Ingest Queues"
+      tags={createIngestQueueStatusTag(queueStates)}
+      extra={ingestQueueActions
+        .map((action) => {
+          return (
+            <IngestActionButton
+              style={{ display: "block", textAlign: "center", width: "auto" }}
+              action={action}
+              stateCode={stateCode}
+              buttonText={regionActionNames[action]}
+              onActionConfirmed={() => {
+                onRefreshQueuesData();
+              }}
+              block
+              key={action}
+            />
+          );
+        })
+        .concat(
+          ...[
+            <Button
+              type="primary"
+              shape="circle"
+              icon={<SyncOutlined />}
+              onClick={() => onRefreshQueuesData()}
+            />,
+          ]
+        )}
+    />
+  );
+};
 
 export default IngestQueuesActionsPageHeader;
 

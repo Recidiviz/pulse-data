@@ -28,6 +28,7 @@ import {
   Typography,
 } from "antd";
 import * as React from "react";
+
 import { generateEmails } from "../../AdminPanelAPI/LineStaffTools";
 import ActionRegionConfirmationForm, {
   RegionAction,
@@ -51,8 +52,9 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
 
-  const [formData, setFormData] =
-    React.useState<GenerateFormData | undefined>(undefined);
+  const [formData, setFormData] = React.useState<GenerateFormData | undefined>(
+    undefined
+  );
   const [showSpinner, setShowSpinner] = React.useState(false);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);

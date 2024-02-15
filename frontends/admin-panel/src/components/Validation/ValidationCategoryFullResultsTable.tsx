@@ -19,11 +19,12 @@ import { Table } from "antd";
 import { ColumnsType, ColumnType } from "antd/lib/table";
 import { FC } from "react";
 import { useHistory } from "react-router-dom";
+
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
 import { MetadataRecord } from "../../types";
 import {
-  optionalNumberSort,
   getUniqueValues,
+  optionalNumberSort,
 } from "../Utilities/GeneralUtilities";
 import { RecordStatus } from "./constants";
 import RenderRecordStatus from "./RenderRecordStatus";
@@ -38,96 +39,95 @@ interface ValidationCategoryFullResultsTableProps {
   loading?: boolean;
 }
 
-const ValidationCategoryFullResultsTable: FC<ValidationCategoryFullResultsTableProps> =
-  ({ categoryId, loading, dictOfCategoryIdsToRecords, selectedStates }) => {
-    const history = useHistory();
+const ValidationCategoryFullResultsTable: FC<
+  ValidationCategoryFullResultsTableProps
+> = ({ categoryId, loading, dictOfCategoryIdsToRecords, selectedStates }) => {
+  const history = useHistory();
 
-    function columnTypeForState(
-      state: string
-    ): ColumnType<MetadataRecord<ValidationStatusRecord>> {
-      return {
-        title: selectedStates.length > 1 ? state : "Status",
-        key: state,
+  function columnTypeForState(
+    state: string
+  ): ColumnType<MetadataRecord<ValidationStatusRecord>> {
+    return {
+      title: selectedStates.length > 1 ? state : "Status",
+      key: state,
+      onCell: (record) => {
+        return {
+          onClick: handleClickToDetails(history, record.name, state),
+        };
+      },
+      render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => (
+        <RenderRecordStatus record={record.resultsByState[state]} />
+      ),
+      sorter: (a, b) =>
+        optionalNumberSort(
+          a.resultsByState[state]?.getErrorAmount(),
+          b.resultsByState[state]?.getErrorAmount()
+        ),
+      filters: getUniqueValues(
+        dictOfCategoryIdsToRecords[categoryId].map((record) =>
+          getRecordStatus(record.resultsByState[state])
+        )
+      ).map((status) => ({
+        text: RecordStatus[status],
+        value: status,
+      })),
+      onFilter: (value, record) =>
+        getRecordStatus(record.resultsByState[state]) === value,
+    };
+  }
+  function getLabelColumns(): ColumnsType<
+    MetadataRecord<ValidationStatusRecord>
+  > {
+    const labelColumns: ColumnsType<MetadataRecord<ValidationStatusRecord>> = [
+      {
+        title: "Validation Name",
+        key: "validation",
+        fixed: "left",
+        width: "55%",
         onCell: (record) => {
           return {
-            onClick: handleClickToDetails(history, record.name, state),
+            onClick: handleClickToDetails(
+              history,
+              record.name,
+              selectedStates.length === 1 ? selectedStates[0] : undefined
+            ),
           };
         },
         render: (_: string, record: MetadataRecord<ValidationStatusRecord>) => (
-          <RenderRecordStatus record={record.resultsByState[state]} />
+          <div>{record.name}</div>
         ),
-        sorter: (a, b) =>
-          optionalNumberSort(
-            a.resultsByState[state]?.getErrorAmount(),
-            b.resultsByState[state]?.getErrorAmount()
-          ),
-        filters: getUniqueValues(
-          dictOfCategoryIdsToRecords[categoryId].map((record) =>
-            getRecordStatus(record.resultsByState[state])
-          )
-        ).map((status) => ({
-          text: RecordStatus[status],
-          value: status,
+        sorter: (a, b) => a.name.localeCompare(b.name),
+        defaultSortOrder: "ascend",
+        filters: dictOfCategoryIdsToRecords[categoryId].map(({ name }) => ({
+          text: name,
+          value: name,
         })),
-        onFilter: (value, record) =>
-          getRecordStatus(record.resultsByState[state]) === value,
-      };
-    }
-    function getLabelColumns(): ColumnsType<
-      MetadataRecord<ValidationStatusRecord>
-    > {
-      const labelColumns: ColumnsType<MetadataRecord<ValidationStatusRecord>> =
-        [
-          {
-            title: "Validation Name",
-            key: "validation",
-            fixed: "left",
-            width: "55%",
-            onCell: (record) => {
-              return {
-                onClick: handleClickToDetails(
-                  history,
-                  record.name,
-                  selectedStates.length === 1 ? selectedStates[0] : undefined
-                ),
-              };
-            },
-            render: (
-              _: string,
-              record: MetadataRecord<ValidationStatusRecord>
-            ) => <div>{record.name}</div>,
-            sorter: (a, b) => a.name.localeCompare(b.name),
-            defaultSortOrder: "ascend",
-            filters: dictOfCategoryIdsToRecords[categoryId].map(({ name }) => ({
-              text: name,
-              value: name,
-            })),
-            onFilter: (value, content) => content.name === value,
-            filterSearch: true,
-          },
-        ];
+        onFilter: (value, content) => content.name === value,
+        filterSearch: true,
+      },
+    ];
 
-      return labelColumns.concat(
-        selectedStates.map((s) => columnTypeForState(s))
-      );
-    }
-
-    return (
-      <Table
-        className="validation-table"
-        columns={getLabelColumns()}
-        loading={loading}
-        dataSource={dictOfCategoryIdsToRecords[categoryId]}
-        pagination={{
-          hideOnSinglePage: true,
-          showSizeChanger: true,
-          pageSize: 50,
-          size: "small",
-        }}
-        rowClassName="validation-table-row"
-        rowKey="validation"
-      />
+    return labelColumns.concat(
+      selectedStates.map((s) => columnTypeForState(s))
     );
-  };
+  }
+
+  return (
+    <Table
+      className="validation-table"
+      columns={getLabelColumns()}
+      loading={loading}
+      dataSource={dictOfCategoryIdsToRecords[categoryId]}
+      pagination={{
+        hideOnSinglePage: true,
+        showSizeChanger: true,
+        pageSize: 50,
+        size: "small",
+      }}
+      rowClassName="validation-table-row"
+      rowKey="validation"
+    />
+  );
+};
 
 export default ValidationCategoryFullResultsTable;

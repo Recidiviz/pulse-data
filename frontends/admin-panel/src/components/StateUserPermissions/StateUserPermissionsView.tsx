@@ -17,6 +17,7 @@
 import { Button, message, PageHeader, Space, Spin, Table } from "antd";
 import * as React from "react";
 import { useState } from "react";
+
 import {
   blockUser,
   createNewUser,
@@ -60,8 +61,9 @@ const StateUserPermissionsView = (): JSX.Element => {
   const [editVisible, setEditVisible] = useState(false);
   const [uploadRosterVisible, setUploadRosterVisible] = useState(false);
   const [tableKey, setTableKey] = useState(0);
-  const [userToEnable, setUserToEnable] =
-    useState<StateUserPermissionsResponse | undefined>();
+  const [userToEnable, setUserToEnable] = useState<
+    StateUserPermissionsResponse | undefined
+  >();
 
   // control row selection
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);

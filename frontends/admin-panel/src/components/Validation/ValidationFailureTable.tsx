@@ -20,22 +20,23 @@ import { Table, Tooltip } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import { FC } from "react";
 import { useHistory } from "react-router-dom";
+
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
 import {
-  optionalStringSort,
-  optionalNumberSort,
   getUniqueValues,
+  optionalNumberSort,
+  optionalStringSort,
 } from "../Utilities/GeneralUtilities";
 import { RecordStatus } from "./constants";
 import RenderRecordStatus from "./RenderRecordStatus";
 import {
-  readableNameForCategoryId,
   chooseIdNameForCategory,
-  getRecordStatus,
   formatStatusAmount,
-  replaceInfinity,
   getDaysActive,
+  getRecordStatus,
   handleClickToDetails,
+  readableNameForCategoryId,
+  replaceInfinity,
 } from "./utils";
 
 interface ValdiationFailureTableProps {

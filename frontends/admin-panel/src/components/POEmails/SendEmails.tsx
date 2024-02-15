@@ -16,6 +16,7 @@
 // =============================================================================
 import { Button, Card, Empty, Form, Input, message, Select, Spin } from "antd";
 import * as React from "react";
+
 import {
   getListBatchInfo,
   sendEmails,
@@ -44,13 +45,15 @@ type Option = { value: string; label: string };
 
 const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
   const [form] = Form.useForm();
-  const [formData, setFormData] =
-    React.useState<SendFormData | undefined>(undefined);
+  const [formData, setFormData] = React.useState<SendFormData | undefined>(
+    undefined
+  );
   const [showSpinner, setShowSpinner] = React.useState(false);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
-  const [labeledBatchList, setLabeledBatchList] =
-    React.useState<Option[] | undefined>(undefined);
+  const [labeledBatchList, setLabeledBatchList] = React.useState<
+    Option[] | undefined
+  >(undefined);
 
   const onFinish = (values?: SendFormData | undefined) => {
     setFormData(values);
@@ -135,76 +138,74 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
         }
       >
         {stateInfo && reportType ? (
-          <>
-            <Form
-              form={form}
-              {...layout}
-              className="buffer"
-              onFinish={(values) => {
-                onFinish(values);
-              }}
-            >
-              {labeledBatchList && labeledBatchList.length > 0 ? (
-                <Form.Item
-                  label="Batch ID"
-                  name="batchId"
-                  rules={[{ required: true }]}
-                  initialValue={labeledBatchList[0].value}
-                >
-                  <Select>
-                    {labeledBatchList?.map((item) => (
-                      <Select.Option key={item.value} {...item}>
-                        {item.label}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              ) : null}
+          <Form
+            form={form}
+            {...layout}
+            className="buffer"
+            onFinish={(values) => {
+              onFinish(values);
+            }}
+          >
+            {labeledBatchList && labeledBatchList.length > 0 ? (
+              <Form.Item
+                label="Batch ID"
+                name="batchId"
+                rules={[{ required: true }]}
+                initialValue={labeledBatchList[0].value}
+              >
+                <Select>
+                  {labeledBatchList?.map((item) => (
+                    <Select.Option key={item.value} {...item}>
+                      {item.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            ) : null}
 
-              <Form.Item
-                label="Redirect Address"
-                name="redirectAddress"
-                rules={[{ type: "email" }]}
+            <Form.Item
+              label="Redirect Address"
+              name="redirectAddress"
+              rules={[{ type: "email" }]}
+            >
+              <Input placeholder="xxx@idoc.idaho.gov" />
+            </Form.Item>
+            <Form.Item
+              label="cc"
+              name="ccAddresses"
+              rules={[{ type: "array" }]}
+            >
+              <Select
+                mode="tags"
+                tokenSeparators={[",", " "]}
+                placeholder="cc1@domain.gov, cc2@domain.gov"
               >
-                <Input placeholder="xxx@idoc.idaho.gov" />
-              </Form.Item>
-              <Form.Item
-                label="cc"
-                name="ccAddresses"
-                rules={[{ type: "array" }]}
+                <option value="user@recidiviz.org">user@recidiviz.org</option>
+              </Select>
+            </Form.Item>
+            <Form.Item label="Subject Override" name="subjectOverride">
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Email Allowlist"
+              name="emailAllowlist"
+              rules={[{ type: "array" }]}
+            >
+              <Select
+                mode="tags"
+                tokenSeparators={[",", " "]}
+                placeholder="cc1@domain.gov, cc2@domain.gov"
               >
-                <Select
-                  mode="tags"
-                  tokenSeparators={[",", " "]}
-                  placeholder="cc1@domain.gov, cc2@domain.gov"
-                >
-                  <option value="user@recidiviz.org">user@recidiviz.org</option>
-                </Select>
-              </Form.Item>
-              <Form.Item label="Subject Override" name="subjectOverride">
-                <Input />
-              </Form.Item>
-              <Form.Item
-                label="Email Allowlist"
-                name="emailAllowlist"
-                rules={[{ type: "array" }]}
-              >
-                <Select
-                  mode="tags"
-                  tokenSeparators={[",", " "]}
-                  placeholder="cc1@domain.gov, cc2@domain.gov"
-                >
-                  <option value="user@recidiviz.org">user@recidiviz.org</option>
-                </Select>
-              </Form.Item>
-              <Form.Item {...tailLayout}>
-                <Button type="primary" htmlType="submit">
-                  Send Emails
-                </Button>
-              </Form.Item>
-              {showSpinner ? <Spin /> : null}
-            </Form>
-          </>
+                <option value="user@recidiviz.org">user@recidiviz.org</option>
+              </Select>
+            </Form.Item>
+            <Form.Item {...tailLayout}>
+              <Button type="primary" htmlType="submit">
+                Send Emails
+              </Button>
+            </Form.Item>
+            {showSpinner ? <Spin /> : null}
+          </Form>
         ) : (
           <Empty />
         )}

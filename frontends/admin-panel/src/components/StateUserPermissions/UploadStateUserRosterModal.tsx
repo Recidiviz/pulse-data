@@ -15,9 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { useState } from "react";
-import UploadRoster from "./UploadRoster";
-import { DraggableModal } from "../Utilities/DraggableModal";
+
 import { StateRolePermissionsResponse } from "../../types";
+import { DraggableModal } from "../Utilities/DraggableModal";
+import UploadRoster from "./UploadRoster";
 
 export const UploadStateUserRosterModal = ({
   visible,

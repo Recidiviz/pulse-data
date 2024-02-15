@@ -14,21 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, PageHeader, Space, message } from "antd";
+import { Button, message, PageHeader, Space } from "antd";
 import { useState } from "react";
+
 import {
   createNewConfiguration,
   getInsightsStateCodes,
 } from "../AdminPanelAPI/Insights";
 import { AddConfigurationRequest } from "../types";
+import { StateCodeInfo } from "./general/constants";
 import { AddConfigForm } from "./Insights/AddConfigForm";
 import { checkResponse } from "./StateUserPermissions/utils";
 import StateSelector from "./Utilities/StateSelector";
-import { StateCodeInfo } from "./general/constants";
 
 const InsightsConfigurationsView = (): JSX.Element => {
-  const [stateCode, setStateCode] =
-    useState<StateCodeInfo | undefined>(undefined);
+  const [stateCode, setStateCode] = useState<StateCodeInfo | undefined>(
+    undefined
+  );
   const [addVisible, setAddVisible] = useState(false);
 
   const onAdd = async (

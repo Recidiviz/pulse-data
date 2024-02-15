@@ -15,15 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { FormInstance } from "antd";
+
+import { Route, StateUserPermissionsResponse } from "../../types";
 import {
+  OUTLIERS_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
   WORKFLOWS_PERMISSIONS_LABELS,
-  OUTLIERS_PERMISSIONS_LABELS,
 } from "../constants";
 import FeatureVariantFormItem from "./FeatureVariantFormItem";
 import PermissionSelect from "./PermissionSelect";
-import { Route, StateUserPermissionsResponse } from "../../types";
 import { Note } from "./styles";
 
 /**

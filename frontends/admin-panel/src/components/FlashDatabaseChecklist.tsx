@@ -26,6 +26,7 @@ import {
 } from "antd";
 import * as React from "react";
 import { useHistory } from "react-router-dom";
+
 import {
   acquireBQExportLock,
   changeIngestInstanceStatus,
@@ -60,7 +61,6 @@ import {
   IngestRawFileProcessingStatus,
   QueueState,
 } from "./IngestDataflow/constants";
-
 import NewTabLink from "./NewTabLink";
 import {
   fetchCurrentIngestInstanceStatus,
@@ -185,21 +185,19 @@ const ChecklistSection = ({
       pointerEvents: currentStepSection === stepSection ? "initial" : "none",
     }}
   >
-    <>
-      <ChecklistSectionHeader
-        currentStepSection={currentStepSection}
-        stepSection={stepSection}
-      >
-        {headerContents}
-      </ChecklistSectionHeader>
-      <Steps
-        progressDot
-        current={currentStepSection === stepSection ? currentStep : 0}
-        direction="vertical"
-      >
-        {children}
-      </Steps>
-    </>
+    <ChecklistSectionHeader
+      currentStepSection={currentStepSection}
+      stepSection={stepSection}
+    >
+      {headerContents}
+    </ChecklistSectionHeader>
+    <Steps
+      progressDot
+      current={currentStepSection === stepSection ? currentStep : 0}
+      direction="vertical"
+    >
+      {children}
+    </Steps>
   </div>
 );
 
@@ -217,10 +215,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     setSecondaryIngestInstanceStatus,
   ] = React.useState<string | null>(null);
   // TODO(#24731): remove dataflowEnabled and references after dataflow fully enabled
-  const [dataflowEnabled, setDataflowEnabled] =
-    React.useState<boolean | null>(null);
-  const [proceedWithFlash, setProceedWithFlash] =
-    React.useState<boolean | null>(null);
+  const [dataflowEnabled, setDataflowEnabled] = React.useState<boolean | null>(
+    null
+  );
+  const [proceedWithFlash, setProceedWithFlash] = React.useState<
+    boolean | null
+  >(null);
   const [
     primaryIngestRawFileProcessingStatus,
     setPrimaryIngestRawFileProcessingStatus,
@@ -237,8 +237,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
 
   const history = useHistory();
   // Uses useRef so abort controller not re-initialized every render cycle.
-  const abortControllerRef =
-    React.useRef<AbortController | undefined>(undefined);
+  const abortControllerRef = React.useRef<AbortController | undefined>(
+    undefined
+  );
   const [dataLoading, setDataLoading] = React.useState<boolean>(true);
 
   const isFlashInProgress =
@@ -414,6 +415,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     return primaryResponse.status !== 200 ? primaryResponse : secondaryResponse;
   };
 
+  // eslint-disable-next-line react/no-unstable-nested-components
   const StyledStep = ({
     actionButtonTitle,
     onActionButtonClick,
@@ -486,6 +488,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     stateCode: string;
   }
 
+  // eslint-disable-next-line react/no-unstable-nested-components
   const FlashDecisionComponent = ({
     onSelectProceed,
     onSelectCancel,
@@ -529,6 +532,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     return CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP;
   }
 
+  // eslint-disable-next-line react/no-unstable-nested-components
   const StateCancelRerunChecklist = ({
     stateCode,
   }: StateFlashingChecklistProps): JSX.Element => {
@@ -987,6 +991,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       : FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP;
   }
 
+  // eslint-disable-next-line react/no-unstable-nested-components
   const StateProceedWithFlashChecklist = ({
     stateCode,
   }: StateFlashingChecklistProps): JSX.Element => {
@@ -1125,12 +1130,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             <StyledStep
               title="Backup PRIMARY raw data"
               description={
-                <>
-                  <p>
-                    Move all primary instance raw data to a backup dataset in
-                    BQ.
-                  </p>
-                </>
+                <p>
+                  Move all primary instance raw data to a backup dataset in BQ.
+                </p>
               }
               actionButtonEnabled={isFlashInProgress}
               actionButtonTitle="Move PRIMARY Raw Data to Backup"
@@ -1245,12 +1247,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             <StyledStep
               title="Backup primary ingest view results"
               description={
-                <>
-                  <p>
-                    Move all primary instance ingest view results to a backup
-                    dataset in BQ.
-                  </p>
-                </>
+                <p>
+                  Move all primary instance ingest view results to a backup
+                  dataset in BQ.
+                </p>
               }
               actionButtonEnabled={isFlashInProgress}
               actionButtonTitle="Move to Backup"
@@ -1670,19 +1670,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             title="Full Historical Refresh"
             description={
               dataflowEnabled ? (
-                <>
-                  <p>
-                    Trigger a BigQuery refresh and run the Calculation DAG for{" "}
-                    {stateCode} in <code>PRIMARY</code>.
-                  </p>
-                </>
+                <p>
+                  Trigger a BigQuery refresh and run the Calculation DAG for{" "}
+                  {stateCode} in <code>PRIMARY</code>.
+                </p>
               ) : (
-                <>
-                  <p>
-                    Trigger a BigQuery refresh and run the Ingest DAG for{" "}
-                    {stateCode} in <code>PRIMARY</code>.
-                  </p>
-                </>
+                <p>
+                  Trigger a BigQuery refresh and run the Ingest DAG for{" "}
+                  {stateCode} in <code>PRIMARY</code>.
+                </p>
               )
             }
             actionButtonTitle={

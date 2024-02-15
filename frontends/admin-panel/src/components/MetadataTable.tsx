@@ -15,11 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { useState } from "react";
 import { Checkbox, Empty, Table } from "antd";
 import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { ColumnsType } from "antd/es/table";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+
 import { addStateCodeQueryToLink } from "../navigation/DatasetMetadata";
 import { MetadataAPIResult, MetadataCount, MetadataRecord } from "../types";
 

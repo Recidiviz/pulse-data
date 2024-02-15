@@ -17,12 +17,13 @@
 
 import Title from "antd/lib/typography/Title";
 import { FC } from "react";
+
 import { ValidationStatusRecord } from "../../../recidiviz/admin_panel/models/validation_pb";
 import {
   ANCHOR_VALIDATION_FAILURE_SUMMARY,
   ANCHOR_VALIDATION_HARD_FAILURES,
-  RecordStatus,
   ANCHOR_VALIDATION_SOFT_FAILURES,
+  RecordStatus,
 } from "../constants";
 import ValidationFailureTable from "../ValidationFailureTable";
 

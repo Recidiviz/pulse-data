@@ -21,6 +21,7 @@ import Title from "antd/lib/typography/Title";
 import moment from "moment";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+
 import {
   getDataflowJobAdditionalMetadataByInstance,
   getIngestInstanceResources,
@@ -32,15 +33,13 @@ import {
   getLatestRunStateDatasetRowCounts,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
+import { GCP_STORAGE_BASE_URL } from "../general/constants";
 import NewTabLink from "../NewTabLink";
+import { isAbortException } from "../Utilities/exceptions";
 import {
   formatDatetimeFromTimestamp,
   scrollToAnchor,
 } from "../Utilities/GeneralUtilities";
-import { isAbortException } from "../Utilities/exceptions";
-import { GCP_STORAGE_BASE_URL } from "../general/constants";
-import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
-import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
   ANCHOR_INGEST_LOGS,
@@ -56,6 +55,8 @@ import {
   JobState,
   StateDatasetRowCounts,
 } from "./constants";
+import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
+import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 
 interface RawFileTagColumns {
   fileTag: string;
@@ -105,8 +106,9 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
 
   // Uses useRef so abort controller not re-initialized every render cycle.
-  const abortControllerRefResources =
-    useRef<AbortController | undefined>(undefined);
+  const abortControllerRefResources = useRef<AbortController | undefined>(
+    undefined
+  );
   const abortControllerRefRaw = useRef<AbortController | undefined>(undefined);
 
   // INGEST DATAFLOW PIPELINE DATA LOADING
@@ -255,12 +257,10 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
 
     if (mostRecentPipelineInfo === undefined) {
       return (
-        <>
-          <Alert
-            message="Failed to load latest ingest pipeline metadata."
-            type="error"
-          />
-        </>
+        <Alert
+          message="Failed to load latest ingest pipeline metadata."
+          type="error"
+        />
       );
     }
 
@@ -365,23 +365,19 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
           }
         >
           {latestRawDataWatermarks === undefined ? (
-            <>
-              <Alert
-                message="Failed to load latest watermark data."
-                type="error"
-              />
-            </>
+            <Alert
+              message="Failed to load latest watermark data."
+              type="error"
+            />
           ) : null}
           {rawFileTagsNotMeetingWatermark !== undefined &&
           rawFileTagsNotMeetingWatermark?.length > 0 ? (
-            <>
-              <Alert
-                message={`Some files are stale: ${rawFileTagsNotMeetingWatermark}. This means that the last pipeline that ran used data with fresher update_datetime values than currently exist for these files in ${instance}. If you are sure you want to run ingest pipelines with this older data, you can invalidate the Dataflow job_id associated with these watermarks.
+            <Alert
+              message={`Some files are stale: ${rawFileTagsNotMeetingWatermark}. This means that the last pipeline that ran used data with fresher update_datetime values than currently exist for these files in ${instance}. If you are sure you want to run ingest pipelines with this older data, you can invalidate the Dataflow job_id associated with these watermarks.
 
             `}
-                type="error"
-              />
-            </>
+              type="error"
+            />
           ) : null}
           <Table
             dataSource={
@@ -409,12 +405,10 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         </Card>
         <br />
         {latestIngestViewResults === undefined && !loadingIngestViewResults ? (
-          <>
-            <Alert
-              message="Failed to load latest ingest view results."
-              type="error"
-            />
-          </>
+          <Alert
+            message="Failed to load latest ingest view results."
+            type="error"
+          />
         ) : null}
         <Card
           title="Ingest View Results"
@@ -451,12 +445,10 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         <br />
         {latestStateDatasetCounts === undefined &&
         !loadingStateDatasetCounts ? (
-          <>
-            <Alert
-              message="Failed to load latest state dataset counts."
-              type="error"
-            />
-          </>
+          <Alert
+            message="Failed to load latest state dataset counts."
+            type="error"
+          />
         ) : null}
         <Card
           title="State Dataset Results"
@@ -495,8 +487,9 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   };
 
   // RAW DATA IMPORT DATA LOADING
-  const [ingestInstanceResources, setIngestInstanceResources] =
-    useState<IngestInstanceResources | undefined>(undefined);
+  const [ingestInstanceResources, setIngestInstanceResources] = useState<
+    IngestInstanceResources | undefined
+  >(undefined);
 
   const fetchingestInstanceResources = useCallback(async () => {
     if (!instance) {
@@ -579,49 +572,45 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   );
 
   const rawDataImportResourcesView = (
-    <>
-      <Descriptions bordered>
-        <Descriptions.Item label="Raw Data Input Bucket" span={3}>
-          {!ingestInstanceResources ? (
-            <Spin />
-          ) : (
-            <NewTabLink
-              href={GCP_STORAGE_BASE_URL.concat(
-                ingestInstanceResources.ingestBucketPath
-              )}
-            >
-              {ingestInstanceResources.ingestBucketPath}
-            </NewTabLink>
-          )}
-        </Descriptions.Item>
-        <Descriptions.Item label="Raw Data Storage Bucket" span={3}>
-          {!ingestInstanceResources ? (
-            <Spin />
-          ) : (
-            <NewTabLink
-              href={GCP_STORAGE_BASE_URL.concat(
-                ingestInstanceResources.storageDirectoryPath
-              )}
-            >
-              {ingestInstanceResources.storageDirectoryPath}
-            </NewTabLink>
-          )}
-        </Descriptions.Item>
-      </Descriptions>
-    </>
+    <Descriptions bordered>
+      <Descriptions.Item label="Raw Data Input Bucket" span={3}>
+        {!ingestInstanceResources ? (
+          <Spin />
+        ) : (
+          <NewTabLink
+            href={GCP_STORAGE_BASE_URL.concat(
+              ingestInstanceResources.ingestBucketPath
+            )}
+          >
+            {ingestInstanceResources.ingestBucketPath}
+          </NewTabLink>
+        )}
+      </Descriptions.Item>
+      <Descriptions.Item label="Raw Data Storage Bucket" span={3}>
+        {!ingestInstanceResources ? (
+          <Spin />
+        ) : (
+          <NewTabLink
+            href={GCP_STORAGE_BASE_URL.concat(
+              ingestInstanceResources.storageDirectoryPath
+            )}
+          >
+            {ingestInstanceResources.storageDirectoryPath}
+          </NewTabLink>
+        )}
+      </Descriptions.Item>
+    </Descriptions>
   );
 
   const rawDataImportLogsView = (
-    <>
-      <Descriptions bordered>
-        <Descriptions.Item label="Logs Explorer" span={3}>
-          <NewTabLink href={logsUrl}>{logsUrl}</NewTabLink>
-        </Descriptions.Item>
-        <Descriptions.Item label="Non 200 Responses" span={3}>
-          <NewTabLink href={non200Url}>{non200Url}</NewTabLink>
-        </Descriptions.Item>
-      </Descriptions>
-    </>
+    <Descriptions bordered>
+      <Descriptions.Item label="Logs Explorer" span={3}>
+        <NewTabLink href={logsUrl}>{logsUrl}</NewTabLink>
+      </Descriptions.Item>
+      <Descriptions.Item label="Non 200 Responses" span={3}>
+        <NewTabLink href={non200Url}>{non200Url}</NewTabLink>
+      </Descriptions.Item>
+    </Descriptions>
   );
 
   // OVERALL COMPONENT STRUCTURE

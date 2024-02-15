@@ -88,6 +88,7 @@ export const DraggableModal: React.FC<DraggableModalProps> = ({
       onOk={onOk}
       footer={footer}
       width={width}
+      // eslint-disable-next-line react/no-unstable-nested-components
       modalRender={(modal) => (
         <Draggable
           disabled={disabled}

@@ -16,9 +16,9 @@
 // =============================================================================
 
 import classNames from "classnames";
+
 import NewTabLink from "../NewTabLink";
 import { IngestRawFileProcessingStatus, SPECIAL_FILE_TAGS } from "./constants";
-
 import { getGCPBucketURL } from "./ingestStatusUtils";
 
 interface RenderHasConfigFileProps {

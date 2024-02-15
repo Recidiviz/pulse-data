@@ -21,7 +21,6 @@ import {
   FILE_TAG_UNNORMALIZED,
   IngestRawFileProcessingStatus,
 } from "./constants";
-
 import { getGCPBucketURL } from "./ingestStatusUtils";
 
 interface RawDataLatestProcessedDateCellContentsProps {
@@ -29,38 +28,39 @@ interface RawDataLatestProcessedDateCellContentsProps {
   storageDirectoryPath: string | undefined;
 }
 
-const RawDataLatestProcessedDateCellContents: React.FC<RawDataLatestProcessedDateCellContentsProps> =
-  ({ status, storageDirectoryPath }) => {
-    const { fileTag, hasConfig, latestProcessedTime, latestUpdateDatetime } =
-      status;
+const RawDataLatestProcessedDateCellContents: React.FC<
+  RawDataLatestProcessedDateCellContentsProps
+> = ({ status, storageDirectoryPath }) => {
+  const { fileTag, hasConfig, latestProcessedTime, latestUpdateDatetime } =
+    status;
 
-    if (fileTag === FILE_TAG_IGNORED_IN_SUBDIRECTORY) {
-      return <div className="ingest-caution">N/A - Ignored</div>;
-    }
+  if (fileTag === FILE_TAG_IGNORED_IN_SUBDIRECTORY) {
+    return <div className="ingest-caution">N/A - Ignored</div>;
+  }
 
-    if (fileTag === FILE_TAG_UNNORMALIZED) {
-      return <div className="ingest-danger">N/A - Unknown file tag</div>;
-    }
+  if (fileTag === FILE_TAG_UNNORMALIZED) {
+    return <div className="ingest-danger">N/A - Unknown file tag</div>;
+  }
 
-    if (hasConfig && latestProcessedTime && latestUpdateDatetime) {
-      const date = new Date(latestUpdateDatetime);
-      return storageDirectoryPath ? (
-        <NewTabLink
-          href={getIngestStorageBucketPath(storageDirectoryPath, fileTag, date)}
-        >
-          {latestProcessedTime}
-        </NewTabLink>
-      ) : (
-        <div>{latestProcessedTime}</div>
-      );
-    }
-
-    return (
-      <div>
-        {hasConfig ? latestProcessedTime : "N/A - No Raw Config File Available"}
-      </div>
+  if (hasConfig && latestProcessedTime && latestUpdateDatetime) {
+    const date = new Date(latestUpdateDatetime);
+    return storageDirectoryPath ? (
+      <NewTabLink
+        href={getIngestStorageBucketPath(storageDirectoryPath, fileTag, date)}
+      >
+        {latestProcessedTime}
+      </NewTabLink>
+    ) : (
+      <div>{latestProcessedTime}</div>
     );
-  };
+  }
+
+  return (
+    <div>
+      {hasConfig ? latestProcessedTime : "N/A - No Raw Config File Available"}
+    </div>
+  );
+};
 
 export default RawDataLatestProcessedDateCellContents;
 

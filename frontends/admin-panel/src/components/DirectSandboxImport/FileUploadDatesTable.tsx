@@ -26,8 +26,9 @@ const FileUploadDatesTable: React.FC<FileUploadList> = ({ fileUploadList }) => {
     uploadDate?: string | undefined;
   }
 
-  const [tableData, setTableData] =
-    React.useState<TableData[] | undefined>(undefined);
+  const [tableData, setTableData] = React.useState<TableData[] | undefined>(
+    undefined
+  );
 
   const formatTableData = React.useCallback(() => {
     const data: TableData[] = fileUploadList?.map((x) => {
@@ -55,19 +56,17 @@ const FileUploadDatesTable: React.FC<FileUploadList> = ({ fileUploadList }) => {
   ];
 
   return (
-    <>
-      <Table
-        columns={columns}
-        dataSource={tableData}
-        rowKey="fileTag"
-        pagination={{
-          defaultPageSize: 5,
-          pageSizeOptions: ["5", "10", "20", "50"],
-          size: "small",
-          showSizeChanger: true,
-        }}
-      />
-    </>
+    <Table
+      columns={columns}
+      dataSource={tableData}
+      rowKey="fileTag"
+      pagination={{
+        defaultPageSize: 5,
+        pageSizeOptions: ["5", "10", "20", "50"],
+        size: "small",
+        showSizeChanger: true,
+      }}
+    />
   );
 };
 

@@ -17,6 +17,7 @@
 import { PageHeader, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
+
 import { fetchDataFreshness } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
 import { DataFreshnessResult } from "../types";
