@@ -1185,7 +1185,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         get_ingest_operations_store().purge_ingest_queues(state_code=state_code)
         return "", HTTPStatus.OK
 
-    # TODO(#20997): delete once ingest is enabled in dataflow in all states
+    # TODO(#20930): delete once ingest is enabled in dataflow in all states
     @bp.route(
         "/api/ingest_operations/is_ingest_in_dataflow_enabled",
         methods=["POST"],
