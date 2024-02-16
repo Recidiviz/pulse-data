@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2021 Recidiviz, Inc.
+// Copyright (C) 2024 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,45 +17,27 @@
 import { Select } from "antd";
 import * as React from "react";
 
-import { useFetchedDataJSON } from "../../hooks";
 import { StateCodeInfo } from "../general/constants";
 
-interface StateSelectorProps {
-  /** fetch function to initialize the list of states */
-  fetchStateList: () => Promise<Response>;
-  /** callback to receive the list of fetched states */
-  onFetched?: (stateList: StateCodeInfo[]) => void;
-  /** form component onChange that changes the stateInfo */
+interface StateSelectProps {
+  states?: StateCodeInfo[];
   onChange: (stateInfo: StateCodeInfo) => void;
-  /** initial state code */
   initialValue?: string | null;
   value?: string;
 }
 
 /**
- * State selector component.
- * Should be used when passing the legacy API methods using getResource method which requires
- * useFetchedDataJSON for error handling
+ * State select component.
+ * Should be used when passing the state list as a prop vs the fetch function in StateSelector component
  */
-const StateSelector: React.FC<StateSelectorProps> = ({
-  fetchStateList,
-  onFetched,
+const StateSelector: React.FC<StateSelectProps> = ({
+  states,
   onChange,
   initialValue,
   value,
 }) => {
-  const { loading, data } = useFetchedDataJSON<StateCodeInfo[]>(fetchStateList);
-
-  // storing this on a ref to avoid infinite effect loops; it's only going to be called once
-  const handleFetched = React.useRef(onFetched);
-  React.useEffect(() => {
-    if (handleFetched.current && data) {
-      handleFetched.current(data);
-    }
-  }, [data]);
-
   const handleOnChange = (selectedValue: string) => {
-    data?.forEach((state: StateCodeInfo) => {
+    states?.forEach((state: StateCodeInfo) => {
       if (selectedValue === state.code) {
         onChange(state);
       }
@@ -68,8 +50,8 @@ const StateSelector: React.FC<StateSelectorProps> = ({
     <Select
       style={{ width: 200 }}
       placeholder="Select a state"
-      loading={loading}
       optionFilterProp="children"
+      loading={!states}
       defaultValue={defaultValue}
       onChange={handleOnChange}
       value={value}
@@ -88,7 +70,7 @@ const StateSelector: React.FC<StateSelectorProps> = ({
       }
       showSearch
     >
-      {data
+      {states
         ?.sort((a, b) => a.name.localeCompare(b.name))
         .map((state: StateCodeInfo) => {
           return (

@@ -16,33 +16,38 @@
 // =============================================================================
 
 import { Form, Input } from "antd";
+import { observer } from "mobx-react-lite";
 
-import { AddConfigurationRequest } from "../../types";
+import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
+import { useInsightsStore } from "../StoreProvider";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
-export const AddConfigForm = ({
-  stateCode,
-  addVisible,
-  addOnCancel,
-  addOnSubmit,
+const AddConfigForm = ({
+  visible,
+  setVisible,
 }: {
-  stateCode: string;
-  addVisible: boolean;
-  addOnCancel: () => void;
-  addOnSubmit: (arg0: AddConfigurationRequest, arg1: string) => Promise<void>;
+  visible: boolean;
+  setVisible: (arg0: boolean) => void;
 }): JSX.Element => {
+  const { stateCode, createNewVersion } = useInsightsStore();
   const [form] = Form.useForm();
+
+  const onAdd = async (request: InsightsConfiguration) => {
+    const success = await createNewVersion(request);
+    if (success) setVisible(false);
+  };
+
   return (
     <DraggableModal
-      visible={addVisible}
+      visible={visible}
       title="Create new version"
-      onCancel={addOnCancel}
+      onCancel={() => setVisible(false)}
       onOk={() => {
         form
           .validateFields()
-          .then((values: AddConfigurationRequest) => {
+          .then((values: InsightsConfiguration) => {
             form.resetFields();
-            addOnSubmit(values, stateCode);
+            onAdd(values);
           })
           .catch((errorInfo) => {
             // hypothetically setting `scrollToFirstError` on the form should do this (or at least
@@ -206,3 +211,5 @@ export const AddConfigForm = ({
     </DraggableModal>
   );
 };
+
+export default observer(AddConfigForm);

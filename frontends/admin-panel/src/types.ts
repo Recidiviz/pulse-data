@@ -129,21 +129,3 @@ export type FeatureVariantRecord = Partial<FeatureVariants>;
 export type Route = keyof typeof ROUTES_PERMISSIONS_LABELS;
 export type Routes = Record<Route, boolean>;
 export type RouteRecord = Partial<Routes>;
-
-// Insights Configuration related
-// Extends Record in order to use this as the body in a POST request
-export interface AddConfigurationRequest extends Record<string, unknown> {
-  featureVariant: string | null;
-  supervisionOfficerLabel: string;
-  supervisionDistrictLabel: string;
-  supervisionUnitLabel: string;
-  supervisionSupervisorLabel: string;
-  supervisionDistrictManagerLabel: string;
-  supervisionJiiLabel: string;
-  learnMoreUrl: string;
-  noneAreOutliersLabel: string;
-  worseThanRateLabel: string;
-  slightlyWorseThanRateLabel: string;
-  atOrBelowRateLabel: string;
-  exclusionReasonDescription: string | null;
-}
