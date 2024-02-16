@@ -332,7 +332,7 @@ const Component: React.FC = () => {
               "case-triage-web",
             ],
           }}
-          onFinish={() => requestOnCallLogs}
+          onFinish={(values) => requestOnCallLogs(values)}
           form={form}
         >
           <Form.Item name="view" label="Services">
