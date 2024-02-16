@@ -84,7 +84,9 @@ const renderCell = (record: ValidationErrorTableRows, columnName: string) => {
         width: "max-content",
       }}
     >
-      {record[columnName]}
+      {record[columnName] instanceof Object
+        ? JSON.stringify(record[columnName])
+        : record[columnName]}
     </div>
   );
 };
