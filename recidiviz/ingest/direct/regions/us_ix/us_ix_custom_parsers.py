@@ -267,6 +267,6 @@ def judicial_district_from_county(county_code: str) -> Optional[str]:
 
 
 def parse_charge_is_sex_offense(statute: str) -> bool:
-    if statute in US_IX_SEX_OFFENSE_STATUTE_CODES:
+    if statute.upper() in US_IX_SEX_OFFENSE_STATUTE_CODES:
         return True
     return False
