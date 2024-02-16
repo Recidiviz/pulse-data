@@ -80,7 +80,23 @@ eligible_and_almost_eligible AS (
 
     -- ALMOST ELIGIBLE (missing employment verification within 90 days)
     {one_criteria_away_from_eligibility(criteria_name='US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS',
-                                        from_cte_table_name = "json_to_array_cte")})
+                                        from_cte_table_name = "json_to_array_cte")}
+
+    UNION ALL
+
+    -- ALMOST ELIGIBLE (missing employment verification and negative drug screen)
+    SELECT
+        * 
+    FROM (SELECT
+            * EXCEPT(array_reasons),
+            
+        FROM json_to_array_cte
+        WHERE 
+            ('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS' IN UNNEST(ineligible_criteria) 
+                AND 'NEGATIVE_UA_WITHIN_90_DAYS' IN UNNEST (ineligible_criteria))
+            AND ARRAY_LENGTH(ineligible_criteria) = 2
+        )
+)
 
 SELECT
     eae.external_id,
