@@ -1457,6 +1457,36 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
 
+PAROLE_INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"parole_incarceration_starts_and_inferred_{category.lower()}_violation",
+        display_name="Incarceration Starts And Inferred Incarcerations from Parole, "
+        f"{category.replace('_', ' ').title()} Violation",
+        description="Number of total observed discretionary incarceration starts or inferred "
+        f"incarcerations from parole for which the most severe violation type was "
+        f"{category.replace('_', ' ').lower()}",
+        event_selectors=[
+            EventSelector(
+                event_type=EventType.INCARCERATION_START,
+                event_conditions_dict={
+                    "most_severe_violation_type": types,
+                    "is_discretionary": ["true"],
+                    "latest_active_supervision_type": ["PAROLE"],
+                },
+            ),
+            EventSelector(
+                event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+                event_conditions_dict={
+                    "most_severe_violation_type": types,
+                    "is_discretionary": ["true"],
+                    "latest_active_supervision_type": ["PAROLE"],
+                },
+            ),
+        ],
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
+
 # TODO(#24974): Deprecate inferred only violation type metric
 INCARCERATION_STARTS_AND_INFERRED_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
     EventCountMetric(
