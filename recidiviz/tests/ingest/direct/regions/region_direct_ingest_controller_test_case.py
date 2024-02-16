@@ -19,7 +19,6 @@ BaseDirectIngestControllers.
 """
 import abc
 import datetime
-import os
 from collections import defaultdict
 from copy import deepcopy
 from types import ModuleType
@@ -35,7 +34,6 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -45,17 +43,9 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     get_direct_ingest_region,
 )
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
-from recidiviz.persistence.database.base_schema import StateBase
-from recidiviz.persistence.database.schema.operations import schema as operations_schema
-from recidiviz.persistence.database.schema.state import dao
-from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
-    StateSchemaToEntityConverter,
-)
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -69,7 +59,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     get_all_entity_associations_from_tree,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.persistence import (
     DATABASE_INVARIANT_THRESHOLD,
     ENTITY_MATCHING_THRESHOLD,
@@ -83,15 +72,8 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
-from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
-    run_task_queues_to_empty,
-)
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
-    FakeIngestViewMaterializer,
     build_fake_direct_ingest_controller,
-)
-from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
-    FakeInstanceIngestViewContents,
 )
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
@@ -101,10 +83,7 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     DEFAULT_UPDATE_DATETIME,
 )
-from recidiviz.tests.persistence.entity.state.entities_test_utils import (
-    assert_no_unexpected_entities_in_db,
-    clear_db_ids,
-)
+from recidiviz.tests.persistence.entity.state.entities_test_utils import clear_db_ids
 from recidiviz.tests.pipelines.ingest.state.test_case import (
     BaseStateIngestPipelineTestCase,
 )
@@ -114,10 +93,6 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.utils.environment import in_ci
-from recidiviz.utils.types import assert_type
-
-FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 PROJECT_ID = "test-project"
 
@@ -320,233 +295,11 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
         self.environment_patcher.stop()
         self.entity_matching_error_threshold_patcher.stop()
 
-        if not is_ingest_in_dataflow_enabled(
-            self.region_code(), self.ingest_instance()
-        ):
-            self._validate_integration_test()
-
-    def _validate_integration_test(self) -> None:
-        """If this test is the main integration test, validates that all expected files
-        were processed during this test.
-        """
-        if FULL_INTEGRATION_TEST_NAME not in dir(self):
-            raise ValueError(
-                f"Must define integration test with name "
-                f"[{FULL_INTEGRATION_TEST_NAME}] in this test class."
-            )
-        if (
-            # _outcome exists as a private property, but not in typings. Ignore warnings
-            not self._outcome.success  # type: ignore
-            or self._testMethodName != FULL_INTEGRATION_TEST_NAME
-        ):
-            # If test fails or this is not the integration test, do not validate
-            return
-
-        expected_tags = self.controller.get_ingest_view_rank_list()
-
-        expected_tags_set = set(expected_tags)
-        processed_tags_set = set(self.file_tags_processed)
-
-        if skipped := expected_tags_set.difference(processed_tags_set):
-            self.fail(f"Failed to run test for ingest view files: {skipped}")
-
-        if extra := processed_tags_set.difference(expected_tags_set):
-            self.fail(f"Found test for extra, unexpected ingest view files: {extra}")
-
-        self.assertEqual(
-            expected_tags,
-            self.file_tags_processed,
-            "Expected and processed tags do not match.",
-        )
-
     @classmethod
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
         )
-
-    def invalidate_ingest_view_metadata(self) -> None:
-        with SessionFactory.using_database(self.operations_database_key) as session:
-            session.query(
-                operations_schema.DirectIngestViewMaterializationMetadata
-            ).update(
-                {
-                    operations_schema.DirectIngestViewMaterializationMetadata.is_invalidated: True
-                }
-            )
-
-    def _run_ingest_job_for_filename(
-        self, filename: str, is_rerun: bool = False
-    ) -> None:
-        """Runs ingest for the ingest view file with the given unnormalized file name.
-
-        It reads the input from the following file:
-        `recidiviz/tests/ingest/direct/direct_ingest_fixtures/ux_xx/{ingest_view_name}.csv`
-        """
-        # TODO(#15801): Move the fixture files to `ingest_view` subdirectory and pass
-        # along a test case name to the materialization args.
-
-        environ_patcher = patch.dict("os.environ", {"PERSIST_LOCALLY": "true"})
-        environ_patcher.start()
-
-        if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
-            raise ValueError(
-                f"Controller fs must have type "
-                f"FakeGCSFileSystem. Found instead "
-                f"type [{type(self.controller.fs.gcs_file_system)}]"
-            )
-
-        now = DEFAULT_UPDATE_DATETIME
-        yesterday = now - datetime.timedelta(days=1)
-        file_tag, _ext = os.path.splitext(filename)
-
-        if file_tag not in self.controller.get_ingest_view_rank_list():
-            raise ValueError(
-                f"Cannot run test for tag [{file_tag}] which is not returned by the "
-                f"controller's get_ingest_view_rank_list() function."
-            )
-
-        if not is_rerun:
-            self.file_tags_processed.append(file_tag)
-
-        materialization_job_args = self._register_materialization_job(
-            controller=self.controller,
-            ingest_view_name=file_tag,
-            upper_bound_datetime=now,
-            lower_bound_datetime=yesterday,
-        )
-
-        self.controller.ingest_instance_status_manager.change_status_to(
-            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
-        )
-        self.controller.do_ingest_view_materialization(materialization_job_args)
-
-        run_task_queues_to_empty(self.controller)
-
-        environ_patcher.stop()
-
-    @staticmethod
-    def _register_materialization_job(
-        controller: BaseDirectIngestController,
-        ingest_view_name: str,
-        upper_bound_datetime: datetime.datetime,
-        lower_bound_datetime: Optional[datetime.datetime],
-    ) -> IngestViewMaterializationArgs:
-        metadata_manager = controller.view_materialization_metadata_manager
-        args = IngestViewMaterializationArgs(
-            ingest_view_name=ingest_view_name,
-            lower_bound_datetime_exclusive=lower_bound_datetime,
-            upper_bound_datetime_inclusive=upper_bound_datetime,
-            ingest_instance=metadata_manager.ingest_instance,
-        )
-        metadata_manager.register_ingest_materialization_job(args)
-        return args
-
-    def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:
-        self.invalidate_ingest_view_metadata()
-        ingest_view_contents = assert_type(
-            self.controller.ingest_view_contents, FakeInstanceIngestViewContents
-        )
-        ingest_view_contents.test_clear_data()
-        ingest_view_materializer = assert_type(
-            self.controller.ingest_view_materializer(), FakeIngestViewMaterializer
-        )
-        ingest_view_materializer.processed_args.clear()
-        for file_tag in file_tags:
-            self._run_ingest_job_for_filename(f"{file_tag}.csv", is_rerun=True)
-
-    @staticmethod
-    def convert_and_clear_db_ids(db_entities: List[StateBase]) -> List[Entity]:
-        converted = StateSchemaToEntityConverter().convert_all(
-            db_entities, populate_back_edges=True
-        )
-        clear_db_ids(converted)
-        return converted
-
-    def assert_expected_db_root_entities(
-        self,
-        expected_db_root_entities: List[RootEntity],
-        debug: bool = False,
-        single_root_entity_to_debug: Optional[str] = None,
-        print_tree_structure_only: bool = False,
-        # Default arg caches across calls to this function
-        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
-    ) -> None:
-        """Asserts that the set of expected people matches all the people that currently
-         exist in the database.
-
-        Args:
-            expected_db_root_entities: (List[RootEntity) The list of entities we expect
-                to find in the DB.
-            debug: (bool) If true, prints out both the found and expected entity trees.
-            single_root_entity_to_debug: (str) A string external_id of a root entity,
-            such as StatePerson. If debug=True and this is not None, this
-                will only check for equality between the root entities with that
-                external_id. This should be used for debugging only and this function
-                will throw if this value is set in CI.
-            print_tree_structure_only: (bool) If True and debug=True, then the printed
-                result only shows the tree structure - external ids and parent-child
-                relationships.
-        """
-
-        if debug:
-            print("\n\n************** ASSERTING *************")
-
-        if not self.schema_type() == SchemaType.STATE:
-            raise ValueError(f"Unsupported schema type [{self.schema_type()}]")
-
-        expected_root_entities = cast(List[Entity], expected_db_root_entities)
-
-        found_root_entities: List[Entity] = []
-        found_schema_root_entities = []
-        with SessionFactory.using_database(
-            self.main_database_key, autocommit=False
-        ) as session:
-            found_people_from_db = dao.read_all_people(session)
-            found_schema_root_entities.extend(found_people_from_db)
-            found_root_entities.extend(
-                cast(
-                    List[StatePerson],
-                    self.convert_and_clear_db_ids(found_people_from_db),
-                )
-            )
-            found_staff_from_db = dao.read_all_staff(session)
-            found_schema_root_entities.extend(found_staff_from_db)
-            found_root_entities.extend(
-                cast(
-                    List[StateStaff],
-                    self.convert_and_clear_db_ids(found_staff_from_db),
-                )
-            )
-
-        if debug:
-            if in_ci():
-                self.fail("The |debug| flag should only be used for local debugging.")
-            if single_root_entity_to_debug is not None:
-                found_root_entities = [
-                    e
-                    for e in found_root_entities
-                    if isinstance(e, (HasMultipleExternalIdsEntity, ExternalIdEntity))
-                    and matches_external_id(e, single_root_entity_to_debug)
-                ]
-                expected_root_entities = [
-                    e
-                    for e in expected_root_entities
-                    if isinstance(e, (HasMultipleExternalIdsEntity, ExternalIdEntity))
-                    and matches_external_id(e, single_root_entity_to_debug)
-                ]
-
-            launch_entity_tree_html_diff_comparison(
-                found_root_entities=found_root_entities,
-                expected_root_entities=expected_db_root_entities,
-                field_index=field_index,
-                region_code=self.state_code().value.lower(),
-                print_tree_structure_only=print_tree_structure_only,
-            )
-
-        self.assertCountEqual(found_root_entities, expected_root_entities)
-
-        assert_no_unexpected_entities_in_db(found_schema_root_entities, session)
 
     def get_ingest_view_results_from_fixture(
         self, *, ingest_view_name: str, test_name: str
