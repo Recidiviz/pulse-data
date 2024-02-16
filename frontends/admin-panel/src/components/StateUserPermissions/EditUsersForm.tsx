@@ -175,7 +175,10 @@ export const EditUserForm = ({
           label="Use custom permissions"
           labelAlign="left"
         >
-          <Select onChange={() => showPermissions} allowClear>
+          <Select
+            onChange={(shouldShow) => showPermissions(shouldShow)}
+            allowClear
+          >
             <Option value>Add custom permissions</Option>
             <Option value={false}>Delete custom permissions</Option>
           </Select>
