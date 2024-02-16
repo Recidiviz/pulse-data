@@ -36,7 +36,6 @@ import * as IngestOperations from "../navigation/IngestOperations";
 import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as OnCall from "../navigation/OnCall";
-import InsightsConfigurationsView from "./ConfigurationsView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
 import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
@@ -44,6 +43,7 @@ import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestDataflowView from "./IngestDataflow";
 import IngestOperationsView from "./IngestOperationsView";
+import InsightsConfigurationsView from "./Insights/InsightsConfigurationsView";
 import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
 import SuperAgencyProvisioningView from "./JusticeCountsTools/SuperAgencyProvisioningView";
@@ -52,6 +52,7 @@ import OnCallLogsReview from "./OnCall/LogsReview";
 import POEmailsView from "./POEmailsView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
+import StoreProvider from "./StoreProvider";
 import { EnvironmentType } from "./types";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
@@ -319,10 +320,12 @@ const App = (): JSX.Element => {
             path={OnCall.ON_CALL_BASE_ROUTE}
             component={OnCallLogsReview}
           />
-          <Route
-            path={LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE}
-            component={InsightsConfigurationsView}
-          />
+          <StoreProvider>
+            <Route
+              path={LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE}
+              component={InsightsConfigurationsView}
+            />
+          </StoreProvider>
           <Redirect from="/" to={IngestOperations.INGEST_DATAFLOW_ROUTE} />
         </Switch>
       </div>

@@ -14,18 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { AddConfigurationRequest } from "../types";
-import { getResource, postWithURLAndBody } from "./utils";
+import { z } from "zod";
 
-// Get enabled states for Insights
+export const insightsConfigurationSchema = z.object({
+  featureVariant: z.string().nullable(),
+  supervisionOfficerLabel: z.string(),
+  supervisionDistrictLabel: z.string(),
+  supervisionUnitLabel: z.string(),
+  supervisionSupervisorLabel: z.string(),
+  supervisionDistrictManagerLabel: z.string(),
+  supervisionJiiLabel: z.string(),
+  learnMoreUrl: z.string(),
+  atOrBelowRateLabel: z.string(),
+  exclusionReasonDescription: z.string().nullable(),
+  id: z.number(),
+  noneAreOutliersLabel: z.string(),
+  slightlyWorseThanRateLabel: z.string(),
+  status: z.string(),
+  updatedAt: z.string(),
+  updatedBy: z.string(),
+  worseThanRateLabel: z.string(),
+});
 
-export const getInsightsStateCodes = async (): Promise<Response> => {
-  return getResource("/outliers/enabled_state_codes");
-};
-
-export const createNewConfiguration = async (
-  request: AddConfigurationRequest,
-  stateCode: string
-): Promise<Response> => {
-  return postWithURLAndBody(`/outliers/${stateCode}/configurations`, request);
-};
+export type InsightsConfiguration = z.infer<typeof insightsConfigurationSchema>;

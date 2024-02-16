@@ -135,3 +135,64 @@ export const deleteResource = async (
     ...(body && { body: JSON.stringify(body) }),
   });
 };
+
+interface RequestProps {
+  path: string;
+  method: "GET" | "POST" | "PATCH" | "DELETE";
+  body?: Record<string, unknown>;
+  retrying?: boolean;
+}
+
+/**
+ * API functions with error handling
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const request = async ({
+  path,
+  method,
+  body,
+  retrying = false,
+}: RequestProps): Promise<any> => {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  const response = await fetch(path, {
+    body: method !== "GET" ? JSON.stringify(body) : null,
+    method,
+    headers,
+  });
+
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      `API request failed.
+      \nStatus: ${response.status} - ${response.statusText}
+      \nErrors: ${JSON.stringify(json.errors ?? json)}`
+    );
+  }
+  return json;
+};
+
+export const get = async (
+  path: string,
+  body: Record<string, string> = {}
+): Promise<any> => {
+  return request({ path, body, method: "GET" });
+};
+
+export const post = async (
+  path: string,
+  body: Record<string, unknown> = {}
+): Promise<any> => {
+  return request({ path, body, method: "POST" });
+};
+
+export const patch = async (
+  path: string,
+  body: Record<string, unknown> = {}
+): Promise<any> => {
+  return request({ path, body, method: "PATCH" });
+};
+/* eslint-enable @typescript-eslint/no-explicit-any */
