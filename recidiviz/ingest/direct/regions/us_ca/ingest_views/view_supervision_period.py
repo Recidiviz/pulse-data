@@ -147,6 +147,34 @@ offender_group_periods AS (
     LEAD(update_datetime) OVER (PARTITION BY OffenderId ORDER BY update_datetime ASC) AS og_end_date,
   FROM offender_group_transitions
 ),
+nullBadgeCTE AS (
+  SELECT 
+    OffenderId, 
+    COALESCE(BadgeNumber,'Null') AS BadgeNumber,
+    update_datetime,
+  FROM {PersonParole@ALL}
+),
+supervision_officer_prep_cte AS
+(
+  SELECT 
+    OffenderId, 
+    BadgeNumber,
+    update_datetime,
+    LAG(BadgeNumber) OVER (PARTITION BY OffenderId ORDER BY update_datetime) AS prev_BadgeNumber 
+  FROM nullBadgeCTE
+),
+supervision_officer_periods AS (
+  SELECT 
+    OffenderId, 
+    CASE 
+      WHEN BadgeNumber = 'Null' 
+      THEN NULL ELSE BadgeNumber 
+    END AS BadgeNumber,
+    update_datetime AS PeriodStart,
+    LEAD(update_datetime) OVER (PARTITION BY OffenderId ORDER BY update_datetime) AS PeriodEnd
+  FROM supervision_officer_prep_cte
+  WHERE BadgeNumber != prev_BadgeNumber OR prev_BadgeNumber IS NULL OR BadgeNumber = 'Null'
+),
 supervision_location_prep_cte AS
 (
   SELECT 
@@ -238,6 +266,13 @@ transition_dates as (
 
   UNION DISTINCT
 
+  SELECT DISTINCT
+    OffenderId,
+    PeriodStart AS transition_date
+  FROM supervision_officer_periods
+
+  UNION DISTINCT
+
   -- We filter out `null` end_dates. These reflect open periods, and are not a
   -- transition date. These transition dates will become start_dates, and it is
   -- definitely not a start_date.
@@ -322,6 +357,24 @@ merged_supervision_periods_with_location AS (
     ON p.OffenderId = slp.OffenderId
     AND p.start_date >= slp.PeriodStart
     AND (p.end_date <= slp.PeriodEnd OR slp.PeriodEnd IS NULL)
+),
+merged_supervision_periods_with_officer AS (
+  SELECT DISTINCT
+    p.OffenderId,
+    p.start_date,
+    p.end_date,
+    p.OffenderGroup,
+    p.SupervisionLevel,
+    p.period_sequence_number,
+    p.ParoleUnit,
+    p.ParoleRegion,
+    p.ParoleDistrict,
+    spo.BadgeNumber
+  FROM merged_supervision_periods_with_location p
+  LEFT JOIN supervision_officer_periods spo
+    ON p.OffenderId = spo.OffenderId
+    AND p.start_date >= spo.PeriodStart
+    AND (p.end_date <= spo.PeriodEnd OR spo.PeriodEnd IS NULL)
 )
 SELECT
     OffenderId,
@@ -332,8 +385,9 @@ SELECT
     period_sequence_number,
     ParoleUnit,
     ParoleDistrict,
-    ParoleRegion
-FROM merged_supervision_periods_with_location
+    ParoleRegion,
+    BadgeNumber
+FROM merged_supervision_periods_with_officer
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
