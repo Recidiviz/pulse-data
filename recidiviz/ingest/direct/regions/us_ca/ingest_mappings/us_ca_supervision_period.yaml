@@ -12,6 +12,7 @@ input_columns:
   - ParoleUnit
   - ParoleDistrict
   - ParoleRegion
+  - BadgeNumber
 unused_columns: []
 output:
   StatePerson:
@@ -126,5 +127,11 @@ output:
                         - PAROLE
           start_date: start_date
           termination_date: end_date
+          supervising_officer_staff_external_id: BadgeNumber
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: BadgeNumber
+                $then: $literal("US_CA_BADGE_NO")
           # TODO(#22106): Turn on dataflow_metrics_admission_reason_all_internal_unknown
           #               validation when admission reason is hydrated
