@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all releases from solitary confinement.
+"""Defines a view that shows all releases from administrative solitary confinement.
 """
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder,
@@ -25,23 +26,35 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all releases from solitary confinement."""
+_DESCRIPTION = """Defines a view that shows all releases from administrative solitary confinement."""
 
-_QUERY_TEMPLATE = """
-/* Get any SOLITARY_CONFINEMENT housing_unit_type_collapsed_solitary_session that ends. An end with a date_gap will
-indicate that the resident was discharged out of incarceration, and a new adjacent session will indicate the 
-housing_unit_type_collapsed_solitary_session has changed to a different type. */
+_QUERY_TEMPLATE = f"""
+/* Get any ADMINISTRATIVE_SOLITARY_CONFINEMENT housing_unit_type_session that ends in a housing_unit_type that is not 
+solitary (including nulls). */
 #TODO(#27658) Account for false transitions
+WITH housing_units AS (
+    SELECT 
+    state_code,
+    person_id,
+    end_date_exclusive AS completion_event_date,
+    housing_unit_type,
+    LEAD (housing_unit_type) OVER (PARTITION BY person_id, date_gap_id ORDER BY start_date ASC) AS next_housing_type,
+FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` 
+)
 SELECT 
     state_code,
     person_id,
-    end_date_exclusive AS completion_event_date
-FROM `{project_id}.{sessions_dataset}.housing_unit_type_collapsed_solitary_sessions_materialized` 
-WHERE housing_unit_type_collapsed_solitary LIKE "%SOLITARY%"
+    completion_event_date
+FROM housing_units
+WHERE housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
+    -- do not include open ADMINISTRATIVE_SOLITARY_CONFINEMENT periods 
+    AND {nonnull_end_date_clause('completion_event_date')}<= CURRENT_DATE('US/Eastern')
+    -- only chose sub sessions that transfer to a non solitary housing_unit_type
+    AND COALESCE(next_housing_type, '') NOT LIKE '%SOLITARY%'
 """
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
-    completion_event_type=TaskCompletionEventType.TRANSFER_OUT_OF_SOLITARY_CONFINEMENT,
+    completion_event_type=TaskCompletionEventType.TRANSFER_OUT_OF_ADMINISTRATIVE_SOLITARY_CONFINEMENT,
     description=_DESCRIPTION,
     completion_event_query_template=_QUERY_TEMPLATE,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
