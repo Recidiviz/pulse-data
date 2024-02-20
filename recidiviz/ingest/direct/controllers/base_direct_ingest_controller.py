@@ -57,7 +57,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusChangeListener,
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
@@ -79,7 +78,7 @@ from recidiviz.persistence.database.schema.operations.dao import (
 from recidiviz.utils import environment
 
 
-class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
+class BaseDirectIngestController:
     """Parses and persists individual-level info from direct ingest partners."""
 
     def __init__(
@@ -104,8 +103,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         self.ingest_instance_status_manager = DirectIngestInstanceStatusManager(
             region_code=self.region.region_code,
             ingest_instance=self.ingest_instance,
-            change_listener=self,
-            is_ingest_in_dataflow_enabled=True,
         )
 
         self.temp_output_directory_path = (
@@ -114,47 +111,19 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         self.big_query_client = BigQueryClientImpl()
 
-        # We cannot set these objects until we know the raw data source instance, which
-        # may not be set at instantiation time (i.e. if there is no rerun in progress
-        # for this instance).
-        # TODO(#20930): Delete when ingest in dataflow is shipped for all states - once
-        #  this controller class is only responsible for raw data import, there
-        #  will be no code *reading* from imported raw data, so we can just use the
-        #  ingest_instance everywhere.
-        self._raw_data_source_instance: Optional[DirectIngestInstance] = None
-        self._raw_file_metadata_manager: Optional[
-            DirectIngestRawFileMetadataManager
-        ] = None
-
-        # TODO(#20930): Initialize this in the constructor when ingest in dataflow is
-        #  shipped for all states and the raw_data_source_instance field is deleted.
-        self._raw_file_import_manager: Optional[DirectIngestRawFileImportManager] = None
-
-        self.on_raw_data_source_instance_change(self.ingest_instance)
-
-    @property
-    def raw_data_source_instance(self) -> DirectIngestInstance:
-        raise ValueError(
-            "Raw data source instance is not a valid concept for ingest in Dataflow"
+        self.raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
+            region_code=self.region.region_code,
+            raw_data_instance=self.ingest_instance,
         )
 
-    @property
-    def raw_file_metadata_manager(self) -> DirectIngestRawFileMetadataManager:
-        if not self._raw_file_metadata_manager:
-            raise ValueError(
-                "Expected nonnull raw file metadata manager - has "
-                "on_raw_data_source_instance_change() been called?"
-            )
-        return self._raw_file_metadata_manager
-
-    @property
-    def raw_file_import_manager(self) -> DirectIngestRawFileImportManager:
-        if not self._raw_file_import_manager:
-            raise ValueError(
-                "Expected nonnull raw file import manager - has "
-                "on_raw_data_source_instance_change() been called?"
-            )
-        return self._raw_file_import_manager
+        self.raw_file_import_manager = DirectIngestRawFileImportManager(
+            region=self.region,
+            fs=self.fs,
+            temp_output_directory_path=self.temp_output_directory_path,
+            big_query_client=self.big_query_client,
+            csv_reader=self.csv_reader,
+            instance=self.ingest_instance,
+        )
 
     @property
     def raw_data_bucket_path(self) -> GcsfsBucketPath:
@@ -165,73 +134,18 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
     @property
     def raw_data_storage_directory_path(self) -> GcsfsDirectoryPath:
-        if not self._raw_data_source_instance:
-            raise ValueError("Expected nonnull raw data source instance.")
         return gcsfs_direct_ingest_storage_directory_path_for_state(
             region_code=self.region_code(),
-            ingest_instance=self._raw_data_source_instance,
+            ingest_instance=self.ingest_instance,
         )
 
     def raw_data_deprecated_storage_directory_path(
         self, deprecated_on_date: datetime.date
     ) -> GcsfsDirectoryPath:
-        if not self._raw_data_source_instance:
-            raise ValueError("Expected nonnull raw data source instance.")
         return gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
             region_code=self.region_code(),
-            ingest_instance=self._raw_data_source_instance,
+            ingest_instance=self.ingest_instance,
             deprecated_on_date=deprecated_on_date,
-        )
-
-    def on_ingest_instance_status_change(
-        self, previous_status: DirectIngestStatus, new_status: DirectIngestStatus
-    ) -> None:
-        """Listener method called by the DirectIngestInstanceStatusManager every time a status changes."""
-        if DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS in (
-            previous_status,
-            new_status,
-        ):
-            if self.ingest_instance == DirectIngestInstance.PRIMARY:
-                # Any time we transition to/from importing raw data in PRIMARY, we notify SECONDARY
-                # so that its status can change appropriately.
-                self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
-                    region=self.region,
-                    ingest_instance=DirectIngestInstance.SECONDARY,
-                    can_start_ingest=True,
-                )
-
-    def on_raw_data_source_instance_change(
-        self, raw_data_source_instance: Optional[DirectIngestInstance]
-    ) -> None:
-        """Listener method called by the DirectIngestInstanceStatusManager
-        every time the raw_data_source_instance changes.
-        """
-        # Do nothing if the raw data source hasn't changed.
-        if self._raw_data_source_instance == raw_data_source_instance:
-            return
-
-        self._raw_data_source_instance = raw_data_source_instance
-        # Clear out all fields that rely on a raw_data_source_instance if it's empty
-        if not self._raw_data_source_instance:
-            self._raw_file_metadata_manager = None
-            self._raw_file_import_manager = None
-            return
-
-        # TODO(#20930): Set self._raw_file_metadata_manager / self._raw_file_import_manager
-        #  directly in the constructor once ingest in dataflow is enabled for all states.
-        # Update all fields to rely on the new raw_data_source_instance.
-        self._raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
-            region_code=self.region.region_code,
-            raw_data_instance=self._raw_data_source_instance,
-        )
-
-        self._raw_file_import_manager = DirectIngestRawFileImportManager(
-            region=self.region,
-            fs=self.fs,
-            temp_output_directory_path=self.temp_output_directory_path,
-            big_query_client=self.big_query_client,
-            csv_reader=self.csv_reader,
-            instance=self._raw_data_source_instance,
         )
 
     @property

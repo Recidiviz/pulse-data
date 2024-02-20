@@ -316,7 +316,6 @@ class MoveFilesFromStorageController:
             secondary_status_manager = DirectIngestInstanceStatusManager(
                 self.state_code.value,
                 DirectIngestInstance.SECONDARY,
-                is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
             )
             if not ingest_in_dataflow_enabled:
                 with SessionFactory.for_proxy(

@@ -38,7 +38,6 @@ def _verify_raw_data_flashing_not_in_progress(
     status_manager = DirectIngestInstanceStatusManager(
         region_code=state_code.value,
         ingest_instance=ingest_instance,
-        is_ingest_in_dataflow_enabled=True,
     )
 
     if status_manager.get_current_status() == DirectIngestStatus.FLASH_IN_PROGRESS:

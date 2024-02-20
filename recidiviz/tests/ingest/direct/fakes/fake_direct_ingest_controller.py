@@ -40,7 +40,6 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusChangeListener,
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
@@ -349,14 +348,10 @@ def build_fake_direct_ingest_controller(
     def mock_build_status_manager(
         region_code: str,
         ingest_instance: DirectIngestInstance,
-        change_listener: DirectIngestInstanceStatusChangeListener,
-        is_ingest_in_dataflow_enabled: bool,
     ) -> DirectIngestInstanceStatusManager:
         status_manager = DirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
-            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
-            change_listener=change_listener,
         )
         for status in initial_statuses:
             status_manager.add_instance_status(status)
