@@ -16,7 +16,6 @@
 #  =============================================================================
 """A class that manages reading and updating DirectIngestInstanceStatuses. For a visualization of valid instance
 statuses transitions, please refer to http://go/ingest-instance-status-flow."""
-import abc
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -51,41 +50,13 @@ LEGACY_PRE_DATAFLOW_STATUSES = [
     DirectIngestStatus.NO_RERUN_IN_PROGRESS,
 ]
 
-NEW_POST_DATAFLOW_STATUSES = [
-    DirectIngestStatus.INITIAL_STATE,
-    DirectIngestStatus.RAW_DATA_UP_TO_DATE,
-    DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
-    DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
-    DirectIngestStatus.RAW_DATA_REIMPORT_CANCELED,
-    DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
-]
-
 
 def get_invalid_statuses(
-    ingest_instance: DirectIngestInstance, is_ingest_in_dataflow_enabled: bool
+    ingest_instance: DirectIngestInstance,
 ) -> List[DirectIngestStatus]:
     """Returns a list of statuses that are never valid in the context of a given
     instance.
     """
-    if not is_ingest_in_dataflow_enabled:
-        if ingest_instance is DirectIngestInstance.PRIMARY:
-            return [
-                *NEW_POST_DATAFLOW_STATUSES,
-                DirectIngestStatus.READY_TO_FLASH,
-                DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
-                DirectIngestStatus.RERUN_CANCELED,
-                DirectIngestStatus.STALE_RAW_DATA,
-                DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
-                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
-                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
-            ]
-
-        if ingest_instance is DirectIngestInstance.SECONDARY:
-            return [
-                *NEW_POST_DATAFLOW_STATUSES,
-                DirectIngestStatus.UP_TO_DATE,
-            ]
-
     if ingest_instance == DirectIngestInstance.PRIMARY:
         return [
             *LEGACY_PRE_DATAFLOW_STATUSES,
@@ -104,34 +75,15 @@ def get_invalid_statuses(
             DirectIngestStatus.RAW_DATA_UP_TO_DATE,
         ]
 
-    raise ValueError(
-        f"Unsupported args: {ingest_instance=}, {is_ingest_in_dataflow_enabled=}"
-    )
+    raise ValueError(f"Unsupported args: {ingest_instance=}")
 
 
 def get_human_intervention_statuses(
-    ingest_instance: DirectIngestInstance, is_ingest_in_dataflow_enabled: bool
+    ingest_instance: DirectIngestInstance,
 ) -> List[DirectIngestStatus]:
     """Returns a list of statuses that an instance can only transition to via some human
     intervention.
     """
-    if not is_ingest_in_dataflow_enabled:
-        if ingest_instance is DirectIngestInstance.PRIMARY:
-            return [
-                # Note: `STANDARD_RERUN_STARTED` is automatically added an initial
-                # status via a migration
-                DirectIngestStatus.FLASH_IN_PROGRESS,
-            ]
-
-        if ingest_instance is DirectIngestInstance.SECONDARY:
-            return [
-                DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
-                DirectIngestStatus.RERUN_CANCELED,
-                DirectIngestStatus.FLASH_IN_PROGRESS,
-                DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
-                DirectIngestStatus.STANDARD_RERUN_STARTED,
-            ]
-
     if ingest_instance is DirectIngestInstance.PRIMARY:
         return [
             DirectIngestStatus.FLASH_IN_PROGRESS,
@@ -145,9 +97,7 @@ def get_human_intervention_statuses(
             DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
         ]
 
-    raise ValueError(
-        f"Unsupported args: {ingest_instance=}, {is_ingest_in_dataflow_enabled=}"
-    )
+    raise ValueError(f"Unsupported args: {ingest_instance=}")
 
 
 # TODO(#20930): Delete this once ingest in Dataflow is shipped to all states
@@ -174,140 +124,12 @@ LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS: Dict[
 
 
 def get_valid_current_status_transitions(
-    ingest_instance: DirectIngestInstance, is_ingest_in_dataflow_enabled: bool
+    ingest_instance: DirectIngestInstance,
 ) -> Dict[DirectIngestStatus, List[DirectIngestStatus]]:
     """Returns a dictionary representing all valid status transitions, where the keys
     are a status and the values are the list of all statuses that can precede that
     status.
     """
-    if not is_ingest_in_dataflow_enabled:
-        if ingest_instance is DirectIngestInstance.PRIMARY:
-            return {
-                DirectIngestStatus.STANDARD_RERUN_STARTED: [
-                    DirectIngestStatus.UP_TO_DATE,
-                    DirectIngestStatus.FLASH_COMPLETED,
-                ],
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
-                    *LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                        DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
-                    ],
-                    DirectIngestStatus.FLASH_COMPLETED,
-                    DirectIngestStatus.UP_TO_DATE,
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                ],
-                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
-                ],
-                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: [
-                    *LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
-                    ],
-                    DirectIngestStatus.UP_TO_DATE,
-                ],
-                DirectIngestStatus.FLASH_COMPLETED: LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                    DirectIngestStatus.FLASH_COMPLETED
-                ],
-                # PRIMARY ONLY status.
-                DirectIngestStatus.UP_TO_DATE: [
-                    DirectIngestStatus.UP_TO_DATE,
-                    DirectIngestStatus.FLASH_COMPLETED,
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
-                    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
-                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-                ],
-                # PRIMARY specific check for FLASH_IN_PROGRESS. Flashing could start when ingest
-                # is at any point in PRIMARY - it doesn't matter because everything in PRIMARY
-                # will be overwritten.
-                DirectIngestStatus.FLASH_IN_PROGRESS: [
-                    s
-                    for s in list(DirectIngestStatus)
-                    if s
-                    not in get_invalid_statuses(
-                        DirectIngestInstance.PRIMARY, is_ingest_in_dataflow_enabled
-                    )
-                ],
-            }
-        if ingest_instance is DirectIngestInstance.SECONDARY:
-            return {
-                DirectIngestStatus.STANDARD_RERUN_STARTED: [
-                    DirectIngestStatus.NO_RERUN_IN_PROGRESS
-                ],
-                DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED: [
-                    DirectIngestStatus.NO_RERUN_IN_PROGRESS,
-                ],
-                # SECONDARY specific check for FLASH_IN_PROGRESS.
-                DirectIngestStatus.FLASH_IN_PROGRESS: [
-                    DirectIngestStatus.READY_TO_FLASH
-                ],
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
-                    *LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                        DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
-                    ],
-                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
-                    DirectIngestStatus.STALE_RAW_DATA,
-                    # We would transition from this status if we process new files in SECONDARY
-                    # (that were not seen in PRIMARY)
-                    DirectIngestStatus.READY_TO_FLASH,
-                ],
-                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: [
-                    *LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                        DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
-                    ],
-                    DirectIngestStatus.READY_TO_FLASH,
-                    DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
-                ],
-                DirectIngestStatus.READY_TO_FLASH: [
-                    DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
-                    # We would transition from this status if files are processed in PRIMARY that are not in SECONDARY
-                    # ingest views
-                    DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
-                    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
-                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-                ],
-                DirectIngestStatus.RERUN_CANCELED: [
-                    DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
-                ],
-                DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS:
-                # ANY valid secondary status is allowed before proceeding with a flash cancellation
-                list(
-                    (set(DirectIngestStatus))
-                    - set(
-                        get_invalid_statuses(
-                            DirectIngestInstance.SECONDARY,
-                            is_ingest_in_dataflow_enabled,
-                        )
-                    )
-                ),
-                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: [
-                    *LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
-                    ],
-                    DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
-                ],
-                DirectIngestStatus.STALE_RAW_DATA: [
-                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
-                    DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
-                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-                    DirectIngestStatus.READY_TO_FLASH,
-                ],
-                DirectIngestStatus.FLASH_COMPLETED: LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                    DirectIngestStatus.FLASH_COMPLETED
-                ],
-                DirectIngestStatus.NO_RERUN_IN_PROGRESS: [
-                    DirectIngestStatus.RERUN_CANCELED,
-                    DirectIngestStatus.FLASH_COMPLETED,
-                ],
-                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT: [
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
-                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-                    # We would transition from this status if we are ready to flash and then new raw data is
-                    # processed in PRIMARY
-                    DirectIngestStatus.READY_TO_FLASH,
-                ],
-            }
-
     if ingest_instance is DirectIngestInstance.PRIMARY:
         return {
             DirectIngestStatus.INITIAL_STATE: [],
@@ -329,10 +151,7 @@ def get_valid_current_status_transitions(
             DirectIngestStatus.FLASH_IN_PROGRESS: [
                 s
                 for s in list(DirectIngestStatus)
-                if s
-                not in get_invalid_statuses(
-                    DirectIngestInstance.PRIMARY, is_ingest_in_dataflow_enabled
-                )
+                if s not in get_invalid_statuses(DirectIngestInstance.PRIMARY)
             ],
         }
     if ingest_instance is DirectIngestInstance.SECONDARY:
@@ -357,11 +176,7 @@ def get_valid_current_status_transitions(
             # ANY valid secondary status is allowed before proceeding with a flash cancellation
             list(
                 (set(DirectIngestStatus))
-                - set(
-                    get_invalid_statuses(
-                        DirectIngestInstance.SECONDARY, is_ingest_in_dataflow_enabled
-                    )
-                )
+                - set(get_invalid_statuses(DirectIngestInstance.SECONDARY))
             ),
             DirectIngestStatus.STALE_RAW_DATA: [
                 DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
@@ -375,38 +190,12 @@ def get_valid_current_status_transitions(
             ],
         }
 
-    raise ValueError(
-        f"Unsupported args: {ingest_instance=}, {is_ingest_in_dataflow_enabled=}"
-    )
-
-
-# TODO(#20930): We should be able to remove this listener entirely post-IID
-class DirectIngestInstanceStatusChangeListener:
-    """An abstract class used to react to changes in instance statuses."""
-
-    @abc.abstractmethod
-    def on_raw_data_source_instance_change(
-        self, raw_data_source_instance: Optional[DirectIngestInstance]
-    ) -> None:
-        """Reacts to raw data source instance change."""
-
-    @abc.abstractmethod
-    def on_ingest_instance_status_change(
-        self, previous_status: DirectIngestStatus, new_status: DirectIngestStatus
-    ) -> None:
-        """Called whenever a status changes for this instance."""
+    raise ValueError(f"Unsupported args: {ingest_instance=}")
 
 
 def get_initial_status_for_instance(
-    instance: DirectIngestInstance, ingest_in_dataflow_enabled: bool
+    instance: DirectIngestInstance,
 ) -> DirectIngestStatus:
-    if not ingest_in_dataflow_enabled:
-        return (
-            DirectIngestStatus.STANDARD_RERUN_STARTED
-            if instance is DirectIngestInstance.PRIMARY
-            else DirectIngestStatus.NO_RERUN_IN_PROGRESS
-        )
-
     return (
         DirectIngestStatus.INITIAL_STATE
         if instance is DirectIngestInstance.PRIMARY
@@ -420,18 +209,10 @@ class DirectIngestInstanceStatusManager:
     http://go/ingest-instance-status-flow.
     """
 
-    def __init__(
-        self,
-        region_code: str,
-        ingest_instance: DirectIngestInstance,
-        is_ingest_in_dataflow_enabled: bool,
-        change_listener: Optional[DirectIngestInstanceStatusChangeListener] = None,
-    ):
+    def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
         self.region_code = region_code.upper()
         self.ingest_instance = ingest_instance
-        self.is_ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled
         self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        self.change_listener = change_listener
 
     def _get_current_status_row(self, session: Session) -> DirectIngestInstanceStatus:
         """Returns the most recent status row for this instance."""
@@ -531,24 +312,14 @@ class DirectIngestInstanceStatusManager:
         self, session: Session
     ) -> Optional[List[DirectIngestInstanceStatus]]:
         """Returns all the rows associated with a current rerun, if applicable."""
-        # Return all statuses for PRIMARY, since there is no concept of individual reruns in PRIMARY.
         if self.ingest_instance == DirectIngestInstance.PRIMARY:
-            if self.is_ingest_in_dataflow_enabled:
-                raise ValueError(
-                    "No concept of a raw data reimport for the PRIMARY instance."
-                )
-            return self._get_rows_after_timestamp(
-                session=session, status_timestamp=datetime.min
+            raise ValueError(
+                "We should not be doing a raw data reimport for the PRIMARY instance."
             )
 
         most_recent_completed = self._get_most_recent_row_with_status(
             session=session,
-            # Terminating status is NO_RERUN_IN_PROGRESS in SECONDARY.
-            status=(
-                DirectIngestStatus.NO_RERUN_IN_PROGRESS
-                if not self.is_ingest_in_dataflow_enabled
-                else DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS
-            ),
+            status=DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
         )
         if most_recent_completed:
             current_rerun_status_rows: List[
@@ -572,20 +343,10 @@ class DirectIngestInstanceStatusManager:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
-        if self.is_ingest_in_dataflow_enabled:
-            raise ValueError(
-                "The raw_data_source_instance is not a valid concept for ingest in "
-                "Dataflow states. This should not be called."
-            )
-
-        # Raw data source can only be PRIMARY for PRIMARY instances.
-        if self.ingest_instance == DirectIngestInstance.PRIMARY:
-            return DirectIngestInstance.PRIMARY
-
-        if session:
-            return self._get_raw_data_source_instance(session)
-        with SessionFactory.using_database(self.db_key) as query_session:
-            return self._get_raw_data_source_instance(query_session)
+        raise ValueError(
+            "The raw_data_source_instance is not a valid concept for ingest in "
+            "Dataflow states. This should not be called."
+        )
 
     # TODO(#20930): Rename this to _get_current_raw_data_reimport_start_status once
     #  ingest in dataflow is shipped to all states.
@@ -593,10 +354,7 @@ class DirectIngestInstanceStatusManager:
         self, query_session: Session
     ) -> Optional[DirectIngestInstanceStatus]:
         """Returns the status that indicates the start of a rerun / raw data reimport."""
-        if (
-            self.is_ingest_in_dataflow_enabled
-            and self.ingest_instance is not DirectIngestInstance.SECONDARY
-        ):
+        if self.ingest_instance is not DirectIngestInstance.SECONDARY:
             raise ValueError(
                 "A reimport is not a valid concept for PRIMARY instances. This should "
                 "not be called."
@@ -608,21 +366,7 @@ class DirectIngestInstanceStatusManager:
         if not current_rerun_status_rows:
             return None
 
-        if not self.is_ingest_in_dataflow_enabled:
-            if self.ingest_instance is DirectIngestInstance.PRIMARY:
-                valid_start_statuses = [
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                ]
-            elif self.ingest_instance is DirectIngestInstance.SECONDARY:
-                valid_start_statuses = [
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
-                ]
-            else:
-                raise ValueError(f"Unexpected ingest instance {self.ingest_instance}")
-
-        else:
-            valid_start_statuses = [DirectIngestStatus.RAW_DATA_REIMPORT_STARTED]
+        valid_start_statuses = [DirectIngestStatus.RAW_DATA_REIMPORT_STARTED]
 
         return one(
             row
@@ -630,45 +374,9 @@ class DirectIngestInstanceStatusManager:
             if row.status in valid_start_statuses
         )
 
-    # TODO(#20930): Delete this function once ingest in Dataflow is shipped for all
-    #  states.
-    def _get_raw_data_source_instance(
-        self, query_session: Session
-    ) -> Optional[DirectIngestInstance]:
-        """Returns the current raw data source of the ingest instance associated with
-        this status manager.
-        """
-        if self.is_ingest_in_dataflow_enabled:
-            raise ValueError(
-                "The raw_data_source_instance is not a valid concept for ingest in "
-                "Dataflow states. This should not be called."
-            )
-
-        # Raw data source can be PRIMARY or SECONDARY for SECONDARY instances,
-        # depending on the configurations of the secondary rerun.
-        current_rerun_start_instance_status: Optional[
-            DirectIngestInstanceStatus
-        ] = self._get_current_rerun_start_status(query_session)
-        if not current_rerun_start_instance_status:
-            return None
-
-        # If the rerun only involves regenerating and running ingest views, then the
-        # raw data source is PRIMARY.
-        if (
-            current_rerun_start_instance_status.status
-            == DirectIngestStatus.STANDARD_RERUN_STARTED
-        ):
-            return DirectIngestInstance.PRIMARY
-
-        # Otherwise, this means that the raw data source is SECONDARY.
-        return DirectIngestInstance.SECONDARY
-
     def get_current_ingest_rerun_start_timestamp(self) -> Optional[datetime]:
         """Gets the timestamp of the current rerun's start status."""
-        if (
-            self.is_ingest_in_dataflow_enabled
-            and self.ingest_instance is not DirectIngestInstance.SECONDARY
-        ):
+        if self.ingest_instance is not DirectIngestInstance.SECONDARY:
             raise ValueError(
                 "A reimport is not a valid concept for PRIMARY instances. This should "
                 "not be called."
@@ -684,39 +392,15 @@ class DirectIngestInstanceStatusManager:
 
     def change_status_to(self, new_status: DirectIngestStatus) -> None:
         """Change status to the passed in status."""
-        # TODO(#20930): Remove raw data source instance change notifications once ingest
-        #  in dataflow is shipped in all states.
-        prev_raw_data_source_instance = (
-            self.get_raw_data_source_instance()
-            if not self.is_ingest_in_dataflow_enabled
-            else None
-        )
         self._validate_status_transition_from_current_status(new_status=new_status)
-        previous_status = self._add_new_status_row(status=new_status)
-        if self.change_listener is not None:
-            if (
-                not self.is_ingest_in_dataflow_enabled
-                and prev_raw_data_source_instance
-                != (raw_data_source_instance := self.get_raw_data_source_instance())
-            ):
-                self.change_listener.on_raw_data_source_instance_change(
-                    raw_data_source_instance
-                )
-            if previous_status != new_status:
-                self.change_listener.on_ingest_instance_status_change(
-                    previous_status=previous_status, new_status=new_status
-                )
+        self._add_new_status_row(status=new_status)
 
     @environment.test_only
     def add_initial_status(self) -> None:
         """Seeds the DB with the expected initial status that would normally be set
         via a migration in production environments.
         """
-        self.add_instance_status(
-            get_initial_status_for_instance(
-                self.ingest_instance, self.is_ingest_in_dataflow_enabled
-            )
-        )
+        self.add_instance_status(get_initial_status_for_instance(self.ingest_instance))
 
     @environment.test_only
     def add_instance_status(
@@ -725,9 +409,7 @@ class DirectIngestInstanceStatusManager:
     ) -> None:
         """Add a status (without any validations). Used for testing purposes."""
 
-        if status in get_invalid_statuses(
-            self.ingest_instance, self.is_ingest_in_dataflow_enabled
-        ):
+        if status in get_invalid_statuses(self.ingest_instance):
             raise ValueError(
                 f"Cannot add invalid status [{status.value}] for instance "
                 f"[{self.ingest_instance.value}]."
@@ -781,9 +463,7 @@ class DirectIngestInstanceStatusManager:
         """Validates that the transition from the current status to the new status is
         valid and throws a ValueError if it is not.
         """
-        if new_status in get_invalid_statuses(
-            ingest_instance, self.is_ingest_in_dataflow_enabled
-        ):
+        if new_status in get_invalid_statuses(ingest_instance):
             raise ValueError(
                 f"The status={new_status.value} is an invalid status to transition to "
                 f"in instance={ingest_instance.value}"
@@ -797,17 +477,14 @@ class DirectIngestInstanceStatusManager:
 
         if (
             current_status == new_status
-            and new_status
-            not in get_human_intervention_statuses(
-                ingest_instance, self.is_ingest_in_dataflow_enabled
-            )
+            and new_status not in get_human_intervention_statuses(ingest_instance)
         ):
             # You can always transition to the same status for statuses that do not involve human intervention
             return
 
-        valid_current_statuses = get_valid_current_status_transitions(
-            ingest_instance, self.is_ingest_in_dataflow_enabled
-        )[new_status]
+        valid_current_statuses = get_valid_current_status_transitions(ingest_instance)[
+            new_status
+        ]
 
         if current_status not in valid_current_statuses:
             current_status_str = current_status.value if current_status else None

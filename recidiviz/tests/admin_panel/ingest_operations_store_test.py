@@ -141,86 +141,6 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
 ):
     """Implements tests for get_all_current_ingest_instance_statuses."""
 
-    # TODO(#20930): Delete this test once ingest in dataflow is enabled for all states
-    @freeze_time(datetime(2022, 8, 29, tzinfo=pytz.UTC))
-    def test_all_different_statuses_legacy(self) -> None:
-        """
-        Assert that the correct dictionary exists when all primary and secondary statuses
-        are different
-        """
-
-        ingest_in_dataflow_enabled = False
-        us_xx_primary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_XX.value,
-            DirectIngestInstance.PRIMARY,
-            ingest_in_dataflow_enabled,
-        )
-
-        us_xx_secondary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_XX.value,
-            DirectIngestInstance.SECONDARY,
-            ingest_in_dataflow_enabled,
-        )
-        us_yy_primary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_YY.value,
-            DirectIngestInstance.PRIMARY,
-            ingest_in_dataflow_enabled,
-        )
-
-        us_yy_secondary_status_manager = DirectIngestInstanceStatusManager(
-            StateCode.US_YY.value,
-            DirectIngestInstance.SECONDARY,
-            ingest_in_dataflow_enabled,
-        )
-
-        timestamp = datetime(2022, 8, 29, tzinfo=pytz.UTC)
-        us_xx_primary_status_manager.add_instance_status(
-            DirectIngestStatus.STANDARD_RERUN_STARTED
-        )
-        us_xx_secondary_status_manager.add_instance_status(
-            DirectIngestStatus.READY_TO_FLASH
-        )
-        us_yy_primary_status_manager.add_instance_status(
-            DirectIngestStatus.FLASH_IN_PROGRESS
-        )
-        us_yy_secondary_status_manager.add_instance_status(
-            DirectIngestStatus.FLASH_COMPLETED
-        )
-
-        dif_statuses = self.operations_store.get_all_current_ingest_instance_statuses()
-
-        expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_XX.value,
-                    instance=DirectIngestInstance.PRIMARY,
-                    status=DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    status_timestamp=timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_XX.value,
-                    instance=DirectIngestInstance.SECONDARY,
-                    status=DirectIngestStatus.READY_TO_FLASH,
-                    status_timestamp=timestamp,
-                ),
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_YY.value,
-                    instance=DirectIngestInstance.PRIMARY,
-                    status=DirectIngestStatus.FLASH_IN_PROGRESS,
-                    status_timestamp=timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
-                    region_code=StateCode.US_YY.value,
-                    instance=DirectIngestInstance.SECONDARY,
-                    status=DirectIngestStatus.FLASH_COMPLETED,
-                    status_timestamp=timestamp,
-                ),
-            },
-        }
-        self.assertEqual(expected, dif_statuses)
-
     @freeze_time(datetime(2022, 8, 29, tzinfo=pytz.UTC))
     def test_all_different_statuses(self) -> None:
         """
@@ -228,28 +148,23 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
         are different
         """
 
-        ingest_in_dataflow_enabled = True
         us_xx_primary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
-            ingest_in_dataflow_enabled,
         )
 
         us_xx_secondary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
-            ingest_in_dataflow_enabled,
         )
         us_yy_primary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
-            ingest_in_dataflow_enabled,
         )
 
         us_yy_secondary_status_manager = DirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
-            ingest_in_dataflow_enabled,
         )
 
         timestamp = datetime(2022, 8, 29, tzinfo=pytz.UTC)

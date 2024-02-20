@@ -56,7 +56,6 @@ def _secondary_has_raw_data_changes(state_code: StateCode) -> bool:
     instance_status_manager = DirectIngestInstanceStatusManager(
         region_code=state_code.value.lower(),
         ingest_instance=DirectIngestInstance.SECONDARY,
-        is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
     )
 
     return (

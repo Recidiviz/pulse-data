@@ -39,7 +39,6 @@ def stale_secondary_raw_data(
     secondary_status_manager = DirectIngestInstanceStatusManager(
         region_code=region_code,
         ingest_instance=DirectIngestInstance.SECONDARY,
-        is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
     )
     secondary_rerun_start_timestamp = (
         secondary_status_manager.get_current_ingest_rerun_start_timestamp()

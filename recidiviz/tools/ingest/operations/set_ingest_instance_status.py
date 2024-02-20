@@ -37,7 +37,6 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -107,9 +106,6 @@ def main(
             manager = DirectIngestInstanceStatusManager(
                 region_code=state_code.value,
                 ingest_instance=ingest_instance,
-                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
-                    state_code=state_code, instance=ingest_instance
-                ),
             )
             # pylint: disable=protected-access
             current_status = manager._get_current_status_row(session).status

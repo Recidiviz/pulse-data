@@ -90,16 +90,10 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
 
         # Seed the DB with initial statuses for all regions
         for region_code in get_existing_region_codes():
-            state_code = StateCode(region_code.upper())
             for ingest_instance in DirectIngestInstance:
-                ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
-                    state_code, ingest_instance
-                )
-
                 DirectIngestInstanceStatusManager(
                     region_code=region_code,
                     ingest_instance=ingest_instance,
-                    is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
                 ).add_initial_status()
 
     def tearDown(self) -> None:
@@ -129,7 +123,6 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                     DirectIngestInstanceStatusManager(
                         region_code=region_code,
                         ingest_instance=ingest_instance,
-                        is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
                     ).change_status_to(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
                 controller = DirectIngestControllerFactory.build(
@@ -141,11 +134,6 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                 self.assertIsNotNone(controller)
                 self.assertIsInstance(controller, BaseDirectIngestController)
                 self.assertEqual(ingest_instance, controller.ingest_instance)
-                if not ingest_in_dataflow_enabled:
-                    self.assertEqual(
-                        DirectIngestInstance.PRIMARY,
-                        controller.raw_data_source_instance,
-                    )
 
     def test_build_gcsfs_ingest_controller_all_regions_raw_import_secondary(
         self,
@@ -160,7 +148,6 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             status_manager = DirectIngestInstanceStatusManager(
                 region_code=region_code,
                 ingest_instance=DirectIngestInstance.SECONDARY,
-                is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
             )
 
             if not ingest_in_dataflow_enabled:
@@ -182,10 +169,6 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             self.assertIsNotNone(controller)
             self.assertIsInstance(controller, BaseDirectIngestController)
             self.assertEqual(DirectIngestInstance.SECONDARY, controller.ingest_instance)
-            if not ingest_in_dataflow_enabled:
-                self.assertEqual(
-                    DirectIngestInstance.SECONDARY, controller.raw_data_source_instance
-                )
 
     def test_build_gcsfs_ingest_controller_all_regions_do_not_allow_launched(
         self,

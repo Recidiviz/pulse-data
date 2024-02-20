@@ -363,9 +363,6 @@ class IngestOperationsStore(AdminPanelStore):
         instance_status_manager = DirectIngestInstanceStatusManager(
             region_code=formatted_state_code,
             ingest_instance=instance,
-            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
-                state_code, instance
-            ),
         )
         instance_status_manager.change_status_to(
             DirectIngestStatus.STANDARD_RERUN_STARTED
@@ -407,9 +404,6 @@ class IngestOperationsStore(AdminPanelStore):
         instance_status_manager = DirectIngestInstanceStatusManager(
             region_code=formatted_state_code,
             ingest_instance=instance,
-            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
-                state_code, instance
-            ),
         )
         # Validation that this is a valid status transition is handled within the
         # instance manager.
@@ -690,9 +684,6 @@ class IngestOperationsStore(AdminPanelStore):
                 status_manager = DirectIngestInstanceStatusManager(
                     region_code=state_code.value,
                     ingest_instance=i_instance,
-                    is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
-                        state_code, i_instance
-                    ),
                 )
 
                 curr_status_info = status_manager.get_current_status_info()

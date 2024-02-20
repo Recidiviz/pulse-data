@@ -174,14 +174,10 @@ class DirectIngestRegionDirStructureBase:
         enabled_in_dataflow: bool = False,
     ) -> BaseDirectIngestController:
         """Builds a controller for the given region code and ingest instance."""
-        state_code = StateCode(region_code.upper())
         # Seed the DB with an initial status
         DirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
-            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
-                state_code, ingest_instance
-            ),
         ).add_instance_status(
             DirectIngestStatus.INITIAL_STATE
             if enabled_in_dataflow
