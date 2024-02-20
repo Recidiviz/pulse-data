@@ -33,10 +33,8 @@ class FakeDirectIngestCloudTaskQueueManager(DirectIngestCloudTaskQueueManager, a
     """Base class for fake implementations of DirectIngestCloudTaskManager."""
 
     _queue_type_to_name: Dict[DirectIngestQueueType, str] = {
-        DirectIngestQueueType.MATERIALIZE_INGEST_VIEW: "ingest_view_materialization",
         DirectIngestQueueType.RAW_DATA_IMPORT: "raw_data_import",
         DirectIngestQueueType.SCHEDULER: "schedule",
-        DirectIngestQueueType.EXTRACT_AND_MERGE: "process",
     }
 
     def __init__(self) -> None:

@@ -493,7 +493,6 @@ class TestDirectIngestControl(unittest.TestCase):
             allow_unlaunched=True,
         )
         mock_controller.schedule_next_ingest_task.assert_not_called()
-        mock_controller.run_extract_and_merge_job_and_kick_scheduler_on_completion.assert_not_called()
         mock_controller.handle_new_files.assert_called_with(
             current_task_id=task_id, can_start_ingest=False
         )

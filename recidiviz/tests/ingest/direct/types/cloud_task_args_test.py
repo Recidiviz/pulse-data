@@ -18,13 +18,12 @@
 import datetime
 from unittest import TestCase
 
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
-    IngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
+# TODO(#20930): Move this class to another location when we move
+#  IngestViewMaterializationArgs.
 class TestCloudTaskArgs(TestCase):
     """Tests for cloud_task_args.py."""
 
@@ -40,10 +39,6 @@ class TestCloudTaskArgs(TestCase):
         )
 
         self.assertEqual(args.ingest_instance, DirectIngestInstance.PRIMARY)
-        self.assertEqual(
-            "ingest_view_materialization_my_ingest_view_name-PRIMARY-None-2019_11_22_11_22_33_444444",
-            args.task_id_tag(),
-        )
 
         args = IngestViewMaterializationArgs(
             ingest_view_name="my_ingest_view_name",
@@ -53,24 +48,3 @@ class TestCloudTaskArgs(TestCase):
         )
 
         self.assertEqual(args.ingest_instance, DirectIngestInstance.SECONDARY)
-        self.assertEqual(
-            "ingest_view_materialization_my_ingest_view_name-SECONDARY-2019_01_22_11_22_33_444444-2019_11_22_11_22_33_444444",
-            args.task_id_tag(),
-        )
-
-    def test_extract_and_merge_args(self) -> None:
-        dt = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
-        args = ExtractAndMergeArgs(
-            ingest_time=datetime.datetime.now(),
-            ingest_view_name="my_ingest_view_name",
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            upper_bound_datetime_inclusive=dt,
-            batch_number=2,
-        )
-
-        self.assertEqual(args.ingest_instance, DirectIngestInstance.PRIMARY)
-        self.assertEqual(args.ingest_view_name, "my_ingest_view_name")
-        self.assertEqual(
-            "extract_and_merge_my_ingest_view_name_2019-11-22_batch_2",
-            args.task_id_tag(),
-        )

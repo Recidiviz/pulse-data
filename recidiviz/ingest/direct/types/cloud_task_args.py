@@ -24,7 +24,6 @@ import cattr
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import serialization
-from recidiviz.common.date import snake_case_datetime
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
@@ -49,29 +48,6 @@ class CloudTaskArgs:
         return converter.structure(serializable, cls)
 
 
-# TODO(#20930): Delete this class when ingest in Dataflow is fully shipped.
-@attr.s(frozen=True)
-class ExtractAndMergeArgs(CloudTaskArgs):
-    # The time this extract and merge task was scheduled.
-    ingest_time: datetime.datetime = attr.ib()
-
-    ingest_view_name: str = attr.ib()
-    ingest_instance: DirectIngestInstance = attr.ib()
-
-    upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
-    batch_number: int = attr.ib()
-
-    def task_id_tag(self) -> str:
-        return (
-            f"extract_and_merge_{self.ingest_view_name}_"
-            f"{self.upper_bound_datetime_inclusive.date().isoformat()}_"
-            f"batch_{self.batch_number}"
-        )
-
-    def job_tag(self) -> str:
-        return f"{self.ingest_instance.value}_{self.task_id_tag()}: {self.ingest_time}"
-
-
 @attr.s(frozen=True)
 class GcsfsRawDataBQImportArgs(CloudTaskArgs):
     raw_data_file_path: GcsfsFilePath = attr.ib()
@@ -90,9 +66,10 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
         )
 
 
-# TODO(#20930): Delete this class when ingest in Dataflow is fully shipped.
+# TODO(#20930): Move this class to another location now that it isn't specifically used
+#  for cloud tasks.
 @attr.s(frozen=True)
-class IngestViewMaterializationArgs(CloudTaskArgs):
+class IngestViewMaterializationArgs:
     """Arguments for an ingest view materialization job."""
 
     # The file tag of the ingest view to export. Used to determine which query to run
@@ -127,15 +104,3 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
         return datetime.datetime(
             dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
         )
-
-    def task_id_tag(self) -> str:
-        tag = (
-            f"ingest_view_materialization_{self.ingest_view_name}-"
-            f"{self.ingest_instance.value}"
-        )
-        if self.lower_bound_datetime_exclusive:
-            tag += f"-{snake_case_datetime(self.lower_bound_datetime_exclusive)}"
-        else:
-            tag += "-None"
-        tag += f"-{snake_case_datetime(self.upper_bound_datetime_inclusive)}"
-        return tag

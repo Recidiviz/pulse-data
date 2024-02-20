@@ -66,11 +66,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
-    GcsfsRawDataBQImportArgs,
-    IngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import GcsfsRawDataBQImportArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
@@ -449,18 +445,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         will de facto relinquish their hold on the acquired lock."""
         return 3600
 
-    # TODO(#20930): Delete when ingest in dataflow is shipped for all states
-    def run_extract_and_merge_job_and_kick_scheduler_on_completion(
-        self, args: ExtractAndMergeArgs
-    ) -> None:
-        """
-        Runs the full extract and merge process for this controller and triggers
-        scheduler upon completion, if necessary.
-        """
-        raise ValueError(
-            "Cannot call this method for an ingest in dataflow enabled state."
-        )
-
     # ================= #
     # NEW FILE HANDLING #
     # ================= #
@@ -646,14 +630,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         if should_schedule:
             self.kick_scheduler(just_finished_job=True)
-
-    # TODO(#20930): Delete when ingest in dataflow is shipped for all states
-    def do_ingest_view_materialization(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgs
-    ) -> None:
-        raise ValueError(
-            "Cannot call this method for an ingest in dataflow enabled state."
-        )
 
 
 def check_is_region_launched_in_env(region: DirectIngestRegion) -> None:
