@@ -11,6 +11,7 @@ input_columns:
   - _incident_place_type_description
   - proposed_hearing_date
   - _offense_description_list
+  - _offense_code_list
   - penalties
 unused_columns: []
 output:
@@ -29,6 +30,18 @@ output:
             $enum_mapping:
               $raw_text: _offense_description_list
               $custom_parser: us_mi_custom_enum_parsers.map_incident_type
+          incident_metadata:
+            $json_dict:
+              NONBONDABLE_OFFENSES:
+                $custom:
+                  $function: us_mi_custom_parsers.nonbondable_offenses
+                  $args:
+                    offense_codes: _offense_code_list
+              BONDABLE_OFFENSES:
+                $custom:
+                  $function: us_mi_custom_parsers.bondable_offenses
+                  $args:
+                    offense_codes: _offense_code_list
           incarceration_incident_outcomes:
             - $foreach:
                 $iterable:
