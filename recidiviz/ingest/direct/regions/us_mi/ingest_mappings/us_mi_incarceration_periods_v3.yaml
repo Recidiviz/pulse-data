@@ -15,7 +15,7 @@ input_columns:
   - next_movement_reason_id
   - security_level_id
   - cell_type_id
-  - offender_designation_code_id
+  - wing_name
   - period_id
 unused_columns: []
 output:
@@ -302,82 +302,60 @@ output:
                 StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
                   - "12551" # Security level IS
           housing_unit_type:
-            # In MI, someone is placed in segregation either temporarily for a variety of reasons
-            # or permanently as designated by a committee.  In our data, we have information on
-            # their cell type and their official designation.
-            #
-            # If they're in a segregation cell and we have information on their designation,
-            # then we'll determine permanent vs temporary segregation based on their designation
             $conditional:
+              # If the housing unit is part of the START unit, map to OTHER_SOLITARY_CONFINEMENT
               - $if:
-                  $and:
-                    - $in:
-                        $value: cell_type_id
-                        $options:
-                          - $literal("7856") # TS - Temporary Segregation
-                          - $literal("7842") # PC - Protective Custody (Protective Segregation)
-                          - $literal("7827") # DS - Detention (Punitive Segregation)
-                          - $literal("7823") # AS - Administrative Segregation
-                    - $not_null: offender_designation_code_id
+                  $or:
+                    - $and:
+                        - $equal:
+                            - location_code
+                            - $literal("ECF")
+                        - $in:
+                            $value: reporting_station_name
+                            $options:
+                              - $literal("03") # Unit 3
+                              - $literal("04") # Unit 4
+                    - $and:
+                        - $equal:
+                            - location_code
+                            - $literal("ICF")
+                        - $in:
+                            $value: reporting_station_name
+                            $options:
+                              - $literal("02") # Unit 2
+                              - $literal("03") # Unit 3
+                    - $and:
+                        - $equal:
+                            - location_code
+                            - $literal("ICF")
+                        - $equal:
+                            - reporting_station_name
+                            - $literal("04") # Unit 4
+                        - $equal:
+                            - wing_name
+                            - $literal("A") # Wing A
                 $then:
-                  $conditional:
-                    - $if:
-                        $equal:
-                          - offender_designation_code_id
-                          - $literal("11389") # Temporary Segregation
-                      $then:
-                        $enum_mapping:
-                          $raw_text:
-                            $concat:
-                              $values:
-                                - offender_designation_code_id
-                                - cell_type_id
-                              $include_nulls: True
-                              $separator: "##"
-                          $mappings:
-                            StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
-                              - "11389##7856" # 7856: TS - Temporary Segregation
-                              - "11389##7842" # 7842: PC - Protective Custody (Protective Segregation)
-                              - "11389##7827" # 7827: DS - Detention (Punitive Segregation)
-                              - "11389##7823" # 7823: AS - Administrative Segregation
-                    - $else_if:
-                        $in:
-                          $value: offender_designation_code_id
-                          $options:
-                            - $literal("11672") # Administrative Segregation
-                            - $literal("11670") # Graded in Segregation
-                      $then:
-                        $enum_mapping:
-                          $raw_text:
-                            $concat:
-                              $values:
-                                - offender_designation_code_id
-                                - cell_type_id
-                              $include_nulls: True
-                              $separator: "##"
-                          $mappings:
-                            # TODO(#22252): Remap these values so we can deprecate PERMANENT_SOLITARY_CONFINEMENT
-                            StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
-                              - "11672##7856" # 7856: TS - Temporary Segregation
-                              - "11672##7842" # 7842: PC - Protective Custody (Protective Segregation)
-                              - "11672##7827" # 7856: DS - Detention (Punitive Segregation)
-                              - "11672##7823" # 7827: AS - Administrative Segregation
-                              - "11670##7856" # 7856: TS - Temporary Segregation
-                              - "11670##7842" # 7842: PC - Protective Custody (Protective Segregation)
-                              - "11670##7827" # 7827: DS - Detention (Punitive Segregation)
-                              - "11670##7823" # 7823: AS - Administrative Segregation
-              # If we don't have information on their designation,
-              # then we'll determine permanent vs temporary segregation based on cell type
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - location_code
+                          - reporting_station_name
+                          - wing_name
+                    $custom_parser: us_mi_custom_enum_parsers.map_housing_unit_type_START
+              # Otherwise map based on cell type
               - $else:
                   $enum_mapping:
                     $raw_text: cell_type_id
                     $mappings:
-                      # TODO(#22252): Remap these values so we can deprecate PERMANENT_SOLITARY_CONFINEMENT
-                      StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
+                      StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
                         - "7823" # 7827: AS - Administrative Segregation
                       StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
                         - "7856" # 7856: TS - Temporary Segregation
+                      StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY:
                         - "7842" # 7842: PC - Protective Custody (Protective Segregation)
+                        - "14440" # PH - Protective Housing
+                      StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
                         - "7827" # 7856: DS - Detention (Punitive Segregation)
                       StateIncarcerationPeriodHousingUnitType.GENERAL:
                         - "11319" # Regular
@@ -389,7 +367,6 @@ output:
                         - "13008" # H4 - Residential Treatment Services
                         - "13010" # H6 - Infirmary
                         - "13357" # 1S - SSOTP Phase I
-                        - "14440" # PH - Protective Housing
                         - "14443" # AR - ASRP
                         - "14444" # OB - Overnight Beds
                         - "16010" # IC - Interm. Care Program

@@ -98,6 +98,7 @@ columns:
         description: QU - Quarantine
   - name: cell_status_id
   - name: location_wing_id
+    description: Reference code for location id (links with ADH_LOCATION_WING)
   - name: cell_lock
   - name: bunk
   - name: date_placed_in_service

@@ -29,6 +29,9 @@ from recidiviz.common.constants.state.state_drug_screen import StateDrugScreenRe
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodHousingUnitType,
+)
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
@@ -581,5 +584,15 @@ def parse_coms_drug_screen_result(
             return StateDrugScreenResult.POSITIVE
 
         return StateDrugScreenResult.NO_RESULT
+
+    return None
+
+
+def map_housing_unit_type_START(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitType]:
+
+    if raw_text:
+        return StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT
 
     return None
