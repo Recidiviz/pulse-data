@@ -39,18 +39,9 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
-    IngestViewMaterializer,
-)
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContents,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusChangeListener,
     DirectIngestInstanceStatusManager,
-)
-from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -64,7 +55,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -77,17 +67,9 @@ from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
-    FakeInstanceIngestViewContents,
-)
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestFixtureDataFileType,
-    direct_ingest_fixture_path,
-)
-from recidiviz.utils.types import assert_type
 
 
 class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
@@ -302,6 +284,7 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         self.imported_paths.append(path)
 
 
+# TODO(#20930): Move this to another file since it's no longer used in this one.
 class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderCollector):
     """A test version of DirectIngestViewQueryBuilderCollector"""
 
@@ -345,81 +328,6 @@ class _MockBigQueryClientForControllerTests:
         self.fs = fs
 
 
-# TODO(#20930): Delete this once ingest in Dataflow is enabled for all states
-class FakeIngestViewMaterializer(IngestViewMaterializer):
-    """A fake implementation of IngestViewMaterializer for use in tests."""
-
-    def __init__(
-        self,
-        *,
-        region: DirectIngestRegion,
-        raw_data_source_instance: DirectIngestInstance,
-        ingest_instance: DirectIngestInstance,
-        metadata_manager: DirectIngestViewMaterializationMetadataManager,
-        ingest_view_contents: InstanceIngestViewContents,
-        big_query_client: _MockBigQueryClientForControllerTests,
-        view_collector: DirectIngestViewQueryBuilderCollector,
-        launched_ingest_views: List[str],
-    ):
-        self.region = region
-        self.fs = big_query_client.fs
-        self.metadata_manager = metadata_manager
-        self.ingest_view_contents = ingest_view_contents
-        self.processed_args: List[IngestViewMaterializationArgs] = []
-
-        self.ingest_instance = ingest_instance
-        self.raw_data_source_instance = raw_data_source_instance
-        self.view_collector = view_collector
-        self.launched_ingest_views = launched_ingest_views
-
-    def materialize_view_for_args(
-        self, ingest_view_materialization_args: IngestViewMaterializationArgs
-    ) -> bool:
-        job_completion_time = self.metadata_manager.get_job_completion_time_for_args(
-            ingest_view_materialization_args
-        )
-        if job_completion_time:
-            if ingest_view_materialization_args not in self.processed_args:
-                raise ValueError(
-                    f"Did not find {ingest_view_materialization_args} in "
-                    f"self.processed_args even though the args are marked as processed "
-                    f"in the DB."
-                )
-            return False
-
-        if ingest_view_materialization_args in self.processed_args:
-            raise ValueError(
-                f"Found {ingest_view_materialization_args} in self.processed_args "
-                f"even though the args are not marked as processed in the DB."
-            )
-
-        # TODO(#15801): Move the fixture files to `ingest_view` subdirectory and pass
-        # along a test case name.
-        data_local_path = direct_ingest_fixture_path(
-            region_code=self.region.region_code,
-            file_name=f"{ingest_view_materialization_args.ingest_view_name}.csv",
-            fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
-        )
-        ingest_view_contents = assert_type(
-            self.ingest_view_contents, FakeInstanceIngestViewContents
-        )
-        ingest_view_contents.test_add_batches_for_data(
-            ingest_view_name=ingest_view_materialization_args.ingest_view_name,
-            upper_bound_datetime_inclusive=ingest_view_materialization_args.upper_bound_datetime_inclusive,
-            data_local_path=data_local_path,
-        )
-
-        self.metadata_manager.mark_ingest_view_materialized(
-            ingest_view_materialization_args
-        )
-        self.processed_args.append(ingest_view_materialization_args)
-
-        return True
-
-    def get_materialized_ingest_views(self) -> List[str]:
-        return [arg.ingest_view_name for arg in self.processed_args]
-
-
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_fake_direct_ingest_controller(
     controller_cls: Type[BaseDirectIngestController],
@@ -454,13 +362,6 @@ def build_fake_direct_ingest_controller(
             status_manager.add_instance_status(status)
         return status_manager
 
-    if "TestDirectIngestController" in controller_cls.__name__:
-        view_collector_cls: Type[
-            DirectIngestViewQueryBuilderCollector
-        ] = FakeDirectIngestViewQueryBuilderCollector
-    else:
-        view_collector_cls = DirectIngestViewQueryBuilderCollector
-
     with patch(
         f"{BaseDirectIngestController.__module__}.DirectIngestCloudTaskQueueManagerImpl"
     ) as mock_task_factory_cls, patch(
@@ -468,15 +369,6 @@ def build_fake_direct_ingest_controller(
     ) as mock_big_query_client_cls, patch(
         f"{BaseDirectIngestController.__module__}.DirectIngestRawFileImportManager",
         FakeDirectIngestRawFileImportManager,
-    ), patch(
-        f"{BaseDirectIngestController.__module__}.IngestViewMaterializerImpl",
-        FakeIngestViewMaterializer,
-    ), patch(
-        f"{BaseDirectIngestController.__module__}.DirectIngestViewQueryBuilderCollector",
-        view_collector_cls,
-    ), patch(
-        f"{BaseDirectIngestController.__module__}.InstanceIngestViewContentsImpl",
-        FakeInstanceIngestViewContents,
     ), patch(
         f"{BaseDirectIngestController.__module__}.DirectIngestInstanceStatusManager",
         mock_build_status_manager,

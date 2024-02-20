@@ -380,6 +380,7 @@ def get_valid_current_status_transitions(
     )
 
 
+# TODO(#20930): We should be able to remove this listener entirely post-IID
 class DirectIngestInstanceStatusChangeListener:
     """An abstract class used to react to changes in instance statuses."""
 

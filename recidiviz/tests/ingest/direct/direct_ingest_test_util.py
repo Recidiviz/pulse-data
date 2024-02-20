@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for direct ingest tests."""
-from typing import Optional
-
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -27,16 +25,6 @@ from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_man
 from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-
-
-# TODO(#20930): Remove this once is_ingest_in_dataflow_enabled=True everywhere and just
-#   use ingest_instance.
-def _get_raw_data_source_instance(
-    controller: BaseDirectIngestController,
-) -> Optional[DirectIngestInstance]:
-    if controller.is_ingest_in_dataflow_enabled:
-        return controller.ingest_instance
-    return controller.ingest_instance_status_manager.get_raw_data_source_instance()
 
 
 def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
