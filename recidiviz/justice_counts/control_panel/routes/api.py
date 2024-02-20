@@ -694,10 +694,15 @@ def get_api_blueprint(
             latest_annual_report_definition_json = {}
             latest_annual_reports_json = {}
 
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=current_session, agency_id=agency_id
+            )
+
             if latest_monthly_report is not None:
                 latest_monthly_report_metrics = ReportInterface.get_metrics_by_report(
                     session=current_session,
                     report=latest_monthly_report,
+                    agency_datapoints=agency_datapoints,
                 )
                 latest_monthly_report_definition_json = (
                     ReportInterface.to_json_response(
@@ -720,6 +725,7 @@ def get_api_blueprint(
                 latest_annual_report_metrics = ReportInterface.get_metrics_by_report(
                     session=current_session,
                     report=latest_annual_report,
+                    agency_datapoints=agency_datapoints,
                 )
                 latest_annual_report_definition_json = ReportInterface.to_json_response(
                     report=latest_annual_report,
@@ -737,7 +743,9 @@ def get_api_blueprint(
                 latest_annual_reports_json[month] = latest_annual_report_definition_json
 
             agency_metrics = DatapointInterface.get_metric_settings_by_agency(
-                session=current_session, agency=agency
+                session=current_session,
+                agency=agency,
+                agency_datapoints=agency_datapoints,
             )
             agency_metrics_json = [
                 metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
