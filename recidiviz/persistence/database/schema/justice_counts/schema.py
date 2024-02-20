@@ -680,7 +680,7 @@ class Datapoint(JusticeCountsBase):
     source_id = Column(Integer, nullable=True)
 
     # Indicates if a datapoint is a Report datapoint (True) or an Agency datapoint (False)
-    is_report_datapoint = Column(Boolean)
+    is_report_datapoint = Column(Boolean, index=True)
 
     metric_definition_key = Column(String, nullable=False)
 
