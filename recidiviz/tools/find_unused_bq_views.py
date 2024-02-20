@@ -112,9 +112,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_s
 from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
     HOUSING_UNIT_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
-    HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
@@ -176,10 +173,6 @@ LOOKER_REFERENCED_ADDRESSES = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
-    HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER.address: (
-        "This view was created relatively recently (5/31/23) and may still be in use "
-        "for ad-hoc analysis."
-    ),
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER.address: (
         "This view aggregates early discharge stats at the officer-level. It is used "
         "to generate reports that can be used by supervisors to identify officers who "
