@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,9 +23,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    supervision_level_downgrade,
-)
+from recidiviz.task_eligibility.completion_events.general import kudos_sms_sent
 from recidiviz.task_eligibility.criteria.state_specific.us_ca import (
     employment_for_6_to_8_months,
 )
@@ -48,8 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         employment_for_6_to_8_months.VIEW_BUILDER,
     ],
-    completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
-    # TODO(#22285) - Change to the right completion_event_builder
+    completion_event_builder=kudos_sms_sent.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
