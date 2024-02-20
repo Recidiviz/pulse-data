@@ -33,6 +33,7 @@ VIEW_QUERY_TEMPLATE = """
             ref_micond_place_type.description AS _incident_place_type_description,
             incident.proposed_hearing_date,
             offense.description as _offense_description,
+            offense.misconduct_offense_code,
             miscond_hearing_penalty_id,
             ref_penalty_type.description AS _penalty_type_description,
             CAST(penalty.penalty_days AS FLOAT64) + CEILING(CAST(penalty_hours AS FLOAT64)/24) AS penalty_days,
@@ -87,7 +88,8 @@ VIEW_QUERY_TEMPLATE = """
     offenses_info AS (
         SELECT
             misconduct_incident_id,
-            STRING_AGG(DISTINCT _offense_description, '@@') AS _offense_description_list
+            STRING_AGG(DISTINCT _offense_description, '@@' ORDER BY _offense_description) AS _offense_description_list,
+            STRING_AGG(DISTINCT misconduct_offense_code, '@@' ORDER BY misconduct_offense_code) AS _offense_code_list,
         FROM all_info
         GROUP BY misconduct_incident_id
     )
@@ -100,6 +102,7 @@ VIEW_QUERY_TEMPLATE = """
         _incident_place_type_description,
         proposed_hearing_date,
         _offense_description_list,
+        _offense_code_list,
         penalties
     FROM all_info
     LEFT JOIN offenses_info USING(misconduct_incident_id)

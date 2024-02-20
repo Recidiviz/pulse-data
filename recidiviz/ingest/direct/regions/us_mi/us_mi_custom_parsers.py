@@ -35,6 +35,29 @@ from recidiviz.common.str_field_utils import (
     safe_parse_days_from_duration_pieces,
 )
 
+nonbondable_offense_code = [
+    "007",  # Assault and Battery (Prisoner victim)
+    "008",  # Assault and Battery (Staff victim)
+    "009",  # Assault and Battery (Other Victim)
+    "003",  # Assault Resulting in Serious Physical Injury (Prisoner victim)
+    "004",  # Assault Resulting in Serious Physical Injury (Staff victim)
+    "005",  # Assault Resulting in Serious Physical Injury (Other Victim)
+    "001",  # Escape from Level 1
+    "050",  # Escape from secure facility
+    "017",  # Failure to Disperse
+    "014",  # Fighting
+    "010",  # Homicide
+    "022",  # Incite to Riot or Strike, Rioting or Striking
+    "030",  # Possession of Dangerous Contraband
+    "029",  # Possession of a Weapon
+    "013",  # Sexual Assault (Prisoner victom, sexual acts)
+    "051",  # Sexual Assault (Prisoner victim, abusive sexual contact)
+    "052",  # Sexual Assault (Staff victim)
+    "053",  # Sexual Assault (Other victim)
+    "045",  # Smuggling
+    "012",  # Threatening Behavior
+]
+
 
 def max_and_min_lengths_days(
     years_str: str,
@@ -224,3 +247,21 @@ def custodial_authority_info_from_COMS(supervision_level: str, modifier: str) ->
         return True
 
     return False
+
+
+def nonbondable_offenses(offense_codes: str) -> str:
+    """Returns whether the list of offense codes includes a nonbondable offense"""
+
+    offense_codes_list = offense_codes.split("@@")
+
+    return ",".join(
+        sorted((set(offense_codes_list)).intersection(set(nonbondable_offense_code)))
+    )
+
+
+def bondable_offenses(offense_codes: str) -> str:
+    """Returns whether the list of offense codes includes a bondable offense"""
+
+    offense_codes_list = offense_codes.split("@@")
+
+    return ",".join(sorted(set(offense_codes_list) - set(nonbondable_offense_code)))
