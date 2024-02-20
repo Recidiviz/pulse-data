@@ -63,6 +63,7 @@ module "raw-data-import-queue-secondary" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#20930): Delete this queue which is now unused in IID
 module "materialize-ingest-view-queue" {
   source = "../base-task-queue"
 
@@ -72,6 +73,7 @@ module "materialize-ingest-view-queue" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#20930): Delete this queue which is now unused in IID
 module "materialize-ingest-view-queue-secondary" {
   source = "../base-task-queue"
 
@@ -81,6 +83,7 @@ module "materialize-ingest-view-queue-secondary" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#20930): Delete this queue which is now unused in IID
 module "extract-and-merge-queue" {
   source = "../base-task-queue"
 
@@ -89,6 +92,7 @@ module "extract-and-merge-queue" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#20930): Delete this queue which is now unused in IID
 module "extract-and-merge-queue-secondary" {
   source = "../base-task-queue"
 

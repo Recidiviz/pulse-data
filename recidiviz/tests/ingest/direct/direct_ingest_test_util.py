@@ -18,7 +18,6 @@
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
 )
@@ -40,53 +39,20 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
         queue_args = (controller.region, controller.ingest_instance)
         while (
             tm.get_scheduler_queue_info(*queue_args).size()
-            or tm.get_extract_and_merge_queue_info(
-                *queue_args,
-            ).size()
-            # TODO(#20930): In legacy ingest, raw data relevant to this instance could
-            #  be processed in either instance so we check both queues. Once ingest in
-            #  dataflow is shipped, we should only need to check queue info for
-            #  `controller.ingest_instance`.
             or tm.get_raw_data_import_queue_info(
                 region=controller.region,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-            ).size()
-            or tm.get_raw_data_import_queue_info(
-                region=controller.region,
-                ingest_instance=DirectIngestInstance.SECONDARY,
-            ).size()
-            or tm.get_ingest_view_materialization_queue_info(
-                *queue_args,
+                ingest_instance=controller.ingest_instance,
             ).size()
         ):
-            # TODO(#20930): In legacy ingest, raw data relevant to this instance could
-            #  be processed in either instance so we look at both queues. Once ingest in
-            #  dataflow is shipped, we should only need to run tasks for
-            #  `controller.ingest_instance`.
-            for raw_data_instance in DirectIngestInstance:
-                if tm.get_raw_data_import_queue_info(
-                    region=controller.region,
-                    ingest_instance=raw_data_instance,
-                ).size():
-                    tm.test_run_next_raw_data_import_task(raw_data_instance)
-                    tm.test_pop_finished_raw_data_import_task(raw_data_instance)
-            if tm.get_ingest_view_materialization_queue_info(
-                *queue_args,
+            if tm.get_raw_data_import_queue_info(
+                region=controller.region,
+                ingest_instance=controller.ingest_instance,
             ).size():
-                tm.test_run_next_ingest_view_materialization_task(
-                    controller.ingest_instance
-                )
-                tm.test_pop_finished_ingest_view_materialization_task(
-                    controller.ingest_instance
-                )
+                tm.test_run_next_raw_data_import_task(controller.ingest_instance)
+                tm.test_pop_finished_raw_data_import_task(controller.ingest_instance)
             if tm.get_scheduler_queue_info(*queue_args).size():
                 tm.test_run_next_scheduler_task(controller.ingest_instance)
                 tm.test_pop_finished_scheduler_task(controller.ingest_instance)
-            if tm.get_extract_and_merge_queue_info(
-                *queue_args,
-            ).size():
-                tm.test_run_next_extract_and_merge_task(controller.ingest_instance)
-                tm.test_pop_finished_extract_and_merge_task(controller.ingest_instance)
     else:
         raise ValueError(
             f"Unexpected type for cloud task manager: "
