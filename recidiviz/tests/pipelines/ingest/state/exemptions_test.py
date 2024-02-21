@@ -17,12 +17,9 @@
 """Tests for exemptions.py."""
 import unittest
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, Set
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
-    DirectIngestControllerFactory,
-)
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -137,26 +134,3 @@ class TestExemptions(unittest.TestCase):
                 state_code_to_launchable_views[state_code]
             )
             self.assertEqual(0, len(ordered_difference))
-
-    def test_ingest_view_order_list_matches_controller_rank_lists(self) -> None:
-        state_codes = get_existing_direct_ingest_states()
-        state_code_to_ingest_view_rank_list: Dict[StateCode, List[str]] = defaultdict(
-            list
-        )
-        for state_code in state_codes:
-            region = get_direct_ingest_region(region_code=state_code.value)
-            controller_cls = DirectIngestControllerFactory.get_controller_class(region)
-            state_code_to_ingest_view_rank_list[
-                state_code
-            ] = controller_cls._get_ingest_view_rank_list(  # pylint: disable=protected-access
-                DirectIngestInstance.PRIMARY
-            )
-
-        for (
-            state_code,
-            ordered_views,
-        ) in INGEST_VIEW_ORDER_EXEMPTIONS.items():
-            self.assertTrue(state_code in state_code_to_ingest_view_rank_list)
-            self.assertListEqual(
-                ordered_views, state_code_to_ingest_view_rank_list[state_code]
-            )

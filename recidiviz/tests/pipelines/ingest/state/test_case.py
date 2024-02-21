@@ -182,8 +182,8 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         self.region_patcher.start().return_value = self.region()
 
     def tearDown(self) -> None:
-        super().tearDown()
         self.region_patcher.stop()
+        super().tearDown()
 
     def get_ingest_view_results_from_fixture(
         self,
@@ -508,8 +508,8 @@ class StateIngestPipelineTestCase(
         )
 
     def tearDown(self) -> None:
-        super().tearDown()
         self.raw_file_config_patcher.stop()
+        super().tearDown()
 
     def setup_single_ingest_view_raw_data_bq_tables(
         self, ingest_view_name: str, test_name: str

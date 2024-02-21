@@ -22,7 +22,7 @@ import datetime
 from collections import defaultdict
 from copy import deepcopy
 from types import ModuleType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 import apache_beam as beam
 import pytest
@@ -30,19 +30,12 @@ from apache_beam.pvalue import PBegin
 from apache_beam.testing.util import assert_that
 from mock import patch
 
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
 from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -72,9 +65,6 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
-from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
-    build_fake_direct_ingest_controller,
-)
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
@@ -203,11 +193,6 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
 
     @classmethod
     @abc.abstractmethod
-    def controller_cls(cls) -> Type[BaseDirectIngestController]:
-        pass
-
-    @classmethod
-    @abc.abstractmethod
     def schema_type(cls) -> SchemaType:
         pass
 
@@ -255,17 +240,6 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.operations_database_key
         )
-
-        if not is_ingest_in_dataflow_enabled(
-            self.region_code(), self.ingest_instance()
-        ):
-            self.controller = build_fake_direct_ingest_controller(
-                self.controller_cls(),
-                ingest_instance=self._main_ingest_instance(),
-                initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
-                run_async=False,
-                regions_module=regions,
-            )
 
         # Set entity matching error threshold to a diminishingly small number
         # for tests. We cannot set it to 0 because we throw when errors *equal*
