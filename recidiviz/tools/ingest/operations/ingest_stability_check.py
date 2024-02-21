@@ -188,7 +188,7 @@ def verify_ingest_view_determinism(
         ),
     )
     launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
-        ingest_instance=ingest_instance, is_dataflow_pipeline=True
+        ingest_instance=ingest_instance
     )
 
     ingest_view_contents = InstanceIngestViewContentsImpl(

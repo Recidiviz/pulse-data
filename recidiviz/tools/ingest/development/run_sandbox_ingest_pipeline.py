@@ -181,7 +181,7 @@ def get_extra_pipeline_parameter_args(
         ),
     )
     launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(
-        ingest_instance=ingest_instance, is_dataflow_pipeline=True
+        ingest_instance=ingest_instance
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,

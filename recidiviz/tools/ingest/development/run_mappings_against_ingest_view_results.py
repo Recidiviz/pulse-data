@@ -178,7 +178,6 @@ def parse_results(
             result_callable=result_processor,
             context=IngestViewContentsContextImpl(
                 ingest_instance=ingest_instance,
-                is_dataflow_pipeline=False,
                 results_update_datetime=results_update_datetime,
             ),
         )

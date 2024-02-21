@@ -68,17 +68,13 @@ class IngestViewManifestCollector:
         return self._ingest_view_to_manifest
 
     def launchable_ingest_views(
-        self, ingest_instance: DirectIngestInstance, is_dataflow_pipeline: bool
+        self, ingest_instance: DirectIngestInstance
     ) -> List[str]:
         """Returns a list of ingest views that are launchable in the current project."""
         return [
             ingest_view_name
             for ingest_view_name, manifest in self.ingest_view_to_manifest.items()
-            if manifest.should_launch(
-                IngestViewContentsContextImpl(
-                    ingest_instance, is_dataflow_pipeline=is_dataflow_pipeline
-                )
-            )
+            if manifest.should_launch(IngestViewContentsContextImpl(ingest_instance))
         ]
 
     def _parse_ingest_view_name(self, manifest_path: str) -> str:

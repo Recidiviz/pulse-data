@@ -10,8 +10,6 @@ input_columns:
   - county_code
   - jail_credit_days
 unused_columns: []
-launch_env:
-  $env: is_dataflow_pipeline
 variables:
   - life_bool:
       $equal:

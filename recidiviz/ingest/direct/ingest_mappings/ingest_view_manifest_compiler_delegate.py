@@ -104,8 +104,6 @@ class IngestViewManifestCompilerDelegate:
 _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 
 # Supported $env properties
-# TODO(#20930): Remove this property when ingest in Dataflow has been fully shipped.
-IS_DATAFLOW_PIPELINE_PROPERTY_NAME = "is_dataflow_pipeline"
 IS_LOCAL_PROPERTY_NAME = "is_local"
 IS_STAGING_PROPERTY_NAME = "is_staging"
 IS_PRODUCTION_PROPERTY_NAME = "is_production"
@@ -151,7 +149,6 @@ class IngestViewManifestCompilerDelegateImpl(
 
     def get_env_property_type(self, property_name: str) -> Type:
         if property_name in (
-            IS_DATAFLOW_PIPELINE_PROPERTY_NAME,
             IS_LOCAL_PROPERTY_NAME,
             IS_STAGING_PROPERTY_NAME,
             IS_PRODUCTION_PROPERTY_NAME,

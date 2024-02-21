@@ -652,10 +652,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     ingest_view_names
                 )
                 contents_context = IngestViewContentsContextImpl(
-                    ingest_instance=ingest_instance,
-                    is_dataflow_pipeline=is_ingest_in_dataflow_enabled(
-                        state_code=region_code, instance=ingest_instance
-                    ),
+                    ingest_instance=ingest_instance
                 )
                 for ingest_view, ingest_view_2 in related_ingest_view_pairs:
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
@@ -907,7 +904,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 for (
                     ingest_view
                 ) in ingest_view_manifest_collector.launchable_ingest_views(
-                    ingest_instance, is_dataflow_pipeline=True
+                    ingest_instance
                 ):
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
                         ingest_view

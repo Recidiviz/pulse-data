@@ -57,7 +57,7 @@ class TestExemptions(unittest.TestCase):
                 ),
             )
             all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
-                ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=True
+                ingest_instance=DirectIngestInstance.PRIMARY
             )
             state_code_to_launchable_views[state_code] = set(all_launchable_views)
 
@@ -121,7 +121,7 @@ class TestExemptions(unittest.TestCase):
                 ),
             )
             all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
-                ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=True
+                ingest_instance=DirectIngestInstance.PRIMARY
             )
             state_code_to_launchable_views[state_code] = set(all_launchable_views)
 
