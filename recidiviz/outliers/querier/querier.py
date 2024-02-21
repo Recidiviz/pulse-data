@@ -1123,3 +1123,38 @@ class OutliersQuerier:
             )
 
             return config
+
+    def deactivate_configuration(self, config_id: int) -> None:
+        """
+        Deactivates the configuration with the given id. Raises an exception if the
+        DB returns anything other than one entity or if the configuration to deactivate
+        is the only active default (feature_variant=None) configuration.
+        """
+
+        with self.database_session() as session:
+            config = (
+                session.query(Configuration).filter(Configuration.id == config_id).one()
+            )
+
+            # Silently log an error because we shouldn't try to deactvate inactive configurations
+            if config.status == ConfigurationStatus.INACTIVE.value:
+                logging.error("Configuration %s is already inactive", config_id)
+                return
+
+            if config.feature_variant is None:
+                active_default_configs = (
+                    session.query(Configuration)
+                    .filter(
+                        Configuration.feature_variant.is_(None),
+                        Configuration.status == ConfigurationStatus.ACTIVE.value,
+                    )
+                    .all()
+                )
+
+                if len(active_default_configs) == 1:
+                    raise ValueError(
+                        f"Cannot deactivate the only active default configuration for {self.state_code.value}"
+                    )
+
+            config.status = ConfigurationStatus.INACTIVE.value
+            session.commit()

@@ -75,6 +75,11 @@ class OutliersAdminPanelEndpointTests(TestCase):
             self.configurations = flask.url_for(
                 "outliers.ConfigurationsAPI", state_code_str="US_PA"
             )
+            self.deactivate = lambda config_id=None: flask.url_for(
+                "outliers.DeactivateConfigurationByIdAPI",
+                state_code_str="US_PA",
+                config_id=config_id,
+            )
 
         # Set up database
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
@@ -344,3 +349,59 @@ class OutliersAdminPanelEndpointTests(TestCase):
             },
         )
         self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
+
+    ########
+    # PUT /outliers/<state_code_str>/configurations/<config_id_str>/deactivate
+    ########
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_deactivate_config_not_found(self, mock_enabled_states: MagicMock) -> None:
+        config_id = 6
+        mock_enabled_states.return_value = ["US_PA"]
+        with self.app.test_request_context():
+            result = self.client.put(
+                self.deactivate(config_id),
+                headers=self.headers,
+            )
+
+            self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
+            error_message = f"Configuration with id {config_id} does not exist"
+            self.assertEqual(error_message, json.loads(result.data)["message"])
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_deactivate_config_default(self, mock_enabled_states: MagicMock) -> None:
+        config_id = 1
+        mock_enabled_states.return_value = ["US_PA"]
+        with self.app.test_request_context():
+            result = self.client.put(
+                self.deactivate(config_id),
+                headers=self.headers,
+            )
+
+            self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
+            error_message = (
+                "Cannot deactivate the only active default configuration for US_PA"
+            )
+            self.assertEqual(error_message, json.loads(result.data)["message"])
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_deactivate_config_success(self, mock_enabled_states: MagicMock) -> None:
+        config_id = 2
+        mock_enabled_states.return_value = ["US_PA"]
+        with self.app.test_request_context():
+            result = self.client.put(
+                self.deactivate(config_id),
+                headers=self.headers,
+            )
+
+            self.assertEqual(HTTPStatus.OK, result.status_code)
+            self.assertEqual(
+                f"Configuration {config_id} has been deactivated",
+                json.loads(result.data),
+            )
