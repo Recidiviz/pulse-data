@@ -30,7 +30,10 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
-from recidiviz.justice_counts.utils.email import send_reminder_emails
+from recidiviz.justice_counts.utils.email import (
+    send_reminder_emails,
+    send_reminder_emails_for_superagency,
+)
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -54,15 +57,21 @@ def send_reminder_emails_to_all_agencies(engine: Engine, dry_run: bool) -> None:
     agencies = AgencyInterface.get_agencies(session=session)
     for agency in agencies:
         msg = "DRY_RUN " if dry_run is True else ""
-        if agency.is_superagency is True or agency.super_agency_id is not None:
-            # TODO(#26632) For P0 of rollout, no superagencies or child agencies will
-            # receive reminder emails
+        if agency.super_agency_id is not None:
+            # We will be sending information about the child agencies in the email
+            # to the super agencies.
             continue
         msg += "Sending reminder emails to " + agency.name
         logger.info(msg)
-        send_reminder_emails(
-            session=session, agency_id=agency.id, dry_run=dry_run, logger=logger
-        )
+
+        if agency.is_superagency is not True:
+            send_reminder_emails(
+                session=session, agency_id=agency.id, dry_run=dry_run, logger=logger
+            )
+        else:
+            send_reminder_emails_for_superagency(
+                session=session, agency_id=agency.id, dry_run=dry_run, logger=logger
+            )
         logger.info("-----------------------------------\n\n")
 
 

@@ -1,0 +1,54 @@
+<div style="padding: 10px;">
+    <div style="padding-left: 180px;"> 
+        <img style="width: 50px;" src="https://publisher.justice-counts.org/android-chrome-192x192.png" alt="Logo Description">
+    </div>
+    <h2>Please upload the following metrics in <a clicktracking=off href="{{ data_entry_url }}">Publisher</a></h2>
+    
+    {% if system_to_monthly_metric_to_num_child_agencies|length > 0 %}     
+        <h3> Monthly Metrics from {{ month_names[monthly_report_date_range[0].month] }} {{ monthly_report_date_range[0].year}} </h3>
+        {% for system, missing_metric_to_num_child_agencies in system_to_monthly_metric_to_num_child_agencies.items() %}
+            <div style="margin-left: 30px;">
+                <strong>From the {{ system.value.split("_")|map('capitalize')|join(' ') }} sector:</strong><br>
+                {% for missing_metric, num_child_agencies in missing_metric_to_num_child_agencies.items() %}
+                    {% if system == superagency_system  %}
+                        <div> {{ missing_metric }} </div>
+                    {% elif num_child_agencies > 1 %}
+                        <div>{{ num_child_agencies }} child agencies are missing the {{ missing_metric }} metric</div>
+                    {% else %}
+                        <div>{{ num_child_agencies }} child agency is missing the {{ missing_metric }} metric</div>
+                    {% endif %}
+                {% endfor %}
+                <br>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if date_range_to_system_to_annual_metric_to_num_child_agencies|length > 0 %}
+        {% for date_range, system_to_missing_annual_metric_to_num_child_agencies in date_range_to_system_to_annual_metric_to_num_child_agencies.items() %}
+            {% set report_name = "" %}
+            {% if date_range[0].month == 1 %}
+                {% set report_name = "Annual Record CY" ~ date_range[0].year %}
+            {% else %}
+                {% set report_name = "Annual Record FY" ~ date_range[0].year ~ "-" ~ date_range[1].year %}
+            {% endif %}
+            <h3> Metrics from {{ report_name }}</h3>
+                <div style="margin-left: 30px;">
+                    {% for system, missing_annual_metric_to_num_child_agencies in system_to_missing_annual_metric_to_num_child_agencies.items() %}
+                        <strong>From the {{ system.value.split("_")|map('capitalize')|join(' ') }} sector:</strong><br>
+                        {% for missing_metric, num_child_agencies in missing_annual_metric_to_num_child_agencies.items() %}
+                            {% if system == superagency_system  %}
+                                <div> {{ missing_metric }} </div>
+                            {% elif num_child_agencies > 1 %}
+                                <div>{{ num_child_agencies }} child agencies are missing the {{ missing_metric }} metric</div>
+                            {% else %}
+                                <div>{{ num_child_agencies }} child agency is missing the {{ missing_metric }} metric</div>
+                            {% endif %}
+                        {% endfor %}
+                        <br>
+                    {% endfor %}
+                </div>
+        {% endfor %}
+    {% endif %}
+
+    <div><strong>If you have any questions or believe this message is incorrect, please reach out to justice-counts-support@csg.org</strong></div>
+</div>

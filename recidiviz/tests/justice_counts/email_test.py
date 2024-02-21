@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for the Justice Counts Publisher emails."""
 import datetime
+import itertools
 from typing import Dict, List, Tuple
 
 from dateutil.relativedelta import relativedelta
@@ -36,7 +37,10 @@ from recidiviz.justice_counts.utils.constants import (
     REPORTING_FREQUENCY_CONTEXT_KEY,
     UploadMethod,
 )
-from recidiviz.justice_counts.utils.email import get_missing_metrics
+from recidiviz.justice_counts.utils.email import (
+    get_missing_metrics,
+    get_missing_metrics_for_superagencies,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils.utils import (
@@ -385,7 +389,10 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             enabled_metrics = (
                 enabled_metrics
             ) = self.get_enabled_metric_setting_datapoints(
-                metric_definitions=[law_enforcement.funding, law_enforcement.expenses],
+                metric_definitions=[
+                    law_enforcement.funding,
+                    law_enforcement.expenses,
+                ],
                 agency=agency,
             )
 
@@ -635,4 +642,186 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 monthly_report_date_range,
                 (monthly_report.date_range_start, monthly_report.date_range_end),
+            )
+
+    def test_get_missing_metrics_superagency(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_prison_super_agency
+            child_agency_A = self.test_schema_objects.test_prison_affiliate_A
+            child_agency_B = self.test_schema_objects.test_prison_affiliate_B
+
+            agency.systems = [
+                schema.System.SUPERAGENCY.value,
+                schema.System.PRISONS.value,
+            ]
+
+            child_agency_A.systems = [schema.System.PRISONS.value]
+            child_agency_B.systems = [schema.System.PRISONS.value]
+
+            monthly_report_superagency = self.get_monthly_report(agency=agency)
+            monthly_report_child_agency_A = self.get_monthly_report(
+                agency=child_agency_A
+            )
+            monthly_report_child_agency_B = self.get_monthly_report(
+                agency=child_agency_B
+            )
+            annual_calendar_year_report_superagency = (
+                self.get_annual_calendar_year_report(agency=agency)
+            )
+            annual_fiscal_year_report_superagency = self.annual_fiscal_year_report(
+                agency=agency
+            )
+            annual_calendar_year_report_child_agency_A = (
+                self.get_annual_calendar_year_report(agency=child_agency_A)
+            )
+            annual_calendar_year_report_child_agency_B = (
+                self.get_annual_calendar_year_report(agency=child_agency_B)
+            )
+
+            annual_fiscal_year_report_child_agency_A = self.annual_fiscal_year_report(
+                agency=child_agency_A
+            )
+            annual_fiscal_year_report_child_agency_B = self.annual_fiscal_year_report(
+                agency=child_agency_B
+            )
+
+            # Enable all metrics
+            enabled_metrics = list(
+                itertools.chain(
+                    *[
+                        self.get_enabled_metric_setting_datapoints(
+                            METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                            agency=agency,
+                        )
+                        for agency in [child_agency_A, child_agency_B]
+                    ]
+                )
+            ) + self.get_enabled_metric_setting_datapoints(
+                METRICS_BY_SYSTEM[schema.System.SUPERAGENCY.value],
+                agency=agency,
+            )
+
+            # Set grievances to be reported fiscally for child agencies
+            custom_reported_metrics = self.get_custom_reported_metrics(
+                starting_month=7,
+                agency=child_agency_A,
+                metric_definitions=[prisons.grievances_upheld],
+            ) + self.get_custom_reported_metrics(
+                starting_month=7,
+                agency=child_agency_B,
+                metric_definitions=[prisons.grievances_upheld],
+            )
+
+            session.add_all(
+                [
+                    agency,
+                    child_agency_A,
+                    child_agency_B,
+                    monthly_report_superagency,
+                    monthly_report_child_agency_A,
+                    monthly_report_child_agency_B,
+                    annual_calendar_year_report_superagency,
+                    annual_fiscal_year_report_superagency,
+                    annual_calendar_year_report_child_agency_A,
+                    annual_calendar_year_report_child_agency_B,
+                    annual_fiscal_year_report_child_agency_A,
+                    annual_fiscal_year_report_child_agency_B,
+                ]
+                + enabled_metrics
+                + custom_reported_metrics
+            )
+            session.commit()
+            session.refresh(agency)
+            (
+                system_to_monthly_metric_to_num_child_agencies,
+                date_range_to_system_to_annual_metric_to_num_child_agencies,
+                monthly_report_date_range,
+            ) = get_missing_metrics_for_superagencies(
+                agencies=[agency, child_agency_A, child_agency_B],
+                session=session,
+                today=self.today,
+            )
+
+            self.assertEqual(
+                set(system_to_monthly_metric_to_num_child_agencies.keys()),
+                {
+                    schema.System.PRISONS
+                },  # There are no monthly Superagency metrics, so only prison metrics will be in this dictionary
+            )
+
+            self.assertEqual(
+                set(date_range_to_system_to_annual_metric_to_num_child_agencies.keys()),
+                {
+                    (self.july_start_date, self.july_end_date),
+                    (self.january_start_date, self.january_end_date),
+                },
+            )
+
+            for metric in METRICS_BY_SYSTEM["PRISONS"]:
+                if metric.key == prisons.grievances_upheld.key:
+                    self.assertEqual(
+                        date_range_to_system_to_annual_metric_to_num_child_agencies[
+                            (self.july_start_date, self.july_end_date)
+                        ][schema.System.PRISONS][metric.display_name.title()],
+                        2,
+                    )
+                elif metric.reporting_frequency == schema.ReportingFrequency.MONTHLY:
+                    self.assertEqual(
+                        system_to_monthly_metric_to_num_child_agencies[
+                            schema.System.PRISONS
+                        ][metric.display_name.title()],
+                        2,
+                    )
+                elif metric.reporting_frequency == schema.ReportingFrequency.ANNUAL:
+                    self.assertEqual(
+                        date_range_to_system_to_annual_metric_to_num_child_agencies[
+                            (self.january_start_date, self.january_end_date)
+                        ][schema.System.PRISONS][metric.display_name.title()],
+                        2,
+                    )
+
+            for metric in METRICS_BY_SYSTEM["SUPERAGENCY"]:
+                self.assertEqual(
+                    date_range_to_system_to_annual_metric_to_num_child_agencies[
+                        (self.january_start_date, self.january_end_date)
+                    ][schema.System.SUPERAGENCY][metric.display_name.title()],
+                    1,
+                )
+
+            self.assertEqual(
+                monthly_report_date_range,
+                (
+                    monthly_report_superagency.date_range_start,
+                    monthly_report_superagency.date_range_end,
+                ),
+            )
+
+            # Disable Admission Metric for child_agency_A!
+            session.add(
+                schema.Datapoint(
+                    metric_definition_key=prisons.admissions.key,
+                    enabled=False,
+                    source=child_agency_A,
+                    is_report_datapoint=False,
+                ),
+            )
+            session.commit()
+
+            (
+                system_to_monthly_metric_to_num_child_agencies,
+                _,
+                _,
+            ) = get_missing_metrics_for_superagencies(
+                agencies=[agency, child_agency_A, child_agency_B],
+                session=session,
+                today=self.today,
+            )
+
+            # Only one child agency will be missing the admissions metric
+            # since it is disabled in the other one
+            self.assertEqual(
+                system_to_monthly_metric_to_num_child_agencies[schema.System.PRISONS][
+                    prisons.admissions.display_name.title()
+                ],
+                1,
             )
