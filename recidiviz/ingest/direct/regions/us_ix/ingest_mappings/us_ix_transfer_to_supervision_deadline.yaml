@@ -6,8 +6,6 @@ input_columns:
   - SegmentPED
   - update_datetime
 unused_columns: []
-launch_env:
-  $env: is_dataflow_pipeline
 output:
   StatePerson:
     external_ids:

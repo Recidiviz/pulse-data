@@ -1,9 +1,7 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_SentencesChargesAndCourtCases_v2` to
+# This file associates the columns outputted from the query in `view_SentencesChargesAndCourtCases_v4` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
-launch_env:
-  $env: is_dataflow_pipeline
 input_columns:
   - OffenderID
   - ConvictionCounty

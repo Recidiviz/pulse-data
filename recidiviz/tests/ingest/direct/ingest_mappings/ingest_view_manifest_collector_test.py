@@ -64,30 +64,21 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
                 "basic",
                 "tagBasicData",
                 "tagMoreBasicData",
-                "tagMoreBasicData_legacy",
             ],
             list(sorted(result.keys())),
         )
 
     def test_launchable_ingest_views(self) -> None:
         result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
-            ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=True
+            ingest_instance=DirectIngestInstance.PRIMARY
         )
         self.assertListEqual(
             ["basic", "tagBasicData", "tagMoreBasicData"],
             list(sorted(result)),
         )
 
-        result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
-            ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=False
-        )
-        self.assertListEqual(
-            ["basic", "tagBasicData", "tagMoreBasicData_legacy"],
-            list(sorted(result)),
-        )
-
         result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
-            ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=True
+            ingest_instance=DirectIngestInstance.PRIMARY
         )
         self.assertListEqual(
             [],
@@ -95,7 +86,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
         )
 
         result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
-            ingest_instance=DirectIngestInstance.SECONDARY, is_dataflow_pipeline=True
+            ingest_instance=DirectIngestInstance.SECONDARY
         )
         self.assertListEqual(
             # In US_YY this view is gated to only run in SECONDARY

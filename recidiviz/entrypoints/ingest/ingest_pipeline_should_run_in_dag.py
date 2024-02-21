@@ -85,13 +85,10 @@ def _secondary_has_manifest_views_with_launch_env_changes(
     differing_launch_envs = False
     for manifest in manifest_collector.ingest_view_to_manifest.values():
         differing_launch_envs |= manifest.should_launch(
-            IngestViewContentsContextImpl(
-                ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=True
-            )
+            IngestViewContentsContextImpl(ingest_instance=DirectIngestInstance.PRIMARY)
         ) != manifest.should_launch(
             IngestViewContentsContextImpl(
-                ingest_instance=DirectIngestInstance.SECONDARY,
-                is_dataflow_pipeline=True,
+                ingest_instance=DirectIngestInstance.SECONDARY
             )
         )
 
@@ -128,7 +125,7 @@ def _has_launchable_ingest_views(
     return (
         len(
             ingest_manifest_collector.launchable_ingest_views(
-                ingest_instance=ingest_instance, is_dataflow_pipeline=True
+                ingest_instance=ingest_instance
             )
         )
         > 0
