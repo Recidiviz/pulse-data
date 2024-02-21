@@ -25,7 +25,6 @@ from types import ModuleType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 import apache_beam as beam
-import pytest
 from apache_beam.pvalue import PBegin
 from apache_beam.testing.util import assert_that
 from mock import patch
@@ -37,9 +36,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     get_direct_ingest_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     ExternalIdEntity,
@@ -51,12 +47,6 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
     get_all_entity_associations_from_tree,
-)
-from recidiviz.persistence.persistence import (
-    DATABASE_INVARIANT_THRESHOLD,
-    ENTITY_MATCHING_THRESHOLD,
-    ENUM_THRESHOLD,
-    OVERALL_THRESHOLD,
 )
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     LOWER_BOUND_DATETIME_COL_NAME,
@@ -82,9 +72,6 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     pipeline_constructor,
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-
-PROJECT_ID = "test-project"
 
 
 class FakeGenerateIngestViewResults(GenerateIngestViewResults):
@@ -161,11 +148,10 @@ class RunValidationsWithOutputChecking(RunValidations):
         return _equal_to
 
 
-@pytest.mark.uses_db
+# TODO(#20930): Rename this class to StateSpecificIngestPipelineIntegrationTestCase and
+#  rename subclasses/related files accordingly.
 class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
-    """Class with basic functionality for tests of all region-specific
-    BaseDirectIngestControllers.
-    """
+    """Class with basic functionality for all region-specific ingest integration tests."""
 
     @classmethod
     @abc.abstractmethod
@@ -178,7 +164,7 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
 
     @classmethod
     def region_module_override(cls) -> Optional[ModuleType]:
-        return regions
+        return None
 
     @classmethod
     def region(cls) -> DirectIngestRegion:
@@ -191,89 +177,23 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
     def state_code_str_upper(cls) -> str:
         return cls.state_code().value.upper()
 
-    @classmethod
-    @abc.abstractmethod
-    def schema_type(cls) -> SchemaType:
-        pass
-
-    # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-
-    @classmethod
-    def _main_ingest_instance(cls) -> DirectIngestInstance:
-        # We assume we're ingesting into the SECONDARY ingest instance, which
-        # should always have the latest ingest logic updates released to it.
-        return DirectIngestInstance.SECONDARY
-
-    @classmethod
-    def _main_database_key(cls) -> "SQLAlchemyDatabaseKey":
-        if cls.schema_type() == SchemaType.STATE:
-            return database_key_for_state(
-                cls._main_ingest_instance(),
-                cls.state_code(),
-            )
-        return SQLAlchemyDatabaseKey.for_schema(cls.schema_type())
-
     def setUp(self) -> None:
         super().setUp()
         self.maxDiff = None
 
+        self.project_id = "recidiviz-staging"
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = "recidiviz-staging"
+        self.mock_project_id_fn.return_value = self.project_id
 
         self.environment_patcher = patch("recidiviz.utils.environment.in_gcp_staging")
         self.mock_environment_fn = self.environment_patcher.start()
         self.mock_environment_fn.return_value = True
 
-        self.main_database_key = self._main_database_key()
-        self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
-            SchemaType.OPERATIONS
-        )
-        local_persistence_helpers.use_on_disk_postgresql_database(
-            self.main_database_key
-        )
-        local_persistence_helpers.use_on_disk_postgresql_database(
-            self.operations_database_key
-        )
-
-        # Set entity matching error threshold to a diminishingly small number
-        # for tests. We cannot set it to 0 because we throw when errors *equal*
-        # the error threshold.
-        self.entity_matching_error_threshold_patcher = patch.dict(
-            "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
-            {
-                OVERALL_THRESHOLD: 0,
-                ENUM_THRESHOLD: 0,
-                ENTITY_MATCHING_THRESHOLD: 0,
-                DATABASE_INVARIANT_THRESHOLD: 0,
-            },
-        )
-
-        self.entity_matching_error_threshold_patcher.start()
-
-        self.file_tags_processed: List[str] = []
-
     def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.operations_database_key
-        )
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.main_database_key
-        )
         self.metadata_patcher.stop()
         self.environment_patcher.stop()
-        self.entity_matching_error_threshold_patcher.stop()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
-        )
+        super().tearDown()
 
     def get_ingest_view_results_from_fixture(
         self, *, ingest_view_name: str, test_name: str
@@ -407,7 +327,7 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
         pipeline_args = default_arg_list_for_pipeline(
             pipeline=self.pipeline_class(),
             state_code=self.region_code().value,
-            project_id=PROJECT_ID,
+            project_id=self.project_id,
             unifying_id_field_filter_set=None,
             ingest_view_results_only=ingest_view_results_only,
             ingest_views_to_run=ingest_views_to_run,
@@ -433,7 +353,7 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
                 ):
                     with patch(
                         "recidiviz.pipelines.base_pipeline.Pipeline",
-                        pipeline_constructor(PROJECT_ID),
+                        pipeline_constructor(self.project_id),
                     ):
                         self.pipeline_class().build_from_args(pipeline_args).run()
 

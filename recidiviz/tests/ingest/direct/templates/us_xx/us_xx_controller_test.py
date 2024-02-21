@@ -20,7 +20,6 @@ from typing import List, Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import templates
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.region_direct_ingest_controller_test_case import (
     RegionDirectIngestControllerTestCase,
@@ -37,10 +36,6 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
     @classmethod
     def region_module_override(cls) -> Optional[ModuleType]:
         return templates
-
-    @classmethod
-    def schema_type(cls) -> SchemaType:
-        return SchemaType.STATE
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         """Integration test that runs ingest end-to-end for all ingest views defined for

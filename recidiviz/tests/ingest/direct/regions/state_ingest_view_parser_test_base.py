@@ -82,6 +82,8 @@ DEFAULT_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0)
 class StateIngestViewParserTestBase:
     """Base test class for ingest view parser tests."""
 
+    # TODO(#20930): Remove this method and definitions from all subclasses and just pass
+    #  in SchemaType.STATE for all tests.
     @classmethod
     @abstractmethod
     def schema_type(cls) -> SchemaType:
