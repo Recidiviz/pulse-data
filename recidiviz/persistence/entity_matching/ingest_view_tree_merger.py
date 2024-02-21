@@ -31,8 +31,16 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     root_entity_external_id_keys,
 )
-from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.persistence_utils import RootEntityT
+
+
+# TODO(#20930): Consider renaming this to EntityMergerError
+class EntityMatchingError(Exception):
+    """Raised when an error with entity matching is encountered."""
+
+    def __init__(self, msg: str, entity_name: str):
+        self.entity_name = entity_name
+        super().__init__(msg)
 
 
 class IngestViewTreeMerger:

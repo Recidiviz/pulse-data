@@ -34,10 +34,6 @@ from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
-from recidiviz.persistence.entity_matching import (
-    templates as persistence_templates_module,
-)
-from recidiviz.persistence.entity_matching.legacy import state as state_module
 from recidiviz.pipelines.utils import state_utils as state_specific_calculation_module
 from recidiviz.pipelines.utils.state_utils import (
     templates as state_specific_calculation_templates_module,
@@ -63,9 +59,6 @@ from recidiviz.validation.config import templates as validation_config_templates
 DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
 REGIONS_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_module.__file__, start=DEFAULT_WORKING_DIR)
-)
-PERSISTENCE_DIR_PATH = os.path.dirname(
-    os.path.relpath(state_module.__file__, start=DEFAULT_WORKING_DIR)
 )
 INGEST_TESTS_DIR_PATH = os.path.dirname(
     os.path.relpath(regions_test_module.__file__, start=DEFAULT_WORKING_DIR)
@@ -117,9 +110,6 @@ class RegionFilesGenerator:
         new_region_dir_path = os.path.join(
             self.curr_directory, REGIONS_DIR_PATH, self.region_code
         )
-        new_region_persistence_dir_path = os.path.join(
-            self.curr_directory, PERSISTENCE_DIR_PATH, self.region_code
-        )
         new_region_tests_dir_path = os.path.join(
             self.curr_directory, INGEST_TESTS_DIR_PATH, self.region_code
         )
@@ -143,9 +133,6 @@ class RegionFilesGenerator:
 
         template_to_dest: Dict[str, str] = {
             os.path.dirname(ingest_templates_module.__file__): new_region_dir_path,
-            os.path.dirname(
-                persistence_templates_module.__file__
-            ): new_region_persistence_dir_path,
             os.path.dirname(test_templates_module.__file__): new_region_tests_dir_path,
             os.path.dirname(
                 state_specific_calculation_templates_module.__file__
