@@ -23,7 +23,11 @@ is missing metrics in their most recent annual or monthly report.
 import argparse
 import logging
 
-from recidiviz.justice_counts.utils.email import send_reminder_emails
+from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.utils.email import (
+    send_reminder_emails,
+    send_reminder_emails_for_superagency,
+)
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -75,9 +79,20 @@ if __name__ == "__main__":
                 secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
                 autocommit=False,
             ) as session:
-                send_reminder_emails(
-                    session=session,
-                    agency_id=args.agency_id,
-                    dry_run=args.dry_run,
-                    logger=logger,
+                agency = AgencyInterface.get_agency_by_id(
+                    session=session, agency_id=args.agency_id
                 )
+                if agency.is_superagency is not True:
+                    send_reminder_emails(
+                        session=session,
+                        agency_id=args.agency_id,
+                        dry_run=args.dry_run,
+                        logger=logger,
+                    )
+                else:
+                    send_reminder_emails_for_superagency(
+                        session=session,
+                        agency_id=args.agency_id,
+                        dry_run=args.dry_run,
+                        logger=logger,
+                    )
