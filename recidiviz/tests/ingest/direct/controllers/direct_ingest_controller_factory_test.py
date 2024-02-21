@@ -246,7 +246,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
     def test_build_for_unsupported_region_throws(self) -> None:
         with self.assertRaisesRegex(
             DirectIngestError,
-            r"^Unsupported direct ingest region \[us_xx\] in project \[recidiviz-456\]$",
+            r"^Unsupported direct ingest region \[US_XX\] in project \[recidiviz-456\]$",
         ):
             _ = DirectIngestControllerFactory.build(
                 region_code="us_xx",

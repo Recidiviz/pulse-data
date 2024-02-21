@@ -16,14 +16,10 @@
 # =============================================================================
 """Unit and integration tests for US_XX direct ingest."""
 from types import ModuleType
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import templates
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
-from recidiviz.ingest.direct.templates.us_xx.us_xx_controller import UsXxController
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.region_direct_ingest_controller_test_case import (
@@ -37,10 +33,6 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
     @classmethod
     def state_code(cls) -> StateCode:
         return StateCode.US_XX
-
-    @classmethod
-    def controller_cls(cls) -> Type[BaseDirectIngestController]:
-        return UsXxController
 
     @classmethod
     def region_module_override(cls) -> Optional[ModuleType]:

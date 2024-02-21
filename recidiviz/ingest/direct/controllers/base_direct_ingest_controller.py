@@ -17,7 +17,6 @@
 
 """Functionality to perform direct ingest.
 """
-import abc
 import datetime
 import logging
 import os
@@ -78,15 +77,19 @@ from recidiviz.persistence.database.schema.operations.dao import (
 from recidiviz.utils import environment
 
 
+# TODO(#20930): Rename this class/file and related test classes/files to
+#  IngestRawFileImportController.
 class BaseDirectIngestController:
     """Parses and persists individual-level info from direct ingest partners."""
 
     def __init__(
         self,
+        state_code: StateCode,
         ingest_instance: DirectIngestInstance,
-        region_module_override: Optional[ModuleType] = None,
+        region_module_override: Optional[ModuleType],
     ) -> None:
         """Initialize the controller."""
+        self.state_code = state_code
         self.region_module_override = region_module_override
         self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
         self.ingest_instance = ingest_instance
@@ -155,35 +158,8 @@ class BaseDirectIngestController:
             region_module_override=self.region_module_override,
         )
 
-    @classmethod
-    @abc.abstractmethod
-    def state_code(cls) -> StateCode:
-        pass
-
-    @classmethod
-    def region_code(cls) -> str:
-        return cls.state_code().value.lower()
-
-    def get_ingest_view_rank_list(self) -> List[str]:
-        """Returns the list of ingest view names for ingest views that are shipped in
-        the current environment and whose results can be processed and committed to
-        our central data model.
-        """
-        raise ValueError(
-            "Cannot call this method for an ingest in dataflow enabled state."
-        )
-
-    # TODO(#20930): Delete this function once ingest in Dataflow is enabled for all
-    #  states.
-    @classmethod
-    @abc.abstractmethod
-    def _get_ingest_view_rank_list(
-        cls, ingest_instance: DirectIngestInstance
-    ) -> List[str]:
-        """Returns the list of ingest view names for ingest views that are shipped in
-        the current environment and whose results can be processed and committed to
-        our central data model.
-        """
+    def region_code(self) -> str:
+        return self.state_code.value.lower()
 
     def _ingest_is_not_running(self) -> bool:
         """Returns True if ingest is not running in this instance and all functions should
@@ -341,9 +317,6 @@ class BaseDirectIngestController:
             )
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
 
-    # =================== #
-    # SINGLE JOB RUN CODE #
-    # =================== #
     def default_job_lock_timeout_in_seconds(self) -> int:
         """This method can be overridden by subclasses that need more (or less)
         time to process jobs to completion, but by default enforces a

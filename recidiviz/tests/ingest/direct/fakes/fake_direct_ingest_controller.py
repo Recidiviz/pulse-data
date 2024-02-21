@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for building a test-only version of the BaseDirectIngestController."""
+import os
 from types import ModuleType
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional, Set
 
 import attr
 from mock import Mock, create_autospec, patch
@@ -28,6 +29,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import (
     FakeGCSFileSystem,
     FakeGCSFileSystemDelegate,
@@ -327,16 +329,35 @@ class _MockBigQueryClientForControllerTests:
         self.fs = fs
 
 
+class BaseDirectIngestControllerForTests(BaseDirectIngestController):
+    """Base class for test direct ingest controllers used in this file."""
+
+    def __init__(
+        self,
+        state_code: StateCode,
+        ingest_instance: DirectIngestInstance,
+        region_module_override: Optional[ModuleType],
+    ) -> None:
+        super().__init__(state_code, ingest_instance, region_module_override)
+        self.local_paths: Set[str] = set()
+
+    def has_temp_paths_in_disk(self) -> bool:
+        for path in self.local_paths:
+            if os.path.exists(path):
+                return True
+        return False
+
+
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_fake_direct_ingest_controller(
-    controller_cls: Type[BaseDirectIngestController],
+    state_code: StateCode,
     ingest_instance: DirectIngestInstance,
     initial_statuses: List[DirectIngestStatus],
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
     shared_task_manager: Optional[FakeSynchronousDirectIngestCloudTaskManager] = None,
-) -> BaseDirectIngestController:
+) -> BaseDirectIngestControllerForTests:
     """Builds an instance of |controller_cls| for use in tests with several internal
     classes mocked properly.
     """
@@ -386,7 +407,11 @@ def build_fake_direct_ingest_controller(
             "regions",
             new=regions_module,
         ):
-            controller = controller_cls(ingest_instance=ingest_instance)
+            controller = BaseDirectIngestControllerForTests(
+                state_code=state_code,
+                ingest_instance=ingest_instance,
+                region_module_override=regions_module,
+            )
 
             task_manager.set_controller(ingest_instance, controller)
             if not shared_task_manager:

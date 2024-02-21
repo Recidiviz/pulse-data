@@ -44,7 +44,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
@@ -245,27 +244,6 @@ class DirectIngestRegionDirStructureBase:
             lambda region_code: "manifest.yaml", validate_manifest_contents
         )
 
-    def test_region_controller_exists_and_builds(self) -> None:
-        for dir_path in self.region_dir_paths:
-            region_code = os.path.basename(dir_path)
-            controller_path = os.path.join(dir_path, f"{region_code}_controller.py")
-            self.test.assertTrue(
-                os.path.exists(controller_path),
-                f"Path [{controller_path}] does not exist.",
-            )
-
-            region = get_direct_ingest_region(
-                region_code, region_module_override=self.region_module_override
-            )
-            with patch(
-                "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
-            ):
-                controller_class = DirectIngestControllerFactory.get_controller_class(
-                    region
-                )
-                self.test.assertIsNotNone(controller_class)
-                self.test.assertEqual(region_code, controller_class.region_code())
-
     def test_region_controller_builds(
         self,
     ) -> None:
@@ -285,7 +263,7 @@ class DirectIngestRegionDirStructureBase:
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
-            region = get_direct_ingest_region(
+            region = direct_ingest_regions.get_direct_ingest_region(
                 region_code, region_module_override=self.region_module_override
             )
             raw_file_manager = DirectIngestRegionRawFileConfig(
@@ -377,7 +355,7 @@ class DirectIngestRegionDirStructureBase:
     def test_collect_and_print_ingest_views(self, _name: str, project_id: str) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value=project_id):
             for region_code in self.region_dir_names:
-                region = get_direct_ingest_region(
+                region = direct_ingest_regions.get_direct_ingest_region(
                     region_code, region_module_override=self.region_module_override
                 )
 
@@ -502,7 +480,7 @@ class DirectIngestRegionDirStructure(
 
     def test_playground_regions_are_marked(self) -> None:
         for region_code in PLAYGROUND_STATE_INFO:
-            region = get_direct_ingest_region(
+            region = direct_ingest_regions.get_direct_ingest_region(
                 region_code, region_module_override=self.region_module_override
             )
             self.assertTrue(region.playground)
@@ -593,51 +571,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             for ingest_instance in list(DirectIngestInstance)
             for project in sorted(environment.GCP_PROJECTS)
         ]
-
-    def test_ingest_rank_list_matches_manifests(
-        self,
-    ) -> None:
-        for region_code, ingest_instance, project in self.combinations:
-            region = direct_ingest_regions.get_direct_ingest_region(
-                region_code=region_code.value
-            )
-            controller_cls = DirectIngestControllerFactory.get_controller_class(region)
-            ingest_view_manifest_collector = IngestViewManifestCollector(
-                region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
-            )
-            with patch.object(
-                metadata, "project_id", return_value=project
-            ), patch.object(
-                environment,
-                "in_gcp_staging",
-                return_value=(project == environment.GCP_PROJECT_STAGING),
-            ), patch.object(
-                environment,
-                "in_gcp_production",
-                return_value=(project == environment.GCP_PROJECT_PRODUCTION),
-            ):
-                # pylint: disable=protected-access
-                self.assertListEqual(
-                    sorted(
-                        controller_cls._get_ingest_view_rank_list(
-                            ingest_instance=ingest_instance
-                        )
-                    ),
-                    sorted(
-                        ingest_view_manifest_collector.launchable_ingest_views(
-                            ingest_instance=ingest_instance,
-                            # Note: there may be views gated to Dataflow only which
-                            # should *not* be listed in the ingest view rank list so
-                            # that legacy ingest does not try to process them.
-                            is_dataflow_pipeline=False,
-                        )
-                    ),
-                    "The ingest rank list does not match the ingest view manifests for "
-                    f"[{region_code.value}] [{ingest_instance.value}] [{project}]",
-                )
 
     def _get_related_ingest_view_pairs(
         self, ingest_view_names: List[str]
