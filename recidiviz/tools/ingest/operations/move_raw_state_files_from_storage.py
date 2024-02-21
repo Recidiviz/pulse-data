@@ -50,7 +50,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     get_direct_ingest_queues_for_state,
 )
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
 )
@@ -58,13 +57,8 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_ls,
@@ -165,7 +159,6 @@ class MoveFilesFromStorageController:
 
         if not self.dry_run:
             self.pause_and_purge_destination_queues()
-            self.validate_secondary_ingest_status()
 
         logging.info("Finding files to move...")
         date_subdir_paths = self.get_date_subdir_paths()
@@ -306,48 +299,6 @@ class MoveFilesFromStorageController:
         for queue_name in self._queues_to_pause():
             self.pause_destination_project_queue(queue_name)
             self.purge_destination_queue(queue_name)
-
-    def validate_secondary_ingest_status(self) -> None:
-        """Validate the secondary ingest status is correct"""
-        if self.destination_raw_data_instance == DirectIngestInstance.SECONDARY:
-            ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
-                self.state_code, DirectIngestInstance.SECONDARY
-            )
-            secondary_status_manager = DirectIngestInstanceStatusManager(
-                self.state_code.value,
-                DirectIngestInstance.SECONDARY,
-            )
-            if not ingest_in_dataflow_enabled:
-                with SessionFactory.for_proxy(
-                    SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-                ) as session:
-                    # Retrieve raw data source instance, if it exists.
-                    raw_data_source_instance: Optional[
-                        DirectIngestInstance
-                    ] = secondary_status_manager.get_raw_data_source_instance(session)
-
-                # If a SECONDARY rerun is in progress (as indicated by a nonnull source
-                # instance) and the rerun is reading from PRIMARY, we should not be
-                # copying to SECONDARY.
-                if (
-                    raw_data_source_instance
-                    and raw_data_source_instance != DirectIngestInstance.SECONDARY
-                ):
-                    raise ValueError(
-                        "The SECONDARY instance is expecting to read raw files from "
-                        "PRIMARY, not SECONDARY. We should not be copying raw data "
-                        "into the SECONDARY bucket right now."
-                    )
-
-            # If we have reached this point, there is no rerun in progress or there
-            # IS a rerun in progress with a SECONDARY raw data source. Both are valid
-            # situations to copy files over to SECONDARY (e.g. new files that have
-            # come in since the rerun started).
-
-        logging.info(
-            "Can proceed with movement of files to %s ingest bucket.",
-            self.destination_raw_data_instance.value,
-        )
 
     def get_files_to_move_from_path(self, gs_dir_path: str) -> List[str]:
         """Returns files directly in the given directory that should be moved back into the ingest directory."""

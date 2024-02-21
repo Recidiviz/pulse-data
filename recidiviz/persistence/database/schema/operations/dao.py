@@ -29,12 +29,12 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
-def stale_secondary_raw_data(
-    region_code: str, is_ingest_in_dataflow_enabled: bool
-) -> bool:
-    """Returns whether there is stale raw data in secondary, as defined by there being non-invalidated instances of
-    a given normalized_file_name that exists in PRIMARY after the timestamp of the start of a secondary rerun that
-    does not exist in SECONDARY."""
+def stale_secondary_raw_data(region_code: str) -> bool:
+    """Returns whether there is stale raw data in SECONDARY, as defined by:
+    a) there exist non-invalidated files that have been added to PRIMARY after the
+    timestamp of the start of the current SECONDARY rerun, and
+    b) One or more of those files does not exist in SECONDARY.
+    """
     region_code_upper = region_code.upper()
     secondary_status_manager = DirectIngestInstanceStatusManager(
         region_code=region_code,
@@ -43,22 +43,6 @@ def stale_secondary_raw_data(
     secondary_rerun_start_timestamp = (
         secondary_status_manager.get_current_ingest_rerun_start_timestamp()
     )
-
-    # TODO(#20930): Delete this logic once ingest in dataflow has shipped - the concept
-    #  of a raw data source instance only applies in the pre-ingest in dataflow world.
-    if not is_ingest_in_dataflow_enabled:
-        # It is not possible to have stale SECONDARY raw data if there isn't a SECONDARY raw data import rerun in progress
-        # or if a start of a rerun was not found in SECONDARY
-        secondary_raw_data_source = (
-            secondary_status_manager.get_raw_data_source_instance()
-        )
-        if secondary_raw_data_source != DirectIngestInstance.SECONDARY:
-            logging.info(
-                "[stale_secondary_raw_data] Secondary raw data source is not SECONDARY: %s. Raw data in secondary cannot "
-                "be stale. Returning.",
-                secondary_raw_data_source,
-            )
-            return False
 
     if not secondary_rerun_start_timestamp:
         logging.info(

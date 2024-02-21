@@ -79,7 +79,6 @@ class TestDao(TestCase):
     def test_stale_secondary_raw_data_no_primary_file_after_frozen_discovery_date(
         self,
     ) -> None:
-        is_ingest_in_dataflow_enabled = True
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
         with freeze_time(discovery_date):
             DirectIngestInstanceStatusManager(
@@ -109,14 +108,11 @@ class TestDao(TestCase):
 
             # Assert that secondary raw data is not stale, because no rerun in progress
             # in secondary
-            self.assertFalse(
-                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
-            )
+            self.assertFalse(stale_secondary_raw_data("us_xx"))
 
     def test_stale_secondary_raw_data_reimport_start_before_discovery_present_in_both(
         self,
     ) -> None:
-        is_ingest_in_dataflow_enabled = True
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
         rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
 
@@ -160,14 +156,11 @@ class TestDao(TestCase):
             # Assert that raw data is not considered stale because the same file_tag is present and non-invalidated
             # in both instances, and the rerun in secondary started BEFORE the files were discovered in both
             # PRIMARY and SECONDARY
-            self.assertFalse(
-                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
-            )
+            self.assertFalse(stale_secondary_raw_data("us_xx"))
 
     def test_stale_secondary_raw_data_reimport_start_before_discovery_present_in_both_invalidated_in_secondary(
         self,
     ) -> None:
-        is_ingest_in_dataflow_enabled = True
         discovery_date = datetime.datetime(2022, 7, 1, tzinfo=pytz.UTC)
         rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
 
@@ -214,6 +207,4 @@ class TestDao(TestCase):
 
             # Assert that raw data is considered stale because the same file_tag is present in both, but is
             # invalidated in SECONDARY
-            self.assertTrue(
-                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
-            )
+            self.assertTrue(stale_secondary_raw_data("us_xx"))
