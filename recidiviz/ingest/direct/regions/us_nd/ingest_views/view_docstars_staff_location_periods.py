@@ -120,7 +120,8 @@ SELECT
     start_date,
     end_date,
     ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
-FROM all_periods 
+FROM all_periods
+WHERE location IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

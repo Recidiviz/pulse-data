@@ -20,10 +20,6 @@ output:
               $values:
                 - OFFICER
                 - period_seq_num
-          location_external_id:
-            $conditional:
-              - $if:
-                  $not_null: location
-                $then: location
+          location_external_id: location
           start_date: start_date
           end_date: end_date
