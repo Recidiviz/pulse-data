@@ -171,7 +171,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
                 "app_engine_http_request": {
                     "http_method": "POST",
                     "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                    f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
+                    f"ingest_instance={ingest_instance.value.lower()}",
                     "body": body_encoded,
                 },
             }
@@ -184,7 +184,6 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
             ingest_instance=ingest_instance,
-            just_finished_job=False,
         )
 
         # Assert
@@ -226,7 +225,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
                 "app_engine_http_request": {
                     "http_method": "POST",
                     "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                    f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
+                    f"ingest_instance={ingest_instance.value.lower()}",
                     "body": body_encoded,
                 },
             }
@@ -239,7 +238,6 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
             ingest_instance=ingest_instance,
-            just_finished_job=False,
         )
 
         # Assert

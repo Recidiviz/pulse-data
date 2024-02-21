@@ -148,7 +148,7 @@ class TestDirectIngestControl(unittest.TestCase):
             allow_unlaunched=False,
         )
         mock_controller.schedule_next_ingest_task.assert_called_with(
-            current_task_id=task_id, just_finished_job=False
+            current_task_id=task_id
         )
 
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")

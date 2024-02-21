@@ -90,7 +90,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
         self,
         region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
-        just_finished_job: bool,
     ) -> None:
         controller = self.controllers.get(ingest_instance)
         if not controller:
@@ -112,7 +111,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
                 controller.schedule_next_ingest_task,
             ),
             current_task_id=task_id,
-            just_finished_job=just_finished_job,
         )
 
     def create_direct_ingest_handle_new_files_task(
