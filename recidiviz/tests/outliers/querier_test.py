@@ -24,7 +24,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 import pytest
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from recidiviz.case_triage.outliers.user_context import UserContext
 from recidiviz.common.constants.states import StateCode
@@ -1037,3 +1037,36 @@ Incarceration rate denominator description""",
             querier.add_configuration(config_to_add)
             # Assert the latest entity is the first non-header row in configurations.csv
             self.assertEqual(querier.get_configurations()[0].id, 1)
+
+    def test_deactivate_configuration_no_matching_id(self) -> None:
+        with self.assertRaises(NoResultFound):
+            querier = OutliersQuerier(StateCode.US_PA)
+            querier.deactivate_configuration(1001)
+
+    def test_deactivate_configuration_inactive(self) -> None:
+        with patch("logging.Logger.error") as mock_logger:
+            querier = OutliersQuerier(StateCode.US_PA)
+            # Assumes that the second non-header row in configurations.csv has status=INACTIVE
+            querier.deactivate_configuration(2)
+            mock_logger.assert_has_calls(
+                [call("Configuration %s is already inactive", 2)]
+            )
+
+    def test_deactivate_configuration_default_config(self) -> None:
+        with self.assertRaises(ValueError):
+            querier = OutliersQuerier(StateCode.US_PA)
+            # Assumes that the first non-header row in configurations.csv is the only
+            # row with feature_variant=None and status=ACTIVE
+            querier.deactivate_configuration(1)
+
+    def test_deactivate_configuration_success(self) -> None:
+        # Assumes that the third non-header row in configurations.csv has
+        # feature_variant != None and status=ACTIVE
+        config_id_to_deactivate = 3
+        querier = OutliersQuerier(StateCode.US_PA)
+        querier.deactivate_configuration(config_id_to_deactivate)
+
+        self.assertEqual(
+            querier.get_configuration(config_id_to_deactivate).status,
+            ConfigurationStatus.INACTIVE.value,
+        )

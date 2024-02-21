@@ -24,7 +24,7 @@ from typing import Any, Dict, List
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from sqlalchemy.engine.row import Row
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.line_staff_tools.outliers_api_schemas import (
@@ -104,3 +104,29 @@ class ConfigurationsAPI(MethodView):
             abort(HTTPStatus.INTERNAL_SERVER_ERROR, message=f"{e}")
 
         return config
+
+
+@outliers_blueprint.route("<state_code_str>/configurations/<int:config_id>/deactivate")
+class DeactivateConfigurationByIdAPI(MethodView):
+    """CRUD endpoints for /admin/outliers/<state_code_str>/configurations/<config_id>/deactivate"""
+
+    @outliers_blueprint.response(HTTPStatus.OK)
+    def put(self, state_code_str: str, config_id: int) -> str:
+        if state_code_str not in get_outliers_enabled_states():
+            raise ValueError(f"Invalid state: {state_code_str}")
+
+        try:
+            state_code = StateCode(state_code_str.upper())
+            OutliersQuerier(state_code).deactivate_configuration(config_id)
+        except NoResultFound:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"Configuration with id {str(config_id)} does not exist",
+            )
+        except Exception as e:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=str(e),
+            )
+
+        return f"Configuration {str(config_id)} has been deactivated"
