@@ -355,14 +355,11 @@ def scheduler() -> Tuple[str, HTTPStatus]:
     """Checks the state of the ingest instance and schedules any tasks to be run."""
     logging.info("Received request for direct ingest scheduler: %s", request.values)
     region_code = get_str_param_value("region", request.values)
-    just_finished_job = get_bool_param_value(
-        "just_finished_job", request.values, default=False
-    )
     current_task_id = get_current_cloud_task_id()
 
     ingest_instance_str = get_str_param_value("ingest_instance", request.args)
 
-    if not region_code or just_finished_job is None or not ingest_instance_str:
+    if not region_code or not ingest_instance_str:
         response = f"Bad parameters [{request.values}]"
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
@@ -390,9 +387,7 @@ def scheduler() -> Tuple[str, HTTPStatus]:
                 return str(e), HTTPStatus.BAD_REQUEST
             raise e
 
-        controller.schedule_next_ingest_task(
-            current_task_id=current_task_id, just_finished_job=just_finished_job
-        )
+        controller.schedule_next_ingest_task(current_task_id=current_task_id)
     return "", HTTPStatus.OK
 
 
@@ -424,7 +419,7 @@ def kick_all_schedulers() -> None:
                     allow_unlaunched=False,
                 )
 
-                controller.kick_scheduler(just_finished_job=False)
+                controller.kick_scheduler()
 
 
 def _region_for_region_code(region_code: str) -> DirectIngestRegion:

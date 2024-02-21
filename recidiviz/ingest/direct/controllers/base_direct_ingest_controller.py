@@ -199,12 +199,11 @@ class BaseDirectIngestController:
     # ============== #
     # JOB SCHEDULING #
     # ============== #
-    def kick_scheduler(self, just_finished_job: bool) -> None:
+    def kick_scheduler(self) -> None:
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
             region=self.region,
             ingest_instance=self.ingest_instance,
-            just_finished_job=just_finished_job,
         )
 
     def _prune_redundant_tasks(self, current_task_id: str) -> None:
@@ -242,13 +241,7 @@ class BaseDirectIngestController:
                 "Pruned [%s] duplicate tasks out of the queue.", pruned_task_count
             )
 
-    def schedule_next_ingest_task(
-        self,
-        *,
-        current_task_id: str,
-        # TODO(#20930): Remove the now-unused just_finished_job arg
-        just_finished_job: bool,  # pylint: disable=unused-argument
-    ) -> None:
+    def schedule_next_ingest_task(self, *, current_task_id: str) -> None:
         """Finds the next task(s) that need to be scheduled for ingest and queues
         them. Also prunes redundant tasks out of the scheduler queue, if they exist.
         """
@@ -505,7 +498,7 @@ class BaseDirectIngestController:
                 "processed or deleted",
                 data_import_args.raw_data_file_path,
             )
-            self.kick_scheduler(just_finished_job=True)
+            self.kick_scheduler()
             return
 
         if file_metadata is None:
@@ -518,7 +511,7 @@ class BaseDirectIngestController:
                 "File [%s] is already marked as processed. Skipping file processing.",
                 data_import_args.raw_data_file_path.file_name,
             )
-            self.kick_scheduler(just_finished_job=True)
+            self.kick_scheduler()
             return
 
         should_schedule = False
@@ -543,7 +536,7 @@ class BaseDirectIngestController:
             should_schedule = True
 
         if should_schedule:
-            self.kick_scheduler(just_finished_job=True)
+            self.kick_scheduler()
 
 
 def check_is_region_launched_in_env(region: DirectIngestRegion) -> None:

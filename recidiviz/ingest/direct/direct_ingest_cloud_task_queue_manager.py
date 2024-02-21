@@ -249,7 +249,6 @@ class DirectIngestCloudTaskQueueManager:
         self,
         region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
-        just_finished_job: bool,
     ) -> None:
         """Creates a scheduler task for direct ingest for a given region.
         Scheduler tasks should be short-running and queue other tasks if
@@ -258,8 +257,6 @@ class DirectIngestCloudTaskQueueManager:
         Args:
             region: `Region` direct ingest region.
             ingest_instance: The ingest instance that work should be scheduled for.
-            just_finished_job: True if this schedule is coming as a result
-                of just having finished a job.
         """
 
     @abc.abstractmethod
@@ -397,14 +394,12 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         self,
         region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
-        just_finished_job: bool,
     ) -> None:
         task_id = build_scheduler_task_id(region, ingest_instance)
 
         params = {
             "region": region.region_code.lower(),
             "ingest_instance": ingest_instance.value.lower(),
-            "just_finished_job": just_finished_job,
         }
 
         relative_uri = f"/direct/scheduler?{urlencode(params)}"
