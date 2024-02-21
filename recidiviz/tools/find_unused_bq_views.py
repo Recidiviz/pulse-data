@@ -141,9 +141,6 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
-from recidiviz.task_eligibility.criteria.state_specific.us_me.six_years_remaining_on_sentence import (
-    VIEW_BUILDER as US_ME_SIX_YEARS_REMAINING_VIEW_BUILDER,
-)
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
@@ -309,9 +306,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER.address: (
         "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
         "#21518 is completed (Damini Sharma 1/25/24)"
-    ),
-    US_ME_SIX_YEARS_REMAINING_VIEW_BUILDER.address: (
-        "Will be used for future workflows (Hugo S 2/5/24)"
     ),
     ALL_TASK_TYPE_ELIGIBILITY_SPANS_VIEW_BUILDER.address: (
         "Will be referenced by a funnel status sessions view to support Workflows impact dashboards"
