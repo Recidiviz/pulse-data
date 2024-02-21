@@ -8,7 +8,9 @@ file_description: >-
 
     1. Referrals to non-DRP programs only. This filter is applied by using a
        "IS_STATE_SPONSORED" field on CDCR side.
-    2. Only referrals which appear to result in an actual program start. We do this by:
+    2. Only referrals which appear to result in an actual program start (NOTE: We no
+    longer think we are doing this successfully! It may simply not be possible to infer
+    a program start from this data. We're talking to more TT soon!). We do this by:
       2.1. Removing programs for which someone is on the waitlist.
       2.2. Using the "End_Reasons", I think we can filter by the "REASON_TYPE" field. I
            believe we want the following filters:

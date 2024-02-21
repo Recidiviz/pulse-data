@@ -32,10 +32,17 @@ columns:
       - value: Act HRSO GPS Non-Specialized
       - value: Act HRSO GPS Specialized
       - value: Category A
+        description: Highest level of normal supervision.
       - value: Category B
+        description: Second highest level of normal supervision.
       - value: Category C
+        description: Low level of normal supervision.
       - value: Category D
+        description: >-
+          In custody. This may mean that the individual has violated, committed a new
+          crime, or been revoked.
       - value: Category E
+        description: Telephone reporting. This is rare.
       - value: Category I
       - value: Category P
       - value: Community Custody Release
@@ -68,7 +75,6 @@ columns:
       - value: SO Category B
       - value: SO Category C
       - value: SO Category D
-        description:
       - value: SO Category E
       - value: SO Category I
       - value: SO Category P

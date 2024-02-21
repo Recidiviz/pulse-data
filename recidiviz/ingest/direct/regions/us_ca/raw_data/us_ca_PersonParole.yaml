@@ -133,14 +133,22 @@ columns:
     known_values:
       - value: PAROLE
       - value: MCRP
-        description: Male Community Reentry Program
+        description: >-
+          Male Community Reentry Program. More information can be found here:
+          https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/
       - value: ICOOP
         description: Interstate cooperative cases
       - value: MDPAR
       - value: CCTRP
+        description: >-
+          Custody to Community Transitional Reentry Program. More information can be
+          found here: https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/
       - value: PAL
         description: Identifies someone who has absconded.
       - value: ACP
+        description: >-
+          Alternative Custody Program. More information can be found here:
+          https://www.cdcr.ca.gov/adult-operations/fops/reentry-services/
       - value: ISPU
         description: Interstate Parole Unit
       - value: ISPU_PAL

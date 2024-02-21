@@ -46,3 +46,8 @@ columns:
           Removed from SACCO (Sacramento Central Office) jurisdiction. TODO(#21313)
           Aaron may have more information about this in his email.
       - value: Return to Institution
+        description: >-
+          This usually means that someone has committed another crime and is now in
+          prison, no longer on parole. This is not used when someone is revoked. To
+          observe that, we should look at when someone is put in Category D, though more
+          UXR is needed on this. See go/ca-uxr.
