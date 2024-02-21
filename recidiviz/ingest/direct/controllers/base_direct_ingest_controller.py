@@ -252,9 +252,7 @@ class BaseDirectIngestController:
             self.ingest_instance_status_manager.change_status_to(
                 DirectIngestStatus.RAW_DATA_UP_TO_DATE
             )
-        elif stale_secondary_raw_data(
-            self.region_code(), is_ingest_in_dataflow_enabled=True
-        ):
+        elif stale_secondary_raw_data(self.region_code()):
             logging.info(
                 "Controller's instance is SECONDARY. No tasks to schedule but secondary raw data is now "
                 "stale."
