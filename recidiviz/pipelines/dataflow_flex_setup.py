@@ -65,7 +65,7 @@ REQUIRED_PACKAGES = [
     "opentelemetry-instrumentation-sqlalchemy==0.41b0",
     "opentelemetry-semantic-conventions==0.41b0",
     # Must stay up-to-date with latest protobuf version in the Pipfile
-    "protobuf==4.25.2",
+    "protobuf==4.25.3",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
     "python-Levenshtein",
     "pyjwt",
