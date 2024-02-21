@@ -128,6 +128,14 @@ def send_id_lsu_texts(
         message_doc.reference.path.split("/")[1]
         for message_doc in message_query.stream()
     }
+    logging.info(
+        "%s individuals have already received initial/welcome texts.",
+        len(initial_text_document_ids),
+    )
+    logging.info(
+        "Document ids of individuals who have received initial/welcome texts: "
+    )
+    logging.info(initial_text_document_ids)
 
     # Get all document_ids for individuals who have opted-out
     twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
@@ -135,21 +143,24 @@ def send_id_lsu_texts(
         filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
     )
     opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
+    logging.info("%s individuals have opted-out of texts.", len(opt_out_document_ids))
+    logging.info("Document ids of individuals who have opted-out: ")
+    logging.info(opt_out_document_ids)
 
     # Generate the dictionary that maps external ids to phone numbers to text strings
+    logging.info("Generate dictionary of external ids to phone numbers to text strings")
     if message_type == MessageType.INITIAL_TEXT.value.lower():
         external_id_to_phone_num_to_text_dict = generate_initial_text_messages_dict(
             bq_output=query_job
         )
         message_type = MessageType.INITIAL_TEXT.value
+        logging.info("message_type: %s", message_type)
     elif message_type == MessageType.ELIGIBILITY_TEXT.value.lower():
         external_id_to_phone_num_to_text_dict = generate_eligibility_text_messages_dict(
             bq_output=query_job
         )
         message_type = MessageType.ELIGIBILITY_TEXT.value
-
-    if dry_run is True:
-        return
+        logging.info("message_type: %s", message_type)
 
     state_code = StateCode.US_ID.value.lower()
 
@@ -158,6 +169,7 @@ def send_id_lsu_texts(
         "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_playtesting",
         "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test",
     ]:
+        logging.info("Iterate through dictionary construction from bigquery")
         # Iterate through the dictionary that maps external ids to phone numbers to text strings
         for (
             external_id,
@@ -165,6 +177,7 @@ def send_id_lsu_texts(
         ) in external_id_to_phone_num_to_text_dict.items():
             for phone_number, text_body in phone_num_to_text_dict.items():
                 document_id = f"{state_code}_{external_id}"
+                logging.info("document_id: %s", document_id)
 
                 # Check that current document_id has not opted-out
                 if document_id in opt_out_document_ids:
@@ -172,7 +185,7 @@ def send_id_lsu_texts(
                         "JII with document id %s has opted-out of receiving texts. Will not attempt to send message.",
                         document_id,
                     )
-                    return
+                    continue
 
                 logging.info(
                     "Twilio send SMS gcp environment: [%s]",
@@ -193,7 +206,7 @@ def send_id_lsu_texts(
                             "Individual with document id [%s] has already received initial text. Do not attempt to send initial text.",
                             document_id,
                         )
-                        return
+                        continue
 
                 # If this is an eligibility text, and the individual has not
                 # received an initial/welcome text in the past, do not attempt to send
@@ -204,9 +217,23 @@ def send_id_lsu_texts(
                             "Individual with document id [%s] has not received initial text. Do not attempt to send eligibility text.",
                             document_id,
                         )
-                        return
+                        continue
 
+                if dry_run is True:
+                    logging.info(
+                        "DRY RUN: Would send the following text to individual with document id: %s",
+                        document_id,
+                    )
+                    with open(f"{batch_id}_texts.txt", "a", encoding="utf-8") as file:
+                        file.write(text_body)
+                        file.write("\n")
+                        file.write("\n")
+                        file.close()
+                    continue
                 # Send text message to individual
+                logging.info(
+                    "Sending text to individual with document id: %s", document_id
+                )
                 response = client.messages.create(
                     body=text_body,
                     messaging_service_sid=messaging_service_sid,
@@ -216,6 +243,10 @@ def send_id_lsu_texts(
 
                 # Store the individual's phone number in their individual level doc
                 firestore_individual_path = f"twilio_messages/{document_id}"
+                logging.info(
+                    "Updating individual's phone_numbers with document id: %s",
+                    document_id,
+                )
                 firestore_client.set_document(
                     document_path=firestore_individual_path,
                     data={
@@ -229,6 +260,10 @@ def send_id_lsu_texts(
 
                 # Next, update their message level doc
                 firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{batch_id}"
+                logging.info(
+                    "Updating individual's message level doc with document id: %s",
+                    document_id,
+                )
                 firestore_client.set_document(
                     document_path=firestore_message_path,
                     data={

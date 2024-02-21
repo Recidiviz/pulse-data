@@ -19,6 +19,7 @@
 """
 File with helper functions used by recidiviz/case_triage/jii/send_id_lsu_texts.py
 """
+import logging
 from ast import literal_eval
 from collections import defaultdict
 from typing import Dict
@@ -55,6 +56,7 @@ def generate_initial_text_messages_dict(
         given_name = literal_eval(individual["person_name"])["given_names"].title()
         text_body = StrictStringFormatter().format(INITIAL_TEXT, given_name=given_name)
         external_id_to_phone_num_to_text_dict[external_id] = {phone_num: text_body}
+        logging.info("Initial text constructed for external_id: %s", external_id)
 
     return external_id_to_phone_num_to_text_dict
 
@@ -101,6 +103,15 @@ def generate_eligibility_text_messages_dict(
             missing_income_verified_within_3_months=missing_income_verified_within_3_months,
         )
         external_id_to_phone_num_to_text_dict[external_id] = {phone_num: text_body}
+        logging.info("Eligibility text constructed for external_id: %s", external_id)
+        logging.info("fully_eligible: %s", fully_eligible)
+        logging.info(
+            "missing_negative_ua_within_90_days: %s", missing_negative_ua_within_90_days
+        )
+        logging.info(
+            "missing_income_verified_within_3_months: %s",
+            missing_income_verified_within_3_months,
+        )
 
     return external_id_to_phone_num_to_text_dict
 
