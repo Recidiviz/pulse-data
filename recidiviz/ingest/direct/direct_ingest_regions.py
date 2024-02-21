@@ -21,6 +21,7 @@ Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
 import os
+from collections import defaultdict
 from types import ModuleType
 from typing import Any, Dict, Optional
 
@@ -34,7 +35,7 @@ from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 # Cache of the `DirectIngestRegion` objects.
-REGIONS: Dict[str, "DirectIngestRegion"] = {}
+_REGIONS: Dict[str, Dict[str, "DirectIngestRegion"]] = defaultdict(dict)
 
 
 def _to_lower(s: str) -> str:
@@ -102,18 +103,25 @@ class DirectIngestRegion:
 def get_direct_ingest_region(
     region_code: str, region_module_override: Optional[ModuleType] = None
 ) -> DirectIngestRegion:
+    region_code = region_code.lower()
     if region_module_override:
         region_module = region_module_override
     else:
         region_module = direct_ingest_regions_module
 
-    if region_code not in REGIONS:
-        REGIONS[region_code] = DirectIngestRegion(
-            region_code=region_code.lower(),
+    region_module_str = region_module.__name__
+    if region_code not in _REGIONS[region_module_str]:
+        _REGIONS[region_module_str][region_code] = DirectIngestRegion(
+            region_code=region_code,
             region_module=region_module,
-            **get_direct_ingest_region_manifest(region_code.lower(), region_module),
+            **get_direct_ingest_region_manifest(region_code, region_module),
         )
-    return REGIONS[region_code]
+    return _REGIONS[region_module_str][region_code]
+
+
+@environment.test_only
+def clear_direct_ingest_regions_cache() -> None:
+    _REGIONS.clear()
 
 
 MANIFEST_NAME = "manifest.yaml"
