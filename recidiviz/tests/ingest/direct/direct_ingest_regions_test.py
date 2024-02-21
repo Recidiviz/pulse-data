@@ -24,6 +24,8 @@ from mock import Mock, PropertyMock, mock_open
 
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
+from recidiviz.ingest.direct import templates
+from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
 
 BAD_ENV_BOOL_MANIFEST_CONTENTS = """
@@ -54,10 +56,10 @@ class TestRegions(TestCase):
     """Tests for regions.py."""
 
     def setup_method(self, _test_method: Callable) -> None:
-        direct_ingest_regions.REGIONS = {}
+        direct_ingest_regions.clear_direct_ingest_regions_cache()
 
     def teardown_method(self, _test_method: Callable) -> None:
-        direct_ingest_regions.REGIONS = {}
+        direct_ingest_regions.clear_direct_ingest_regions_cache()
 
     def test_get_region_manifest(self) -> None:
         manifest = with_manifest(
@@ -69,6 +71,24 @@ class TestRegions(TestCase):
             "agency_name": "North Dakota Department of Corrections and Rehabilitation",
             "environment": "production",
         }
+
+    def test_get_region_manifest_caching(self) -> None:
+        region_template = direct_ingest_regions.get_direct_ingest_region(
+            region_code="us_xx", region_module_override=templates
+        )
+        self.assertEqual(region_template.region_module, templates)
+
+        region_fake = direct_ingest_regions.get_direct_ingest_region(
+            region_code="us_xx", region_module_override=fake_regions
+        )
+        self.assertEqual(region_fake.region_module, fake_regions)
+        self.assertNotEqual(id(region_fake), id(region_template))
+
+        region_template_retry = direct_ingest_regions.get_direct_ingest_region(
+            region_code="US_XX", region_module_override=templates
+        )
+        self.assertEqual(region_template_retry.region_module, templates)
+        self.assertEqual(id(region_template_retry), id(region_template))
 
     def test_get_region_manifest_not_found(self) -> None:
         with self.assertRaises(FileNotFoundError):
