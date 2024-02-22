@@ -34,7 +34,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
 from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
@@ -406,12 +405,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             stream_into_table_args[0][2][1].get("region_code"), state_codes[1].name
         )
         self.assertEqual(stream_into_table_args[0][2][1].get("schema"), "OPERATIONS")
-
-    def test_secondary_without_prefix_raises(self) -> None:
-        with self.assertRaises(ValueError):
-            federated_bq_schema_refresh(
-                SchemaType.STATE, direct_ingest_instance=DirectIngestInstance.SECONDARY
-            )
 
     @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch(

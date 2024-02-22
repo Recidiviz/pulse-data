@@ -89,6 +89,8 @@ def update_bq_dataset_to_match_sqlalchemy_schema(
     schema.py.
     """
     bq_client = BigQueryClientImpl(region_override=bq_region_override)
+    # TODO(#20930): We shouldn't have to reference the CloudSqlToBQConfig just to get
+    #  the list of tables in the schema.
     export_config = CloudSqlToBQConfig.for_schema_type(schema_type)
     bq_dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
 

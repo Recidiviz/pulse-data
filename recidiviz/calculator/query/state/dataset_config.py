@@ -52,16 +52,16 @@ STATE_BASE_REGIONAL_DATASET: str = "state_regional"
 # Where the base tables for the state schema live, containing just data from CloudSQL
 # (legacy) ingest. These are a mirror of the data in our state CloudSQL instance,
 # refreshed daily via the CloudSQL -> BQ federated export.
-# TODO(#20930): Remove this constant and update docstring for STATE_BASE_DATASET
-# and STATE_BASE_VIEWS_DATASET below.
+# TODO(#20930): Remove this constant once it is no longer referenced by the
+#  CloudSqlToBQConfig.
 STATE_BASE_LEGACY_DATASET: str = "state_legacy"
 
-# The views that union output from both CloudSQL (legacy) ingest and Dataflow based
-# ingest, and are materialized to STATE_BASE_DATASET.
+# Views that are the union of the output from each state's PRIMARY Dataflow ingest
+# pipeline.
 STATE_BASE_VIEWS_DATASET: str = "state_views"
 
-# The tables for the state schema, including output from both CloudSQL (legacy) ingest
-# and Dataflow based ingest.
+# The tables for the state schema, including output from each state's PRIMARY Dataflow
+# ingest pipeline.
 STATE_BASE_DATASET: str = "state"
 
 # Where the normalized state tables live, with data from all states. For each entity
@@ -70,13 +70,8 @@ STATE_BASE_DATASET: str = "state"
 # output for that entity in each state.
 NORMALIZED_STATE_DATASET: str = "normalized_state"
 
-# Where the views for the COVID dashboard live
-COVID_DASHBOARD_DATASET: str = "covid_public_data"
-
 # Where the tables used to populate the COVID dashboard views live
 COVID_DASHBOARD_REFERENCE_DATASET: str = "covid_public_data_reference_tables"
-
-LINESTAFF_DATA_VALIDATION: str = "linestaff_data_validation"
 
 # Where the views for the public dashboard live
 PUBLIC_DASHBOARD_VIEWS_DATASET: str = "public_dashboard_views"
@@ -105,6 +100,8 @@ VITALS_REPORT_DATASET: str = "vitals_report_views"
 # Where Sendgrid datasets live
 SENDGRID_EMAIL_DATA_DATASET: str = "sendgrid_email_data"
 
+# TODO(#20930): Delete these US_XX_RAW_DATA constants in favor of calls to
+#  raw_latest_views_dataset_for_region().
 # Where US_TN raw data lives
 US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
 

@@ -36,7 +36,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
     CloudSqlToBqRefreshStatus,
     store_bq_refresh_status_in_big_query,
@@ -66,21 +65,12 @@ from recidiviz.view_registry.deployed_views import (
 
 def federated_bq_schema_refresh(
     schema_type: SchemaType,
-    direct_ingest_instance: Optional[DirectIngestInstance] = None,
     dataset_override_prefix: Optional[str] = None,
 ) -> List[Table]:
     """Performs a full refresh of BigQuery data for a given schema, pulling data from
     the appropriate CloudSQL Postgres instance.
     """
-    if (
-        direct_ingest_instance == DirectIngestInstance.SECONDARY
-        and not dataset_override_prefix
-    ):
-        raise ValueError(
-            "Federated refresh can only proceed for secondary databases into a sandbox."
-        )
-
-    config = CloudSqlToBQConfig.for_schema_type(schema_type, direct_ingest_instance)
+    config = CloudSqlToBQConfig.for_schema_type(schema_type)
     # Query CloudSQL and export data into datasets with regions that match the instance
     # region (e.g. us-east1)
     refreshed_states = _federated_bq_regional_dataset_refresh(
