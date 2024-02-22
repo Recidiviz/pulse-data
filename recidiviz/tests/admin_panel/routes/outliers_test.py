@@ -27,6 +27,7 @@ from unittest.mock import MagicMock, patch
 import flask
 import freezegun
 import pytest
+import responses
 from flask import Flask
 from flask_smorest import Api
 
@@ -77,6 +78,11 @@ class OutliersAdminPanelEndpointTests(TestCase):
             )
             self.deactivate = lambda config_id=None: flask.url_for(
                 "outliers.DeactivateConfigurationByIdAPI",
+                state_code_str="US_PA",
+                config_id=config_id,
+            )
+            self.promote = lambda config_id=None: flask.url_for(
+                "outliers.PromoteConfigurationsAPI",
                 state_code_str="US_PA",
                 config_id=config_id,
             )
@@ -233,6 +239,25 @@ class OutliersAdminPanelEndpointTests(TestCase):
             {
                 "atOrBelowRateLabel": "At or below statewide rate",
                 "exclusionReasonDescription": None,
+                "featureVariant": "fv1",
+                "id": 5,
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-02-01T00:00:00",
+                "updatedBy": "test-user@recidiviz.org",
+                "worseThanRateLabel": "Far worse than statewide rate",
+            },
+            {
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
                 "featureVariant": None,
                 "id": 1,
                 "learnMoreUrl": "fake.com",
@@ -276,7 +301,167 @@ class OutliersAdminPanelEndpointTests(TestCase):
                 "learnMoreUrl": "fake.com",
                 "noneAreOutliersLabel": "are outliers",
                 "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "status": "INACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:02",
+                "updatedBy": "dana1@recidiviz.org",
+                "worseThanRateLabel": "Far worse than statewide rate",
+            },
+            {
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
+                "featureVariant": None,
+                "id": 2,
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "status": "INACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:01",
+                "updatedBy": "fake@recidiviz.org",
+                "worseThanRateLabel": "Far worse than statewide rate",
+            },
+        ]
+
+        self.client.post(
+            self.configurations,
+            headers=self.headers,
+            json={
+                "featureVariant": "fv1",
+                "supervisionDistrictLabel": "district",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionUnitLabel": "unit",
+                "supervisionDistrictManagerLabel": "district manager",
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "worseThanRateLabel": "Far worse than statewide rate",
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
+            },
+        )
+
+        response = self.client.get(self.configurations, headers=self.headers)
+
+        self.assertEqual(json.loads(response.data), expected)
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    def test_add_configuration_bad_request(
+        self, mock_enabled_states: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_PA"]
+        result = self.client.post(
+            self.configurations,
+            headers=self.headers,
+            json={
+                # incorrect type
+                "featureVariant": 1,
+                "supervisionDistrictLabel": "district",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionUnitLabel": "unit",
+                "supervisionDistrictManagerLabel": "district manager",
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "worseThanRateLabel": "Far worse than statewide rate",
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
+            },
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
+
+    @patch(
+        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
+    )
+    @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
+    def test_add_configuration_with_updated_by(
+        self, mock_enabled_states: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_PA"]
+
+        expected = [
+            {
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
+                "featureVariant": "fv1",
+                "id": 5,
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
                 "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-02-01T00:00:00",
+                "updatedBy": "email@gmail.com",
+                "worseThanRateLabel": "Far worse than statewide rate",
+            },
+            {
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
+                "featureVariant": None,
+                "id": 1,
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "agent",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-26T13:30:00",
+                "updatedBy": "alexa@recidiviz.org",
+                "worseThanRateLabel": "Far worse than statewide rate",
+            },
+            {
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
+                "featureVariant": "fv2",
+                "id": 4,
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "status": "ACTIVE",
+                "supervisionDistrictLabel": "district",
+                "supervisionDistrictManagerLabel": "district manager",
+                "supervisionJiiLabel": "client",
+                "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
+                "updatedAt": "2024-01-01T13:30:03",
+                "updatedBy": "dana2@recidiviz.org",
+                "worseThanRateLabel": "Far worse than statewide rate",
+            },
+            {
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
+                "featureVariant": "fv1",
+                "id": 3,
+                "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "status": "INACTIVE",
                 "supervisionDistrictLabel": "district",
                 "supervisionDistrictManagerLabel": "district manager",
                 "supervisionJiiLabel": "client",
@@ -311,6 +496,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
             self.configurations,
             headers=self.headers,
             json={
+                "updatedBy": "email@gmail.com",
                 "featureVariant": "fv1",
                 "supervisionDistrictLabel": "district",
                 "supervisionSupervisorLabel": "supervisor",
@@ -319,36 +505,16 @@ class OutliersAdminPanelEndpointTests(TestCase):
                 "supervisionUnitLabel": "unit",
                 "supervisionDistrictManagerLabel": "district manager",
                 "learnMoreUrl": "fake.com",
+                "noneAreOutliersLabel": "are outliers",
+                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                "worseThanRateLabel": "Far worse than statewide rate",
+                "atOrBelowRateLabel": "At or below statewide rate",
+                "exclusionReasonDescription": None,
             },
         )
 
         response = self.client.get(self.configurations, headers=self.headers)
-
         self.assertEqual(json.loads(response.data), expected)
-
-    @patch(
-        "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
-    )
-    def test_add_configuration_bad_request(
-        self, mock_enabled_states: MagicMock
-    ) -> None:
-        mock_enabled_states.return_value = ["US_PA"]
-        result = self.client.post(
-            self.configurations,
-            headers=self.headers,
-            json={
-                # incorrect type
-                "featureVariant": 1,
-                "supervisionDistrictLabel": "district",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionUnitLabel": "unit",
-                "supervisionDistrictManagerLabel": "district manager",
-                "learnMoreUrl": "fake.com",
-            },
-        )
-        self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
 
     ########
     # PUT /outliers/<state_code_str>/configurations/<config_id_str>/deactivate
@@ -404,4 +570,81 @@ class OutliersAdminPanelEndpointTests(TestCase):
             self.assertEqual(
                 f"Configuration {config_id} has been deactivated",
                 json.loads(result.data),
+            )
+
+    ########
+    # POST /outliers/<state_code_str>/configurations/<config_id>/promote
+    ########
+
+    @patch("recidiviz.admin_panel.routes.outliers.get_gcp_environment")
+    @patch("recidiviz.admin_panel.routes.outliers.fetch_id_token")
+    @patch("recidiviz.admin_panel.routes.outliers.in_gcp")
+    def test_promote_configuration_success(
+        self, in_gcp_mock: MagicMock, fetch_id_token_mock: MagicMock, get_env: MagicMock
+    ) -> None:
+        get_env.return_value = "staging"
+        test_token = "test-token-value"
+        in_gcp_mock.return_value = True
+        fetch_id_token_mock.return_value = test_token
+        config_id = 1
+        with self.app.test_request_context(), responses.RequestsMock() as rsps:
+            rsps.post(
+                "https://admin-panel-prod.recidiviz.org/admin/outliers/US_PA/configurations",
+                status=200,
+                match=[
+                    responses.matchers.header_matcher(
+                        {"Authorization": f"Bearer {test_token}"}
+                    ),
+                    responses.matchers.json_params_matcher(
+                        {
+                            "learnMoreUrl": "fake.com",
+                            "supervisionDistrictLabel": "district",
+                            "featureVariant": None,
+                            "supervisionDistrictManagerLabel": "district manager",
+                            "supervisionJiiLabel": "client",
+                            "supervisionOfficerLabel": "agent",
+                            "supervisionSupervisorLabel": "supervisor",
+                            "supervisionUnitLabel": "unit",
+                            "noneAreOutliersLabel": "are outliers",
+                            "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
+                            "worseThanRateLabel": "Far worse than statewide rate",
+                            "atOrBelowRateLabel": "At or below statewide rate",
+                            "exclusionReasonDescription": None,
+                            "updatedBy": "test-user@recidiviz.org",
+                        }
+                    ),
+                ],
+            )
+
+            result = self.client.post(self.promote(config_id), headers=self.headers)
+            self.assertEqual(result.status_code, HTTPStatus.OK)
+            self.assertEqual(
+                json.loads(result.data),
+                "Configuration 1 successfully promoted to production",
+            )
+
+    @patch("recidiviz.admin_panel.routes.outliers.get_gcp_environment")
+    def test_promote_configuration_bad_request(self, get_env: MagicMock) -> None:
+        get_env.return_value = "staging"
+        # Assumes second non-header row in configurations.csv has status=INACTIVE
+        config_id = 2
+        with self.app.test_request_context():
+            result = self.client.post(self.promote(config_id), headers=self.headers)
+            self.assertEqual(result.status_code, HTTPStatus.BAD_REQUEST)
+            self.assertEqual(
+                json.loads(result.data)["message"],
+                "Must promote an active configuration",
+            )
+
+    @patch("recidiviz.admin_panel.routes.outliers.get_gcp_environment")
+    def test_promote_configuration_wrong_env(self, get_env: MagicMock) -> None:
+        get_env.return_value = "production"
+        # Assumes second non-header row in configurations.csv has status=INACTIVE
+        config_id = 2
+        with self.app.test_request_context():
+            result = self.client.post(self.promote(config_id), headers=self.headers)
+            self.assertEqual(result.status_code, HTTPStatus.BAD_REQUEST)
+            self.assertEqual(
+                json.loads(result.data)["message"],
+                "This endpoint should not be called from production",
             )

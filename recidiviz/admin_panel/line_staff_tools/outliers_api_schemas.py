@@ -29,6 +29,7 @@ class ConfigurationSchema(CamelCaseSchema):
     """
 
     feature_variant = fields.Str(allow_none=True)
+    updated_by = fields.Email(allow_none=True)
     supervision_officer_label = fields.Str(required=True)
     supervision_district_label = fields.Str(required=True)
     supervision_unit_label = fields.Str(required=True)
@@ -45,7 +46,6 @@ class ConfigurationSchema(CamelCaseSchema):
 
 class FullConfigurationSchema(ConfigurationSchema):
     id = fields.Int(required=True)
-    updated_by = fields.Email(required=True)
     updated_at = fields.DateTime(required=True)
     status = fields.Str(required=True)
 
