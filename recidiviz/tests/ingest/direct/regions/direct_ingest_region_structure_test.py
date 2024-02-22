@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests that each regions direct ingest directory is set up properly."""
 import abc
+import inspect
 import os
 import re
 import unittest
@@ -27,6 +28,7 @@ from typing import Callable, Dict, List, Optional, Set, Tuple
 import pytest
 import yaml
 from mock import patch
+from more_itertools import one
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
@@ -36,6 +38,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -89,9 +92,15 @@ from recidiviz.tests.common.constants.state.external_id_types_test import (
     get_external_id_types,
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
+from recidiviz.tests.ingest.direct import regions as regions_tests_module
+from recidiviz.tests.ingest.direct.regions.ingest_view_query_test_case import (
+    IngestViewEmulatorQueryTestCase,
+    IngestViewQueryTestCase,
+)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.types import assert_type
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
 YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
@@ -669,7 +678,12 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                         f"[{project}] and [{ingest_instance}]",
                     )
 
-    def test_ingest_view_result_fixture_files_have_corresponding_yaml(self) -> None:
+    def test_integration_test_ingest_view_result_fixture_files_have_corresponding_yaml(
+        self,
+    ) -> None:
+        """Fails if there are integration test fixture files that are no longer used but
+        have not been deleted.
+        """
         for region_code in get_existing_direct_ingest_states():
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=region_code.value
@@ -691,6 +705,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 if fixture_file.endswith(".csv")
             ]
 
+            ingest_view_names = (
+                ingest_view_manifest_collector.ingest_view_to_manifest.keys()
+            )
             extra_fixtures = set(fixture_file_names) - set(
                 ingest_view_manifest_collector.ingest_view_to_manifest.keys()
             )
@@ -701,6 +718,13 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 f"Found fixtures in {fixtures_directory} with no corresponding "
                 f"ingest mappings (candidates for cleanup): {extra_fixtures}",
             )
+
+            if not fixture_file_names and ingest_view_names:
+                raise ValueError(
+                    f"[{region_code.value}] Found no integration test fixture files "
+                    f"in [{fixtures_directory}] even though there are ingest views for "
+                    f"this state - is this test looking in the right place?"
+                )
 
     def test_ingest_view_fixture_files_is_subset_of_ingest_mappings(self) -> None:
         for region_code in get_existing_direct_ingest_states():
@@ -717,8 +741,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 os.path.dirname(direct_ingest_fixtures.__file__),
                 region_code.value.lower(),
             )
-            if "ingest_view" not in os.listdir(region_fixtures_directory):
-                continue
             ingest_view_fixture_directories = [
                 directory
                 for directory in os.listdir(
@@ -750,7 +772,169 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 f"{extra_fixture_directories}",
             )
 
+    def _get_ingest_view_to_test_names(
+        self, state_code: StateCode
+    ) -> Dict[str, Set[str]]:
+        """For the given state, returns a dictionary mapping from ingest_view_name to
+        the names of each of the tests that has been written for that ingest view.
+        """
+        region = direct_ingest_regions.get_direct_ingest_region(
+            region_code=state_code.value
+        )
+        ingest_view_manifest_collector = IngestViewManifestCollector(
+            region=region,
+            delegate=IngestViewManifestCompilerDelegateImpl(
+                region=region, schema_type=SchemaType.STATE
+            ),
+        )
+
+        ingest_view_to_test_names = {}
+        ingest_view_test_module = ModuleCollectorMixin.get_relative_module(
+            regions_tests_module, [state_code.value.lower(), "ingest_views"]
+        )
+        for ingest_view_test_file_module in ModuleCollectorMixin.get_submodules(
+            ingest_view_test_module, submodule_name_prefix_filter=None
+        ):
+            test_class_candidates = []
+            for attribute in dir(ingest_view_test_file_module):
+                var = getattr(ingest_view_test_file_module, attribute)
+                if not inspect.isclass(var):
+                    continue
+                if var not in (
+                    IngestViewQueryTestCase,
+                    IngestViewEmulatorQueryTestCase,
+                ) and (
+                    issubclass(var, IngestViewQueryTestCase)
+                    or issubclass(var, IngestViewEmulatorQueryTestCase)
+                ):
+                    test_class_candidates.append(var)
+
+            test_class = one(test_class_candidates)
+
+            test_file_name = assert_type(
+                os.path.basename(
+                    assert_type(ingest_view_test_file_module.__file__, str)
+                ),
+                str,
+            )
+            if not (
+                match := re.match(
+                    r"view_(?P<ingest_view_name>.*)_test\.py", test_file_name
+                )
+            ):
+                raise ValueError(
+                    f"[{state_code.value}] View test file {test_file_name} does not match "
+                    f"expected pattern."
+                )
+            ingest_view_name = match.group("ingest_view_name")
+            if (
+                ingest_view_name
+                not in ingest_view_manifest_collector.ingest_view_to_manifest
+            ):
+                raise ValueError(
+                    f"[{state_code.value}] Found ingest view test file "
+                    f"[{test_file_name}] for ingest view [{ingest_view_name}] which "
+                    f"is not a valid ingest view name."
+                )
+
+            test_names = {
+                a.removeprefix("test") for a in dir(test_class) if a.startswith("test")
+            }
+            if not test_names:
+                raise ValueError(
+                    f"Found no tests defined for class [{test_class}] in "
+                    f"[{test_file_name}]"
+                )
+            ingest_view_to_test_names[ingest_view_name] = test_names
+        return ingest_view_to_test_names
+
+    def test_all_ingest_views_have_corresponding_test(self) -> None:
+        """Fails for any ingest view that does not have a corresponding test in the
+        ingest_views/view_{ingest_view_name}_test.py file.
+        """
+        exemptions_by_state_code = {
+            StateCode.US_IX: {
+                # TODO(#27741): Write tests for this view and remove exemption
+                "supervision_violation_legacy"
+            },
+            StateCode.US_MI: {
+                # TODO(#27743): Write tests for this view and remove exemption
+                "person_external_ids"
+            },
+            StateCode.US_MO: {
+                # TODO(#19824): Write tests for this view and remove exemption
+                "tak001_offender_identification",
+                # TODO(#19825): Write tests for this view and remove exemption
+                "tak028_tak042_tak076_tak024_violation_reports",
+                # TODO(#19826): Write tests for this view and remove exemption
+                "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
+                # TODO(#19827): Write tests for this view and remove exemption
+                "tak291_tak292_tak024_citations",
+            },
+            StateCode.US_OZ: {
+                # TODO(#27744): Write tests for this view and remove exemption
+                "vfds_person"
+            },
+            StateCode.US_PA: {
+                # TODO(#19828): Write tests for this view and remove exemption
+                "board_action",
+                # TODO(#19829): Write tests for this view and remove exemption
+                "dbo_Miscon",
+                # TODO(#19830): Write tests for this view and remove exemption
+                "dbo_Offender_v2",
+                # TODO(#19831): Write tests for this view and remove exemption
+                "dbo_Senrec_v2",
+                # TODO(#19832): Write tests for this view and remove exemption
+                "doc_person_info",
+                # TODO(#19834): Write tests for this view and remove exemption
+                "supervision_violation",
+                # TODO(#19835): Write tests for this view and remove exemption
+                "supervision_violation_response",
+            },
+            StateCode.US_TN: {
+                # TODO(#27742): Write tests for this view and remove exemption
+                "VantagePointAssessments"
+            },
+        }
+
+        for state_code in get_existing_direct_ingest_states():
+            ingest_view_to_test_names = self._get_ingest_view_to_test_names(state_code)
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=state_code.value
+            )
+            ingest_view_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IngestViewManifestCompilerDelegateImpl(
+                    region=region, schema_type=SchemaType.STATE
+                ),
+            )
+
+            all_ingest_views = set(
+                ingest_view_manifest_collector.ingest_view_to_manifest
+            )
+            ingest_views_with_tests = set(ingest_view_to_test_names)
+            exemptions = exemptions_by_state_code.get(state_code, set())
+
+            missing_tests = all_ingest_views - ingest_views_with_tests - exemptions
+            if missing_tests:
+                raise ValueError(
+                    f"Found the following ingest views for [{state_code.value}] which "
+                    f"do not have a corresponding test file: {missing_tests}"
+                )
+
+            if unnecessary_exemptions := exemptions.intersection(
+                ingest_views_with_tests
+            ):
+                raise ValueError(
+                    f"Found ingest view tests for views {unnecessary_exemptions}, "
+                    f"which are in the test exemption list. These can be removed from "
+                    f"the exemptions list!"
+                )
+
     def test_ingest_views_have_corresponding_yaml(self) -> None:
+        """Fails if there are ingest view files that do not have a corresponding ingest
+        view mappings YAML file.
+        """
         for region_code in get_existing_direct_ingest_states():
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=region_code.value
