@@ -234,47 +234,62 @@ def send_id_lsu_texts(
                 logging.info(
                     "Sending text to individual with document id: %s", document_id
                 )
-                response = client.messages.create(
-                    body=text_body,
-                    messaging_service_sid=messaging_service_sid,
-                    to=phone_number,
-                    status_callback=f"{base_url}/jii/webhook/twilio_status",
-                )
-
-                # Store the individual's phone number in their individual level doc
                 firestore_individual_path = f"twilio_messages/{document_id}"
-                logging.info(
-                    "Updating individual's phone_numbers with document id: %s",
-                    document_id,
-                )
-                firestore_client.set_document(
-                    document_path=firestore_individual_path,
-                    data={
-                        "last_phone_num_update": datetime.datetime.now(
-                            datetime.timezone.utc
-                        ),
-                        "phone_numbers": ArrayUnion([phone_number]),
-                    },
-                    merge=True,
-                )
+                try:
+                    response = client.messages.create(
+                        body=text_body,
+                        messaging_service_sid=messaging_service_sid,
+                        to=phone_number,
+                        status_callback=f"{base_url}/jii/webhook/twilio_status",
+                    )
 
-                # Next, update their message level doc
-                firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{batch_id}"
-                logging.info(
-                    "Updating individual's message level doc with document id: %s",
-                    document_id,
-                )
-                firestore_client.set_document(
-                    document_path=firestore_message_path,
-                    data={
-                        "timestamp": datetime.datetime.now(datetime.timezone.utc),
-                        "message_sid": response.sid,
-                        "body": text_body,
-                        "phone_number": phone_number,
-                        "message_type": message_type,
-                    },
-                    merge=True,
-                )
+                    # Store the individual's phone number in their individual level doc
+                    logging.info(
+                        "Updating individual's phone_numbers with document id: %s",
+                        document_id,
+                    )
+                    firestore_client.set_document(
+                        document_path=firestore_individual_path,
+                        data={
+                            "last_phone_num_update": datetime.datetime.now(
+                                datetime.timezone.utc
+                            ),
+                            "phone_numbers": ArrayUnion([phone_number]),
+                        },
+                        merge=True,
+                    )
+
+                    # Next, update their message level doc
+                    firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{batch_id}"
+                    logging.info(
+                        "Updating individual's message level doc with document id: %s",
+                        document_id,
+                    )
+                    firestore_client.set_document(
+                        document_path=firestore_message_path,
+                        data={
+                            "timestamp": datetime.datetime.now(datetime.timezone.utc),
+                            "message_sid": response.sid,
+                            "body": text_body,
+                            "phone_number": phone_number,
+                            "message_type": message_type,
+                        },
+                        merge=True,
+                    )
+                except Exception as e:
+                    logging.error("Error sending sms request to Twilio. Error: %s", e)
+                    firestore_client.set_document(
+                        firestore_individual_path,
+                        {
+                            "status": ExternalSystemRequestStatus.FAILURE.value,
+                            "updated": {
+                                "date": datetime.datetime.now(datetime.timezone.utc),
+                                "by": "RECIDIVIZ",
+                            },
+                            "errors": [str(e)],
+                        },
+                        merge=True,
+                    )
 
 
 if __name__ == "__main__":
