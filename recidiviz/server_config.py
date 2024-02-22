@@ -26,6 +26,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
+from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
+    get_workflows_enabled_states,
+)
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
@@ -55,27 +58,37 @@ def database_keys_for_schema_type(
     if not schema_type.is_multi_db_schema:
         return [SQLAlchemyDatabaseKey.for_schema(schema_type)]
 
-    if schema_type == SchemaType.STATE:
-        return [
-            database_key_for_state(ingest_instance, state_code)
-            for ingest_instance in DirectIngestInstance
-            for state_code in get_direct_ingest_states_existing_in_env()
-        ]
+    match schema_type:
+        case SchemaType.STATE:
+            return [
+                database_key_for_state(ingest_instance, state_code)
+                for ingest_instance in DirectIngestInstance
+                for state_code in get_direct_ingest_states_existing_in_env()
+            ]
 
-    if schema_type == SchemaType.PATHWAYS:
-        return [
-            PathwaysDatabaseManager.database_key_for_state(state_code)
-            for state_code in get_pathways_enabled_states()
-        ]
+        case SchemaType.PATHWAYS:
+            return [
+                PathwaysDatabaseManager.database_key_for_state(state_code)
+                for state_code in get_pathways_enabled_states()
+            ]
 
-    if schema_type == SchemaType.OUTLIERS:
-        outliers_db_manager = StateSegmentedDatabaseManager(
-            get_outliers_enabled_states(), SchemaType.OUTLIERS
-        )
-        return [
-            outliers_db_manager.database_key_for_state(state_code)
-            for state_code in get_outliers_enabled_states()
-        ]
+        case SchemaType.OUTLIERS:
+            outliers_db_manager = StateSegmentedDatabaseManager(
+                get_outliers_enabled_states(), SchemaType.OUTLIERS
+            )
+            return [
+                outliers_db_manager.database_key_for_state(state_code)
+                for state_code in get_outliers_enabled_states()
+            ]
+
+        case SchemaType.WORKFLOWS:
+            workflows_db_manager = StateSegmentedDatabaseManager(
+                get_workflows_enabled_states(), SchemaType.WORKFLOWS
+            )
+            return [
+                workflows_db_manager.database_key_for_state(state_code)
+                for state_code in get_workflows_enabled_states()
+            ]
 
     raise ValueError(f"Unexpected schema_type: [{schema_type}]")
 

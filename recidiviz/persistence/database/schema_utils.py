@@ -31,8 +31,10 @@ from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
     JusticeCountsBase,
     OperationsBase,
+    OutliersBase,
     PathwaysBase,
     StateBase,
+    WorkflowsBase,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.case_triage import (
@@ -43,9 +45,9 @@ from recidiviz.persistence.database.schema.justice_counts import (
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.outliers import schema as outliers_schema
-from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema.workflows import schema as workflows_schema
 from recidiviz.persistence.database.schema_type import SchemaType
 
 _SCHEMA_MODULES: List[ModuleType] = [
@@ -55,6 +57,7 @@ _SCHEMA_MODULES: List[ModuleType] = [
     state_schema,
     operations_schema,
     outliers_schema,
+    workflows_schema,
 ]
 
 BQ_TYPES = {
@@ -249,34 +252,40 @@ def get_state_database_association_with_names(
 
 
 def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
-    if isinstance(schema_object, JusticeCountsBase):
-        return SchemaType.JUSTICE_COUNTS
-    if isinstance(schema_object, StateBase):
-        return SchemaType.STATE
-    if isinstance(schema_object, OperationsBase):
-        return SchemaType.OPERATIONS
-    if isinstance(schema_object, CaseTriageBase):
-        return SchemaType.CASE_TRIAGE
-    if isinstance(schema_object, PathwaysBase):
-        return SchemaType.PATHWAYS
-    if isinstance(schema_object, OutliersBase):
-        return SchemaType.OUTLIERS
+    match schema_object:
+        case JusticeCountsBase():
+            return SchemaType.JUSTICE_COUNTS
+        case StateBase():
+            return SchemaType.STATE
+        case OperationsBase():
+            return SchemaType.OPERATIONS
+        case CaseTriageBase():
+            return SchemaType.CASE_TRIAGE
+        case PathwaysBase():
+            return SchemaType.PATHWAYS
+        case OutliersBase():
+            return SchemaType.OUTLIERS
+        case WorkflowsBase():
+            return SchemaType.WORKFLOWS
 
     raise ValueError(f"Object of type [{type(schema_object)}] has unknown schema base.")
 
 
 def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
-    if schema_type == SchemaType.STATE:
-        return StateBase
-    if schema_type == SchemaType.OPERATIONS:
-        return OperationsBase
-    if schema_type == SchemaType.JUSTICE_COUNTS:
-        return JusticeCountsBase
-    if schema_type == SchemaType.CASE_TRIAGE:
-        return CaseTriageBase
-    if schema_type == SchemaType.PATHWAYS:
-        return PathwaysBase
-    if schema_type == SchemaType.OUTLIERS:
-        return OutliersBase
+    match schema_type:
+        case SchemaType.STATE:
+            return StateBase
+        case SchemaType.OPERATIONS:
+            return OperationsBase
+        case SchemaType.JUSTICE_COUNTS:
+            return JusticeCountsBase
+        case SchemaType.CASE_TRIAGE:
+            return CaseTriageBase
+        case SchemaType.PATHWAYS:
+            return PathwaysBase
+        case SchemaType.OUTLIERS:
+            return OutliersBase
+        case SchemaType.WORKFLOWS:
+            return WorkflowsBase
 
     raise ValueError(f"Unexpected schema type [{schema_type}].")

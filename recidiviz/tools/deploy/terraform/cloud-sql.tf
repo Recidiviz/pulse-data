@@ -125,10 +125,36 @@ module "outliers_database" {
   }
 }
 
+module "workflows_database" {
+  source = "./modules/cloud-sql-instance"
+
+  project_id        = var.project_id
+  instance_key      = "workflows"
+  base_secret_name  = "workflows"
+  region            = var.region
+  zone              = var.zone
+  secondary_zone    = "us-central1-b"
+  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
+  has_readonly_user = true
+
+  additional_databases = [
+    for value in local.workflows_enabled_states :
+    lower(value)
+  ]
+
+  insights_config = {
+    query_insights_enabled  = true
+    query_string_length     = 1024
+    record_application_tags = false
+    record_client_address   = false
+  }
+}
+
 locals {
   # Add demo states to staging for demo mode
-  pathways_enabled_states = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
-  outliers_enabled_states = yamldecode(file("${path.module}/config/outliers_enabled_states.yaml"))
+  pathways_enabled_states  = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
+  outliers_enabled_states  = yamldecode(file("${path.module}/config/outliers_enabled_states.yaml"))
+  workflows_enabled_states = yamldecode(file("${path.module}/config/workflows_enabled_states.yaml"))
 
   joined_connection_string = join(
     ",",
@@ -137,6 +163,7 @@ locals {
       module.justice_counts_database.connection_name,
       module.pathways_database.connection_name,
       module.outliers_database.connection_name,
+      module.workflows_database.connection_name,
       # v2 modules
       module.operations_database_v2.connection_name,
       module.state_database_v2.connection_name,

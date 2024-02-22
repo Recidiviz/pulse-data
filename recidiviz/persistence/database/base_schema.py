@@ -25,6 +25,7 @@ from recidiviz.persistence.database.schema.operations.schema import OperationsBa
 from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.schema.state.schema import StateBase
+from recidiviz.persistence.database.schema.workflows.schema import WorkflowsBase
 
 SQLAlchemyModelType = Union[
     StateBase,
@@ -33,4 +34,5 @@ SQLAlchemyModelType = Union[
     CaseTriageBase,
     PathwaysBase,
     OutliersBase,
+    WorkflowsBase,
 ]

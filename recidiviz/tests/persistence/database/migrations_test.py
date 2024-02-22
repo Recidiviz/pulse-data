@@ -539,6 +539,14 @@ class TestPathwaysMigrations(MigrationsTestBase):
         }
 
 
+class TestWorkflowsMigrations(MigrationsTestBase):
+    __test__ = True
+
+    @classmethod
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.WORKFLOWS
+
+
 class MigrationsTestTest(TestCase):
     """Tests that any new schema added has migration tests defined."""
 

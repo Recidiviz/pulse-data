@@ -231,6 +231,10 @@ class TestSchemaUtils(unittest.TestCase):
             "configurations",
             "user_metadata",
         ]
+        workflows_table_names = [
+            "opportunity",
+            "opportunity_configuration",
+        ]
 
         expected_table_class_names = (
             case_triage_table_names
@@ -239,6 +243,7 @@ class TestSchemaUtils(unittest.TestCase):
             + pathways_table_names
             + state_table_names
             + outliers_table_names
+            + workflows_table_names
         )
 
         all_table_classes = get_all_table_classes()

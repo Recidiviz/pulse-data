@@ -184,19 +184,21 @@ class SQLAlchemyEngineManager:
     @classmethod
     def _secret_manager_prefix_for_type(cls, schema_type: SchemaType) -> str:
         # TODO(#8282): Clean up the _v2 suffix eventually.
-        if schema_type == SchemaType.STATE:
-            return "state_v2"
-        if schema_type == SchemaType.OPERATIONS:
-            return "operations_v2"
-
-        if schema_type == SchemaType.JUSTICE_COUNTS:
-            return "justice_counts"
-        if schema_type == SchemaType.CASE_TRIAGE:
-            return "case_triage"
-        if schema_type == SchemaType.PATHWAYS:
-            return "pathways"
-        if schema_type == SchemaType.OUTLIERS:
-            return "outliers"
+        match schema_type:
+            case SchemaType.STATE:
+                return "state_v2"
+            case SchemaType.OPERATIONS:
+                return "operations_v2"
+            case SchemaType.JUSTICE_COUNTS:
+                return "justice_counts"
+            case SchemaType.CASE_TRIAGE:
+                return "case_triage"
+            case SchemaType.PATHWAYS:
+                return "pathways"
+            case SchemaType.OUTLIERS:
+                return "outliers"
+            case SchemaType.WORKFLOWS:
+                return "workflows"
 
         raise ValueError(f"Unexpected schema type [{schema_type}].")
 
