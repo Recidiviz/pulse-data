@@ -104,6 +104,17 @@ services:
       - pathways_db_data:/var/lib/postgresql/data
       - pathways_db_socket:/var/run/postgresql/
 
+  workflows_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: workflows_user
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5437:5432"
+    volumes:
+      - workflows_db_data:/var/lib/postgresql/data
+      - workflows_db_socket:/var/run/postgresql/
+
   redis:
     image: redis:5.0
     ports:
@@ -120,3 +131,5 @@ volumes:
   outliers_db_socket:
   pathways_db_data:
   pathways_db_socket:
+  workflows_db_data:
+  workflows_db_socket:

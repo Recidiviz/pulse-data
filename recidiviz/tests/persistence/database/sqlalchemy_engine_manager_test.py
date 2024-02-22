@@ -67,6 +67,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         f"{server_config.__name__}.get_outliers_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
+    @patch(
+        f"{server_config.__name__}.get_workflows_enabled_states",
+        return_value=[StateCode.US_OZ.value, StateCode.US_YY.value],
+    )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.utils.environment.in_gcp_production")
     @patch("recidiviz.utils.environment.in_gcp")
@@ -79,6 +83,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_in_gcp: mock.MagicMock,
         mock_in_production: mock.MagicMock,
         mock_create_engine: mock.MagicMock,
+        _mock_workflows_enabled: mock.MagicMock,
         _mock_outliers_enabled: mock.MagicMock,
         _mock_pathways_enabled: mock.MagicMock,
         mock_get_states: mock.MagicMock,
@@ -263,6 +268,38 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="workflows_db_user_value",
+                        password="workflows_db_password_value",
+                        port=5432,
+                        database="us_oz",
+                        query={
+                            "host": "/cloudsql/workflows_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="workflows_db_user_value",
+                        password="workflows_db_password_value",
+                        port=5432,
+                        database="us_yy",
+                        query={
+                            "host": "/cloudsql/workflows_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
         )
         mock_get_states.assert_called()
@@ -279,6 +316,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         f"{server_config.__name__}.get_outliers_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
+    @patch(
+        f"{server_config.__name__}.get_workflows_enabled_states",
+        return_value=[StateCode.US_YY.value, StateCode.US_OZ.value],
+    )
     @patch("sqlalchemy.create_engine")
     @patch("recidiviz.utils.environment.in_gcp_staging")
     @patch("recidiviz.utils.environment.in_gcp")
@@ -289,6 +330,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_in_gcp: mock.MagicMock,
         mock_in_staging: mock.MagicMock,
         mock_create_engine: mock.MagicMock,
+        _mock_workflows_enabled: mock.MagicMock,
         _mock_outliers_enabled: mock.MagicMock,
         _mock_pathways_enabled: mock.MagicMock,
         mock_get_states: mock.MagicMock,
@@ -470,6 +512,38 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     echo_pool=True,
                     pool_recycle=600,
                 ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="workflows_db_user_value",
+                        password="workflows_db_password_value",
+                        port=5432,
+                        database="us_yy",
+                        query={
+                            "host": "/cloudsql/workflows_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
+                call(
+                    URL.create(
+                        drivername="postgresql",
+                        username="workflows_db_user_value",
+                        password="workflows_db_password_value",
+                        port=5432,
+                        database="us_oz",
+                        query={
+                            "host": "/cloudsql/workflows_cloudsql_instance_id_value"
+                        },
+                    ),
+                    isolation_level=None,
+                    poolclass=None,
+                    echo_pool=True,
+                    pool_recycle=600,
+                ),
             ],
         )
         mock_get_states.assert_called()
@@ -486,13 +560,14 @@ class SQLAlchemyEngineManagerTest(TestCase):
             "project:region:444",
             "project:region:555",
             "project:region:666",
+            "project:region:777",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666"])
+        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666", "777"])
         mock_secrets.assert_has_calls(
             [
                 mock.call("state_v2_cloudsql_instance_id"),
@@ -501,6 +576,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 mock.call("case_triage_cloudsql_instance_id"),
                 mock.call("pathways_cloudsql_instance_id"),
                 mock.call("outliers_cloudsql_instance_id"),
+                mock.call("workflows_cloudsql_instance_id"),
             ],
             any_order=True,
         )

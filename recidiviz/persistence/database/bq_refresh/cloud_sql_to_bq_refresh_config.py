@@ -353,6 +353,7 @@ class CloudSqlToBQConfig:
             SchemaType.JUSTICE_COUNTS,
             SchemaType.PATHWAYS,
             SchemaType.OUTLIERS,
+            SchemaType.WORKFLOWS,
         ):
             return False
 

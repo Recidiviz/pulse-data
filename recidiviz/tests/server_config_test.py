@@ -32,22 +32,27 @@ class TestServerConfig(unittest.TestCase):
     """Tests for server_config.py."""
 
     @patch(
-        f"{server_config.__name__}.get_direct_ingest_states_existing_in_env",
-        return_value=[StateCode.US_XX, StateCode.US_WW],
+        f"{server_config.__name__}.get_workflows_enabled_states",
+        return_value=[StateCode.US_OZ.value, StateCode.US_YY.value],
+    )
+    @patch(
+        f"{server_config.__name__}.get_outliers_enabled_states",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
     @patch(
         f"{server_config.__name__}.get_pathways_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
     @patch(
-        f"{server_config.__name__}.get_outliers_enabled_states",
-        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
+        f"{server_config.__name__}.get_direct_ingest_states_existing_in_env",
+        return_value=[StateCode.US_XX, StateCode.US_WW],
     )
     def test_get_database_keys_for_schema(
         self,
         state_codes_fn: Mock,
         _pathways_enabled_states: Mock,
         _outliers_enabled_states: Mock,
+        _workflows_enabled_states: Mock,
     ) -> None:
         all_keys = []
         for schema_type in SchemaType:
@@ -65,6 +70,8 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_ww"),
             SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx"),
             SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_ww"),
+            SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_oz"),
+            SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_yy"),
         ]
 
         self.assertCountEqual(expected_all_keys, all_keys)

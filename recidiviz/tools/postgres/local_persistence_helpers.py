@@ -40,6 +40,7 @@ from recidiviz.persistence.database.schema.operations.schema import OperationsBa
 from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.schema.state.schema import StateBase
+from recidiviz.persistence.database.schema.workflows.schema import WorkflowsBase
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -156,4 +157,5 @@ DECLARATIVE_BASES = [
     CaseTriageBase,
     PathwaysBase,
     OutliersBase,
+    WorkflowsBase,
 ]

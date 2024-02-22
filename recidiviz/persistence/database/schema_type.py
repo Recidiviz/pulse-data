@@ -26,8 +26,14 @@ class SchemaType(enum.Enum):
     CASE_TRIAGE = "CASE_TRIAGE"
     PATHWAYS = "PATHWAYS"
     OUTLIERS = "OUTLIERS"
+    WORKFLOWS = "WORKFLOWS"
 
     @property
     def is_multi_db_schema(self) -> bool:
         """Returns True if this schema is segmented into multiple databases"""
-        return self in [SchemaType.STATE, SchemaType.PATHWAYS, SchemaType.OUTLIERS]
+        return self in [
+            SchemaType.STATE,
+            SchemaType.PATHWAYS,
+            SchemaType.OUTLIERS,
+            SchemaType.WORKFLOWS,
+        ]
