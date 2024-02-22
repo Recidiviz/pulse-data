@@ -16,6 +16,8 @@
 # ============================================================================
 """Define the ORM schema objects that map directly to the database, for Outliers related entities."""
 
+from typing import Any, Dict
+
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -272,6 +274,11 @@ class Configuration(OutliersBase):
     exclusion_reason_description = Column(String)
     slightly_worse_than_rate_label = Column(String, nullable=False)
     at_or_below_rate_label = Column(String, nullable=False)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            field.name: getattr(self, field.name, None) for field in self.__table__.c
+        }
 
 
 class UserMetadata(OutliersBase):
