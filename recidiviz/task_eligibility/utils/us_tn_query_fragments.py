@@ -600,10 +600,18 @@ def us_tn_classification_forms(
     ) seg
         ON pei.external_id = seg.OffenderID
     LEFT JOIN (
-        SELECT OffenderID, ARRAY_AGG(STRUCT(IncompatibleOffenderID AS incompatible_offender_id,
+        SELECT OffenderID, ARRAY_AGG(STRUCT(incompatible_ids AS incompatible_offender_id,
                                             IncompatibleType AS incompatible_type)) AS incompatible_array
-        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.IncompatiblePair_latest`
-        WHERE IncompatibleRemovedDate IS NULL
+        FROM (
+            SELECT DISTINCT
+                    OffenderID,
+                    CASE WHEN IncompatibleType = 'S' THEN 'STAFF'
+                         ELSE IncompatibleOffenderID
+                         END AS incompatible_ids,
+                    IncompatibleType,
+            FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.IncompatiblePair_latest`
+            WHERE IncompatibleRemovedDate IS NULL
+            )
         GROUP BY 1
     ) incompatible
         ON pei.external_id = incompatible.OffenderID
