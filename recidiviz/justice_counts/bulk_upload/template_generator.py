@@ -40,6 +40,34 @@ THIS_YEAR = datetime.date.today().year
 LAST_YEAR = THIS_YEAR - 1
 
 
+def get_supervision_subsystems_metric_interfaces(
+    metric_key_to_interface: dict[str, MetricInterface],
+    metricfile: MetricFile,
+) -> List[MetricInterface]:
+    """
+    Returns the list of supervision subsystem metric interfaces from
+    `metric_key_to_interface` which correspond to the `metricfile`.
+
+    As an example, if metricfile is the "funding" metricfile, then when we get to a
+    metric_interface that includes the "funding" metricfile
+    (e.g. MetricInterface(
+            key=PAROLE_FUNDING,
+            metric_files = [funding metricfile, funding_by_type metricfile]
+        ))
+    then we will append this metric_interface to the list.
+    """
+    metric_interfaces = []
+    for metric_interface in metric_key_to_interface.values():
+        if (
+            metricfile.canonical_filename
+            in set(x.canonical_filename for x in metric_interface.metric_files)
+            and metric_interface.metric_definition.system
+            in schema.System.supervision_subsystems()
+        ):
+            metric_interfaces.append(metric_interface)
+    return metric_interfaces
+
+
 def generate_bulk_upload_template(
     system: schema.System,
     file_path: str,
@@ -50,13 +78,12 @@ def generate_bulk_upload_template(
 ) -> None:
     """Generates a Bulk Upload template for a particular agency."""
 
-    metric_interface_list = DatapointInterface.get_metric_settings_by_agency(
-        session,
-        agency,
-    )
     metric_key_to_interface = {
         metric_interface.key: metric_interface
-        for metric_interface in metric_interface_list
+        for metric_interface in DatapointInterface.get_metric_settings_by_agency(
+            session,
+            agency,
+        )
     }
     metricfiles = SYSTEM_TO_METRICFILES[system]
 
@@ -69,8 +96,6 @@ def generate_bulk_upload_template(
     )
 
     for metricfile in metricfiles:  # pylint: disable=too-many-nested-blocks
-        rows: List[Dict[str, str]] = []
-        metric_interface = metric_key_to_interface[metricfile.definition.key]
         high_level_metric = [
             curr_metricfile
             for curr_metricfile in metricfiles
@@ -78,61 +103,74 @@ def generate_bulk_upload_template(
             and curr_metricfile.disaggregation is None
         ][0].canonical_filename
 
-        enabled_status = metric_interface.is_metric_enabled
-
-        if is_generic_template is False and enabled_status is not True:
-            continue
-        reporting_frequency = (
-            metric_interface.custom_reporting_frequency.frequency
-            if metric_interface.custom_reporting_frequency.frequency is not None
-            else metricfile.definition.reporting_frequency
-        )
-
-        if reporting_frequency == schema.ReportingFrequency.ANNUAL:
-            rows = _add_rows_for_annual_metric(
-                rows=rows,
-                metricfile=metricfile,
-                is_single_page_template=is_single_page_template,
-                high_level_metric=high_level_metric,
-                is_disaggregated_by_supervision_subsystems=metric_interface.disaggregated_by_supervision_subsystems
-                is True,
-                agency=agency,
+        metric_interfaces = [metric_key_to_interface[metricfile.definition.key]]
+        if system == schema.System.SUPERVISION:
+            metric_interfaces.extend(
+                get_supervision_subsystems_metric_interfaces(
+                    metric_key_to_interface=metric_key_to_interface,
+                    metricfile=metricfile,
+                )
             )
 
-        else:
-            rows = _add_rows_for_monthly_metric(
-                rows=rows,
-                metricfile=metricfile,
-                is_single_page_template=is_single_page_template,
-                high_level_metric=high_level_metric,
-                is_disaggregated_by_supervision_subsystems=metric_interface.disaggregated_by_supervision_subsystems
-                is True,
-                agency=agency,
+        for metric_interface in metric_interfaces:
+            rows: List[Dict[str, str]] = []
+
+            enabled_status = metric_interface.is_metric_enabled
+
+            if is_generic_template is False and enabled_status is not True:
+                continue
+            reporting_frequency = (
+                metric_interface.custom_reporting_frequency.frequency
+                if metric_interface.custom_reporting_frequency.frequency is not None
+                else metricfile.definition.reporting_frequency
             )
 
-        if metricfile.disaggregation is not None:
-            rows = _add_rows_for_disaggregated_metric(
-                rows=rows,
-                metricfile=metricfile,
-                metric_interface=metric_interface,
-                is_single_page_template=is_single_page_template,
-            )
+            if reporting_frequency == schema.ReportingFrequency.ANNUAL:
+                rows = _add_rows_for_annual_metric(
+                    rows=rows,
+                    metricfile=metricfile,
+                    is_single_page_template=is_single_page_template,
+                    high_level_metric=high_level_metric,
+                    is_disaggregated_by_supervision_subsystems=metric_interface.disaggregated_by_supervision_subsystems
+                    is True,
+                    metric_interface=metric_interface,
+                )
 
-        if agency.is_superagency is True and system != schema.System.SUPERAGENCY:
-            rows = _add_rows_for_super_agency(
-                rows=rows,
-                child_agencies=child_agencies,
-                is_single_page_template=is_single_page_template,
-            )
+            else:
+                rows = _add_rows_for_monthly_metric(
+                    rows=rows,
+                    metricfile=metricfile,
+                    is_single_page_template=is_single_page_template,
+                    high_level_metric=high_level_metric,
+                    is_disaggregated_by_supervision_subsystems=metric_interface.disaggregated_by_supervision_subsystems
+                    is True,
+                    metric_interface=metric_interface,
+                )
 
-        # If no new rows were added, don't add the sheet. This will happen in
-        # the case where a metric is all dimensions of an dissaggregation
-        # are disabled.
-        if is_single_page_template is False:
-            if len(rows) > 0:
-                filename_to_rows[metricfile.canonical_filename] = rows
-        else:
-            filename_to_rows["Sheet 1"].extend(rows)
+            if metricfile.disaggregation is not None:
+                rows = _add_rows_for_disaggregated_metric(
+                    rows=rows,
+                    metricfile=metricfile,
+                    metric_interface=metric_interface,
+                    is_single_page_template=is_single_page_template,
+                )
+
+            if agency.is_superagency is True and system != schema.System.SUPERAGENCY:
+                rows = _add_rows_for_super_agency(
+                    rows=rows,
+                    child_agencies=child_agencies,
+                    is_single_page_template=is_single_page_template,
+                )
+
+            # If no new rows were added, don't add the sheet. This will happen in
+            # the case where a metric is all dimensions of an dissaggregation
+            # are disabled.
+            if is_single_page_template is False:
+                if len(rows) > 0:
+                    # This will need to be an extend.
+                    filename_to_rows[metricfile.canonical_filename].extend(rows)
+            else:
+                filename_to_rows["Sheet 1"].extend(rows)
 
     with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
         file_path
@@ -161,38 +199,36 @@ def _add_rows_for_annual_metric(
     is_single_page_template: bool,
     high_level_metric: str,
     is_disaggregated_by_supervision_subsystems: bool,
-    agency: schema.Agency,
+    metric_interface: MetricInterface,
 ) -> List[Dict[str, str]]:
     """Creates rows for an annual metric."""
-    if metricfile.definition.system == schema.System.SUPERVISION:
-        systems = (
-            ["ALL"]
-            if is_disaggregated_by_supervision_subsystems is False
-            else [
-                s
-                for s in agency.systems
-                if schema.System[s] in schema.System.supervision_subsystems()
-            ]
+    if (
+        metricfile.definition.system == schema.System.SUPERVISION
+        or metricfile.definition.system in schema.System.supervision_subsystems()
+    ):
+        system = (
+            metric_interface.metric_definition.system.value
+            if is_disaggregated_by_supervision_subsystems is True
+            else "ALL"
         )
-        for s in systems:
-            for year in [LAST_YEAR, THIS_YEAR]:
-                row = (
-                    # Columns will be  `year`, `system`, `value`
-                    {"year": str(year), "system": s, "value": ""}
-                    if is_single_page_template is False
-                    # Columns will be `metric`, `year`, `month`, `system`,
-                    # `breakdown_category`, `breakdown`, `value`
-                    else {
-                        "metric": high_level_metric,
-                        "year": str(year),
-                        "month": "",
-                        "system": s,
-                        "breakdown_category": "",
-                        "breakdown": "",
-                        "value": "",
-                    }
-                )
-                rows.append(row)
+        for year in [LAST_YEAR, THIS_YEAR]:
+            row = (
+                # Columns will be  `year`, `system`, `value`
+                {"year": str(year), "system": system, "value": ""}
+                if is_single_page_template is False
+                # Columns will be `metric`, `year`, `month`, `system`,
+                # `breakdown_category`, `breakdown`, `value`
+                else {
+                    "metric": high_level_metric,
+                    "year": str(year),
+                    "month": "",
+                    "system": system,
+                    "breakdown_category": "",
+                    "breakdown": "",
+                    "value": "",
+                }
+            )
+            rows.append(row)
     else:
         for year in [LAST_YEAR, THIS_YEAR]:
             row = (
@@ -220,44 +256,42 @@ def _add_rows_for_monthly_metric(
     is_single_page_template: bool,
     high_level_metric: str,
     is_disaggregated_by_supervision_subsystems: bool,
-    agency: schema.Agency,
+    metric_interface: MetricInterface,
 ) -> List[Dict[str, str]]:
     """Creates rows for an monthly metric."""
-    if metricfile.definition.system == schema.System.SUPERVISION:
-        systems = (
-            ["ALL"]
-            if is_disaggregated_by_supervision_subsystems is False
-            else [
-                s
-                for s in agency.systems
-                if schema.System[s] in schema.System.supervision_subsystems()
-            ]
+    if (
+        metricfile.definition.system == schema.System.SUPERVISION
+        or metricfile.definition.system in schema.System.supervision_subsystems()
+    ):
+        system = (
+            metric_interface.metric_definition.system.value
+            if is_disaggregated_by_supervision_subsystems is True
+            else "ALL"
         )
-        for s in systems:
-            for year in [LAST_YEAR, THIS_YEAR]:
-                for month in range(1, 13):
-                    row = (
-                        # Columns will be `year`, `month`, `system, `value`
-                        {
-                            "year": str(year),
-                            "month": str(month),
-                            "system": s,
-                            "value": "",
-                        }
-                        if is_single_page_template is False
-                        # Columns will be `metric`, `year`, `month`, `system`
-                        # `breakdown_category`, `breakdown`, `value`
-                        else {
-                            "metric": high_level_metric,
-                            "year": str(year),
-                            "month": str(month),
-                            "system": s,
-                            "breakdown_category": "",
-                            "breakdown": "",
-                            "value": "",
-                        }
-                    )
-                    rows.append(row)
+        for year in [LAST_YEAR, THIS_YEAR]:
+            for month in range(1, 13):
+                row = (
+                    # Columns will be `year`, `month`, `system, `value`
+                    {
+                        "year": str(year),
+                        "month": str(month),
+                        "system": system,
+                        "value": "",
+                    }
+                    if is_single_page_template is False
+                    # Columns will be `metric`, `year`, `month`, `system`
+                    # `breakdown_category`, `breakdown`, `value`
+                    else {
+                        "metric": high_level_metric,
+                        "year": str(year),
+                        "month": str(month),
+                        "system": system,
+                        "breakdown_category": "",
+                        "breakdown": "",
+                        "value": "",
+                    }
+                )
+                rows.append(row)
     else:
         for year in [LAST_YEAR, THIS_YEAR]:
             for month in range(1, 13):
