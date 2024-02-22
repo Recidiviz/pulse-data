@@ -150,6 +150,8 @@ Denominator is the average daily caseload for the agent over the given time peri
 <br />
 Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
+        ],
+        deprecated_metrics=[
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
                 title_display_name="Technical Incarceration Rate (TPVs)",
