@@ -119,10 +119,8 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     SPARK_OUTPUT_DATASET: "Stores output of Spark simulations",
     PULSE_DASHBOARD_SEGMENT_DATASET: "Stores events logged from pulse-dashboard via Segment.",
     SENDGRID_EMAIL_DATA_DATASET: "Stores the output of email activity data from Sendgrid.",
-    # TODO(#20930): Update this docstring once all states pull from dataflow.
-    STATE_BASE_DATASET: "Ingested state data. The schema of this dataset matches the"
-    " state postgres database. For each state it pulls data from the postgres database"
-    " or the most recent ingest pipeline output, if enabled.",
+    STATE_BASE_DATASET: "Ingested state data. For each state it pulls data from the "
+    "most recent ingest pipeline output.",
     STATIC_REFERENCE_TABLES_DATASET: "Reference tables used by various views in BigQuery."
     " May need to be updated manually for new states.",
     SUPPLEMENTAL_DATA_DATASET: "Stores datasets generated not by traditional ingest or calc pipelines in BigQuery.",

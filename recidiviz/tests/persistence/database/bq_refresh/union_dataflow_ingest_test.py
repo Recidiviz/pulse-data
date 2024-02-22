@@ -116,16 +116,6 @@ class UnionDataflowIngestTest(unittest.TestCase):
         self.mock_bq.dataset_exists.return_value = True
         self.mock_bq.create_or_update_view.return_value.schema = []
 
-        self.ingest_in_dataflow_enabled_patcher = patch(
-            f"{UNION_DATAFLOW_INGEST_PACKAGE_NAME}.is_ingest_in_dataflow_enabled"
-        )
-        self.mock_dataflow_enabled = self.ingest_in_dataflow_enabled_patcher.start()
-
-        self.job_manager_patcher = patch(
-            f"{UNION_DATAFLOW_INGEST_PACKAGE_NAME}.DirectIngestDataflowJobManager"
-        )
-        self.mock_job_manager = self.job_manager_patcher.start().return_value
-
         self.existing_states_patcher = patch(
             f"{UNION_DATAFLOW_INGEST_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
             MagicMock(
@@ -141,33 +131,12 @@ class UnionDataflowIngestTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.existing_states_patcher.stop()
-        self.job_manager_patcher.stop()
-        self.ingest_in_dataflow_enabled_patcher.stop()
         self.bq_patcher.stop()
 
     def test_output_dataset_is_source(self) -> None:
         self.assertTrue(STATE_BASE_DATASET in VIEW_SOURCE_TABLE_DATASETS)
 
     def test_combine_ingest_sources(self) -> None:
-        # Arrange
-        self.mock_dataflow_enabled.side_effect = lambda state_code, instance: (
-            instance == DirectIngestInstance.PRIMARY and state_code in {StateCode.US_DD}
-        ) or (
-            instance == DirectIngestInstance.SECONDARY
-            and state_code in {StateCode.US_DD, StateCode.US_WW}
-        )
-
-        # Jobs have run for all states/instances that have ingest in dataflow enabled.
-        self.mock_job_manager.get_most_recent_job_ids_by_state_and_instance.return_value = {
-            StateCode.US_DD: {
-                DirectIngestInstance.PRIMARY: "us_dd_primary_job_id",
-                DirectIngestInstance.SECONDARY: "us_dd_secondary_job_id",
-            },
-            StateCode.US_WW: {
-                DirectIngestInstance.SECONDARY: "us_ww_secondary_job_id",
-            },
-        }
-
         # Act
         union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -180,11 +149,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_person_view",
             description="",
             view_query_template="SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.state_legacy.fake_person`\n"
-            "WHERE state_code IN ('US_WW','US_XX','US_YY')\n"
+            "FROM `test-project.us_dd_state_primary.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_dd_state_primary.fake_person`\n",
+            "FROM `test-project.us_ww_state_primary.fake_person`\n"
+            "UNION ALL\n"
+            "SELECT state_code, person_id, full_name, entity_id\n"
+            "FROM `test-project.us_xx_state_primary.fake_person`\n"
+            "UNION ALL\n"
+            "SELECT state_code, person_id, full_name, entity_id\n"
+            "FROM `test-project.us_yy_state_primary.fake_person`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="fake_person"
@@ -195,11 +169,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_entity_view",
             description="",
             view_query_template="SELECT state_code, entity_id, name\n"
-            "FROM `test-project.state_legacy.fake_entity`\n"
-            "WHERE state_code IN ('US_WW','US_XX','US_YY')\n"
+            "FROM `test-project.us_dd_state_primary.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_dd_state_primary.fake_entity`\n",
+            "FROM `test-project.us_ww_state_primary.fake_entity`\n"
+            "UNION ALL\n"
+            "SELECT state_code, entity_id, name\n"
+            "FROM `test-project.us_xx_state_primary.fake_entity`\n"
+            "UNION ALL\n"
+            "SELECT state_code, entity_id, name\n"
+            "FROM `test-project.us_yy_state_primary.fake_entity`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="fake_entity"
@@ -210,11 +189,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="state_entity_association_view",
             description="",
             view_query_template="SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.state_legacy.state_entity_association`\n"
-            "WHERE state_code IN ('US_WW','US_XX','US_YY')\n"
+            "FROM `test-project.us_dd_state_primary.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_dd_state_primary.state_entity_association`\n",
+            "FROM `test-project.us_ww_state_primary.state_entity_association`\n"
+            "UNION ALL\n"
+            "SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.us_xx_state_primary.state_entity_association`\n"
+            "UNION ALL\n"
+            "SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.us_yy_state_primary.state_entity_association`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="state_entity_association"
@@ -290,25 +274,6 @@ class UnionDataflowIngestTest(unittest.TestCase):
             )
 
     def test_combine_ingest_sources_secondary_sandbox(self) -> None:
-        # Arrange
-        self.mock_dataflow_enabled.side_effect = lambda state_code, instance: (
-            instance == DirectIngestInstance.PRIMARY and state_code in {StateCode.US_DD}
-        ) or (
-            instance == DirectIngestInstance.SECONDARY
-            and state_code in {StateCode.US_DD, StateCode.US_WW}
-        )
-
-        # Jobs have run for all states/instances that have ingest in dataflow enabled.
-        self.mock_job_manager.get_most_recent_job_ids_by_state_and_instance.return_value = {
-            StateCode.US_DD: {
-                DirectIngestInstance.PRIMARY: "us_dd_primary_job_id",
-                DirectIngestInstance.SECONDARY: "us_dd_secondary_job_id",
-            },
-            StateCode.US_WW: {
-                DirectIngestInstance.SECONDARY: "us_ww_secondary_job_id",
-            },
-        }
-
         # Act
         union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
             ingest_instance=DirectIngestInstance.SECONDARY,
@@ -322,14 +287,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_person_view",
             description="",
             view_query_template="SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.foo_state_legacy.fake_person`\n"
-            "WHERE state_code IN ('US_XX','US_YY')\n"
-            "UNION ALL\n"
-            "SELECT state_code, person_id, full_name, entity_id\n"
             "FROM `test-project.us_dd_state_secondary.fake_person`\n"
             "UNION ALL\n"
             "SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.us_ww_state_secondary.fake_person`\n",
+            "FROM `test-project.us_ww_state_secondary.fake_person`\n"
+            "UNION ALL\n"
+            "SELECT state_code, person_id, full_name, entity_id\n"
+            "FROM `test-project.us_xx_state_secondary.fake_person`\n"
+            "UNION ALL\n"
+            "SELECT state_code, person_id, full_name, entity_id\n"
+            "FROM `test-project.us_yy_state_secondary.fake_person`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="foo_state", table_id="fake_person"
@@ -340,14 +307,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="fake_entity_view",
             description="",
             view_query_template="SELECT state_code, entity_id, name\n"
-            "FROM `test-project.foo_state_legacy.fake_entity`\n"
-            "WHERE state_code IN ('US_XX','US_YY')\n"
-            "UNION ALL\n"
-            "SELECT state_code, entity_id, name\n"
             "FROM `test-project.us_dd_state_secondary.fake_entity`\n"
             "UNION ALL\n"
             "SELECT state_code, entity_id, name\n"
-            "FROM `test-project.us_ww_state_secondary.fake_entity`\n",
+            "FROM `test-project.us_ww_state_secondary.fake_entity`\n"
+            "UNION ALL\n"
+            "SELECT state_code, entity_id, name\n"
+            "FROM `test-project.us_xx_state_secondary.fake_entity`\n"
+            "UNION ALL\n"
+            "SELECT state_code, entity_id, name\n"
+            "FROM `test-project.us_yy_state_secondary.fake_entity`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="foo_state", table_id="fake_entity"
@@ -358,14 +327,16 @@ class UnionDataflowIngestTest(unittest.TestCase):
             view_id="state_entity_association_view",
             description="",
             view_query_template="SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.foo_state_legacy.state_entity_association`\n"
-            "WHERE state_code IN ('US_XX','US_YY')\n"
-            "UNION ALL\n"
-            "SELECT entity_id, another_entity_id, state_code\n"
             "FROM `test-project.us_dd_state_secondary.state_entity_association`\n"
             "UNION ALL\n"
             "SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.us_ww_state_secondary.state_entity_association`\n",
+            "FROM `test-project.us_ww_state_secondary.state_entity_association`\n"
+            "UNION ALL\n"
+            "SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.us_xx_state_secondary.state_entity_association`\n"
+            "UNION ALL\n"
+            "SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.us_yy_state_secondary.state_entity_association`\n",
             should_materialize=True,
             materialized_address_override=BigQueryAddress(
                 dataset_id="state", table_id="state_entity_association"
@@ -383,121 +354,6 @@ class UnionDataflowIngestTest(unittest.TestCase):
                     bigquery.DatasetReference(TEST_PROJECT, "foo_state"),
                     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
-            ],
-        )
-
-        # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.create_or_update_view.call_args_list), 4)
-        (
-            _another_entity_create_call_args,
-            entity_create_call_args,
-            person_create_call_args,
-            association_table_create_call_args,
-        ) = sorted(
-            self.mock_bq.create_or_update_view.call_args_list, key=lambda x: x[0][0]
-        )
-        self.assertEqual(person_create_call_args, call(person_view, might_exist=True))
-        self.assertEqual(person_create_call_args[0][0], person_view)
-        self.assertEqual(entity_create_call_args, call(entity_view, might_exist=True))
-        self.assertEqual(entity_create_call_args[0][0], entity_view)
-        self.assertEqual(
-            association_table_create_call_args,
-            call(association_table_view, might_exist=True),
-        )
-        self.assertEqual(
-            association_table_create_call_args[0][0], association_table_view
-        )
-
-        # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.materialize_view_to_table.call_args_list), 4)
-        (
-            _another_entity_materialize_call_args,
-            entity_materialize_call_args,
-            person_materialize_call_args,
-            association_table_materialize_call_args,
-        ) = sorted(
-            self.mock_bq.materialize_view_to_table.call_args_list,
-            key=lambda x: x[1]["view"],
-        )
-        self.assertEqual(
-            person_materialize_call_args, call(view=person_view, use_query_cache=True)
-        )
-        self.assertEqual(person_materialize_call_args[1]["view"], person_view)
-        self.assertEqual(
-            entity_materialize_call_args, call(view=entity_view, use_query_cache=True)
-        )
-        self.assertEqual(entity_materialize_call_args[1]["view"], entity_view)
-        self.assertEqual(
-            association_table_materialize_call_args,
-            call(view=association_table_view, use_query_cache=True),
-        )
-        self.assertEqual(
-            association_table_materialize_call_args[1]["view"], association_table_view
-        )
-
-    def test_no_completed_ingest_job_post_launch(self) -> None:
-        # Arrange
-        self.mock_dataflow_enabled.side_effect = lambda state_code, instance: (
-            instance == DirectIngestInstance.PRIMARY and state_code in {StateCode.US_DD}
-        ) or (
-            instance == DirectIngestInstance.SECONDARY
-            and state_code in {StateCode.US_DD, StateCode.US_WW}
-        )
-
-        # No ingest jobs have run, so all states should reference `state_legacy`
-        self.mock_job_manager.get_most_recent_job_ids_by_state_and_instance.return_value = (
-            {}
-        )
-
-        # Act
-        union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            tables=_ALL_SCHEMA_TABLES,
-        )
-
-        # Assert
-        person_view = SimpleBigQueryViewBuilder(
-            dataset_id="state_views",
-            view_id="fake_person_view",
-            description="",
-            view_query_template="SELECT state_code, person_id, full_name, entity_id\n"
-            "FROM `test-project.state_legacy.fake_person`\n"
-            "WHERE state_code IN ('US_DD','US_WW','US_XX','US_YY')\n",
-            should_materialize=True,
-            materialized_address_override=BigQueryAddress(
-                dataset_id="state", table_id="fake_person"
-            ),
-        ).build()
-        entity_view = SimpleBigQueryViewBuilder(
-            dataset_id="state_views",
-            view_id="fake_entity_view",
-            description="",
-            view_query_template="SELECT state_code, entity_id, name\n"
-            "FROM `test-project.state_legacy.fake_entity`\n"
-            "WHERE state_code IN ('US_DD','US_WW','US_XX','US_YY')\n",
-            should_materialize=True,
-            materialized_address_override=BigQueryAddress(
-                dataset_id="state", table_id="fake_entity"
-            ),
-        ).build()
-        association_table_view = SimpleBigQueryViewBuilder(
-            dataset_id="state_views",
-            view_id="state_entity_association_view",
-            description="",
-            view_query_template="SELECT entity_id, another_entity_id, state_code\n"
-            "FROM `test-project.state_legacy.state_entity_association`\n"
-            "WHERE state_code IN ('US_DD','US_WW','US_XX','US_YY')\n",
-            should_materialize=True,
-            materialized_address_override=BigQueryAddress(
-                dataset_id="state", table_id="state_entity_association"
-            ),
-        ).build()
-
-        self.assertEqual(
-            self.mock_bq.create_dataset_if_necessary.mock_calls,
-            [
-                call(bigquery.DatasetReference(TEST_PROJECT, "state_views"), None),
-                call(bigquery.DatasetReference(TEST_PROJECT, "state"), None),
             ],
         )
 

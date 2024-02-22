@@ -70,6 +70,8 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.utils import metadata
 
 
+# TODO(#20930): Remove all usages of this class with the STATE schema and update so
+#  STATE is no longer a valid schema in this class.
 class CloudSqlToBQConfig:
     """Configuration class for exporting tables from Cloud SQL to BigQuery
     Args:
@@ -83,6 +85,8 @@ class CloudSqlToBQConfig:
     def __init__(
         self,
         schema_type: SchemaType,
+        # TODO(#20930): Remove direct_ingest_instance as the STATE schema no longer does
+        #  a CloudSQL refresh.
         direct_ingest_instance: Optional[DirectIngestInstance] = None,
         region_codes_to_exclude: Optional[List[str]] = None,
     ):
@@ -369,6 +373,8 @@ class CloudSqlToBQConfig:
     def for_schema_type(
         cls,
         schema_type: SchemaType,
+        # TODO(#20930): Remove direct_ingest_instance as the STATE schema no longer does
+        #  a CloudSQL refresh.
         direct_ingest_instance: Optional[DirectIngestInstance] = None,
         yaml_path: Optional[GcsfsFilePath] = None,
     ) -> "CloudSqlToBQConfig":

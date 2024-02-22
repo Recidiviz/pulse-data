@@ -36,11 +36,10 @@ Example:
 import argparse
 import logging
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 from unittest import mock
 
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_config
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
@@ -60,9 +59,12 @@ region_codes_to_exclude: []
 def main(
     sandbox_dataset_prefix: str,
     schema_type: SchemaType,
-    direct_ingest_instance: Optional[DirectIngestInstance],
 ) -> None:
     """Defines the main function responsible for moving data from Postgres to BQ."""
+
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        raise ValueError(f"Unsupported schema type: [{schema_type}]")
+
     logging.info("Prefixing all output datasets with [%s_].", sandbox_dataset_prefix)
     fake_gcs = FakeGCSFileSystem()
 
@@ -78,7 +80,6 @@ def main(
         )
         federated_bq_schema_refresh(
             schema_type=schema_type,
-            direct_ingest_instance=direct_ingest_instance,
             dataset_override_prefix=sandbox_dataset_prefix,
         )
         config = CloudSqlToBQConfig.for_schema_type(schema_type)
@@ -116,13 +117,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="Specifies which schema to generate migrations for.",
         required=True,
     )
-    parser.add_argument(
-        "--direct-ingest-instance",
-        type=DirectIngestInstance,
-        choices=list(DirectIngestInstance),
-        help="When using the STATE schema, allows the user to specify which instance to use. "
-        "If unspecified, this defaults to the PRIMARY instance.",
-    )
 
     return parser.parse_known_args(argv)
 
@@ -135,5 +129,4 @@ if __name__ == "__main__":
         main(
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             schema_type=known_args.schema,
-            direct_ingest_instance=known_args.direct_ingest_instance,
         )
