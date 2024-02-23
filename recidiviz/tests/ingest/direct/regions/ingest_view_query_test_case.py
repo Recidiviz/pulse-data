@@ -113,6 +113,7 @@ class IngestViewQueryTester:
 
     def run_ingest_view_test(
         self,
+        test_method_name: str,
         fixtures_files_name: str,
         region_code: str,
         ingest_view: DirectIngestViewQueryBuilder,
@@ -133,6 +134,15 @@ class IngestViewQueryTester:
         Passing `create_expected=True` will first create the expected output csv before
         the comparison check.
         """
+
+        fixture_name = os.path.splitext(fixtures_files_name)[0]
+        expected_test_name = f"test_{fixture_name}"
+        if test_method_name != expected_test_name:
+            raise ValueError(
+                f"Expected test name [{expected_test_name}] for fixture file name "
+                f"[{fixtures_files_name}]. Found [{test_method_name}]"
+            )
+
         self._create_mock_raw_bq_tables_from_fixtures(
             region_code=region_code,
             ingest_view=ingest_view,
@@ -333,6 +343,7 @@ class IngestViewQueryTestCase(
         self, fixtures_files_name: str, create_expected: bool = False
     ) -> None:
         self.tester.run_ingest_view_test(
+            test_method_name=self._testMethodName,
             fixtures_files_name=fixtures_files_name,
             region_code=self.region_code,
             ingest_view=self.ingest_view,
@@ -409,6 +420,7 @@ class IngestViewEmulatorQueryTestCase(
         self, fixtures_files_name: str, create_expected: bool = False
     ) -> None:
         self.tester.run_ingest_view_test(
+            test_method_name=self._testMethodName,
             fixtures_files_name=fixtures_files_name,
             region_code=self.region_code,
             ingest_view=self.ingest_view,
