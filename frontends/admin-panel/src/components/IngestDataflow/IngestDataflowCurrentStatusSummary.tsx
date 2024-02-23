@@ -22,7 +22,6 @@ import moment from "moment";
 import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 
-import { getAllIngestInstanceDataflowEnabledStatuses } from "../../AdminPanelAPI";
 import {
   getAllIngestInstanceStatuses,
   getAllLatestDataflowJobs,
@@ -35,7 +34,6 @@ import {
 } from "../../navigation/IngestOperations";
 import { StateCodeInfo } from "../general/constants";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
-import { IngestInstanceDataflowEnabledStatusResponse } from "../IngestOperationsView/constants";
 import NewTabLink from "../NewTabLink";
 import {
   DataflowIngestPipelineJobResponse,
@@ -88,17 +86,10 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       getAllIngestInstanceStatuses
     );
 
-  // TODO(#20390): stop loading dataflow enabled statuses once dataflow is fully enabled
-  const {
-    loading: dataflowEnabledStatusesLoading,
-    data: stateDataflowEnabledStatuses,
-  } = useFetchedDataJSON<IngestInstanceDataflowEnabledStatusResponse>(
-    getAllIngestInstanceDataflowEnabledStatuses
-  );
-
   const [stateIngestQueueStatuses, setStateIngestQueueStatuses] = useState<
     StateIngestQueuesStatuses | undefined
   >(undefined);
+
   useEffect(() => {
     if (rawDataStatuses === undefined) {
       return;
@@ -134,21 +125,11 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     loadAllStatesQueueStatuses();
   }, [rawDataStatuses]);
 
-  if (
-    dataflowPipelinesLoading ||
-    dataflowEnabledStatusesLoading ||
-    loadingRawDataStatuses
-  ) {
+  if (dataflowPipelinesLoading || loadingRawDataStatuses) {
     return (
       <div className="center">
         <Spin size="large" />
       </div>
-    );
-  }
-
-  if (stateDataflowEnabledStatuses === undefined) {
-    return (
-      <Alert message="Failed to load dataflow enabled statuses." type="error" />
     );
   }
 
@@ -205,27 +186,18 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   function getJobMetadataForCell(
     key: string,
     instance: DirectIngestInstance,
-    enabledStatuses: IngestInstanceDataflowEnabledStatusResponse,
     pipelineStatuses: DataflowIngestPipelineJobResponse
   ): DataflowJobStatusMetadata {
-    const enabled =
-      instance === DirectIngestInstance.PRIMARY
-        ? enabledStatuses[key].primary
-        : enabledStatuses[key].secondary;
-    if (enabled) {
-      if (instance === DirectIngestInstance.PRIMARY) {
-        return {
-          status: getCurrentStatus(pipelineStatuses[key].primary),
-          terminationTime: pipelineStatuses[key].primary?.terminationTime,
-        };
-      }
+    if (instance === DirectIngestInstance.PRIMARY) {
       return {
-        status: getCurrentStatus(pipelineStatuses[key].secondary),
-        terminationTime: pipelineStatuses[key].secondary?.terminationTime,
+        status: getCurrentStatus(pipelineStatuses[key].primary),
+        terminationTime: pipelineStatuses[key].primary?.terminationTime,
       };
     }
-
-    return { status: JobState.NOT_ENABLED, terminationTime: undefined };
+    return {
+      status: getCurrentStatus(pipelineStatuses[key].secondary),
+      terminationTime: pipelineStatuses[key].secondary?.terminationTime,
+    };
   }
 
   const dataSource: IngestInstanceDataflowStatusTableInfo[] = Object.keys(
@@ -250,13 +222,11 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       primaryStatus: getJobMetadataForCell(
         key,
         DirectIngestInstance.PRIMARY,
-        stateDataflowEnabledStatuses,
         dataflowPipelines
       ),
       secondaryStatus: getJobMetadataForCell(
         key,
         DirectIngestInstance.SECONDARY,
-        stateDataflowEnabledStatuses,
         dataflowPipelines
       ),
       primaryRawDataStatus,

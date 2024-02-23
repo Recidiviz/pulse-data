@@ -24,7 +24,6 @@ export enum JobState {
   SUCCEEDED = "SUCCEEDED",
   FAILED = "FAILED",
   NO_JOB_RUNS = "NO_JOB_RUNS",
-  NOT_ENABLED = "NOT_ENABLED",
 }
 
 export type DataflowIngestPipelineStatus = {

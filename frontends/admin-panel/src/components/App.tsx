@@ -42,7 +42,6 @@ import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestDataflowView from "./IngestDataflow";
-import IngestOperationsView from "./IngestOperationsView";
 import InsightsConfigurationsView from "./Insights/InsightsConfigurationsView";
 import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
@@ -113,7 +112,6 @@ const ENVIRONMENT_OPTIONS: Map<EnvironmentType, EnvironmentOption> = new Map([
 
 const items: MenuProps["items"] = [
   getItem("Ingest", "ingest_group", null, [
-    getItem("Ingest Status (Legacy)", IngestOperations.INGEST_ACTIONS_ROUTE),
     getItem("Ingest Status", IngestOperations.INGEST_DATAFLOW_ROUTE),
     getItem("Flash Databases", IngestOperations.FLASH_DB_CHECKLIST_ROUTE),
     getItem(
@@ -207,7 +205,7 @@ const App = (): JSX.Element => {
     "main-content": true,
     "main-content-padding": ![
       DatasetMetadata.VALIDATION_STATUS_ROUTE,
-      IngestOperations.INGEST_ACTIONS_ROUTE,
+      IngestOperations.INGEST_DATAFLOW_ROUTE,
       DatasetMetadata.routeForMetadataDataset(MetadataDataset.VALIDATION),
       DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST),
     ].filter((x) => history.location.pathname.includes(x)).length,
@@ -261,10 +259,6 @@ const App = (): JSX.Element => {
           <Route
             path={DatasetMetadata.VALIDATION_STATUS_ROUTE}
             component={ValidationStatusOverview}
-          />
-          <Route
-            path={IngestOperations.INGEST_ACTIONS_ROUTE}
-            component={IngestOperationsView}
           />
           <Route
             exact
@@ -355,9 +349,6 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(DatasetMetadata.VALIDATION_STATUS_ROUTE)) {
     return [DatasetMetadata.VALIDATION_STATUS_ROUTE];
-  }
-  if (pathname.startsWith(IngestOperations.INGEST_ACTIONS_ROUTE)) {
-    return [IngestOperations.INGEST_ACTIONS_ROUTE];
   }
   if (pathname.startsWith(LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE)) {
     return [LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE];
