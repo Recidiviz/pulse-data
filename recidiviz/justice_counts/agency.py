@@ -119,9 +119,10 @@ class AgencyInterface:
     def get_agencies_by_id(
         session: Session, agency_ids: List[int], raise_on_missing: bool = False
     ) -> List[schema.Agency]:
+        set_agency_ids = set(agency_ids)
         agencies = (
             session.query(schema.Agency)
-            .filter(schema.Agency.id.in_(agency_ids))
+            .filter(schema.Agency.id.in_(set_agency_ids))
             # eagerly load the users in this agency
             .options(
                 selectinload(schema.Agency.user_account_assocs).joinedload(
@@ -134,7 +135,7 @@ class AgencyInterface:
         )
         found_agency_ids = {a.id for a in agencies}
         if len(agency_ids) != len(found_agency_ids):
-            missing_agency_ids = set(agency_ids).difference(found_agency_ids)
+            missing_agency_ids = set_agency_ids.difference(found_agency_ids)
             msg = f"Could not find the following agencies: {missing_agency_ids}"
             if raise_on_missing:
                 raise ValueError(msg)
