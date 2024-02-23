@@ -24,7 +24,7 @@ US_MI_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_QUERY_TEMPLATE = """
 SELECT DISTINCT
     pei.state_code,
     pei.person_id,
-    SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(item_complete_date, r'\\:\\d\\d\\d', '')) AS DATE) AS completion_event_date,
+    DATE(item_complete_date) AS completion_event_date,
 FROM `{project_id}.{raw_data_up_to_date_views_dataset}.ADH_OFFENDER_SCHEDULE_latest` schedule 
 LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.ADH_REFERENCE_CODE_latest` ref1 
     ON schedule.schedule_type_id = ref1.reference_code_id
@@ -35,7 +35,7 @@ INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pe
 WHERE ref1.description = 'SCC - Security Classification Committee'
 AND item_complete_date IS NOT NULL
 -- this filter shouldn't actually do anything because the data should have been frozen by 2023-08-14
-AND SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(item_complete_date, r'\\:\\d\\d\\d', '')) AS DATE) < "2023-08-14"
+AND DATE(item_complete_date) < "2023-08-14"
 
 UNION ALL 
 
