@@ -225,6 +225,8 @@ output:
                   - BED_ASSIGNMENT_CHANGE
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - TRN
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - FED
           housing_unit_category:
             $enum_mapping:
               $raw_text: bed_assignment
