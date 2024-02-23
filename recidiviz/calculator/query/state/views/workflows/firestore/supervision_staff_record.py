@@ -37,6 +37,9 @@ from recidiviz.calculator.query.state.views.workflows.us_mi.supervision_staff_te
 from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_staff_template import (
     US_ND_SUPERVISION_STAFF_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.workflows.us_or.supervision_staff_template import (
+    US_OR_SUPERVISION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_staff_template import (
     US_TN_SUPERVISION_STAFF_TEMPLATE,
 )
@@ -65,6 +68,7 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
         , me_staff AS ({build_us_me_staff_template("client_record_materialized")})
         , mi_staff AS ({US_MI_SUPERVISION_STAFF_TEMPLATE})
         , ca_staff AS ({US_CA_SUPERVISION_STAFF_TEMPLATE})
+        , or_staff AS ({US_OR_SUPERVISION_STAFF_TEMPLATE})
 
     SELECT {{columns}} FROM tn_staff
     UNION ALL 
@@ -79,6 +83,8 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     SELECT {{columns}} FROM mi_staff
     UNION ALL
     SELECT {{columns}} FROM ca_staff
+    UNION ALL
+    SELECT {{columns}} FROM or_staff
 """
 
 SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
