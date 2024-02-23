@@ -227,8 +227,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
             .parse_contents(
                 contents_iterator=iter(rows),
                 context=IngestViewContentsContextImpl(
-                    ingest_instance=self.ingest_instance(),
-                    results_update_datetime=datetime.now(),
+                    ingest_instance=self.ingest_instance()
                 ),
             )
         )

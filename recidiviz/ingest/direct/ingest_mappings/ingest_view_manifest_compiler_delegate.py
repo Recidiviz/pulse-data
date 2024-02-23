@@ -108,8 +108,6 @@ IS_STAGING_PROPERTY_NAME = "is_staging"
 IS_PRODUCTION_PROPERTY_NAME = "is_production"
 IS_PRIMARY_INSTANCE_PROPERTY_NAME = "is_primary_instance"
 IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
-# TODO(#20930): Remove this property when ingest in Dataflow has been fully shipped.
-INGEST_VIEW_RESULTS_UPDATE_DATETIME = "results_update_datetime"
 
 
 def ingest_view_manifest_dir(region: DirectIngestRegion) -> str:
@@ -154,9 +152,6 @@ class StateSchemaIngestViewManifestCompilerDelegate(
             IS_SECONDARY_INSTANCE_PROPERTY_NAME,
         ):
             return bool
-
-        if property_name == INGEST_VIEW_RESULTS_UPDATE_DATETIME:
-            return str
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")
 

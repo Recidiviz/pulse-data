@@ -169,10 +169,7 @@ class StateIngestViewParserTestBase:
                         fixture_path, cleanup_file=False
                     ).get_contents_iterator()
                 ),
-                context=IngestViewContentsContextImpl(
-                    ingest_instance=ingest_instance,
-                    results_update_datetime=DEFAULT_UPDATE_DATETIME,
-                ),
+                context=IngestViewContentsContextImpl(ingest_instance=ingest_instance),
             )
 
         if debug:
