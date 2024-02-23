@@ -92,6 +92,10 @@ from recidiviz.tests.common.constants.state.external_id_types_test import (
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.tests.ingest.direct import regions as regions_tests_module
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestFixtureDataFileType,
+    DirectIngestTestFixturePath,
+)
 from recidiviz.tests.ingest.direct.regions.ingest_view_query_test_case import (
     IngestViewEmulatorQueryTestCase,
     IngestViewQueryTestCase,
@@ -829,7 +833,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 )
 
             test_names = {
-                a.removeprefix("test") for a in dir(test_class) if a.startswith("test")
+                a.removeprefix("test_")
+                for a in dir(test_class)
+                if a.startswith("test_")
             }
             if not test_names:
                 raise ValueError(
@@ -861,10 +867,6 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
                 # TODO(#19827): Write tests for this view and remove exemption
                 "tak291_tak292_tak024_citations",
-            },
-            StateCode.US_OZ: {
-                # TODO(#27744): Write tests for this view and remove exemption
-                "vfds_person"
             },
             StateCode.US_PA: {
                 # TODO(#19828): Write tests for this view and remove exemption
@@ -956,102 +958,170 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 f"{extra_ingest_view_files}",
             )
 
-    def test_raw_input_fixture_has_corresponding_ingest_view_output_file(self) -> None:
+    def _get_fixture_file_paths_by_fixture_type(
+        self,
+        state_code: StateCode,
+    ) -> Dict[DirectIngestFixtureDataFileType, List[DirectIngestTestFixturePath]]:
+        fixture_paths_by_type: Dict[
+            DirectIngestFixtureDataFileType, List[DirectIngestTestFixturePath]
+        ] = defaultdict(list)
+        for path, _directory_names, file_names in os.walk(
+            DirectIngestTestFixturePath.fixtures_root_for_region(
+                state_code.value.lower()
+            )
+        ):
+            for file_name in file_names:
+                if file_name == "__init__.py":
+                    continue
+                fixture_path = DirectIngestTestFixturePath.from_path(
+                    os.path.join(path, file_name)
+                )
+                fixture_paths_by_type[fixture_path.fixture_file_type].append(
+                    fixture_path
+                )
+        return fixture_paths_by_type
+
+    def test_ingest_view_test_fixtures_match_existing_tests(self) -> None:
         for region_code in get_existing_direct_ingest_states():
-            if region_code == StateCode.US_OZ:
-                continue
+            fixtures_by_type = self._get_fixture_file_paths_by_fixture_type(region_code)
+
+            ingest_view_results_fixtures = fixtures_by_type[
+                DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS
+            ]
+
+            ingest_view_results_fixtures_by_ingest_view: Dict[
+                str, List[DirectIngestTestFixturePath]
+            ] = defaultdict(list)
+            for fixture in ingest_view_results_fixtures:
+                ingest_view_results_fixtures_by_ingest_view[
+                    fixture.ingest_view_name()
+                ].append(fixture)
+
+            ingest_view_to_existing_test_names = self._get_ingest_view_to_test_names(
+                region_code
+            )
+
+            ingest_views_with_tests = set(ingest_view_to_existing_test_names)
+            ingest_views_with_fixtures = set(
+                ingest_view_results_fixtures_by_ingest_view
+            )
+
+            if ingest_views_with_fixtures_no_test := (
+                ingest_views_with_fixtures - ingest_views_with_tests
+            ):
+                raise ValueError(
+                    f"Found ingest view result fixture files for these ingest views "
+                    f"but no associated tests for these views: "
+                    f"{ingest_views_with_fixtures_no_test}. Either you added fixtures "
+                    f"and forgot to write the test, or the test is in an incorrect "
+                    f"directory, or these are old fixtures which need to be deleted."
+                )
+
+            if ingest_views_with_test_no_fixtures := (
+                ingest_views_with_tests - ingest_views_with_fixtures
+            ):
+                raise ValueError(
+                    f"Found tests for these ingest views but no associated fixture "
+                    f"files (i.e. you have an ingest view test crashing): "
+                    f"{ingest_views_with_test_no_fixtures}"
+                )
+
             region = direct_ingest_regions.get_direct_ingest_region(
                 region_code=region_code.value
             )
-            ingest_view_manifest_collector = IngestViewManifestCollector(
-                region=region,
-                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
-            )
+
             view_collector = DirectIngestViewQueryBuilderCollector(
                 region,
-                list(ingest_view_manifest_collector.ingest_view_to_manifest.keys()),
+                list(ingest_views_with_tests),
             )
-            ingest_view_to_raw_data_dependencies: Dict[str, Set[str]] = {}
+
+            # Dictionary mapping raw table dependency name (e.g. "fileTag" or
+            # "fileTag@ALL") to the names of all the ingest view tests that use this
+            # file as an input.
+            raw_table_arg_name_to_existing_tests = defaultdict(set)
+
+            # At this point we can assume the set of keys is the same
             for (
-                ingest_view,
-                _,
-            ) in ingest_view_manifest_collector.ingest_view_to_manifest.items():
-                ingest_view_to_raw_data_dependencies[ingest_view] = {
-                    raw_data_dependency.raw_file_config.file_tag
-                    for raw_data_dependency in view_collector.get_query_builder_by_view_name(
-                        ingest_view
-                    ).raw_table_dependency_configs
+                ingest_view_name,
+                existing_test_names,
+            ) in ingest_view_to_existing_test_names.items():
+                ingest_view_results_fixtures = (
+                    ingest_view_results_fixtures_by_ingest_view[ingest_view_name]
+                )
+                fixture_test_names = {
+                    f.test_name() for f in ingest_view_results_fixtures
                 }
+                if extra_fixture_names := fixture_test_names - existing_test_names:
+                    unused_fixture_paths = {
+                        f.full_path()
+                        for f in ingest_view_results_fixtures
+                        if f.test_name() in extra_fixture_names
+                    }
 
-            if region.region_module.__file__ is None:
-                raise ValueError(f"No file associated with {region.region_module}.")
-            region_fixtures_directory = os.path.join(
-                os.path.dirname(direct_ingest_fixtures.__file__),
-                region_code.value.lower(),
-            )
-
-            if "raw" not in os.listdir(
-                region_fixtures_directory
-            ) or "ingest_view" not in os.listdir(region_fixtures_directory):
-                continue
-
-            raw_data_fixtures_directory = os.path.join(region_fixtures_directory, "raw")
-            file_name_to_raw_data_folder = defaultdict(list)
-            for raw_data_dir in os.listdir(raw_data_fixtures_directory):
-                if not os.path.isdir(
-                    os.path.join(raw_data_fixtures_directory, raw_data_dir)
-                ):
-                    continue
-                raw_data_files = [
-                    file
-                    for file in os.listdir(
-                        os.path.join(raw_data_fixtures_directory, raw_data_dir)
+                    raise ValueError(
+                        f"Found ingest view result paths for ingest view "
+                        f"[{ingest_view_name}] that are not used by any ingest view "
+                        f"test: {unused_fixture_paths}"
                     )
-                    if file.endswith(".csv")
-                ]
-                file_name_to_raw_data_folder[raw_data_dir] = raw_data_files
 
-            ingest_view_fixtures_directory = os.path.join(
-                region_fixtures_directory, "ingest_view"
-            )
-            file_name_to_ingest_view_folder = defaultdict(list)
-            for ingest_view_dir in os.listdir(ingest_view_fixtures_directory):
-                if not os.path.isdir(
-                    os.path.join(ingest_view_fixtures_directory, ingest_view_dir)
-                ):
-                    continue
-                ingest_view_files = [
-                    file
-                    for file in os.listdir(
-                        os.path.join(ingest_view_fixtures_directory, ingest_view_dir)
-                    )
-                    if file.endswith(".csv")
-                ]
-                file_name_to_ingest_view_folder[ingest_view_dir] = ingest_view_files
+                for (
+                    raw_data_dependency
+                ) in view_collector.get_query_builder_by_view_name(
+                    ingest_view_name
+                ).raw_table_dependency_configs:
+                    for test_name in existing_test_names:
+                        raw_table_arg_name_to_existing_tests[
+                            raw_data_dependency.raw_table_dependency_arg_name
+                        ].add(test_name)
 
+            raw_data_fixtures = fixtures_by_type[DirectIngestFixtureDataFileType.RAW]
+
+            raw_table_arg_name_to_fixtures: Dict[
+                str, List[DirectIngestTestFixturePath]
+            ] = defaultdict(list)
+            for fixture in raw_data_fixtures:
+                raw_table_arg_name_to_fixtures[
+                    fixture.raw_table_dependency_arg_name()
+                ].append(fixture)
+
+            raw_table_args_with_tests = set(raw_table_arg_name_to_existing_tests)
+            raw_table_args_with_fixtures = set(raw_table_arg_name_to_fixtures)
+
+            if raw_table_args_with_fixtures_no_test := (
+                raw_table_args_with_fixtures - raw_table_args_with_tests
+            ):
+                raise ValueError(
+                    f"Found raw data fixture files for these raw data tables but "
+                    f"no associated tests referencing that table: "
+                    f"{raw_table_args_with_fixtures_no_test}. Either you added fixtures "
+                    f"and forgot to write the test, or the test is in an incorrect "
+                    f"directory, or these are old fixtures which need to be deleted."
+                )
+
+            if raw_table_args_with_tests_no_fixtures := (
+                raw_table_args_with_tests - raw_table_args_with_fixtures
+            ):
+                raise ValueError(
+                    f"Found tests referencing these raw tables but no associated "
+                    f"fixture files (i.e. you have an ingest view test crashing): "
+                    f"{raw_table_args_with_tests_no_fixtures}"
+                )
+
+            # At this point we can assume the set of raw data keys is the same
             for (
-                ingest_view,
-                raw_data_dependencies,
-            ) in ingest_view_to_raw_data_dependencies.items():
-                for raw_data_dependency in raw_data_dependencies:
-                    if (
-                        ingest_view in file_name_to_ingest_view_folder
-                        and raw_data_dependency in file_name_to_raw_data_folder
-                    ):
-                        raw_file_fixtures = file_name_to_raw_data_folder[
-                            raw_data_dependency
-                        ]
-                        if f"{raw_data_dependency}@ALL" in file_name_to_raw_data_folder:
-                            raw_file_fixtures = (
-                                raw_file_fixtures
-                                + file_name_to_raw_data_folder[
-                                    f"{raw_data_dependency}@ALL"
-                                ]
-                            )
-                        for file in file_name_to_ingest_view_folder[ingest_view]:
-                            self.assertTrue(
-                                file in raw_file_fixtures,
-                                f"Found extra output fixture files for {ingest_view} in [{os.path.join(ingest_view_fixtures_directory, ingest_view)}] "
-                                f"that do not correspond to any input fixture files in [{os.path.join(raw_data_fixtures_directory, raw_data_dependency)}]: "
-                                f"extra file: {file}, files in ingest view: {file_name_to_ingest_view_folder[ingest_view]}, files in raw data: {raw_file_fixtures}",
-                            )
+                raw_table_arg,
+                existing_test_names,
+            ) in raw_table_arg_name_to_existing_tests.items():
+                raw_data_fixtures = raw_table_arg_name_to_fixtures[raw_table_arg]
+                fixture_test_names = {f.test_name() for f in raw_data_fixtures}
+                if extra_fixture_names := fixture_test_names - existing_test_names:
+                    unused_fixture_paths = {
+                        f.full_path()
+                        for f in raw_data_fixtures
+                        if f.test_name() in extra_fixture_names
+                    }
+                    raise ValueError(
+                        f"Found raw data fixture paths for raw file arg "
+                        f"[{raw_table_arg}] that are not used by any ingest view test: "
+                        f"{unused_fixture_paths}"
+                    )

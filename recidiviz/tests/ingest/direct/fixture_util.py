@@ -20,6 +20,7 @@ import os
 from enum import Enum
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
+import attr
 import pandas as pd
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
@@ -38,6 +39,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.utils import csv
+from recidiviz.utils.types import assert_type
 
 
 def _direct_ingest_raw_file_path(
@@ -113,11 +115,10 @@ def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath, region_code: str) -
         file_name = path.file_name
 
     # TODO(#10301): Move the fixture files used by parser / integration tests to ingest view subdir
-    return direct_ingest_fixture_path(
+    return DirectIngestTestFixturePath.for_extract_and_merge_fixture(
         region_code=region_code,
         file_name=file_name,
-        fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
-    )
+    ).full_path()
 
 
 class DirectIngestFixtureDataFileType(Enum):
@@ -125,48 +126,19 @@ class DirectIngestFixtureDataFileType(Enum):
 
     # Fixture files that contain mocked raw data that is used as inputs to ingest view
     # tests.
-    RAW = "RAW"
+    RAW = "raw"
 
     # Fixture files that contain expected ingest view results for ingest view tests.
-    INGEST_VIEW_RESULTS = "INGEST_VIEW_RESULTS"
+    INGEST_VIEW_RESULTS = "ingest_view"
 
     # Fixture files that contain enum raw text values for use in enum mappings tests.
-    ENUM_RAW_TEXT = "ENUM_RAW_TEXT"
+    ENUM_RAW_TEXT = "enum_raw_text"
 
     # Fixture files that contain ingest view results in CSV form that are used as inputs
-    # to parser and controller extract and merge integration tests.
+    # to parser and ingest pipeline integration tests.
     # TODO(#15801): Move the fixture files used by parser / integration tests to ingest
     #  view subdir and delete this enum?
-    EXTRACT_AND_MERGE_INPUT = "EXTRACT_AND_MERGE_INPUT"
-
-    def fixture_directory_for_region_code(
-        self, region_code: str, subdir_name: Optional[str] = None
-    ) -> str:
-        region_fixtures_directory_path = os.path.join(
-            os.path.dirname(direct_ingest_fixtures.__file__), region_code.lower()
-        )
-
-        if self is DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT:
-            return region_fixtures_directory_path
-
-        if self is DirectIngestFixtureDataFileType.RAW:
-            if subdir_name is None:
-                raise ValueError(
-                    f"subdir_name cannot be none for fixture file type [{self}]"
-                )
-            subdir = os.path.join("raw", subdir_name)
-        elif self is DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS:
-            if subdir_name is None:
-                raise ValueError(
-                    f"subdir_name cannot be none for fixture file type [{self}]"
-                )
-            subdir = os.path.join("ingest_view", subdir_name)
-        elif self is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:
-            subdir = "enum_raw_text"
-        else:
-            raise ValueError(f"Unexpected fixture file type [{self}]")
-
-        return os.path.join(region_fixtures_directory_path, subdir)
+    EXTRACT_AND_MERGE_INPUT = "extract_and_merge_input"
 
 
 def replace_empty_with_null(
@@ -189,66 +161,214 @@ def load_dataframe_from_path(
     return pd.DataFrame(values, columns=fixture_columns)
 
 
-def direct_ingest_fixture_path(
-    *,
-    region_code: str,
-    fixture_file_type: DirectIngestFixtureDataFileType,
-    file_name: str,
-) -> str:
-    if fixture_file_type == DirectIngestFixtureDataFileType.RAW:
-        raise ValueError(
-            f"Unexpected fixture_file_type {fixture_file_type} - use "
-            f"ingest_view_raw_table_dependency_fixture_path() instead."
+@attr.define
+class DirectIngestTestFixturePath:
+    """Class storing information about an ingest test fixture file."""
+
+    region_code: str
+    fixture_file_type: DirectIngestFixtureDataFileType
+    subdir_name: Optional[str]
+    file_name: str
+
+    def full_path(self) -> str:
+        """Returns the absolute path to this fixture file."""
+        return os.path.join(
+            self._fixture_directory(),
+            self.file_name,
         )
-    if fixture_file_type == DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS:
+
+    def test_name(self) -> str:
+        """Returns the name of the test associated with this fixture file (ingest view
+        tests only).
+        """
+        if self.fixture_file_type not in (
+            DirectIngestFixtureDataFileType.RAW,
+            DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
+        ):
+            raise ValueError(
+                f"Unexpected fixture type [{self.fixture_file_type}]. Can only infer "
+                f"the test name from the path for RAW and INGEST_VIEW_RESULTS fixtures."
+            )
+        return self.file_name.removesuffix(".csv")
+
+    def raw_table_dependency_arg_name(self) -> str:
+        """The name of the raw table dependency for a RAW fixture file. This is the text
+        inside the brackets of a raw table reference in an ingest view query (e.g.
+        "myFileTag" or "myFileTag@ALL"). It corresponds to a subidirectory name the
+        fixture file lives in.
+        """
+        if self.fixture_file_type is not DirectIngestFixtureDataFileType.RAW:
+            raise ValueError(
+                f"Unexpected fixture type [{self.fixture_file_type}]. Can only infer "
+                f"the raw file tag from the path for RAW fixtures."
+            )
+        return assert_type(self.subdir_name, str)
+
+    def ingest_view_name(self) -> str:
+        if (
+            self.fixture_file_type
+            is DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS
+        ):
+            return assert_type(self.subdir_name, str)
+        if (
+            self.fixture_file_type
+            is DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT
+        ):
+            return self.file_name.removesuffix(".csv")
+
         raise ValueError(
-            f"Unexpected fixture_file_type {fixture_file_type} - use "
-            f"ingest_view_results_fixture_path() instead."
+            f"Unexpected fixture type [{self.fixture_file_type}]. Can only infer the "
+            f"ingest view name from the path for INGEST_VIEW_RESULTS and "
+            f"EXTRACT_AND_MERGE_INPUT fixtures."
         )
-    return _direct_ingest_fixture_path(
-        region_code=region_code,
-        fixture_file_type=fixture_file_type,
-        subdir_name=None,
-        file_name=file_name,
-    )
 
+    @classmethod
+    def for_raw_file_fixture(
+        cls,
+        *,
+        region_code: str,
+        raw_file_dependency_config: DirectIngestViewRawFileDependency,
+        file_name: str,
+    ) -> "DirectIngestTestFixturePath":
+        return cls(
+            region_code=region_code,
+            fixture_file_type=DirectIngestFixtureDataFileType.RAW,
+            subdir_name=raw_file_dependency_config.raw_table_dependency_arg_name,
+            file_name=file_name,
+        )
 
-def _direct_ingest_fixture_path(
-    *,
-    region_code: str,
-    fixture_file_type: DirectIngestFixtureDataFileType,
-    subdir_name: Optional[str],
-    file_name: str,
-) -> str:
-    return os.path.join(
-        fixture_file_type.fixture_directory_for_region_code(
-            region_code=region_code, subdir_name=subdir_name
-        ),
-        file_name,
-    )
+    @classmethod
+    def for_ingest_view_test_results_fixture(
+        cls,
+        *,
+        region_code: str,
+        ingest_view_name: str,
+        file_name: str,
+    ) -> "DirectIngestTestFixturePath":
+        return cls(
+            region_code=region_code,
+            fixture_file_type=DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
+            subdir_name=ingest_view_name,
+            file_name=file_name,
+        )
 
+    @classmethod
+    def for_enum_raw_text_fixture(
+        cls,
+        *,
+        region_code: str,
+        file_name: str,
+    ) -> "DirectIngestTestFixturePath":
+        return cls(
+            region_code=region_code,
+            fixture_file_type=DirectIngestFixtureDataFileType.ENUM_RAW_TEXT,
+            subdir_name=None,
+            file_name=file_name,
+        )
 
-def ingest_view_raw_table_dependency_fixture_path(
-    region_code: str,
-    raw_file_dependency_config: DirectIngestViewRawFileDependency,
-    file_name: str,
-) -> str:
-    return _direct_ingest_fixture_path(
-        region_code=region_code,
-        fixture_file_type=DirectIngestFixtureDataFileType.RAW,
-        subdir_name=raw_file_dependency_config.raw_table_dependency_arg_name,
-        file_name=file_name,
-    )
+    @classmethod
+    def for_extract_and_merge_fixture(
+        cls,
+        *,
+        region_code: str,
+        file_name: str,
+    ) -> "DirectIngestTestFixturePath":
+        return cls(
+            region_code=region_code,
+            fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
+            subdir_name=None,
+            file_name=file_name,
+        )
 
+    @classmethod
+    def fixtures_root(cls) -> str:
+        """The root directory with all ingest test fixture files."""
+        return os.path.dirname(direct_ingest_fixtures.__file__)
 
-def ingest_view_results_fixture_path(
-    region_code: str,
-    ingest_view_name: str,
-    file_name: str,
-) -> str:
-    return _direct_ingest_fixture_path(
-        region_code=region_code,
-        fixture_file_type=DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
-        subdir_name=ingest_view_name,
-        file_name=file_name,
-    )
+    @classmethod
+    def fixtures_root_for_region(cls, region_code: str) -> str:
+        """The root directory with all ingest test fixture files for a given region."""
+        return os.path.join(cls.fixtures_root(), region_code.lower())
+
+    @classmethod
+    def from_path(cls, fixture_path: str) -> "DirectIngestTestFixturePath":
+        """Parses a DirectIngestTestFixturePath from a fixture file absolute path."""
+        if not os.path.exists(fixture_path):
+            raise ValueError(f"Fixture path does not exist: {fixture_path}")
+
+        if os.path.isdir(fixture_path):
+            raise ValueError(
+                f"Fixture path should be a file, not a directory: {fixture_path}"
+            )
+
+        relative_path = os.path.relpath(fixture_path, cls.fixtures_root())
+        parts = relative_path.split(os.sep)
+
+        region_code = parts[0]
+
+        if len(parts) == 2:
+            return cls(
+                region_code=region_code,
+                fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
+                subdir_name=None,
+                file_name=parts[1],
+            )
+        fixture_file_type = DirectIngestFixtureDataFileType(parts[1])
+
+        if fixture_file_type is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:
+            if len(parts) != 3:
+                raise ValueError(
+                    f"Expected 4 parts in relative path {relative_path}, found "
+                    f"{len(parts)}: {parts}"
+                )
+            return cls(
+                region_code=region_code,
+                fixture_file_type=fixture_file_type,
+                subdir_name=None,
+                file_name=parts[2],
+            )
+        if len(parts) != 4:
+            raise ValueError(
+                f"Expected 4 parts in relative path {relative_path}, found "
+                f"{len(parts)}: {parts}"
+            )
+        return cls(
+            region_code=region_code,
+            fixture_file_type=fixture_file_type,
+            subdir_name=parts[2],
+            file_name=parts[3],
+        )
+
+    def _fixture_directory(self) -> str:
+        """Returns the directory this fixture file is in."""
+        region_fixtures_directory_path = self.fixtures_root_for_region(self.region_code)
+
+        if (
+            self.fixture_file_type
+            is DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT
+        ):
+            return region_fixtures_directory_path
+
+        if self.fixture_file_type is DirectIngestFixtureDataFileType.RAW:
+            return os.path.join(
+                region_fixtures_directory_path,
+                self.fixture_file_type.value,
+                self.raw_table_dependency_arg_name(),
+            )
+
+        if (
+            self.fixture_file_type
+            is DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS
+        ):
+            return os.path.join(
+                region_fixtures_directory_path,
+                self.fixture_file_type.value,
+                self.ingest_view_name(),
+            )
+
+        if self.fixture_file_type is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:
+            return os.path.join(
+                region_fixtures_directory_path, self.fixture_file_type.value
+            )
+
+        raise ValueError(f"Unexpected fixture file type [{self}]")
