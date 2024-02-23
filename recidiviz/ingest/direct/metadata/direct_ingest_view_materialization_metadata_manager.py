@@ -88,6 +88,8 @@ class IngestViewMaterializationSummary:
         }
 
 
+# TODO(#20930): We should be able to delete this class entirely once we've deleted
+#  IngestViewMaterializerImpl.
 class DirectIngestViewMaterializationMetadataManager:
     """Writes metadata about pending and completed ingest view materialization jobs to a
     postgres database.

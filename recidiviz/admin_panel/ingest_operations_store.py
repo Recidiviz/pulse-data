@@ -18,7 +18,6 @@
 import json
 import logging
 from collections import Counter, defaultdict
-from concurrent import futures
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
@@ -30,10 +29,7 @@ from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
     get_all_latest_ingest_jobs,
 )
-from recidiviz.big_query.big_query_client import (
-    BQ_CLIENT_MAX_POOL_SIZE,
-    BigQueryClientImpl,
-)
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -48,7 +44,6 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     get_direct_ingest_queues_for_state,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -57,18 +52,12 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContentsImpl,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
-)
-from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
@@ -82,7 +71,6 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestInstanceError,
 )
-from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.utils import metadata
 from recidiviz.utils.types import assert_type
@@ -215,41 +203,6 @@ class IngestOperationsStore(AdminPanelStore):
                 f"ingest rerun."
             )
 
-    def _verify_clean_ingest_view_state(
-        self, state_code: StateCode, instance: DirectIngestInstance
-    ) -> None:
-        """Confirm that all ingest view metadata / data has been invalidated."""
-
-        # Confirm that all metadata about ingest view materialization has been
-        # invalidated for this instance.
-        ingest_view_materialization_manager = (
-            DirectIngestViewMaterializationMetadataManager(state_code.value, instance)
-        )
-
-        # If instance summaries is empty, that means that all ingest view
-        # materialization metadata has been invalidated.
-        if len(ingest_view_materialization_manager.get_instance_summaries()) != 0:
-            raise DirectIngestInstanceError(
-                "Cannot kick off ingest rerun, as not all ingest view materialization"
-                "metadata has been invalidated on Postgres."
-            )
-
-        # Confirm that there aren't any materialized ingest view results in BQ.
-        ingest_view_contents = InstanceIngestViewContentsImpl(
-            self.bq_client, state_code.value, instance, dataset_prefix=None
-        )
-        dataset_ref = self.bq_client.dataset_ref_for_id(
-            ingest_view_contents.results_dataset()
-        )
-        if (
-            self.bq_client.dataset_exists(dataset_ref)
-            and len(list(self.bq_client.list_tables(dataset_ref.dataset_id))) > 0
-        ):
-            raise DirectIngestInstanceError(
-                f"There are ingest view results in {dataset_ref} that have not been"
-                f"cleaned up. Cannot proceed with ingest rerun."
-            )
-
     def trigger_task_scheduler(
         self, state_code: StateCode, instance: DirectIngestInstance
     ) -> None:
@@ -311,79 +264,12 @@ class IngestOperationsStore(AdminPanelStore):
             for queue_info in ingest_queue_states
         ]
 
-    # TODO(#20930): Delete this function once ingest in Dataflow is enabled for all
-    #  states.
-    def start_ingest_rerun(
-        self,
-        state_code: StateCode,
-        instance: DirectIngestInstance,
-        raw_data_source_instance: DirectIngestInstance,
-    ) -> None:
-        """Kicks off an ingest rerun in the specified instance.
-        Requires:
-        - state_code: (required) State code to start ingest rerun for (i.e. "US_ID")
-        - instance: (required) Ingest instance to start ingest rerun for (i.e. SECONDARY)
-        - raw_data_source_instance: (required)  Source instance of raw data (i.e. PRIMARY)
-        """
-        if is_ingest_in_dataflow_enabled(state_code, instance):
-            raise ValueError(
-                f"Cannot start an ingest rerun for a state with ingest in Dataflow "
-                f"enabled: {state_code.value}"
-            )
-
-        formatted_state_code = state_code.value.lower()
-
-        # TODO(#13406): remove check once this rerun endpoint can be triggered in
-        #  PRIMARY as well.
-        if instance != DirectIngestInstance.SECONDARY:
-            raise DirectIngestInstanceError(
-                "Ingest reruns can only be kicked off for SECONDARY instances."
-            )
-
-        region = direct_ingest_regions.get_direct_ingest_region(
-            region_code=formatted_state_code
-        )
-        if not self.cloud_task_manager.all_ingest_instance_queues_are_empty(
-            region, instance
-        ):
-            raise DirectIngestInstanceError(
-                "Cannot kick off ingest rerun because not all ingest related queues are "
-                "empty. Please check queues on Ingest Operations Admin Panel to see "
-                "which have remaining tasks."
-            )
-
-        if raw_data_source_instance == DirectIngestInstance.SECONDARY:
-            self._verify_clean_secondary_raw_data_state(state_code)
-
-        # Confirm that all ingest view metadata / data has been invalidated.
-        self._verify_clean_ingest_view_state(state_code, instance)
-
-        # Validation that a rerun is a valid status transition is handled within the
-        # instance manager.
-        instance_status_manager = DirectIngestInstanceStatusManager(
-            region_code=formatted_state_code,
-            ingest_instance=instance,
-        )
-        instance_status_manager.change_status_to(
-            DirectIngestStatus.STANDARD_RERUN_STARTED
-            if raw_data_source_instance == DirectIngestInstance.PRIMARY
-            else DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
-        )
-
-        self.trigger_task_scheduler(state_code, instance)
-
     def start_secondary_raw_data_reimport(self, state_code: StateCode) -> None:
         """Enables the SECONDARY instance for |state_code| so that it can import
         any raw files in the SECONDARY GCS ingest bucket to the us_xx_raw_data_secondary
         dataset in BigQuery.
         """
         instance = DirectIngestInstance.SECONDARY
-
-        if not is_ingest_in_dataflow_enabled(state_code, instance):
-            raise ValueError(
-                f"Cannot start a secondary raw data reimport for a state without ingest"
-                f"in Dataflow enabled: {state_code.value}"
-            )
 
         formatted_state_code = state_code.value.lower()
 
@@ -418,7 +304,6 @@ class IngestOperationsStore(AdminPanelStore):
     ) -> Dict[str, Any]:
         """Returns a dictionary containing the following info for the provided instance:
         i.e. {
-            dbName: database name for this instance,
             storageDirectoryPath: storage directory absolute path,
             ingestBucketPath: ingest bucket path,
         }
@@ -439,13 +324,9 @@ class IngestOperationsStore(AdminPanelStore):
             project_id=metadata.project_id(),
         )
 
-        # Get the database name corresponding to this instance
-        ingest_db_name = database_key_for_state(ingest_instance, state_code).db_name
-
         return {
             "storageDirectoryPath": storage_bucket_path.abs_path(),
             "ingestBucketPath": ingest_bucket_path.abs_path(),
-            "dbName": ingest_db_name,
         }
 
     def get_ingest_raw_file_processing_status(
@@ -586,90 +467,6 @@ class IngestOperationsStore(AdminPanelStore):
             for raw_file_metadata in raw_file_metadata_manager.get_metadata_for_all_raw_files_in_region()
         }
 
-    @staticmethod
-    def get_ingest_view_summaries(
-        state_code: StateCode, ingest_instance: DirectIngestInstance
-    ) -> Dict[
-        str,
-        Union[
-            int,
-            Optional[datetime],
-            List[Dict[str, Union[Optional[str], int]]],
-        ],
-    ]:
-        """Returns the following dictionary with information from BigQuery:
-        {
-            ingestViewMaterializationSummaries: [
-                {
-                    ingestViewName: <str>
-                    numPendingJobs: <int>
-                    numCompletedJobs: <int>
-                    completedJobsMaxDatetime: <datetime>
-                    pendingJobsMinDatetime: <datetime>
-                }
-            ],
-            ingestViewContentsSummaries: [
-                {
-                    ingestViewName: <str>
-                    numUnprocessedRows: <int>
-                    unprocessedRowsMinDatetime: <datetime>
-                    numProcessedRows: <int>
-                    processedRowsMaxDatetime: <datetime>
-                }
-            ]
-        }
-        """
-        logging.info(
-            "Getting instance [%s] ingest view materialization summaries",
-            ingest_instance.value,
-        )
-        materialization_job_summaries = DirectIngestViewMaterializationMetadataManager(
-            state_code.value, ingest_instance
-        ).get_instance_summaries()
-
-        ingest_view_contents = InstanceIngestViewContentsImpl(
-            big_query_client=BigQueryClientImpl(),
-            region_code=state_code.value,
-            ingest_instance=ingest_instance,
-            dataset_prefix=None,
-        )
-        logging.info(
-            "Getting instance [%s] ingest view contents summaries",
-            ingest_instance.value,
-        )
-        with futures.ThreadPoolExecutor(
-            # Conservatively allow only half as many workers as allowed connections.
-            # Lower this number if we see "urllib3.connectionpool:Connection pool is
-            # full, discarding connection" errors.
-            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
-        ) as executor:
-            summary_futures = [
-                executor.submit(
-                    ingest_view_contents.get_ingest_view_contents_summary,
-                    ingest_view_name,
-                )
-                for ingest_view_name in materialization_job_summaries
-            ]
-            contents_summaries = [
-                f.result() for f in futures.as_completed(summary_futures)
-            ]
-
-        logging.info(
-            "Done getting operations DB metadata for instance [%s]",
-            ingest_instance.value,
-        )
-        return {
-            "ingestViewMaterializationSummaries": [
-                summary.as_api_dict()
-                for summary in materialization_job_summaries.values()
-            ],
-            "ingestViewContentsSummaries": [
-                summary.as_api_dict()
-                for summary in contents_summaries
-                if summary is not None
-            ],
-        }
-
     def get_all_current_ingest_instance_statuses(
         self,
     ) -> Dict[StateCode, Dict[DirectIngestInstance, DirectIngestInstanceStatus]]:
@@ -688,24 +485,6 @@ class IngestOperationsStore(AdminPanelStore):
 
                 curr_status_info = status_manager.get_current_status_info()
                 instance_to_status_dict[i_instance] = curr_status_info
-
-            ingest_statuses[state_code] = instance_to_status_dict
-
-        return ingest_statuses
-
-    def get_all_ingest_instance_dataflow_enabled_status(
-        self,
-    ) -> Dict[StateCode, Dict[DirectIngestInstance, bool]]:
-        """Returns whetherer dataflow is enabled for both primary and secondary instances for states
-        in the given project"""
-
-        ingest_statuses = {}
-        for state_code in get_direct_ingest_states_launched_in_env():
-            instance_to_status_dict: Dict[DirectIngestInstance, bool] = {}
-            for i_instance in DirectIngestInstance:  # new direct ingest instance
-                instance_to_status_dict[i_instance] = is_ingest_in_dataflow_enabled(
-                    state_code, i_instance
-                )
 
             ingest_statuses[state_code] = instance_to_status_dict
 

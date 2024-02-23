@@ -85,6 +85,10 @@ class IngestViewMaterializer:
         """
 
 
+# TODO(#20930): We should be able to delete this entire class with the exception of the
+#  functionality in dataflow_query_for_args(). This will require transitioning other
+#  remaining usages in ingest_stability_check.py and ingest view tests to use that
+#  function.
 class IngestViewMaterializerImpl(IngestViewMaterializer):
     """Class that manages logic related to materializing ingest views for a region so
     the results can be processed and merged into our Postgres database.

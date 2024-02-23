@@ -40,32 +40,20 @@ from recidiviz.admin_panel.ingest_operations.ingest_utils import (
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
-from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockAlreadyExists,
-    GCSPseudoLockDoesNotExist,
-)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
-    DirectIngestRegionLockManager,
-)
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContentsImpl,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
 )
@@ -75,28 +63,17 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.ingest.flash_database_tools import (
     copy_raw_data_between_instances,
     copy_raw_data_to_backup,
     delete_contents_of_raw_data_tables,
     delete_tables_in_pruning_datasets,
-    move_ingest_view_results_between_instances,
-    move_ingest_view_results_to_backup,
 )
-from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
-from recidiviz.utils.trigger_dag_helpers import (
-    trigger_calculation_dag_pubsub,
-    trigger_ingest_dag_pubsub,
-)
+from recidiviz.utils.trigger_dag_helpers import trigger_ingest_dag_pubsub
 from recidiviz.utils.types import assert_type
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
@@ -122,8 +99,6 @@ def _sql_export_path(
 def add_ingest_ops_routes(bp: Blueprint) -> None:
     """Adds routes for ingest operations."""
 
-    project_id = GCP_PROJECT_STAGING if not in_gcp() else metadata.project_id()
-
     @bp.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
     def _fetch_ingest_state_codes() -> Tuple[Response, HTTPStatus]:
         all_state_codes = get_ingest_operations_store().state_codes_launched_in_env
@@ -144,34 +119,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "invalid ingest instance provided", HTTPStatus.BAD_REQUEST
 
         get_ingest_operations_store().trigger_task_scheduler(state_code, instance)
-        return "", HTTPStatus.OK
-
-    # Start an ingest rerun in secondary
-    # TODO(#20930): Delete this endpoint once ingest in Dataflow is enabled for all
-    #  states.
-    @bp.route(
-        "/api/ingest_operations/<state_code_str>/start_ingest_rerun",
-        methods=["POST"],
-    )
-    def _start_ingest_rerun(state_code_str: str) -> Tuple[str, HTTPStatus]:
-        state_code = _get_state_code_from_str(state_code_str)
-        try:
-            request_json = assert_type(request.json, dict)
-            ingest_instance = DirectIngestInstance(request_json["instance"].upper())
-            raw_data_source_instance = DirectIngestInstance(
-                request_json["rawDataSourceInstance"].upper()
-            )
-        except ValueError:
-            return "invalid ingest instance provided", HTTPStatus.BAD_REQUEST
-
-        try:
-            get_ingest_operations_store().start_ingest_rerun(
-                state_code, ingest_instance, raw_data_source_instance
-            )
-        except Exception as e:
-            # Catch all exceptions and display the errors associated.
-            return str(e), HTTPStatus.BAD_REQUEST
-
         return "", HTTPStatus.OK
 
     # Start a raw data reimport in secondary
@@ -233,23 +180,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
         return jsonify(ingest_instance_resources), HTTPStatus.OK
 
-    # Get summary of an ingest instance for a state
-    @bp.route(
-        "/api/ingest_operations/<state_code_str>/get_ingest_view_summaries/<ingest_instance_str>"
-    )
-    def _get_ingest_view_summaries(
-        state_code_str: str, ingest_instance_str: str
-    ) -> Tuple[Union[str, Response], HTTPStatus]:
-        state_code = _get_state_code_from_str(state_code_str)
-        try:
-            ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-        ingest_view_summaries = get_ingest_operations_store().get_ingest_view_summaries(
-            state_code, ingest_instance
-        )
-        return jsonify(ingest_view_summaries), HTTPStatus.OK
-
     # Get processing status of filetags for an ingest instance for a state
     @bp.route(
         "/api/ingest_operations/<state_code_str>/get_ingest_raw_file_processing_status/<ingest_instance_str>"
@@ -268,183 +198,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             )
         )
         return jsonify(ingest_file_processing_status), HTTPStatus.OK
-
-    @bp.route("/api/ingest_operations/export_database_to_gcs", methods=["POST"])
-    def _export_database_to_gcs() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(
-                request_json["ingestInstance"].upper()
-            )
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
-            state_code, ingest_instance
-        )
-        # Assert that we still have the lock. We do not check `can_proceed` as we do not
-        # want to yield to any other tasks (e.g. if the export takes a subsequent lock).
-        # So long as we still have our lock it is safe to proceed.
-        if not lock_manager.is_locked():
-            return (
-                "ingest lock no longer held; aborting operation",
-                HTTPStatus.CONFLICT,
-            )
-
-        db_key = database_key_for_state(ingest_instance, state_code)
-        cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
-
-        operation_id = cloud_sql_client.export_to_gcs_sql(
-            db_key,
-            _sql_export_path(
-                project_id=project_id,
-                ingest_instance=ingest_instance,
-                state_code=state_code,
-            ),
-        )
-        if operation_id is None:
-            return (
-                "Cloud SQL export operation was not started successfully.",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        operation_succeeded = cloud_sql_client.wait_until_operation_completed(
-            operation_id, seconds_to_wait=GCS_IMPORT_EXPORT_TIMEOUT_SEC
-        )
-        if not operation_succeeded:
-            return (
-                "Cloud SQL import did not complete within 60 seconds",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        return operation_id, HTTPStatus.OK
-
-    @bp.route("/api/ingest_operations/import_database_from_gcs", methods=["POST"])
-    def _import_database_from_gcs() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            import_to_ingest_instance = DirectIngestInstance(
-                request_json["importToDatabaseInstance"].upper()
-            )
-            exported_ingest_instance = DirectIngestInstance(
-                request_json["exportedDatabaseInstance"].upper()
-            )
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
-            state_code, ingest_instance=import_to_ingest_instance
-        )
-        # Assert that we still have the lock. We do not check `can_proceed` as we do not
-        # want to yield to any other tasks (e.g. if the export takes a subsequent lock).
-        # So long as we still have our lock it is safe to proceed.
-        if not lock_manager.is_locked():
-            return (
-                "ingest lock no longer held; aborting operation",
-                HTTPStatus.CONFLICT,
-            )
-
-        db_key = database_key_for_state(import_to_ingest_instance, state_code)
-        cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
-
-        operation_id = cloud_sql_client.import_gcs_sql(
-            db_key,
-            _sql_export_path(
-                project_id=project_id,
-                ingest_instance=exported_ingest_instance,
-                state_code=state_code,
-            ),
-        )
-        if operation_id is None:
-            return (
-                "Cloud SQL import operation was not started successfully.",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        operation_succeeded = cloud_sql_client.wait_until_operation_completed(
-            operation_id, seconds_to_wait=GCS_IMPORT_EXPORT_TIMEOUT_SEC
-        )
-        if not operation_succeeded:
-            return (
-                "Cloud SQL import did not complete within 60 seconds",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        return operation_id, HTTPStatus.OK
-
-    @bp.route(
-        "/api/ingest_operations/delete_database_import_gcs_files", methods=["POST"]
-    )
-    def _delete_database_import_gcs_files() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            exported_ingest_instance = DirectIngestInstance(
-                request_json["exportedDatabaseInstance"].upper()
-            )
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        path_to_delete = _sql_export_path(
-            project_id=project_id,
-            ingest_instance=exported_ingest_instance,
-            state_code=state_code,
-        )
-
-        fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-        fs.delete(path=path_to_delete)
-
-        return "", HTTPStatus.OK
-
-    @bp.route("/api/ingest_operations/acquire_ingest_lock", methods=["POST"])
-    def _acquire_ingest_lock() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
-            state_code, ingest_instance=ingest_instance
-        )
-        try:
-            lock_manager.acquire_lock()
-        except GCSPseudoLockAlreadyExists:
-            return "lock already exists", HTTPStatus.CONFLICT
-
-        if not lock_manager.can_proceed():
-            try:
-                lock_manager.release_lock()
-            except Exception as e:
-                logging.exception(e)
-            return (
-                "other locks blocking ingest have been acquired; releasing lock",
-                HTTPStatus.CONFLICT,
-            )
-
-        return "", HTTPStatus.OK
-
-    @bp.route("/api/ingest_operations/release_ingest_lock", methods=["POST"])
-    def _release_ingest_lock() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
-            state_code, ingest_instance=ingest_instance
-        )
-        try:
-            lock_manager.release_lock()
-        except GCSPseudoLockDoesNotExist:
-            return "lock does not exist", HTTPStatus.NOT_FOUND
-
-        return "", HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/direct/sandbox_raw_data_import", methods=["POST"])
     def _sandbox_raw_data_import() -> Tuple[Union[str, Response], HTTPStatus]:
@@ -550,171 +303,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
-    @bp.route(
-        "/api/ingest_operations/flash_primary_db/move_ingest_view_results_to_backup",
-        methods=["POST"],
-    )
-    def _move_ingest_view_results_to_backup() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(
-                request_json["ingestInstance"].upper()
-            )
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            move_ingest_view_results_to_backup(
-                state_code, ingest_instance, BigQueryClientImpl()
-            )
-
-            return (
-                "",
-                HTTPStatus.OK,
-            )
-
-        except ValueError as error:
-            logging.exception(error)
-            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
-
-    @bp.route(
-        "/api/ingest_operations/flash_primary_db/move_ingest_view_results_between_instances",
-        methods=["POST"],
-    )
-    def _move_ingest_view_results_between_instances() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance_source = DirectIngestInstance(
-                request_json["srcIngestInstance"].upper()
-            )
-            ingest_instance_destination = DirectIngestInstance(
-                request_json["destIngestInstance"].upper()
-            )
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            move_ingest_view_results_between_instances(
-                state_code=state_code,
-                ingest_instance_source=ingest_instance_source,
-                ingest_instance_destination=ingest_instance_destination,
-                big_query_client=BigQueryClientImpl(),
-            )
-
-            return (
-                "",
-                HTTPStatus.OK,
-            )
-
-        except ValueError as error:
-            logging.exception(error)
-            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
-
-    @bp.route(
-        "/api/ingest_operations/flash_primary_db/delete_contents_in_secondary_ingest_view_dataset",
-        methods=["POST"],
-    )
-    def _delete_contents_in_secondary_ingest_view_dataset() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            ingest_view_contents = InstanceIngestViewContentsImpl(
-                BigQueryClientImpl(),
-                state_code.value,
-                DirectIngestInstance.SECONDARY,
-                dataset_prefix=None,
-            )
-            ingest_view_contents.delete_contents_in_ingest_view_dataset(
-                state_code=state_code,
-            )
-
-            return (
-                "",
-                HTTPStatus.OK,
-            )
-
-        except ValueError as error:
-            logging.exception(error)
-            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
-
-    @bp.route(
-        "/api/ingest_operations/flash_primary_db/mark_instance_ingest_view_data_invalidated",
-        methods=["POST"],
-    )
-    def _mark_instance_ingest_view_data_invalidated() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(
-                request_json["ingestInstance"].upper()
-            )
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            ingest_view_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManager(
-                    region_code=state_code.value, ingest_instance=ingest_instance
-                )
-            )
-            ingest_view_metadata_manager.mark_instance_data_invalidated()
-
-            return (
-                "",
-                HTTPStatus.OK,
-            )
-
-        except ValueError as error:
-            logging.exception(error)
-            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
-
-    @bp.route(
-        "/api/ingest_operations/flash_primary_db/transfer_ingest_view_metadata_to_new_instance",
-        methods=["POST"],
-    )
-    def _transfer_ingest_view_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            src_ingest_instance = DirectIngestInstance(
-                request_json["srcIngestInstance"].upper()
-            )
-            dest_ingest_instance = DirectIngestInstance(
-                request_json["destIngestInstance"].upper()
-            )
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            ingest_view_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManager(
-                    region_code=state_code.value, ingest_instance=src_ingest_instance
-                )
-            )
-
-            new_instance_manager = DirectIngestViewMaterializationMetadataManager(
-                region_code=state_code.value,
-                ingest_instance=dest_ingest_instance,
-            )
-            ingest_view_metadata_manager.transfer_metadata_to_new_instance(
-                new_instance_manager=new_instance_manager
-            )
-
-            return (
-                "",
-                HTTPStatus.OK,
-            )
-
-        except ValueError as error:
-            logging.exception(error)
-            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
-
     @bp.route("/api/ingest_operations/all_ingest_instance_statuses")
     def _all_ingest_instance_statuses() -> Tuple[Response, HTTPStatus]:
         all_instance_statuses = (
@@ -726,25 +314,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 {
                     instance_state_code.value: {
                         instance.value.lower(): curr_status_info.for_api()
-                        for instance, curr_status_info in instances.items()
-                    }
-                    for instance_state_code, instances in all_instance_statuses.items()
-                }
-            ),
-            HTTPStatus.OK,
-        )
-
-    @bp.route("/api/ingest_operations/all_ingest_instance_dataflow_enabled_status")
-    def _all_ingest_instance_dataflow_enabled_status() -> Tuple[Response, HTTPStatus]:
-        all_instance_statuses = (
-            get_ingest_operations_store().get_all_ingest_instance_dataflow_enabled_status()
-        )
-
-        return (
-            jsonify(
-                {
-                    instance_state_code.value: {
-                        instance.value.lower(): curr_status_info
                         for instance, curr_status_info in instances.items()
                     }
                     for instance_state_code, instances in all_instance_statuses.items()
@@ -846,52 +415,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         current_status: str = status_manager.get_current_status().value
         return (
             current_status,
-            HTTPStatus.OK,
-        )
-
-    @bp.route("/api/ingest_operations/get_raw_data_source_instance", methods=["POST"])
-    def _get_raw_data_source_instance() -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(
-                request_json["ingestInstance"].upper()
-            )
-        except ValueError:
-            return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
-
-        ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
-            state_code, ingest_instance
-        )
-
-        if ingest_in_dataflow_enabled:
-            return (jsonify({"instance": ingest_instance.value}), HTTPStatus.OK)
-
-        status_manager = DirectIngestInstanceStatusManager(
-            state_code.value,
-            ingest_instance,
-        )
-        try:
-            raw_data_source_instance: Optional[
-                DirectIngestInstance
-            ] = status_manager.get_raw_data_source_instance()
-        except ValueError:
-            error_message = (
-                f"Could not locate a valid start of a rerun for region=[{state_code.value}], "
-                f"instance=[{ingest_instance.value}]",
-            )
-            return (jsonify(error_message), HTTPStatus.INTERNAL_SERVER_ERROR)
-
-        return (
-            jsonify(
-                {
-                    "instance": (
-                        raw_data_source_instance.value
-                        if raw_data_source_instance is not None
-                        else None
-                    )
-                }
-            ),
             HTTPStatus.OK,
         )
 
@@ -1174,24 +697,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         get_ingest_operations_store().purge_ingest_queues(state_code=state_code)
         return "", HTTPStatus.OK
 
-    # TODO(#20930): delete once ingest is enabled in dataflow in all states
-    @bp.route(
-        "/api/ingest_operations/is_ingest_in_dataflow_enabled",
-        methods=["POST"],
-    )
-    def _is_ingest_in_dataflow_enabled() -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(request_json["instance"].upper())
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        return (
-            jsonify(is_ingest_in_dataflow_enabled(state_code, ingest_instance)),
-            HTTPStatus.OK,
-        )
-
     @bp.route(
         "/api/ingest_operations/get_latest_ingest_dataflow_raw_data_watermarks/<state_code_str>/<instance_str>"
     )
@@ -1286,32 +791,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         try:
             delete_tables_in_pruning_datasets(
                 state_code, ingest_instance, BigQueryClientImpl()
-            )
-            return (
-                "",
-                HTTPStatus.OK,
-            )
-
-        except ValueError as error:
-            logging.exception(error)
-            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
-
-    @bp.route(
-        "/api/ingest_operations/trigger_calculation_dag",
-        methods=["POST"],
-    )
-    def _trigger_calculation_dag() -> Tuple[Union[str, Response], HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            trigger_calculation_dag_pubsub(
-                DirectIngestInstance.PRIMARY,
-                state_code,
-                trigger_ingest_dag_post_bq_refresh=False,
             )
             return (
                 "",

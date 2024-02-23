@@ -343,18 +343,3 @@ class IngestOpsEndpointTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {"state_person": 2341234, "state_staff": 1923})
-
-    @patch("recidiviz.admin_panel.routes.ingest_ops.is_ingest_in_dataflow_enabled")
-    def test_get_raw_data_source_instance_dataflow_enabled(
-        self, mock_dataflow_enabled: mock.MagicMock
-    ) -> None:
-        mock_dataflow_enabled.return_value = True
-
-        response = self.client.post(
-            "/api/ingest_operations/get_raw_data_source_instance",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-            json={"stateCode": "US_XX", "ingestInstance": "PRIMARY"},
-        )
-        # Assert
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, {"instance": "PRIMARY"})

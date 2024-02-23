@@ -140,17 +140,6 @@ export const listRawFilesInSandboxBucket = async (
   });
 };
 
-export const deleteContentsInSecondaryIngestViewDataset = async (
-  stateCode: string
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/delete_contents_in_secondary_ingest_view_dataset",
-    {
-      stateCode,
-    }
-  );
-};
-
 // Invalidate ingest pipeline runs for a state and instance
 export const invalidateIngestPipelineRuns = async (
   stateCode: string,
