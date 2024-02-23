@@ -285,6 +285,12 @@ class AgencyUserAccountAssociation(JusticeCountsBase):
     subscribed = Column(Boolean, nullable=True, default=False)
 
     agency = relationship("Agency", back_populates="user_account_assocs")
+
+    # Integer representing the number of days after a completed reporting period
+    # that a user wants to receive an email notifying them that they are missing
+    # metrics from that report.
+    days_after_time_period_to_send_email = Column(Integer, nullable=True)
+
     user_account = relationship("UserAccount", back_populates="agency_assocs")
 
 
@@ -395,24 +401,30 @@ class Agency(Source):
             "state_code": self.state_code,
             "fips_county_code": self.fips_county_code,
             "state": self.get_state_name(),
-            "team": [
-                {
-                    "name": assoc.user_account.name,
-                    "user_account_id": assoc.user_account_id,
-                    "auth0_user_id": assoc.user_account.auth0_user_id,
-                    "email": assoc.user_account.email,
-                    "invitation_status": assoc.invitation_status.value
-                    if assoc.invitation_status is not None
-                    else None,
-                    "role": assoc.role.value if assoc.role is not None else None,
-                }
-                for assoc in self.user_account_assocs
-            ]
-            if with_team is True
-            else [],
-            "settings": [setting.to_json() for setting in self.agency_settings]
-            if with_settings is True
-            else [],
+            "team": (
+                [
+                    {
+                        "name": assoc.user_account.name,
+                        "user_account_id": assoc.user_account_id,
+                        "auth0_user_id": assoc.user_account.auth0_user_id,
+                        "email": assoc.user_account.email,
+                        "invitation_status": (
+                            assoc.invitation_status.value
+                            if assoc.invitation_status is not None
+                            else None
+                        ),
+                        "role": assoc.role.value if assoc.role is not None else None,
+                    }
+                    for assoc in self.user_account_assocs
+                ]
+                if with_team is True
+                else []
+            ),
+            "settings": (
+                [setting.to_json() for setting in self.agency_settings]
+                if with_settings is True
+                else []
+            ),
             "is_superagency": self.is_superagency,
             "super_agency_id": self.super_agency_id,
             "is_dashboard_enabled": self.is_dashboard_enabled,
