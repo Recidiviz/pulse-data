@@ -62,7 +62,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
@@ -80,7 +80,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 from recidiviz.utils.context import on_exit
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -183,9 +182,7 @@ def verify_ingest_view_determinism(
 
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewManifestCompilerDelegateImpl(
-            region=region, schema_type=SchemaType.STATE
-        ),
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
     launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
         ingest_instance=ingest_instance

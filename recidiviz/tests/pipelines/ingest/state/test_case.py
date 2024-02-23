@@ -44,7 +44,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -142,10 +142,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
     def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:
         return IngestViewManifestCollector(
             cls.region(),
-            delegate=IngestViewManifestCompilerDelegateImpl(
-                cls.region(),
-                schema_type=SchemaType.STATE,
-            ),
+            delegate=StateSchemaIngestViewManifestCompilerDelegate(cls.region()),
         )
 
     @classmethod

@@ -30,7 +30,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
@@ -131,16 +130,15 @@ def yaml_mappings_filepath(region: DirectIngestRegion, ingest_view_name: str) ->
     )
 
 
-class IngestViewManifestCompilerDelegateImpl(
+class StateSchemaIngestViewManifestCompilerDelegate(
     IngestViewManifestCompilerDelegate, ModuleCollectorMixin
 ):
-    """Standard implementation of the IngestViewManifestCompilerDelegate, for use in
-    production code.
+    """Implementation of the IngestViewManifestCompilerDelegate for parsing ingest view
+    mappings for the STATE schema.
     """
 
-    def __init__(self, region: DirectIngestRegion, schema_type: SchemaType) -> None:
+    def __init__(self, region: DirectIngestRegion) -> None:
         self.region = region
-        self.schema_type = schema_type
         self.entity_cls_cache: Dict[str, Type[Entity]] = {}
         self.enum_cls_cache: Dict[str, Type[Enum]] = {}
 
@@ -163,31 +161,21 @@ class IngestViewManifestCompilerDelegateImpl(
         raise ValueError(f"Unexpected environment property: [{property_name}]")
 
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
-        if self.schema_type == SchemaType.STATE:
-            # All entities in the state schema have the state_code field - we add this
-            # as a common argument so we don't have to specify it in the yaml mappings.
-            return {"state_code": self.region.region_code}
-        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+        # All entities in the state schema have the state_code field - we add this
+        # as a common argument so we don't have to specify it in the yaml mappings.
+        return {"state_code": self.region.region_code}
 
     def _get_deserialize_factories_module(self) -> ModuleType:
-        if self.schema_type == SchemaType.STATE:
-            return state_deserialize_entity_factories
-        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+        return state_deserialize_entity_factories
 
     def _get_entities_module(self) -> ModuleType:
-        if self.schema_type == SchemaType.STATE:
-            return state_entities
-        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+        return state_entities
 
     def _get_enums_modules(self) -> List[ModuleType]:
-        if self.schema_type == SchemaType.STATE:
-            return [state_constants]
-        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+        return [state_constants]
 
     def _get_enum_submodule_prefix_filter(self) -> str:
-        if self.schema_type == SchemaType.STATE:
-            return "state"
-        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+        return "state"
 
     def get_entity_factory_class(self, entity_cls_name: str) -> Type[EntityFactory]:
         factory_entity_name = f"{entity_cls_name}Factory"

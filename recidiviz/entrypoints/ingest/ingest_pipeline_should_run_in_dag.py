@@ -35,13 +35,12 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IS_PRIMARY_INSTANCE_PROPERTY_NAME,
     IS_SECONDARY_INSTANCE_PROPERTY_NAME,
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import environment
 
 
@@ -77,9 +76,7 @@ def _secondary_has_manifest_views_with_launch_env_changes(
     )
     manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewManifestCompilerDelegateImpl(
-            region=region, schema_type=SchemaType.STATE
-        ),
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
 
     differing_launch_envs = False
@@ -118,9 +115,7 @@ def _has_launchable_ingest_views(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewManifestCompilerDelegateImpl(
-            region=region, schema_type=SchemaType.STATE
-        ),
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
     return (
         len(

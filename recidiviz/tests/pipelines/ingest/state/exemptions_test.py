@@ -25,13 +25,12 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities as entities_schema
 from recidiviz.pipelines.ingest.state.exemptions import (
@@ -52,9 +51,7 @@ class TestExemptions(unittest.TestCase):
             region = get_direct_ingest_region(region_code=state_code.value)
             ingest_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
                 ingest_instance=DirectIngestInstance.PRIMARY
@@ -116,9 +113,7 @@ class TestExemptions(unittest.TestCase):
             region = get_direct_ingest_region(region_code=state_code.value)
             ingest_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
                 ingest_instance=DirectIngestInstance.PRIMARY
