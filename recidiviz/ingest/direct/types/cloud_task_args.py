@@ -76,6 +76,8 @@ class IngestViewMaterializationArgs:
     # to generate the exported file.
     ingest_view_name: str = attr.ib()
 
+    # TODO(#20930): We should be able to eliminate this arg and all date-diffing related
+    #  logic now that we only query using "latest" logic.
     # The lower bound date for updates this query should include. Any rows that have not
     # changed since this date will not be included.
     lower_bound_datetime_exclusive: Optional[datetime.datetime] = attr.ib()

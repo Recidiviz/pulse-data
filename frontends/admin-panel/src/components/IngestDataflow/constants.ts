@@ -114,9 +114,6 @@ export type QueueMetadata = {
 export type IngestInstanceResources = {
   storageDirectoryPath: string;
   ingestBucketPath: string;
-  // TODO(#20930): Delete this field from the response once IID is shipped - the
-  // Postgres DB is no longer relevant.
-  dbName: string;
 };
 
 export type IngestRawFileProcessingStatus = {

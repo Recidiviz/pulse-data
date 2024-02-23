@@ -343,7 +343,6 @@ def main() -> int:
                 "recidiviz.pipelines",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_tasks",
-                "recidiviz.cloud_sql",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
                 "recidiviz.datasets",
@@ -454,7 +453,6 @@ def main() -> int:
                 "recidiviz.calculator",
                 "recidiviz.pipelines",
                 "recidiviz.case_triage",
-                "recidiviz.cloud_sql",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
                 "recidiviz.datasets",
@@ -471,6 +469,30 @@ def main() -> int:
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.view_registry",
+            }
+        ),
+    )
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.application_data_import.server",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.aggregated_metrics",
+                "recidiviz.big_query",
+                "recidiviz.calculator",
+                "recidiviz.cloud_sql",
+                "recidiviz.cloud_storage",
+                "recidiviz.common",
+                "recidiviz.datasets",
+                "recidiviz.ingest",
+                "recidiviz.metrics",
+                "recidiviz.monitoring",
+                "recidiviz.outliers",
+                "recidiviz.persistence",
+                "recidiviz.pipelines",
+                "recidiviz.task_eligibility",
+                "recidiviz.utils",
+                "recidiviz.validation",
             }
         ),
     )
