@@ -88,6 +88,44 @@ function displayJobState(status: string): JobState {
   throw new Error(`Found unknown job state ${status}`);
 }
 
+function bigQueryStateDatasetUrl(
+  isProduction: boolean,
+  instance: string,
+  stateCode: string,
+  tableName?: string
+): string {
+  // Returns a URL for the provided state's `us_xx_state` dataset in the BQ UI, or to a
+  // table in that dataset if tableName is provided.
+  const base = isProduction
+    ? "https://go/prod-state-dataset-table"
+    : "https://go/staging-state-dataset-table";
+
+  const datasetURL = `${base}/${stateCode.toLowerCase()}/${instance.toLowerCase()}`;
+  if (tableName === undefined) {
+    return datasetURL;
+  }
+  return `${datasetURL}/${tableName}`;
+}
+
+function bigQueryIngestViewResultsDatasetUrl(
+  isProduction: boolean,
+  instance: string,
+  stateCode: string,
+  ingestViewName?: string
+): string {
+  // Returns a URL for the provided state's ingest view results dataset in the BQ UI,
+  // or to a table in that dataset if ingestViewName is provided.
+  const base = isProduction
+    ? "https://go/prod-ingest-view-results"
+    : "https://go/staging-ingest-view-results";
+
+  const datasetURL = `${base}/${stateCode.toLowerCase()}/${instance.toLowerCase()}`;
+  if (ingestViewName === undefined) {
+    return datasetURL;
+  }
+  return `${datasetURL}/${ingestViewName}`;
+}
+
 const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   instance,
   env,
@@ -196,20 +234,18 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
       title: "Ingest View Name",
       dataIndex: "ingestViewName",
       key: "ingestViewName",
-      render: (ingestViewName: string) =>
-        isProduction ? (
-          <NewTabLink
-            href={`https://go/prod-ingest-view-results/${stateCode}/${instance}/${ingestViewName}`}
-          >
-            {ingestViewName}
-          </NewTabLink>
-        ) : (
-          <NewTabLink
-            href={`https://go/staging-ingest-view-results/${stateCode}/${instance}/${ingestViewName}`}
-          >
-            {ingestViewName}
-          </NewTabLink>
-        ),
+      render: (ingestViewName: string) => (
+        <NewTabLink
+          href={bigQueryIngestViewResultsDatasetUrl(
+            isProduction,
+            instance,
+            stateCode,
+            ingestViewName
+          )}
+        >
+          {ingestViewName}
+        </NewTabLink>
+      ),
     },
     {
       title: "Number of Rows",
@@ -223,20 +259,18 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
       title: "State Dataset Counts",
       dataIndex: "dataset",
       key: "dataset",
-      render: (tableName: string) =>
-        isProduction ? (
-          <NewTabLink
-            href={`https://go/prod-state-dataset-table/${stateCode}/${instance}/${tableName}`}
-          >
-            {tableName}
-          </NewTabLink>
-        ) : (
-          <NewTabLink
-            href={`https://go/staging-state-dataset-table/${stateCode}/${instance}/${tableName}`}
-          >
-            {tableName}
-          </NewTabLink>
-        ),
+      render: (tableName: string) => (
+        <NewTabLink
+          href={bigQueryStateDatasetUrl(
+            isProduction,
+            instance,
+            stateCode,
+            tableName
+          )}
+        >
+          {tableName}
+        </NewTabLink>
+      ),
     },
     {
       title: "Number of Rows",
@@ -315,37 +349,25 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
             )}
           </Descriptions.Item>
           <Descriptions.Item label="Ingest View Results Output Table" span={3}>
-            {isProduction ? (
-              <NewTabLink
-                href={`http://go/prod-ingest-view-results/${stateCode}/${instance}`}
-              >
-                {datasetNames?.ingestViewResultsDatasetName}
-              </NewTabLink>
-            ) : (
-              <NewTabLink
-                href={`http://go/staging-ingest-view-results/${stateCode}/${instance}`}
-              >
-                {datasetNames?.ingestViewResultsDatasetName}
-              </NewTabLink>
-            )}
+            <NewTabLink
+              href={bigQueryIngestViewResultsDatasetUrl(
+                isProduction,
+                instance,
+                stateCode
+              )}
+            >
+              {datasetNames?.ingestViewResultsDatasetName}
+            </NewTabLink>
           </Descriptions.Item>
           <Descriptions.Item
             label="State Dataset Results Output Table"
             span={3}
           >
-            {isProduction ? (
-              <NewTabLink
-                href={`go/prod-state-dataset-table/${stateCode}/${instance}`}
-              >
-                {datasetNames?.stateResultsDatasetName}
-              </NewTabLink>
-            ) : (
-              <NewTabLink
-                href={`go/staging-state-dataset-table/${stateCode}/${instance}`}
-              >
-                {datasetNames?.stateResultsDatasetName}
-              </NewTabLink>
-            )}
+            <NewTabLink
+              href={bigQueryStateDatasetUrl(isProduction, instance, stateCode)}
+            >
+              {datasetNames?.stateResultsDatasetName}
+            </NewTabLink>
           </Descriptions.Item>
           <Descriptions.Item label="Ingest DAG" span={3}>
             {isProduction ? (
