@@ -55,7 +55,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -435,9 +435,7 @@ def _get_ingest_view_builders(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewManifestCompilerDelegateImpl(
-            region=region, schema_type=SchemaType.STATE
-        ),
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,

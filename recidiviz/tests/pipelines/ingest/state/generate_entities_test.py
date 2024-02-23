@@ -25,10 +25,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
     IngestViewManifestCompiler,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -78,9 +77,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
             ),
         ]
         manifest_compiler = IngestViewManifestCompiler(
-            delegate=IngestViewManifestCompilerDelegateImpl(
-                region=self.region(), schema_type=SchemaType.STATE
-            )
+            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=self.region())
         )
         ingest_view_name = "ingest12"
         ingest_view_manifest = manifest_compiler.compile_manifest(

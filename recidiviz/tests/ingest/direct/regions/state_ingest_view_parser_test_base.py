@@ -45,11 +45,10 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
     IngestViewManifestCompiler,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
     ingest_view_manifest_dir,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -82,13 +81,6 @@ DEFAULT_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0)
 class StateIngestViewParserTestBase:
     """Base test class for ingest view parser tests."""
 
-    # TODO(#20930): Remove this method and definitions from all subclasses and just pass
-    #  in SchemaType.STATE for all tests.
-    @classmethod
-    @abstractmethod
-    def schema_type(cls) -> SchemaType:
-        pass
-
     @classmethod
     @abstractmethod
     def state_code(cls) -> StateCode:
@@ -113,9 +105,8 @@ class StateIngestViewParserTestBase:
     @property
     def _manifest_compiler(self) -> IngestViewManifestCompiler:
         return IngestViewManifestCompiler(
-            delegate=IngestViewManifestCompilerDelegateImpl(
-                region=self._region(),
-                schema_type=self.schema_type(),
+            delegate=StateSchemaIngestViewManifestCompilerDelegate(
+                region=self._region()
             )
         )
 
@@ -241,10 +232,7 @@ class StateIngestViewParserTestBase:
         region = self._region()
         collector = IngestViewManifestCollector(
             region=region,
-            delegate=IngestViewManifestCompilerDelegateImpl(
-                region=region,
-                schema_type=self.schema_type(),
-            ),
+            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
         )
         for manifest in collector.ingest_view_to_manifest.values():
             manifest_ast = manifest.output

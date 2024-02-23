@@ -60,7 +60,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     INGEST_VIEW_RESULTS_UPDATE_DATETIME,
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
@@ -649,9 +649,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             ):
                 ingest_view_manifest_collector = IngestViewManifestCollector(
                     region=region,
-                    delegate=IngestViewManifestCompilerDelegateImpl(
-                        region=region,
-                        schema_type=SchemaType.STATE,
+                    delegate=StateSchemaIngestViewManifestCompilerDelegate(
+                        region=region
                     ),
                 )
                 ingest_view_names = list(
@@ -690,10 +689,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region,
-                    schema_type=SchemaType.STATE,
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             fixtures_directory = os.path.join(
                 os.path.dirname(direct_ingest_fixtures.__file__),
@@ -733,9 +729,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             region_fixtures_directory = os.path.join(
                 os.path.dirname(direct_ingest_fixtures.__file__),
@@ -783,9 +777,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
         )
         ingest_view_manifest_collector = IngestViewManifestCollector(
             region=region,
-            delegate=IngestViewManifestCompilerDelegateImpl(
-                region=region, schema_type=SchemaType.STATE
-            ),
+            delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
         )
 
         ingest_view_to_test_names = {}
@@ -904,9 +896,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
 
             all_ingest_views = set(
@@ -941,9 +931,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             if region.region_module.__file__ is None:
                 raise ValueError(f"No file associated with {region.region_module}.")
@@ -978,9 +966,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             view_collector = DirectIngestViewQueryBuilderCollector(
                 region,
@@ -1080,9 +1066,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewManifestCompilerDelegateImpl(
-                    region=region, schema_type=SchemaType.STATE
-                ),
+                delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
             for ingest_instance in DirectIngestInstance:
                 for (

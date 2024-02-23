@@ -51,7 +51,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
     IngestViewManifestCompiler,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     to_string_value_converter,
@@ -63,7 +63,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -132,9 +131,7 @@ def parse_results(
     ingest_instance = DirectIngestInstance.PRIMARY
     results_update_datetime = datetime.now()
     manifest_compiler = IngestViewManifestCompiler(
-        delegate=IngestViewManifestCompilerDelegateImpl(
-            region=region, schema_type=SchemaType.STATE
-        )
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region)
     )
 
     log_path = os.path.join(tempfile.gettempdir(), "mappings_errors.txt")

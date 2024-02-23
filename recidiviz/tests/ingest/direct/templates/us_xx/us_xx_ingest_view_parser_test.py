@@ -18,7 +18,6 @@
 import unittest
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
 )
@@ -26,10 +25,6 @@ from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base im
 
 class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
     """Parser unit tests for each US_XX ingest view query results to be ingested."""
-
-    @classmethod
-    def schema_type(cls) -> SchemaType:
-        raise NotImplementedError("Choose one of STATE or JAILS")
 
     @classmethod
     def state_code(cls) -> StateCode:

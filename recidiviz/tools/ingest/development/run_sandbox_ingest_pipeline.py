@@ -59,7 +59,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    IngestViewManifestCompilerDelegateImpl,
+    StateSchemaIngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
@@ -176,9 +176,7 @@ def get_extra_pipeline_parameter_args(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewManifestCompilerDelegateImpl(
-            region=region, schema_type=SchemaType.STATE
-        ),
+        delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
     launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(
         ingest_instance=ingest_instance
