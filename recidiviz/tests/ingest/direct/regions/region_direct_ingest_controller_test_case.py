@@ -56,8 +56,7 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestFixtureDataFileType,
-    direct_ingest_fixture_path,
+    DirectIngestTestFixturePath,
     load_dataframe_from_path,
 )
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
@@ -205,11 +204,10 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
             .input_columns
         )
         records = load_dataframe_from_path(
-            raw_fixture_path=direct_ingest_fixture_path(
+            raw_fixture_path=DirectIngestTestFixturePath.for_extract_and_merge_fixture(
                 region_code=self.region_code().value,
-                fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
                 file_name=f"{test_name}.csv",
-            ),
+            ).full_path(),
             fixture_columns=fixture_columns,
         ).to_dict("records")
 

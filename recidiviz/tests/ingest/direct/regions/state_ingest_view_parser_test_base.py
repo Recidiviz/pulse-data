@@ -54,10 +54,7 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     print_entity_trees,
 )
-from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestFixtureDataFileType,
-    direct_ingest_fixture_path,
-)
+from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
 from recidiviz.tests.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_test import (
     ingest_mappingest_json_schema_path,
 )
@@ -122,11 +119,10 @@ class StateIngestViewParserTestBase:
         enum_parser_manifest: EnumMappingManifest,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
     ) -> None:
-        fixture_path = direct_ingest_fixture_path(
+        fixture_path = DirectIngestTestFixturePath.for_enum_raw_text_fixture(
             region_code=self.region_code(),
             file_name=f"{file_tag}.csv",
-            fixture_file_type=DirectIngestFixtureDataFileType.ENUM_RAW_TEXT,
-        )
+        ).full_path()
 
         contents_handle = LocalFileContentsHandle(fixture_path, cleanup_file=False)
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
@@ -153,11 +149,10 @@ class StateIngestViewParserTestBase:
 
         in_gcp_staging = project == GCP_PROJECT_STAGING
         in_gcp_prod = project == GCP_PROJECT_PRODUCTION
-        fixture_path = direct_ingest_fixture_path(
+        fixture_path = DirectIngestTestFixturePath.for_extract_and_merge_fixture(
             region_code=self.region_code(),
             file_name=f"{ingest_view_name}.csv",
-            fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
-        )
+        ).full_path()
         with patch.object(
             environment, "in_gcp_staging", return_value=in_gcp_staging
         ), patch.object(environment, "in_gcp_production", return_value=in_gcp_prod):

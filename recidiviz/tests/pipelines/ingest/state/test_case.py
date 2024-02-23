@@ -96,8 +96,7 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fixture_util import (
-    ingest_view_raw_table_dependency_fixture_path,
-    ingest_view_results_fixture_path,
+    DirectIngestTestFixturePath,
     load_dataframe_from_path,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
@@ -190,11 +189,11 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         """Reads in fixtures for ingest view results - if there is no metadata associated
         with the ingest view results, generates a default metadata for the results."""
         return load_dataframe_from_path(
-            raw_fixture_path=ingest_view_results_fixture_path(
+            raw_fixture_path=DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
                 region_code=self.region().region_code,
                 ingest_view_name=ingest_view_name,
                 file_name=f"{test_name}.csv",
-            ),
+            ).full_path(),
             fixture_columns=[
                 *self.ingest_view_manifest_collector()
                 .ingest_view_to_manifest[ingest_view_name]
@@ -567,11 +566,11 @@ class StateIngestPipelineTestCase(
         self.load_rows_into_table(
             table_address,
             data=load_dataframe_from_path(
-                raw_fixture_path=ingest_view_raw_table_dependency_fixture_path(
-                    self.region().region_code,
+                raw_fixture_path=DirectIngestTestFixturePath.for_raw_file_fixture(
+                    region_code=self.region().region_code,
                     raw_file_dependency_config=raw_table_dependency_config,
                     file_name=f"{test_name}.csv",
-                ),
+                ).full_path(),
                 fixture_columns=[c.name for c in schema],
             ).to_dict("records"),
         )

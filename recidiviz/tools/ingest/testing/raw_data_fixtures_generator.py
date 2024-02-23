@@ -44,9 +44,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
-from recidiviz.tests.ingest.direct.fixture_util import (
-    ingest_view_raw_table_dependency_fixture_path,
-)
+from recidiviz.tests.ingest.direct.fixture_util import DirectIngestTestFixturePath
 
 Faker.seed(0)
 FAKE = Faker(locale=["en-US"])
@@ -143,11 +141,11 @@ class RawDataFixturesGenerator:
     def get_output_fixture_path(
         self, raw_file_dependency_config: DirectIngestViewRawFileDependency
     ) -> str:
-        return ingest_view_raw_table_dependency_fixture_path(
+        return DirectIngestTestFixturePath.for_raw_file_fixture(
             region_code=self.region_code,
             file_name=f"{self.output_filename}.csv",
             raw_file_dependency_config=raw_file_dependency_config,
-        )
+        ).full_path()
 
     def write_results_to_csv(
         self, query_results: DataFrame, output_fixture_path: str

@@ -63,8 +63,7 @@ from recidiviz.tests.big_query.big_query_test_helper import (
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
 from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tests.ingest.direct.fixture_util import (
-    ingest_view_raw_table_dependency_fixture_path,
-    ingest_view_results_fixture_path,
+    DirectIngestTestFixturePath,
     load_dataframe_from_path,
     replace_empty_with_null,
 )
@@ -150,10 +149,12 @@ class IngestViewQueryTester:
             file_update_dt=file_update_dt,
         )
 
-        expected_output_fixture_path = ingest_view_results_fixture_path(
-            region_code=region_code,
-            ingest_view_name=ingest_view.ingest_view_name,
-            file_name=fixtures_files_name,
+        expected_output_fixture_path = (
+            DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
+                region_code=region_code,
+                ingest_view_name=ingest_view.ingest_view_name,
+                file_name=fixtures_files_name,
+            ).full_path()
         )
         results = self._query_ingest_view_for_builder(ingest_view, query_run_dt)
 
@@ -247,11 +248,11 @@ class IngestViewQueryTester:
         raw_fixtures_name: str,
         file_update_dt: datetime.datetime,
     ) -> pd.DataFrame:
-        raw_fixture_path = ingest_view_raw_table_dependency_fixture_path(
+        raw_fixture_path = DirectIngestTestFixturePath.for_raw_file_fixture(
             region_code=region_code,
             raw_file_dependency_config=raw_file_dependency_config,
             file_name=raw_fixtures_name,
-        )
+        ).full_path()
         print(
             f"Loading fixture data for raw file [{raw_file_dependency_config.file_tag}] "
             f"from file path [{raw_fixture_path}]."
