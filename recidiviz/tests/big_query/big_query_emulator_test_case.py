@@ -66,7 +66,8 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         # Lists all running containers and looks for one with port 9050 exposed (this
         # is the port used by the BQ emulator).
         bq_emulator_container_ids = run_command(
-            'docker ps --filter "expose=9050" -q', timeout_sec=10
+            'docker ps --filter "expose=9050" -q',
+            timeout_sec=10,
         )
         if not bq_emulator_container_ids:
             raise ValueError(
