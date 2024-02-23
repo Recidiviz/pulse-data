@@ -14,14 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-
-import { message } from "antd";
-
-import {
-  getCurrentIngestInstanceStatus,
-  getRawDataSourceInstance,
-} from "../../AdminPanelAPI";
-import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
+import { getCurrentIngestInstanceStatus } from "../../AdminPanelAPI";
 import { DirectIngestInstance } from "../IngestDataflow/constants";
 
 export const fetchCurrentIngestInstanceStatus = async (
@@ -30,57 +23,4 @@ export const fetchCurrentIngestInstanceStatus = async (
 ): Promise<string> => {
   const response = await getCurrentIngestInstanceStatus(stateCode, instance);
   return response.text();
-};
-
-export const fetchCurrentRawDataSourceInstance = async (
-  stateCode: string,
-  instance: DirectIngestInstance
-): Promise<DirectIngestInstance | null> => {
-  try {
-    const response = await getRawDataSourceInstance(stateCode, instance);
-    const json = await response.json();
-    if (response.status === 500) {
-      message.error(
-        `An error occurred when attempting to retrieve raw data source instance of secondary rerun: ${json}`,
-        8
-      );
-      return null;
-    }
-    return json.instance;
-  } catch (err) {
-    message.error(
-      `An error occurred when attempting to retrieve raw data source instance of secondary rerun: ${err}`,
-      8
-    );
-    return null;
-  }
-};
-
-export const fetchDataflowEnabled = async (
-  stateCode: string
-): Promise<boolean> => {
-  const primaryResponse = await isIngestInDataflowEnabled(
-    stateCode,
-    DirectIngestInstance.PRIMARY
-  );
-  const isEnabledPrimary = await primaryResponse.json();
-  const secondaryResponse = await isIngestInDataflowEnabled(
-    stateCode,
-    DirectIngestInstance.SECONDARY
-  );
-  const isEnabledSecondary = await secondaryResponse.json();
-
-  if (typeof isEnabledPrimary !== "boolean") {
-    throw new Error(
-      "Received non-boolean result for isIngestInDataflowEnabled in PRIMARY"
-    );
-  }
-
-  if (typeof isEnabledSecondary !== "boolean") {
-    throw new Error(
-      "Received non-boolean result for isIngestInDataflowEnabled in SECONDARY"
-    );
-  }
-
-  return isEnabledPrimary && isEnabledSecondary;
 };

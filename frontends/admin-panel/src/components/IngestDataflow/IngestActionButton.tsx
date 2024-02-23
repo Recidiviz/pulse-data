@@ -18,8 +18,6 @@ import { Button, message } from "antd";
 import { useState } from "react";
 
 import {
-  exportDatabaseToGCS,
-  startIngestRerun,
   triggerTaskScheduler,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
@@ -28,7 +26,6 @@ import ActionRegionConfirmationForm, {
   RegionAction,
   RegionActionContext,
   regionActionNames,
-  StartIngestRerunContext,
 } from "../Utilities/ActionRegionConfirmationForm";
 import { DirectIngestInstance, QueueState } from "./constants";
 
@@ -90,42 +87,6 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
         await updateIngestQueuesState(stateCode, QueueState.RUNNING);
         setActionConfirmed();
         break;
-
-      // TODO(#24652): delete after dataflow is fully enabled
-      case RegionAction.StartIngestRerun:
-        if (instance === undefined) {
-          throw new Error(
-            "Must have a defined instance before starting an ingest rerun."
-          );
-        }
-        if (context.ingestAction !== RegionAction.StartIngestRerun) {
-          throw new Error(
-            "Context for ingest rerun must be of type StartIngestRerunContext."
-          );
-        }
-        if (
-          (context as StartIngestRerunContext)
-            .ingestRerunRawDataSourceInstance === undefined
-        ) {
-          throw new Error(
-            "Context for ingest rerun must have a defined ingestRerunRawDataSourceInstance."
-          );
-        } else {
-          const res = await startIngestRerun(
-            stateCode,
-            instance,
-            (context as StartIngestRerunContext)
-              .ingestRerunRawDataSourceInstance
-          );
-          if (res.status === 200) {
-            message.success(`Start Ingest Rerun Succeeded!`, 7);
-          } else {
-            const text = await res.text();
-            message.error(`Start Ingest Rerun Failed: ${text}`, 7);
-          }
-        }
-        setActionConfirmed();
-        break;
       case RegionAction.StartRawDataReimport:
         if (context.ingestAction !== RegionAction.StartRawDataReimport) {
           throw new Error(
@@ -141,19 +102,6 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
           }
         }
         setActionConfirmed();
-        break;
-      case RegionAction.ExportToGCS:
-        if (instance) {
-          message.info("Exporting database...");
-          const r = await exportDatabaseToGCS(stateCode, instance);
-          if (r.status >= 400) {
-            const text = await r.text();
-            message.error(`Export to GCS failed: ${text}`);
-          } else {
-            message.success("GCS Export succeeded!");
-          }
-          setActionConfirmed();
-        }
         break;
       default:
         throw unsupportedIngestAction;

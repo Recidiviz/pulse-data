@@ -36,22 +36,6 @@ export const triggerTaskScheduler = async (
   );
 };
 
-// TODO(#24652): delete once dataflow is fully enabled
-//  Start Ingest Rerun
-export const startIngestRerun = async (
-  regionCode: string,
-  instance: DirectIngestInstance,
-  rawDataSourceInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/${regionCode}/start_ingest_rerun`,
-    {
-      instance,
-      rawDataSourceInstance,
-    }
-  );
-};
-
 //  Start Raw Data Reimport
 export const startRawDataReimport = async (
   regionCode: string
@@ -103,23 +87,6 @@ export const getIngestInstanceResources = async (
   );
 };
 
-// Get ingest view summaries
-export const getIngestViewSummaries = async (
-  regionCode: string,
-  ingestInstance: DirectIngestInstance,
-  controller: AbortController
-): Promise<Response> => {
-  return fetch(
-    `/admin/api/ingest_operations/${regionCode}/get_ingest_view_summaries/${ingestInstance}`,
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      signal: controller.signal,
-    }
-  );
-};
-
 // Get ingest raw file processing status
 export const getIngestRawFileProcessingStatus = async (
   regionCode: string,
@@ -135,66 +102,6 @@ export const getIngestRawFileProcessingStatus = async (
       signal: controller.signal,
     }
   );
-};
-
-// Start CloudSQL export to GCS
-export const exportDatabaseToGCS = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(`/api/ingest_operations/export_database_to_gcs`, {
-    stateCode,
-    ingestInstance,
-  });
-};
-
-// Start CloudSQL import from GCS
-export const importDatabaseFromGCS = async (
-  stateCode: string,
-  importToDatabaseInstance: DirectIngestInstance,
-  exportedDatabaseInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(`/api/ingest_operations/import_database_from_gcs`, {
-    stateCode,
-    importToDatabaseInstance,
-    exportedDatabaseInstance,
-  });
-};
-
-// Clean up CloudSQL import files
-export const deleteDatabaseImportGCSFiles = async (
-  stateCode: string,
-  exportedDatabaseInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/delete_database_import_gcs_files`,
-    {
-      stateCode,
-      exportedDatabaseInstance,
-    }
-  );
-};
-
-// Acquire BQ Export lock for the STATE database
-export const acquireBQExportLock = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(`/api/ingest_operations/acquire_ingest_lock`, {
-    stateCode,
-    ingestInstance,
-  });
-};
-
-// Release BQ Export lock for the STATE database
-export const releaseBQExportLock = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(`/api/ingest_operations/release_ingest_lock`, {
-    stateCode,
-    ingestInstance,
-  });
 };
 
 // Import raw files to BigQuery Sandbox
@@ -233,36 +140,6 @@ export const listRawFilesInSandboxBucket = async (
   });
 };
 
-// Move ingest view results to backup dataset
-export const moveIngestViewResultsToBackup = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/move_ingest_view_results_to_backup",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Move ingest view results between instances
-export const moveIngestViewResultsBetweenInstances = async (
-  stateCode: string,
-  srcIngestInstance: DirectIngestInstance,
-  destIngestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/move_ingest_view_results_between_instances",
-    {
-      stateCode,
-      srcIngestInstance,
-      destIngestInstance,
-    }
-  );
-};
-
 export const deleteContentsInSecondaryIngestViewDataset = async (
   stateCode: string
 ): Promise<Response> => {
@@ -270,36 +147,6 @@ export const deleteContentsInSecondaryIngestViewDataset = async (
     "/api/ingest_operations/flash_primary_db/delete_contents_in_secondary_ingest_view_dataset",
     {
       stateCode,
-    }
-  );
-};
-
-// Mark instance ingest view data as invalidated
-export const markInstanceIngestViewDataInvalidated = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/mark_instance_ingest_view_data_invalidated",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Transfer ingest view metadata to new instance
-export const transferIngestViewMetadataToNewInstance = async (
-  stateCode: string,
-  srcIngestInstance: DirectIngestInstance,
-  destIngestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/transfer_ingest_view_metadata_to_new_instance",
-    {
-      stateCode,
-      srcIngestInstance,
-      destIngestInstance,
     }
   );
 };
@@ -322,14 +169,6 @@ export const invalidateIngestPipelineRuns = async (
 export const getAllIngestInstanceStatuses = async (): Promise<Response> => {
   return getResource("/api/ingest_operations/all_ingest_instance_statuses");
 };
-
-// Get all ingest dataflow pipeline enabled statuses
-export const getAllIngestInstanceDataflowEnabledStatuses =
-  async (): Promise<Response> => {
-    return getResource(
-      "/api/ingest_operations/all_ingest_instance_dataflow_enabled_status"
-    );
-  };
 
 // Get all latest ingest dataflow pipeline statuses
 export const getAllLatestDataflowJobs = async (): Promise<Response> => {
@@ -378,7 +217,7 @@ export const getLatestRawDataTagsNotMeetingWatermark = async (
   );
 };
 
-// Get latest run ingest view results for the state and instance
+// Get latest ingest dataflow pipeline run ingest view results for the state and instance
 export const getLatestRunIngestViewResults = async (
   stateCode: string,
   instance: string
@@ -413,20 +252,6 @@ export const getCurrentIngestInstanceStatus = async (
 ): Promise<Response> => {
   return postWithURLAndBody(
     "/api/ingest_operations/get_current_ingest_instance_status",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Gets the raw data source instance of the most recent rerun (if present)
-export const getRawDataSourceInstance = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/get_raw_data_source_instance",
     {
       stateCode,
       ingestInstance,
@@ -547,20 +372,6 @@ export const purgeIngestQueues = async (
   });
 };
 
-// Determine if ingest in dataflow is enabled
-export const isIngestInDataflowEnabled = async (
-  stateCode: string,
-  instance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/is_ingest_in_dataflow_enabled",
-    {
-      stateCode,
-      instance,
-    }
-  );
-};
-
 // Delete tables in the datasets related to raw data pruning
 export const deleteTablesInPruningDatasets = async (
   stateCode: string,
@@ -573,15 +384,6 @@ export const deleteTablesInPruningDatasets = async (
       instance,
     }
   );
-};
-
-// Run Calculation DAG For State
-export const runCalculationDAGForState = async (
-  stateCode: string
-): Promise<Response> => {
-  return postWithURLAndBody("/api/ingest_operations/trigger_calculation_dag", {
-    stateCode,
-  });
 };
 
 // Run Ingest DAG For State

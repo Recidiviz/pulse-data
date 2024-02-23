@@ -69,6 +69,8 @@ const getLabelForStatus = (status: IngestStatus) => {
       return "Entity Ingest";
     case IngestStatus.UP_TO_DATE:
       return "Ingest Up to Date";
+    case IngestStatus.RAW_DATA_UP_TO_DATE:
+      return "Raw Data Import Up to Date";
     default:
       return "";
   }

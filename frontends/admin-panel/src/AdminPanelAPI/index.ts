@@ -99,26 +99,13 @@ export const fetchValidationErrorTable = async (
 };
 
 export {
-  acquireBQExportLock,
   changeIngestInstanceStatus,
-  deleteDatabaseImportGCSFiles,
-  exportDatabaseToGCS,
   fetchIngestStateCodes,
-  getAllIngestInstanceDataflowEnabledStatuses,
   getAllIngestInstanceStatuses,
   getCurrentIngestInstanceStatus,
   getCurrentIngestInstanceStatusInformation,
-  getIngestViewSummaries as getIngestInstanceSummary,
   getIngestQueuesState,
   getIngestRawFileProcessingStatus,
-  getRawDataSourceInstance,
-  importDatabaseFromGCS,
-  markInstanceIngestViewDataInvalidated,
-  moveIngestViewResultsBetweenInstances,
-  moveIngestViewResultsToBackup,
-  releaseBQExportLock,
-  startIngestRerun,
-  transferIngestViewMetadataToNewInstance,
   triggerTaskScheduler,
   updateIngestQueuesState,
 } from "./IngestOperations";

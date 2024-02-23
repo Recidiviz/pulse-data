@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { PageHeader, Popover, Tag } from "antd";
+import { PageHeader, Popover } from "antd";
 import classNames from "classnames";
 import { useEffect, useState } from "react";
 
@@ -35,12 +35,11 @@ import {
 interface IngestActionsPageHeaderProps {
   stateCode: string;
   instance: DirectIngestInstance;
-  dataflowEnabled: boolean;
 }
 
 const IngestInstanceActionsPageHeader: React.FC<
   IngestActionsPageHeaderProps
-> = ({ stateCode, instance, dataflowEnabled }) => {
+> = ({ stateCode, instance }) => {
   const [statusInfo, setStatusInfo] = useState<
     IngestInstanceStatusInfo | undefined
   >();
@@ -68,8 +67,8 @@ const IngestInstanceActionsPageHeader: React.FC<
   return (
     <PageHeader
       title={instance}
-      tags={[
-        ...(statusInfo
+      tags={
+        statusInfo
           ? [
               <Popover content={IngestInstanceStatusPopoverContent}>
                 <div
@@ -83,21 +82,10 @@ const IngestInstanceActionsPageHeader: React.FC<
                 </div>
               </Popover>,
             ]
-          : []),
-        ...(dataflowEnabled ? [<Tag color="green">DATAFLOW ENABLED</Tag>] : []),
-      ]}
+          : []
+      }
       extra={
         <>
-          {/* TODO(#20930): Delete button once ingest in dataflow enabled for all states */}
-          {!dataflowEnabled ? (
-            <IngestActionButton
-              style={{ marginRight: 5 }}
-              action={RegionAction.ExportToGCS}
-              buttonText={regionActionNames[RegionAction.ExportToGCS]}
-              instance={instance}
-              stateCode={stateCode}
-            />
-          ) : null}
           <IngestActionButton
             style={{ marginRight: 5 }}
             action={RegionAction.TriggerTaskScheduler}
@@ -113,18 +101,8 @@ const IngestInstanceActionsPageHeader: React.FC<
                 ? { marginRight: 5 }
                 : { display: "none" }
             }
-            action={
-              // TODO(#24652): remove rerun condition once dataflow is fully enabled
-              dataflowEnabled
-                ? RegionAction.StartRawDataReimport
-                : RegionAction.StartIngestRerun
-            }
-            buttonText={
-              // TODO(#24652): remove rerun condition once dataflow is fully enabled
-              dataflowEnabled
-                ? regionActionNames[RegionAction.StartRawDataReimport]
-                : regionActionNames[RegionAction.StartIngestRerun]
-            }
+            action={RegionAction.StartRawDataReimport}
+            buttonText={regionActionNames[RegionAction.StartRawDataReimport]}
             instance={instance}
             stateCode={stateCode}
             type="primary"
