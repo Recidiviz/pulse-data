@@ -15,13 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query containing CDCR staff member information. Currently only looks at supervision
-agents.
+agents. See `us_ca.md` for more information about how this query works.
 
 Supervision agents with multiple badge numbers are included multiple times (once with 
 each identifying badge number). Agents with null badge numbers are currently excluded.
-
-Tickets to improve this view:
-1. #TODO(#21323): Create a validation view to track officers with multiple badge numbers.
 
 Things to consider making tickets for:
 1. In progress question about what it means for an agent to have a null badge number.
@@ -33,12 +30,54 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH staff_from_AgentParole AS (
   SELECT
     DISTINCT BadgeNumber,
-    TRIM(SPLIT(ParoleAgentName, '|')[OFFSET(0)]) as LastName,
-    TRIM(SPLIT(ParoleAgentName, '|')[OFFSET(1)]) as FirstName,
-  FROM {AgentParole}
+    UPPER(TRIM(SPLIT(ParoleAgentName, '|')[OFFSET(0)])) AS LastName,
+    UPPER(TRIM(SPLIT(ParoleAgentName, '|')[OFFSET(1)])) AS FirstName,
+  FROM {AgentParole@ALL}
   WHERE BadgeNumber IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY update_datetime DESC) = 1
+),
+staff_from_PersonParole AS (
+  SELECT
+    DISTINCT BadgeNumber,
+    UPPER(TRIM(SPLIT(ParoleAgentName, ',')[OFFSET(0)])) AS LastName,
+    UPPER(TRIM(SPLIT(ParoleAgentName, ',')[OFFSET(1)])) AS FirstName,
+  FROM {PersonParole@ALL}
+  WHERE BadgeNumber IS NOT NULL
+  QUALIFY row_number() OVER (PARTITION BY BadgeNumber ORDER BY update_datetime DESC) = 1
+),
+unioned AS (
+  SELECT 
+    BadgeNumber,
+    LastName,
+    FirstName,
+    0 AS sourceTablePriority
+  FROM staff_from_AgentParole
+
+  UNION ALL
+  
+  SELECT 
+    BadgeNumber,
+    LastName,
+    FirstName,
+    1 as sourceTablePriority
+  FROM staff_from_PersonParole
+), final as (
+  SELECT 
+    BadgeNumber,
+    LastName,
+    FirstName
+  FROM unioned
+  WHERE True -- Required because of https://github.com/google/zetasql/issues/124
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY sourceTablePriority) = 1
+)
+SELECT 
+  BadgeNumber,
+  LastName,
+  FirstName
+FROM final
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

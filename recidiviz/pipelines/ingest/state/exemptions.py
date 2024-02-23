@@ -22,8 +22,6 @@ from recidiviz.common.constants.states import StateCode
 INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS = {
     # TODO(#24299) Remove this exemption once conflicts no longer appear.
     StateCode.US_PA: {"sci_incarceration_period"},
-    # TODO(#24658) Remove this exemption once conflicts no longer appear.
-    StateCode.US_CA: {"staff"},
 }
 
 # The names of each global uniqueness constraint with known failures by state.
