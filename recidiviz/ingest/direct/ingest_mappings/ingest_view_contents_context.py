@@ -19,11 +19,9 @@ logic from the IngestViewManifest. This class may contain context that differs
 between rows in the ingest view results.
 """
 import abc
-import datetime
-from typing import Optional, Union
+from typing import Union
 
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
-    INGEST_VIEW_RESULTS_UPDATE_DATETIME,
     IS_LOCAL_PROPERTY_NAME,
     IS_PRIMARY_INSTANCE_PROPERTY_NAME,
     IS_PRODUCTION_PROPERTY_NAME,
@@ -53,13 +51,8 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
     production code.
     """
 
-    def __init__(
-        self,
-        ingest_instance: DirectIngestInstance,
-        results_update_datetime: Optional[datetime.datetime] = None,
-    ) -> None:
+    def __init__(self, ingest_instance: DirectIngestInstance) -> None:
         self.ingest_instance = ingest_instance
-        self.results_update_datetime = results_update_datetime
 
     def get_env_property(self, property_name: str) -> Union[bool, str]:
         if property_name == IS_LOCAL_PROPERTY_NAME:
@@ -72,14 +65,5 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
             return self.ingest_instance == DirectIngestInstance.PRIMARY
         if property_name == IS_SECONDARY_INSTANCE_PROPERTY_NAME:
             return self.ingest_instance == DirectIngestInstance.SECONDARY
-        if property_name == INGEST_VIEW_RESULTS_UPDATE_DATETIME:
-            if self.results_update_datetime is None:
-                raise ValueError(
-                    "The results_update_datetime is not defined for this context - "
-                    "cannot use this to parse a manifest that uses an "
-                    "`$env: results_update_datetime` clause."
-                )
-            results_update_datetime_str = self.results_update_datetime.isoformat()
-            return results_update_datetime_str
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")

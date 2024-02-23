@@ -16,7 +16,6 @@
 # =============================================================================
 """A PTransform that generates entities from ingest view results."""
 from copy import deepcopy
-from datetime import datetime
 from typing import Any, Dict, Tuple
 
 import apache_beam as beam
@@ -57,6 +56,9 @@ class GenerateEntities(beam.PTransform):
         self._state_code = state_code
         self._ingest_instance = ingest_instance
         self._ingest_view_manifest = ingest_view_manifest
+        self._parser_context = IngestViewContentsContextImpl(
+            ingest_instance=self._ingest_instance,
+        )
 
     def expand(
         self, input_or_inputs: beam.PCollection[Dict[str, Any]]
@@ -92,10 +94,7 @@ class GenerateEntities(beam.PTransform):
         entity = one(
             self._ingest_view_manifest.parse_contents(
                 contents_iterator=iter([row]),
-                context=IngestViewContentsContextImpl(
-                    ingest_instance=self._ingest_instance,
-                    results_update_datetime=datetime.fromtimestamp(upperbound_date),
-                ),
+                context=self._parser_context,
             )
         )
 

@@ -33,7 +33,6 @@ import logging
 import os
 import tempfile
 import traceback
-from datetime import datetime
 from typing import Dict, Union
 
 from tqdm import tqdm
@@ -129,7 +128,6 @@ def parse_results(
 ) -> None:
     """Parses the ingest view results, collecting any errors and writing them to a file."""
     ingest_instance = DirectIngestInstance.PRIMARY
-    results_update_datetime = datetime.now()
     manifest_compiler = IngestViewManifestCompiler(
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region)
     )
@@ -175,7 +173,6 @@ def parse_results(
             result_callable=result_processor,
             context=IngestViewContentsContextImpl(
                 ingest_instance=ingest_instance,
-                results_update_datetime=results_update_datetime,
             ),
         )
 
