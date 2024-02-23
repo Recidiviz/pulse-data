@@ -15,12 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert, Spin } from "antd";
-import { useCallback } from "react";
+import { Alert } from "antd";
 import { useParams } from "react-router-dom";
 
-import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
-import { useFetchedDataJSON } from "../../hooks";
 import { DirectIngestInstance } from "./constants";
 import IngestDataflowInstanceCard from "./IngestDataflowInstanceCard";
 import IngestInstanceActionsPageHeader from "./IngestInstanceActionsPageHeader";
@@ -38,29 +35,9 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
   }>();
 
   const directInstance = getInstance(instance);
-  const fetchDataflowEnabled = useCallback(async () => {
-    if (directInstance === undefined) {
-      throw new Error("Invalid instance");
-    }
-    return isIngestInDataflowEnabled(stateCode, directInstance);
-  }, [stateCode, directInstance]);
-  const { loading, data: dataflowEnabled } =
-    useFetchedDataJSON<boolean>(fetchDataflowEnabled);
 
   if (!directInstance) {
     return <Alert message="Invalid instance" type="error" />;
-  }
-
-  if (loading) {
-    return (
-      <div className="center">
-        <Spin size="large" />
-      </div>
-    );
-  }
-
-  if (dataflowEnabled === undefined) {
-    return <Alert message="Unable to load dataflow gating info" type="error" />;
   }
 
   return (
@@ -68,7 +45,6 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
       <IngestInstanceActionsPageHeader
         instance={directInstance}
         stateCode={stateCode}
-        dataflowEnabled={dataflowEnabled}
       />
       {env === "development" ? (
         <Alert
