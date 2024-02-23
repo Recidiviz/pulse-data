@@ -28,7 +28,7 @@ input_columns:
   - CRIME_DESCRIPTION
   - CONVICTED_DATE # date_charged
   - COUNTY
-  - ORS_NUMBER # statute # need to link to NCIC table for NCIC_CODE
+  - ORS_STATUTE # statute # need to link to NCIC table for NCIC_CODE
   - ORS_DESCRIPTION
   - PAROLE_RELEASE_DATE
   - PAROLE_POSSIBLE
@@ -128,7 +128,7 @@ output:
                       date_charged: CONVICTED_DATE
                       county_code: COUNTY
                       ncic_code: NCIC_CODE
-                      statute: ORS_NUMBER
+                      statute: ORS_STATUTE
                       description: CRIME_DESCRIPTION
                       classification_type:
                         $enum_mapping:
@@ -261,7 +261,7 @@ output:
                       date_charged: CONVICTED_DATE
                       county_code: COUNTY
                       ncic_code: NCIC_CODE
-                      statute: ORS_NUMBER
+                      statute: ORS_STATUTE
                       description: CRIME_DESCRIPTION
                       classification_type:
                         $enum_mapping:
