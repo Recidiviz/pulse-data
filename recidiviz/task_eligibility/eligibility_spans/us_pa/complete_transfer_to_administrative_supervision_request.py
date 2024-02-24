@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Builder for a task eligibility spans view that shows the spans of time during which
-someone in PA is eligible for transfer to Administrative Supervision.
+someone in PA is eligible for transfer to administrative supervision.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
@@ -27,11 +27,6 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     on_parole_at_least_one_year,
     supervision_level_is_not_limited,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
-    no_high_sanctions_in_past_year,
-    fulfilled_requirements,
-    not_serving_ineligible_as_offense,
 )
 
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -52,9 +47,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         on_parole_at_least_one_year.VIEW_BUILDER,
         supervision_level_is_not_limited.VIEW_BUILDER,
-        no_high_sanctions_in_past_year.VIEW_BUILDER,
-        fulfilled_requirements.VIEW_BUILDER,
-        not_serving_ineligible_as_offense.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )

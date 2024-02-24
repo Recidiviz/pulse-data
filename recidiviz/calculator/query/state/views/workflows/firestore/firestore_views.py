@@ -87,9 +87,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_level_downgrade_to_medium_trustee_request_record import (
     US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
-    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_furlough_release_form_record import (
     US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
 )
@@ -98,6 +95,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_me_transfer_t
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_work_release_form_record import (
     US_ME_COMPLETE_WORK_RELEASE_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
+    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_classification_review_form_record import (
     US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
@@ -131,9 +131,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_d
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_or_earned_discharge_record import (
     US_OR_EARNED_DISCHARGE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_pa_transfer_to_administrative_supervision_form_record import (
-    US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_annual_reclassification_review_record import (
     US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
@@ -196,5 +193,4 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
     US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
     US_OR_EARNED_DISCHARGE_RECORD_VIEW_BUILDER,
-    US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
 ]
