@@ -117,8 +117,7 @@ def is_association_table(table_name: str) -> bool:
 
 def get_all_table_classes_in_schema(schema_type: SchemaType) -> Iterator[Table]:
     metadata_base = schema_type_to_schema_base(schema_type)
-    for table in metadata_base.metadata.sorted_tables:
-        yield table
+    yield from metadata_base.metadata.sorted_tables
 
 
 def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:

@@ -34,8 +34,7 @@ def get_rows_as_key_value_pairs(csv_filename: str) -> Iterator[Dict[str, str]]:
     """Generator that reads a CSV file and yields a key/value dictionary for each row the file."""
     with open(csv_filename, mode="r", encoding="utf-8") as csv_file:
         csv_reader = csv.DictReader(csv_file)
-        for row in csv_reader:
-            yield row
+        yield from csv_reader
 
 
 def get_rows_as_tuples(
