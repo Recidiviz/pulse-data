@@ -189,6 +189,7 @@ class BigQueryTestHelper:
             datetime.datetime,
             datetime.date,
             pd.Timestamp,
+            numpy.datetime64,
             db_dtypes.DateDtype,
             numpy.dtypes.ObjectDType,
             # Collection types are not hashable so there are issues with setting
