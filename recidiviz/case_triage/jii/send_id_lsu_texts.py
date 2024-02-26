@@ -168,6 +168,7 @@ def send_id_lsu_texts(
     if bigquery_view in [
         "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_playtesting",
         "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test",
+        "recidiviz-staging.hsalas_scratch.ix_lsu_jii_pilot_2_POs",
     ]:
         logging.info("Iterate through dictionary construction from bigquery")
         # Iterate through the dictionary that maps external ids to phone numbers to text strings
@@ -225,6 +226,8 @@ def send_id_lsu_texts(
                         document_id,
                     )
                     with open(f"{batch_id}_texts.txt", "a", encoding="utf-8") as file:
+                        file.write(phone_number)
+                        file.write("\n")
                         file.write(text_body)
                         file.write("\n")
                         file.write("\n")
