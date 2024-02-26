@@ -35,17 +35,17 @@ SELECT * FROM (
         PERSON_ID, 
         LOCATION_ID, 
         CONCAT(
-            location.RESIDENCE_STREET_NUMBER, ' ',
-            location.RESIDENCE_STREET_NAME, ' ',
-            street_lookup.DESCRIPTION, ' ', -- st, blvd, ave, etc
-            city_lookup.DESCRIPTION, ' ', -- city
-            state_lookup.DESCRIPTION, ' ', -- state
-            location.RESIDENCE_ZIP_CODE
+            COALESCE(location.RESIDENCE_STREET_NUMBER,''), ' ',
+            COALESCE(location.RESIDENCE_STREET_NAME,''), ' ',
+            COALESCE(street_lookup.DESCRIPTION,''), ' ', -- st, blvd, ave, etc
+            COALESCE(city_lookup.DESCRIPTION,''), ' ', -- city
+            COALESCE(state_lookup.DESCRIPTION,''), ' ', -- state
+            COALESCE(location.RESIDENCE_ZIP_CODE,'')
         ) AS full_address,
         ROW_NUMBER() OVER (
             PARTITION BY PERSON_ID 
             ORDER BY occ.CHANGE_ID DESC, 
-            SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', occ.UPDT_DTM) DESC
+            occ.UPDT_DTM DESC
         ) AS recency_rank
     FROM {OCCUPANCY} occ
     LEFT JOIN {LOCATION} location
@@ -80,7 +80,7 @@ FROM (
         ROW_NUMBER() OVER (
             PARTITION BY PERSON_ID 
             ORDER BY d.CHANGE_ID DESC, 
-            SAFE.PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', d.UPDT_DTM) DESC
+            d.UPDT_DTM DESC
         ) AS recency_rank
     FROM {PERSON} p
     LEFT JOIN {DEMOGRAPHICS} d

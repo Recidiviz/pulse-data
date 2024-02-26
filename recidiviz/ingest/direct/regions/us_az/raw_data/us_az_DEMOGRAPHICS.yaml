@@ -154,6 +154,9 @@ columns:
     description: |-
       date-time record was last updated
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: ACTIVE_FLAG
     description: |-
       Is the record deleted Y/N

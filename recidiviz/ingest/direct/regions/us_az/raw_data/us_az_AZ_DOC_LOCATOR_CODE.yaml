@@ -39,7 +39,7 @@ columns:
       Date/time record was created.  Second component of the compound primary key
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: CREATE_USERID
     description: |-
       User_id of person who created the record
@@ -49,7 +49,7 @@ columns:
       Date record was last updated
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
   - name: UPDT_USERID
     description: |-
       User_id of person who last updated the record

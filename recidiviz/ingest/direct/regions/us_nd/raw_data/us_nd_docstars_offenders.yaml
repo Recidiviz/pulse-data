@@ -58,7 +58,7 @@ columns:
     description: |-
       Date of birth of the person.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     is_pii: True
   - name: AGENT
     description: |-
@@ -132,7 +132,7 @@ columns:
     description: |-
       The good time date upon which this person can be released from supervision.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: RACE
     description: |-
       Race or ethnicity of the person.
@@ -171,7 +171,7 @@ columns:
     description: |-
       When this person's recordkeeping in Docstars became inactive.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: BIGSIXT1
     description: |-
       LSIR assessment domain with the highest score for this person, based on their most recent assessment.
@@ -204,7 +204,7 @@ columns:
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: SORAC_SCORE
     description: |-
       Total SORAC assessment score for this person, based on their most recent assessment.
@@ -219,19 +219,19 @@ columns:
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: LAST_HOME_VISIT
     field_type: datetime
     description: |-
       When the last home visit by the supervising officer occurred for this person.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: LAST_FACE_TO_FACE
     field_type: datetime
     description: |-
       When the last face-to-face visit by the supervising officer occurred for this person.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MAILING_ADDRESS2
     description: |-
       The second mailing address for this person.
@@ -248,7 +248,7 @@ columns:
     description: |-
       When this person's supervision was early terminated.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: EARLY_TERMINATION_ACKNOWLEDGED
     description: |-
       Whether this person's supervision was early terminated.
