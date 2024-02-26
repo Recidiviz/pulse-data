@@ -198,8 +198,7 @@ def run_command_streaming(
     ) as proc:
         if not proc.stdout or not proc.stdin or not proc.stderr:
             raise ValueError("Found one of stdout/stdin/stderr is None")
-        for stdout_line in iter(proc.stdout.readline, ""):
-            yield stdout_line
+        yield from iter(proc.stdout.readline, "")
         return_code = proc.wait()
         err = proc.stderr.read()
         proc.stdin.close()

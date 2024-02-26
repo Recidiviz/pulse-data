@@ -180,8 +180,7 @@ class DirectIngestCloudTaskQueueInfo(CloudTaskQueueInfo):
             task_id_tag=None,
             prefix_only=True,
         )
-        for task in self.task_names_for_task_id_prefix(instance_prefix):
-            yield task
+        yield from self.task_names_for_task_id_prefix(instance_prefix)
 
     def task_names_for_task_id_prefix(
         self, task_prefix: str

@@ -376,9 +376,7 @@ class ProduceMetrics(beam.DoFn):
             calculation_month_count=calculation_month_count,
             metrics_producer_delegates=metrics_producer_delegates,
         )
-
-        for metric in metrics:
-            yield metric
+        yield from metrics
 
 
 @with_input_types(

@@ -39,6 +39,8 @@ if ! pip show pylint; then
   pip install "pylint"
 fi
 
+pylint --version
+
 if [[ -n "${pylint_config_files_in_change_list}" ]]
 then
     pylint_config_may_have_changed=true
