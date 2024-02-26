@@ -14,20 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit and integration tests for US_XX direct ingest."""
+"""Ingest pipeline integration test(s) for US_XX."""
 from types import ModuleType
 from typing import List, Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import templates
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest.direct.regions.region_direct_ingest_controller_test_case import (
-    RegionDirectIngestControllerTestCase,
+from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integration_test_case import (
+    StateSpecificIngestPipelineIntegrationTestCase,
 )
 
 
-class TestUsXxController(RegionDirectIngestControllerTestCase):
-    """Unit tests for each US_XX file to be ingested."""
+class UsXxPipelineIntegrationTest(StateSpecificIngestPipelineIntegrationTestCase):
+    """Ingest pipeline integration test(s) for US_XX."""
 
     @classmethod
     def state_code(cls) -> StateCode:
@@ -37,7 +37,7 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
     def region_module_override(cls) -> Optional[ModuleType]:
         return templates
 
-    def test_run_full_ingest_all_files_specific_order(self) -> None:
+    def test_run_full_ingest_pipeline(self) -> None:
         """Integration test that runs ingest end-to-end for all ingest views defined for
         US_XX.
         """

@@ -43,7 +43,7 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
-from recidiviz.tests.ingest.direct.regions.region_direct_ingest_controller_test_case import (
+from recidiviz.tests.ingest.direct.regions.state_specific_ingest_pipeline_integration_test_case import (
     launch_entity_tree_html_diff_comparison,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
