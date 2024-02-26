@@ -166,7 +166,7 @@ class IngestOpsEndpointTests(TestCase):
                 DirectIngestInstance.PRIMARY: DataflowPipelineMetadataResponse(
                     id="1234",
                     project_id="recidiviz-456",
-                    name="us-xx-ingest",
+                    name="us-xx-ingest-primary",
                     create_time=1695821110,
                     start_time=1695821110,
                     termination_time=1695821110,
@@ -179,7 +179,7 @@ class IngestOpsEndpointTests(TestCase):
                 DirectIngestInstance.PRIMARY: DataflowPipelineMetadataResponse(
                     id="1236",
                     project_id="recidiviz-456",
-                    name="us-yy-ingest",
+                    name="us-yy-ingest-primary",
                     create_time=1695821110,
                     start_time=1695821110,
                     termination_time=1695821110,
@@ -212,7 +212,7 @@ class IngestOpsEndpointTests(TestCase):
                     "primary": {
                         "id": "1234",
                         "projectId": "recidiviz-456",
-                        "name": "us-xx-ingest",
+                        "name": "us-xx-ingest-primary",
                         "createTime": 1695821110,
                         "startTime": 1695821110,
                         "terminationTime": 1695821110,
@@ -226,7 +226,7 @@ class IngestOpsEndpointTests(TestCase):
                     "primary": {
                         "id": "1236",
                         "projectId": "recidiviz-456",
-                        "name": "us-yy-ingest",
+                        "name": "us-yy-ingest-primary",
                         "createTime": 1695821110,
                         "startTime": 1695821110,
                         "terminationTime": 1695821110,
@@ -255,7 +255,7 @@ class IngestOpsEndpointTests(TestCase):
                 DirectIngestInstance.PRIMARY: DataflowPipelineMetadataResponse(
                     id="1234",
                     project_id="recidiviz-456",
-                    name="us-xx-ingest",
+                    name="us-xx-ingest-primary",
                     create_time=1695821110,
                     start_time=1695821110,
                     termination_time=1695821110,
@@ -277,7 +277,7 @@ class IngestOpsEndpointTests(TestCase):
             {
                 "id": "1234",
                 "projectId": "recidiviz-456",
-                "name": "us-xx-ingest",
+                "name": "us-xx-ingest-primary",
                 "createTime": 1695821110,
                 "startTime": 1695821110,
                 "terminationTime": 1695821110,

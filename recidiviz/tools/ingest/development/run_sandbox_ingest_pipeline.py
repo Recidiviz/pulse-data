@@ -150,9 +150,9 @@ def get_extra_pipeline_parameter_args(
     state code, instance and sandbox prefix.
     """
 
-    standard_job_name = ingest_pipeline_name(state_code, ingest_instance)
-
-    job_name = f"{sandbox_prefix}-{standard_job_name}-test".replace("_", "-")
+    job_name = ingest_pipeline_name(
+        state_code=state_code, instance=ingest_instance, sandbox_prefix=sandbox_prefix
+    )
 
     sandbox_output_dataset = state_dataset_for_state_code(
         state_code,
