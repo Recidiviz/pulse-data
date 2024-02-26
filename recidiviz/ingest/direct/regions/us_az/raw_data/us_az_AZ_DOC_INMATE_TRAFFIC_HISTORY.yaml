@@ -18,7 +18,7 @@ columns:
       Date movement took place
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: MOVEMENT_CODE_ID
     description: |-
@@ -59,7 +59,7 @@ columns:
       Date record was created
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: UPDT_USERID
     description: |-
@@ -70,7 +70,7 @@ columns:
       Date record was last updated
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
   - name: CHANGE_ID
     description: |-
