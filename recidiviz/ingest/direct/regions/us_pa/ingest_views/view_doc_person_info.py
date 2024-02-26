@@ -57,7 +57,8 @@ info_ranked_by_recency AS (
         -- days since the last day of the previous year (i.e. Jan 1 == 001). This column indicates 
         --- recency ordering, and will be set to 9999999 if the inmate number is active.
         ORDER BY CAST(delete_date AS INT64) DESC,
-        inmate_number DESC
+        inmate_number DESC,
+        info.rcptpn_regular_date DESC
     ) AS recency_index,
     info.Frst_Nm,
     info.Mid_Nm,
