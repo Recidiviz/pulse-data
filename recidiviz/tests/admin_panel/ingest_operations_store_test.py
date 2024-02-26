@@ -501,7 +501,7 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
     US_XX_PIPELINE_INFO_1 = DataflowPipelineMetadataResponse(
         id="1234",
         project_id="test-project",
-        name="us-xx-ingest",
+        name="us-xx-ingest-primary",
         create_time=datetime(2023, 7, 10).timestamp(),
         start_time=datetime(2023, 7, 10).timestamp(),
         termination_time=datetime(2023, 7, 11).timestamp(),

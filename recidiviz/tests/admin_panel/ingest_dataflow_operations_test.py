@@ -123,7 +123,7 @@ class IngestDataflowOperations(TestCase):
         pipeline = DataflowPipelineMetadataResponse(
             id="1234",
             project_id="test-project",
-            name="us-xx-ingest",
+            name="us-xx-ingest-primary",
             create_time=datetime.datetime(2023, 7, 10).timestamp(),
             start_time=datetime.datetime(2023, 7, 10).timestamp(),
             termination_time=datetime.datetime(2023, 7, 11).timestamp(),
@@ -145,7 +145,7 @@ class IngestDataflowOperations(TestCase):
         pipeline3 = DataflowPipelineMetadataResponse(
             id="1236",
             project_id="test-project",
-            name="us-yy-ingest",
+            name="us-yy-ingest-primary",
             create_time=datetime.datetime(2023, 8, 10).timestamp(),
             start_time=datetime.datetime(2023, 8, 10).timestamp(),
             termination_time=datetime.datetime(2023, 8, 11).timestamp(),
@@ -216,7 +216,7 @@ class IngestDataflowOperations(TestCase):
         pipeline = DataflowPipelineMetadataResponse(
             id="1234",
             project_id="test-project",
-            name="us-xx-ingest",
+            name="us-xx-ingest-primary",
             create_time=datetime.datetime(2023, 7, 10).timestamp(),
             start_time=datetime.datetime(2023, 7, 10).timestamp(),
             termination_time=datetime.datetime(2023, 7, 11).timestamp(),
@@ -227,7 +227,7 @@ class IngestDataflowOperations(TestCase):
         pipeline2 = DataflowPipelineMetadataResponse(
             id="1236",
             project_id="test-project",
-            name="us-yy-ingest",
+            name="us-yy-ingest-primary",
             create_time=datetime.datetime(2023, 8, 10).timestamp(),
             start_time=datetime.datetime(2023, 8, 10).timestamp(),
             termination_time=datetime.datetime(2023, 8, 11).timestamp(),

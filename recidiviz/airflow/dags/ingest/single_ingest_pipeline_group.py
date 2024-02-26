@@ -253,7 +253,9 @@ def _create_dataflow_pipeline(
                 project=get_project_id(),
                 ingest_instance=ingest_instance.value,
                 raw_data_upper_bound_dates_json=json.dumps(max_update_datetimes),
-                job_name=ingest_pipeline_name(state_code, ingest_instance),
+                job_name=ingest_pipeline_name(
+                    state_code=state_code, instance=ingest_instance, sandbox_prefix=None
+                ),
                 pipeline=INGEST_PIPELINE_NAME,
                 state_code=state_code.value,
                 region=region,
