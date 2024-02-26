@@ -49,11 +49,6 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
 class DirectIngestInstanceStatusManagerTest(TestCase):
     """Implements tests for DirectIngestInstanceStatusManager."""
 
-    # We set __test__ to False to tell `pytest` not to collect this class for running tests
-    # (as successful runs rely on the implementation of an abstract method).
-    # In sub-classes, __test__ should be re-set to True.
-    __test__ = False
-
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
 
@@ -253,16 +248,6 @@ class DirectIngestInstanceStatusManagerTest(TestCase):
             reused_status,
         ]
         self.assertCountEqual(added_statuses, expected_statuses)
-
-
-# TODO(#20930): Merge this test class back with the base test class once ingest in
-#  dataflow has shipped for all states.
-class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
-    DirectIngestInstanceStatusManagerTest
-):
-    """Tests for DirectIngestInstanceStatusManager."""
-
-    __test__ = True
 
     def _run_test_for_status_transitions(
         self,

@@ -147,10 +147,10 @@ class RunValidationsWithOutputChecking(RunValidations):
         return _equal_to
 
 
-# TODO(#20930): Rename this class to StateSpecificIngestPipelineIntegrationTestCase and
-#  rename subclasses/related files accordingly.
-class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
-    """Class with basic functionality for all region-specific ingest integration tests."""
+class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTestCase):
+    """Class with basic functionality for all region-specific ingest pipeline
+    integration tests.
+    """
 
     @classmethod
     @abc.abstractmethod
