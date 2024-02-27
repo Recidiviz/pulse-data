@@ -49,12 +49,12 @@ output:
                   - IV # Investigation
                 StateSupervisionPeriodSupervisionType.PAROLE:
                   - PA # Parole
+                  - PO # Post Prison - Essentially new form of Parole
                 StateSupervisionPeriodSupervisionType.PROBATION:
                   - PR # Probation
                   - CD # Prob/Conditional Discharge
                   - DV # Probation Diversion
                 StateSupervisionPeriodSupervisionType.DUAL:
-                  - PO # Post Prison - Post Prison and Parole at same time
                   - PS # Post Parole - Have open Post Prison and Probation Sentence
                   - SL # Second Look Juvenile (means they were let out at half of sentence generally) - closest to Post Prison sentence
                 StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
