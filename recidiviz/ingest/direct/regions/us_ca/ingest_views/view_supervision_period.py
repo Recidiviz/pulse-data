@@ -183,7 +183,7 @@ supervision_location_prep_cte AS
     ifnull(ParoleRegion, 'null') AS ParoleRegion,
     ifnull(ParoleDistrict, 'null') AS ParoleDistrict,
     update_datetime, 
-    CONCAT(ifnull(ParoleDistrict, 'null'),'-',ifnull(ParoleRegion, 'null'),'-',ifnull(ParoleDistrict, 'null')) AS fullLoc
+    CONCAT(ifnull(ParoleDistrict, 'null'),'@@',ifnull(ParoleRegion, 'null'),'@@',ifnull(ParoleDistrict, 'null')) AS fullLoc
   FROM {PersonParole@ALL}
 ),
 supervision_location_prep_cte2 AS (
@@ -349,9 +349,11 @@ merged_supervision_periods_with_location AS (
     p.OffenderGroup,
     p.SupervisionLevel,
     p.period_sequence_number,
-    slp.ParoleUnit,
-    slp.ParoleRegion,
-    slp.ParoleDistrict
+    CASE
+      WHEN ParoleDistrict IS NULL AND ParoleRegion IS NULL AND ParoleDistrict IS NULL 
+      THEN NULL
+      ELSE CONCAT(ifnull(slp.ParoleUnit, 'null'),'@@',ifnull(slp.ParoleDistrict, 'null'),'@@',ifnull(slp.ParoleRegion, 'null')) 
+    END AS supervision_site,
   FROM merged_supervision_periods_with_supervision_level_and_offender_groups p
   LEFT JOIN supervision_location_periods slp
     ON p.OffenderId = slp.OffenderId
@@ -366,9 +368,7 @@ merged_supervision_periods_with_officer AS (
     p.OffenderGroup,
     p.SupervisionLevel,
     p.period_sequence_number,
-    p.ParoleUnit,
-    p.ParoleRegion,
-    p.ParoleDistrict,
+    p.supervision_site,
     spo.BadgeNumber
   FROM merged_supervision_periods_with_location p
   LEFT JOIN supervision_officer_periods spo
@@ -383,9 +383,7 @@ SELECT
     OffenderGroup,
     SupervisionLevel,
     period_sequence_number,
-    ParoleUnit,
-    ParoleDistrict,
-    ParoleRegion,
+    supervision_site,
     BadgeNumber
 FROM merged_supervision_periods_with_officer
 """

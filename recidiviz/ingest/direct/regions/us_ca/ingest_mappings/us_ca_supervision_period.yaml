@@ -9,10 +9,8 @@ input_columns:
   - OffenderGroup
   - SupervisionLevel
   - period_sequence_number
-  - ParoleUnit
-  - ParoleDistrict
-  - ParoleRegion
   - BadgeNumber
+  - supervision_site
 unused_columns: []
 output:
   StatePerson:
@@ -99,12 +97,7 @@ output:
                       - In-Custody MISD
                       - EX and SX
                       - CS P36 Specialized Caseload
-          supervision_site:
-            $concat:
-              $values:
-                - ParoleUnit
-                - ParoleDistrict
-                - ParoleRegion
+          supervision_site: supervision_site
           supervision_type:
             $conditional:
               - $if:
