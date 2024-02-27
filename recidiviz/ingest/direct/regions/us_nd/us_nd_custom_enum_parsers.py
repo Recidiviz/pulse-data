@@ -179,6 +179,8 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
         "YCC",
         "JRMU",
         "DWCRC1",
+        "WCJWRP",
+        "SWMCCC",
     ],
 }
 
@@ -233,6 +235,8 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
         "YCC",
         "JRMU",
         "DWCRC1",
+        "WCJWRP",
+        "SWMCCC",
     ],
 }
 
