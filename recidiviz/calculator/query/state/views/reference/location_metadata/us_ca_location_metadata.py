@@ -41,21 +41,21 @@ SELECT
   CONCAT(ParoleUnit, '@@', ParoleDistrict,'@@',ParoleRegion) AS location_external_id,
   ParoleUnit as location_name,
   TO_JSON(
-          STRUCT(
-            UPPER(ParoleUnit) AS {LocationMetadataKey.SUPERVISION_UNIT_NAME.value},
-            UPPER(ParoleDistrict) AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
-            UPPER(ParoleRegion) AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value},
-            UPPER(ParoleUnit) AS {LocationMetadataKey.SUPERVISION_UNIT_ID.value},
-            UPPER(ParoleDistrict) AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
-            UPPER(ParoleRegion) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value}
-          )
-        ) AS location_metadata,
-    'SUPERVISION_LOCATION' as location_type
+    STRUCT(
+      CASE WHEN SAFE_CAST(ParoleUnit AS INT64) IS NULL THEN UPPER(ParoleUnit) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_UNIT_NAME.value},
+      CASE WHEN SAFE_CAST(ParoleDistrict AS INT64) IS NULL THEN UPPER(ParoleDistrict) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+      CASE WHEN SAFE_CAST(ParoleRegion AS INT64) IS NULL THEN UPPER(ParoleRegion) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value},
+      UPPER(ParoleUnit) AS {LocationMetadataKey.SUPERVISION_UNIT_ID.value},
+      UPPER(ParoleDistrict) AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+      UPPER(ParoleRegion) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value}
+    )
+  ) AS location_metadata,
+  'SUPERVISION_LOCATION' as location_type
 FROM (
     SELECT DISTINCT
-        ifnull(ParoleUnit, 'null') AS ParoleUnit,
-        ifnull(ParoleDistrict, 'null') AS ParoleDistrict,
-        ifnull(ParoleRegion, 'null') AS ParoleRegion
+        ifnull(ParoleUnit, 'NULL') AS ParoleUnit,
+        ifnull(ParoleDistrict, 'NULL') AS ParoleDistrict,
+        ifnull(ParoleRegion, 'NULL') AS ParoleRegion
     FROM `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest`
 )
 """
