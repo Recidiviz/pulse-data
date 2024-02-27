@@ -38,7 +38,7 @@ locations in CA that can be associated with a person or staff member.
 US_CA_LOCATION_METADATA_QUERY_TEMPLATE = f"""
 SELECT 
   'US_CA' AS state_code, 
-  CONCAT(ParoleUnit, '-', ParoleDistrict,'-',ParoleRegion) AS location_external_id,
+  CONCAT(ParoleUnit, '@@', ParoleDistrict,'@@',ParoleRegion) AS location_external_id,
   ParoleUnit as location_name,
   TO_JSON(
           STRUCT(
