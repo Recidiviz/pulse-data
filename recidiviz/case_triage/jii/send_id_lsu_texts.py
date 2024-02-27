@@ -49,6 +49,8 @@ from recidiviz.utils.secrets import get_secret
 STAGING_URL = "https://app-staging.recidiviz.org"
 PRODUCTION_URL = "https://app.recidiviz.org"
 
+logger = logging.getLogger(__name__)
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
@@ -296,6 +298,7 @@ def send_id_lsu_texts(
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
 
     with local_project_id_override(GCP_PROJECT_STAGING):
