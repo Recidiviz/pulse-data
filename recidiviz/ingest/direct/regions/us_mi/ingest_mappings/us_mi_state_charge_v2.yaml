@@ -76,7 +76,14 @@ variables:
         county_code: county
         ncic_code: ncic_code
         # For MI, offense_code is their statute number but MI has said that it's "squirrely" field because offense codes can get reassigned
-        statute: offense_code
+        statute:
+          $conditional:
+            - $if:
+                $custom:
+                  $function: us_mi_custom_parsers.flag_new_offense_code
+                  $args:
+                    offense_code: offense_code
+              $then: offense_code
         description: description
         attempted:
           $in:
