@@ -20,6 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
@@ -27,6 +28,7 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 )
 from recidiviz.task_eligibility.utils.us_or_query_fragments import (
     OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES,
+    OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -46,9 +48,18 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         separately when evaluating eligibility for OR earned discharge. If we decide to
         change this in the future, we can refactor this subcriterion query to rely upon
         sentence_spans. */
-        SELECT * 
+        SELECT *
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+    ),
+    sentence_supervision_types AS (
+        SELECT
+            state_code,
+            person_id,
+            supervision_sentence_id AS sentence_id,
+            supervision_type_raw_text,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_sentence`
+        WHERE state_code='US_OR'
     )
     SELECT DISTINCT
         state_code,
@@ -56,10 +67,14 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         sentence_id,
         start_date,
         end_date,
-        IF((statute IN ({list_to_query_string(
-                OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True
-            )})), FALSE, TRUE) AS meets_criteria,
+        -- check that statute isn't universally ineligible
+        ((statute NOT IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True)}))
+        -- check that if post-prison, statute isn't ineligible for post-prison cases
+        AND NOT ((supervision_type_raw_text='O') AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON, quoted=True)})))
+        ) AS meets_criteria,
     FROM sentences
+    LEFT JOIN sentence_supervision_types
+        USING (state_code, person_id, sentence_id)
 """
 
 US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -68,6 +83,7 @@ US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_OR_STATUTE_ELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=False,
 )
 
