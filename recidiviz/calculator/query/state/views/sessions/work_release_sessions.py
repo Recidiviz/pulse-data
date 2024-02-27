@@ -30,7 +30,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # States currently supported
-SUPPORTED_STATES = ["US_ME"]
+SUPPORTED_STATES = ["US_ME", "US_ND"]
 
 WORK_RELEASE_SESSIONS_VIEW_NAME = "work_release_sessions"
 
@@ -45,6 +45,8 @@ WORK_RELEASE_SESSIONS_QUERY_TEMPLATE = f"""
 WITH all_wr_sessions AS (
     # TODO(#24698): Add IX
     SELECT * FROM `{{project_id}}.{{sessions_dataset}}.us_me_work_release_sessions_preprocessing`
+    UNION ALL
+    SELECT * FROM `{{project_id}}.{{sessions_dataset}}.us_nd_work_release_sessions_preprocessing`
     ),
 comp_ses AS (
     SELECT *
