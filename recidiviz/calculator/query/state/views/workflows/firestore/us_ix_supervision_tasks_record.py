@@ -58,7 +58,8 @@ SUPERVISION_TASK_CONFIGS = [
               STRUCT(
                 MAX(most_recent_home_visit_date) AS last_home_visit,
                 MAX(client.supervision_level) AS supervision_level, 
-                MAX(client.address) AS current_address
+                MAX(client.address) AS current_address,
+                MAX(case_type) AS case_type
 	          ) AS details
             )
         """,
@@ -70,7 +71,8 @@ SUPERVISION_TASK_CONFIGS = [
               MAX(next_recommended_face_to_face_date) AS due_date,
               STRUCT(
                 MAX(client.supervision_level) AS supervision_level,
-                MAX(most_recent_face_to_face_date) AS last_contacted
+                MAX(most_recent_face_to_face_date) AS last_contacted,
+                MAX(case_type) AS case_type
               ) AS details
             )
         """,
@@ -82,7 +84,8 @@ SUPERVISION_TASK_CONFIGS = [
               MAX(next_recommended_assessment_date) AS due_date,
               STRUCT(
                 MAX(ss.assessment_level_raw_text) AS risk_level, 
-                MAX(ss.assessment_date) AS last_assessed_on
+                MAX(ss.assessment_date) AS last_assessed_on,
+                MAX(case_type) AS case_type
               ) AS details
             )
         """,
