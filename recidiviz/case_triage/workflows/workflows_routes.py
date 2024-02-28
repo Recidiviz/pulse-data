@@ -23,7 +23,8 @@ from typing import Optional
 
 import requests
 import werkzeug.wrappers
-from flask import Blueprint, Response, current_app, g, jsonify, make_response, request
+from flask import Response, current_app, g, jsonify, make_response, request
+from flask_smorest import Blueprint
 from flask_wtf.csrf import generate_csrf
 from twilio.rest import Client as TwilioClient
 
@@ -36,6 +37,7 @@ from recidiviz.case_triage.helpers import (
 )
 from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
+    WorkflowsConfigurationsResponseSchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
@@ -739,5 +741,57 @@ def create_workflows_api_blueprint() -> Blueprint:
             "Early termination date successfully updated in DOCSTARS.",
             HTTPStatus.OK,
         )
+
+    @workflows_api.get("/<state>/opportunities")
+    @workflows_api.response(HTTPStatus.OK, WorkflowsConfigurationsResponseSchema)
+    def get_opportunities(state: str) -> Response:
+        state_code = StateCode(state)
+        if state_code != StateCode.US_ID:
+            return jsonify_response(
+                "Only supported for US_ID currently",
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        config_fixture = {
+            "usIdCrcWorkRelease": {
+                "stateCode": "US_ID",
+                "urlSection": "CRCWorkRelease",
+                "displayName": "Work-release at Community Reentry Centers",
+                "featureVariant": "usIdCRC",
+                "dynamicEligibilityText": "resident[|s] may be eligible for work-release at a Community Reentry Center",
+                "callToAction": "Review residents who may be eligible for work-release to a CRC and start their paperwork in ATLAS.",
+                "firestoreCollection": "US_ID-CRCWorkReleaseReferrals",
+                "snooze": {
+                    "defaultSnoozeDays": 30,
+                    "maxSnoozeDays": 90,
+                },
+                "denialReasons": {
+                    "MEDICAL": "Was not approved by an IDOC medical provider",
+                    "PENDING": "There are pending felony charges or felony investigations in which the resident is a suspect",
+                    "BEHAVIOR": "Resident has had poor institutional behavior",
+                    "PROGRAM": "Missing required facility programming",
+                    "Other": "Other, please specify a reason",
+                },
+                "eligibleCriteriaCopy": {
+                    "custodyLevelIsMinimum": {
+                        "text": "Currently on Minimum custody",
+                    },
+                    "notServingForSexualOffense": {
+                        "text": "Not serving for a sexual offense",
+                    },
+                },
+                "ineligibleCriteriaCopy": {},
+                "sidebarComponents": [
+                    "Incarceration",
+                    "UsIdPastTwoYearsAlert",
+                    "CaseNotes",
+                ],
+                "methodologyUrl": "https://drive.google.com/file/d/1pum9mrOIvGoBIwwE3dQEITod7O5mcYGm/view?usp=sharing",
+            }
+        }
+
+        response_blob = {"enabledConfigs": config_fixture}
+
+        return make_response(jsonify(message=response_blob), HTTPStatus.OK)
 
     return workflows_api

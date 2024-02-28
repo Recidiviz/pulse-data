@@ -1801,6 +1801,28 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
+    def test_workflows_config_static(self) -> None:
+        with self.test_app.test_request_context():
+            response = self.test_client.get(
+                "/workflows/US_ID/opportunities",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn("usIdCrcWorkRelease", response.get_json()["message"]["enabledConfigs"])  # type: ignore
+
+    def test_workflows_config_disabled_state(self) -> None:
+        with self.test_app.test_request_context():
+            response = self.test_client.get(
+                "/workflows/US_MI/opportunities",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            "Only supported for US_ID currently", response.get_json()["message"]  # type: ignore
+        )
+
 
 def make_cors_test(
     path: str,
