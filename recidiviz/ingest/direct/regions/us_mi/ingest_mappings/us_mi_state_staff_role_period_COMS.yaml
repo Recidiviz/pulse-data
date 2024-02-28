@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - Case_Manager_Omnni_Employee_Id
+  - start_date
+  - end_date
+  - period_id
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: Case_Manager_Omnni_Employee_Id
+          id_type: $literal("US_MI_OMNI_USER")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("COMS")
+                - Case_Manager_Omnni_Employee_Id
+                - period_id
+          start_date: start_date
+          end_date: end_date
+          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
