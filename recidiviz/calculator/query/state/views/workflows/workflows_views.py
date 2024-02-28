@@ -18,9 +18,6 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.workflows.adhoc.recidiviz_users_to_delete_from_analytics import (
-    RECIDIVIZ_USERS_TO_DELETE_FROM_ANALYTICS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.client_record_archive import (
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
 )
@@ -123,5 +120,4 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
     WORKFLOWS_USAGE_VIEW_BUILDER,
-    RECIDIVIZ_USERS_TO_DELETE_FROM_ANALYTICS_VIEW_BUILDER,
 ]
