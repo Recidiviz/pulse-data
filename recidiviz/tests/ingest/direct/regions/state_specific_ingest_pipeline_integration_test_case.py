@@ -21,12 +21,13 @@ import abc
 import datetime
 from collections import defaultdict
 from copy import deepcopy
+from functools import cmp_to_key
 from types import ModuleType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
-from apache_beam.testing.util import assert_that
+from apache_beam.testing.util import BeamAssertException, assert_that
 from mock import patch
 
 from recidiviz.common.constants.states import StateCode
@@ -47,6 +48,9 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
     get_all_entity_associations_from_tree,
+)
+from recidiviz.persistence.entity_matching.entity_merger_utils import (
+    root_entity_external_id_keys,
 )
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     LOWER_BOUND_DATETIME_COL_NAME,
@@ -71,6 +75,7 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     pipeline_constructor,
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
+from recidiviz.utils.environment import in_ci
 
 
 class FakeGenerateIngestViewResults(GenerateIngestViewResults):
@@ -129,22 +134,64 @@ class RunValidationsWithOutputChecking(RunValidations):
         expected_root_entity_output: Iterable[RootEntity],
         state_code: StateCode,
         debug: bool = False,
-    ) -> Callable[[Iterable[RootEntity]], bool]:
-        def _equal_to(actual: Iterable[RootEntity]) -> bool:
+    ) -> Callable[[Iterable[RootEntity]], None]:
+        def _equal_to(actual: Iterable[RootEntity]) -> None:
             copy_of_actual = deepcopy(actual)
             clear_db_ids([cast(CoreEntity, entity) for entity in copy_of_actual])
-            if copy_of_actual != expected_root_entity_output:
+            sorted_actual = _sort_root_entities(copy_of_actual)
+            sorted_expected = _sort_root_entities(expected_root_entity_output)
+            if sorted_actual != sorted_expected:
                 if debug:
+                    if in_ci():
+                        raise ValueError(
+                            "The |debug| flag should only be used for local debugging."
+                        )
                     launch_entity_tree_html_diff_comparison(
-                        found_root_entities=copy_of_actual,  # type: ignore
-                        expected_root_entities=expected_root_entity_output,  # type: ignore
+                        found_root_entities=sorted_actual,  # type: ignore
+                        expected_root_entities=sorted_expected,  # type: ignore
                         field_index=CoreEntityFieldIndex(),
                         region_code=state_code.value.lower(),
                     )
-                return False
-            return True
+                raise BeamAssertException(
+                    "Entity lists not equal. Rerun this test with debug=True to see diff."
+                )
 
         return _equal_to
+
+
+def _sort_root_entities(root_entities: Iterable[RootEntity]) -> List[RootEntity]:
+    """Sorts the input collection of root_entities so that they can be compared to
+    another collection of root entities. Sort is only deterministic if all root entities
+    have external ids (this should be checked on pipeline output by a previous pipeline
+    step) and no two root entities share a matching external id (for correct output,
+    this should never be the case).
+    """
+
+    def _root_entity_comparator(
+        root_entity_a: RootEntity, root_entity_b: RootEntity
+    ) -> int:
+        if isinstance(root_entity_a, HasMultipleExternalIdsEntity):
+            external_id_keys_a = sorted(root_entity_external_id_keys(root_entity_a))
+        else:
+            raise ValueError(
+                f"Expected root entity to be an instance of "
+                f"HasMultipleExternalIdsEntity, found: {type(root_entity_a)}"
+            )
+
+        if isinstance(root_entity_b, HasMultipleExternalIdsEntity):
+            external_id_keys_b = sorted(root_entity_external_id_keys(root_entity_b))
+        else:
+            raise ValueError(
+                f"Expected root entity to be an instance of "
+                f"HasMultipleExternalIdsEntity, found: {type(root_entity_b)}"
+            )
+
+        if external_id_keys_a == external_id_keys_b:
+            return 0
+
+        return -1 if external_id_keys_a < external_id_keys_b else 1
+
+    return sorted(root_entities, key=cmp_to_key(_root_entity_comparator))
 
 
 class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTestCase):

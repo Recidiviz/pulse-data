@@ -26,17 +26,20 @@ from recidiviz.common.attr_mixins import (
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     _raw_text_field_name,
 )
-from recidiviz.persistence.entity.base_entity import EnumEntity, ExternalIdEntity
+from recidiviz.persistence.entity.base_entity import (
+    EnumEntity,
+    ExternalIdEntity,
+    HasMultipleExternalIdsEntity,
+)
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
 )
-from recidiviz.persistence.persistence_utils import RootEntityT
 
 
-def root_entity_external_id_keys(root_entity: RootEntityT) -> Set[str]:
+def root_entity_external_id_keys(root_entity: HasMultipleExternalIdsEntity) -> Set[str]:
     """Generates a set of unique string keys for a root entity's external id objects."""
-    return {external_id_key(e) for e in root_entity.external_ids}
+    return {external_id_key(e) for e in root_entity.get_external_ids()}
 
 
 def external_id_key(external_id_entity: ExternalIdEntity) -> str:
