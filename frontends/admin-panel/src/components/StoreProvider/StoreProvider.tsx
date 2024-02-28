@@ -19,13 +19,15 @@ import { observer } from "mobx-react-lite";
 import PropTypes from "prop-types";
 import React, { useContext } from "react";
 
-import store, { InsightsStore } from "../../InsightsStore/InsightsStore";
+import { InsightsStore } from "../../InsightsStore/InsightsStore";
 
 const StoreContext = React.createContext<undefined | InsightsStore>(undefined);
 
 const StoreProvider: React.FC = observer(function StoreProvider({ children }) {
   return (
-    <StoreContext.Provider value={store}>{children}</StoreContext.Provider>
+    <StoreContext.Provider value={new InsightsStore()}>
+      {children}
+    </StoreContext.Provider>
   );
 });
 

@@ -19,17 +19,19 @@ import { Form, Input } from "antd";
 import { observer } from "mobx-react-lite";
 
 import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
-import { useInsightsStore } from "../StoreProvider";
+import ConfigurationPresenter from "../../InsightsStore/presenters/ConfigurationPresenter";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
 const AddConfigForm = ({
   visible,
   setVisible,
+  presenter,
 }: {
   visible: boolean;
   setVisible: (arg0: boolean) => void;
+  presenter: ConfigurationPresenter;
 }): JSX.Element => {
-  const { stateCode, createNewVersion } = useInsightsStore();
+  const { createNewVersion, stateCode } = presenter;
   const [form] = Form.useForm();
 
   const onAdd = async (request: InsightsConfiguration) => {

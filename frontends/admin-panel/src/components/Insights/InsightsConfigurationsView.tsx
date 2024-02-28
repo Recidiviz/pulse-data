@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { useInsightsStore } from "../StoreProvider";
 import StateSelect from "../Utilities/StateSelect";
 import AddConfigForm from "./AddConfigForm";
+import ConfigurationsTable from "./ConfigurationsTable";
 
 const InsightsConfigurationsView = (): JSX.Element => {
   const store = useInsightsStore();
@@ -29,7 +30,8 @@ const InsightsConfigurationsView = (): JSX.Element => {
     if (store.hydrationState.status === "needs hydration") store.hydrate();
   }, [store]);
 
-  const { stateCodeInfo, stateCode, setStateCode } = store;
+  const { stateCodeInfo, stateCode, setStateCode, configurationPresenter } =
+    store;
 
   const [addConfigFormVisible, setAddConfigFormVisible] = useState(false);
 
@@ -39,7 +41,9 @@ const InsightsConfigurationsView = (): JSX.Element => {
       <Space>
         <StateSelect
           states={stateCodeInfo}
-          onChange={(state) => setStateCode(state.code)}
+          onChange={(state) => {
+            setStateCode(state.code);
+          }}
         />
         <Button
           onClick={() => {
@@ -49,11 +53,17 @@ const InsightsConfigurationsView = (): JSX.Element => {
         >
           Create new version
         </Button>
+      </Space>
+      {configurationPresenter && (
+        <ConfigurationsTable presenter={configurationPresenter} />
+      )}
+      {configurationPresenter && (
         <AddConfigForm
           visible={addConfigFormVisible}
           setVisible={setAddConfigFormVisible}
+          presenter={configurationPresenter}
         />
-      </Space>
+      )}
     </>
   );
 };
