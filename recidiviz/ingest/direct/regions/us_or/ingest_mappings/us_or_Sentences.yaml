@@ -40,6 +40,9 @@ input_columns:
   - COURT_CASE_NUMBER
   - COURT_CASE_COUNT # counts
   - JUDGE
+  - PPS_SENTENCE_DAYS
+  - PPS_SENTENCE_MONTHS
+  - PPS_SENTENCE_YEARS
 unused_columns:
   - CURRENT_STATUS
 output:
@@ -110,6 +113,9 @@ output:
                     - $literal("L") # Life sentence
                 sentence_metadata:
                   $json_dict:
+                    PPS_SENTENCE_DAYS: PPS_SENTENCE_DAYS
+                    PPS_SENTENCE_MONTHS: PPS_SENTENCE_MONTHS
+                    PPS_SENTENCE_YEARS: PPS_SENTENCE_YEARS
                     CONSEC_SENT: CONSEC_TO
                     MERGED_SENT: MERGE_SENTENCE
                     COURT_CASE_NUMBER: COURT_CASE_NUMBER
