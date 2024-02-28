@@ -15,52 +15,55 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { message } from "antd";
-import { flowResult, makeAutoObservable } from "mobx";
+import { autorun, flowResult, makeAutoObservable } from "mobx";
 
 import {
-  createNewConfiguration,
   getInsightsConfigurations,
   getInsightsStateCodeInfo,
 } from "../AdminPanelAPI/InsightsAPI";
 import { StateCodeInfo } from "../components/general/constants";
 import { InsightsConfiguration } from "./models/InsightsConfiguration";
+import ConfigurationPresenter from "./presenters/ConfigurationPresenter";
 import { Hydratable, HydrationState } from "./types";
 
 export class InsightsStore implements Hydratable {
   hydrationState: HydrationState;
 
-  stateCode: string;
+  stateCode?: string;
 
   stateCodeInfo?: StateCodeInfo[];
 
   configs?: InsightsConfiguration[];
 
+  configurationPresenter?: ConfigurationPresenter;
+
   constructor() {
-    makeAutoObservable(this);
-
-    this.setStateCode = this.setStateCode.bind(this);
-
-    this.createNewVersion = this.createNewVersion.bind(this);
-
+    makeAutoObservable(this, undefined, { autoBind: true });
     this.hydrationState = { status: "needs hydration" };
 
-    this.stateCode = "US_PA";
+    autorun(() => {
+      if (this.stateCode) {
+        this.initializeConfigurationPresenter();
+      }
+    });
   }
 
   setStateCode(stateCode: string): void {
+    this.resetStateData();
     this.stateCode = stateCode;
   }
 
-  async createNewVersion(request: InsightsConfiguration): Promise<boolean> {
-    try {
-      await createNewConfiguration(request, this.stateCode);
-      message.success("Configuration added!");
-      return true;
-    } catch (e) {
-      message.error(`Error adding configuration: ${e}`);
-      return false;
-    }
+  resetStateData() {
+    this.configs = undefined;
+    this.configurationPresenter = undefined;
+  }
+
+  initializeConfigurationPresenter() {
+    if (!this.stateCode) return;
+    this.configurationPresenter = new ConfigurationPresenter(
+      this,
+      this.stateCode
+    );
   }
 
   *populateConfigs(): Generator<
@@ -68,6 +71,7 @@ export class InsightsStore implements Hydratable {
     void,
     InsightsConfiguration[]
   > {
+    if (!this.stateCode) throw new Error("missing state code");
     this.configs = yield getInsightsConfigurations(this.stateCode);
   }
 
@@ -88,7 +92,6 @@ export class InsightsStore implements Hydratable {
 
     try {
       this.hydrationState = { status: "loading" };
-      await flowResult(this.populateConfigs());
       await flowResult(this.populateStateCodeInfo());
       this.hydrationState = { status: "hydrated" };
     } catch (e) {
@@ -96,5 +99,3 @@ export class InsightsStore implements Hydratable {
     }
   }
 }
-
-export default new InsightsStore();

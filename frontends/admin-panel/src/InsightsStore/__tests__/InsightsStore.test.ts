@@ -17,12 +17,12 @@
 
 import { configure } from "mobx";
 
-import { getInsightsConfigurations } from "../../AdminPanelAPI/InsightsAPI";
+import { getInsightsStateCodeInfo } from "../../AdminPanelAPI/InsightsAPI";
 import { InsightsStore } from "../InsightsStore";
-import { rawInsightsConfigurationFixture } from "../models/fixtures/InsightsConfigurationFixture";
+import { rawStateCodeInfoFixture } from "../models/fixtures/StateCodeInfoFixture";
 
 jest.mock("../../AdminPanelAPI/InsightsAPI");
-const mockGetInsightsConfigurations = getInsightsConfigurations as jest.Mock;
+const mockGetInsightsStateCodeInfo = getInsightsStateCodeInfo as jest.Mock;
 
 let store: InsightsStore;
 
@@ -30,9 +30,7 @@ beforeEach(async () => {
   jest.resetModules();
   configure({ safeDescriptors: false });
   store = new InsightsStore();
-  mockGetInsightsConfigurations.mockResolvedValue(
-    rawInsightsConfigurationFixture
-  );
+  mockGetInsightsStateCodeInfo.mockResolvedValue(rawStateCodeInfoFixture);
 });
 
 afterEach(() => {
@@ -46,9 +44,9 @@ test("hydrate store", async () => {
   expect(store.hydrationState.status).toEqual("hydrated");
 });
 
-test("hydration error", async () => {
+test("hydration -- error", async () => {
   const error = new Error("hydrationError");
-  mockGetInsightsConfigurations.mockRejectedValue(error);
+  mockGetInsightsStateCodeInfo.mockRejectedValue(error);
   await store.hydrate();
   expect(store.hydrationState).toEqual({
     status: "failed",
@@ -56,8 +54,8 @@ test("hydration error", async () => {
   });
 });
 
-test("configs", async () => {
+test("stateCodeInfo", async () => {
   await store.hydrate();
 
-  expect(store.configs).toMatchSnapshot();
+  expect(store.stateCodeInfo).toMatchSnapshot();
 });

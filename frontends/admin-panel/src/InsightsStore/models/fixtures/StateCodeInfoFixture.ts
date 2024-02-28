@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2024 Recidiviz, Inc.
+// Copyright (C) 2024 Recidiviz,Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,13 +15,23 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { rawInsightsConfigurationFixture } from "../fixtures/ConfigurationsFixture";
-import { insightsConfigurationSchema } from "../InsightsConfiguration";
+import { StateCodeInfo } from "../../../components/general/constants";
 
-test("transformation", () => {
-  expect(
-    rawInsightsConfigurationFixture.map((e) =>
-      insightsConfigurationSchema.parse(e)
-    )
-  ).toMatchSnapshot();
-});
+export const rawStateCodeInfoFixture: Array<StateCodeInfo> = [
+  {
+    code: "US_PA",
+    name: "Pennsylvania",
+  },
+  {
+    code: "US_IX",
+    name: "Idaho ATLAS",
+  },
+  {
+    code: "US_MI",
+    name: "Michigan",
+  },
+  {
+    code: "US_TN",
+    name: "Tennessee",
+  },
+];
