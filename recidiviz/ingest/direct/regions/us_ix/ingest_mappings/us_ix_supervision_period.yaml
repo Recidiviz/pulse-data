@@ -224,6 +224,8 @@ output:
                         - Serving Out of State Sentence
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - Offender Moves Location
+                      StateSupervisionPeriodTerminationReason.ABSCONSION:
+                        - Escape
               - $else_if:
                   $not_null: end_date
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
