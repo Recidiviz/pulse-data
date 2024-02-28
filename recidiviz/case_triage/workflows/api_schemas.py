@@ -21,8 +21,12 @@ from typing import Dict, List
 from marshmallow import Schema, ValidationError, fields
 from marshmallow_enum import EnumField
 
-from recidiviz.case_triage.api_schemas_utils import CamelOrSnakeCaseSchema
+from recidiviz.case_triage.api_schemas_utils import (
+    CamelCaseSchema,
+    CamelOrSnakeCaseSchema,
+)
 from recidiviz.case_triage.workflows.constants import WorkflowsUsTnVotersRightsCode
+from recidiviz.common.constants.states import StateCode
 
 
 def valid_us_tn_contact_note(data: Dict[int, List[str]]) -> None:
@@ -152,3 +156,39 @@ class WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema(CamelOrSnakeCaseSche
     early_termination_date = fields.Date(required=True)
     justification_reasons = fields.List(fields.Nested(JustificationReasonSchema))
     should_queue_task = fields.Boolean(load_default=True, load_only=True)
+
+
+class WorkflowsConfigurationsResponseSchema(CamelCaseSchema):
+    """
+    The schema returned by the /workflows/<state>/opportunities endpoint
+    """
+
+    class ConfigSchema(CamelCaseSchema):
+        class SnoozeConfigSchema(CamelCaseSchema):
+            default_snooze_days = fields.Integer()
+            max_snooze_days = fields.Integer()
+
+        class CriteriaCopySchema(CamelCaseSchema):
+            text = fields.Str()
+            tooltip = fields.Str(required=False)
+
+        state_code = fields.Enum(StateCode)
+        url_section = fields.Str()
+        display_name = fields
+        feature_variant = fields.Str(required=False)
+        dynamic_eligibility_text = fields.Str()
+        call_to_action = fields.Str()
+        firestore_collection = fields.Str()
+        methodology_url = fields.Str()
+        snooze = fields.Nested(SnoozeConfigSchema, required=False)
+        denial_reasons = fields.Dict(fields.Str(), fields.Str())
+        eligible_criteria_copy = fields.Dict(
+            fields.Str(), fields.Nested(CriteriaCopySchema())
+        )
+        ineligible_criteria_copy = fields.Dict(
+            fields.Str(), fields.Nested(CriteriaCopySchema())
+        )
+        sidebar_components = fields.List(fields.Str())
+
+    # TODO(#27835): Make opportunity types top-level instead of nested one deep
+    enabled_configs = fields.Dict(fields.Str(), fields.Nested(ConfigSchema()))
