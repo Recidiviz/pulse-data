@@ -114,7 +114,7 @@ wr_sessions AS (
         ) AS start_date ,
         LEAST(
             f.end_date,
-            DATE_SUB(p.end_date, INTERVAL 1 DAY)
+            DATE_SUB(p.end_date_exclusive, INTERVAL 1 DAY)
         ) AS end_date,
         f.facility,  
         f.facility_name,
