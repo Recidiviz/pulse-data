@@ -87,6 +87,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_level_downgrade_to_medium_trustee_request_record import (
     US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
+    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_furlough_release_form_record import (
     US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
 )
@@ -96,9 +99,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_me_transfer_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_work_release_form_record import (
     US_ME_COMPLETE_WORK_RELEASE_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_reclassification_review_form_record import (
-    US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_classification_review_form_record import (
     US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
 )
@@ -107,6 +107,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_d
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_full_term_discharge_from_supervision_request_record import (
     US_MI_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_security_committee_classification_review_form_record import (
+    US_MI_COMPLETE_SECURITY_COMMITTEE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_transfer_to_telephone_reporting_request_record import (
     US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
@@ -181,6 +184,7 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
     US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
+    US_MI_COMPLETE_SECURITY_COMMITTEE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
     US_MI_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
