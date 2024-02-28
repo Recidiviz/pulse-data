@@ -24,7 +24,6 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
-import csv
 from re import findall, search
 from typing import Optional
 
@@ -266,25 +265,3 @@ def bondable_offenses(offense_codes: str) -> str:
     offense_codes_list = offense_codes.split("@@")
 
     return ",".join(sorted(set(offense_codes_list) - set(nonbondable_offense_code)))
-
-
-def flag_new_offense_code(offense_code: str) -> bool:
-    """we want to flag when we see a new mcl code that has not ever existed in the data previously,
-    and is also LIKE 'statute%' for each statute in the list we are screening.
-    """
-    listOfCodes = []
-
-    with open(
-        "recidiviz/common/data_sets/MCLCodes.csv",
-        "r",
-        encoding="utf-8",
-    ) as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            listOfCodes.append(row["statute_code"])
-
-    for code in listOfCodes:
-        if offense_code.startswith(code) and offense_code not in listOfCodes:
-            raise ValueError(f"Found error with code: [{offense_code}]")
-
-    return True
