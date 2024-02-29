@@ -187,6 +187,8 @@ Denominator is the average daily caseload for the agent over the given time peri
         learn_more_url="https://drive.google.com/file/d/1bbjsV6jBr4bkOwTJa8LIfK7oYYxAqa2t/view",
         supervision_district_manager_label="region manager",
         supervision_district_label="region",
+        # If we were to add supervision_staff_exclusions for US_MI, we might have to refactor us_mi_insights_workflows_details_for_leadership.
+        # See https://github.com/Recidiviz/pulse-data/pull/27833#discussion_r1504426734
     ),
     StateCode.US_TN: OutliersBackendConfig(
         metrics=[
