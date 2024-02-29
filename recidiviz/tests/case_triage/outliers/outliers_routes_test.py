@@ -77,6 +77,7 @@ TEST_CLIENT_EVENT = OutliersClientEventConfig.build(
 )
 
 
+@pytest.mark.usefixtures("snapshottest_snapshot")
 class OutliersBlueprintTestCase(TestCase):
     """Base class for Outliers flask tests"""
 
@@ -212,53 +213,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             headers={"Origin": "http://localhost:3000"},
         )
 
-        expected_json = {
-            "config": {
-                "learnMoreUrl": "https://recidiviz.org",
-                "metrics": [
-                    {
-                        "bodyDisplayName": "incarceration rate",
-                        "eventName": "incarcerations",
-                        "eventNameSingular": "incarceration",
-                        "eventNamePastTense": "were incarcerated",
-                        "name": "incarceration_starts_and_inferred",
-                        "outcomeType": "ADVERSE",
-                        "titleDisplayName": "Incarceration Rate (CPVs & TPVs)",
-                        "descriptionMarkdown": """Incarceration rate description
-
-<br />
-Incarceration rate denominator description""",
-                    },
-                    {
-                        "bodyDisplayName": "absconsion rate",
-                        "eventName": "absconsions",
-                        "eventNameSingular": "absconsion",
-                        "eventNamePastTense": "absconded",
-                        "name": "absconsions_bench_warrants",
-                        "outcomeType": "ADVERSE",
-                        "titleDisplayName": "Absconsion Rate",
-                        "descriptionMarkdown": None,
-                    },
-                ],
-                "clientEvents": [
-                    {"name": "violation_responses", "displayName": "Sanctions"}
-                ],
-                "supervisionDistrictLabel": "district",
-                "supervisionJiiLabel": "client",
-                "supervisionDistrictManagerLabel": "district director",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "noneAreOutliersLabel": "are outliers on any metrics",
-                "worseThanRateLabel": "Much worse than statewide rate",
-                "slightlyWorseThanRateLabel": "Slightly worse than statewide rate",
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-            }
-        }
-
+        self.snapshot.assert_match(response.json, name="test_get_state_configuration_success")  # type: ignore[attr-defined]
         self.assertEqual(HTTPStatus.OK, response.status_code)
-        self.assertEqual(expected_json, response.json)
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_supervisor_entities",
@@ -297,25 +253,7 @@ Incarceration rate denominator description""",
             headers={"Origin": "http://localhost:3000"},
         )
 
-        expected_json = {
-            "supervisors": [
-                {
-                    "fullName": {
-                        "givenNames": "Supervisor",
-                        "middleNames": None,
-                        "nameSuffix": None,
-                        "surname": "2",
-                    },
-                    "externalId": "102",
-                    "pseudonymizedId": "hash2",
-                    "supervisionDistrict": "2",
-                    "email": "supervisor2@recidiviz.org",
-                    "hasOutliers": True,
-                }
-            ]
-        }
-
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_get_supervisors")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
@@ -414,56 +352,7 @@ Incarceration rate denominator description""",
                 headers={"Origin": "http://localhost:3000"},
             )
 
-            expected_json = {
-                "officers": [
-                    {
-                        "fullName": {
-                            "givenNames": "Harry",
-                            "middleNames": None,
-                            "surname": "Potter",
-                            "nameSuffix": None,
-                        },
-                        "externalId": "123",
-                        "pseudonymizedId": "hashhash",
-                        "supervisorExternalId": "102",
-                        "district": "Hogwarts",
-                        "caseloadType": None,
-                        "outlierMetrics": [
-                            {
-                                "metricId": "metric_one",
-                                "statusesOverTime": [
-                                    {
-                                        "endDate": "2023-05-01",
-                                        "metricRate": 0.1,
-                                        "status": "FAR",
-                                    },
-                                    {
-                                        "endDate": "2023-04-01",
-                                        "metricRate": 0.1,
-                                        "status": "FAR",
-                                    },
-                                ],
-                            }
-                        ],
-                    },
-                    {
-                        "fullName": {
-                            "givenNames": "Ron",
-                            "middleNames": None,
-                            "surname": "Weasley",
-                            "nameSuffix": None,
-                        },
-                        "externalId": "456",
-                        "pseudonymizedId": "hashhashhash",
-                        "supervisorExternalId": "102",
-                        "district": "Hogwarts",
-                        "caseloadType": None,
-                        "outlierMetrics": [],
-                    },
-                ]
-            }
-
-            self.assertEqual(response.json, expected_json)
+            self.snapshot.assert_match(response.json, name="test_get_officers_for_supervisor")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
@@ -538,56 +427,7 @@ Incarceration rate denominator description""",
                 headers={"Origin": "http://localhost:3000"},
             )
 
-            expected_json = {
-                "officers": [
-                    {
-                        "fullName": {
-                            "givenNames": "Harry",
-                            "middleNames": None,
-                            "surname": "Potter",
-                            "nameSuffix": None,
-                        },
-                        "externalId": "123",
-                        "pseudonymizedId": "hashhash",
-                        "supervisorExternalId": "102",
-                        "district": "Hogwarts",
-                        "caseloadType": None,
-                        "outlierMetrics": [
-                            {
-                                "metricId": "metric_one",
-                                "statusesOverTime": [
-                                    {
-                                        "endDate": "2023-05-01",
-                                        "metricRate": 0.1,
-                                        "status": "FAR",
-                                    },
-                                    {
-                                        "endDate": "2023-04-01",
-                                        "metricRate": 0.1,
-                                        "status": "FAR",
-                                    },
-                                ],
-                            }
-                        ],
-                    },
-                    {
-                        "fullName": {
-                            "givenNames": "Ron",
-                            "middleNames": None,
-                            "surname": "Weasley",
-                            "nameSuffix": None,
-                        },
-                        "externalId": "456",
-                        "pseudonymizedId": "hashhashhash",
-                        "supervisorExternalId": "102",
-                        "district": "Hogwarts",
-                        "caseloadType": None,
-                        "outlierMetrics": [],
-                    },
-                ]
-            }
-
-            self.assertEqual(response.json, expected_json)
+            self.snapshot.assert_match(response.json, name="test_get_officers_mismatched_supervisor_can_access_all")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
@@ -653,25 +493,7 @@ Incarceration rate denominator description""",
             headers={"Origin": "http://localhost:3000"},
         )
 
-        expected_json = {
-            "metrics": [
-                {
-                    "metricId": "absconsions_bench_warrants",
-                    "caseloadType": "ALL",
-                    "benchmarks": [
-                        {"target": 0.14, "endDate": "2023-05-01", "threshold": 0.21},
-                        {"target": 0.14, "endDate": "2023-04-01", "threshold": 0.21},
-                        {"target": 0.14, "endDate": "2023-03-01", "threshold": 0.21},
-                        {"target": 0.14, "endDate": "2023-02-01", "threshold": 0.21},
-                        {"target": 0.14, "endDate": "2023-01-01", "threshold": 0.21},
-                        {"target": 0.14, "endDate": "2022-12-01", "threshold": 0.21},
-                    ],
-                    "latestPeriodValues": {"far": [0.8], "near": [0.32], "met": [0.1]},
-                }
-            ]
-        }
-
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_get_benchmarks")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
@@ -944,31 +766,7 @@ Incarceration rate denominator description""",
                 headers={"Origin": "http://localhost:3000"},
             )
 
-            expected_json = {
-                "events": [
-                    {
-                        "attributes": None,
-                        "clientId": "222",
-                        "clientName": {
-                            "givenNames": "Olivia",
-                            "middleNames": None,
-                            "surname": "Rodrigo",
-                        },
-                        "eventDate": "2023-04-01",
-                        "metricId": "absconsions_bench_warrants",
-                        "officerAssignmentDate": "2022-01-01",
-                        "officerAssignmentEndDate": "2023-06-01",
-                        "officerId": "03",
-                        "stateCode": "US_PA",
-                        "pseudonymizedClientId": "clienthash2",
-                        "supervisionEndDate": "2023-06-01",
-                        "supervisionStartDate": "2022-01-01",
-                        "supervisionType": "PROBATION",
-                    }
-                ]
-            }
-
-            self.assertEqual(response.json, expected_json)
+            self.snapshot.assert_match(response.json, name="test_get_events_by_officer_mismatched_supervisor_can_access_all")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
@@ -1321,36 +1119,12 @@ Incarceration rate denominator description""",
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
 
-            expected_json = {
-                "events": [
-                    {
-                        "attributes": None,
-                        "clientId": "222",
-                        "clientName": {
-                            "givenNames": "Olivia",
-                            "middleNames": None,
-                            "surname": "Rodrigo",
-                        },
-                        "eventDate": "2023-04-01",
-                        "metricId": "absconsions_bench_warrants",
-                        "officerAssignmentDate": "2022-01-01",
-                        "officerAssignmentEndDate": "2023-06-01",
-                        "officerId": "03",
-                        "stateCode": "US_PA",
-                        "pseudonymizedClientId": "clienthash2",
-                        "supervisionEndDate": "2023-06-01",
-                        "supervisionStartDate": "2022-01-01",
-                        "supervisionType": "PROBATION",
-                    }
-                ]
-            }
-
+            self.snapshot.assert_match(response.json, name="test_get_events_by_officer_success")  # type: ignore[attr-defined]
             mock_get_events.assert_called_with(
                 "hashhash",
                 [TEST_METRIC_3.name],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
-            self.assertEqual(response.json, expected_json)
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_events_by_officer",
@@ -1430,36 +1204,12 @@ Incarceration rate denominator description""",
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
 
-            expected_json = {
-                "events": [
-                    {
-                        "attributes": None,
-                        "clientId": "444",
-                        "clientName": {
-                            "givenNames": "Barbie",
-                            "middleNames": "Millicent",
-                            "surname": "Roberts",
-                        },
-                        "eventDate": None,
-                        "metricId": "incarceration_starts_and_inferred",
-                        "officerAssignmentDate": None,
-                        "officerAssignmentEndDate": None,
-                        "officerId": "03",
-                        "stateCode": "US_PA",
-                        "pseudonymizedClientId": "clienthash4",
-                        "supervisionEndDate": None,
-                        "supervisionStartDate": None,
-                        "supervisionType": "PROBATION",
-                    }
-                ]
-            }
-
+            self.snapshot.assert_match(response.json, name="test_get_events_by_officer_success_with_null_dates")  # type: ignore[attr-defined]
             mock_get_events.assert_called_with(
                 "hashhash",
                 [TEST_METRIC_1.name],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
             )
-            self.assertEqual(response.json, expected_json)
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
@@ -1611,34 +1361,13 @@ Incarceration rate denominator description""",
         )
 
         mock_get_supervisor.return_value = None
-
-        expected_json = {
-            "officer": {
-                "fullName": {
-                    "givenNames": "Olivia",
-                    "middleNames": None,
-                    "surname": "Rodrigo",
-                    "nameSuffix": None,
-                },
-                "externalId": "123",
-                "pseudonymizedId": "hashhash",
-                "supervisorExternalId": "102",
-                "district": "Guts",
-                "caseloadType": None,
-                "outlierMetrics": [],
-            }
-        }
-
         response = self.test_client.get(
             "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(
-            response.json,
-            expected_json,
-        )
+        self.snapshot.assert_match(response.json, name="test_get_officer_not_outlier")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
@@ -1698,36 +1427,8 @@ Incarceration rate denominator description""",
             headers={"Origin": "http://localhost:3000"},
         )
 
-        expected_json = {
-            "officer": {
-                "fullName": {
-                    "givenNames": "Olivia",
-                    "middleNames": None,
-                    "surname": "Rodrigo",
-                    "nameSuffix": None,
-                },
-                "externalId": "123",
-                "pseudonymizedId": "hashhash",
-                "supervisorExternalId": "102",
-                "district": "Guts",
-                "caseloadType": None,
-                "outlierMetrics": [
-                    {
-                        "metricId": "absconsions_bench_warrants",
-                        "statusesOverTime": [
-                            {
-                                "endDate": "2023-05-01",
-                                "metricRate": 0.1,
-                                "status": "FAR",
-                            },
-                        ],
-                    }
-                ],
-            }
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_get_officer_success")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
@@ -1764,26 +1465,8 @@ Incarceration rate denominator description""",
             headers={"Origin": "http://localhost:3000"},
         )
 
-        expected_json = {
-            "entity": {
-                "fullName": {
-                    "givenNames": "Supervisor",
-                    "middleNames": None,
-                    "nameSuffix": None,
-                    "surname": "2",
-                },
-                "externalId": "102",
-                "pseudonymizedId": "hashhash",
-                "supervisionDistrict": "2",
-                "email": "supervisor2@recidiviz.org",
-                "hasOutliers": True,
-            },
-            "role": "supervision_officer_supervisor",
-            "hasSeenOnboarding": False,
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_user_info_for_supervisor_match")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
@@ -1846,26 +1529,8 @@ Incarceration rate denominator description""",
             headers={"Origin": "http://localhost:3000"},
         )
 
-        expected_json = {
-            "entity": {
-                "fullName": {
-                    "givenNames": "Supervisor",
-                    "middleNames": None,
-                    "nameSuffix": None,
-                    "surname": "2",
-                },
-                "externalId": "102",
-                "pseudonymizedId": "hashhash",
-                "supervisionDistrict": "2",
-                "email": "supervisor2@recidiviz.org",
-                "hasOutliers": True,
-            },
-            "role": "supervision_officer_supervisor",
-            "hasSeenOnboarding": False,
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_user_info_for_recidiviz_user")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
@@ -1905,26 +1570,8 @@ Incarceration rate denominator description""",
             json={"hasSeenOnboarding": True},
         )
 
-        expected_json = {
-            "entity": {
-                "fullName": {
-                    "givenNames": "Supervisor",
-                    "middleNames": None,
-                    "nameSuffix": None,
-                    "surname": "2",
-                },
-                "externalId": "102",
-                "pseudonymizedId": "hashhash",
-                "supervisionDistrict": "2",
-                "email": "supervisor2@recidiviz.org",
-                "hasOutliers": True,
-            },
-            "role": "supervision_officer_supervisor",
-            "hasSeenOnboarding": True,
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_update_user_info_for_supervisor")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
@@ -2211,27 +1858,8 @@ Incarceration rate denominator description""",
             headers={"Origin": "http://localhost:3000"},
         )
 
-        expected_json = {
-            "events": [
-                {
-                    "attributes": {"testKey": "test_value"},
-                    "clientId": "111",
-                    "clientName": {
-                        "givenNames": "Harry",
-                        "middleNames": None,
-                        "surname": "Potter",
-                    },
-                    "eventDate": "2023-05-01",
-                    "metricId": "violations",
-                    "officerId": "03",
-                    "stateCode": "US_PA",
-                    "pseudonymizedClientId": "clienthash1",
-                }
-            ]
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_get_events_by_client_success")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
@@ -2279,28 +1907,8 @@ Incarceration rate denominator description""",
             f"/outliers/US_PA/client/{client_hash}/events?period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
-
-        expected_json = {
-            "events": [
-                {
-                    "attributes": {"testKey": "test_value"},
-                    "clientId": "111",
-                    "clientName": {
-                        "givenNames": "Harry",
-                        "middleNames": None,
-                        "surname": "Potter",
-                    },
-                    "eventDate": "2023-05-01",
-                    "metricId": "violations",
-                    "officerId": "03",
-                    "stateCode": "US_PA",
-                    "pseudonymizedClientId": "clienthash1",
-                }
-            ]
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_get_events_by_client_success_default_metrics")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
@@ -2456,24 +2064,8 @@ Incarceration rate denominator description""",
             f"/outliers/US_PA/client/{client_hash}",
             headers={"Origin": "http://localhost:3000"},
         )
-        expected_json = {
-            "client": {
-                "birthdate": "1989-01-01",
-                "clientId": "111",
-                "clientName": {
-                    "givenNames": "Harry",
-                    "middleNames": None,
-                    "surname": "Potter",
-                },
-                "gender": "MALE",
-                "pseudonymizedClientId": "clienthash1",
-                "raceOrEthnicity": "WHITE",
-                "stateCode": "US_PA",
-            }
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_get_client_success")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
@@ -2525,21 +2117,5 @@ Incarceration rate denominator description""",
             f"/outliers/US_PA/client/{client_hash}",
             headers={"Origin": "http://localhost:3000"},
         )
-        expected_json = {
-            "client": {
-                "birthdate": "1989-01-01",
-                "clientId": "111",
-                "clientName": {
-                    "givenNames": "Harry",
-                    "middleNames": None,
-                    "surname": "Potter",
-                },
-                "gender": "MALE",
-                "pseudonymizedClientId": "clienthash1",
-                "raceOrEthnicity": "WHITE",
-                "stateCode": "US_PA",
-            }
-        }
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response.json, expected_json)
+        self.snapshot.assert_match(response.json, name="test_get_client_success_for_csg_user")  # type: ignore[attr-defined]

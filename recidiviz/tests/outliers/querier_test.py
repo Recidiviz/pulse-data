@@ -37,17 +37,9 @@ from recidiviz.outliers.constants import (
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
     ConfigurationStatus,
-    OfficerMetricEntity,
-    OfficerSupervisorReportData,
-    OutlierMetricInfo,
     OutliersBackendConfig,
     OutliersClientEventConfig,
     OutliersMetricConfig,
-    PersonName,
-    SupervisionOfficerEntity,
-    SupervisionOfficerSupervisorEntity,
-    TargetStatus,
-    TargetStatusStrategy,
     UserInfo,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
@@ -135,6 +127,7 @@ TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
 
 
 @pytest.mark.uses_db
+@pytest.mark.usefixtures("snapshottest_snapshot")
 class TestOutliersQuerier(TestCase):
     """Implements tests for the OutliersQuerier."""
 
@@ -201,428 +194,28 @@ class TestOutliersQuerier(TestCase):
             end_date=TEST_END_DATE
         )
 
-        expected = {
-            "103": OfficerSupervisorReportData(
-                metrics=[],
-                metrics_without_outliers=[TEST_METRIC_1, TEST_METRIC_2],
-                recipient_email_address="manager3@recidiviz.org",
-                additional_recipients=["manager2@recidiviz.org"],
-            ),
-            "102": OfficerSupervisorReportData(
-                metrics=[
-                    OutlierMetricInfo(
-                        metric=TEST_METRIC_2,
-                        target=0.008,
-                        other_officers={
-                            TargetStatus.FAR: [],
-                            TargetStatus.MET: [
-                                0.27,
-                                0.11,
-                                0.039,
-                                0.184,
-                                0.126,
-                                0.171,
-                                0.333,
-                            ],
-                            TargetStatus.NEAR: [],
-                        },
-                        highlighted_officers=[
-                            OfficerMetricEntity(
-                                name=PersonName(
-                                    given_names="Officer",
-                                    surname="4",
-                                    middle_names=None,
-                                    name_suffix=None,
-                                ),
-                                rate=0.0,
-                                target_status=TargetStatus.FAR,
-                                prev_rate=0.0,
-                                supervisor_external_id="102",
-                                supervision_district="2",
-                                prev_target_status=None,
-                            )
-                        ],
-                        target_status_strategy=TargetStatusStrategy.ZERO_RATE,
-                    )
-                ],
-                metrics_without_outliers=[TEST_METRIC_1],
-                recipient_email_address="supervisor2@recidiviz.org",
-                additional_recipients=[
-                    "manager2@recidiviz.org",
-                    "manager3@recidiviz.org",
-                ],
-            ),
-            "101": OfficerSupervisorReportData(
-                metrics=[
-                    OutlierMetricInfo(
-                        metric=TEST_METRIC_1,
-                        target=0.13,
-                        other_officers={
-                            TargetStatus.FAR: [],
-                            TargetStatus.MET: [0.11, 0.04, 0.0, 0.12],
-                            TargetStatus.NEAR: [0.184, 0.17],
-                        },
-                        highlighted_officers=[
-                            OfficerMetricEntity(
-                                name=PersonName(
-                                    given_names="Officer",
-                                    surname="1",
-                                    middle_names=None,
-                                    name_suffix=None,
-                                ),
-                                rate=0.26,
-                                target_status=TargetStatus.FAR,
-                                prev_rate=0.32,
-                                supervisor_external_id="101",
-                                supervision_district="1",
-                                prev_target_status=TargetStatus.NEAR,
-                            ),
-                            OfficerMetricEntity(
-                                name=PersonName(
-                                    given_names="Officer",
-                                    surname="8",
-                                    middle_names=None,
-                                    name_suffix=None,
-                                ),
-                                rate=0.333,
-                                target_status=TargetStatus.FAR,
-                                prev_rate=None,
-                                supervisor_external_id="101",
-                                supervision_district="1",
-                                prev_target_status=None,
-                            ),
-                        ],
-                        target_status_strategy=TargetStatusStrategy.IQR_THRESHOLD,
-                    )
-                ],
-                metrics_without_outliers=[TEST_METRIC_2],
-                recipient_email_address="supervisor1@recidiviz.org",
-                additional_recipients=[],
-            ),
-        }
-        expected_json = {
-            "103": {
-                "metrics": [],
-                "metrics_without_outliers": [
-                    {
-                        "name": "incarceration_starts_and_inferred",
-                        "outcome_type": "ADVERSE",
-                        "title_display_name": "Incarceration Rate (CPVs & TPVs)",
-                        "body_display_name": "incarceration rate",
-                        "event_name": "incarcerations",
-                        "event_name_singular": "incarceration",
-                        "event_name_past_tense": "were incarcerated",
-                        "description_markdown": """Incarceration rate description
-
-<br />
-Incarceration rate denominator description""",
-                    },
-                    {
-                        "name": "task_completions_transfer_to_limited_supervision",
-                        "outcome_type": "FAVORABLE",
-                        "title_display_name": "Limited Supervision Unit Transfer Rate",
-                        "body_display_name": "Limited Supervision Unit transfer rate(s)",
-                        "event_name": "LSU transfers",
-                        "event_name_singular": "LSU transfer",
-                        "event_name_past_tense": "were transferred to LSU",
-                        "description_markdown": None,
-                    },
-                ],
-                "recipient_email_address": "manager3@recidiviz.org",
-                "additional_recipients": ["manager2@recidiviz.org"],
-            },
-            "102": {
-                "metrics": [
-                    {
-                        "metric": {
-                            "name": "task_completions_transfer_to_limited_supervision",
-                            "outcome_type": "FAVORABLE",
-                            "title_display_name": "Limited Supervision Unit Transfer Rate",
-                            "body_display_name": "Limited Supervision Unit transfer rate(s)",
-                            "event_name": "LSU transfers",
-                            "event_name_singular": "LSU transfer",
-                            "event_name_past_tense": "were transferred to LSU",
-                            "description_markdown": None,
-                        },
-                        "target": 0.008,
-                        "other_officers": {
-                            "FAR": [],
-                            "MET": [0.27, 0.11, 0.039, 0.184, 0.126, 0.171, 0.333],
-                            "NEAR": [],
-                        },
-                        "highlighted_officers": [
-                            {
-                                "name": {
-                                    "given_names": "Officer",
-                                    "surname": "4",
-                                    "middle_names": None,
-                                    "name_suffix": None,
-                                },
-                                "rate": 0.0,
-                                "target_status": "FAR",
-                                "prev_rate": 0.0,
-                                "supervisor_external_id": "102",
-                                "supervision_district": "2",
-                                "prev_target_status": None,
-                            }
-                        ],
-                        "target_status_strategy": "ZERO_RATE",
-                    }
-                ],
-                "metrics_without_outliers": [
-                    {
-                        "name": "incarceration_starts_and_inferred",
-                        "outcome_type": "ADVERSE",
-                        "title_display_name": "Incarceration Rate (CPVs & TPVs)",
-                        "body_display_name": "incarceration rate",
-                        "event_name": "incarcerations",
-                        "event_name_singular": "incarceration",
-                        "event_name_past_tense": "were incarcerated",
-                        "description_markdown": """Incarceration rate description
-
-<br />
-Incarceration rate denominator description""",
-                    }
-                ],
-                "recipient_email_address": "supervisor2@recidiviz.org",
-                "additional_recipients": [
-                    "manager2@recidiviz.org",
-                    "manager3@recidiviz.org",
-                ],
-            },
-            "101": {
-                "metrics": [
-                    {
-                        "metric": {
-                            "name": "incarceration_starts_and_inferred",
-                            "outcome_type": "ADVERSE",
-                            "title_display_name": "Incarceration Rate (CPVs & TPVs)",
-                            "body_display_name": "incarceration rate",
-                            "event_name": "incarcerations",
-                            "event_name_singular": "incarceration",
-                            "event_name_past_tense": "were incarcerated",
-                            "description_markdown": """Incarceration rate description
-
-<br />
-Incarceration rate denominator description""",
-                        },
-                        "target": 0.13,
-                        "other_officers": {
-                            "FAR": [],
-                            "MET": [0.11, 0.04, 0.0, 0.12],
-                            "NEAR": [0.184, 0.17],
-                        },
-                        "highlighted_officers": [
-                            {
-                                "name": {
-                                    "given_names": "Officer",
-                                    "surname": "1",
-                                    "middle_names": None,
-                                    "name_suffix": None,
-                                },
-                                "rate": 0.26,
-                                "target_status": "FAR",
-                                "prev_rate": 0.32,
-                                "supervisor_external_id": "101",
-                                "supervision_district": "1",
-                                "prev_target_status": "NEAR",
-                            },
-                            {
-                                "name": {
-                                    "given_names": "Officer",
-                                    "surname": "8",
-                                    "middle_names": None,
-                                    "name_suffix": None,
-                                },
-                                "rate": 0.333,
-                                "target_status": "FAR",
-                                "prev_rate": None,
-                                "supervisor_external_id": "101",
-                                "supervision_district": "1",
-                                "prev_target_status": None,
-                            },
-                        ],
-                        "target_status_strategy": "IQR_THRESHOLD",
-                    }
-                ],
-                "metrics_without_outliers": [
-                    {
-                        "name": "task_completions_transfer_to_limited_supervision",
-                        "outcome_type": "FAVORABLE",
-                        "title_display_name": "Limited Supervision Unit Transfer Rate",
-                        "body_display_name": "Limited Supervision Unit transfer rate(s)",
-                        "event_name": "LSU transfers",
-                        "event_name_singular": "LSU transfer",
-                        "event_name_past_tense": "were transferred to LSU",
-                        "description_markdown": None,
-                    }
-                ],
-                "recipient_email_address": "supervisor1@recidiviz.org",
-                "additional_recipients": [],
-            },
-        }
-        self.assertEqual(expected, actual)
+        self.snapshot.assert_match(actual, name="test_get_officer_level_report_data_by_supervisor")  # type: ignore[attr-defined]
 
         actual_json = {
             supervisor_id: supervisor_data.to_dict()
             for supervisor_id, supervisor_data in actual.items()
         }
-        self.assertEqual(expected_json, actual_json)
+        self.snapshot.assert_match(actual_json, name="test_get_officer_level_report_data_by_supervisor_json")  # type: ignore[attr-defined]
 
     def test_get_supervision_officer_entities(
         self,
     ) -> None:
-        expected = [
-            SupervisionOfficerSupervisorEntity(
-                full_name=PersonName(
-                    given_names="Supervisor",
-                    surname="1",
-                    middle_names=None,
-                    name_suffix=None,
-                ),
-                external_id="101",
-                pseudonymized_id="hash1",
-                supervision_district=None,
-                email="supervisor1@recidiviz.org",
-                has_outliers=True,
-            ),
-            SupervisionOfficerSupervisorEntity(
-                full_name=PersonName(
-                    given_names="Supervisor",
-                    surname="2",
-                    middle_names=None,
-                    name_suffix=None,
-                ),
-                external_id="102",
-                pseudonymized_id="hash2",
-                supervision_district="2",
-                email="supervisor2@recidiviz.org",
-                has_outliers=True,
-            ),
-            SupervisionOfficerSupervisorEntity(
-                full_name=PersonName(
-                    given_names="Supervisor",
-                    surname="3",
-                    middle_names=None,
-                    name_suffix=None,
-                ),
-                external_id="103",
-                pseudonymized_id="hash3",
-                supervision_district="2",
-                email="manager3@recidiviz.org",
-                has_outliers=False,
-            ),
-        ]
-
         actual = OutliersQuerier(
             StateCode.US_PA
         ).get_supervision_officer_supervisor_entities()
 
-        self.assertEqual(expected, actual)
+        self.snapshot.assert_match(actual, name="test_get_supervision_officer_entities")  # type: ignore[attr-defined]
 
     def test_get_officers_for_supervisor(self) -> None:
         actual = OutliersQuerier(StateCode.US_PA).get_officers_for_supervisor(
             supervisor_external_id="102", num_lookback_periods=5
         )
-
-        expected = [
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    given_names="Officer",
-                    surname="3",
-                    middle_names=None,
-                    name_suffix=None,
-                ),
-                external_id="03",
-                pseudonymized_id="officerhash3",
-                supervisor_external_id="102",
-                district="2",
-                caseload_type=None,
-                outlier_metrics=[
-                    {
-                        "metric_id": "absconsions_bench_warrants",
-                        "statuses_over_time": [
-                            {
-                                "status": "FAR",
-                                "end_date": "2023-05-01",
-                                "metric_rate": 0.8,
-                            },
-                            {
-                                "status": "FAR",
-                                "end_date": "2023-04-01",
-                                "metric_rate": 0.8,
-                            },
-                            {
-                                "status": "FAR",
-                                "end_date": "2023-03-01",
-                                "metric_rate": 0.8,
-                            },
-                            {
-                                "status": "FAR",
-                                "end_date": "2023-02-01",
-                                "metric_rate": 0.8,
-                            },
-                            {
-                                "status": "FAR",
-                                "end_date": "2023-01-01",
-                                "metric_rate": 0.8,
-                            },
-                            {
-                                "status": "FAR",
-                                "end_date": "2022-12-01",
-                                "metric_rate": 0.8,
-                            },
-                        ],
-                    }
-                ],
-            ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    given_names="Officer",
-                    surname="4",
-                    middle_names=None,
-                    name_suffix=None,
-                ),
-                external_id="04",
-                pseudonymized_id="officerhash4",
-                supervisor_external_id="102",
-                district="2",
-                caseload_type=None,
-                outlier_metrics=[
-                    {
-                        "metric_id": "task_completions_transfer_to_limited_supervision",
-                        "statuses_over_time": [
-                            {
-                                "status": "FAR",
-                                "end_date": "2023-05-01",
-                                "metric_rate": 0,
-                            },
-                            {
-                                "status": "FAR",
-                                "end_date": "2023-04-01",
-                                "metric_rate": 0,
-                            },
-                        ],
-                    }
-                ],
-            ),
-            SupervisionOfficerEntity(
-                full_name=PersonName(
-                    given_names="Officer",
-                    surname="6",
-                    middle_names=None,
-                    name_suffix=None,
-                ),
-                external_id="06",
-                pseudonymized_id="officerhash6",
-                supervisor_external_id="102",
-                district="2",
-                caseload_type=None,
-                outlier_metrics=[],
-            ),
-        ]
-
-        self.assertEqual(actual, expected)
+        self.snapshot.assert_match(actual, name="test_get_officers_for_supervisor")  # type: ignore[attr-defined]
 
     def test_get_supervisor_from_pseudonymized_id_no_match(self) -> None:
         # If matching supervisor doesn't exist, return None
@@ -652,53 +245,7 @@ Incarceration rate denominator description""",
 
     def test_get_benchmarks(self) -> None:
         actual = OutliersQuerier(StateCode.US_PA).get_benchmarks(4)
-
-        expected = [
-            {
-                "metric_id": "absconsions_bench_warrants",
-                "caseload_type": "ALL",
-                "benchmarks": [
-                    {"target": 0.14, "end_date": "2023-05-01", "threshold": 0.21},
-                    {"target": 0.14, "end_date": "2023-04-01", "threshold": 0.21},
-                    {"target": 0.14, "end_date": "2023-03-01", "threshold": 0.21},
-                    {"target": 0.14, "end_date": "2023-02-01", "threshold": 0.21},
-                    {"target": 0.14, "end_date": "2023-01-01", "threshold": 0.21},
-                ],
-                "latest_period_values": {
-                    "far": [0.8],
-                    "near": [0.32],
-                    "met": [0.1, 0.1],
-                },
-            },
-            {
-                "metric_id": "incarceration_starts_and_inferred",
-                "caseload_type": "ALL",
-                "benchmarks": [
-                    {"target": 0.13, "end_date": "2023-05-01", "threshold": 0.2},
-                    {"target": 0.14, "end_date": "2023-04-01", "threshold": 0.21},
-                ],
-                "latest_period_values": {
-                    "far": [0.26, 0.333],
-                    "near": [0.17, 0.184],
-                    "met": [0.0, 0.04, 0.11, 0.12],
-                },
-            },
-            {
-                "metric_id": "task_completions_transfer_to_limited_supervision",
-                "caseload_type": "ALL",
-                "benchmarks": [
-                    {"target": 0.008, "end_date": "2023-05-01", "threshold": 0.1},
-                    {"target": 0.008, "end_date": "2023-04-01", "threshold": 0.1},
-                ],
-                "latest_period_values": {
-                    "far": [0.0],
-                    "near": [],
-                    "met": [0.039, 0.11, 0.126, 0.171, 0.184, 0.27, 0.333],
-                },
-            },
-        ]
-
-        self.assertEqual(expected, actual)
+        self.snapshot.assert_match(actual, name="test_get_benchmarks")  # type: ignore[attr-defined]
 
     def test_get_events_by_officer(self) -> None:
         # Return matching event
@@ -729,34 +276,7 @@ Incarceration rate denominator description""",
         actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
             pseudonymized_officer_id="officerhash3", num_lookback_periods=0
         )
-
-        expected = SupervisionOfficerEntity(
-            full_name=PersonName(
-                given_names="Officer",
-                surname="3",
-                middle_names=None,
-                name_suffix=None,
-            ),
-            external_id="03",
-            pseudonymized_id="officerhash3",
-            supervisor_external_id="102",
-            district="2",
-            caseload_type=None,
-            outlier_metrics=[
-                {
-                    "metric_id": "absconsions_bench_warrants",
-                    "statuses_over_time": [
-                        {
-                            "status": "FAR",
-                            "end_date": "2023-05-01",
-                            "metric_rate": 0.8,
-                        },
-                    ],
-                }
-            ],
-        )
-
-        self.assertEqual(expected, actual)
+        self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match")  # type: ignore[attr-defined]
 
     def test_get_supervision_officer_entity_no_match(self) -> None:
         # Return None because none found
