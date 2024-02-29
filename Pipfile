@@ -234,6 +234,7 @@ twilio-stubs = "*"
 urllib3 = "==1.26.15"
 xlrd = "*"
 google-cloud-run = "*"
+snapshottest = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!

@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for insights-specific routes in admin_panel/routes/line_staff_tools.py"""
-
-
 import json
 from datetime import datetime
 from http import HTTPStatus
@@ -46,6 +44,7 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
     MagicMock(return_value=("test-user@recidiviz.org", None)),
 )
 @pytest.mark.uses_db
+@pytest.mark.usefixtures("snapshottest_snapshot")
 class OutliersAdminPanelEndpointTests(TestCase):
     """Tests of our Flask endpoints"""
 
@@ -147,87 +146,8 @@ class OutliersAdminPanelEndpointTests(TestCase):
         mock_enabled_states.return_value = ["US_PA"]
         response = self.client.get(self.configurations, headers=self.headers)
 
-        expected = [
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 1,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "agent",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-26T13:30:00",
-                "updatedBy": "alexa@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv2",
-                "id": 4,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:03",
-                "updatedBy": "dana2@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv1",
-                "id": 3,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:02",
-                "updatedBy": "dana1@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 2,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "INACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:01",
-                "updatedBy": "fake@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-        ]
-
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(json.loads(response.data), expected)
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_configurations")  # type: ignore[attr-defined]
 
     ########
     # POST /outliers/<state_code_str>/configurations
@@ -239,104 +159,6 @@ class OutliersAdminPanelEndpointTests(TestCase):
     @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
     def test_add_configuration(self, mock_enabled_states: MagicMock) -> None:
         mock_enabled_states.return_value = ["US_PA"]
-
-        expected = [
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv1",
-                "id": 5,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-02-01T00:00:00",
-                "updatedBy": "test-user@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 1,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "agent",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-26T13:30:00",
-                "updatedBy": "alexa@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv2",
-                "id": 4,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:03",
-                "updatedBy": "dana2@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv1",
-                "id": 3,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "INACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:02",
-                "updatedBy": "dana1@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 2,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "INACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:01",
-                "updatedBy": "fake@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-        ]
 
         self.client.post(
             self.configurations,
@@ -359,8 +181,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
         )
 
         response = self.client.get(self.configurations, headers=self.headers)
-
-        self.assertEqual(json.loads(response.data), expected)
+        self.snapshot.assert_match(json.loads(response.data), name="test_add_configuration")  # type: ignore[attr-defined]
 
     @patch(
         "recidiviz.admin_panel.routes.outliers.get_outliers_enabled_states",
@@ -400,103 +221,6 @@ class OutliersAdminPanelEndpointTests(TestCase):
     ) -> None:
         mock_enabled_states.return_value = ["US_PA"]
 
-        expected = [
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv1",
-                "id": 5,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-02-01T00:00:00",
-                "updatedBy": "email@gmail.com",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 1,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "agent",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-26T13:30:00",
-                "updatedBy": "alexa@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv2",
-                "id": 4,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:03",
-                "updatedBy": "dana2@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv1",
-                "id": 3,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "INACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:02",
-                "updatedBy": "dana1@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 2,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "INACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:01",
-                "updatedBy": "fake@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-        ]
         self.client.post(
             self.configurations,
             headers=self.headers,
@@ -519,7 +243,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
         )
 
         response = self.client.get(self.configurations, headers=self.headers)
-        self.assertEqual(json.loads(response.data), expected)
+        self.snapshot.assert_match(json.loads(response.data), name="test_add_configuration_with_updated_by")  # type: ignore[attr-defined]
 
     ########
     # PUT /outliers/<state_code_str>/configurations/<config_id_str>/deactivate
