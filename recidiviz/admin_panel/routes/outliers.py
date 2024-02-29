@@ -157,8 +157,10 @@ class DeactivateConfigurationByIdAPI(MethodView):
         return f"Configuration {str(config_id)} has been deactivated"
 
 
-@outliers_blueprint.route("<state_code_str>/configurations/<int:config_id>/promote")
-class PromoteConfigurationsAPI(MethodView):
+@outliers_blueprint.route(
+    "<state_code_str>/configurations/<int:config_id>/promote/production"
+)
+class PromoteToProdConfigurationsAPI(MethodView):
     """CRUD endpoints for /admin/outliers/<state_code_str>/configurations/<config_id>/promote"""
 
     @outliers_blueprint.response(HTTPStatus.OK)
@@ -210,3 +212,49 @@ class PromoteConfigurationsAPI(MethodView):
 
         response.raise_for_status()
         return f"Configuration {str(config_id)} successfully promoted to production"
+
+
+@outliers_blueprint.route(
+    "<state_code_str>/configurations/<int:config_id>/promote/default"
+)
+class PromoteToDefaultConfigurationsAPI(MethodView):
+    """CRUD endpoints for /admin/outliers/<state_code_str>/configurations/<config_id>/promote/default"""
+
+    @outliers_blueprint.response(HTTPStatus.OK)
+    def post(self, state_code_str: str, config_id: int) -> str:
+        """
+        Promotes the Configuration with id: config_id to the default configuration
+        by adding a new DB entity for an active configuration with `feature_variant=None`
+        """
+        state_code = StateCode(state_code_str.upper())
+        querier = OutliersQuerier(state_code)
+        config = querier.get_configuration(config_id)
+
+        if config.feature_variant is None:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"Configuration {config.id} is already a default configuration, status is {config.status}",
+            )
+
+        config_dict = config.to_dict()
+
+        try:
+            user_email, error_str = get_authenticated_user_email()
+            if error_str:
+                logging.error("Error determining logged-in user: %s", error_str)
+
+            # The id is autoincremented upon insert
+            config_dict.pop("id")
+            # Update the dictionary to have up-to-date information
+            config_dict["updated_by"] = user_email.lower()
+            config_dict["updated_at"] = datetime.now()
+            config_dict["status"] = ConfigurationStatus.ACTIVE.value
+            # Setting the configuration to default means having no FV
+            config_dict["feature_variant"] = None
+
+            config = querier.add_configuration(config_dict)
+        except IntegrityError as e:
+            logging.error("Error adding configuration: %s", e)
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR, message=f"{e}")
+
+        return f"Configuration {str(config_id)} successfully promoted to the default configuration"
