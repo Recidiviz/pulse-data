@@ -21,6 +21,7 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
@@ -43,7 +44,26 @@ see an SCC review take place. SCC reviews are summed over the solitary confineme
 will restart for each new session. """
 
 _QUERY_TEMPLATE = f"""
-   WITH review_dates_preprocessed AS (
+   WITH solitary_sessions_without_start_preprocessed AS (
+   /* This CTE sessionizes all adjacent solitary housing_unit_type sessions with the exception of START sessions,
+   which are mapped to `OTHER_SOLITARY_CONFINEMENT` in Michigan. Because clients who are part of START are in 
+   solitary, but do not require SCC reviews with the same date cadence, they are removed from this query */
+        SELECT
+            * EXCEPT (housing_unit_type),
+            IF(
+                (CONTAINS_SUBSTR(housing_unit_type, 'SOLITARY_CONFINEMENT') AND
+                NOT CONTAINS_SUBSTR(housing_unit_type, 'OTHER_SOLITARY_CONFINEMENT')),
+                'SOLITARY_CONFINEMENT',
+                housing_unit_type
+            ) AS housing_unit_type_collapsed_solitary,
+        FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized`
+    ),
+    solitary_sessions_without_start AS ({aggregate_adjacent_spans(
+        table_name="solitary_sessions_without_start_preprocessed",
+        attribute="housing_unit_type_collapsed_solitary",
+        end_date_field_name='end_date_exclusive'
+    )}),
+       review_dates_preprocessed AS (
        /* This CTE gathers all solitary confinement session start dates, and associates the first scc review. 
        If that review is within 7 days, that date is used to calculate subsequent review due dates, 
        otherwise, 7 days from the solitary start is used. */
@@ -53,7 +73,7 @@ _QUERY_TEMPLATE = f"""
             h.start_date,
             h.end_date_exclusive,
             COALESCE(s.completion_event_date, DATE_ADD(h.start_date, INTERVAL 7 DAY)) AS first_review_date,
-        FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` h
+        FROM  solitary_sessions_without_start h
         LEFT JOIN `{{project_id}}.{{analyst_views_dataset}}.us_mi_security_classification_committee_review_materialized` s
             ON s.person_id = h.person_id
             AND s.state_code = h.state_code
@@ -70,7 +90,7 @@ _QUERY_TEMPLATE = f"""
         SELECT 
             state_code,
             person_id, 
-            DATE_ADD(first_review_date, INTERVAL offset DAY) AS change_date
+            DATE_TRUNC(DATE_ADD(first_review_date, INTERVAL offset DAY), WEEK(MONDAY)) AS change_date
         FROM review_dates_preprocessed p,
             UNNEST(GENERATE_ARRAY(30, 36500, 30)) AS offset
         WHERE
@@ -107,7 +127,7 @@ _QUERY_TEMPLATE = f"""
             0 AS expected_review,
             0 AS activity_type,
         FROM
-            `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` h
+            solitary_sessions_without_start h
         WHERE
             state_code = 'US_MI'
             AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
@@ -187,9 +207,9 @@ _QUERY_TEMPLATE = f"""
         FROM
             time_spans ts
         INNER JOIN
-            `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` hu
+            solitary_sessions_without_start hu
             ON ts.person_id = hu.person_id
-            AND ts.start_date < {nonnull_end_date_exclusive_clause('hu.end_date_exclusive')}
+            AND ts.start_date < {nonnull_end_date_clause('hu.end_date_exclusive')}
             AND hu.start_date < COALESCE(ts.end_date, "9999-12-31")
             AND hu.housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
     )
