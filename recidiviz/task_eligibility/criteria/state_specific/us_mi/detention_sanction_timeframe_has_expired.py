@@ -74,7 +74,7 @@ detention_designation_spans AS (
         ON pei.external_id = d.offender_id
         AND pei.id_type = 'US_MI_DOC_ID'
     WHERE r.description = 'Detention'
-    AND DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', start_date)) < DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', end_date))
+    AND DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', start_date)) < {nonnull_end_date_clause("DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', end_date))")}
 ),
 critical_date_spans AS (
     SELECT
