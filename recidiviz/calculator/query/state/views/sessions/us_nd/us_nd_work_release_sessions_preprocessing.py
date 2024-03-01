@@ -46,6 +46,8 @@ _WR_FACILITIES = (
             "MTPMND",  # Centre Mandan - Male
             "BTC",  # Bismarck Transition Center
             "MRCC",  # Missouri River Correctional Center
+            "SWMCCC",  # SW Multi-County Correctional Center - Work Release
+            "WCJWRP",  # Ward County Jail - Work Release Program
         ]
     )
     + "')"
@@ -60,7 +62,6 @@ North Dakota state-specific preprocessing for work_release sessions. Most folks 
 as being on work-release based on their facility assignment, although sometimes we need
 to use their program assignment too."""
 
-# TODO(#27797): Add two county jails to this view
 US_ND_WORK_RELEASE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = f"""
 WITH wr_facilities AS (
     -- All facilities that have work release programs
