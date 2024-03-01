@@ -354,8 +354,16 @@ def get_assignment_query_for_unit_of_analysis(
 
 def get_static_attributes_query_for_unit_of_analysis(
     unit_of_analysis_type: MetricUnitOfAnalysisType,
+    bq_view: Optional[bool] = True,
 ) -> Optional[str]:
-    """Returns the query that associates a unit of analysis with its static attribute columns"""
+    """
+    Returns the query that associates a unit of analysis with its static attribute columns.
+    If bq_view is True, includes the `{project_id}` prefix in all view addresses; otherwise,
+    removes prefix because we assume the view will be referenced in Looker, where project id is set elsewhere.
+    """
     if unit_of_analysis_type in UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT:
-        return UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT[unit_of_analysis_type]
+        query = UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT[unit_of_analysis_type]
+        if not bq_view:
+            query = query.replace("{project_id}.", "")
+        return query
     return None

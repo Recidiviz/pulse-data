@@ -42,6 +42,22 @@ FIELD_TEMPLATE = """
 LookMLViewFieldT = TypeVar("LookMLViewFieldT", bound="LookMLViewField")
 
 
+def enforce_has_datatype_if_date_field(
+    field_parameters: List[LookMLFieldParameter],
+) -> None:
+    """Enforce that datatype exists when type is date"""
+    if any(
+        isinstance(param, FieldParameterType)
+        and param.field_type is LookMLFieldType.DATE
+        for param in field_parameters
+    ) and not any(
+        isinstance(param, FieldParameterDatatype) for param in field_parameters
+    ):
+        raise ValueError(
+            "Datatype parameter must be supplied when type parameter is `date`."
+        )
+
+
 @attr.define
 class LookMLViewField:
     """Produces a LookML view field clause that satisfies the syntax described in
@@ -85,18 +101,6 @@ class LookMLViewField:
                 f"Defined field parameters contain repeated key: {single_value_keys}"
             )
 
-        # Enforce that datatype exists when type is date
-        if any(
-            isinstance(param, FieldParameterType)
-            and param.field_type is LookMLFieldType.DATE
-            for param in self.parameters
-        ) and not any(
-            isinstance(param, FieldParameterDatatype) for param in self.parameters
-        ):
-            raise ValueError(
-                "Datatype parameter must be supplied when type parameter is `date`."
-            )
-
     def build(self) -> str:
         parameter_declarations = "\n    ".join(
             [param.build() for param in self.parameters]
@@ -123,6 +127,11 @@ class DimensionLookMLViewField(LookMLViewField):
     """Defines a LookML dimension field object."""
 
     field_category = LookMLFieldCategory.DIMENSION
+
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+        # Enforce that datatype exists when type is date
+        enforce_has_datatype_if_date_field(self.parameters)
 
     @classmethod
     def for_column(
@@ -177,10 +186,20 @@ class DimensionLookMLViewField(LookMLViewField):
 class FilterLookMLViewField(LookMLViewField):
     field_category = LookMLFieldCategory.FILTER
 
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+        # Enforce that datatype exists when type is date
+        enforce_has_datatype_if_date_field(self.parameters)
+
 
 @attr.define
 class MeasureLookMLViewField(LookMLViewField):
     field_category = LookMLFieldCategory.MEASURE
+
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+        # Enforce that datatype exists when type is date
+        enforce_has_datatype_if_date_field(self.parameters)
 
 
 @attr.define
@@ -226,5 +245,8 @@ class DimensionGroupLookMLViewField(LookMLViewField):
             raise ValueError(
                 "`timeframes` may only be used when type parameter is `time`."
             )
+
+        # Enforce that datatype exists when type is date
+        enforce_has_datatype_if_date_field(self.parameters)
 
     field_category = LookMLFieldCategory.DIMENSION_GROUP
