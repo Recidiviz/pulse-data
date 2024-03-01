@@ -50,8 +50,8 @@ class Opportunity(WorkflowsBase):
 
     state_code = Column(String, primary_key=True)
     opportunity_type = Column(String, primary_key=True)
-    updated_by = Column(DateTime, nullable=False)
-    updated_at = Column(String, nullable=False)
+    updated_by = Column(String, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
     gating_feature_variant = Column(String, nullable=True)
     # TODO(#27733): Migrate fields from WorkflowsOpportunityConfig
 
