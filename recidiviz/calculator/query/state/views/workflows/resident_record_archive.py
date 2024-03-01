@@ -49,7 +49,7 @@ RESIDENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
     FROM split_path
     -- Pull the person_id from the latest version of ingested data
     INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` latest_person_id
-        ON latest_person_id.state_code = path_parts[SAFE_OFFSET(2)]
+        ON latest_person_id.state_code = IF(path_parts[SAFE_OFFSET(2)]="US_ID", "US_IX", path_parts[SAFE_OFFSET(2)])
         AND latest_person_id.person_external_id = split_path.person_external_id
 """
 
