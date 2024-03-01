@@ -42,8 +42,12 @@ from recidiviz.looker.lookml_view_field import (
 )
 from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
+    ASSIGNMENT_NAME_TO_TYPES,
     generate_assignment_event_metric_view,
     generate_assignment_span_metric_view,
+    generate_assignments_view,
+    generate_assignments_with_attributes_and_time_periods_view,
+    generate_assignments_with_attributes_view,
     generate_custom_metrics_view,
     generate_period_event_metric_view,
     generate_period_span_metric_view,
@@ -121,6 +125,20 @@ def main(
             view_name,
             additional_view_fields=[task_type_parameter_field],
         ).write(output_directory, source_script_path=__file__)
+
+        generate_assignments_view(
+            view_name,
+            ASSIGNMENT_NAME_TO_TYPES,
+        ).write(output_subdirectory, source_script_path=__file__)
+
+        generate_assignments_with_attributes_view(
+            view_name,
+        ).write(output_subdirectory, source_script_path=__file__)
+
+        generate_assignments_with_attributes_and_time_periods_view(
+            view_name,
+        ).write(output_subdirectory, source_script_path=__file__)
+
         generate_period_span_metric_view(
             [
                 metric
