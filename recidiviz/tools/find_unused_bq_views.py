@@ -109,9 +109,6 @@ from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses i
 from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
-    HOUSING_UNIT_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
@@ -120,9 +117,6 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 )
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.work_release_sessions import (
-    WORK_RELEASE_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snoozed import (
     CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER,
@@ -217,10 +211,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
         "Not currently referenced but captures state-specific logic that may eventually be relevant to "
         "assessment schema and could assist with PSI-shaped work (mayukas 12/21/23)"
     ),
-    HOUSING_UNIT_SESSIONS_VIEW_BUILDER.address: (
-        "We don't use specific housing unit info in downstream products right now, but "
-        "this sessions view is useful for ad hoc analysis (Shalin Brahmbhatt 12/21/23)"
-    ),
     PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER.address: (
         "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
         "provides a template for an eventual  schema addition to support parole boards info. "
@@ -234,10 +224,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
         "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
         "provides a template for an eventual  schema addition to support parole boards info. "
         "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
-    ),
-    WORK_RELEASE_SESSIONS_VIEW_BUILDER.address: (
-        "Will be used for event view builders (Hugo S 12/21/23) "
-        "TODO(#16722): can be deleted once this view is referenced"
     ),
     CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER.address: (
         "Pulled into a google sheet that is being used for impact tracking (Dana Hoffman 12/21/23)"
