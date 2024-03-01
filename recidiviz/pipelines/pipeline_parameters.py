@@ -351,7 +351,8 @@ class PipelineParameters:
                         "shuffle-mode=service",
                         "use-beam-bq-sink",
                         "use-runner-v2",
-                        "enable_google_cloud_profiler",
+                        # TODO(#27823): add this flag back if it isn't the cause of worker failures or if google resolves the issue
+                        # "enable_google_cloud_profiler",
                     ],
                     "network": "default",
                     "subnetwork": f"https://www.googleapis.com/compute/v1/projects/{project_id}/regions/{self.region}/subnetworks/default",

@@ -39,7 +39,8 @@ REQUIRED_PACKAGES = [
     "google-api-core",
     "google-api-python-client",
     "google-cloud-monitoring",
-    "google-cloud-profiler",
+    # TODO(#27823): add this package back if it isn't the cause of worker failures or if google resolves the issue
+    # "google-cloud-profiler",
     "google-cloud-secret-manager",
     "google-cloud-storage",
     "google-cloud-logging",
