@@ -305,7 +305,7 @@ snapshots[
     "config": {
         "atOrBelowRateLabel": "At or below statewide rate",
         "clientEvents": [{"displayName": "Sanctions", "name": "violation_responses"}],
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "",
         "learnMoreUrl": "https://recidiviz.org",
         "metrics": [
             {
@@ -323,7 +323,7 @@ Incarceration rate denominator description""",
             },
             {
                 "bodyDisplayName": "absconsion rate",
-                "descriptionMarkdown": None,
+                "descriptionMarkdown": "",
                 "eventName": "absconsions",
                 "eventNamePastTense": "absconded",
                 "eventNameSingular": "absconsion",

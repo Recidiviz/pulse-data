@@ -39,7 +39,7 @@ class ConfigurationSchema(CamelCaseSchema):
     learn_more_url = fields.Str(required=True)
     none_are_outliers_label = fields.Str(required=True)
     worse_than_rate_label = fields.Str(required=True)
-    exclusion_reason_description = fields.Str(allow_none=True)
+    exclusion_reason_description = fields.Str(required=True)
     slightly_worse_than_rate_label = fields.Str(required=True)
     at_or_below_rate_label = fields.Str(required=True)
 

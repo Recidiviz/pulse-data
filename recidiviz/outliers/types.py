@@ -145,7 +145,7 @@ class OutliersMetricConfig:
 
     # A description of how the metric for this event type is calculated, formatted in markdown and
     # displayed when a user clicks on the info icon next to the metric.
-    description_markdown: str | None = attr.ib(default=None)
+    description_markdown: str = attr.ib()
 
     # The query fragment to use to filter analyst_data.person_events for this metric's events
     metric_event_conditions_string: str = attr.ib(default=None)
@@ -159,7 +159,8 @@ class OutliersMetricConfig:
         event_name: str,
         event_name_singular: str,
         event_name_past_tense: str,
-        description_markdown: str | None = None,
+        # TODO(#27074): Remove the default value when the copy is ready for PA and IX
+        description_markdown: str = "",
     ) -> "OutliersMetricConfig":
         return cls(
             metric.name,
@@ -238,7 +239,7 @@ class OutliersBackendConfig:
     at_or_below_rate_label: str = attr.ib(default="At or below statewide rate")
 
     # A description of why some officers may be excluded from the list.
-    exclusion_reason_description: str | None = attr.ib(default=None)
+    exclusion_reason_description: str = attr.ib(default="")
 
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])

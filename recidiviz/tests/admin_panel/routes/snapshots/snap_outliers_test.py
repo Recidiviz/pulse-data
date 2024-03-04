@@ -16,26 +16,7 @@ snapshots[
 ] = [
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
-        "featureVariant": "fv1",
-        "id": 6,
-        "learnMoreUrl": "fake.com",
-        "noneAreOutliersLabel": "are outliers",
-        "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-        "status": "ACTIVE",
-        "supervisionDistrictLabel": "district",
-        "supervisionDistrictManagerLabel": "district manager",
-        "supervisionJiiLabel": "client",
-        "supervisionOfficerLabel": "officer",
-        "supervisionSupervisorLabel": "supervisor",
-        "supervisionUnitLabel": "unit",
-        "updatedAt": "2024-02-01T00:00:00",
-        "updatedBy": "test-user@recidiviz.org",
-        "worseThanRateLabel": "Far worse than statewide rate",
-    },
-    {
-        "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
         "id": 1,
         "learnMoreUrl": "fake.com",
@@ -54,7 +35,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
         "id": 4,
         "learnMoreUrl": "fake.com",
@@ -73,13 +54,13 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
         "id": 3,
         "learnMoreUrl": "fake.com",
         "noneAreOutliersLabel": "are outliers",
         "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-        "status": "INACTIVE",
+        "status": "ACTIVE",
         "supervisionDistrictLabel": "district",
         "supervisionDistrictManagerLabel": "district manager",
         "supervisionJiiLabel": "client",
@@ -92,7 +73,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
         "id": 2,
         "learnMoreUrl": "fake.com",
@@ -111,7 +92,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
         "id": 5,
         "learnMoreUrl": "fake.com",
@@ -135,26 +116,7 @@ snapshots[
 ] = [
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
-        "featureVariant": "fv1",
-        "id": 6,
-        "learnMoreUrl": "fake.com",
-        "noneAreOutliersLabel": "are outliers",
-        "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-        "status": "ACTIVE",
-        "supervisionDistrictLabel": "district",
-        "supervisionDistrictManagerLabel": "district manager",
-        "supervisionJiiLabel": "client",
-        "supervisionOfficerLabel": "officer",
-        "supervisionSupervisorLabel": "supervisor",
-        "supervisionUnitLabel": "unit",
-        "updatedAt": "2024-02-01T00:00:00",
-        "updatedBy": "email@gmail.com",
-        "worseThanRateLabel": "Far worse than statewide rate",
-    },
-    {
-        "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
         "id": 1,
         "learnMoreUrl": "fake.com",
@@ -173,7 +135,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
         "id": 4,
         "learnMoreUrl": "fake.com",
@@ -192,13 +154,13 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
         "id": 3,
         "learnMoreUrl": "fake.com",
         "noneAreOutliersLabel": "are outliers",
         "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-        "status": "INACTIVE",
+        "status": "ACTIVE",
         "supervisionDistrictLabel": "district",
         "supervisionDistrictManagerLabel": "district manager",
         "supervisionJiiLabel": "client",
@@ -211,7 +173,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
         "id": 2,
         "learnMoreUrl": "fake.com",
@@ -230,7 +192,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
         "id": 5,
         "learnMoreUrl": "fake.com",
@@ -254,7 +216,7 @@ snapshots[
 ] = [
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
         "id": 1,
         "learnMoreUrl": "fake.com",
@@ -273,7 +235,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
         "id": 4,
         "learnMoreUrl": "fake.com",
@@ -292,7 +254,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
         "id": 3,
         "learnMoreUrl": "fake.com",
@@ -311,7 +273,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
         "id": 2,
         "learnMoreUrl": "fake.com",
@@ -330,7 +292,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
         "id": 5,
         "learnMoreUrl": "fake.com",
@@ -354,7 +316,7 @@ snapshots[
 ] = [
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because z",
         "featureVariant": None,
         "id": 6,
         "learnMoreUrl": "fake.com",
@@ -373,7 +335,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
         "id": 1,
         "learnMoreUrl": "fake.com",
@@ -392,7 +354,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
         "id": 4,
         "learnMoreUrl": "fake.com",
@@ -411,7 +373,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
         "id": 3,
         "learnMoreUrl": "fake.com",
@@ -430,7 +392,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
         "id": 2,
         "learnMoreUrl": "fake.com",
@@ -449,7 +411,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
         "id": 5,
         "learnMoreUrl": "fake.com",
@@ -473,7 +435,7 @@ snapshots[
 ] = [
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
         "id": 6,
         "learnMoreUrl": "fake.com",
@@ -492,7 +454,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
         "id": 1,
         "learnMoreUrl": "fake.com",
@@ -511,7 +473,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
         "id": 4,
         "learnMoreUrl": "fake.com",
@@ -530,7 +492,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
         "id": 3,
         "learnMoreUrl": "fake.com",
@@ -549,7 +511,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
         "id": 2,
         "learnMoreUrl": "fake.com",
@@ -568,7 +530,7 @@ snapshots[
     },
     {
         "atOrBelowRateLabel": "At or below statewide rate",
-        "exclusionReasonDescription": None,
+        "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
         "id": 5,
         "learnMoreUrl": "fake.com",
