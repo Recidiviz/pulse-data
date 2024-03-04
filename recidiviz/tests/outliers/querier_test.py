@@ -493,7 +493,7 @@ class TestOutliersQuerier(TestCase):
             "worse_than_rate_label": "Far worse than statewide rate",
             "slightly_worse_than_rate_label": "slightly worse than statewide rate",
             "at_or_below_rate_label": "At or below statewide rate",
-            "exclusion_reason_description": None,
+            "exclusion_reason_description": "excluded because x",
         }
 
         querier = OutliersQuerier(StateCode.US_PA)
@@ -524,7 +524,7 @@ class TestOutliersQuerier(TestCase):
             "worse_than_rate_label": "Far worse than statewide rate",
             "slightly_worse_than_rate_label": "slightly worse than statewide rate",
             "at_or_below_rate_label": "At or below statewide rate",
-            "exclusion_reason_description": None,
+            "exclusion_reason_description": "excluded because x",
         }
 
         querier = OutliersQuerier(StateCode.US_PA)

@@ -271,7 +271,7 @@ class Configuration(OutliersBase):
     learn_more_url = Column(String, nullable=False)
     none_are_outliers_label = Column(String, nullable=False)
     worse_than_rate_label = Column(String, nullable=False)
-    exclusion_reason_description = Column(String)
+    exclusion_reason_description = Column(String, nullable=False)
     slightly_worse_than_rate_label = Column(String, nullable=False)
     at_or_below_rate_label = Column(String, nullable=False)
 

@@ -343,7 +343,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
                             "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
                             "worseThanRateLabel": "Far worse than statewide rate",
                             "atOrBelowRateLabel": "At or below statewide rate",
-                            "exclusionReasonDescription": None,
+                            "exclusionReasonDescription": "excluded because x",
                             "updatedBy": "test-user@recidiviz.org",
                         }
                     ),
