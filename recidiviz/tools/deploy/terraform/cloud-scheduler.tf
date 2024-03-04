@@ -116,9 +116,6 @@ resource "google_cloud_scheduler_job" "update_long_term_backups" {
   name = "update-long-term-backups"
   # Runs at a time when it's unlikely someone will be running the flashing checklist, to avoid
   # 'Operation failed because another operation was already in progress' errors.
-  # TODO(#20930): Delete above comment which will no longer be relevant when
-  # ingest is moved to Dataflow and the flashing checklist no longer runs CloudSQL
-  # operations.
   schedule         = "0 23 * * 1" # Every Monday 23:00
   description      = "Create new long-term backup and delete oldest long-term backup"
   time_zone        = "America/Los_Angeles"
