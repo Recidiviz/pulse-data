@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PVDTS_TreatmentReferrals
 file_description: >-
+  No longer used! Ultimately we found the start / end times weren't accurate, and the
+  data was incomplete or duplicated data from the ARMS dataset.
+
   Contains information about individuals who were referred to non-DRP programming. This
   data technically contains referrals to programming which come from the PVDTS dataset
   administered by DAPO. We receive a subset of these referrals determined by the
