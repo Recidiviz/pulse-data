@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { message } from "antd";
+import { uniq } from "lodash";
 import { autorun, flowResult, makeAutoObservable } from "mobx";
 
 import { createNewConfiguration } from "../../AdminPanelAPI/InsightsAPI";
@@ -28,12 +29,16 @@ export default class ConfigurationPresenter implements Hydratable {
 
   stateCode: string;
 
+  selectedFeatureVariant: string | null | undefined;
+
   constructor(private insightsStore: InsightsStore, stateCode: string) {
     makeAutoObservable(this, undefined, { autoBind: true });
 
     this.hydrationState = { status: "needs hydration" };
 
     this.stateCode = stateCode;
+
+    this.selectedFeatureVariant = undefined;
 
     autorun(async () => {
       if (this.hydrationState.status === "needs hydration") {
@@ -44,6 +49,25 @@ export default class ConfigurationPresenter implements Hydratable {
 
   get configs() {
     return this.insightsStore.configs;
+  }
+
+  setSelectedFeatureVariant(variant: string | undefined): void {
+    this.selectedFeatureVariant = variant;
+  }
+
+  get allFeatureVariants(): (string | null)[] {
+    return uniq(this.configs?.map((config) => config.featureVariant));
+  }
+
+  get priorityConfigForSelectedFeatureVariant():
+    | InsightsConfiguration
+    | undefined {
+    const activeConfig = this.configs?.find(
+      (config) =>
+        config.featureVariant === this.selectedFeatureVariant &&
+        config.status === "ACTIVE"
+    );
+    return activeConfig ?? this.configs?.slice().sort((a, b) => b.id - a.id)[0];
   }
 
   async createNewVersion(request: InsightsConfiguration): Promise<boolean> {

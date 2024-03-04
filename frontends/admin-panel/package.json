@@ -55,6 +55,7 @@
     "@recidiviz/eslint-config": "^3.0.0",
     "@recidiviz/tsconfig": "^2.0.0",
     "@types/jest": "^29.5.3",
+    "@types/lodash": "^4.14.202",
     "@types/node": "14.6.4",
     "@types/react": "^17.0.0",
     "@types/react-dom": "16.9.8",

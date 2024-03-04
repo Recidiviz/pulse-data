@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Form, Input } from "antd";
+import { Form, Input, Select } from "antd";
 import { observer } from "mobx-react-lite";
 
 import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
@@ -31,13 +31,31 @@ const AddConfigForm = ({
   setVisible: (arg0: boolean) => void;
   presenter: ConfigurationPresenter;
 }): JSX.Element => {
-  const { createNewVersion, stateCode } = presenter;
+  const {
+    createNewVersion,
+    stateCode,
+    setSelectedFeatureVariant,
+    selectedFeatureVariant,
+    configs,
+    allFeatureVariants,
+    priorityConfigForSelectedFeatureVariant: baseConfig,
+  } = presenter;
   const [form] = Form.useForm();
 
   const onAdd = async (request: InsightsConfiguration) => {
     const success = await createNewVersion(request);
     if (success) setVisible(false);
+    setSelectedFeatureVariant(undefined);
   };
+
+  const fields = baseConfig
+    ? Object.entries(baseConfig).map(([field, value]) => {
+        return {
+          name: [field],
+          value,
+        };
+      })
+    : [];
 
   return (
     <DraggableModal
@@ -61,9 +79,43 @@ const AddConfigForm = ({
           });
       }}
     >
-      <Form form={form}>
-        <Form.Item name="featureVariant" label="Feature Variant">
-          <Input />
+      <Form form={form} key={selectedFeatureVariant} fields={fields}>
+        <div>
+          Select an existing feature variant to use as default values for the
+          new version. Or, enter a new feature variant and start blank.
+        </div>
+        <br />
+
+        <Form.Item label="Feature Variant" labelCol={{ span: 24 }}>
+          <Form.Item
+            style={{ display: "inline-block", width: "calc(50% - 8px)" }}
+          >
+            <Select
+              style={{ width: 200 }}
+              placeholder="Select feature variant"
+              optionFilterProp="children"
+              loading={!configs}
+              defaultValue={undefined}
+              onChange={(value) => setSelectedFeatureVariant(value)}
+              value={selectedFeatureVariant}
+            >
+              {allFeatureVariants
+                ?.sort((a, b) => (a ? a.localeCompare(b ?? "") : -1))
+                .map((fv) => {
+                  return (
+                    <Select.Option key={fv} value={fv}>
+                      {fv || "(None)"}
+                    </Select.Option>
+                  );
+                })}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="featureVariant"
+            style={{ display: "inline-block", width: "calc(50% - 8px)" }}
+          >
+            <Input placeholder="Enter new feature variant" />
+          </Form.Item>
         </Form.Item>
         <Form.Item
           name="supervisionOfficerLabel"
