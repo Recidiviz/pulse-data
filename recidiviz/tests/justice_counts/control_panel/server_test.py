@@ -3056,7 +3056,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
             response = self.client.put(
                 f"/api/agency/{agency_id}/subscription/{user_id}",
-                json={"is_subscribed": True},
+                json={
+                    "is_subscribed": True,
+                    "days_after_time_period_to_send_email": 15,
+                },
             )
         self.assertEqual(response.status_code, 200)
 
@@ -3068,6 +3071,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )[0]
 
         self.assertEqual(association.subscribed, True)
+        self.assertEqual(association.days_after_time_period_to_send_email, 15)
+
+        response = self.client.put(
+            f"/api/agency/{agency_id}/subscription/{user_id}",
+            json={
+                "is_subscribed": True,
+                "days_after_time_period_to_send_email": -15,
+            },
+        )
+
+        # We do not accept negative numbers for days_after_time_period_to_send_email
+        self.assertEqual(response.status_code, 500)
 
     def test_upload_superagency_spreadsheet(self) -> None:
         self.session.add_all(
