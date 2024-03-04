@@ -47,7 +47,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
@@ -182,18 +181,13 @@ class DirectIngestRegionDirStructureBase:
         ingest_instance: DirectIngestInstance,
         allow_unlaunched: bool,
         region_module_override: Optional[ModuleType],
-        enabled_in_dataflow: bool = False,
     ) -> BaseDirectIngestController:
         """Builds a controller for the given region code and ingest instance."""
         # Seed the DB with an initial status
         DirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
-        ).add_instance_status(
-            DirectIngestStatus.INITIAL_STATE
-            if enabled_in_dataflow
-            else DirectIngestStatus.STANDARD_RERUN_STARTED
-        )
+        ).add_instance_status(DirectIngestStatus.INITIAL_STATE)
 
         controller = DirectIngestControllerFactory.build(
             region_code=region_code,
@@ -268,9 +262,6 @@ class DirectIngestRegionDirStructureBase:
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=True,
                     region_module_override=self.region_module_override,
-                    enabled_in_dataflow=is_ingest_in_dataflow_enabled(
-                        StateCode(region_code.upper()), DirectIngestInstance.PRIMARY
-                    ),
                 )
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
@@ -511,9 +502,6 @@ class DirectIngestRegionDirStructure(
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=False,
                     region_module_override=None,
-                    enabled_in_dataflow=is_ingest_in_dataflow_enabled(
-                        StateCode(region_code.upper()), DirectIngestInstance.PRIMARY
-                    ),
                 )
 
         # But they should not be supported in production
@@ -528,9 +516,6 @@ class DirectIngestRegionDirStructure(
                         ingest_instance=DirectIngestInstance.PRIMARY,
                         allow_unlaunched=False,
                         region_module_override=None,
-                        enabled_in_dataflow=is_ingest_in_dataflow_enabled(
-                            StateCode(region_code.upper()), DirectIngestInstance.PRIMARY
-                        ),
                     )
 
 

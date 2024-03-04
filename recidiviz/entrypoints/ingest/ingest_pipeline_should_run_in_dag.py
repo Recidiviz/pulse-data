@@ -25,7 +25,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.entrypoint_utils import save_to_xcom
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -49,17 +48,13 @@ def _secondary_has_raw_data_changes(state_code: StateCode) -> bool:
     Returns if there are raw data changes that require a reimport for the given state. If so,
     we should run the secondary ingest pipeline for the given state.
     """
-    ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
-        state_code, DirectIngestInstance.SECONDARY
-    )
     instance_status_manager = DirectIngestInstanceStatusManager(
         region_code=state_code.value.lower(),
         ingest_instance=DirectIngestInstance.SECONDARY,
     )
 
     return (
-        ingest_in_dataflow_enabled
-        and instance_status_manager.get_current_status()
+        instance_status_manager.get_current_status()
         != DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS
     )
 
