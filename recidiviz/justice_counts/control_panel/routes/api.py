@@ -2100,6 +2100,9 @@ def get_api_blueprint(
         try:
             request_dict = assert_type(request.json, dict)
             is_subscribed = assert_type(request_dict.get("is_subscribed"), bool)
+            days_after_time_period_to_send_email = request_dict.get(
+                "days_after_time_period_to_send_email"
+            )
 
             association = AgencyUserAccountAssociationInterface.get_association_by_ids(
                 agency_id=agency_id,
@@ -2109,6 +2112,18 @@ def get_api_blueprint(
 
             # Update subscription status
             association.subscribed = is_subscribed
+            if days_after_time_period_to_send_email is not None:
+
+                if days_after_time_period_to_send_email < 0:
+                    raise JusticeCountsServerError(
+                        code="negative_days_after_time_period_to_send_email",
+                        description="You cannot have a negative value for days_after_time_period_to_send_email.",
+                    )
+
+                association.days_after_time_period_to_send_email = assert_type(
+                    days_after_time_period_to_send_email, int
+                )
+
             current_session.commit()
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
