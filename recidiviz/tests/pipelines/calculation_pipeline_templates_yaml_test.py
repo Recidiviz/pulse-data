@@ -24,7 +24,6 @@ from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
@@ -106,12 +105,10 @@ class TestConfiguredPipelines(unittest.TestCase):
         )
 
         for state_code, ingest_instance in pairs_with_pipelines_enabled:
-            if is_ingest_in_dataflow_enabled(state_code, ingest_instance):
-                self.assertIn(state_code, states_launched_in_env)
+            self.assertIn(state_code, states_launched_in_env)
 
         for state_code in states_launched_in_env:
             for ingest_instance in DirectIngestInstance:
-                if is_ingest_in_dataflow_enabled(state_code, ingest_instance):
-                    self.assertIn(
-                        (state_code, ingest_instance), pairs_with_pipelines_enabled
-                    )
+                self.assertIn(
+                    (state_code, ingest_instance), pairs_with_pipelines_enabled
+                )

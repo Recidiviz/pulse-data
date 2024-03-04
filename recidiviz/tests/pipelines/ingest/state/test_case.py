@@ -36,7 +36,6 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -132,10 +131,6 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
     @classmethod
     def ingest_instance(cls) -> DirectIngestInstance:
         return DirectIngestInstance.SECONDARY
-
-    @classmethod
-    def is_ingest_in_dataflow_enabled(cls) -> bool:
-        return is_ingest_in_dataflow_enabled(cls.region_code(), cls.ingest_instance())
 
     @classmethod
     def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:

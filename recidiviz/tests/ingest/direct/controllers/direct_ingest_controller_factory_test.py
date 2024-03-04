@@ -34,7 +34,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
 )
@@ -114,17 +113,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
 
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
         for region_code in get_existing_region_codes():
-            state_code = StateCode(region_code.upper())
             for ingest_instance in DirectIngestInstance:
-                ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
-                    state_code, ingest_instance
-                )
-                if not ingest_in_dataflow_enabled:
-                    DirectIngestInstanceStatusManager(
-                        region_code=region_code,
-                        ingest_instance=ingest_instance,
-                    ).change_status_to(DirectIngestStatus.STANDARD_RERUN_STARTED)
-
                 controller = DirectIngestControllerFactory.build(
                     region_code=region_code,
                     ingest_instance=ingest_instance,
@@ -139,25 +128,14 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         self,
     ) -> None:
         for region_code in get_existing_region_codes():
-            state_code = StateCode(region_code.upper())
-            ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
-                state_code, DirectIngestInstance.SECONDARY
-            )
-
             # Update so a reimport has now started in SECONDARY
             status_manager = DirectIngestInstanceStatusManager(
                 region_code=region_code,
                 ingest_instance=DirectIngestInstance.SECONDARY,
             )
 
-            if not ingest_in_dataflow_enabled:
-                status_manager.add_instance_status(
-                    DirectIngestStatus.NO_RERUN_IN_PROGRESS
-                )
             status_manager.add_instance_status(
                 DirectIngestStatus.RAW_DATA_REIMPORT_STARTED
-                if ingest_in_dataflow_enabled
-                else DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
             )
 
             controller = DirectIngestControllerFactory.build(
