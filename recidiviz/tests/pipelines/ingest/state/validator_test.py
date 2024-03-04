@@ -20,11 +20,9 @@ from datetime import date, datetime
 from typing import Dict, List, Type
 
 import sqlalchemy
-from mock import patch
 from more_itertools import one
 
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
@@ -49,7 +47,6 @@ class TestEntityValidations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
-        self.state_code = StateCode.US_XX
 
     def test_valid_external_id_state_staff_entities(self) -> None:
         entity = state_entities.StateStaff(
@@ -69,7 +66,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_staff_entities(self) -> None:
@@ -77,7 +74,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", staff_id=1111, external_ids=[]
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StateStaff\] with id \[1111\] missing an external_id:",
@@ -101,7 +98,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -126,7 +123,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -146,7 +143,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_person_entities(self) -> None:
@@ -154,7 +151,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", person_id=1111, external_ids=[]
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StatePerson\] with id \[1111\] missing an external_id:",
@@ -178,7 +175,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -203,7 +200,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity, self.field_index, self.state_code)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -248,7 +245,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index, self.state_code)
+        error_messages = validate_root_entity(person, self.field_index)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_entity_tree_unique_constraints_simple_invalid(self) -> None:
@@ -305,7 +302,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index, self.state_code)
+        error_messages = validate_root_entity(person, self.field_index)
         expected_error_message = (
             "Found [2] state_task_deadline entities with (state_code=US_XX, "
             "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
@@ -358,7 +355,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index, self.state_code)
+        error_messages = validate_root_entity(person, self.field_index)
         expected_error_message = (
             "Found [2] state_task_deadline entities with (state_code=US_XX, "
             "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
@@ -409,7 +406,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index, self.state_code)
+        error_messages = validate_root_entity(person, self.field_index)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_multiple_errors_returned_for_root_enities(self) -> None:
@@ -456,7 +453,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person, self.field_index, self.state_code)
+        error_messages = validate_root_entity(person, self.field_index)
         self.assertEqual(2, len(error_messages))
         self.assertRegex(
             error_messages[0],
@@ -473,67 +470,6 @@ class TestEntityValidations(unittest.TestCase):
             "  * StateTaskDeadline(task_deadline_id=2)"
         )
         self.assertEqual(expected_error_message, error_messages[1])
-
-    @patch(
-        "recidiviz.pipelines.ingest.state.validator.ENTITY_UNIQUE_CONSTRAINT_ERROR_EXEMPTIONS",
-        {StateCode.US_XX: {"state_task_deadline_unique_per_person_update_date_type"}},
-    )
-    def test_skips_entity_tree_unique_constraint_if_exemption_present(self) -> None:
-        person = state_entities.StatePerson(
-            state_code="US_XX",
-            person_id=3111,
-            external_ids=[
-                StatePersonExternalId(
-                    person_external_id_id=11114,
-                    state_code="US_XX",
-                    external_id="4001",
-                    id_type="PERSON",
-                ),
-            ],
-        )
-
-        person.task_deadlines.append(
-            StateTaskDeadline(
-                task_deadline_id=1,
-                state_code="US_XX",
-                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
-                task_subtype=None,
-                eligible_date=date(2020, 9, 11),
-                update_datetime=datetime(2023, 2, 1, 11, 19),
-                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
-                person=person,
-            )
-        )
-
-        # Add exact duplicate (only primary key is changed)
-        person.task_deadlines.append(
-            StateTaskDeadline(
-                task_deadline_id=2,
-                state_code="US_XX",
-                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
-                task_subtype=None,
-                eligible_date=date(2020, 9, 11),
-                update_datetime=datetime(2023, 2, 1, 11, 19),
-                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
-                person=person,
-            )
-        )
-        # Add similar with different task_type
-        person.task_deadlines.append(
-            StateTaskDeadline(
-                task_deadline_id=3,
-                state_code="US_XX",
-                task_type=StateTaskType.INTERNAL_UNKNOWN,
-                task_subtype=None,
-                eligible_date=date(2020, 9, 11),
-                update_datetime=datetime(2023, 2, 1, 11, 19),
-                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
-                person=person,
-            )
-        )
-
-        error_messages = validate_root_entity(person, self.field_index, self.state_code)
-        self.assertEqual(0, len(error_messages))
 
 
 class TestUniqueConstraintValid(unittest.TestCase):

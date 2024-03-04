@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A DoFn that merges entity trees together via entity matching."""
-import sys
 from typing import Dict, Iterable, Tuple
 
 import apache_beam as beam
@@ -31,11 +30,9 @@ from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
 from recidiviz.pipelines.ingest.state.constants import IngestViewName, UpperBoundDate
-from recidiviz.pipelines.ingest.state.exemptions import INGEST_VIEW_ORDER_EXEMPTIONS
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
 )
-from recidiviz.pipelines.metrics.utils.calculator_utils import safe_list_index
 
 
 class MergeRootEntitiesAcrossDates(beam.PTransform):
@@ -90,18 +87,9 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
         root_entity_merger = RootEntityUpdateMerger(self.field_index)
         primary_key, root_entity_dictionary = element
         merged_root_entity = None
-        sorted_keys = sorted(
-            root_entity_dictionary.keys(),
-            key=lambda key: (
-                key[0],
-                # TODO(#20930) Remove this once we no longer need deterministic ordering.
-                safe_list_index(
-                    INGEST_VIEW_ORDER_EXEMPTIONS[self.state_code], key[1], sys.maxsize
-                )
-                if self.state_code in INGEST_VIEW_ORDER_EXEMPTIONS
-                else key[1],
-            ),
-        )
+        # We sort by (date, ingest_view_name) to ensure deterministic merge order across
+        # pipeline runs.
+        sorted_keys = sorted(root_entity_dictionary.keys())
         for date_timestamp, ingest_view_name in sorted_keys:
             root_entities = list(
                 root_entity_dictionary[(date_timestamp, ingest_view_name)]

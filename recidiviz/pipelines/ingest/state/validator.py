@@ -19,7 +19,6 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Type
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database_invariant_validator.state.state_person_invariant_validators import (
     state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_person,
 )
@@ -34,14 +33,11 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
-from recidiviz.pipelines.ingest.state.exemptions import (
-    ENTITY_UNIQUE_CONSTRAINT_ERROR_EXEMPTIONS,
-)
 from recidiviz.utils.types import assert_type
 
 
 def validate_root_entity(
-    root_entity: RootEntityT, field_index: CoreEntityFieldIndex, state_code: StateCode
+    root_entity: RootEntityT, field_index: CoreEntityFieldIndex
 ) -> List[Error]:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
@@ -87,10 +83,6 @@ def validate_root_entity(
 
     for entity_cls, entities_of_type in entities_by_cls.items():
         for constraint in entity_cls.entity_tree_unique_constraints():
-            if constraint.name in ENTITY_UNIQUE_CONSTRAINT_ERROR_EXEMPTIONS.get(
-                state_code, {}
-            ):
-                continue
             seen_tuples: Dict[Tuple[Any, ...], List[Entity]] = defaultdict(list)
 
             for entity in entities_of_type:

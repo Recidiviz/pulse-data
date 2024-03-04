@@ -406,6 +406,9 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
 
         return _validate_ingest_view_results_output
 
+    # TODO(#29030): Failures inside this validator are really hard to debug (only show
+    #  one row that isn't present in expected) and the |debug| doesn't thread through
+    #  here to launch an HTML diff showing the difference.
     @staticmethod
     def validate_entity_results(
         expected_output: Iterable[Dict[str, Any]],
