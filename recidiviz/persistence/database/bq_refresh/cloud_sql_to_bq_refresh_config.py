@@ -26,6 +26,9 @@ The yaml file format for cloud_sql_to_bq_config.yaml is:
 
 region_codes_to_exclude:
   - <list of state region codes>
+
+TODO(#20930): Update this docstring / delete cloud_sql_to_bq_config.yaml once the
+ OPERATIONS DB refresh no longer references it.
 """
 from typing import Dict, List, Optional, Tuple
 
@@ -41,10 +44,6 @@ from recidiviz.calculator.query.operations.dataset_config import (
     OPERATIONS_BASE_DATASET,
     OPERATIONS_BASE_REGIONAL_DATASET,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_LEGACY_DATASET,
-    STATE_BASE_REGIONAL_DATASET,
-)
 from recidiviz.case_triage.views.dataset_config import (
     CASE_TRIAGE_FEDERATED_DATASET,
     CASE_TRIAGE_FEDERATED_REGIONAL_DATASET,
@@ -52,8 +51,6 @@ from recidiviz.case_triage.views.dataset_config import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
@@ -78,35 +75,31 @@ class CloudSqlToBQConfig:
         region_codes_to_exclude: An optional list of region codes to exclude from the refresh.
 
     Usage:
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
         tables = config.get_tables_to_export()
     """
 
     def __init__(
         self,
         schema_type: SchemaType,
-        # TODO(#20930): Remove direct_ingest_instance as the STATE schema no longer does
-        #  a CloudSQL refresh.
-        direct_ingest_instance: Optional[DirectIngestInstance] = None,
         region_codes_to_exclude: Optional[List[str]] = None,
     ):
         if region_codes_to_exclude is None:
             region_codes_to_exclude = []
-        self.direct_ingest_instance = direct_ingest_instance
         self.schema_type = schema_type
         self.sorted_tables = list(get_all_table_classes_in_schema(schema_type))
         self.region_codes_to_exclude = [
             region_code.upper() for region_code in region_codes_to_exclude
         ]
 
+    # TODO(#20930): Update the OPERATIONS schema to refresh the same way as the other
+    #  schemas (i.e.not state-segmented) and delete all code related to state-segmented
+    #  refreshes.
     def is_state_segmented_refresh_schema(self) -> bool:
         """Returns True if the data for the config's schema can and should be refreshed
         on a per-state basis.
         """
-        if self.schema_type in (
-            SchemaType.STATE,
-            SchemaType.OPERATIONS,
-        ):
+        if self.schema_type is SchemaType.OPERATIONS:
             return True
 
         if self.schema_type in (
@@ -125,9 +118,7 @@ class CloudSqlToBQConfig:
         This dataset will have a region that matches the region of the schema's CloudSQL
         instance, e.g us-east1.
         """
-        if self.schema_type == SchemaType.STATE:
-            dest_dataset = STATE_BASE_REGIONAL_DATASET
-        elif self.schema_type == SchemaType.OPERATIONS:
+        if self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_REGIONAL_DATASET
         elif self.schema_type == SchemaType.JUSTICE_COUNTS:
             dest_dataset = JUSTICE_COUNTS_BASE_REGIONAL_DATASET
@@ -140,6 +131,8 @@ class CloudSqlToBQConfig:
             dest_dataset = f"{dataset_override_prefix}_{dest_dataset}"
         return dest_dataset
 
+    # TODO(#20930): Rename this when we eliminate the concept of a state-segmented
+    #  refresh.
     def unioned_multi_region_dataset(
         self, dataset_override_prefix: Optional[str]
     ) -> str:
@@ -150,10 +143,7 @@ class CloudSqlToBQConfig:
         Note: By "unioned", we mean a union of all state segments for the given dataset,
         if relevant.
         """
-        # TODO(#20930): Remove this branch so it will error for `STATE`.
-        if self.schema_type == SchemaType.STATE:
-            dest_dataset = STATE_BASE_LEGACY_DATASET
-        elif self.schema_type == SchemaType.OPERATIONS:
+        if self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_DATASET
         elif self.schema_type == SchemaType.JUSTICE_COUNTS:
             dest_dataset = JUSTICE_COUNTS_BASE_DATASET
@@ -166,7 +156,9 @@ class CloudSqlToBQConfig:
             dest_dataset = f"{dataset_override_prefix}_{dest_dataset}"
         return dest_dataset
 
-    def database_key_for_segment(self, state_code: StateCode) -> SQLAlchemyDatabaseKey:
+    # TODO(#20930): Delete this when we eliminate the concept of a state-segmented
+    #  refresh.
+    def database_key_for_segment(self) -> SQLAlchemyDatabaseKey:
         """Returns a key for the database associated with a particular state segment.
         Throws for unsegmented schemas.
         """
@@ -174,18 +166,10 @@ class CloudSqlToBQConfig:
             raise ValueError(
                 f"Only expect state-segmented schemas, found [{self.schema_type}]"
             )
-
-        if self.schema_type == SchemaType.STATE:
-            if not self.direct_ingest_instance:
-                raise ValueError(
-                    "Expected DirectIngestInstance to be non-None for STATE schema."
-                )
-            return database_key_for_state(
-                self.direct_ingest_instance, state_code=state_code
-            )
-
         return SQLAlchemyDatabaseKey.for_schema(self.schema_type)
 
+    # TODO(#20930): Rename this when we eliminate the concept of a state-segmented
+    #  refresh.
     @property
     def unsegmented_database_key(self) -> SQLAlchemyDatabaseKey:
         """Returns a key for the database associated with a particular unsegmented
@@ -220,6 +204,8 @@ class CloudSqlToBQConfig:
             table_id=table.name,
         )
 
+    # TODO(#20930): Rename this when we eliminate the concept of a state-segmented
+    #  refresh.
     def materialized_address_for_unsegmented_table(
         self, table: Table
     ) -> BigQueryAddress:
@@ -346,7 +332,6 @@ class CloudSqlToBQConfig:
     @classmethod
     def is_valid_schema_type(cls, schema_type: SchemaType) -> bool:
         if schema_type in (
-            SchemaType.STATE,
             SchemaType.OPERATIONS,
             SchemaType.CASE_TRIAGE,
         ):
@@ -357,6 +342,7 @@ class CloudSqlToBQConfig:
             SchemaType.JUSTICE_COUNTS,
             SchemaType.PATHWAYS,
             SchemaType.OUTLIERS,
+            SchemaType.STATE,
             SchemaType.WORKFLOWS,
         ):
             return False
@@ -371,21 +357,11 @@ class CloudSqlToBQConfig:
 
     @classmethod
     def for_schema_type(
-        cls,
-        schema_type: SchemaType,
-        # TODO(#20930): Remove direct_ingest_instance as the STATE schema no longer does
-        #  a CloudSQL refresh.
-        direct_ingest_instance: Optional[DirectIngestInstance] = None,
-        yaml_path: Optional[GcsfsFilePath] = None,
+        cls, schema_type: SchemaType, yaml_path: Optional[GcsfsFilePath] = None
     ) -> "CloudSqlToBQConfig":
         """Logic for instantiating a config object for a schema type."""
         if not cls.is_valid_schema_type(schema_type):
             raise ValueError(f"Unsupported schema_type: [{schema_type}]")
-
-        if schema_type != SchemaType.STATE and direct_ingest_instance is not None:
-            raise ValueError(
-                "CloudSQLToBQConfig can only be initialized with DirectIngestInstance with STATE schema."
-            )
 
         gcs_fs = GcsfsFactory.build()
         if not yaml_path:
@@ -399,14 +375,6 @@ class CloudSqlToBQConfig:
         if schema_type == SchemaType.OPERATIONS:
             return CloudSqlToBQConfig(
                 schema_type=SchemaType.OPERATIONS,
-                region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
-            )
-        if schema_type == SchemaType.STATE:
-            if direct_ingest_instance is None:
-                direct_ingest_instance = DirectIngestInstance.PRIMARY
-            return CloudSqlToBQConfig(
-                schema_type=SchemaType.STATE,
-                direct_ingest_instance=direct_ingest_instance,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
             )
         if schema_type == SchemaType.CASE_TRIAGE:
