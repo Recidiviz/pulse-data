@@ -90,6 +90,11 @@ class OutliersAdminPanelEndpointTests(TestCase):
                 state_code_str="US_PA",
                 config_id=config_id,
             )
+            self.reactivate = lambda config_id=None: flask.url_for(
+                "outliers.ReactivateConfigurationsAPI",
+                state_code_str="US_PA",
+                config_id=config_id,
+            )
 
         # Set up database
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
@@ -391,103 +396,6 @@ class OutliersAdminPanelEndpointTests(TestCase):
     @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
     def test_promote_default_configuration_success(self) -> None:
         config_id = 3
-        expected = [
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 5,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-02-01T00:00:00",
-                "updatedBy": "test-user@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 1,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "INACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "agent",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-26T13:30:00",
-                "updatedBy": "alexa@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv2",
-                "id": 4,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:03",
-                "updatedBy": "dana2@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": "fv1",
-                "id": 3,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "ACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:02",
-                "updatedBy": "dana1@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-            {
-                "atOrBelowRateLabel": "At or below statewide rate",
-                "exclusionReasonDescription": None,
-                "featureVariant": None,
-                "id": 2,
-                "learnMoreUrl": "fake.com",
-                "noneAreOutliersLabel": "are outliers",
-                "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
-                "status": "INACTIVE",
-                "supervisionDistrictLabel": "district",
-                "supervisionDistrictManagerLabel": "district manager",
-                "supervisionJiiLabel": "client",
-                "supervisionOfficerLabel": "officer",
-                "supervisionSupervisorLabel": "supervisor",
-                "supervisionUnitLabel": "unit",
-                "updatedAt": "2024-01-01T13:30:01",
-                "updatedBy": "fake@recidiviz.org",
-                "worseThanRateLabel": "Far worse than statewide rate",
-            },
-        ]
 
         with self.app.test_request_context():
             result = self.client.post(
@@ -500,7 +408,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
             )
 
             response = self.client.get(self.configurations, headers=self.headers)
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_promote_default_configuration_success")  # type: ignore[attr-defined]
 
     def test_promote_default_configuration_bad_request(self) -> None:
         # Assumes first non-header row in configurations.csv has fv=None and status=ACTIVE
@@ -513,4 +421,33 @@ class OutliersAdminPanelEndpointTests(TestCase):
             self.assertEqual(
                 json.loads(result.data)["message"],
                 "Configuration 1 is already a default configuration, status is ACTIVE",
+            )
+
+    ########
+    # POST /outliers/<state_code_str>/configurations/<config_id>/reactivate
+    ########
+
+    @freezegun.freeze_time(datetime(2024, 2, 1, 0, 0, 0, 0))
+    def test_reactivate_configuration_success(self) -> None:
+        config_id = 5
+        with self.app.test_request_context():
+            result = self.client.post(self.reactivate(config_id), headers=self.headers)
+            self.assertEqual(result.status_code, HTTPStatus.OK)
+            self.assertEqual(
+                json.loads(result.data),
+                "Configuration 5 successfully reactivated",
+            )
+
+            response = self.client.get(self.configurations, headers=self.headers)
+            self.snapshot.assert_match(json.loads(response.data), name="test_reactivate_configuration_success")  # type: ignore[attr-defined]
+
+    def test_reactivate_configuration_bad_request(self) -> None:
+        # Assumes first non-header row in configurations.csv has status=ACTIVE
+        config_id = 1
+        with self.app.test_request_context():
+            result = self.client.post(self.reactivate(config_id), headers=self.headers)
+            self.assertEqual(result.status_code, HTTPStatus.BAD_REQUEST)
+            self.assertEqual(
+                json.loads(result.data)["message"],
+                "Configuration 1 is already active",
             )

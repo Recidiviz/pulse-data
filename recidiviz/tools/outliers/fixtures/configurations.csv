@@ -3,3 +3,4 @@ alexa@recidiviz.org,2024-01-26 13:30:00,ACTIVE,,agent,district,unit,supervisor,d
 fake@recidiviz.org,2024-01-01 13:30:01,INACTIVE,,officer,district,unit,supervisor,district manager,client,fake.com,are outliers,Far worse than statewide rate,,slightly worse than statewide rate,At or below statewide rate
 dana1@recidiviz.org,2024-01-01 13:30:02,ACTIVE,fv1,officer,district,unit,supervisor,district manager,client,fake.com,are outliers,Far worse than statewide rate,,slightly worse than statewide rate,At or below statewide rate
 dana2@recidiviz.org,2024-01-01 13:30:03,ACTIVE,fv2,officer,district,unit,supervisor,district manager,client,fake.com,are outliers,Far worse than statewide rate,,slightly worse than statewide rate,At or below statewide rate
+dana2@recidiviz.org,2024-01-01 13:00:03,INACTIVE,fv2,officer-fv2,district,unit,supervisor,district manager,client,fake.com,are outliers,Far worse than statewide rate,,slightly worse than statewide rate,At or below statewide rate

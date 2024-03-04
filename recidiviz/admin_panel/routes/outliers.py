@@ -214,6 +214,32 @@ class PromoteToProdConfigurationsAPI(MethodView):
         return f"Configuration {str(config_id)} successfully promoted to production"
 
 
+def _get_refreshed_active_configuration_metadata(
+    config: Configuration,
+    new_feature_variant: str | None,
+) -> Dict[str, Any]:
+    """
+    Returns a dictionary for the Configuration object with updated metadata based
+    on the provided configuration object and an ACTIVE status.
+    """
+    config_dict = config.to_dict()
+
+    user_email, error_str = get_authenticated_user_email()
+    if error_str:
+        logging.error("Error determining logged-in user: %s", error_str)
+
+    # The id is autoincremented upon insert
+    config_dict.pop("id")
+
+    # Update the dictionary to have up-to-date information
+    config_dict["updated_by"] = user_email.lower()
+    config_dict["updated_at"] = datetime.now()
+    config_dict["status"] = ConfigurationStatus.ACTIVE.value
+    config_dict["feature_variant"] = new_feature_variant
+
+    return config_dict
+
+
 @outliers_blueprint.route(
     "<state_code_str>/configurations/<int:config_id>/promote/default"
 )
@@ -236,25 +262,47 @@ class PromoteToDefaultConfigurationsAPI(MethodView):
                 message=f"Configuration {config.id} is already a default configuration, status is {config.status}",
             )
 
-        config_dict = config.to_dict()
+        config_dict = _get_refreshed_active_configuration_metadata(
+            config=config, new_feature_variant=None
+        )
 
         try:
-            user_email, error_str = get_authenticated_user_email()
-            if error_str:
-                logging.error("Error determining logged-in user: %s", error_str)
-
-            # The id is autoincremented upon insert
-            config_dict.pop("id")
-            # Update the dictionary to have up-to-date information
-            config_dict["updated_by"] = user_email.lower()
-            config_dict["updated_at"] = datetime.now()
-            config_dict["status"] = ConfigurationStatus.ACTIVE.value
-            # Setting the configuration to default means having no FV
-            config_dict["feature_variant"] = None
-
             config = querier.add_configuration(config_dict)
         except IntegrityError as e:
             logging.error("Error adding configuration: %s", e)
             abort(HTTPStatus.INTERNAL_SERVER_ERROR, message=f"{e}")
 
         return f"Configuration {str(config_id)} successfully promoted to the default configuration"
+
+
+@outliers_blueprint.route("<state_code_str>/configurations/<int:config_id>/reactivate")
+class ReactivateConfigurationsAPI(MethodView):
+    """CRUD endpoints for /admin/outliers/<state_code_str>/configurations/<config_id>/reactivate"""
+
+    @outliers_blueprint.response(HTTPStatus.OK)
+    def post(self, state_code_str: str, config_id: int) -> str:
+        """
+        Reactivates an inactive configuration
+        """
+        state_code = StateCode(state_code_str.upper())
+        querier = OutliersQuerier(state_code)
+        config = querier.get_configuration(config_id)
+
+        if config.status == ConfigurationStatus.ACTIVE.value:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"Configuration {config.id} is already active",
+            )
+
+        config_dict = _get_refreshed_active_configuration_metadata(
+            config=config,
+            new_feature_variant=config.feature_variant,
+        )
+
+        try:
+            config = querier.add_configuration(config_dict)
+        except IntegrityError as e:
+            logging.error("Error adding configuration: %s", e)
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR, message=f"{e}")
+
+        return f"Configuration {str(config_id)} successfully reactivated"
