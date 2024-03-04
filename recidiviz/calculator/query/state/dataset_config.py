@@ -44,18 +44,6 @@ SHARED_METRIC_VIEWS_DATASET: str = "shared_metric_views"
 # pipelines, or which may be referenced by other views.
 REFERENCE_VIEWS_DATASET: str = "reference_views"
 
-# Transitional dataset in the same region (e.g. us-east1) as the State CloudSQL
-# instance where State CloudSQL data is stored before the CloudSQL -> BQ refresh
-# copies it to a dataset in the 'US' multi-region.
-STATE_BASE_REGIONAL_DATASET: str = "state_regional"
-
-# Where the base tables for the state schema live, containing just data from CloudSQL
-# (legacy) ingest. These are a mirror of the data in our state CloudSQL instance,
-# refreshed daily via the CloudSQL -> BQ federated export.
-# TODO(#20930): Remove this constant once it is no longer referenced by the
-#  CloudSqlToBQConfig.
-STATE_BASE_LEGACY_DATASET: str = "state_legacy"
-
 # Views that are the union of the output from each state's PRIMARY Dataflow ingest
 # pipeline.
 STATE_BASE_VIEWS_DATASET: str = "state_views"

@@ -69,10 +69,8 @@ from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
     update_bq_dataset_to_match_sqlalchemy_schema_for_one_table,
     update_bq_schema_for_sqlalchemy_table,
 )
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
-    CloudSqlToBQConfig,
-)
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
@@ -341,9 +339,7 @@ def update_normalized_state_schema(
                 dataset_id=normalized_state_dataset_id,
                 table=table,
             )
-            for table in CloudSqlToBQConfig.for_schema_type(
-                SchemaType.STATE
-            ).get_tables_to_export()
+            for table in list(get_all_table_classes_in_schema(SchemaType.STATE))
             if table.name not in normalized_table_ids
         ]
         for f in futures.as_completed(tables):
@@ -419,9 +415,7 @@ def update_state_specific_ingest_state_schemas(
                 table=table,
             )
             for state_code, ingest_instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
-            for table in CloudSqlToBQConfig.for_schema_type(
-                SchemaType.STATE
-            ).get_tables_to_export()
+            for table in list(get_all_table_classes_in_schema(SchemaType.STATE))
         ]
         for f in futures.as_completed(tables):
             f.result()

@@ -27,7 +27,6 @@ import sqlalchemy
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -70,15 +69,9 @@ region_codes_to_exclude:
 
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):
-            CloudSqlToBQConfig.for_schema_type("random-schema-type")  # type: ignore[arg-type]
-
-    def test_incorrect_direct_ingest_instance_raises(self) -> None:
-        for schema_type in self.enabled_schema_types:
-            if schema_type != SchemaType.STATE:
-                with self.assertRaises(ValueError):
-                    _ = CloudSqlToBQConfig.for_schema_type(
-                        schema_type, DirectIngestInstance.PRIMARY
-                    )
+            CloudSqlToBQConfig.for_schema_type(
+                "random-schema-type"  # type: ignore[arg-type]
+            )
 
     def test_for_schema_type_returns_instance(self) -> None:
         for schema_type in self.schema_types:
@@ -88,13 +81,6 @@ region_codes_to_exclude:
             else:
                 config = CloudSqlToBQConfig.for_schema_type(schema_type)
                 self.assertIsInstance(config, CloudSqlToBQConfig)
-
-    def test_is_state_segmented_refresh_schema(self) -> None:
-        for schema_type in self.enabled_schema_types:
-            config = CloudSqlToBQConfig.for_schema_type(schema_type)
-            is_state_segmented = config.is_state_segmented_refresh_schema()
-            if schema_type == SchemaType.STATE:
-                self.assertTrue(is_state_segmented)
 
     def test_unioned_regional_dataset(self) -> None:
         for schema_type in self.enabled_schema_types:
@@ -115,11 +101,7 @@ region_codes_to_exclude:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             dataset = config.unioned_multi_region_dataset(dataset_override_prefix=None)
             self.assertFalse(dataset.endswith("regional"))
-            # The state_legacy dataset needs to first be unioned with dataflow output
-            # before it can be relied on by views, so it does not exist in the source
-            # table datasets.
-            if schema_type != SchemaType.STATE:
-                self.assertTrue(dataset in VIEW_SOURCE_TABLE_DATASETS)
+            self.assertTrue(dataset in VIEW_SOURCE_TABLE_DATASETS)
 
             dataset_with_prefix = config.unioned_multi_region_dataset(
                 dataset_override_prefix="prefix"
@@ -129,11 +111,7 @@ region_codes_to_exclude:
             self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
 
     def test_get_tables_to_export(self) -> None:
-        """Assertions for the method get_tables_to_export
-        1. Assert that it returns a list of type sqlalchemy.Table
-        2. For the StateBase schema, assert that included history tables are included
-        3. For the StateBase schema, assert that other history tables are excluded
-        """
+        """Assert that get_tables_to_export returns a list of type sqlalchemy.Table"""
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             assert config is not None
@@ -168,10 +146,12 @@ region_codes_to_exclude:
         mock.Mock(return_value="a-new-fake-id"),
     )
     def test_incorrect_environment(self) -> None:
-        with self.assertRaises(ValueError):
-            config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
-            assert config is not None
-            self.assertEqual(config.region_codes_to_exclude, [])
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Could not find blob at GcsfsFilePath\(bucket_name='a-new-fake-id-configs', "
+            r"blob_name='cloud_sql_to_bq_config.yaml'\)",
+        ):
+            _ = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
 
     def test_schema_for_sqlalchemy_table(self) -> None:
         """Assert that we will be able to manage all tables in BigQuery created by the

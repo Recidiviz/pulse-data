@@ -27,7 +27,6 @@ from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
@@ -39,9 +38,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
     CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
     CloudSqlToBqRefreshStatus,
-)
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
-    CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
@@ -127,17 +123,6 @@ class IngestDataFreshnessStore(AdminPanelStore):
                 # Return cached results if results were calculated in last 15 min
                 return self._data_freshness_results
 
-        bq_export_config = CloudSqlToBQConfig.for_schema_type(
-            SchemaType.STATE,
-            yaml_path=GcsfsFilePath.from_absolute_path(
-                f"gs://{metadata.project_id()}-configs/cloud_sql_to_bq_config.yaml"
-            ),
-        )
-        if bq_export_config is None:
-            raise ValueError("STATE CloudSqlToBQConfig unexpectedly None.")
-
-        regions_paused = bq_export_config.region_codes_to_exclude
-
         latest_upper_bounds: List[Dict[str, Union[Optional[str], bool]]] = []
 
         ingested_states = get_direct_ingest_states_launched_in_env()
@@ -157,7 +142,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
                     "lastRefreshDate": _iso_date_string_from_optional_datetime(
                         state_data_freshness[state_code].last_state_dataset_refresh_time
                     ),
-                    "ingestPaused": state_code.name in regions_paused,
+                    "ingestPaused": False,
                 }
             )
 

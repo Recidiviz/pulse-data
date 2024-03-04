@@ -24,8 +24,6 @@ from unittest.mock import create_autospec, patch
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
@@ -34,7 +32,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
+from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
     federated_cloud_sql_to_bq_refresh,
@@ -124,74 +122,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 table=OperationsBase.metadata.sorted_tables[0],
                 state_codes=[StateCode.US_XX],
             )
-
-    def test_build_unioned_segments_view(self) -> None:
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
-        view_builder = UnionedStateSegmentsViewBuilder(
-            config=config,
-            table=StateBase.metadata.tables["state_person_external_id"],
-            state_codes=[StateCode.US_XX, StateCode.US_WW],
-        )
-        view = view_builder.build()
-        expected_query = (
-            "SELECT state_person_external_id.person_external_id_id,"
-            "state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
-            "`recidiviz-staging.us_xx_state_regional.state_person_external_id` state_person_external_id\n"
-            "UNION ALL\n"
-            "SELECT state_person_external_id.person_external_id_id,"
-            "state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
-            "`recidiviz-staging.us_ww_state_regional.state_person_external_id` state_person_external_id"
-        )
-        self.assertEqual(expected_query, view.view_query)
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="state_regional", table_id="state_person_external_id"
-            ),
-            view.materialized_address,
-        )
-
-    def test_build_unioned_segments_view_with_address_overrides(self) -> None:
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
-        view_builder = UnionedStateSegmentsViewBuilder(
-            config=config,
-            table=StateBase.metadata.tables["state_person_external_id"],
-            state_codes=[StateCode.US_XX, StateCode.US_WW],
-        )
-
-        address_overrides_builder = BigQueryAddressOverrides.Builder(
-            sandbox_prefix="my_prefix"
-        )
-        for dataset_id in [
-            "state_regional",
-            "us_xx_state_regional",
-            "us_ww_state_regional",
-        ]:
-            address_overrides_builder.register_sandbox_override_for_entire_dataset(
-                dataset_id
-            )
-        address_overrides = address_overrides_builder.build()
-        view = view_builder.build(address_overrides=address_overrides)
-        expected_query = (
-            "SELECT state_person_external_id.person_external_id_id,"
-            "state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
-            "`recidiviz-staging.my_prefix_us_xx_state_regional.state_person_external_id` state_person_external_id\n"
-            "UNION ALL\n"
-            "SELECT state_person_external_id.person_external_id_id,"
-            "state_person_external_id.external_id,state_person_external_id.state_code,"
-            "state_person_external_id.id_type,state_person_external_id.person_id FROM "
-            "`recidiviz-staging.my_prefix_us_ww_state_regional.state_person_external_id` state_person_external_id"
-        )
-        self.assertEqual(expected_query, view.view_query)
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="my_prefix_state_regional",
-                table_id="state_person_external_id",
-            ),
-            view.materialized_address,
-        )
 
     @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch(

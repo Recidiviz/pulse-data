@@ -128,7 +128,7 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
-                schema_type=SchemaType.STATE,
+                schema_type=SchemaType.OPERATIONS,
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 sandbox_prefix=None,
             )

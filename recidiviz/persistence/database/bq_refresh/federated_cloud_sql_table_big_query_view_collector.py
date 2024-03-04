@@ -67,7 +67,7 @@ class StateSegmentedSchemaFederatedBigQueryViewCollector(
         views = []
         for table in self.config.get_tables_to_export():
             for state_code in self.state_codes_to_collect:
-                database_key = self.config.database_key_for_segment(state_code)
+                database_key = self.config.database_key_for_segment()
                 cloud_sql_query = (
                     self.config.get_single_state_table_federated_export_query(
                         table, state_code
