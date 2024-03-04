@@ -473,7 +473,7 @@ class TestOutliersQuerier(TestCase):
         querier = OutliersQuerier(StateCode.US_PA)
         result = querier.get_configurations()
 
-        self.assertListEqual([config.id for config in result], [1, 4, 3, 2])
+        self.assertListEqual([config.id for config in result], [1, 4, 3, 2, 5])
 
     def test_add_configuration_no_fv(self) -> None:
         new_datetime = datetime(2024, 2, 1)
