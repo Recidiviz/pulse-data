@@ -410,6 +410,8 @@ def sentence_attributes() -> str:
         effective_date AS start_date,
         IFNULL(completion_date, {nonnull_end_date_clause('projected_completion_date_max')}) AS end_date,
     FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+    -- drop zero-day sentences (which, at least in OR, come from underlying raw data)
+    WHERE effective_date<IFNULL(completion_date, {nonnull_end_date_clause('projected_completion_date_max')})
     """
 
 
