@@ -60,6 +60,16 @@ SELECT
     sentence_detail.BT_SDI  -- sentence is_capital_punishment
 FROM
     {LBAKRDTA_TAK023} AS sentence_detail
+WHERE
+    sentence_detail.BT_SD not in (   
+        '0', 
+        '19000000',
+        '20000000',
+        '66666666',
+        '77777777',
+        '88888888',
+        '99999999'
+    )
 """
 
 # TODO(#26621): Include data for what was StateSupervisionSentence

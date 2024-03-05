@@ -102,7 +102,7 @@ def set_response_date(final_formed_create_date: str, response_date: str) -> str:
     return date
 
 
-JULIAN_DATE_STR_REGEX = re.compile(r"(\d?\d\d)(\d\d\d)")
+JULIAN_DATE_STR_REGEX: re.Pattern[str] = re.compile(r"(\d?\d\d)(\d\d\d)")
 
 
 def mo_julian_date_to_yyyymmdd(julian_date_str: Optional[str]) -> Optional[str]:

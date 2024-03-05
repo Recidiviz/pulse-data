@@ -48,7 +48,7 @@ class TestLedgerEntity(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Found ExampleLedger with datetime 2022-01-01 00:00:00 after datetime 2001-01-01 00:00:00.",
+            "Found ExampleLedger  with  datetime 2022-01-01 00:00:00 after  datetime 2001-01-01 00:00:00.",
         ):
             _ = ExampleLedger(
                 sequence_num=None,
@@ -82,7 +82,7 @@ class TestLedgerEntity(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Found ExampleLedger with datetime 2022-01-01 00:00:00 after datetime 2001-01-01 00:00:00.",
+            "Found ExampleLedger  with  datetime 2022-01-01 00:00:00 after  datetime 2001-01-01 00:00:00.",
         ):
             _ = ExampleLedger(
                 sequence_num=None,
@@ -93,7 +93,7 @@ class TestLedgerEntity(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Found ExampleLedger with datetime 2022-01-01 00:00:00 after datetime 1999-01-01 00:00:00.",
+            "Found ExampleLedger  with  datetime 2022-01-01 00:00:00 after  datetime 1999-01-01 00:00:00.",
         ):
             _ = ExampleLedger(
                 sequence_num=None,
