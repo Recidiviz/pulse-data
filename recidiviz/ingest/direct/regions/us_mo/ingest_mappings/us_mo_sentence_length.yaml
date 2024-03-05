@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - person_ext_id
+  - sentence_ext_id
+  - critical_date
+  - BS_PD
+  - CG_MD
+  - BT_SLY
+  - BT_SLM
+  - BT_SLD
+  - BT_SCT
+  - BT_PC
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: person_ext_id
+          id_type: $literal("US_MO_DOC")
+    sentences:
+      - StateSentence:
+          external_id: sentence_ext_id
+          sentence_lengths:
+            - StateSentenceLength:
+                length_update_datetime: critical_date
+                sentence_length_days_max:
+                  $custom:
+                    $function: us_mo_custom_parsers.max_length_days_from_ymd
+                    $args:
+                      years: BT_SLY
+                      months: BT_SLM
+                      days: BT_SLD
+                earned_time_days: BT_SCT
+                parole_eligibility_date_external:
+                  $custom:
+                    $function: us_mo_custom_parsers.null_if_invalid_date
+                    $args:
+                      date: CG_MD
+                projected_completion_date_min_external:
+                  $custom:
+                    $function: us_mo_custom_parsers.null_if_invalid_date
+                    $args:
+                      date: BT_PC
+                projected_completion_date_max_external:
+                  $custom:
+                    $function: us_mo_custom_parsers.null_if_invalid_date
+                    $args:
+                      date: BS_PD

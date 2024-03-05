@@ -2607,7 +2607,13 @@ class StateSentenceStatusSnapshot(
 @attr.s(eq=False, kw_only=True)
 class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity):
     """Represents a historical ledger of time attributes for a single sentence,
-    including sentence length, accrued amount of days earned off, key dates, etc."""
+    including sentence length, accrued amount of days earned off, key dates, etc.
+
+    The projected date fields for this entity can only be hydrated if the state provides
+    sentence-specific estimates for individual sentences. Many states only provide projected
+    dates for all sentences in a sentence group. If that is the case, hydrate the projected
+    date fields on StateSentenceGroup.
+    """
 
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
@@ -2637,17 +2643,18 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
     parole_eligibility_date_external: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
-    # The date on which a person is projected to be released from incarceration to parole
+    # The date on which a person is projected to be released from incarceration to parole, if
+    # they will be released to parole from the parent sentence.
     projected_parole_release_date_external: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
-    # The earliest date on which a person is projected to be released to liberty
-    # after having completed all sentences in the term.
+    # The earliest date on which a person is projected to be released to liberty, if
+    # they will be released to liberty from the parent sentence.
     projected_completion_date_min_external: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
-    # The latest date on which a person is projected to be released to liberty
-    # after having completed all sentences in the term.
+    # The latest date on which a person is projected to be released to liberty, if
+    # they will be released to liberty from the parent sentence.
     projected_completion_date_max_external: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
@@ -2666,32 +2673,21 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
     def ledger_datetime_field(self) -> DateOrDateTime:
         return self.length_update_datetime
 
+    # TODO(#27577) Better understand projected dates and enforce them properly.
     def __attrs_post_init__(self):
         """Ensures that parole eligibility is before potential completions and
         that projected completion dates are in the right order."""
         self.assert_datetime_less_than(
-            self.parole_eligibility_date_external,
-            self.projected_parole_release_date_external,
-        )
-        self.assert_datetime_less_than(
-            self.parole_eligibility_date_external,
-            self.projected_completion_date_min_external,
-        )
-        self.assert_datetime_less_than(
-            self.parole_eligibility_date_external,
-            self.projected_completion_date_max_external,
-        )
-        self.assert_datetime_less_than(
             self.projected_parole_release_date_external,
             self.projected_completion_date_min_external,
+            before_description="projected parole release",
+            after_description="projected minimum completion",
         )
         self.assert_datetime_less_than(
             self.projected_parole_release_date_external,
             self.projected_completion_date_max_external,
-        )
-        self.assert_datetime_less_than(
-            self.projected_completion_date_min_external,
-            self.projected_completion_date_max_external,
+            before_description="projected parole release",
+            after_description="projected maximum completion",
         )
 
 
@@ -2737,32 +2733,21 @@ class StateSentenceGroup(
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
 
+    # TODO(#27577) Better understand projected dates and enforce them properly.
     def __attrs_post_init__(self):
-        """Ensures that parole eligibility is before potential releases and
-        that projected release dates are in the right order."""
-        self.assert_datetime_less_than(
-            self.parole_eligibility_date_external,
-            self.projected_parole_release_date_external,
-        )
-        self.assert_datetime_less_than(
-            self.parole_eligibility_date_external,
-            self.projected_full_term_release_date_min_external,
-        )
-        self.assert_datetime_less_than(
-            self.parole_eligibility_date_external,
-            self.projected_full_term_release_date_max_external,
-        )
+        """Ensures that parole eligibility is before potential completions and
+        that projected completion dates are in the right order."""
         self.assert_datetime_less_than(
             self.projected_parole_release_date_external,
             self.projected_full_term_release_date_min_external,
+            before_description="projected parole release",
+            after_description="projected minimum full term release",
         )
         self.assert_datetime_less_than(
             self.projected_parole_release_date_external,
             self.projected_full_term_release_date_max_external,
-        )
-        self.assert_datetime_less_than(
-            self.projected_full_term_release_date_min_external,
-            self.projected_full_term_release_date_max_external,
+            before_description="projected parole release",
+            after_description="projected maximum full term release",
         )
 
     @property

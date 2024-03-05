@@ -71,6 +71,8 @@ class LedgerEntityMixin(SequencedEntityMixin):
         self,
         before: Optional[DateOrDateTime],
         after: Optional[DateOrDateTime],
+        before_description: str = "",
+        after_description: str = "",
     ) -> None:
         """Raises a ValueError if the given "before" date/datetime is after the "after" one.
         Both field names must be datetime.datetime or datetime.date fields.
@@ -79,8 +81,10 @@ class LedgerEntityMixin(SequencedEntityMixin):
             assert_datetime_less_than(before, after)
         # The class name is helpful in ingest, so catching and re-raising with that info.
         except ValueError as exc:
+            _pii = self.limited_pii_repr() if hasattr(self, "limited_pii_repr") else ""
             raise ValueError(
-                f"Found {self.__class__.__name__} with datetime {before} after datetime {after}."
+                f"Found {self.__class__.__name__} {_pii} with "
+                f"{before_description} datetime {before} after {after_description} datetime {after}."
             ) from exc
 
 
