@@ -16,7 +16,10 @@
 # ============================================================================
 """Excludes individuals under ineligible supervision types from eligibility for OR earned discharge"""
 
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -52,11 +55,10 @@ _QUERY_TEMPLATE = f"""
                 )})) AS is_eligible
         FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
         WHERE state_code='US_OR'
+        -- drop zero-day periods (which have start_date=termination_date)
+        AND start_date<{nonnull_end_date_clause('termination_date')}
     ),
-    /* Here, we sub-sessionize to handle overlapping supervision periods, because there
-    are some cases where there are overlapping periods (even with different supervision
-    types) recorded for an individual. These typically appear to be single-day periods
-    that start/end on the same day as another period. */
+    -- sub-sessionize in case there are overlapping supervision periods
     {create_sub_sessions_with_attributes("supervision_type_spans")}
     SELECT
         state_code,
