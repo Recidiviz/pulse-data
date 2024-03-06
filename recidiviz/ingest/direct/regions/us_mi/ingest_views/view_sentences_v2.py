@@ -109,7 +109,10 @@ select
   sentenced_date,
   effective_date,
   closing_date,
-  expiration_date,
+  case when extract(YEAR from expiration_date) = 9999
+       then DATE(9999,12,31)
+       else expiration_date
+       end as expiration_date,
   county,
   min_length_days,
   min_length_months,
