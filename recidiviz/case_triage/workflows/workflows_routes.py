@@ -755,7 +755,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             return make_response(jsonify({"enabledConfigs": {}}), HTTPStatus.OK)
 
         config_fixture = {
-            "usIdCrcWorkRelease": {
+            "usIdCRCWorkRelease": {
                 "stateCode": "US_ID",
                 "urlSection": "CRCWorkRelease",
                 "systemType": "INCARCERATION",
