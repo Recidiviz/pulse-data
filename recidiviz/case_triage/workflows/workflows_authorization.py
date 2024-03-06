@@ -20,6 +20,9 @@ from typing import Any, Dict, List
 
 from flask import g
 
+from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
+    get_workflows_enabled_states,
+)
 from recidiviz.case_triage.authorization_utils import (
     on_successful_authorization_requested_state,
 )
@@ -51,7 +54,9 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     Saves the user email, given the requested state authorization is a no-op.
     """
     on_successful_authorization_requested_state(
-        claims, get_workflows_external_request_enabled_states()
+        claims,
+        get_workflows_external_request_enabled_states()
+        + get_workflows_enabled_states(),
     )
     g.authenticated_user_email = claims.get(
         f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
