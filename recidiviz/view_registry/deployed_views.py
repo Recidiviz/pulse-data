@@ -226,9 +226,6 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
 # A list of all datasets that have ever held managed views that were updated by our
 # process that refreshes the data from CloudSQL into Bigquery. This list is used to
 # identify places where we should look for legacy views that we need to clean up.
-# NOTE: This list DOES NOT contain the unioned regional datasets for federated
-# refreshes of state-segmented databases. Those datasets are stored in
-# CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA.
 # DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY
 # DELETED FROM BOTH PROD AND STAGING.
 CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
@@ -307,9 +304,9 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "us_tn_operations_regional",
         "us_me_operations_regional",
         "us_az_operations_regional",
+        "operations_regional",
     },
 }
-
 
 # A list of all datasets that have ever held managed views that were updated by the
 # step in our CloudSQL into Bigquery refresh process that unions the contents of
@@ -325,6 +322,8 @@ CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA
     SchemaType, Set[str]
 ] = {
     SchemaType.STATE: {
+        # TODO(#20930): Actually delete this dataset manually out of prod/staging, then
+        #  delete CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA.
         "state_regional",
     },
     SchemaType.OPERATIONS: {

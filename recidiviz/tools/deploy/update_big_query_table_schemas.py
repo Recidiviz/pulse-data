@@ -22,15 +22,11 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
-)
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
     update_bq_dataset_to_match_sqlalchemy_schema_for_one_table,
 )
@@ -38,9 +34,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-)
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir, redirect_logging_to_file
 from recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas import (
     update_dataflow_output_schemas,
@@ -91,83 +84,32 @@ def update_cloud_sql_bq_refresh_output_schemas(
         if CloudSqlToBQConfig.is_valid_schema_type(s)
     ]
 
-    file_kwargs = (
-        [
-            {
-                "schema_type": export_config.schema_type,
-                "dataset_id": export_config.unioned_multi_region_dataset(
-                    dataset_override_prefix=dataset_override_prefix
-                ),
-                "table": table,
-                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if dataset_override_prefix
-                else None,
-                "bq_region_override": None,
-            }
-            for export_config in export_configs
-            for table in export_config.get_tables_to_export()
-        ]
-        + [
-            {
-                "schema_type": export_config.schema_type,
-                "dataset_id": export_config.unioned_multi_region_dataset(
-                    dataset_override_prefix=dataset_override_prefix
-                ),
-                "table": table,
-                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if dataset_override_prefix
-                else None,
-                "bq_region_override": SQLAlchemyEngineManager.get_cloudsql_instance_region(
-                    export_config.schema_type
-                )
-                if export_config.schema_type != SchemaType.JUSTICE_COUNTS
-                else None,
-            }
-            for export_config in export_configs
-            for table in export_config.get_tables_to_export()
-            if export_config.is_state_segmented_refresh_schema()
-        ]
-        + [
-            {
-                "schema_type": export_config.schema_type,
-                "dataset_id": export_config.materialized_dataset_for_segment(
-                    state_code=state_code,
-                )
-                if not dataset_override_prefix
-                else BigQueryAddressOverrides.format_sandbox_dataset(
-                    dataset_override_prefix,
-                    export_config.materialized_dataset_for_segment(
-                        state_code=state_code
-                    ),
-                ),
-                "table": table,
-                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if dataset_override_prefix
-                else None,
-                "bq_region_override": SQLAlchemyEngineManager.get_cloudsql_instance_region(
-                    export_config.schema_type
-                )
-                if export_config.schema_type != SchemaType.JUSTICE_COUNTS
-                else None,
-            }
-            for state_code in get_direct_ingest_states_existing_in_env()
-            for export_config in export_configs
-            for table in export_config.get_tables_to_export()
-            if export_config.is_state_segmented_refresh_schema()
-        ]
-        + [
-            {
-                "schema_type": SchemaType.STATE,
-                "dataset_id": STATE_BASE_DATASET,
-                "table": table,
-                "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if dataset_override_prefix
-                else None,
-                "bq_region_override": None,
-            }
-            for table in CloudSqlToBQConfig(SchemaType.STATE).get_tables_to_export()
-        ]
-    )
+    file_kwargs = [
+        {
+            "schema_type": export_config.schema_type,
+            "dataset_id": export_config.multi_region_dataset(
+                dataset_override_prefix=dataset_override_prefix
+            ),
+            "table": table,
+            "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+            if dataset_override_prefix
+            else None,
+            "bq_region_override": None,
+        }
+        for export_config in export_configs
+        for table in export_config.get_tables_to_export()
+    ] + [
+        {
+            "schema_type": SchemaType.STATE,
+            "dataset_id": STATE_BASE_DATASET,
+            "table": table,
+            "default_table_expiration_ms": TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+            if dataset_override_prefix
+            else None,
+            "bq_region_override": None,
+        }
+        for table in CloudSqlToBQConfig(SchemaType.STATE).get_tables_to_export()
+    ]
 
     update_all_cloud_sql_bq_refresh_output_schemas(
         file_kwargs,

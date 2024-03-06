@@ -14,25 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Export configuration. By default, exports all non-history tables from a given schema.
+"""Configuration class for exporting tables from Cloud SQL to BigQuery."""
+from typing import List, Optional
 
-To update the configuration, take the following steps:
-- Announce in #ingest-questions that you intend to change the config file for staging or prod [acquires pseudo-lock]
-- Download file from gs://{project-name}-configs/cloud_sql_to_bq_config.yaml
-- Update and re-upload file
-- Announce in #ingest-questions that the change is complete [releases pseudo-lock]
-
-The yaml file format for cloud_sql_to_bq_config.yaml is:
-
-region_codes_to_exclude:
-  - <list of state region codes>
-
-TODO(#20930): Update this docstring / delete cloud_sql_to_bq_config.yaml once the
- OPERATIONS DB refresh no longer references it.
-"""
-from typing import Dict, List, Optional, Tuple
-
-import yaml
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -48,11 +32,7 @@ from recidiviz.case_triage.views.dataset_config import (
     CASE_TRIAGE_FEDERATED_DATASET,
     CASE_TRIAGE_FEDERATED_REGIONAL_DATASET,
 )
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
-    BigQuerySchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -64,56 +44,26 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.utils import metadata
 
 
-# TODO(#20930): Remove all usages of this class with the STATE schema and update so
-#  STATE is no longer a valid schema in this class.
 class CloudSqlToBQConfig:
     """Configuration class for exporting tables from Cloud SQL to BigQuery
     Args:
-        region_codes_to_exclude: An optional list of region codes to exclude from the refresh.
+        schema_type: The schema to export.
 
     Usage:
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
         tables = config.get_tables_to_export()
     """
 
-    def __init__(
-        self,
-        schema_type: SchemaType,
-        region_codes_to_exclude: Optional[List[str]] = None,
-    ):
-        if region_codes_to_exclude is None:
-            region_codes_to_exclude = []
+    def __init__(self, schema_type: SchemaType):
         self.schema_type = schema_type
         self.sorted_tables = list(get_all_table_classes_in_schema(schema_type))
-        self.region_codes_to_exclude = [
-            region_code.upper() for region_code in region_codes_to_exclude
-        ]
 
-    # TODO(#20930): Update the OPERATIONS schema to refresh the same way as the other
-    #  schemas (i.e.not state-segmented) and delete all code related to state-segmented
-    #  refreshes.
-    def is_state_segmented_refresh_schema(self) -> bool:
-        """Returns True if the data for the config's schema can and should be refreshed
-        on a per-state basis.
-        """
-        if self.schema_type is SchemaType.OPERATIONS:
-            return True
-
-        if self.schema_type in (
-            SchemaType.JUSTICE_COUNTS,
-            SchemaType.CASE_TRIAGE,
-        ):
-            return False
-
-        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
-
-    def unioned_regional_dataset(self, dataset_override_prefix: Optional[str]) -> str:
-        """Returns the name of the dataset where refreshed data from all segments should
-        be written right before it is copied to its final destination in the
-        multi-region dataset that can be referenced by views.
+    def regional_dataset(self, dataset_override_prefix: Optional[str]) -> str:
+        """Returns the name of the dataset where refreshed data should be written right
+        before it is copied to its final destination in the multi-region dataset that
+        can be referenced by views.
 
         This dataset will have a region that matches the region of the schema's CloudSQL
         instance, e.g us-east1.
@@ -131,17 +81,10 @@ class CloudSqlToBQConfig:
             dest_dataset = f"{dataset_override_prefix}_{dest_dataset}"
         return dest_dataset
 
-    # TODO(#20930): Rename this when we eliminate the concept of a state-segmented
-    #  refresh.
-    def unioned_multi_region_dataset(
-        self, dataset_override_prefix: Optional[str]
-    ) -> str:
+    def multi_region_dataset(self, dataset_override_prefix: Optional[str]) -> str:
         """Returns the name of the dataset that is the final destination for refreshed
         data. This dataset will live in the 'US' mult-region and can be referenced by
         our views.
-
-        Note: By "unioned", we mean a union of all state segments for the given dataset,
-        if relevant.
         """
         if self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_DATASET
@@ -156,53 +99,10 @@ class CloudSqlToBQConfig:
             dest_dataset = f"{dataset_override_prefix}_{dest_dataset}"
         return dest_dataset
 
-    # TODO(#20930): Delete this when we eliminate the concept of a state-segmented
-    #  refresh.
-    def database_key_for_segment(self) -> SQLAlchemyDatabaseKey:
-        """Returns a key for the database associated with a particular state segment.
-        Throws for unsegmented schemas.
-        """
-        if not self.is_state_segmented_refresh_schema():
-            raise ValueError(
-                f"Only expect state-segmented schemas, found [{self.schema_type}]"
-            )
-        return SQLAlchemyDatabaseKey.for_schema(self.schema_type)
-
-    # TODO(#20930): Rename this when we eliminate the concept of a state-segmented
-    #  refresh.
     @property
-    def unsegmented_database_key(self) -> SQLAlchemyDatabaseKey:
-        """Returns a key for the database associated with a particular unsegmented
-        schema. Throws for state-segmented schemas.
-        """
-        if self.is_state_segmented_refresh_schema():
-            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
-
+    def database_key(self) -> SQLAlchemyDatabaseKey:
+        """Returns a key for the database associated with a particular schema."""
         return SQLAlchemyDatabaseKey.for_schema(self.schema_type)
-
-    def materialized_dataset_for_segment(self, state_code: StateCode) -> str:
-        """Returns the dataset that data for a given state segment is materialized into.
-        Throws for unsegmented schemas.
-        """
-        if not self.is_state_segmented_refresh_schema():
-            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
-        return f"{state_code.value.lower()}_{self.schema_type.value.lower()}_regional"
-
-    def materialized_address_for_segment_table(
-        self,
-        table: Table,
-        state_code: StateCode,
-    ) -> BigQueryAddress:
-        """Returns the dataset that data for a given table in a state segment is
-        materialized into. Throws for unsegmented schemas.
-        """
-        if not self.is_state_segmented_refresh_schema():
-            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
-
-        return BigQueryAddress(
-            dataset_id=self.materialized_dataset_for_segment(state_code),
-            table_id=table.name,
-        )
 
     # TODO(#20930): Rename this when we eliminate the concept of a state-segmented
     #  refresh.
@@ -212,10 +112,7 @@ class CloudSqlToBQConfig:
         """Returns the dataset that data for a given table in an unsegmented schema is
         materialized into. Throws for state-segmented schemas.
         """
-        if self.is_state_segmented_refresh_schema():
-            raise ValueError(f"Unexpected schema type [{self.schema_type}]")
-
-        dataset = self.unioned_regional_dataset(dataset_override_prefix=None)
+        dataset = self.regional_dataset(dataset_override_prefix=None)
         if self.schema_type == SchemaType.JUSTICE_COUNTS:
             # TODO(#7285): JUSTICE_COUNTS has a custom materialized location for
             #  backwards compatibility. Once we delete the legacy views at
@@ -241,46 +138,13 @@ class CloudSqlToBQConfig:
         """Return a List of column objects to export for a given table"""
         return list(column.name for column in table.columns)
 
-    def get_single_state_table_federated_export_query(
-        self, table: Table, state_code: StateCode
-    ) -> str:
-        """Return a formatted SQL query for a given CloudSQL schema table that can be
-        used to export data for a given state to BigQuery via a federated query.
-
-        For association tables, it adds a region code column to the select statement
-        through a join.
-
-        Throws if the provided state_code is in the list of region_codes_to_exclude.
-        """
-        if state_code.value in self.region_codes_to_exclude:
-            raise ValueError(
-                f"State [{state_code}] listed in region codes to exclude - "
-                f"cannot produce query."
-            )
-
-        columns = self._get_table_columns_to_export(table)
-        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            schema_type=self.schema_type,
-            table=table,
-            columns_to_include=columns,
-            region_code=state_code.value,
-        )
-        return query_builder.full_query()
-
     def get_table_federated_export_query(self, table_name: str) -> str:
         """Return a formatted SQL query for a given CloudSQL schema table that can be
         used to export data for a given state to BigQuery via a federated query.
 
         For association tables, it adds a region code column to the select statement
         through a join.
-
-        Throws if the provided state_code is in the list of region_codes_to_exclude.
         """
-        if self.region_codes_to_exclude:
-            raise ValueError(
-                "Cannot be used with a schema that ever excludes region codes"
-            )
-
         table = get_table_class_by_name(table_name, self.schema_type)
         columns = self._get_table_columns_to_export(table)
 
@@ -291,39 +155,6 @@ class CloudSqlToBQConfig:
             region_code=None,
         )
         return query_builder.full_query()
-
-    def get_unioned_table_view_query_format_string(
-        self, state_codes: List[StateCode], table: Table
-    ) -> Tuple[str, Dict[str, str]]:
-        """Returns a tuple (query format string, kwargs) for a view query that unions
-        table data from each of the state-segmented datasets into a single table.
-        """
-
-        state_select_queries = []
-        kwargs = {}
-        for state_code in state_codes:
-            address = self.materialized_address_for_segment_table(
-                table=table, state_code=state_code
-            )
-            dataset_key = f"{state_code.value.lower()}_specific_dataset"
-            kwargs[dataset_key] = address.dataset_id
-
-            bq_query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
-                project_id=metadata.project_id(),
-                dataset_id=address.dataset_id,
-                table=table,
-                schema_type=self.schema_type,
-                columns_to_include=self._get_table_columns_to_export(table),
-                region_codes_to_include=[state_code.value.upper()],
-                region_codes_to_exclude=None,
-            )
-
-            state_select_queries.append(
-                f"{bq_query_builder.select_clause()} "
-                f"FROM `{{project_id}}.{{{dataset_key}}}.{address.table_id}` {address.table_id}"
-            )
-        table_union_query = "\nUNION ALL\n".join(state_select_queries)
-        return table_union_query, kwargs
 
     def get_tables_to_export(self) -> List[Table]:
         """Return List of table classes to include in export"""
@@ -349,35 +180,10 @@ class CloudSqlToBQConfig:
 
         raise ValueError(f"Unexpected schema type value [{schema_type}]")
 
-    @staticmethod
-    def default_config_path() -> GcsfsFilePath:
-        return GcsfsFilePath.from_absolute_path(
-            f"gs://{metadata.project_id()}-configs/cloud_sql_to_bq_config.yaml"
-        )
-
     @classmethod
-    def for_schema_type(
-        cls, schema_type: SchemaType, yaml_path: Optional[GcsfsFilePath] = None
-    ) -> "CloudSqlToBQConfig":
+    def for_schema_type(cls, schema_type: SchemaType) -> "CloudSqlToBQConfig":
         """Logic for instantiating a config object for a schema type."""
         if not cls.is_valid_schema_type(schema_type):
             raise ValueError(f"Unsupported schema_type: [{schema_type}]")
 
-        gcs_fs = GcsfsFactory.build()
-        if not yaml_path:
-            yaml_path = cls.default_config_path()
-        yaml_string = gcs_fs.download_as_string(yaml_path)
-        try:
-            yaml_config = yaml.safe_load(yaml_string)
-        except yaml.YAMLError as e:
-            raise ValueError(f"Could not parse YAML in [{yaml_path.abs_path()}]") from e
-
-        if schema_type == SchemaType.OPERATIONS:
-            return CloudSqlToBQConfig(
-                schema_type=SchemaType.OPERATIONS,
-                region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
-            )
-        if schema_type == SchemaType.CASE_TRIAGE:
-            return CloudSqlToBQConfig(schema_type=SchemaType.CASE_TRIAGE)
-
-        raise ValueError(f"Unexpected schema type value [{schema_type}]")
+        return CloudSqlToBQConfig(schema_type=schema_type)

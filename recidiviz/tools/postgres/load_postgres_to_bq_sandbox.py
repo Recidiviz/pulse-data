@@ -24,23 +24,18 @@ Usage:
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
         --schema [SCHEMA]
-        [--direct-ingest-instance [PRIMARY,SECONDARY]]
 Example:
     python -m recidiviz.tools.postgres.load_postgres_to_bq_sandbox \
         --project_id recidiviz-staging \
-        --sandbox_dataset_prefix my_prefix \
-        --schema STATE \
-        --direct-ingest-instance SECONDARY
+        --sandbox_dataset_prefix ageiduschek \
+        --schema OPERATIONS
 
 """
 import argparse
 import logging
 import sys
 from typing import List, Tuple
-from unittest import mock
 
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_config
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -51,41 +46,22 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-STANDARD_YAML_CONTENTS = """
-region_codes_to_exclude: []
-"""
 
-
-def main(
-    sandbox_dataset_prefix: str,
-    schema_type: SchemaType,
-) -> None:
+def main(sandbox_dataset_prefix: str, schema_type: SchemaType) -> None:
     """Defines the main function responsible for moving data from Postgres to BQ."""
 
     if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
         raise ValueError(f"Unsupported schema type: [{schema_type}]")
 
     logging.info("Prefixing all output datasets with [%s_].", sandbox_dataset_prefix)
-    fake_gcs = FakeGCSFileSystem()
-
-    # We mock the export config to a version that does not have any paused regions.
-    with mock.patch(
-        f"{cloud_sql_to_bq_refresh_config.__name__}.GcsfsFactory.build",
-        return_value=fake_gcs,
-    ):
-        fake_gcs.upload_from_string(
-            path=CloudSqlToBQConfig.default_config_path(),
-            contents=STANDARD_YAML_CONTENTS,
-            content_type="text/yaml",
-        )
-        federated_bq_schema_refresh(
-            schema_type=schema_type,
-            dataset_override_prefix=sandbox_dataset_prefix,
-        )
-        config = CloudSqlToBQConfig.for_schema_type(schema_type)
-        final_destination_dataset = config.unioned_multi_region_dataset(
-            dataset_override_prefix=sandbox_dataset_prefix
-        )
+    federated_bq_schema_refresh(
+        schema_type=schema_type,
+        dataset_override_prefix=sandbox_dataset_prefix,
+    )
+    config = CloudSqlToBQConfig.for_schema_type(schema_type)
+    final_destination_dataset = config.multi_region_dataset(
+        dataset_override_prefix=sandbox_dataset_prefix
+    )
 
     logging.info(
         "Load complete. Data loaded to dataset [%s].", final_destination_dataset

@@ -19,9 +19,6 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
-)
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -30,81 +27,14 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
 )
 
 
-class StateSegmentedSchemaFederatedBigQueryViewCollector(
+class FederatedCloudSQLTableBigQueryViewCollector(
     BigQueryViewCollector[FederatedCloudSQLTableBigQueryViewBuilder]
 ):
-    """Collects all FederatedCloudSQLTableBigQueryViewBuilders for any schema whose
-    CloudSQL -> BQ refresh should be segmented per-state.
+    """Collects all FederatedCloudSQLTableBigQueryViewBuilders for the schema associated
+    with the provided config.
     """
 
     def __init__(self, config: CloudSqlToBQConfig):
-        if not config.is_state_segmented_refresh_schema():
-            raise ValueError(
-                f"Only valid for state-segmented schema types. Cannot be instantiated "
-                f"with schema_type [{config.schema_type}]"
-            )
-        self.config = config
-        self.state_codes_to_collect = [
-            state_code
-            for state_code in get_direct_ingest_states_existing_in_env()
-            if state_code.value not in self.config.region_codes_to_exclude
-        ]
-
-        direct_ingest_region_codes = {
-            state_code.value
-            for state_code in get_direct_ingest_states_existing_in_env()
-        }
-        invalid_region_codes = (
-            set(self.config.region_codes_to_exclude) - direct_ingest_region_codes
-        )
-        if invalid_region_codes:
-            raise ValueError(
-                f"Found disabled region(s) [{invalid_region_codes}] which are not valid "
-                f"direct ingest state codes."
-            )
-
-    def collect_view_builders(self) -> List[FederatedCloudSQLTableBigQueryViewBuilder]:
-        views = []
-        for table in self.config.get_tables_to_export():
-            for state_code in self.state_codes_to_collect:
-                database_key = self.config.database_key_for_segment()
-                cloud_sql_query = (
-                    self.config.get_single_state_table_federated_export_query(
-                        table, state_code
-                    )
-                )
-                materialized_address = (
-                    self.config.materialized_address_for_segment_table(
-                        table=table,
-                        state_code=state_code,
-                    )
-                )
-                views.append(
-                    FederatedCloudSQLTableBigQueryViewBuilder(
-                        connection_region=self.config.connection_region,
-                        table=table,
-                        view_id=f"{state_code.value.lower()}_{table.name}",
-                        database_key=database_key,
-                        materialized_address_override=materialized_address,
-                        cloud_sql_query=cloud_sql_query,
-                    )
-                )
-        return views
-
-
-class UnsegmentedSchemaFederatedBigQueryViewCollector(
-    BigQueryViewCollector[FederatedCloudSQLTableBigQueryViewBuilder]
-):
-    """Collects all FederatedCloudSQLTableBigQueryViewBuilders for any schema whose
-    CloudSQL -> BQ refresh is not segmented by state or any other dimension.
-    """
-
-    def __init__(self, config: CloudSqlToBQConfig):
-        if config.is_state_segmented_refresh_schema():
-            raise ValueError(
-                f"Only valid for unsegmented schema types. Cannot be instantiated with "
-                f"schema_type [{config.schema_type}]"
-            )
         self.config = config
 
     def collect_view_builders(self) -> List[FederatedCloudSQLTableBigQueryViewBuilder]:
@@ -121,7 +51,7 @@ class UnsegmentedSchemaFederatedBigQueryViewCollector(
                     cloud_sql_query=self.config.get_table_federated_export_query(
                         table.name
                     ),
-                    database_key=self.config.unsegmented_database_key,
+                    database_key=self.config.database_key,
                     materialized_address_override=materialized_address,
                 )
             )
