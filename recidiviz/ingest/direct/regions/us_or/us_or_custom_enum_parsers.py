@@ -28,6 +28,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
 )
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 
 
@@ -148,3 +151,21 @@ def parse_sentence_status(raw_text: str) -> Optional[StateSentenceStatus]:
         return StateSentenceStatus.AMENDED
 
     return StateSentenceStatus.INTERNAL_UNKNOWN
+
+
+def parse_participation_status(
+    raw_text: str,
+) -> Optional[StateProgramAssignmentParticipationStatus]:
+    """
+    Determining Program Assignment Participation from start_date and end_date
+    """
+    start_date, end_date = raw_text.split("@@")
+
+    if start_date is not None and end_date is None:
+        return StateProgramAssignmentParticipationStatus.IN_PROGRESS
+
+    if end_date is not None:
+        # there are instances when no start date is entered but there is end_date and exit_code
+        return StateProgramAssignmentParticipationStatus.DISCHARGED
+
+    return StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN
