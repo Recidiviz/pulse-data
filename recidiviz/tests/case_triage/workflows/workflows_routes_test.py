@@ -1809,7 +1809,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertIn("usIdCrcWorkRelease", response.get_json()["message"]["enabledConfigs"])  # type: ignore
+        self.assertIn("usIdCrcWorkRelease", response.get_json()["enabledConfigs"])  # type: ignore
 
     def test_workflows_config_disabled_state(self) -> None:
         with self.test_app.test_request_context():
@@ -1819,7 +1819,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual({}, response.get_json()["message"])  # type: ignore
+        self.assertEqual({"enabledConfigs": {}}, response.get_json())  # type: ignore
 
 
 def make_cors_test(
