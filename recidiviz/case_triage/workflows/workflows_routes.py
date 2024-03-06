@@ -245,6 +245,11 @@ def create_workflows_api_blueprint() -> Blueprint:
     def handle_insert_tepe_contact_note(
         state: str,  # pylint: disable=unused-argument
     ) -> Response:
+        if state.upper() != "US_TN":
+            return jsonify_response(
+                f"Not supported in {state.upper()}", HTTPStatus.BAD_REQUEST
+            )
+
         cloud_task_body = get_cloud_task_json_body()
         person_external_id = cloud_task_body.get("person_external_id", None)
 
@@ -745,17 +750,15 @@ def create_workflows_api_blueprint() -> Blueprint:
     @workflows_api.get("/<state>/opportunities")
     @workflows_api.response(HTTPStatus.OK, WorkflowsConfigurationsResponseSchema)
     def get_opportunities(state: str) -> Response:
-        state_code = StateCode(state)
-        if state_code != StateCode.US_ID:
-            return jsonify_response(
-                "Only supported for US_ID currently",
-                HTTPStatus.BAD_REQUEST,
-            )
+        state_code = state.upper()
+        if state_code != "US_ID":
+            return make_response(jsonify(message={}), HTTPStatus.OK)
 
         config_fixture = {
             "usIdCrcWorkRelease": {
                 "stateCode": "US_ID",
                 "urlSection": "CRCWorkRelease",
+                "systemType": "INCARCERATION",
                 "displayName": "Work-release at Community Reentry Centers",
                 "featureVariant": "usIdCRC",
                 "dynamicEligibilityText": "resident[|s] may be eligible for work-release at a Community Reentry Center",

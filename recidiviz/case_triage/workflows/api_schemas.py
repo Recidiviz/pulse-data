@@ -173,14 +173,15 @@ class WorkflowsConfigurationsResponseSchema(CamelCaseSchema):
             tooltip = fields.Str(required=False)
 
         state_code = fields.Enum(StateCode)
+        system_type = fields.Str()
         url_section = fields.Str()
-        display_name = fields
+        display_name = fields.Str()
         feature_variant = fields.Str(required=False)
         dynamic_eligibility_text = fields.Str()
         call_to_action = fields.Str()
         firestore_collection = fields.Str()
         methodology_url = fields.Str()
-        snooze = fields.Nested(SnoozeConfigSchema, required=False)
+        snooze = fields.Nested(SnoozeConfigSchema(), required=False)
         denial_reasons = fields.Dict(fields.Str(), fields.Str())
         eligible_criteria_copy = fields.Dict(
             fields.Str(), fields.Nested(CriteriaCopySchema())

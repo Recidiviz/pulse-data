@@ -420,7 +420,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "/workflows/external_request/US_ID/handle_insert_tepe_contact_note",
                 json=request_body,
             )
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     def test_handle_insert_tepe_contact_note_missing_param(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
@@ -1818,10 +1818,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 headers={"Origin": "http://localhost:3000"},
             )
 
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-        self.assertEqual(
-            "Only supported for US_ID currently", response.get_json()["message"]  # type: ignore
-        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual({}, response.get_json()["message"])  # type: ignore
 
 
 def make_cors_test(
