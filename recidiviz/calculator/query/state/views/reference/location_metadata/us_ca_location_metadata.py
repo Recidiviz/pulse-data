@@ -38,14 +38,15 @@ locations in CA that can be associated with a person or staff member.
 US_CA_LOCATION_METADATA_QUERY_TEMPLATE = f"""
 SELECT 
   'US_CA' AS state_code, 
-  CONCAT(ParoleUnit, '@@', ParoleDistrict,'@@',ParoleRegion) AS location_external_id,
+  UPPER(CONCAT(ParoleUnit, '@@', ParoleDistrict,'@@',ParoleRegion)) AS location_external_id,
   ParoleUnit as location_name,
   TO_JSON(
     STRUCT(
-      CASE WHEN SAFE_CAST(ParoleUnit AS INT64) IS NULL THEN UPPER(ParoleUnit) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_UNIT_NAME.value},
+      -- ParoleUnit is the lowest level of location in CA, but is analogous to the Recidiviz term "office"
+      CASE WHEN SAFE_CAST(ParoleUnit AS INT64) IS NULL THEN UPPER(ParoleUnit) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
       CASE WHEN SAFE_CAST(ParoleDistrict AS INT64) IS NULL THEN UPPER(ParoleDistrict) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
       CASE WHEN SAFE_CAST(ParoleRegion AS INT64) IS NULL THEN UPPER(ParoleRegion) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value},
-      UPPER(ParoleUnit) AS {LocationMetadataKey.SUPERVISION_UNIT_ID.value},
+      UPPER(ParoleUnit) AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
       UPPER(ParoleDistrict) AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
       UPPER(ParoleRegion) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value}
     )
