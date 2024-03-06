@@ -283,7 +283,11 @@ class IngestViewManifestCompiler:
         if unlisted_referenced_columns:
             raise ValueError(
                 f"Found columns referenced in |output| that are not listed in "
-                f"|input_columns|: {unlisted_referenced_columns}"
+                f"|input_columns|: {unlisted_referenced_columns}. This means that these "
+                f"columns are used somewhere in your ingest mapping, but aren't included "
+                f"in the |input_columns| list. Either add "
+                f"{unlisted_referenced_columns} the |input_columns| list and be sure "
+                f"they're returned by the ingest view, or remove its usage in the mapping."
             )
 
         if unreferenced_columns:
