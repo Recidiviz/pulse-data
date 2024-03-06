@@ -29,9 +29,7 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines import dataflow_output_table_manager
 from recidiviz.pipelines.dataflow_config import (
@@ -50,9 +48,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
-from recidiviz.tests.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view_collector_test import (
-    NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
-)
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -218,21 +213,10 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
 
         self.mock_client.project_id.return_value = self.project_id
 
-        self.gcs_factory_patcher = mock.patch(
-            "recidiviz.admin_panel.dataset_metadata_store.GcsfsFactory.build"
-        )
-        self.fake_fs = FakeGCSFileSystem()
-        self.gcs_factory_patcher.start().return_value = self.fake_fs
-
-        self.fake_config_path = GcsfsFilePath.from_absolute_path(
-            "gs://fake-recidiviz-project-configs/cloud_sql_to_bq_config.yaml"
-        )
-
     def tearDown(self) -> None:
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
-        self.gcs_factory_patcher.stop()
 
     @mock.patch(
         "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
@@ -349,12 +333,6 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
     def test_update_normalized_state_schema(
         self, mock_update_norm_schemas: mock.MagicMock
     ) -> None:
-        self.fake_fs.upload_from_string(
-            path=self.fake_config_path,
-            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
-            content_type="text/yaml",
-        )
-
         mock_update_norm_schemas.return_value = [
             "state_incarceration_period",
             "state_supervision_period",
@@ -369,12 +347,6 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
     def test_update_normalized_state_schema_adds_dataset_prefix(
         self, mock_update_norm_schemas: mock.MagicMock
     ) -> None:
-        self.fake_fs.upload_from_string(
-            path=self.fake_config_path,
-            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
-            content_type="text/yaml",
-        )
-
         mock_update_norm_schemas.return_value = [
             "state_incarceration_period",
             "state_supervision_period",
@@ -486,22 +458,6 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
 
         self.mock_client.project_id.return_value = self.project_id
 
-        self.gcs_factory_patcher = mock.patch(
-            "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.GcsfsFactory.build"
-        )
-        self.fake_fs = FakeGCSFileSystem()
-        self.gcs_factory_patcher.start().return_value = self.fake_fs
-
-        self.fake_config_path = GcsfsFilePath.from_absolute_path(
-            "gs://recidiviz-project-configs/cloud_sql_to_bq_config.yaml"
-        )
-
-        self.fake_fs.upload_from_string(
-            path=self.fake_config_path,
-            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
-            content_type="text/yaml",
-        )
-
         self.query_builder_patcher = mock.patch(
             "recidiviz.ingest.direct.views.direct_ingest_view_query_builder.DirectIngestViewQueryBuilder"
         )
@@ -519,7 +475,6 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
-        self.gcs_factory_patcher.stop()
         self.query_builder_patcher.stop()
         self.get_view_builder_patcher.stop()
 

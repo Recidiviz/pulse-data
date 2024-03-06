@@ -20,13 +20,10 @@
 import string
 import unittest
 from typing import List
-from unittest import mock
 
 import sqlalchemy
 
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -44,28 +41,6 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             for schema_type in self.schema_types
             if CloudSqlToBQConfig.is_valid_schema_type(schema_type)
         ]
-        self.mock_project_id = "fake-recidiviz-project"
-        self.metadata_patcher = mock.patch(
-            "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.metadata"
-        )
-        self.mock_metadata = self.metadata_patcher.start()
-        self.mock_metadata.project_id.return_value = self.mock_project_id
-
-        self.gcs_factory_patcher = mock.patch(
-            "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.GcsfsFactory.build"
-        )
-        self.fake_gcs = FakeGCSFileSystem()
-        self.gcs_factory_patcher.start().return_value = self.fake_gcs
-        self.set_config_yaml(
-            """
-region_codes_to_exclude:
-  - US_ND
-"""
-        )
-
-    def tearDown(self) -> None:
-        self.metadata_patcher.stop()
-        self.gcs_factory_patcher.stop()
 
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):
@@ -82,28 +57,28 @@ region_codes_to_exclude:
                 config = CloudSqlToBQConfig.for_schema_type(schema_type)
                 self.assertIsInstance(config, CloudSqlToBQConfig)
 
-    def test_unioned_regional_dataset(self) -> None:
+    def test_regional_dataset(self) -> None:
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
-            dataset = config.unioned_regional_dataset(dataset_override_prefix=None)
+            dataset = config.regional_dataset(dataset_override_prefix=None)
             self.assertTrue(dataset.endswith("regional"))
             self.assertTrue(dataset not in VIEW_SOURCE_TABLE_DATASETS)
 
-            dataset_with_prefix = config.unioned_regional_dataset(
+            dataset_with_prefix = config.regional_dataset(
                 dataset_override_prefix="prefix"
             )
             self.assertTrue(dataset_with_prefix.startswith("prefix_"))
             self.assertTrue(dataset_with_prefix.endswith("regional"))
             self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
 
-    def test_unioned_multi_region_dataset(self) -> None:
+    def test_multi_region_dataset(self) -> None:
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
-            dataset = config.unioned_multi_region_dataset(dataset_override_prefix=None)
+            dataset = config.multi_region_dataset(dataset_override_prefix=None)
             self.assertFalse(dataset.endswith("regional"))
             self.assertTrue(dataset in VIEW_SOURCE_TABLE_DATASETS)
 
-            dataset_with_prefix = config.unioned_multi_region_dataset(
+            dataset_with_prefix = config.multi_region_dataset(
                 dataset_override_prefix="prefix"
             )
             self.assertTrue(dataset_with_prefix.startswith("prefix_"))
@@ -133,25 +108,11 @@ region_codes_to_exclude:
             assert config is not None
             allowed_characters = set(string.ascii_letters + string.digits + "_")
 
-            dataset_id = config.unioned_multi_region_dataset(
-                dataset_override_prefix=None
-            )
+            dataset_id = config.multi_region_dataset(dataset_override_prefix=None)
             self.assertIsInstance(dataset_id, str)
 
             for char in dataset_id:
                 self.assertIn(char, allowed_characters)
-
-    @mock.patch(
-        "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.metadata.project_id",
-        mock.Mock(return_value="a-new-fake-id"),
-    )
-    def test_incorrect_environment(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Could not find blob at GcsfsFilePath\(bucket_name='a-new-fake-id-configs', "
-            r"blob_name='cloud_sql_to_bq_config.yaml'\)",
-        ):
-            _ = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
 
     def test_schema_for_sqlalchemy_table(self) -> None:
         """Assert that we will be able to manage all tables in BigQuery created by the
@@ -184,11 +145,3 @@ region_codes_to_exclude:
                 elem in l2,
                 msg=f"{msg_prefix}: Element {elem} present in first list but not second",
             )
-
-    def set_config_yaml(self, contents: str) -> None:
-        path = GcsfsFilePath.from_absolute_path(
-            f"gs://{self.mock_project_id}-configs/cloud_sql_to_bq_config.yaml"
-        )
-        self.fake_gcs.upload_from_string(
-            path=path, contents=contents, content_type="text/yaml"
-        )

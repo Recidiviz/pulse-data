@@ -53,16 +53,6 @@ class TestDatasetMetadataStore(TestCase):
         )
 
         fake_gcs = FakeGCSFileSystem()
-        fake_gcs.upload_from_string(
-            path=GcsfsFilePath.from_absolute_path(
-                "gs://recidiviz-456-configs/cloud_sql_to_bq_config.yaml"
-            ),
-            contents="""
-region_codes_to_exclude:
-  - US_ND
-""",
-            content_type="text/yaml",
-        )
 
         fixture_folder = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
