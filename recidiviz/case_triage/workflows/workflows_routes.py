@@ -752,7 +752,7 @@ def create_workflows_api_blueprint() -> Blueprint:
     def get_opportunities(state: str) -> Response:
         state_code = state.upper()
         if state_code != "US_ID":
-            return make_response(jsonify(message={}), HTTPStatus.OK)
+            return make_response(jsonify({"enabledConfigs": {}}), HTTPStatus.OK)
 
         config_fixture = {
             "usIdCrcWorkRelease": {
@@ -795,6 +795,6 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         response_blob = {"enabledConfigs": config_fixture}
 
-        return make_response(jsonify(message=response_blob), HTTPStatus.OK)
+        return make_response(jsonify(response_blob), HTTPStatus.OK)
 
     return workflows_api
