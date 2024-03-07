@@ -88,17 +88,6 @@ VITALS_REPORT_DATASET: str = "vitals_report_views"
 # Where Sendgrid datasets live
 SENDGRID_EMAIL_DATA_DATASET: str = "sendgrid_email_data"
 
-# TODO(#20930): Delete these US_XX_RAW_DATA constants in favor of calls to
-#  raw_latest_views_dataset_for_region().
-# Where US_TN raw data lives
-US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
-
-# Where US_PA raw data lives
-US_PA_RAW_DATASET: str = "us_pa_raw_data_up_to_date_views"
-
-# Where US_CA raw data lives
-US_CA_RAW_DATASET: str = "us_ca_raw_data_up_to_date_views"
-
 # Views that power the workflows part of the state dashboard
 WORKFLOWS_VIEWS_DATASET: str = "workflows_views"
 
