@@ -2745,6 +2745,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 schema.AgencyUserAccountAssociation(
                     user_account=self.test_schema_objects.test_user_A,
                     agency=self.test_schema_objects.test_agency_C,
+                    subscribed=True,
+                    days_after_time_period_to_send_email=12,
                 ),
             ]
         )
@@ -2809,7 +2811,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         },
                     ],
                     "jurisdictions": {"excluded": [], "included": []},
-                    "is_subscribed_to_emails": False,
+                    "is_subscribed_to_emails": True,
+                    "days_after_time_period_to_send_email": 12,
                 },
             )
 
@@ -2824,6 +2827,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     user_account=self.test_schema_objects.test_user_A,
                     agency=self.test_schema_objects.test_agency_A,
                     role=schema.UserAccountRole.AGENCY_ADMIN,
+                    subscribed=True,
+                    days_after_time_period_to_send_email=12,
                 ),
             ]
         )
@@ -2856,7 +2861,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "is_subscribed_to_emails": False,
+                    "days_after_time_period_to_send_email": 12,
+                    "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
                         "excluded": [],
@@ -2885,7 +2891,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "is_subscribed_to_emails": False,
+                    "days_after_time_period_to_send_email": 12,
+                    "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
                         "excluded": ["0105500000", "0105900000"],
@@ -2914,7 +2921,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "is_subscribed_to_emails": False,
+                    "days_after_time_period_to_send_email": 12,
+                    "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": [],
                         "excluded": ["0105500000", "0105900000"],
@@ -2943,7 +2951,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "is_subscribed_to_emails": False,
+                    "days_after_time_period_to_send_email": 12,
+                    "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": [],
                         "excluded": [],
