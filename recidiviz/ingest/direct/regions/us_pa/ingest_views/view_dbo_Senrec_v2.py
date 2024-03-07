@@ -22,39 +22,52 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """SELECT
-    sentences.curr_inmate_num,
-    sentences.type_number,
-    sentences.sent_status_code,
-    sentences.type_of_sent,
-    sentences.sent_date,
-    sentences.sent_start_date,
-    sentences.sent_stop_date,
-    sentences.sentcing_cnty,
-    sentences.offense_track_num,
-    -- Historical offense codes come from offense_code, codes after 9/22/23 come
-    -- are joined to dbo_Senrec from dbo_Senrec_Extended.Crime_Code
-    COALESCE(sentences.offense_code, sentences.Crime_Code) AS offense_code,
-    sentences.class_of_sent,         
-    sentences.max_cort_sent_yrs,    
-    sentences.max_cort_sent_mths,    
-    sentences.max_cort_sent_days,    
-    sentences.min_cort_sent_yrs,     
-    sentences.min_cort_sent_mths,    
-    sentences.min_cort_sent_days,  
-    sentences.min_expir_date,
-    sentences.max_expir_date,
-    COALESCE(sentences.judge, sentences.Judge_Formatted_Name) AS judge,
-    offense_codes.Offense, 
-    offense_codes.Category, 
-    offense_codes.ASCA_Category___Ranked, 
-    offense_codes.SubCategory, 
-    offense_codes.Grade_Category,
-    offense_codes.Grade
-FROM 
-    {dbo_Senrec} sentences
-LEFT JOIN {offense_codes} offense_codes
-    ON COALESCE(sentences.offense_code, sentences.Crime_Code) = offense_codes.Code
+VIEW_QUERY_TEMPLATE = """
+    SELECT
+        sentences.curr_inmate_num,
+        sentences.type_number,
+        sentences.sent_status_code,
+        sentences.type_of_sent,
+        sentences.sent_date,
+        sentences.sent_start_date,
+        sentences.sent_stop_date,
+        sentences.sentcing_cnty,
+        sentences.offense_track_num,
+        -- Historical offense codes come from offense_code, codes after 9/22/23 come
+        -- are joined to dbo_Senrec from dbo_Senrec_Extended.Crime_Code
+        COALESCE(sentences.offense_code, sentences.Crime_Code) AS offense_code,
+        sentences.class_of_sent,         
+        sentences.max_cort_sent_yrs,    
+        sentences.max_cort_sent_mths,    
+        sentences.max_cort_sent_days,    
+        sentences.min_cort_sent_yrs,     
+        sentences.min_cort_sent_mths,    
+        sentences.min_cort_sent_days,  
+        sentences.min_expir_date,
+        CASE 
+            WHEN sentences.max_expir_date = '00000000'
+            THEN NULL
+            ELSE sentences.max_expir_date
+        END AS max_expir_date,
+        CASE 
+            WHEN sentences.sig_date IS NULL THEN 
+                LAG(sentences.sig_date) OVER (PARTITION BY sentences.curr_inmate_num ORDER BY sentences.type_number ASC)
+            WHEN sentences.sig_date = '00000000' THEN 
+                NULL
+            ELSE 
+                sentences.sig_date
+        END AS sig_date,
+        COALESCE(sentences.judge, sentences.Judge_Formatted_Name) AS judge,
+        offense_codes.Offense, 
+        offense_codes.Category, 
+        offense_codes.ASCA_Category___Ranked, 
+        offense_codes.SubCategory, 
+        offense_codes.Grade_Category,
+        offense_codes.Grade
+    FROM 
+        {dbo_Senrec} sentences
+    LEFT JOIN {offense_codes} offense_codes
+        ON COALESCE(sentences.offense_code, sentences.Crime_Code) = offense_codes.Code
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
