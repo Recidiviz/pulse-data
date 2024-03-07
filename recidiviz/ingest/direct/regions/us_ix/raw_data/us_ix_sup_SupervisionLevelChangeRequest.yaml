@@ -81,3 +81,10 @@ columns:
   - name: ApprovedRecommendationStatusId
     description: |-
       TODO(#15329): Fill in column description
+  - name: AssessmentDegreeId
+    description: |-
+      ID for the Assessment Degree.
+  - name: AssessmentResultNote
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
