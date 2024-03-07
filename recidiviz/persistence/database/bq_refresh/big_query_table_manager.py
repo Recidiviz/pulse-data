@@ -28,11 +28,9 @@ from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
-    CloudSqlToBQConfig,
-)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_all_table_classes_in_schema,
     is_association_table,
     schema_has_region_code_query_support,
 )
@@ -89,14 +87,11 @@ def update_bq_dataset_to_match_sqlalchemy_schema(
     schema.py.
     """
     bq_client = BigQueryClientImpl(region_override=bq_region_override)
-    # TODO(#20930): We shouldn't have to reference the CloudSqlToBQConfig just to get
-    #  the list of tables in the schema.
-    export_config = CloudSqlToBQConfig.for_schema_type(schema_type)
     bq_dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
 
     bq_client.create_dataset_if_necessary(bq_dataset_ref, default_table_expiration_ms)
 
-    for table in export_config.get_tables_to_export():
+    for table in get_all_table_classes_in_schema(schema_type):
         update_bq_schema_for_sqlalchemy_table(
             bq_client=bq_client,
             schema_type=schema_type,
