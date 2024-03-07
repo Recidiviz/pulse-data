@@ -168,7 +168,6 @@ class BaseDirectIngestController:
         current_status = self.ingest_instance_status_manager.get_current_status()
 
         return current_status in {
-            DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
         }
 

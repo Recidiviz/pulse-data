@@ -20,11 +20,9 @@ from datetime import timedelta
 from typing import List, Optional
 from unittest.case import TestCase
 
-import mock
 import pytest
 import pytz
 from freezegun import freeze_time
-from mock import patch
 from more_itertools import one
 from parameterized import parameterized
 
@@ -123,15 +121,8 @@ class DirectIngestInstanceStatusManagerTest(TestCase):
         )
         self.assertEqual(len(secondary_differences), 0)
 
-    @patch(
-        f"{DirectIngestInstanceStatusManager.__module__}.DirectIngestInstanceStatusManager.get_raw_data_source_instance"
-    )
-    def test_change_status_to_invalid_transitions(
-        self, mock_get_raw_data_source_instance: mock.MagicMock
-    ) -> None:
+    def test_change_status_to_invalid_transitions(self) -> None:
         """Ensure that all invalid transitions raise the correct error."""
-        mock_get_raw_data_source_instance.return_value = DirectIngestInstance.PRIMARY
-
         for instance in DirectIngestInstance:
             invalid_statuses_for_instance = get_invalid_statuses(instance)
             valid_status_transitions = get_valid_current_status_transitions(instance)
@@ -266,7 +257,7 @@ class DirectIngestInstanceStatusManagerTest(TestCase):
         with self.assertRaisesRegex(
             ValueError, "Initial statuses for a state must be set via a migration."
         ):
-            us_ww_manager.change_status_to(DirectIngestStatus.STANDARD_RERUN_STARTED)
+            us_ww_manager.change_status_to(DirectIngestStatus.INITIAL_STATE)
 
     def test_happy_path_primary_raw_data_import_flow(self) -> None:
         self._run_test_for_status_transitions(
