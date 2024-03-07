@@ -20,11 +20,13 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    US_TN_RAW_DATASET,
 )
 from recidiviz.calculator.query.state.views.sessions.compartment_level_1_super_sessions import (
     COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -174,7 +176,9 @@ US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
     normalized_state=NORMALIZED_STATE_DATASET,
-    us_tn_raw_dataset=US_TN_RAW_DATASET,
+    us_tn_raw_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
     compartment_level_1_super_sessions=COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER.table_for_query.to_str(),
     should_materialize=False,
 )

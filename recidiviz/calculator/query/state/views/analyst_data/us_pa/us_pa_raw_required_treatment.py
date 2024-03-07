@@ -24,12 +24,13 @@ from recidiviz.calculator.query.state.dataset_config import (
     REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_PA_RAW_REQUIRED_TREATMENT_VIEW_NAME = "us_pa_raw_required_treatment"
-
-US_PA_RAW_DATASET = "us_pa_raw_data_up_to_date_views"
 
 US_PA_RAW_REQUIRED_TREATMENT_VIEW_DESCRIPTION = """List of people in PA actively on supervision along with their required treatment and treatment referral/completion status"""
 
@@ -244,7 +245,9 @@ US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    raw_dataset=US_PA_RAW_DATASET,
+    raw_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
+    ),
     reference_dataset=REFERENCE_VIEWS_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,

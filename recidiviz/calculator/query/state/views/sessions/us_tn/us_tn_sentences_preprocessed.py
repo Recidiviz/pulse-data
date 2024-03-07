@@ -20,8 +20,10 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    US_TN_RAW_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -304,7 +306,9 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_TN_SENTENCES_PREPROCESSED_VIEW_NAME,
     view_query_template=US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=US_TN_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
-    raw_dataset=US_TN_RAW_DATASET,
+    raw_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
