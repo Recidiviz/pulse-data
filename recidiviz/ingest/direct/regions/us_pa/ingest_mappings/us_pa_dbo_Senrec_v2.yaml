@@ -27,6 +27,7 @@ input_columns:
   - Category
   - SubCategory
   - ASCA_Category___Ranked
+  - sig_date
 unused_columns: []
 output:
   StatePerson:
@@ -34,6 +35,25 @@ output:
       - StatePersonExternalId:
           external_id: curr_inmate_num
           id_type: $literal("US_PA_INMATE")
+    task_deadlines:
+      - $conditional:
+          - $if:
+              $and:
+                - $not_null: sig_date
+                - $not_null: max_expir_date
+            $then:
+              StateTaskDeadline:
+                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+                eligible_date: max_expir_date
+                update_datetime: sig_date
+                task_metadata:
+                  $json_dict:
+                    external_id:
+                      $concat:
+                        $values:
+                          - curr_inmate_num
+                          - type_number
+                    sentence_type: $literal("INCARCERATION")
     incarceration_sentences:
       - StateIncarcerationSentence:
           external_id:
