@@ -1,0 +1,6 @@
+state_code,opportunity_type,created_by,created_at,description,status,feature_variant,display_name,methodology_url,is_alert,initial_header,dynamic_eligibility_text,call_to_action,denial_text,snooze
+US_ID,usIdCrcWorkRelease,bob@recivizens.org,2023-05-01,base config,INACTIVE,,Work Release,http://example.com,false,Search for work realease,client[|s] eligible fur WR,Approve some,,
+US_ID,usIdCrcWorkRelease,bob@recivizens.org,2023-05-03,base config,ACTIVE,,Work Release,http://example.com,false,Search for work realease,client[|s] eligible for WR,Approve them all,,
+US_ID,usIdSLD,barry@revivizens.org,2023-05-08,base config,ACTIVE,,Supervision Level Downgrade,http://fake.com,false,Search for mismatches,client[|s] eligible for SLD,Downgrades all around,Leave mismatched,"{""defaultSnoozeDays"": 10, ""maxSnoozeDays"": 30}"
+US_ID,usIdSLD,otherBarry@revivizens.org,2023-05-17,shorter snooze,ACTIVE,otherFeatureVariant,Supervision Level Downgrade,http://other-fake.com,false,Search for mismatches,client[|s] eligible for SLD,Downgrade all of them,Leave mismatched,"{""defaultSnoozeDays"": 2, ""maxSnoozeDays"": 30}"
+US_ID,usIdCrcWorkRelease,bob@recivizens.org,2023-05-03,experimental config,INACTIVE,experimentalFeature,Work Release Experiment,http://example.com,false,Search for work realease,client[|s] eligible for WR,Approve them all,,
