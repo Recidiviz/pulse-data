@@ -37,19 +37,6 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.utils import environment
 
-# Direct ingest statuses that are only valid in a pre-ingest in Dataflow world.
-LEGACY_PRE_DATAFLOW_STATUSES = [
-    DirectIngestStatus.STANDARD_RERUN_STARTED,
-    DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
-    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
-    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-    DirectIngestStatus.UP_TO_DATE,
-    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
-    DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
-    DirectIngestStatus.RERUN_CANCELED,
-    DirectIngestStatus.NO_RERUN_IN_PROGRESS,
-]
-
 
 def get_invalid_statuses(
     ingest_instance: DirectIngestInstance,
@@ -59,7 +46,6 @@ def get_invalid_statuses(
     """
     if ingest_instance == DirectIngestInstance.PRIMARY:
         return [
-            *LEGACY_PRE_DATAFLOW_STATUSES,
             DirectIngestStatus.READY_TO_FLASH,
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELED,
@@ -70,7 +56,6 @@ def get_invalid_statuses(
 
     if ingest_instance == DirectIngestInstance.SECONDARY:
         return [
-            *LEGACY_PRE_DATAFLOW_STATUSES,
             DirectIngestStatus.INITIAL_STATE,
             DirectIngestStatus.RAW_DATA_UP_TO_DATE,
         ]
@@ -98,29 +83,6 @@ def get_human_intervention_statuses(
         ]
 
     raise ValueError(f"Unsupported args: {ingest_instance=}")
-
-
-# TODO(#20930): Delete this once ingest in Dataflow is shipped to all states
-# Valid status transitions that are applicable to both PRIMARY and SECONDARY.
-LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS: Dict[
-    DirectIngestStatus, List[DirectIngestStatus]
-] = {
-    DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
-        DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
-        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-    ],
-    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: [
-        DirectIngestStatus.STANDARD_RERUN_STARTED,
-        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-        DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
-        DirectIngestStatus.UP_TO_DATE,
-    ],
-    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: [
-        DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
-        DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
-    ],
-    DirectIngestStatus.FLASH_COMPLETED: [DirectIngestStatus.FLASH_IN_PROGRESS],
-}
 
 
 def get_valid_current_status_transitions(
@@ -335,22 +297,7 @@ class DirectIngestInstanceStatusManager:
             session=session, status_timestamp=datetime.min
         )
 
-    # TODO(#20930): Delete this function once ingest in Dataflow is shipped for all
-    #  states.
-    def get_raw_data_source_instance(
-        self, session: Optional[Session] = None
-    ) -> Optional[DirectIngestInstance]:
-        """Returns the current raw data source of the ingest instance associated with
-        this status manager.
-        """
-        raise ValueError(
-            "The raw_data_source_instance is not a valid concept for ingest in "
-            "Dataflow states. This should not be called."
-        )
-
-    # TODO(#20930): Rename this to _get_current_raw_data_reimport_start_status once
-    #  ingest in dataflow is shipped to all states.
-    def _get_current_rerun_start_status(
+    def _get_current_raw_data_reimport_start_status(
         self, query_session: Session
     ) -> Optional[DirectIngestInstanceStatus]:
         """Returns the status that indicates the start of a rerun / raw data reimport."""
@@ -383,7 +330,9 @@ class DirectIngestInstanceStatusManager:
             )
 
         with SessionFactory.using_database(self.db_key) as session:
-            current_rerun_start_status = self._get_current_rerun_start_status(session)
+            current_rerun_start_status = (
+                self._get_current_raw_data_reimport_start_status(session)
+            )
             if not current_rerun_start_status:
                 # Check for current status - this will throw if there isn't one set
                 self._get_current_status_row(session)

@@ -98,7 +98,7 @@ class IngestOpsEndpointTests(TestCase):
                 DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
                     region_code=StateCode.US_XX.value,
                     instance=DirectIngestInstance.SECONDARY,
-                    status=DirectIngestStatus.UP_TO_DATE,
+                    status=DirectIngestStatus.RAW_DATA_UP_TO_DATE,
                     status_timestamp=timestamp,
                 ),
             },
@@ -106,7 +106,7 @@ class IngestOpsEndpointTests(TestCase):
                 DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
                     region_code=StateCode.US_YY.value,
                     instance=DirectIngestInstance.PRIMARY,
-                    status=DirectIngestStatus.STANDARD_RERUN_STARTED,
+                    status=DirectIngestStatus.INITIAL_STATE,
                     status_timestamp=timestamp,
                 ),
                 DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
@@ -138,7 +138,7 @@ class IngestOpsEndpointTests(TestCase):
                     "secondary": {
                         "instance": "SECONDARY",
                         "regionCode": "US_XX",
-                        "status": "UP_TO_DATE",
+                        "status": "RAW_DATA_UP_TO_DATE",
                         "statusTimestamp": "2022-08-29T00:00:00+00:00",
                     },
                 },
@@ -146,7 +146,7 @@ class IngestOpsEndpointTests(TestCase):
                     "primary": {
                         "instance": "PRIMARY",
                         "regionCode": "US_YY",
-                        "status": "STANDARD_RERUN_STARTED",
+                        "status": "INITIAL_STATE",
                         "statusTimestamp": "2022-08-29T00:00:00+00:00",
                     },
                     "secondary": {
