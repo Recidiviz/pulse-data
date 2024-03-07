@@ -44,6 +44,25 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegat
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
 
+        generic_opportunity_doc = {
+            k: v
+            for k, v in self.generic_opportunity_delegate.build_document(data).items()
+            if k
+            in [
+                "stateCode",
+                "externalId",
+                "formInformation",
+                "metadata",
+                "criteria",
+                "eligibleCriteria",
+                "ineligibleCriteria",
+                "caseNotes",
+            ]
+        }
+
+        if not "tdoc_id" in data and "external_id" in data:
+            return data["external_id"], generic_opportunity_doc
+
         if "compliant_reporting_eligible" not in data:
             return None, None
 
@@ -136,20 +155,8 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegat
             new_document["almostEligibleCriteria"] = almost_eligible_criteria
 
         new_document = convert_nested_dictionary_keys(new_document, snake_to_camel)
+
         # Merge the document created with the new compliant reporting opportunity record
-        generic_opportunity_doc = {
-            k: v
-            for k, v in self.generic_opportunity_delegate.build_document(data).items()
-            if k
-            in [
-                "formInformation",
-                "metadata",
-                "criteria",
-                "eligibleCriteria",
-                "ineligibleCriteria",
-                "caseNotes",
-            ]
-        }
         return data["tdoc_id"], new_document | generic_opportunity_doc
 
 

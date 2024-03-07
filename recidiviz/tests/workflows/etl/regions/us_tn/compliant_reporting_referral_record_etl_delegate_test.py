@@ -393,6 +393,115 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                 row,
             )
 
+            # Row 4: Data in new query only
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.maxDiff = None
+            self.assertEqual(doc_id, "203")
+            self.assertEqual(
+                {
+                    "stateCode": "US_XX",
+                    "externalId": "203",
+                    "eligibleCriteria": {
+                        "hasActiveSentence": {"hasActiveSentence": True},
+                        "supervisionLevelIsNotInternalUnknown": None,
+                        "supervisionLevelIsNotInterstateCompact": None,
+                        "supervisionLevelIsNotUnassigned": None,
+                        "supervisionNotPastFullTermCompletionDateOrUpcoming90Days": {
+                            "eligibleDate": "2025-01-18"
+                        },
+                        "usTnFinesFeesEligible": {
+                            "hasFinesFeesBalanceBelow500": {"amountOwed": 0},
+                            "hasPayments3ConsecutiveMonths": {
+                                "amountOwed": 0,
+                                "consecutiveMonthlyPayments": None,
+                            },
+                            "hasPermanentFinesFeesExemption": {
+                                "currentExemptions": ["SSDB"],
+                            },
+                        },
+                        "usTnIneligibleOffensesExpired": None,
+                        "usTnNoArrestsInPastYear": None,
+                        "usTnNoDuiOffenseInPast5Years": None,
+                        "usTnNoHighSanctionsInPastYear": None,
+                        "usTnNoMurderConvictions": None,
+                        "usTnNoPriorRecordWithIneligibleCrOffense": None,
+                        "usTnNoRecentCompliantReportingRejections": None,
+                        "usTnNoZeroToleranceCodesSpans": {
+                            "zeroToleranceCodeDates": None,
+                        },
+                        "usTnNotInJudicialDistrict17WhileOnProbation": None,
+                        "usTnNotOnLifeSentenceOrLifetimeSupervision": {
+                            "lifetimeFlag": False
+                        },
+                        "usTnNotPermanentlyRejectedFromCompliantReporting": None,
+                        "usTnNotServingIneligibleCrOffense": None,
+                        "usTnNotServingUnknownCrOffense": None,
+                        "usTnOnEligibleLevelForSufficientTime": {
+                            "eligibleDate": "2024-04-02",
+                            "eligibleLevel": "MINIMUM",
+                            "startDateOnEligibleLevel": "2023-04-02",
+                        },
+                        "usTnPassedDrugScreenCheck": {
+                            "hasAtLeast1NegativeDrugTestPastYear": [
+                                {
+                                    "negativeScreenDate": "2023-11-03",
+                                    "negativeScreenResult": "DRUN",
+                                }
+                            ],
+                            "hasAtLeast2NegativeDrugTestsPastYear": [
+                                {
+                                    "negativeScreenDate": "2023-11-03",
+                                    "negativeScreenResult": "DRUN",
+                                }
+                            ],
+                            "latestAlcoholDrugNeedLevel": "LOW",
+                            "latestDrugTestIsNegative": {
+                                "latestDrugScreenDate": "2023-11-03",
+                                "latestDrugScreenResult": "DRUN",
+                            },
+                        },
+                        "usTnSpecialConditionsAreCurrent": {"speNoteDue": "2024-05-01"},
+                    },
+                    "ineligibleCriteria": {},
+                    "formInformation": {
+                        "courtCostsPaid": False,
+                        "currentExemptionsAndExpiration": [
+                            {"exemptionEndDate": None, "exemptionReason": "SSDB"}
+                        ],
+                        "currentOffenses": ["THEFT OF PROPERTY"],
+                        "docketNumbers": ["20000"],
+                        "driversLicense": "00000000",
+                        "expirationDate": "2025-01-18",
+                        "judicialDistrict": [],
+                        "restitutionAmt": 0,
+                        "restitutionMonthlyPayment": 0,
+                        "restitutionMonthlyPaymentTo": [],
+                        "sentenceLengthDays": "729",
+                        "sentenceStartDate": "2023-01-20",
+                        "supervisionFeeArrearaged": False,
+                        "supervisionFeeArrearagedAmount": 0,
+                        "supervisionFeeAssessed": 0,
+                        "supervisionFeeWaived": True,
+                    },
+                    "metadata": {
+                        "allOffenses": ["THEFT OF PROPERTY"],
+                        "convictionCounties": ["ABC123"],
+                        "ineligibleOffensesExpired": [],
+                        "mostRecentArrestCheck": {
+                            "contactDate": "2023-10-20",
+                            "contactType": "ARRN",
+                        },
+                        "mostRecentSpeNote": {
+                            "contactDate": "2023-10-25",
+                            "contactType": "SPEC",
+                        },
+                    },
+                    "caseNotes": {},
+                },
+                row,
+            )
+
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
     @patch("google.cloud.firestore_v1.Client")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
