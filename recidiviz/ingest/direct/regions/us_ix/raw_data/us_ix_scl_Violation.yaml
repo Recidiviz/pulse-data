@@ -113,3 +113,6 @@ columns:
   - name: OtherOffenderLocation
     description: |-
       TODO(#15329): Fill in column description
+  - name: ViolationDispositionTypeId
+    description: |-
+      The ID for the violation disposition type. Added 2024-03-07.
