@@ -14,9 +14,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  ============================================================================
-"""Querier class to encapsualte requests to the Workflows postgres DBs."""
+"""Querier class to encapsulate requests to the Workflows postgres DBs."""
+import logging
 from functools import cached_property
-from typing import List
+from typing import Dict, List, Set, Union
 
 import attr
 from sqlalchemy.orm import sessionmaker
@@ -28,9 +29,21 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
-from recidiviz.persistence.database.schema.workflows.schema import Opportunity
+from recidiviz.persistence.database.schema.workflows.schema import (
+    Opportunity,
+    OpportunityConfiguration,
+    OpportunityStatus,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.workflows.types import OpportunityInfo
+from recidiviz.workflows.types import (
+    OpportunityConfig,
+    OpportunityInfo,
+    WorkflowsSystemType,
+)
+from recidiviz.workflows.utils.utils import (
+    get_config_for_opportunity,
+    get_system_for_opportunity,
+)
 
 
 @attr.s(auto_attribs=True)
@@ -49,6 +62,8 @@ class WorkflowsQuerier:
         return self.database_manager.get_session(self.state_code)
 
     def get_opportunities(self) -> List[OpportunityInfo]:
+        """Returns all opportunities configured in a state
+        irrespective of feature-variant gating or system."""
         with self.database_session() as session:
             opportunities = session.query(Opportunity).with_entities(
                 Opportunity.state_code,
@@ -56,4 +71,129 @@ class WorkflowsQuerier:
                 Opportunity.gating_feature_variant,
             )
 
-            return [OpportunityInfo(**opportunity) for opportunity in opportunities]
+            infos: List[OpportunityInfo] = []
+
+            for opportunity in opportunities:
+                config = get_config_for_opportunity(opportunity.opportunity_type)
+
+                infos.append(
+                    OpportunityInfo(
+                        state_code=opportunity.state_code,
+                        opportunity_type=opportunity.opportunity_type,
+                        gating_feature_variant=opportunity.gating_feature_variant,
+                        url_section=config.opportunity_type_path_str,
+                        firestore_collection=config.export_collection_name,
+                        system_type=get_system_for_opportunity(
+                            opportunity.opportunity_type
+                        ),
+                    )
+                )
+
+            return infos
+
+    def get_enabled_opportunities(
+        self,
+        allowed_systems: List[WorkflowsSystemType],
+        active_feature_variants: List[str],
+    ) -> List[OpportunityInfo]:
+        """Returns opportunities enabled for the state given the allowed systems
+        and active feature variants"""
+
+        opportunities = self.get_opportunities()
+
+        fv_set: Set[Union[str, None]] = set(active_feature_variants)
+        fv_set.add(None)
+
+        return [
+            opp
+            for opp in opportunities
+            if opp.gating_feature_variant in fv_set
+            and opp.system_type in allowed_systems
+        ]
+
+    def get_active_configs_for_opportunity_types(
+        self, opportunity_types: List[str]
+    ) -> List[OpportunityConfig]:
+        """Returns all active configs for the given opportunity types. Does not
+        filter based on active feature variants."""
+        with self.database_session() as session:
+            configs = session.query(OpportunityConfiguration).filter(
+                OpportunityConfiguration.opportunity_type.in_(opportunity_types),
+                OpportunityConfiguration.status == OpportunityStatus.ACTIVE,
+            )
+
+            return [
+                OpportunityConfig(
+                    id=config.id,
+                    state_code=config.state_code,
+                    opportunity_type=config.opportunity_type,
+                    created_by=config.created_by,
+                    created_at=config.created_at,
+                    description=config.description,
+                    status=config.status,
+                    display_name=config.display_name,
+                    methodology_url=config.methodology_url,
+                    initial_header=config.initial_header,
+                    dynamic_eligibility_text=config.dynamic_eligibility_text,
+                    call_to_action=config.call_to_action,
+                    snooze=config.snooze,
+                    feature_variant=config.feature_variant,
+                    is_alert=config.is_alert,
+                    denial_text=config.denial_text,
+                )
+                for config in configs
+            ]
+
+    def get_top_config_for_opportunity_types(
+        self, opportunity_types: List[str], active_feature_variants: List[str]
+    ) -> Dict[str, OpportunityConfig]:
+        """Returns one OpportunityConfig for each provided opportunity type.
+        If multiple configs are active for a provided opportunity type, we return
+        a config whose gating feature variant is among the provided active
+        feature variants. If none match, we return the config with no gating
+        feature variant set.
+        """
+        active_configs = self.get_active_configs_for_opportunity_types(
+            opportunity_types
+        )
+
+        config_map: Dict[str, OpportunityConfig] = {}
+
+        for opportunity_type in opportunity_types:
+            configs = [
+                c for c in active_configs if c.opportunity_type == opportunity_type
+            ]
+
+            gated_configs = [
+                c for c in configs if c.feature_variant in active_feature_variants
+            ]
+
+            if len(gated_configs) > 0:
+                # there should only be one gated config for a user
+                # in the case of two, use a deterministic sort
+                if len(gated_configs) > 1:
+                    relevant_fvs = ",".join(c.feature_variant for c in gated_configs)
+                    logging.warning(
+                        "Multiple gated configs returned for %s. Relevant FVs: %s",
+                        opportunity_type,
+                        relevant_fvs,
+                    )
+                    gated_configs.sort(key=lambda c: c.created_at)
+
+                config_map[opportunity_type] = gated_configs[0]
+            else:
+                default_configs = [c for c in configs if c.feature_variant is None]
+                if len(default_configs) == 0:
+                    logging.error("No default config set for  %s", opportunity_type)
+                elif len(default_configs) > 1:
+                    logging.error(
+                        "Multiple (%d) default configs found for %s. Using most recent.",
+                        len(default_configs),
+                        opportunity_type,
+                    )
+                    default_configs.sort(key=lambda c: c.created_at)
+                    config_map[opportunity_type] = default_configs[-1]
+                else:
+                    config_map[opportunity_type] = default_configs[0]
+
+        return config_map
