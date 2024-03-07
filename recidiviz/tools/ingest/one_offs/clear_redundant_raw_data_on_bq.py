@@ -332,6 +332,11 @@ if __name__ == "__main__":
 
     if not args.dry_run:
         prompt_for_confirmation(
+            f"[{args.state_code.value}][{args.project_id}] Execute raw data pruning? [n] will skip this state/project pair",
+            exit_code=0,
+        )
+
+        prompt_for_confirmation(
             f"Have you confirmed that there are NO tasks running for this state in {args.project_id}: "
             f" https://console.cloud.google.com/cloudtasks?referrer=search&project={args.project_id}?"
         )

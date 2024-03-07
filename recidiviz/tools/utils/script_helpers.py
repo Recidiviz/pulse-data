@@ -32,6 +32,7 @@ def prompt_for_confirmation(
     accepted_response_override: Optional[str] = None,
     dry_run: bool = False,
     exit_on_cancel: bool = True,
+    exit_code: int = 1,
 ) -> Optional[bool]:
     input_prompt = f"{input_text}"
     accepted_response = accepted_response_override or "Y"
@@ -50,7 +51,7 @@ def prompt_for_confirmation(
     if not (confirm := check.lower() == accepted_response.lower()):
         logging.warning("\nResponded with [%s]. Confirmation aborted.", check)
         if exit_on_cancel:
-            sys.exit(1)
+            sys.exit(exit_code)
     return confirm
 
 

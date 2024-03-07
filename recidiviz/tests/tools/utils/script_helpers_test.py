@@ -141,6 +141,48 @@ def test_prompt_for_confirmation_no_exit_boolean(
 
 
 @pytest.mark.parametrize(
+    ("user_input", "logging_results", "exit_code", "exit_assertion"),
+    [
+        ("y", [], 0, lambda m: not m.called),
+        (
+            "n",
+            [("root", logging.WARNING, "\nResponded with [n]. Confirmation aborted.")],
+            0,
+            lambda m: m.mock_calls == [mock.call(0)],
+        ),
+        (
+            "n",
+            [("root", logging.WARNING, "\nResponded with [n]. Confirmation aborted.")],
+            100,
+            lambda m: m.mock_calls == [mock.call(100)],
+        ),
+        (
+            "n",
+            [("root", logging.WARNING, "\nResponded with [n]. Confirmation aborted.")],
+            -100,
+            lambda m: m.mock_calls == [mock.call(-100)],
+        ),
+    ],
+)
+@mock.patch("sys.exit")
+@mock.patch("builtins.input")
+def test_prompt_for_confirmation_custom_exit_code(
+    input_mock: mock.MagicMock,
+    exit_mock: mock.MagicMock,
+    caplog: Any,
+    user_input: str,
+    logging_results: List[Tuple[str, int, str]],
+    exit_code: int,
+    exit_assertion: Callable,
+) -> None:
+    input_mock.return_value = user_input
+    prompt_for_confirmation("test input", exit_code=exit_code)
+    assert input_mock.mock_calls == [mock.call("test input [y/n]: \n")]
+    assert caplog.record_tuples == logging_results
+    assert exit_assertion(exit_mock)
+
+
+@pytest.mark.parametrize(
     ("prompt_rv", "calls", "expected", "exception_context"),
     [
         pytest.param(
@@ -204,14 +246,12 @@ class TestInteractiveLoopUntilTasksSucceed:
 
     @staticmethod
     @pytest.fixture(name="tasks")
-    def tasks_fixture() -> (
-        Tuple[
-            Dict[str, int],
-            Dict[str, int],
-            Dict[str, int],
-            Dict[str, int],
-        ]
-    ):
+    def tasks_fixture() -> Tuple[
+        Dict[str, int],
+        Dict[str, int],
+        Dict[str, int],
+        Dict[str, int],
+    ]:
         return ({"one": 1}, {"two": 2}, {"three": 3}, {"four": 4})
 
     @staticmethod
