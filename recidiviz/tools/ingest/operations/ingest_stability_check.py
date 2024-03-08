@@ -31,8 +31,8 @@ that change, you can filter to only checks that category (either "raw_data" or
 
 python -m recidiviz.tools.ingest.operations.ingest_stability_check \
     --project-id recidiviz-staging \
-    --state-code US_ME \
-    --category raw_data
+    --state-code US_OZ \
+    --category ingest_view
 """
 
 import argparse
@@ -41,48 +41,49 @@ import enum
 import sys
 import uuid
 from concurrent import futures
-from typing import Dict, Optional, Set
+from typing import Dict, Set
 
 import attr
 from google.cloud import bigquery
+from more_itertools import one
 from tqdm import tqdm
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClient,
     BigQueryClientImpl,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.fakes.null_direct_ingest_view_materialization_metadata_manager import (
-    NullDirectIngestViewMaterializationMetadataManager,
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataset,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
-    IngestViewMaterializerImpl,
-)
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    IngestViewContentsSummary,
-    InstanceIngestViewContentsImpl,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.context import on_exit
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.types import assert_type
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -101,7 +102,7 @@ class IngestViewDeterminismResult:
 def verify_raw_data_primary_keys(
     bq_client: BigQueryClient,
     state_code: StateCode,
-    raw_data_source_instance: DirectIngestInstance,
+    instance: DirectIngestInstance,
 ) -> Set[str]:
     """Verifies that each of this state's raw files has a sufficient primary key defined
 
@@ -110,7 +111,7 @@ def verify_raw_data_primary_keys(
     region_raw_file_config = DirectIngestRegionRawFileConfig(state_code.value)
     raw_table_dataset_id = raw_tables_dataset_for_region(
         state_code=state_code,
-        instance=raw_data_source_instance,
+        instance=instance,
         sandbox_dataset_prefix=None,
     )
 
@@ -170,15 +171,95 @@ def verify_raw_data_primary_keys(
         return bad_key_file_tags
 
 
+def _materialize_twice_and_return_num_different_rows(
+    bq_client: BigQueryClient,
+    temp_results_dataset_id: str,
+    ingest_view_query_builder: DirectIngestViewQueryBuilder,
+) -> int:
+    """Materializes the ingest view query for the given query builder two separate
+    times, then returns the number of rows that are different between two.
+
+    The different rows are also materialized to a separate table in the provided
+    dataset.
+    """
+    current_datetime = datetime.datetime.now()
+
+    view_query = ingest_view_query_builder.build_query(
+        config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+            raw_data_datetime_upper_bound=current_datetime,
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            use_order_by=False,
+        ),
+        using_dataflow=True,
+    )
+
+    address_1 = BigQueryAddress(
+        dataset_id=temp_results_dataset_id,
+        table_id=f"{ingest_view_query_builder.ingest_view_name}__1",
+    ).to_project_specific_address(metadata.project_id())
+    address_2 = BigQueryAddress(
+        dataset_id=temp_results_dataset_id,
+        table_id=f"{ingest_view_query_builder.ingest_view_name}__2",
+    ).to_project_specific_address(metadata.project_id())
+
+    query_jobs = [
+        bq_client.insert_into_table_from_query_async(
+            destination_dataset_id=address_1.dataset_id,
+            destination_table_id=address_1.table_id,
+            query=view_query,
+            use_query_cache=False,
+        ),
+        bq_client.insert_into_table_from_query_async(
+            destination_dataset_id=address_2.dataset_id,
+            destination_table_id=address_2.table_id,
+            query=view_query,
+            use_query_cache=False,
+        ),
+    ]
+    bq_client.wait_for_big_query_jobs(query_jobs)
+
+    diff_address = BigQueryAddress(
+        dataset_id=temp_results_dataset_id,
+        table_id=f"{ingest_view_query_builder.ingest_view_name}__diff",
+    ).to_project_specific_address(metadata.project_id())
+    diff_query = (
+        f"{address_1.select_query()} EXCEPT DISTINCT ({address_2.select_query()});"
+    )
+
+    bq_client.insert_into_table_from_query_async(
+        destination_dataset_id=diff_address.dataset_id,
+        destination_table_id=diff_address.table_id,
+        query=diff_query,
+        use_query_cache=False,
+    ).result()
+
+    count_query = (
+        f"""SELECT COUNT(*) AS cnt FROM {diff_address.format_address_for_query()};"""
+    )
+
+    return one(
+        bq_client.run_query_async(query_str=count_query, use_query_cache=False).result()
+    )["cnt"]
+
+
 def verify_ingest_view_determinism(
     bq_client: BigQueryClient,
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
-    raw_data_source_instance: DirectIngestInstance,
 ) -> IngestViewDeterminismResult:
     """Verifies that each of this state's ingest views are deterministic."""
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
     dataset_prefix = f"stability_{str(uuid.uuid4())[:6]}"
+
+    temp_results_dataset_id = ingest_view_materialization_results_dataset(
+        state_code=state_code,
+        instance=ingest_instance,
+        sandbox_dataset_prefix=dataset_prefix,
+    )
+    bq_client.create_dataset_if_necessary(
+        bq_client.dataset_ref_for_id(temp_results_dataset_id),
+        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+    )
 
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
@@ -188,37 +269,17 @@ def verify_ingest_view_determinism(
         ingest_instance=ingest_instance
     )
 
-    ingest_view_contents = InstanceIngestViewContentsImpl(
-        big_query_client=bq_client,
-        region_code=state_code.value,
-        ingest_instance=ingest_instance,
-        dataset_prefix=dataset_prefix,
-    )
-
-    ingest_view_materializer = IngestViewMaterializerImpl(
-        region=region,
-        ingest_instance=ingest_instance,
-        raw_data_source_instance=raw_data_source_instance,
-        ingest_view_contents=ingest_view_contents,
-        metadata_manager=NullDirectIngestViewMaterializationMetadataManager(
-            region_code=state_code.value, ingest_instance=ingest_instance
-        ),
-        big_query_client=bq_client,
-        view_collector=DirectIngestViewQueryBuilderCollector(
-            region,
-            expected_ingest_views=launched_ingest_views,
-        ),
-        launched_ingest_views=launched_ingest_views,
-    )
-
-    current_datetime = datetime.datetime.now()
+    view_query_builders = DirectIngestViewQueryBuilderCollector(
+        region,
+        expected_ingest_views=launched_ingest_views,
+    ).collect_query_builders()
 
     progress = tqdm(
         total=len(launched_ingest_views),
         desc="Verifying ingest view determinism",
     )
 
-    summary_futures: Dict[futures.Future[Optional[IngestViewContentsSummary]], str]
+    num_diff_rows_futures: Dict[futures.Future[int], str]
     with futures.ThreadPoolExecutor(
         # Conservatively allow only half as many workers as allowed connections.
         # Lower this number if we see "urllib3.connectionpool:Connection pool is
@@ -227,46 +288,33 @@ def verify_ingest_view_determinism(
     ) as executor:
 
         def materialize_ingest_view(
-            ingest_view_name: str,
-        ) -> Optional[IngestViewContentsSummary]:
+            ingest_view_query_builder: DirectIngestViewQueryBuilder,
+        ) -> int:
             with on_exit(progress.update):
-                # If there are results when materializing an ingest view with the lower
-                # bound and upper bound set to the same date, then it is not deterministic.
-                ingest_view_materializer.materialize_view_for_args(
-                    IngestViewMaterializationArgs(
-                        ingest_view_name=ingest_view_name,
-                        lower_bound_datetime_exclusive=current_datetime,
-                        upper_bound_datetime_inclusive=current_datetime,
-                        ingest_instance=ingest_instance,
-                    )
+                return _materialize_twice_and_return_num_different_rows(
+                    bq_client=bq_client,
+                    temp_results_dataset_id=temp_results_dataset_id,
+                    ingest_view_query_builder=ingest_view_query_builder,
                 )
 
-                return ingest_view_contents.get_ingest_view_contents_summary(
-                    ingest_view_name=ingest_view_name
-                )
-
-        summary_futures = {
-            executor.submit(materialize_ingest_view, ingest_view_name): ingest_view_name
-            for ingest_view_name in launched_ingest_views
+        num_diff_rows_futures = {
+            executor.submit(
+                materialize_ingest_view, query_builder
+            ): query_builder.ingest_view_name
+            for query_builder in view_query_builders
         }
 
     nondeterministic_views = {}
-    for f in futures.as_completed(summary_futures):
-        ingest_view_name = summary_futures[f]
-        summary = f.result()
+    for f in futures.as_completed(num_diff_rows_futures):
+        ingest_view_name = num_diff_rows_futures[f]
+        different_rows_count = assert_type(f.result(), int)
 
-        if summary is None:
-            raise ValueError(
-                f"Expected ingest view summary. Did the `{ingest_view_contents.results_dataset()}` "
-                "dataset expire during this run?"
-            )
-
-        if summary.num_unprocessed_rows:
-            nondeterministic_views[ingest_view_name] = summary.num_unprocessed_rows
+        if different_rows_count:
+            nondeterministic_views[ingest_view_name] = different_rows_count
 
     progress.close()
     return IngestViewDeterminismResult(
-        dataset_id=ingest_view_contents.results_dataset(),
+        dataset_id=temp_results_dataset_id,
         nondeterministic_views=nondeterministic_views,
     )
 
@@ -280,7 +328,6 @@ def main(
     state_code: StateCode,
     categories: Set[CheckCategory],
     ingest_instance: DirectIngestInstance,
-    raw_data_source_instance: DirectIngestInstance,
 ) -> int:
     """Runs the various ingest stability checks and reports the results."""
     bq_client = BigQueryClientImpl()
@@ -288,7 +335,7 @@ def main(
     bad_key_file_tags = None
     if CheckCategory.RAW_DATA in categories:
         bad_key_file_tags = verify_raw_data_primary_keys(
-            bq_client, state_code, raw_data_source_instance=raw_data_source_instance
+            bq_client, state_code, ingest_instance
         )
 
     determinism_result = None
@@ -297,7 +344,6 @@ def main(
             bq_client,
             state_code,
             ingest_instance=ingest_instance,
-            raw_data_source_instance=raw_data_source_instance,
         )
 
     any_failures = False
@@ -369,14 +415,6 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
-    parser.add_argument(
-        "--raw-data-source-instance",
-        choices=[instance.value for instance in DirectIngestInstance],
-        help="The instance from which we should read raw data.",
-        default=DirectIngestInstance.PRIMARY.value,
-        required=False,
-    )
-
     return parser.parse_args()
 
 
@@ -388,8 +426,5 @@ if __name__ == "__main__":
                 StateCode(args.state_code),
                 {CheckCategory(category) for category in args.category},
                 ingest_instance=DirectIngestInstance(args.ingest_instance),
-                raw_data_source_instance=DirectIngestInstance(
-                    args.raw_data_source_instance
-                ),
             )
         )
