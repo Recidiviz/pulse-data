@@ -52,9 +52,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    to_string_value_converter,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -64,6 +61,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_tree
+from recidiviz.pipelines.ingest.state.generate_entities import to_string_value_converter
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import get_closest_string

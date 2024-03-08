@@ -53,7 +53,7 @@ from recidiviz.calculator.query.state.dataset_config import state_dataset_for_st
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -163,9 +163,7 @@ def get_extra_pipeline_parameter_args(
     sandbox_ingest_view_results_output_dataset = (
         BigQueryAddressOverrides.format_sandbox_dataset(
             sandbox_prefix,
-            ingest_view_materialization_results_dataflow_dataset(
-                state_code, ingest_instance
-            ),
+            ingest_view_materialization_results_dataset(state_code, ingest_instance),
         )
     )
 

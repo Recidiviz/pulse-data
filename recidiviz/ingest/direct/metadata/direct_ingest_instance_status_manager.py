@@ -268,12 +268,12 @@ class DirectIngestInstanceStatusManager:
                 new_status=new_status,
             )
 
-    # TODO(#20930): Rename this to _get_status_rows_of_current_raw_data_reimport once
-    #  ingest in dataflow is shipped to all states.
-    def _get_status_rows_of_current_rerun(
+    def _get_status_rows_of_current_raw_data_reimport(
         self, session: Session
     ) -> Optional[List[DirectIngestInstanceStatus]]:
-        """Returns all the rows associated with a current rerun, if applicable."""
+        """Returns all the rows associated with a current raw data re-import, if
+        applicable.
+        """
         if self.ingest_instance == DirectIngestInstance.PRIMARY:
             raise ValueError(
                 "We should not be doing a raw data reimport for the PRIMARY instance."
@@ -307,7 +307,7 @@ class DirectIngestInstanceStatusManager:
                 "not be called."
             )
 
-        current_rerun_status_rows = self._get_status_rows_of_current_rerun(
+        current_rerun_status_rows = self._get_status_rows_of_current_raw_data_reimport(
             session=query_session
         )
         if not current_rerun_status_rows:

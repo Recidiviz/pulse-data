@@ -206,14 +206,9 @@ def transform_dict_to_bigquery_row(data_point: Dict[str, Any]) -> bigquery.table
     return bigquery.table.Row(values, indices)
 
 
-# TODO(#20930): Remove include_milliseconds and default to always include once all
-#  legacy include_milliseconds=False calls are deleted (should be the case once we
-#  deprecate all pre-ingest-in-Dataflow code).
-def datetime_clause(dt: datetime.datetime, include_milliseconds: bool) -> str:
+def datetime_clause(dt: datetime.datetime) -> str:
     """Returns a datetime formatted as a BigQuery DATETIME() function."""
-    if include_milliseconds:
-        return f'DATETIME "{dt.isoformat()}"'
-    return f"DATETIME({dt.year}, {dt.month}, {dt.day}, {dt.hour}, {dt.minute}, {dt.second})"
+    return f'DATETIME "{dt.isoformat()}"'
 
 
 def build_views_to_update(

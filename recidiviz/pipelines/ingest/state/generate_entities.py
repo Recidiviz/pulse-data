@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A PTransform that generates entities from ingest view results."""
+import datetime
 from copy import deepcopy
 from typing import Any, Dict, Tuple
 
@@ -29,8 +30,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    to_string_value_converter,
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import RootEntity
@@ -38,8 +39,26 @@ from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.state.constants import UpperBoundDate
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
-    UPPER_BOUND_DATETIME_COL_NAME,
 )
+
+
+def to_string_value_converter(
+    field_name: str,
+    value: Any,
+) -> str:
+    """Converts all values to strings."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (bool, int)):
+        return str(value)
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return value.isoformat()
+
+    raise ValueError(
+        f"Unexpected value type [{type(value)}] for field [{field_name}]: {value}"
+    )
 
 
 class GenerateEntities(beam.PTransform):

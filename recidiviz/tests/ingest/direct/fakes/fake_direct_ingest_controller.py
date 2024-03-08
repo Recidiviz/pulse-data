@@ -57,12 +57,6 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
-    DirectIngestViewQueryBuilder,
-)
-from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
-    DirectIngestViewQueryBuilderCollector,
-)
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
@@ -257,36 +251,6 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
     ) -> None:
         self.imported_paths.append(path)
-
-
-# TODO(#20930): Move this to another file since it's no longer used in this one.
-class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderCollector):
-    """A test version of DirectIngestViewQueryBuilderCollector"""
-
-    def __init__(self, region: DirectIngestRegion, expected_ingest_views: List[str]):
-        super().__init__(region, expected_ingest_views)
-
-    def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
-        builders = [
-            DirectIngestViewQueryBuilder(
-                region=self.region.region_code,
-                ingest_view_name=tag,
-                view_query_template=(f"SELECT * FROM {{{tag}}}"),
-                order_by_cols="",
-            )
-            for tag in self.expected_ingest_views
-        ]
-
-        builders.append(
-            DirectIngestViewQueryBuilder(
-                ingest_view_name="gatedTagNotInTagsList",
-                region=self.region.region_code,
-                view_query_template="SELECT * FROM {tagBasicData} LEFT OUTER JOIN {tagBasicData} USING (col);",
-                order_by_cols="",
-            )
-        )
-
-        return builders
 
 
 class _MockBigQueryClientForControllerTests:

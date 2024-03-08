@@ -29,11 +29,11 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,

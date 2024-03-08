@@ -104,13 +104,9 @@ class CloudSqlToBQConfig:
         """Returns a key for the database associated with a particular schema."""
         return SQLAlchemyDatabaseKey.for_schema(self.schema_type)
 
-    # TODO(#20930): Rename this when we eliminate the concept of a state-segmented
-    #  refresh.
-    def materialized_address_for_unsegmented_table(
-        self, table: Table
-    ) -> BigQueryAddress:
-        """Returns the dataset that data for a given table in an unsegmented schema is
-        materialized into. Throws for state-segmented schemas.
+    def materialized_address_for_table(self, table: Table) -> BigQueryAddress:
+        """Returns the dataset that data for a given table in a schema is materialized
+        into.
         """
         dataset = self.regional_dataset(dataset_override_prefix=None)
         if self.schema_type == SchemaType.JUSTICE_COUNTS:

@@ -32,7 +32,7 @@ from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
@@ -50,6 +50,10 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    MATERIALIZATION_TIME_COL_NAME,
+    UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -77,8 +81,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
-    MATERIALIZATION_TIME_COL_NAME,
-    UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_key,
@@ -153,7 +155,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
 
     @classmethod
     def expected_ingest_view_dataset(cls) -> str:
-        return ingest_view_materialization_results_dataflow_dataset(
+        return ingest_view_materialization_results_dataset(
             cls.region_code(), cls.ingest_instance(), "sandbox"
         )
 

@@ -32,7 +32,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPPER_BOUND_DATETIME_COL_NAME,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -384,5 +384,5 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                 "test_ingest_view", self.region_code(), self.field_index
             )
         )
-        with self.assertRaisesRegex(RuntimeError, r".*EntityMatchingError.*"):
+        with self.assertRaisesRegex(RuntimeError, r".*EntityMergingError.*"):
             self.test_pipeline.run()

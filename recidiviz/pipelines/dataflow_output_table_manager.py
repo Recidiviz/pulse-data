@@ -49,7 +49,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -540,7 +540,7 @@ def update_state_specific_ingest_view_results_schemas(
         ingest_instance,
     ) in get_ingest_pipeline_enabled_state_and_instance_pairs():
         update_state_specific_ingest_view_result_schema(
-            ingest_view_materialization_results_dataflow_dataset(
+            ingest_view_materialization_results_dataset(
                 state_code, ingest_instance, sandbox_dataset_prefix
             ),
             state_code,

@@ -47,7 +47,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
@@ -85,10 +85,8 @@ def create_or_update_ingest_output_sandbox(
     datasets name with the given prefix. Creates one dataset per state_code and ingest instance
     that has calculation pipelines regularly scheduled."""
 
-    sandbox_ingest_view_results_id = (
-        ingest_view_materialization_results_dataflow_dataset(
-            state_code, ingest_instance, sandbox_dataset_prefix
-        )
+    sandbox_ingest_view_results_id = ingest_view_materialization_results_dataset(
+        state_code, ingest_instance, sandbox_dataset_prefix
     )
     sandbox_ingest_view_results_ref = bq_client.dataset_ref_for_id(
         sandbox_ingest_view_results_id

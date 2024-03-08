@@ -47,7 +47,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -373,8 +373,8 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
-        ingest_view_results_dataset = (
-            ingest_view_materialization_results_dataflow_dataset(state_code, instance)
+        ingest_view_results_dataset = ingest_view_materialization_results_dataset(
+            state_code, instance
         )
         state_results_dataset = state_dataset_for_state_code(state_code, instance)
 

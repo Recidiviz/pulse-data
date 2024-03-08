@@ -34,9 +34,8 @@ from recidiviz.persistence.entity_matching.entity_merger_utils import (
 from recidiviz.persistence.persistence_utils import RootEntityT
 
 
-# TODO(#20930): Consider renaming this to EntityMergerError
-class EntityMatchingError(Exception):
-    """Raised when an error with entity matching is encountered."""
+class EntityMergingError(Exception):
+    """Raised when an error with entity merging is encountered."""
 
     def __init__(self, msg: str, entity_name: str):
         self.entity_name = entity_name
@@ -161,7 +160,7 @@ class IngestViewTreeMerger:
                 f"information: {[e.limited_pii_repr() for e in entity_group]}"
             )
             if should_throw_on_conflicts:
-                raise EntityMatchingError(
+                raise EntityMergingError(
                     error_message,
                     entity_name=primary_entity.get_entity_name(),
                 )

@@ -116,13 +116,6 @@ def refresh_bq_dataset_operator(
     schema_type: SchemaType,
 ) -> RecidivizKubernetesPodOperator:
     schema_type_str = schema_type.value.upper()
-    # TODO(#20930): Once ingest in dataflow rollout is complete and we no longer have
-    #  to check for the existence of a successful pipeline run in
-    #  combine_ingest_sources_into_single_state_dataset(), we can remove the required
-    #  connection for STATE.
-    required_cloud_sql_connections = (
-        [SchemaType.OPERATIONS] if schema_type == SchemaType.STATE else None
-    )
     return build_kubernetes_pod_task(
         task_id=f"refresh_bq_dataset_{schema_type_str}",
         container_name=f"refresh_bq_dataset_{schema_type_str}",
@@ -132,7 +125,6 @@ def refresh_bq_dataset_operator(
             INGEST_INSTANCE_JINJA_ARG,
             SANDBOX_PREFIX_JINJA_ARG,
         ],
-        cloud_sql_connections=required_cloud_sql_connections,
     )
 
 

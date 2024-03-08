@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state.dataset_config import state_dataset_for_st
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -50,7 +50,7 @@ class IngestPipelineParameters(PipelineParameters):
 
     @ingest_view_results_output.default
     def _ingest_view_results_output_default(self) -> str:
-        return ingest_view_materialization_results_dataflow_dataset(
+        return ingest_view_materialization_results_dataset(
             StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
         )
 
