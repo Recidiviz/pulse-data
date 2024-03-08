@@ -350,8 +350,8 @@ class WorkflowsClientETLDelegateTest(TestCase):
                         "middleNames": "Persons",
                         "nameSuffix": "",
                         "surname": "Realname",
-                    },
-                    "address": "456 Fake st., Faketown, TN 12345",
+                    },  # this field is different in the _new version
+                    "address": "456 Fake st., Faketown, TN 12345",  # this field is different in the _new version
                     "currentBalance": 45.1,
                     "expirationDate": "2022-02-28",
                     "lastPaymentAmount": 10.25,
@@ -362,7 +362,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "stateCode": "US_TN",
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": "2020-03-10",
-                    "supervisionType": "Probation",
+                    "supervisionType": "Probation",  # this field is different in the _new version
                     "boardConditions": [
                         {
                             "condition": "CT",
@@ -390,6 +390,14 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "personExternalIdNew": "206",
                     "officerIdNew": "101",
                     "supervisionStartDateNew": "2021-03-05",
+                    "personNameNew": {
+                        "givenNames": "Seventh",
+                        "middleNames": "Persons New",
+                        "nameSuffix": "",
+                        "surname": "Realname",
+                    },
+                    "supervisionTypeNew": "ISC",
+                    "addressNew": "567 Fake st., Faketown, TN 12345",
                 },
                 row,
             )
