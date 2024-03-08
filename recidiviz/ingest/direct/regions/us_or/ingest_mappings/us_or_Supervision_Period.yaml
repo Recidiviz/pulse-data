@@ -213,6 +213,7 @@ output:
                   - ACQT # Acquittal After Re-trial/Re-sentencing
                   - RSNT # Resentenced (only 1 instance)
                   - PSRB # Psychiatric Review Board-Order Req.
+                  - RVCM # TODO(#28038): Find correct mapping for this value
                 StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
                   - AUTO # unknown
                   - ADMB # unknown - old code (only 39 instances)
