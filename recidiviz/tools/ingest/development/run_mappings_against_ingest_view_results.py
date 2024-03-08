@@ -98,6 +98,7 @@ def query_ingest_view(
     query = ingest_view.build_query(
         config=DirectIngestViewQueryBuilder.QueryStructureConfig(
             raw_data_datetime_upper_bound=None,
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
         ),
     )
 

@@ -189,7 +189,7 @@ class DirectIngestViewQueryBuilder:
         raw_data_datetime_upper_bound: Optional[datetime.datetime] = attr.ib()
 
         # The source of the raw data for the query
-        raw_data_source_instance: DirectIngestInstance = attr.ib(default=None)
+        raw_data_source_instance: DirectIngestInstance = attr.ib()
 
         # Specifies whether the query should be structured to write results to a destination table and the type of that
         # table.

@@ -31,9 +31,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
-    IngestViewMaterializerImpl,
-)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRawFileImportManager,
@@ -41,7 +38,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     check_found_columns_are_subset_of_config,
     get_region_raw_file_config,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
@@ -280,21 +276,22 @@ class IngestViewQueryTester:
         ingest_view: DirectIngestViewQueryBuilder,
         query_run_dt: datetime.datetime,
     ) -> pd.DataFrame:
-        """Uses the ingest view diff query from DirectIngestIngestViewExportManager.debug_query_for_args to query
-        raw data for ingest view tests."""
-        upper_bound_datetime_inclusive = query_run_dt
-        view_query = str(
-            IngestViewMaterializerImpl.debug_query_for_args(
-                ingest_views_by_name={ingest_view.ingest_view_name: ingest_view},
+        """Uses the ingest view query run by Dataflow pipelines to query raw data for
+        ingest view tests.
+        """
+        view_query = ingest_view.build_query(
+            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                ingest_view_materialization_args=IngestViewMaterializationArgs(
-                    ingest_view_name=ingest_view.ingest_view_name,
-                    upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
-                    ingest_instance=DirectIngestInstance.PRIMARY,
-                ),
-            )
+                raw_data_datetime_upper_bound=query_run_dt,
+                # Only use the ORDER BY clause here to test that the columns exist in
+                # the query output. We should be able to remove order_by_cols entirely
+                # now that we're not using them in the Dataflow pipeline. This is not
+                # needed for test determinism since we always sort the results by all
+                # columns before comparing.
+                use_order_by=True,
+            ),
+            using_dataflow=True,
         )
-
         return query_view(self.helper, ingest_view.ingest_view_name, view_query)
 
     def compare_results_to_fixture(
