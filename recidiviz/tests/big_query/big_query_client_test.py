@@ -51,6 +51,8 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
 
+# TODO(#27976) migrate to use the BigQueryEmulatorTestCase for testing instead of
+# mocking out the client where possible!
 class BigQueryClientImplTest(unittest.TestCase):
     """Tests for BigQueryClientImpl"""
 
@@ -1085,25 +1087,28 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.update_table.assert_not_called()
 
     def test_update_removed_and_added(self) -> None:
-        """Tests that update_schema() does not do any updates when the schema hasn't
-        changed.
-        """
+        """Tests that update_schema() correctly removes and updates fields."""
         table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [
             bigquery.SchemaField("field_1", "STRING"),
-            bigquery.SchemaField("field_2", "STRING"),
-            bigquery.SchemaField("field_3", "STRING", description="Old description"),
+            bigquery.SchemaField("field_2", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("field_3", "STRING"),
+            bigquery.SchemaField("field_4", "STRING", description="Old description"),
         ]
-        fields_have_been_removed = [False]
+        new_schema_fields = [
+            bigquery.SchemaField("field_1", "STRING"),
+            bigquery.SchemaField("field_4", "STRING", description="New description"),
+        ]
+        fields_removed: set[str] = set()
 
         def mock_get_table(ref: bigquery.TableReference) -> bigquery.Table:
             if ref != table_ref:
                 raise ValueError(f"Unexpected table [{ref}]")
-            if not fields_have_been_removed[0]:
+            if not fields_removed:
                 return bigquery.Table(table_ref, schema_fields)
 
             return bigquery.Table(
-                table_ref, [c for c in schema_fields if c.name != "field_2"]
+                table_ref, [c for c in schema_fields if c.name not in fields_removed]
             )
 
         self.mock_client.get_table.side_effect = mock_get_table
@@ -1113,18 +1118,13 @@ class BigQueryClientImplTest(unittest.TestCase):
                 pass
 
         def mock_query(query: str, **kwargs: Any) -> FakeQueryJob:
-            self.assertTrue("SELECT * EXCEPT(field_2)" in query)
-            fields_have_been_removed[0] = True
+            self.assertTrue("DROP COLUMN field_2" in query)
+            fields_removed.add("field_2")
+            self.assertTrue("DROP COLUMN field_3" in query)
+            fields_removed.add("field_3")
             return FakeQueryJob()
 
         self.mock_client.query.side_effect = mock_query
-
-        new_schema_fields = [
-            bigquery.SchemaField("field_1", "STRING"),
-            bigquery.SchemaField(
-                "field_3", "STRING", description="Updated description"
-            ),
-        ]
 
         self.bq_client.update_schema(
             self.mock_dataset_id, self.mock_table_id, new_schema_fields
@@ -1367,6 +1367,20 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_2", "INT"),
         ]
         extended_schema = [bigquery.SchemaField("field_2", "INT")]
+
+        excess_fields = BigQueryClientImpl._get_excess_schema_fields(
+            base_schema, extended_schema
+        )
+
+        self.assertListEqual(excess_fields, [])
+
+    def test__get_excess_schema_fields_different_modes(self) -> None:
+        """Tests _get_excess_schema_fields() ignore everything but field name"""
+        base_schema = [
+            bigquery.SchemaField("field_1", "INT"),
+            bigquery.SchemaField("field_2", "INT", mode="NULLABLE"),
+        ]
+        extended_schema = [bigquery.SchemaField("field_2", "INT", mode="REQUIRED")]
 
         excess_fields = BigQueryClientImpl._get_excess_schema_fields(
             base_schema, extended_schema

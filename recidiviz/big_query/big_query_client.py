@@ -1985,18 +1985,24 @@ class BigQueryClientImpl(BigQueryClient):
     ) -> Optional[bigquery.QueryJob]:
         """Compares the schema of the given table to the desired schema fields and
         drops any unused columns.
+
+        n.b.: Using ALTER TABLE statements does not immediately free up storage, see
+        https://cloud.google.com/bigquery/docs/managing-table-schemas#delete_a_column
+        for more info
         """
         deprecated_fields = self._get_excess_schema_fields(
             desired_schema_fields, existing_schema
         )
 
         if not deprecated_fields:
-            logging.info(
-                "Schema for table %s.%s has no excess fields to drop.",
-                dataset_id,
-                table_id,
-            )
             return None
+
+        logging.info(
+            "Schema for table %s.%s has [%s] excess fields to drop.",
+            dataset_id,
+            table_id,
+            len(deprecated_fields),
+        )
 
         if not allow_field_deletions:
             raise ValueError(
@@ -2004,21 +2010,16 @@ class BigQueryClientImpl(BigQueryClient):
                 f" {dataset_id}.{table_id} but field deletions is not allowed."
             )
 
-        columns_to_drop = ", ".join([field.name for field in deprecated_fields])
+        drop_statements = ", ".join(
+            [f"DROP COLUMN {field.name}" for field in deprecated_fields]
+        )
 
-        rebuild_query = f"""
-            SELECT * EXCEPT({columns_to_drop})
-            FROM `{dataset_id}.{table_id}`
+        drop_query = f"""
+            ALTER TABLE `{dataset_id}.{table_id}` {drop_statements}
         """
 
-        return self.insert_into_table_from_query_async(
-            destination_dataset_id=dataset_id,
-            destination_table_id=table_id,
-            query=rebuild_query,
-            allow_field_additions=False,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-            # We want to be extra careful when copying data between tables that we are
-            # querying from the most recent version of the data.
+        return self.run_query_async(
+            query_str=drop_query,
             use_query_cache=False,
         )
 
