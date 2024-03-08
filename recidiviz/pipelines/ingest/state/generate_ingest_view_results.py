@@ -30,7 +30,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
     IngestViewMaterializerImpl,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    LOWER_BOUND_DATETIME_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
@@ -47,8 +46,7 @@ from recidiviz.utils.string import StrictStringFormatter
 
 INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE = f"""
 SELECT
-    MAX(update_datetime) AS {UPPER_BOUND_DATETIME_COL_NAME},
-    CAST(NULL AS DATETIME) AS {LOWER_BOUND_DATETIME_COL_NAME}
+    MAX(update_datetime) AS {UPPER_BOUND_DATETIME_COL_NAME}
 FROM (
         {{raw_data_tables}}
 );"""
@@ -69,11 +67,6 @@ ADDITIONAL_SCHEMA_COLUMNS = [
         UPPER_BOUND_DATETIME_COL_NAME,
         field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
         mode="REQUIRED",
-    ),
-    bigquery.SchemaField(
-        LOWER_BOUND_DATETIME_COL_NAME,
-        field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
-        mode="NULLABLE",
     ),
     bigquery.SchemaField(
         MATERIALIZATION_TIME_COL_NAME,
@@ -103,6 +96,8 @@ class GenerateIngestViewResults(beam.PTransform):
         self.ingest_instance = ingest_instance
 
     def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
+        # TODO(#20930): Remove the date bound tuple logic entirely from the pipeline -
+        #  we can just query now using the single upper bound date per table.
         return (
             input_or_inputs
             | f"Read {self.ingest_view_name} date pairs based on raw data tables."
@@ -185,11 +180,6 @@ class GenerateIngestViewResults(beam.PTransform):
             )
             ingest_view_materialization_args = IngestViewMaterializationArgs(
                 ingest_view_name=ingest_view_name,
-                lower_bound_datetime_exclusive=parser.isoparse(
-                    date_pair[LOWER_BOUND_DATETIME_COL_NAME]
-                )
-                if date_pair[LOWER_BOUND_DATETIME_COL_NAME]
-                else None,
                 upper_bound_datetime_inclusive=parser.isoparse(
                     date_pair[UPPER_BOUND_DATETIME_COL_NAME]
                 ),

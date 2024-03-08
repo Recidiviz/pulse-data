@@ -76,33 +76,9 @@ class IngestViewMaterializationArgs:
     # to generate the exported file.
     ingest_view_name: str = attr.ib()
 
-    # TODO(#20930): We should be able to eliminate this arg and all date-diffing related
-    #  logic now that we only query using "latest" logic.
-    # The lower bound date for updates this query should include. Any rows that have not
-    # changed since this date will not be included.
-    lower_bound_datetime_exclusive: Optional[datetime.datetime] = attr.ib()
-
     # The upper bound date for updates this query should include. Updates will only
     # reflect data received up until this date.
     upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
 
     # The instance the ingest view is being generated in.
     ingest_instance: DirectIngestInstance = attr.ib()
-
-    def lower_bound_datetime_exclusive_for_query(self) -> datetime.datetime:
-        """Temporary workaround to manage recovery from https://go/pull/21230.
-        This function returns a lower bound datetime with milliseconds stripped
-        which should be used as the temporary lower bound for ingest view diff
-        queries to make sure we don't create a gap in ingested data.
-        TODO(#21230): Remove this and use the actual datetime with milliseconds once
-         every ingest view has run at least once with fresh data for every state.
-        """
-        if not self.lower_bound_datetime_exclusive:
-            raise ValueError(
-                "The lower_bound_datetime_exclusive is None. Should only be called for "
-                "args with a nonnull lower_bound_datetime_exclusive."
-            )
-        dt = self.lower_bound_datetime_exclusive
-        return datetime.datetime(
-            dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
-        )

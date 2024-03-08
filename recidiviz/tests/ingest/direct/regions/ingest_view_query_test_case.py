@@ -289,7 +289,6 @@ class IngestViewQueryTester:
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 ingest_view_materialization_args=IngestViewMaterializationArgs(
                     ingest_view_name=ingest_view.ingest_view_name,
-                    lower_bound_datetime_exclusive=None,
                     upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
                     ingest_instance=DirectIngestInstance.PRIMARY,
                 ),

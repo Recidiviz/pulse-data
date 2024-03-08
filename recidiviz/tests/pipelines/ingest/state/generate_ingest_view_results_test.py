@@ -121,8 +121,7 @@ class TestGenerateDateBoundTuplesQuery(StateIngestPipelineTestCase):
         )
         expected = """
 SELECT
-    MAX(update_datetime) AS __upper_bound_datetime_inclusive,
-    CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
+    MAX(update_datetime) AS __upper_bound_datetime_inclusive
 FROM (
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
         FROM `test-project.us_dd_raw_data_secondary.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
@@ -146,8 +145,7 @@ UNION ALL
         )
         expected = """
 SELECT
-    MAX(update_datetime) AS __upper_bound_datetime_inclusive,
-    CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
+    MAX(update_datetime) AS __upper_bound_datetime_inclusive
 FROM (
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
         FROM `test-project.us_dd_raw_data_secondary.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
@@ -206,10 +204,7 @@ UNION ALL
         self.load_rows_into_table(address=address_2, data=table_2_data)
 
         expected_results: Iterable[Dict[str, Optional[datetime]]] = [
-            {
-                "__lower_bound_datetime_exclusive": None,
-                "__upper_bound_datetime_inclusive": date_4,
-            },
+            {"__upper_bound_datetime_inclusive": date_4},
         ]
         self.run_query_test(
             query_str=pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
