@@ -105,11 +105,11 @@ from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_sentence_te
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_early_discharge_sessions_preprocessing import (
     US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_classification_review import (
-    US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_security_classification_committee_review import (
     US_MI_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_classification_review import (
+    US_MI_SUPERVISION_CLASSIFICATION_REVIEW_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_level_raw_text_mappings import (
     US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
@@ -155,9 +155,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_half
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_statute_eligible import (
     US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
-    US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q1 import (
     US_TN_CAF_Q1_VIEW_BUILDER,
@@ -270,7 +267,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
     US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
     US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
-    US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER,

@@ -17,7 +17,6 @@
 """Tests for find_unused_bq_views.py."""
 import unittest
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.tools.find_unused_bq_views import (
     UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON,
     get_unused_across_all_projects_addresses_from_all_views_dag,
@@ -28,15 +27,6 @@ class TestFindUnusedBQViews(unittest.TestCase):
     """Tests for enforcing no untracked unreferenced views and testing the
     find_unused_bq_views script.
     """
-
-    def test_find_unused_views_does_not_crash(self) -> None:
-        unused_view_addresses = (
-            get_unused_across_all_projects_addresses_from_all_views_dag()
-        )
-
-        self.assertTrue(
-            all(isinstance(a, BigQueryAddress) for a in unused_view_addresses)
-        )
 
     def test_no_unused_views(self) -> None:
         unused_addresses = get_unused_across_all_projects_addresses_from_all_views_dag()

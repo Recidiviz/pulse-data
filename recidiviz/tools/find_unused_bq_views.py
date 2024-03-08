@@ -58,6 +58,9 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_session
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
+    PROJECTED_DISCHARGES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
@@ -72,9 +75,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tra
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
-    US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
@@ -146,14 +146,15 @@ from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_
 LOOKER_REFERENCED_ADDRESSES = {
     WORKFLOWS_USAGE_VIEW_BUILDER.address,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
-    # TODO(Recidiviz/looker#521): The dashboard referencing this view is no longer
-    #  needed and can be deleted.
-    US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER.address,
     # TODO(Recidiviz/looker#427): The legacy TN compliant reporting dashboard
     #  referencing this view is actively in use because it has more functionality than
     #  any existing dashboard for standard workflows infra, and it cannot be deleted
     #  until we have an adequate replacement.
     US_TN_COMPLIANT_REPORTING_FUNNEL_VIEW_BUILDER.address,
+    # TODO(Recidiviz/looker#539): This view is only referenced by the
+    #  day_zero_overdue_supervision_discharge dashboard and can be deleted when that is
+    #  deleted.
+    PROJECTED_DISCHARGES_VIEW_BUILDER.address,
 }
 
 # List of views that are not referenced in Looker but should still be kept around,
