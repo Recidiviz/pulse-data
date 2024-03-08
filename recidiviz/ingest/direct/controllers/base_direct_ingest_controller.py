@@ -24,6 +24,7 @@ from types import ModuleType
 from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
@@ -36,9 +37,6 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
-    DirectIngestRegionLockManager,
-)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
     build_handle_new_files_task_id,
@@ -76,6 +74,8 @@ from recidiviz.persistence.database.schema.operations.dao import (
 )
 from recidiviz.utils import environment
 
+_RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_RAW_FILE_"
+
 
 # TODO(#20930): Rename this class/file and related test classes/files to
 #  IngestRawFileImportController.
@@ -93,10 +93,7 @@ class BaseDirectIngestController:
         self.region_module_override = region_module_override
         self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
         self.ingest_instance = ingest_instance
-        self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
-            region_code=self.region.region_code,
-            ingest_instance=self.ingest_instance,
-        )
+        self.lock_manager = GCSPseudoLockManager()
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.instance_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region.region_code, ingest_instance=self.ingest_instance
@@ -160,6 +157,14 @@ class BaseDirectIngestController:
 
     def region_code(self) -> str:
         return self.state_code.value.lower()
+
+    def _ingest_lock_name_for_raw_file(self, raw_file_tag: str) -> str:
+        return (
+            _RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX
+            + self.region_code().upper()
+            + f"_{self.ingest_instance.name}"
+            + f"_{raw_file_tag}"
+        )
 
     def _ingest_is_not_running(self) -> bool:
         """Returns True if ingest is not running in this instance and all functions should
@@ -484,9 +489,10 @@ class BaseDirectIngestController:
             self.kick_scheduler()
             return
 
-        should_schedule = False
-        with self.region_lock_manager.using_raw_file_lock(
-            raw_file_tag=data_import_args.file_id(),
+        # Grab the lock for this file tag so no other tasks for the same file tag can
+        # run at the same time.
+        with self.lock_manager.using_lock(
+            self._ingest_lock_name_for_raw_file(data_import_args.file_id()),
             expiration_in_seconds=self.default_job_lock_timeout_in_seconds(),
         ):
             self.raw_file_import_manager.import_raw_file_to_big_query(
