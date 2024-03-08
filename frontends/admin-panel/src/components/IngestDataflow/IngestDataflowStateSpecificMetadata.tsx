@@ -86,10 +86,6 @@ const items: MenuProps["items"] = [
   ]),
   getItem("Secondary Instance", INGEST_DATAFLOW_SECONDARY_ROUTE, null, [
     getItem(
-      "Latest Job",
-      `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_DATAFLOW_LATEST_JOB}`
-    ),
-    getItem(
       "Raw Data",
       `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_INGEST_RAW_DATA}`
     ),

@@ -164,14 +164,8 @@ class IngestDataflowOperations(TestCase):
             location="us-east1",
         )
         expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: pipeline,
-                DirectIngestInstance.SECONDARY: pipeline2,
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: pipeline3,
-                DirectIngestInstance.SECONDARY: pipeline4,
-            },
+            StateCode.US_XX: pipeline,
+            StateCode.US_YY: pipeline3,
         }
 
         most_recent_job_id_map = {
@@ -236,14 +230,8 @@ class IngestDataflowOperations(TestCase):
         )
 
         expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: pipeline,
-                DirectIngestInstance.SECONDARY: None,
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: pipeline2,
-                DirectIngestInstance.SECONDARY: None,
-            },
+            StateCode.US_XX: pipeline,
+            StateCode.US_YY: pipeline2,
         }
 
         most_recent_job_id_map = {

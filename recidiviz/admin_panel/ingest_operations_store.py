@@ -88,7 +88,7 @@ class IngestOperationsStore(AdminPanelStore):
         self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
         self.bq_client = BigQueryClientImpl()
-        self.cache_key = f"{self.__class__}"
+        self.cache_key = f"{self.__class__}V2"
 
     def hydrate_cache(self) -> None:
         latest_jobs = get_all_latest_ingest_jobs()
@@ -98,21 +98,13 @@ class IngestOperationsStore(AdminPanelStore):
         self,
         latest_jobs: Dict[
             StateCode,
-            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+            Optional[DataflowPipelineMetadataResponse],
         ],
     ) -> None:
+
         jobs_dict = {
-            state_code.value: {
-                instance.value: (
-                    attr_to_json_dict(
-                        job,  # type: ignore[arg-type]
-                    )
-                    if job
-                    else None
-                )
-                for instance, job in responses_by_instance.items()
-            }
-            for state_code, responses_by_instance in latest_jobs.items()
+            state_code.value: (attr_to_json_dict(job) if job else None)  # type: ignore[arg-type]
+            for state_code, job in latest_jobs.items()
         }
 
         jobs_json = json.dumps(jobs_dict)
@@ -124,11 +116,8 @@ class IngestOperationsStore(AdminPanelStore):
 
     def get_most_recent_dataflow_job_statuses(
         self,
-    ) -> Dict[
-        StateCode,
-        Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
-    ]:
-        """Retrieve the most recent dataflow job statuses for each state from the cache if available, or via
+    ) -> Dict[StateCode, Optional[DataflowPipelineMetadataResponse]]:
+        """Retrieve the most recent dataflow job status for each state from the cache if available, or via
         new requests to the dataflow API."""
         jobs_json = self.redis.get(self.cache_key)
         if not jobs_json:
@@ -143,26 +132,18 @@ class IngestOperationsStore(AdminPanelStore):
 
         rehydrated_jobs: Dict[
             StateCode,
-            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
-        ] = defaultdict(dict)
+            Optional[DataflowPipelineMetadataResponse],
+        ] = defaultdict()
         for state_code in get_direct_ingest_states_launched_in_env():
             # There is an edge case where if a state was newly added, it would not
             # appear in the cache results yet. We allow for this and just add a None
             # value for pipeline results until the cache is next hydrated.
-            responses_by_instance = parsed_jobs_dict.get(state_code.value)
-            for instance in DirectIngestInstance:
-                job_dict = (
-                    responses_by_instance.get(instance.value)
-                    if responses_by_instance
-                    else None
-                )
-                rehydrated_jobs[state_code][instance] = (
-                    assert_type(
-                        attr_from_json_dict(job_dict), DataflowPipelineMetadataResponse
-                    )
-                    if job_dict
-                    else None
-                )
+            job = parsed_jobs_dict.get(state_code.value)
+            rehydrated_jobs[state_code] = (
+                assert_type(attr_from_json_dict(job), DataflowPipelineMetadataResponse)
+                if job
+                else None
+            )
 
         return rehydrated_jobs
 
