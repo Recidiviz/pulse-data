@@ -27,3 +27,7 @@ UPDATE_DATETIME_COL_NAME = "update_datetime"
 UPDATE_DATETIME_COL_DESCRIPTION = (
     "The timestamp of the file this row was extracted from"
 )
+
+# Recidiviz-managed ingest view results columns
+UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"
+MATERIALIZATION_TIME_COL_NAME = "__materialization_time"

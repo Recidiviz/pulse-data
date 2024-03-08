@@ -36,6 +36,10 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    MATERIALIZATION_TIME_COL_NAME,
+    UPPER_BOUND_DATETIME_COL_NAME,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -53,8 +57,6 @@ from recidiviz.persistence.entity_matching.entity_merger_utils import (
     root_entity_external_id_keys,
 )
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
-    MATERIALIZATION_TIME_COL_NAME,
-    UPPER_BOUND_DATETIME_COL_NAME,
     GenerateIngestViewResults,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations

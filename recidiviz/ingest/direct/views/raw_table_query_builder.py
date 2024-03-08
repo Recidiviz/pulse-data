@@ -163,7 +163,7 @@ class RawTableQueryBuilder:
             columns_clause += f", {UPDATE_DATETIME_COL_NAME}"
 
         if raw_data_datetime_upper_bound:
-            date_filter_clause = f"WHERE {UPDATE_DATETIME_COL_NAME} <= {datetime_clause(raw_data_datetime_upper_bound, include_milliseconds=True)}"
+            date_filter_clause = f"WHERE {UPDATE_DATETIME_COL_NAME} <= {datetime_clause(raw_data_datetime_upper_bound)}"
         else:
             date_filter_clause = ""
 

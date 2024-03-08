@@ -40,9 +40,7 @@ class FederatedCloudSQLTableBigQueryViewCollector(
     def collect_view_builders(self) -> List[FederatedCloudSQLTableBigQueryViewBuilder]:
         views = []
         for table in self.config.get_tables_to_export():
-            materialized_address = (
-                self.config.materialized_address_for_unsegmented_table(table)
-            )
+            materialized_address = self.config.materialized_address_for_table(table)
             views.append(
                 FederatedCloudSQLTableBigQueryViewBuilder(
                     connection_region=self.config.connection_region,

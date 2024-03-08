@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for DirectIngestDocumentationGenerator."""
 import unittest
+from typing import List
 
 from mock import MagicMock, patch
 
@@ -24,15 +25,50 @@ from recidiviz.common.constants.states import TEST_STATE_CODE_DOCS
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     DirectIngestDocumentationGenerator,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
     FakeDirectIngestRegionRawFileConfig,
-    FakeDirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.utils.fake_region import fake_region
+
+
+class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderCollector):
+    """A test version of DirectIngestViewQueryBuilderCollector"""
+
+    def __init__(self, region: DirectIngestRegion, expected_ingest_views: List[str]):
+        super().__init__(region, expected_ingest_views)
+
+    def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
+        builders = [
+            DirectIngestViewQueryBuilder(
+                region=self.region.region_code,
+                ingest_view_name=tag,
+                view_query_template=(f"SELECT * FROM {{{tag}}}"),
+                order_by_cols="",
+            )
+            for tag in self.expected_ingest_views
+        ]
+
+        builders.append(
+            DirectIngestViewQueryBuilder(
+                ingest_view_name="gatedTagNotInTagsList",
+                region=self.region.region_code,
+                view_query_template="SELECT * FROM {tagBasicData} LEFT OUTER JOIN {tagBasicData} USING (col);",
+                order_by_cols="",
+            )
+        )
+
+        return builders
 
 
 class DirectIngestDocumentationGeneratorTest(unittest.TestCase):

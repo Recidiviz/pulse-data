@@ -19,11 +19,11 @@ the results can be processed and merged into our Postgres database.
 """
 
 from recidiviz.big_query.big_query_utils import datetime_clause
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -79,7 +79,7 @@ class IngestViewMaterializerImpl:
         )
 
         upper_bound_datetime_inclusive_clause = datetime_clause(
-            upper_bound_datetime_inclusive, include_milliseconds=True
+            upper_bound_datetime_inclusive
         )
 
         return StrictStringFormatter().format(

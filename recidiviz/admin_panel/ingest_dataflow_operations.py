@@ -30,7 +30,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
     DirectIngestDataflowJobManager,
@@ -207,9 +207,7 @@ def get_latest_run_ingest_view_results(
 ) -> Dict[str, int]:
     bq_client = BigQueryClientImpl()
     return bq_client.get_row_counts_for_tables(
-        ingest_view_materialization_results_dataflow_dataset(
-            state_code, ingest_instance
-        )
+        ingest_view_materialization_results_dataset(state_code, ingest_instance)
     )
 
 

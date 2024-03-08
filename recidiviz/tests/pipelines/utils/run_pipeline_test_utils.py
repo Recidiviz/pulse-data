@@ -26,7 +26,7 @@ from mock import patch
 from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database import schema_utils
@@ -270,7 +270,7 @@ def default_arg_list_for_pipeline(
                     StateCode(state_code), DirectIngestInstance.SECONDARY, "sandbox"
                 ),
                 "--ingest_view_results_output",
-                ingest_view_materialization_results_dataflow_dataset(
+                ingest_view_materialization_results_dataset(
                     StateCode(state_code), DirectIngestInstance.SECONDARY, "sandbox"
                 ),
             ]
