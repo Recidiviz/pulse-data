@@ -570,6 +570,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
         self.assertEqual(ids, ["111", "222", "333", "444", "555", "666", "777"])
         mock_secrets.assert_has_calls(
             [
+                # TODO(#20930): Before we delete the CloudSQL instance for STATE, we
+                #  should update the has_cloud_sql_instance value for SchemaType.STATE
+                #  so this call no longer happens.
                 mock.call("state_v2_cloudsql_instance_id"),
                 mock.call("operations_v2_cloudsql_instance_id"),
                 mock.call("justice_counts_cloudsql_instance_id"),

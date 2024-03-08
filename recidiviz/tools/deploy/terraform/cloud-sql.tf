@@ -64,7 +64,8 @@ module "operations_database_v2" {
   has_readonly_user = true
 }
 
-
+# TODO(#20930): Actually delete the state CloudSQL instance once we're really sure we don't
+# need the legacy ingest data in there anymore.
 module "state_database_v2" {
   source = "./modules/cloud-sql-instance"
 

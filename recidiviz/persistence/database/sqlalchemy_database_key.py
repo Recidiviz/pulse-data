@@ -49,6 +49,8 @@ class SQLAlchemyPoolConfiguration:
     pool_timeout: int = attr.ib(default=30)
 
 
+# TODO(#20930): Disallow creation of SQLAlchemyDatabaseKey for the STATE schema to
+#  ensure we are never trying to connect to the DB anymore.
 @attr.s(frozen=True)
 class SQLAlchemyDatabaseKey:
     """Contains information required to identify a single database within a CloudSQL
@@ -120,6 +122,7 @@ class SQLAlchemyDatabaseKey:
 
     @property
     def pool_configuration(self) -> Optional[SQLAlchemyPoolConfiguration]:
+        # TODO(#20930): Revisit whether this setting is necessary in a post-IID world.
         if self.schema_type is SchemaType.OPERATIONS:
             # The operations database has many concurrent / distributed connections from various
             # endpoints. In addition, for pre-ingest, (N~100) database operations are performed
