@@ -247,14 +247,6 @@ def main() -> int:
                     "recidiviz.persistence",
                     "recidiviz.big_query",
                     "recidiviz.metrics.metric_big_query_view",
-                    "recidiviz.task_eligibility",
-                    "recidiviz.case_triage",
-                    "recidiviz.outliers",
-                    "recidiviz.view_registry",
-                    "recidiviz.aggregated_metrics",
-                    "recidiviz.datasets",
-                    "recidiviz.monitoring",
-                    "recidiviz.validation",
                 }
             )
         success &= check_dependencies_for_entrypoint(
