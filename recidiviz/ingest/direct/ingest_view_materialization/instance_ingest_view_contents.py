@@ -22,7 +22,6 @@ import datetime
 from typing import Any
 
 UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"
-LOWER_BOUND_DATETIME_COL_NAME = "__lower_bound_datetime_exclusive"
 MATERIALIZATION_TIME_COL_NAME = "__materialization_time"
 
 

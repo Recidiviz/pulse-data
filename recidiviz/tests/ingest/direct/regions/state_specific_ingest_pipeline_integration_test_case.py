@@ -53,7 +53,6 @@ from recidiviz.persistence.entity_matching.entity_merger_utils import (
     root_entity_external_id_keys,
 )
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
-    LOWER_BOUND_DATETIME_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
     GenerateIngestViewResults,
@@ -261,7 +260,6 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         for record in records:
             record[MATERIALIZATION_TIME_COL_NAME] = datetime.datetime.now().isoformat()
             record[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
-            record[LOWER_BOUND_DATETIME_COL_NAME] = None
 
         return records
 

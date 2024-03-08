@@ -77,7 +77,6 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
-    LOWER_BOUND_DATETIME_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
@@ -195,7 +194,6 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                 .input_columns,
                 MATERIALIZATION_TIME_COL_NAME,
                 UPPER_BOUND_DATETIME_COL_NAME,
-                LOWER_BOUND_DATETIME_COL_NAME,
             ],
         ).to_dict("records")
 
@@ -392,10 +390,6 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                 if not MATERIALIZATION_TIME_COL_NAME in record:
                     raise BeamAssertException("Missing materialization time column")
                 record.pop(MATERIALIZATION_TIME_COL_NAME)
-                if record[LOWER_BOUND_DATETIME_COL_NAME]:
-                    record[LOWER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
-                        record[LOWER_BOUND_DATETIME_COL_NAME]
-                    ).isoformat()
                 record[UPPER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
                     record[UPPER_BOUND_DATETIME_COL_NAME]
                 ).isoformat()
