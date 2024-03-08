@@ -56,10 +56,7 @@ export interface StateDatasetRowCounts {
 }
 
 export type DataflowIngestPipelineJobResponse = {
-  [stateCode: string]: {
-    primary: DataflowIngestPipelineStatus | null;
-    secondary: DataflowIngestPipelineStatus | null;
-  };
+  [stateCode: string]: DataflowIngestPipelineStatus | null;
 };
 
 // TODO(#20930): Figure out how to handle backwards compatibility in the validation

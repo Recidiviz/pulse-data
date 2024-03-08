@@ -515,14 +515,8 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
     ) -> None:
         # Arrange
         latest_jobs = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
-                DirectIngestInstance.SECONDARY: None,
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: None,
-                DirectIngestInstance.SECONDARY: None,
-            },
+            StateCode.US_XX: self.US_XX_PIPELINE_INFO_1,
+            StateCode.US_YY: None,
         }
         mock_get_latest_jobs.return_value = latest_jobs
         # Act
@@ -537,18 +531,9 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
         self, mock_get_latest_jobs: mock.MagicMock
     ) -> None:
         # Arrange
-        latest_jobs: Dict[
-            StateCode,
-            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
-        ] = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
-                DirectIngestInstance.SECONDARY: None,
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: None,
-                DirectIngestInstance.SECONDARY: None,
-            },
+        latest_jobs: Dict[StateCode, Optional[DataflowPipelineMetadataResponse],] = {
+            StateCode.US_XX: self.US_XX_PIPELINE_INFO_1,
+            StateCode.US_YY: None,
         }
 
         # Act
@@ -564,11 +549,8 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
         self, mock_get_latest_jobs: mock.MagicMock
     ) -> None:
         # Arrange
-        latest_jobs = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
-                DirectIngestInstance.SECONDARY: None,
-            }
+        latest_jobs: Dict[StateCode, Optional[DataflowPipelineMetadataResponse]] = {
+            StateCode.US_XX: self.US_XX_PIPELINE_INFO_1,
         }
 
         # Act
@@ -579,16 +561,10 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
         mock_get_latest_jobs.assert_not_called()
 
         expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
-                DirectIngestInstance.SECONDARY: None,
-            },
+            StateCode.US_XX: self.US_XX_PIPELINE_INFO_1,
             # None values filled in for US_YY which is brand new since the last time we
             # cached.
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: None,
-                DirectIngestInstance.SECONDARY: None,
-            },
+            StateCode.US_YY: None,
         }
         self.assertEqual(expected, statuses_map)
 

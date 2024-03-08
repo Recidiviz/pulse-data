@@ -26,7 +26,7 @@ import {
   getDataflowJobAdditionalMetadataByInstance,
   getIngestInstanceResources,
   getIngestRawFileProcessingStatus,
-  getLatestDataflowJobByInstance,
+  getLatestDataflowJob,
   getLatestDataflowRawDataWatermarks,
   getLatestRawDataTagsNotMeetingWatermark,
   getLatestRunIngestViewResults,
@@ -150,15 +150,15 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   const abortControllerRefRaw = useRef<AbortController | undefined>(undefined);
 
   // INGEST DATAFLOW PIPELINE DATA LOADING
-  const fetchDataflowPipelineInstance = useCallback(async () => {
-    return getLatestDataflowJobByInstance(stateCode, instance);
-  }, [stateCode, instance]);
+  const fetchLatestIngestDataflowJob = useCallback(async () => {
+    return getLatestDataflowJob(stateCode);
+  }, [stateCode]);
 
   const {
     loading: mostRecentPipelineInfoLoading,
     data: mostRecentPipelineInfo,
   } = useFetchedDataJSON<DataflowIngestPipelineStatus>(
-    fetchDataflowPipelineInstance
+    fetchLatestIngestDataflowJob
   );
 
   const fetchDataflowPipelineAdditionalMetadataInstance =
@@ -638,10 +638,12 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   // OVERALL COMPONENT STRUCTURE
   return (
     <Card>
-      <Title id={ANCHOR_DATAFLOW_LATEST_JOB} level={4}>
-        Latest Ingest Pipeline Run
-      </Title>
-      {renderLatestPipelineInfoView()}
+      {instance === "PRIMARY" ? (
+        <Title id={ANCHOR_DATAFLOW_LATEST_JOB} level={4}>
+          Latest Ingest Pipeline Run
+        </Title>
+      ) : null}
+      {instance === "PRIMARY" ? renderLatestPipelineInfoView() : null}
       <br />
       <Title id={ANCHOR_INGEST_RAW_DATA} level={4}>
         Raw Data Import

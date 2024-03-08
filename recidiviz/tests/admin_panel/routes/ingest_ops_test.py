@@ -162,41 +162,26 @@ class IngestOpsEndpointTests(TestCase):
 
     def test_all_dataflow_jobs(self) -> None:
         mock_response = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: DataflowPipelineMetadataResponse(
-                    id="1234",
-                    project_id="recidiviz-456",
-                    name="us-xx-ingest-primary",
-                    create_time=1695821110,
-                    start_time=1695821110,
-                    termination_time=1695821110,
-                    termination_state="JOB_STATE_DONE",
-                    location="us-west1",
-                ),
-                DirectIngestInstance.SECONDARY: None,
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: DataflowPipelineMetadataResponse(
-                    id="1236",
-                    project_id="recidiviz-456",
-                    name="us-yy-ingest-primary",
-                    create_time=1695821110,
-                    start_time=1695821110,
-                    termination_time=1695821110,
-                    termination_state="JOB_STATE_DONE",
-                    location="us-west1",
-                ),
-                DirectIngestInstance.SECONDARY: DataflowPipelineMetadataResponse(
-                    id="1237",
-                    project_id="recidiviz-456",
-                    name="us-yy-ingest-secondary",
-                    create_time=1695821110,
-                    start_time=1695821110,
-                    termination_time=1695821110,
-                    termination_state="JOB_STATE_DONE",
-                    location="us-west1",
-                ),
-            },
+            StateCode.US_XX: DataflowPipelineMetadataResponse(
+                id="1234",
+                project_id="recidiviz-456",
+                name="us-xx-ingest-primary",
+                create_time=1695821110,
+                start_time=1695821110,
+                termination_time=1695821110,
+                termination_state="JOB_STATE_DONE",
+                location="us-west1",
+            ),
+            StateCode.US_YY: DataflowPipelineMetadataResponse(
+                id="1236",
+                project_id="recidiviz-456",
+                name="us-yy-ingest-primary",
+                create_time=1695821110,
+                start_time=1695821110,
+                termination_time=1695821110,
+                termination_state="JOB_STATE_DONE",
+                location="us-west1",
+            ),
         }
 
         self.mock_current_jobs_statuses.return_value = mock_response
@@ -209,66 +194,48 @@ class IngestOpsEndpointTests(TestCase):
             response.json,
             {
                 "US_XX": {
-                    "primary": {
-                        "id": "1234",
-                        "projectId": "recidiviz-456",
-                        "name": "us-xx-ingest-primary",
-                        "createTime": 1695821110,
-                        "startTime": 1695821110,
-                        "terminationTime": 1695821110,
-                        "terminationState": "JOB_STATE_DONE",
-                        "location": "us-west1",
-                        "duration": 0,
-                    },
-                    "secondary": None,
+                    "id": "1234",
+                    "projectId": "recidiviz-456",
+                    "name": "us-xx-ingest-primary",
+                    "createTime": 1695821110,
+                    "startTime": 1695821110,
+                    "terminationTime": 1695821110,
+                    "terminationState": "JOB_STATE_DONE",
+                    "location": "us-west1",
+                    "duration": 0,
                 },
                 "US_YY": {
-                    "primary": {
-                        "id": "1236",
-                        "projectId": "recidiviz-456",
-                        "name": "us-yy-ingest-primary",
-                        "createTime": 1695821110,
-                        "startTime": 1695821110,
-                        "terminationTime": 1695821110,
-                        "terminationState": "JOB_STATE_DONE",
-                        "location": "us-west1",
-                        "duration": 0,
-                    },
-                    "secondary": {
-                        "id": "1237",
-                        "projectId": "recidiviz-456",
-                        "name": "us-yy-ingest-secondary",
-                        "createTime": 1695821110,
-                        "startTime": 1695821110,
-                        "terminationTime": 1695821110,
-                        "terminationState": "JOB_STATE_DONE",
-                        "location": "us-west1",
-                        "duration": 0,
-                    },
+                    "id": "1236",
+                    "projectId": "recidiviz-456",
+                    "name": "us-yy-ingest-primary",
+                    "createTime": 1695821110,
+                    "startTime": 1695821110,
+                    "terminationTime": 1695821110,
+                    "terminationState": "JOB_STATE_DONE",
+                    "location": "us-west1",
+                    "duration": 0,
                 },
             },
         )
 
-    def test_get_latest_ingest_dataflow_job_by_instance(self) -> None:
+    def test_get_latest_ingest_dataflow_job(self) -> None:
         mock_response = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: DataflowPipelineMetadataResponse(
-                    id="1234",
-                    project_id="recidiviz-456",
-                    name="us-xx-ingest-primary",
-                    create_time=1695821110,
-                    start_time=1695821110,
-                    termination_time=1695821110,
-                    termination_state="JOB_STATE_DONE",
-                    location="us-west1",
-                )
-            }
+            StateCode.US_XX: DataflowPipelineMetadataResponse(
+                id="1234",
+                project_id="recidiviz-456",
+                name="us-xx-ingest-primary",
+                create_time=1695821110,
+                start_time=1695821110,
+                termination_time=1695821110,
+                termination_state="JOB_STATE_DONE",
+                location="us-west1",
+            )
         }
 
         self.mock_current_jobs_statuses.return_value = mock_response
 
         response = self.client.get(
-            "/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/US_XX/PRIMARY",
+            "/api/ingest_operations/get_latest_ingest_dataflow_job/US_XX",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
 

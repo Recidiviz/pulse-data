@@ -38,7 +38,6 @@ import NewTabLink from "../NewTabLink";
 import {
   DataflowIngestPipelineJobResponse,
   DataflowIngestPipelineStatus,
-  DirectIngestInstance,
   IngestInstanceStatusResponse,
   JobState,
   QueueMetadata,
@@ -65,8 +64,7 @@ export type DataflowJobStatusMetadata = {
 
 export type IngestInstanceDataflowStatusTableInfo = {
   stateCode: string;
-  primaryStatus: DataflowJobStatusMetadata;
-  secondaryStatus: DataflowJobStatusMetadata;
+  ingestPipelineStatus: DataflowJobStatusMetadata;
   primaryRawDataStatus: string;
   secondaryRawDataStatus: string;
   primaryRawDataTimestamp: string;
@@ -183,20 +181,14 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     return queueStatusColorDict[currentState].color;
   }
 
+  // for primary
   function getJobMetadataForCell(
     key: string,
-    instance: DirectIngestInstance,
     pipelineStatuses: DataflowIngestPipelineJobResponse
   ): DataflowJobStatusMetadata {
-    if (instance === DirectIngestInstance.PRIMARY) {
-      return {
-        status: getCurrentStatus(pipelineStatuses[key].primary),
-        terminationTime: pipelineStatuses[key].primary?.terminationTime,
-      };
-    }
     return {
-      status: getCurrentStatus(pipelineStatuses[key].secondary),
-      terminationTime: pipelineStatuses[key].secondary?.terminationTime,
+      status: getCurrentStatus(pipelineStatuses[key]),
+      terminationTime: pipelineStatuses[key]?.terminationTime,
     };
   }
 
@@ -219,16 +211,7 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
 
     return {
       stateCode: key,
-      primaryStatus: getJobMetadataForCell(
-        key,
-        DirectIngestInstance.PRIMARY,
-        dataflowPipelines
-      ),
-      secondaryStatus: getJobMetadataForCell(
-        key,
-        DirectIngestInstance.SECONDARY,
-        dataflowPipelines
-      ),
+      ingestPipelineStatus: getJobMetadataForCell(key, dataflowPipelines),
       primaryRawDataStatus,
       secondaryRawDataStatus,
       primaryRawDataTimestamp,
@@ -275,19 +258,11 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
       defaultSortOrder: "ascend",
     },
     {
-      title: "Ingest Pipeline Status (Primary)",
-      dataIndex: "primaryStatus",
-      key: "primaryStatus",
-      render: (primaryStatus: DataflowJobStatusMetadata) => (
-        <span>{renderDataflowStatusCell(primaryStatus)}</span>
-      ),
-    },
-    {
-      title: "Ingest Pipeline Status (Secondary)",
-      dataIndex: "secondaryStatus",
-      key: "secondaryStatus",
-      render: (secondaryStatus: DataflowJobStatusMetadata) => (
-        <span>{renderDataflowStatusCell(secondaryStatus)}</span>
+      title: "Ingest Pipeline Status",
+      dataIndex: "ingestPipelineStatus",
+      key: "ingestPipelineStatus",
+      render: (ingestPipelineStatus: DataflowJobStatusMetadata) => (
+        <span>{renderDataflowStatusCell(ingestPipelineStatus)}</span>
       ),
     },
     {

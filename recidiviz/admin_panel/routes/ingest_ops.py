@@ -331,36 +331,29 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return (
             jsonify(
                 {
-                    instance_state_code.value: {
-                        instance.value.lower(): (
-                            curr_status_info.for_api() if curr_status_info else None
-                        )
-                        for instance, curr_status_info in instances.items()
-                    }
-                    for instance_state_code, instances in all_instance_statuses.items()
+                    instance_state_code.value: (
+                        curr_status_info.for_api() if curr_status_info else None
+                    )
+                    for instance_state_code, curr_status_info in all_instance_statuses.items()
                 }
             ),
             HTTPStatus.OK,
         )
 
-    @bp.route(
-        "/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/<state_code_str>/<instance_str>"
-    )
-    def _get_latest_ingest_dataflow_job_by_instance(
+    @bp.route("/api/ingest_operations/get_latest_ingest_dataflow_job/<state_code_str>")
+    def _get_latest_ingest_dataflow_job(
         state_code_str: str,
-        instance_str: str,
     ) -> Tuple[Response, HTTPStatus]:
         try:
             state_code = StateCode(state_code_str)
-            instance = DirectIngestInstance(instance_str)
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
-        all_instance_statuses = (
+        all_primary_pipeline_statuses = (
             get_ingest_operations_store().get_most_recent_dataflow_job_statuses()
         )
 
-        job_info = all_instance_statuses[state_code][instance]
+        job_info = all_primary_pipeline_statuses[state_code]
 
         return (
             jsonify(job_info.for_api() if job_info else None),

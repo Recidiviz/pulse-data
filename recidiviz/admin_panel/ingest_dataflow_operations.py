@@ -127,15 +127,15 @@ def get_latest_job_for_state_instance(
 def get_all_latest_ingest_jobs() -> (
     Dict[
         StateCode,
-        Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+        Optional[DataflowPipelineMetadataResponse],
     ]
 ):
     """Get the latest job for each ingest pipeline."""
     with futures.ThreadPoolExecutor(max_workers=20) as executor:
         jobs_by_state_instance: Dict[
             StateCode,
-            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
-        ] = defaultdict(dict)
+            Optional[DataflowPipelineMetadataResponse],
+        ] = defaultdict()
 
         most_recent_job_ids_map = (
             DirectIngestDataflowJobManager().get_most_recent_job_ids_by_state_and_instance()
@@ -148,21 +148,16 @@ def get_all_latest_ingest_jobs() -> (
                 # a job may not have yet completed successfully for a state code and instance combination
                 # in this case most_recent_job_ids_map will not contain an entry for that combination
                 # use None in that case
-                most_recent_job_ids_map[state_code][instance]
+                most_recent_job_ids_map[state_code][DirectIngestInstance.PRIMARY]
                 if state_code in most_recent_job_ids_map
-                and instance in most_recent_job_ids_map[state_code]
                 else None,
-            ): (
-                state_code,
-                instance,
-            )
+            ): state_code
             for state_code in get_direct_ingest_states_launched_in_env()
-            for instance in DirectIngestInstance
         }
         for future in concurrent.futures.as_completed(locations_futures):
-            state_code, instance = locations_futures[future]
+            state_code = locations_futures[future]
             job = future.result()
-            jobs_by_state_instance[state_code][instance] = job
+            jobs_by_state_instance[state_code] = job
 
         return jobs_by_state_instance
 

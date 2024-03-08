@@ -167,12 +167,11 @@ export const getAllLatestDataflowJobs = async (): Promise<Response> => {
 };
 
 // Get latest ingest dataflow pipeline status for the state and instance
-export const getLatestDataflowJobByInstance = async (
-  stateCode: string,
-  instance: string
+export const getLatestDataflowJob = async (
+  stateCode: string
 ): Promise<Response> => {
   return getResource(
-    `/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/${stateCode}/${instance}`
+    `/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/${stateCode}`
   );
 };
 
