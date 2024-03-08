@@ -162,7 +162,7 @@ class TestMetricInterface(TestCase):
                 "enabled": True,
                 "frequency": "ANNUAL",
                 "custom_frequency": None,
-                "starting_month": None,
+                "starting_month": 1,
                 "filenames": ["funding", "funding_by_type"],
                 "includes_excludes": [],
                 "contexts": [
@@ -318,7 +318,7 @@ class TestMetricInterface(TestCase):
                 "enabled": False,
                 "frequency": "ANNUAL",
                 "custom_frequency": None,
-                "starting_month": None,
+                "starting_month": 1,
                 "filenames": [
                     "civilian_complaints",
                     "civilian_complaints_by_type",
@@ -2706,7 +2706,7 @@ class TestMetricInterface(TestCase):
             "label": prisons.expenses.display_name,
             "frequency": prisons.expenses.reporting_frequencies[0].value,
             "custom_frequency": None,
-            "starting_month": None,
+            "starting_month": 1,
             "filenames": ["expenses", "expenses_by_type"],
             "value": 200,
             "disaggregations": [],
