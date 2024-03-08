@@ -54,9 +54,9 @@ class CustomReportingFrequency:
     def to_json_str(self) -> str:
         return JSON.dumps(
             {
-                "custom_frequency": self.frequency.value
-                if self.frequency is not None
-                else None,
+                "custom_frequency": (
+                    self.frequency.value if self.frequency is not None else None
+                ),
                 "starting_month": self.starting_month,
             }
         )
@@ -72,7 +72,11 @@ class CustomReportingFrequency:
             if frequency_json is not None
             else None
         )
-        starting_month = int(starting_month) if starting_month is not None else None
+        starting_month = (
+            int(starting_month)
+            if starting_month is not None and frequency is not None
+            else None
+        )
 
         return cls(frequency=frequency, starting_month=starting_month)
 

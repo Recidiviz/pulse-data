@@ -143,9 +143,9 @@ class MetricInterface:
                         {
                             "key": member.name,
                             "label": member.value,
-                            "included": included.value
-                            if included is not None
-                            else None,
+                            "included": (
+                                included.value if included is not None else None
+                            ),
                             "default": default_setting.value,
                         }
                     )
@@ -173,10 +173,17 @@ class MetricInterface:
             "label": self.metric_definition.display_name,
             "enabled": self.is_metric_enabled,
             "frequency": frequency,
-            "custom_frequency": self.custom_reporting_frequency.frequency.value
-            if self.custom_reporting_frequency.frequency is not None
-            else None,
-            "starting_month": self.custom_reporting_frequency.starting_month,
+            "custom_frequency": (
+                self.custom_reporting_frequency.frequency.value
+                if self.custom_reporting_frequency.frequency is not None
+                else None
+            ),
+            "starting_month": (
+                1
+                if self.custom_reporting_frequency.starting_month is None
+                and frequency == schema.ReportingFrequency.ANNUAL.value
+                else self.custom_reporting_frequency.starting_month
+            ),
             "filenames": metric_filenames,
             "datapoints": aggregate_datapoints_json,
             "contexts": [
@@ -188,11 +195,14 @@ class MetricInterface:
                     dimension_definition=dimension_id_to_dimension_definition[
                         d.dimension_identifier()
                     ],
-                    dimension_member_to_datapoints_json=dimension_id_to_dimension_member_to_datapoints_json.get(
-                        d.dimension_identifier()
-                    )
-                    if dimension_id_to_dimension_member_to_datapoints_json is not None
-                    else None,
+                    dimension_member_to_datapoints_json=(
+                        dimension_id_to_dimension_member_to_datapoints_json.get(
+                            d.dimension_identifier()
+                        )
+                        if dimension_id_to_dimension_member_to_datapoints_json
+                        is not None
+                        else None
+                    ),
                     entry_point=entry_point,
                 )
                 for d in self.aggregated_dimensions
