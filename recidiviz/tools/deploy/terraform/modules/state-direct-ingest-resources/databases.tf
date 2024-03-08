@@ -16,16 +16,22 @@
 # =============================================================================
 
 # Postgres Version 13 Upgrade Databases
+
+# TODO(#20930): Actually delete this state CloudSQL database once we're really sure we don't
+# need the legacy ingest data in there anymore.
 resource "google_sql_database" "state_v2_primary" {
   name     = "${lower(var.state_code)}_primary"
   instance = var.v2_cloudsql_instance_name
 }
 
+# TODO(#20930): Actually delete this state CloudSQL database once we're really sure we don't
+# need the legacy ingest data in there anymore.
 resource "google_sql_database" "state_v2_secondary" {
   name     = "${lower(var.state_code)}_secondary"
   instance = var.v2_cloudsql_instance_name
 }
 
+# TODO(#20930): Delete this since it's no longer referenced by Cloud SQL to BQ refresh
 resource "google_bigquery_connection" "state_v2_primary_bq_connection" {
   provider = google-beta
 
@@ -45,6 +51,7 @@ resource "google_bigquery_connection" "state_v2_primary_bq_connection" {
   }
 }
 
+# TODO(#20930): Delete this since it's no longer referenced by Cloud SQL to BQ refresh
 resource "google_bigquery_connection" "state_v2_secondary_bq_connection" {
   provider = google-beta
 

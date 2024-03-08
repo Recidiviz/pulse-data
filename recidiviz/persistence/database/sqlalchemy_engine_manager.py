@@ -281,6 +281,8 @@ class SQLAlchemyEngineManager:
             recidiviz-staging:us-east1:dev-state-data
         """
 
+        # TODO(#20930): Delete secrets for the STATE cloud SQL instance after we delete
+        #  the instance.
         instance_id_key = cls._get_cloudsql_instance_id_key(
             schema_type=schema_type, secret_prefix_override=secret_prefix_override
         )
@@ -333,6 +335,7 @@ class SQLAlchemyEngineManager:
         ids_for_all_schemas = [
             cls.get_stripped_cloudsql_instance_id(schema_type)
             for schema_type in SchemaType
+            if schema_type.has_cloud_sql_instance
         ]
         return [
             instance_id

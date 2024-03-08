@@ -459,14 +459,6 @@ class TestOperationsMigrations(MigrationsTestBase):
                 self.assertEqual(required_states, instance_to_state_codes[instance])
 
 
-class TestStateMigrations(MigrationsTestBase):
-    __test__ = True
-
-    @classmethod
-    def schema_type(cls) -> SchemaType:
-        return SchemaType.STATE
-
-
 class TestOutliersMigrations(MigrationsTestBase):
     __test__ = True
 
@@ -557,8 +549,14 @@ class MigrationsTestTest(TestCase):
         }
 
         all_schemas = set(SchemaType)
+        exempt_schemas = {
+            # The STATE schema is exempt from test coverage because this schema is no
+            # longer deployed in BQ and we just use the SQLAlchemy schema definition
+            # for certain schema introspection conveniences.
+            SchemaType.STATE
+        }
 
-        if missing_coverage := all_schemas - schemas_with_coverage:
+        if missing_coverage := all_schemas - schemas_with_coverage - exempt_schemas:
             raise ValueError(
                 f"Found schema types with missing migrations test coverage: "
                 f"{missing_coverage}."

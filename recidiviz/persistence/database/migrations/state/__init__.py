@@ -14,3 +14,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+# TODO(#20930): Consider deleting all historical migrations for the STATE datset since
+#   we no longer run migrations for this schema.
