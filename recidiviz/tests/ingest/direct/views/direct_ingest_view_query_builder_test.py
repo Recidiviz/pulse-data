@@ -21,6 +21,7 @@ import unittest
 import attr
 from mock import patch
 
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     UPDATE_DATETIME_PARAM_NAME,
     DestinationTableType,
@@ -36,10 +37,12 @@ class DirectIngestViewQueryBuilderTest(unittest.TestCase):
 
     DEFAULT_LATEST_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
         raw_data_datetime_upper_bound=None,
+        raw_data_source_instance=DirectIngestInstance.PRIMARY,
     )
 
     DEFAULT_EXPANDED_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
         raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
+        raw_data_source_instance=DirectIngestInstance.PRIMARY,
     )
 
     def setUp(self) -> None:
@@ -418,6 +421,7 @@ ORDER BY col1, col2;"""
             view.build_query(
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_data_datetime_upper_bound=None,
+                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 )
             ),
         )
@@ -473,6 +477,7 @@ ORDER BY col1, col2;"""
                     raw_data_datetime_upper_bound=datetime.datetime(
                         2000, 1, 2, 3, 4, 5, 6
                     ),
+                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 )
             ),
         )
@@ -931,6 +936,7 @@ ORDER BY col1, col2;"""
                 _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
                     destination_table_type=destination_table_type,
                     raw_data_datetime_upper_bound=None,
+                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 )
 
         has_no_destination_dataset_types = set(DestinationTableType).difference(
@@ -947,6 +953,7 @@ ORDER BY col1, col2;"""
                     destination_dataset_id="some_dataset",
                     destination_table_type=destination_table_type,
                     raw_data_datetime_upper_bound=None,
+                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 )
 
     def test_query_structure_config_destination_table_type_table_id_validations(
@@ -961,6 +968,7 @@ ORDER BY col1, col2;"""
                 destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
                 destination_dataset_id="some_dataset",
                 raw_data_datetime_upper_bound=None,
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
             )
 
         # Must have table id
@@ -971,6 +979,7 @@ ORDER BY col1, col2;"""
             _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
                 destination_table_type=DestinationTableType.TEMPORARY,
                 raw_data_datetime_upper_bound=None,
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
             )
 
         # Should not have table id
@@ -982,6 +991,7 @@ ORDER BY col1, col2;"""
                 destination_table_id="some_table",
                 destination_table_type=DestinationTableType.NONE,
                 raw_data_datetime_upper_bound=None,
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
             )
 
     def test_one_all_rows_dependency(self) -> None:
