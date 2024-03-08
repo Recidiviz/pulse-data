@@ -28,13 +28,9 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    InstanceIngestViewContentsImpl,
-)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
     CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
     CloudSqlToBqRefreshStatus,
@@ -128,9 +124,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
         ingested_states = get_direct_ingest_states_launched_in_env()
 
         state_data_freshness = self.get_data_freshness_by_state(
-            state_codes=ingested_states,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            dataset_prefix=None,
+            state_codes=ingested_states
         )
         for state_code in ingested_states:
             latest_upper_bounds.append(
@@ -194,10 +188,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
         ]
 
     def get_data_freshness_by_state(
-        self,
-        state_codes: List[StateCode],
-        ingest_instance: DirectIngestInstance,
-        dataset_prefix: Optional[str],
+        self, state_codes: List[StateCode]
     ) -> Dict[StateCode, StateDataFreshnessInfo]:
         """Returns the ingest "high water mark" for each state, i.e. the latest date
         where all files on or before that date are processed for a that state
@@ -206,46 +197,9 @@ class IngestDataFreshnessStore(AdminPanelStore):
         refresh_status_bq = self.get_current_statuses_for_schema(SchemaType.STATE)
 
         for state_code in state_codes:
-            content = InstanceIngestViewContentsImpl(
-                big_query_client=self.bq_client,
-                region_code=state_code.name.lower(),
-                dataset_prefix=dataset_prefix,
-                ingest_instance=ingest_instance,
-            )
-            max_dates = content.get_max_date_of_data_processed_before_datetime(
-                datetime_utc=refresh_status_bq[state_code].last_refresh_datetime
-            )
-            min_dates = content.get_min_date_of_unprocessed_data()
-
-            done_processing_views_max_date = None
-            still_processing_views_min_date = None
-            all_ingest_view_names = {*max_dates.keys(), *min_dates.keys()}
-            for ingest_view_name in all_ingest_view_names:
-                max_processed_date = max_dates.get(ingest_view_name, None)
-                min_unprocessed_date = min_dates.get(ingest_view_name, None)
-
-                if min_unprocessed_date is not None:
-                    # If there are still unprocessed data for this ingest view, then
-                    # we can't show a "freshness" date after the max_processed_date
-                    # of this view.
-                    still_processing_views_min_date = _pick_min_date(
-                        [still_processing_views_min_date, max_processed_date]
-                    )
-                else:
-                    # For all views that are done processing, we pick the max date
-                    # of all those views to show the freshness of the data.
-                    done_processing_views_max_date = _pick_max_date(
-                        [done_processing_views_max_date, max_processed_date]
-                    )
-
-            state_dataset_data_freshness = (
-                still_processing_views_min_date
-                if still_processing_views_min_date
-                else done_processing_views_max_date
-            )
             date_freshness_by_state[state_code] = StateDataFreshnessInfo(
                 state_code=state_code,
-                state_dataset_data_freshness=state_dataset_data_freshness,
+                state_dataset_data_freshness=None,
                 last_state_dataset_refresh_time=refresh_status_bq[
                     state_code
                 ].last_refresh_datetime
