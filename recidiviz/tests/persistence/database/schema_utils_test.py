@@ -93,7 +93,6 @@ class TestSchemaUtils(unittest.TestCase):
             "StateSentenceGroup",
         ]
         operations_database_entity_names = [
-            "DirectIngestViewMaterializationMetadata",
             "DirectIngestRawFileMetadata",
             "DirectIngestSftpRemoteFileMetadata",
             "DirectIngestSftpIngestReadyFileMetadata",
@@ -209,7 +208,6 @@ class TestSchemaUtils(unittest.TestCase):
             "state_sentence_group",
         ]
         operations_table_names = [
-            "direct_ingest_view_materialization_metadata",
             "direct_ingest_sftp_remote_file_metadata",
             "direct_ingest_sftp_ingest_ready_file_metadata",
             "direct_ingest_raw_file_metadata",

@@ -24,7 +24,6 @@ from sqlalchemy import event
 
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestInstanceStatus,
-    DirectIngestViewMaterializationMetadata,
 )
 from recidiviz.persistence.database.session import Session
 
@@ -38,29 +37,6 @@ def session_listener(session: Session) -> None:
     def _pending_to_persistent(session: Session, instance: Any) -> None:
         """Called when a SQLAlchemy object transitions to a persistent object. If this function throws, the session
         will be rolled back and that object will not be committed."""
-        if isinstance(instance, DirectIngestViewMaterializationMetadata):
-            results = (
-                session.query(DirectIngestViewMaterializationMetadata)
-                .filter_by(
-                    is_invalidated=False,
-                    region_code=instance.region_code,
-                    instance=instance.instance,
-                    ingest_view_name=instance.ingest_view_name,
-                    lower_bound_datetime_exclusive=instance.lower_bound_datetime_exclusive,
-                    upper_bound_datetime_inclusive=instance.upper_bound_datetime_inclusive,
-                )
-                .all()
-            )
-
-            if len(results) > 1:
-                raise IntegrityError(
-                    f"Attempting to commit repeated DirectIngestViewMaterializationMetadata row for "
-                    f"region_code={instance.region_code}, instance={instance.instance}, "
-                    f"ingest_view_name={instance.ingest_view_name}",
-                    f"lower_bound_datetime_exclusive={instance.lower_bound_datetime_exclusive}, "
-                    f"upper_bound_datetime_inclusive={instance.upper_bound_datetime_inclusive}",
-                )
-
         if isinstance(instance, DirectIngestInstanceStatus):
             # Confirm that the timestamp of the row that is attempting to be committed is strictly after
             # the most recent row's timestamp.
