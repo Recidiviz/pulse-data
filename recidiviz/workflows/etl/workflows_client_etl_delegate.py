@@ -49,18 +49,21 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
                 # they weren't in the standards sheet, this way everyone has the expected fields.
                 key = key.removesuffix("_new")
 
-            new_document[key] = (
-                {
+            transformed_value = value
+            if key in ("person_name", "person_name_new"):
+                transformed_value = {
                     snake_to_camel(k): person_name_case(v)
                     for k, v in json.loads(value).items()
                 }
-                if key == "person_name"
-                else state_specific_supervision_type_transformation(state_code, value)
-                if key == "supervision_type"
-                else state_specific_client_address_transformation(state_code, value)
-                if key == "address"
-                else value
-            )
+            elif key in ("supervision_type", "supervision_type_new"):
+                transformed_value = state_specific_supervision_type_transformation(
+                    state_code, value
+                )
+            elif key in ("address", "address_new"):
+                transformed_value = state_specific_client_address_transformation(
+                    state_code, value
+                )
+            new_document[key] = transformed_value
 
         # Convert all keys to camelcase
         new_document = convert_nested_dictionary_keys(new_document, snake_to_camel)
