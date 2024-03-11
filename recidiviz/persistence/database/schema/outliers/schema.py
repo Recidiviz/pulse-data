@@ -216,7 +216,7 @@ class SupervisionClientEvent(OutliersBase):
     # The id of the JII the event applies to
     client_id = Column(String)
     # Should follow the Recidiviz-standard JSON struct string representation
-    client_name = Column(JSON, nullable=False)
+    client_name = Column(JSON, nullable=True)
     # The external id of the officer assigned to this person at the time the event occurred
     officer_id = Column(String)
     # The start date of the officer assignment period that this event occurred in
@@ -243,7 +243,7 @@ class SupervisionClients(OutliersBase):
     state_code = Column(String, primary_key=True)
     client_id = Column(String, primary_key=True)
     pseudonymized_client_id = Column(String, nullable=False)
-    client_name = Column(JSON, nullable=False)
+    client_name = Column(JSON, nullable=True)
     birthdate = Column(Date, nullable=True)
     gender = Column(String, nullable=True)
     race_or_ethnicity = Column(String, nullable=True)
