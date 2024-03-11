@@ -50,7 +50,7 @@ CREATE_TEMP_TABLE_REGEX = re.compile(r"CREATE\s+((TEMP|TEMPORARY)\s+)TABLE")
 
 CURRENT_DATE_REGEX = re.compile(r"CURRENT_DATE\(|current_date\(")
 
-DESTINATION_TABLE_QUERY_FORMAT = """{raw_materialized_tables_clause}
+DESTINATION_TABLE_QUERY_FORMAT = """
 DROP TABLE IF EXISTS `{{project_id}}.{dataset_id}.{table_id}`;
 CREATE TABLE `{{project_id}}.{dataset_id}.{table_id}`
 OPTIONS(
@@ -63,7 +63,7 @@ OPTIONS(
 );
 """
 
-DESTINATION_TEMP_TABLE_QUERY_FORMAT = """{raw_materialized_tables_clause}
+DESTINATION_TEMP_TABLE_QUERY_FORMAT = """
 CREATE TEMP TABLE {table_id} AS (
 
 {select_query_clause}
@@ -264,8 +264,6 @@ class DirectIngestViewQueryBuilder:
         view_query_template: str,
         region: str,
         order_by_cols: str,
-        # TODO(#20930) Remove materialize_raw_data_table_views once switched to Dataflow.
-        materialize_raw_data_table_views: bool = False,
         region_module: ModuleType = regions,
     ):
         """Builds a view for holding direct ingest pre-processing SQL queries, that can be used to export files for
@@ -276,13 +274,6 @@ class DirectIngestViewQueryBuilder:
             view_query_template: (str) The template for the query, formatted for hydration of raw table views.
             region: (str) The region this view corresponds to.
             order_by_cols: (str) A comma-separated string of columns to sort the final results by.
-            materialize_raw_data_table_views: (bool) When True, the raw table subqueries for this query will be hydrated
-                as separate, materialized CREATE TEMP TABLE statements. Should be used for queries that are too complex
-                to run otherwise (i.e. they produce a 'too many subqueries' error). This will slow down your query by a
-                factor of 4-5.
-                IMPORTANT NOTE: When this is True, the view query will become a "script" which means it cannot be used
-                in the # Python BigQuery API for a query that sets a destination table
-                (bigquery.QueryJobConfig#destination is not None).
             region_module: (ModuleType) Module containing all region raw data config files.
         """
         DirectIngestViewQueryBuilder._validate_order_by(
@@ -298,7 +289,6 @@ class DirectIngestViewQueryBuilder:
 
         self._view_query_template = view_query_template
         self._order_by_cols = order_by_cols
-        self._materialize_raw_data_table_views = materialize_raw_data_table_views
         self._region_module = region_module
 
         if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
@@ -338,22 +328,22 @@ class DirectIngestViewQueryBuilder:
         """
         return self._order_by_cols
 
-    @property
-    def materialize_raw_data_table_views(self) -> bool:
-        """If True, this query will always materialize raw table views into temporary tables."""
-        return self._materialize_raw_data_table_views
-
     def build_query(
         self,
         config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
         # TODO(#20928) Remove this parameter once we've migrated to Dataflow
-        using_dataflow: bool = False,
+        using_dataflow: bool,
     ) -> str:
         """Formats this view's template according to the provided config, with expanded subqueries for each raw table
         dependency."""
-        query = self._format_expanded_view_query(
-            config=config, using_dataflow=using_dataflow
-        )
+
+        if not using_dataflow:
+            raise ValueError(
+                "Cannot set using_dataflow=False post-IID. All built ingest view queries"
+                "are now Dataflow compatible."
+            )
+
+        query = self._format_expanded_view_query(config=config)
         return self._query_builder.build_query(
             project_id=metadata.project_id(),
             query_template=query,
@@ -375,7 +365,8 @@ class DirectIngestViewQueryBuilder:
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_data_source_instance=raw_data_source_instance,
                     raw_data_datetime_upper_bound=datetime.datetime.now(tz=pytz.UTC),
-                )
+                ),
+                using_dataflow=True,
             )
         )
         print(
@@ -386,7 +377,8 @@ class DirectIngestViewQueryBuilder:
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_data_source_instance=raw_data_source_instance,
                     raw_data_datetime_upper_bound=None,
-                )
+                ),
+                using_dataflow=True,
             )
         )
 
@@ -415,9 +407,7 @@ class DirectIngestViewQueryBuilder:
         return f"{query}\nLIMIT 0;"
 
     def _raw_table_subquery_clause(
-        self,
-        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        using_dataflow: bool = False,
+        self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
         """Returns the portion of the script that generates the raw table view queries, either as a list of
         `CREATE TEMP TABLE` statements or a list of WITH subqueries.
@@ -428,41 +418,23 @@ class DirectIngestViewQueryBuilder:
                 self._get_table_subquery_str(config, raw_table_config)
             )
 
-        if self._materialize_raw_data_table_views and not using_dataflow:
-            temp_table_query_strs = [
-                f"CREATE TEMP TABLE {table_subquery_str};"
-                for table_subquery_str in table_subquery_strs
-            ]
-            table_subquery_clause = "\n".join(temp_table_query_strs)
-            return f"{table_subquery_clause}"
-
         table_subquery_clause = ",\n".join(table_subquery_strs)
         return f"{self.WITH_PREFIX}\n{table_subquery_clause}"
 
     def _get_select_query_clause(
-        self,
-        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        using_dataflow: bool = False,
+        self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
-        """Returns the final SELECT statement that produces the results for this ingest view query. It will either
-        pull in raw table data as WITH subqueries or reference materialized temporary tables with raw table data.
+        """Returns the final SELECT statement that produces the results for this ingest
+        view query. Pulls in raw table data as WITH subqueries.
         """
         view_query_template = self._view_query_template.strip()
-        if self._materialize_raw_data_table_views and not using_dataflow:
-            # The template references raw table views that will be prepended to the query script.
-            select_query_clause = view_query_template
 
-        else:
-            raw_table_subquery_clause = self._raw_table_subquery_clause(
-                config, using_dataflow=using_dataflow
-            )
-            if view_query_template.startswith(self.WITH_PREFIX):
-                view_query_template = view_query_template[
-                    len(self.WITH_PREFIX) :
-                ].lstrip()
-                raw_table_subquery_clause = raw_table_subquery_clause + ","
+        raw_table_subquery_clause = self._raw_table_subquery_clause(config)
+        if view_query_template.startswith(self.WITH_PREFIX):
+            view_query_template = view_query_template[len(self.WITH_PREFIX) :].lstrip()
+            raw_table_subquery_clause = raw_table_subquery_clause + ","
 
-            select_query_clause = f"{raw_table_subquery_clause}\n{view_query_template}"
+        select_query_clause = f"{raw_table_subquery_clause}\n{view_query_template}"
         if config.use_order_by:
             select_query_clause = self.add_order_by_suffix(
                 query=select_query_clause, order_by_cols=self._order_by_cols
@@ -473,25 +445,14 @@ class DirectIngestViewQueryBuilder:
         return select_query_clause
 
     def _get_full_query_template(
-        self,
-        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        using_dataflow: bool = False,
+        self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
         """Returns the full, formatted ingest view query template that can be injected with format args."""
-        raw_materialized_tables_clause = (
-            self._raw_table_subquery_clause(config, using_dataflow=using_dataflow)
-            if self._materialize_raw_data_table_views and not using_dataflow
-            else ""
-        )
-
-        select_query_clause = self._get_select_query_clause(
-            config=config, using_dataflow=using_dataflow
-        )
+        select_query_clause = self._get_select_query_clause(config=config)
 
         if config.destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
             return StrictStringFormatter().format(
                 DESTINATION_TABLE_QUERY_FORMAT,
-                raw_materialized_tables_clause=raw_materialized_tables_clause,
                 dataset_id=config.destination_dataset_id,
                 table_id=config.destination_table_id,
                 select_query_clause=select_query_clause,
@@ -499,29 +460,24 @@ class DirectIngestViewQueryBuilder:
         if config.destination_table_type == DestinationTableType.TEMPORARY:
             return StrictStringFormatter().format(
                 DESTINATION_TEMP_TABLE_QUERY_FORMAT,
-                raw_materialized_tables_clause=raw_materialized_tables_clause,
                 table_id=config.destination_table_id,
                 select_query_clause=select_query_clause,
             )
         if config.destination_table_type == DestinationTableType.NONE:
-            return f"{raw_materialized_tables_clause}\n{select_query_clause};"
+            return f"{select_query_clause};"
 
         raise ValueError(
             f"Unsupported destination_table_type: [{config.destination_table_type.name}]"
         )
 
     def _format_expanded_view_query(
-        self,
-        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        using_dataflow: bool = False,
+        self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
         """Formats the given template with expanded subqueries for each raw table dependency according to the given
         config. Does not hydrate the project_id so the result of this function can be passed as a template to the
         superclass constructor.
         """
-        full_query_template = self._get_full_query_template(
-            config=config, using_dataflow=using_dataflow
-        )
+        full_query_template = self._get_full_query_template(config=config)
 
         format_args = {}
         for raw_table_dependency_config in self.raw_table_dependency_configs:

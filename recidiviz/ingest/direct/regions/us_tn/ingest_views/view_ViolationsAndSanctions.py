@@ -61,7 +61,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="ViolationsAndSanctions",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    materialize_raw_data_table_views=False,
     order_by_cols="OffenderID, ContactNoteDate",
 )
 

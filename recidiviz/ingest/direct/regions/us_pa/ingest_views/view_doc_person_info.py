@@ -130,7 +130,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     ingest_view_name="doc_person_info",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="recidiviz_primary_person_id",
-    materialize_raw_data_table_views=True,
 )
 
 if __name__ == "__main__":

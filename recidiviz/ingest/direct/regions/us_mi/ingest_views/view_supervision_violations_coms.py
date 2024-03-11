@@ -58,7 +58,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="supervision_violations_coms",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    materialize_raw_data_table_views=False,
     order_by_cols="Offender_Number, Incident_Date, Violation_Incident_Id",
 )
 

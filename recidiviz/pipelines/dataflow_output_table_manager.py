@@ -467,7 +467,8 @@ def update_state_specific_ingest_view_result_schema(
                     raw_data_source_instance=ingest_instance,
                     raw_data_datetime_upper_bound=datetime.datetime.now(),
                     limit_zero=True,
-                )
+                ),
+                using_dataflow=True,
             ),
             use_query_cache=False,
         )

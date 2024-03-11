@@ -47,7 +47,6 @@ class FakeSingleIngestViewCollector:
                 view_query_template=query,
                 region="us_xx",
                 order_by_cols="colA, colC",
-                materialize_raw_data_table_views=self.materialize_raw_data_table_views,
                 region_module=fake_regions,
             )
         ]

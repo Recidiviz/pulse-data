@@ -841,7 +841,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     ingest_view_name="supervision_periods_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="offender_id, period_start, period_end",
-    materialize_raw_data_table_views=True,
 )
 
 if __name__ == "__main__":

@@ -185,7 +185,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     ingest_view_name="sci_incarceration_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="control_number, sequence_number",
-    materialize_raw_data_table_views=True,
 )
 
 if __name__ == "__main__":
