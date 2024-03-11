@@ -733,23 +733,18 @@ def six_years_remaining_cte(reclass_type: str) -> str:
         "semiannual",
     ), "reclass_type must be annual or semiannual"
 
-    annual_end_date = f"""
-    iss.start_date,
-    LEAST( MAX({nonnull_end_date_clause('iss.end_date')}), 
+    annual_end_date = f"""iss.start_date,
+            LEAST( MAX({nonnull_end_date_clause('iss.end_date')}), 
                    MAX({nonnull_end_date_clause('syr.eligible_date')})
              ) AS end_date, -- If the eligible_date is before the end_date, we use the eligible_date"""
-    semi_annual_start_date = f"""
-    iss.end_date,
-    GREATEST( MAX({nonnull_end_date_clause('iss.start_date')}), 
+    semi_annual_start_date = f"""iss.end_date,
+            GREATEST( MAX({nonnull_end_date_clause('iss.start_date')}), 
                    MAX({nonnull_end_date_clause('syr.eligible_date')})
-             ) AS start_date, -- If the eligible_date is before the start_date, we use the start_date
-    """
-    annual_clause = (
-        f"AND {nonnull_end_date_clause('syr.eligible_date')} > iss.start_date"
-    )
-    semi_annual_clause = " "
-    return f"""
-          SELECT 
+            ) AS start_date, -- If the eligible_date is before the start_date, we use the start_date"""
+    annual_clause = f"""
+            AND {nonnull_end_date_clause('syr.eligible_date')} > iss.start_date"""
+    semi_annual_clause = """"""
+    return f"""SELECT
             iss.state_code,
             iss.person_id,
             iss.incarceration_super_session_id,
@@ -773,10 +768,8 @@ def six_years_remaining_cte(reclass_type: str) -> str:
             -- Merge any time we have overlapping spans
             AND {nonnull_start_date_clause('syr.start_date')} < {nonnull_end_date_clause('iss.end_date')}
             AND {nonnull_start_date_clause('iss.start_date')} < {nonnull_end_date_clause('syr.end_date')}
-          WHERE iss.state_code = 'US_ME'
-            {annual_clause if reclass_type == 'annual' else semi_annual_clause}
-          GROUP BY 1,2,3,4,5,6
-    """
+          WHERE iss.state_code = 'US_ME' {annual_clause if reclass_type == 'annual' else semi_annual_clause}
+          GROUP BY 1,2,3,4,5,6"""
 
 
 def reclassification_shared_logic(reclass_type: str) -> str:
@@ -794,8 +787,7 @@ def reclassification_shared_logic(reclass_type: str) -> str:
         str: Query that grabs all individuals within 6 years of their expected release date
     """
     reclass_type = re.sub(r"[^\w\s]", "", reclass_type).lower()
-    return f"""
-        population_change_dates AS (
+    return f"""population_change_dates AS (
               -- Everyone is assumed to start with MAX(0, previous reclass debt) reclasses owed
               SELECT 
                 state_code,
@@ -866,26 +858,43 @@ def reclassification_shared_logic(reclass_type: str) -> str:
           -- Removes reclassifications done 60 days before one was due and performs
           -- the sum again
               SELECT 
-                * EXCEPT(reclasses_needed, next_due_date), 
+                * EXCEPT(reclasses_needed, next_due_date, prev_due_date), 
                 SUM(reclass_type) OVER (PARTITION BY state_code, person_id, incarceration_super_session_id ORDER BY start_date ) AS reclasses_needed,
               FROM (
                   SELECT 
-                    fs.*,
+                    fs.state_code,
+                    fs.person_id,
+                    fs.incarceration_super_session_id,
+                    fs.start_date,
+                    fs.reclasses_needed,
+                    fs.reclass_type,
                     MIN(r.change_date) AS next_due_date,
+                    MAX(rr.change_date) AS prev_due_date,
                   FROM first_sum fs
                   LEFT JOIN reclass_is_due r
                     -- Merge to the first meeting that happens just after the start_date/change_date
                     ON fs.person_id = r.person_id
                       AND fs.start_date < r.change_date
-                  GROUP BY 1,2,3,4,5,6
+                  LEFT JOIN reclass_is_due rr
+                    -- Merge to the first meeting that happens just before the start_date/change_date
+                    ON fs.person_id = rr.person_id
+                    AND fs.start_date > rr.change_date
+                    GROUP BY 1,2,3,4,5,6 
               )
               WHERE 
                 -- If a reclass brings reclasses_needed below 0 and 
                 --  it was done more than 60 days before such reclass was due, 
-                --  we remove it.
-                NOT (reclass_type <= -1 
+                --  we remove it. 
+                -- For semiannuals, we check if the reclass was within 60 days of the previous reclass date as well to ensure
+                -- we are not removing one that should not be removed
+                (NOT (reclass_type = -1 
                   AND reclasses_needed < 0 
-                  AND DATE_DIFF(next_due_date, start_date, DAY) > 60)
+                  AND DATE_DIFF(next_due_date, start_date, DAY) > 60))
+                {'OR'
+                '(NOT (reclass_type = -1 '
+                  'AND reclasses_needed < 0 ' 
+                  'AND DATE_DIFF(start_date, prev_due_date, DAY) > 60))'
+                  if reclass_type == 'semiannual' else ''}
           ),
           third_sum AS (
           -- Removes reclassifications that bring the reclasses_needed below -1 and
@@ -921,19 +930,16 @@ def reclassification_shared_logic(reclass_type: str) -> str:
     LEFT JOIN meetings
       ON meetings.reclass_meeting_date BETWEEN ts.start_date AND ts.end_date
       AND meetings.person_id = ts.person_id
-    GROUP BY 1,2,3,4,5
-    """
+    GROUP BY 1,2,3,4,5"""
 
 
 def meetings_cte() -> str:
     """
     Query that grabs all reclassification meeting dates for all individuals in ME
     """
-    return """
-        SELECT
-          person_id, 
-          state_code,
-          completion_event_date as reclass_meeting_date,
+    return """SELECT
+              person_id, 
+              state_code,
+              completion_event_date as reclass_meeting_date,
           FROM
-            `{project_id}.{completion_event_us_me_dataset}.incarceration_assessment_completed_materialized`
-    """
+            `{project_id}.{completion_event_us_me_dataset}.incarceration_assessment_completed_materialized`"""
