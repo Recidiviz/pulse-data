@@ -85,7 +85,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
 
         expected_parameterized_view_query = """WITH
@@ -136,7 +136,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
         )
 
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
@@ -156,7 +156,7 @@ ORDER BY col1, col2;"""
             r"^Cannot use undocumented raw file \[tagColumnsMissing\] as a dependency "
             r"in an ingest view.$",
         ):
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True)
 
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -186,7 +186,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
 
         expected_date_parameterized_view_query = """WITH
@@ -217,7 +217,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_date_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
         )
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
@@ -248,7 +248,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
 
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
@@ -286,7 +286,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
 
         expected_parameterized_view_query = """WITH
@@ -338,7 +338,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
         )
 
         # Also check that appending whitespace before the WITH prefix produces the same results
@@ -359,11 +359,11 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
         )
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
@@ -382,105 +382,7 @@ USING (col1);"""
         with self.assertRaisesRegex(
             ValueError, r"Found unexpected raw table tag \[file_tag_not_in_config\]"
         ):
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
-
-    def test_direct_ingest_preprocessed_view_materialized_raw_table_subqueries(
-        self,
-    ) -> None:
-        view_query_template = """SELECT * FROM {file_tag_first}
-LEFT OUTER JOIN {file_tag_second}
-USING (col1);"""
-
-        view = DirectIngestViewQueryBuilder(
-            ingest_view_name="ingest_view_tag",
-            view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
-            materialize_raw_data_table_views=True,
-            region_module=fake_regions_module,
-        )
-
-        self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
-        )
-
-        expected_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
-);
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
-
-        self.assertEqual(
-            expected_view_query,
-            view.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_data_datetime_upper_bound=None,
-                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                )
-            ),
-        )
-
-        expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_1a, col_name_1b
-    FROM filtered_rows
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_2a
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_2a
-    FROM filtered_rows
-);
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
-        self.assertEqual(
-            expected_parameterized_view_query,
-            view.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_data_datetime_upper_bound=datetime.datetime(
-                        2000, 1, 2, 3, 4, 5, 6
-                    ),
-                    raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                )
-            ),
-        )
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True)
 
     def test_direct_ingest_preprocessed_view_other_materialized_subquery_fails(
         self,
@@ -494,237 +396,12 @@ SELECT * FROM my_subquery;"""
             "^Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses.$",
         ):
             _ = DirectIngestViewQueryBuilder(
+                region="us_xx",
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
-                region="us_xx",
                 order_by_cols="col1, col2",
                 region_module=fake_regions_module,
             )
-
-    def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
-        view_query_template = """WITH
-foo AS (SELECT * FROM bar)
-SELECT * FROM {file_tag_first}
-LEFT OUTER JOIN {file_tag_second}
-USING (col1);"""
-
-        view = DirectIngestViewQueryBuilder(
-            ingest_view_name="ingest_view_tag",
-            view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
-            materialize_raw_data_table_views=True,
-            region_module=fake_regions_module,
-        )
-
-        self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
-        )
-
-        expected_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
-);
-WITH
-foo AS (SELECT * FROM bar)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
-
-        self.assertEqual(
-            expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
-        )
-
-        expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_1a, col_name_1b
-    FROM filtered_rows
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_2a
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_2a
-    FROM filtered_rows
-);
-WITH
-foo AS (SELECT * FROM bar)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
-
-        self.assertEqual(
-            expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
-        )
-
-        # Also check that appending whitespace before the WITH prefix produces the same results
-        view_query_template = "\n " + view_query_template
-
-        view = DirectIngestViewQueryBuilder(
-            ingest_view_name="ingest_view_tag",
-            view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
-            materialize_raw_data_table_views=True,
-            region_module=fake_regions_module,
-        )
-
-        self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
-        )
-
-        self.assertEqual(
-            expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
-        )
-        self.assertEqual(
-            expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
-        )
-
-    def test_direct_ingest_preprocessed_view_materialized_raw_table_views_temp_output_table(
-        self,
-    ) -> None:
-        view_query_template = """WITH
-foo AS (SELECT * FROM bar)
-SELECT * FROM {file_tag_first}
-LEFT OUTER JOIN {file_tag_second}
-USING (col1);"""
-
-        view = DirectIngestViewQueryBuilder(
-            ingest_view_name="ingest_view_tag",
-            view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
-            materialize_raw_data_table_views=True,
-            region_module=fake_regions_module,
-        )
-
-        self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
-        )
-
-        expected_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
-);
-CREATE TEMP TABLE my_destination_table AS (
-
-WITH
-foo AS (SELECT * FROM bar)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2
-
-);"""
-
-        latest_config = attr.evolve(
-            self.DEFAULT_LATEST_CONFIG,
-            destination_table_id="my_destination_table",
-            destination_table_type=DestinationTableType.TEMPORARY,
-        )
-        self.assertEqual(expected_view_query, view.build_query(config=latest_config))
-
-        expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_1a, col_name_1b
-    FROM filtered_rows
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_2a
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
-        ) a
-        WHERE
-            recency_rank = 1
-            AND is_deleted = False
-    )
-    SELECT col_name_2a
-    FROM filtered_rows
-);
-CREATE TEMP TABLE my_destination_table AS (
-
-WITH
-foo AS (SELECT * FROM bar)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2
-
-);"""
-
-        parametrized_config = attr.evolve(
-            self.DEFAULT_EXPANDED_CONFIG,
-            destination_table_id="my_destination_table",
-            destination_table_type=DestinationTableType.TEMPORARY,
-        )
-        self.assertEqual(
-            expected_parameterized_view_query,
-            view.build_query(config=parametrized_config),
-        )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_permanent_expiring_output_table(
         self,
@@ -776,7 +453,10 @@ ORDER BY col1, col2
             destination_table_id="my_destination_table",
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
         )
-        self.assertEqual(expected_view_query, view.build_query(config=latest_config))
+        self.assertEqual(
+            expected_view_query,
+            view.build_query(config=latest_config, using_dataflow=True),
+        )
 
         expected_parameterized_view_query = """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
 CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
@@ -842,7 +522,7 @@ ORDER BY col1, col2
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=parametrized_config),
+            view.build_query(config=parametrized_config, using_dataflow=True),
         )
 
     def test_direct_ingest_preprocessed_view_with_update_datetime(self) -> None:
@@ -867,7 +547,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
 
         expected_parameterized_view_query = """WITH
@@ -897,7 +577,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
         )
 
     def test_direct_ingest_preprocessed_view_with_current_date(self) -> None:
@@ -1032,7 +712,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
 
         expected_parameterized_view_query = """WITH
@@ -1072,7 +752,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
         )
 
     def test_all_rows_dependency_mixed_with_latest_same_table(self) -> None:
@@ -1120,7 +800,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
         )
 
         expected_parameterized_view_query = """WITH
@@ -1160,7 +840,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
         )
 
     def test_invalid_raw_table_dependency(self) -> None:

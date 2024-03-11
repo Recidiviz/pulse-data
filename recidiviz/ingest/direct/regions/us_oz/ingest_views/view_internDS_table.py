@@ -36,7 +36,7 @@ FROM {internDS_table}
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_oz",
-    ingest_view_name="internDS_table",  # incarceration periods
+    ingest_view_name="internDS_table",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="ID, admission_date",
 )

@@ -44,7 +44,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="employment_period_coms",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    materialize_raw_data_table_views=False,
     order_by_cols="Employment_Id",
 )
 
