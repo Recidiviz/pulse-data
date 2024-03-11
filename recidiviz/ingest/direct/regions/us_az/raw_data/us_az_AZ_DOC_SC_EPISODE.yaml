@@ -292,3 +292,4 @@ columns:
   - name: VCSED_ORIGINAL_COUNT
     description: |-
       VCSED date original offense number and commitment letter, for violators returning with new Sentences
+  - name: IS_ANY_DPR_PROGRAM_COMPLETED
