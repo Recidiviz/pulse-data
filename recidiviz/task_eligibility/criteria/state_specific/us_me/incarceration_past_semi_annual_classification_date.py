@@ -60,7 +60,7 @@ _QUERY_TEMPLATE = f"""
         SELECT 
           syr.* EXCEPT (reclasses_needed),
           IFNULL(GREATEST(
-            CAST(JSON_EXTRACT_SCALAR(ar.reason,'$.reclasses_needed') AS INT) + 1,
+            CAST(JSON_EXTRACT_SCALAR(ar.reason,'$.reclasses_needed') AS INT),
             syr.reclasses_needed
           ), 0) AS reclasses_needed,
         FROM super_sessions_with_6_years_remaining_premerged syr
@@ -68,6 +68,7 @@ _QUERY_TEMPLATE = f"""
           ON syr.start_date = ar.end_date
             AND syr.person_id = ar.person_id
             AND syr.state_code = ar.state_code
+        WHERE NOT (syr.start_date = '1000-01-01')
       ),
       meetings AS (
           {meetings_cte()}
@@ -84,12 +85,12 @@ _QUERY_TEMPLATE = f"""
             1 AS reclass_type,
           FROM
             super_sessions_with_6_years_remaining,
-            UNNEST(GENERATE_ARRAY(6, 72, 6)) AS OFFSET
+            UNNEST(GENERATE_ARRAY(6, 720, 6)) AS OFFSET
           WHERE
             OFFSET <= DATE_DIFF({nonnull_end_date_clause("end_date")}, actual_start_date, DAY) / 30
+          GROUP BY 1,2,3,4
       ),
-      {reclassification_shared_logic(reclass_type='Semi-annual')}
-"""
+      {reclassification_shared_logic(reclass_type='Semi-annual')}"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     criteria_name=_CRITERIA_NAME,
