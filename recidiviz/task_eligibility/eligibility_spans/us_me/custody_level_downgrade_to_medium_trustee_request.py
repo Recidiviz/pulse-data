@@ -23,7 +23,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
+from recidiviz.task_eligibility.completion_events.state_specific.us_me import (
+    custody_level_downgrade_to_medium_trustee,
+)
 from recidiviz.task_eligibility.criteria.general import incarcerated_at_least_5_years
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     custody_level_is_medium,
@@ -55,7 +57,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         five_or_more_years_remaining_on_sentence.VIEW_BUILDER,
         not_in_msp_imhu.VIEW_BUILDER,
     ],
-    completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
+    completion_event_builder=custody_level_downgrade_to_medium_trustee.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
