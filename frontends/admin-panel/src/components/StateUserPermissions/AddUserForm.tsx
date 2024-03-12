@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input, Select } from "antd";
+import { Col, Form, Input, Row, Select } from "antd";
 import { useState } from "react";
 
 import { AddUserRequest, StateRolePermissionsResponse } from "../../types";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import { layout } from "./constants";
 import ReasonInput from "./ReasonInput";
 import { validateAndFocus } from "./utils";
 
@@ -35,6 +36,7 @@ export const AddUserForm = ({
 }): JSX.Element => {
   const [form] = Form.useForm();
   const [roles, setRoles] = useState([] as string[]);
+  const { gutter, colSpan } = layout;
 
   const handleSelectStateCode = (stateCode: string) => {
     const permissionsForState = stateRoleData?.filter(
@@ -63,71 +65,96 @@ export const AddUserForm = ({
       <br />
       <Form
         form={form}
-        layout="horizontal"
+        layout="vertical"
         onFinish={addOnCreate}
-        labelCol={{ span: 8 }}
+        labelCol={{ span: colSpan }}
       >
-        <ReasonInput label="Reason for addition" />
-        <hr />
-        <Form.Item
-          name="emailAddress"
-          label="Email Address"
-          rules={[
-            {
-              required: true,
-              message: "Please input the user's email address.",
-            },
-            { type: "email", message: "Please enter a valid email." },
-          ]}
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item
-          name="stateCode"
-          label="State code"
-          rules={[
-            {
-              required: true,
-              message: "Please input the user's state code.",
-            },
-          ]}
-        >
-          <Select
-            onChange={handleSelectStateCode}
-            options={stateCodes.map((c) => {
-              return { value: c, label: c };
-            })}
-          />
-        </Form.Item>
-        <Form.Item
-          name="role"
-          label="Role"
-          rules={[
-            {
-              required: true,
-              message: "Please input the user's role.",
-            },
-          ]}
-        >
-          <Select
-            options={roles.map((r) => {
-              return { value: r, label: r };
-            })}
-            disabled={roles.length === 0}
-          />
-        </Form.Item>
-        <Form.Item name="externalId" label="External ID">
-          <Input />
-        </Form.Item>
-        <Form.Item name="district" label="District">
-          <Input />
-        </Form.Item>
-        <Form.Item name="firstName" label="First Name">
-          <Input />
-        </Form.Item>
-        <Form.Item name="lastName" label="Last Name">
-          <Input />
-        </Form.Item>
+        <Row gutter={gutter}>
+          <Col span={colSpan}>
+            <Form.Item name="firstName" label="First Name">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={colSpan}>
+            <Form.Item name="lastName" label="Last Name">
+              <Input />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={gutter}>
+          <Col span={colSpan * 2}>
+            <Form.Item
+              name="emailAddress"
+              label="Email Address"
+              rules={[
+                {
+                  required: true,
+                  message: "Please input the user's email address.",
+                },
+                { type: "email", message: "Please enter a valid email." },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={gutter}>
+          <Col span={colSpan}>
+            <Form.Item
+              name="stateCode"
+              label="Select a State"
+              rules={[
+                {
+                  required: true,
+                  message: "Please input the user's state code.",
+                },
+              ]}
+            >
+              <Select
+                onChange={handleSelectStateCode}
+                options={stateCodes.map((c) => {
+                  return { value: c, label: c };
+                })}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={colSpan}>
+            <Form.Item
+              name="role"
+              label="Role"
+              rules={[
+                {
+                  required: true,
+                  message: "Please input the user's role.",
+                },
+              ]}
+            >
+              <Select
+                options={roles.map((r) => {
+                  return { value: r, label: r };
+                })}
+                disabled={roles.length === 0}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={gutter}>
+          <Col span={colSpan}>
+            <Form.Item name="externalId" label="External ID">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={colSpan}>
+            <Form.Item name="district" label="District">
+              <Input />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={gutter}>
+          <Col span={colSpan * 2}>
+            <ReasonInput label="Reason for Addition" />
+          </Col>
+        </Row>
       </Form>
     </DraggableModal>
   );
