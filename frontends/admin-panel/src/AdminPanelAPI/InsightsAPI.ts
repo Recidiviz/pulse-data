@@ -42,3 +42,21 @@ export const createNewConfiguration = async (
 ): Promise<Response> => {
   return post(`/admin/outliers/${stateCode}/configurations`, request);
 };
+
+export const promoteToProduction = async (
+  configId: number,
+  stateCode: string
+): Promise<Response> => {
+  return post(
+    `/admin/outliers/${stateCode}/configurations/${configId}/promote/production`
+  );
+};
+
+export const promoteToDefault = async (
+  configId: number,
+  stateCode: string
+): Promise<Response> => {
+  return post(
+    `/admin/outliers/${stateCode}/configurations/${configId}/promote/default`
+  );
+};

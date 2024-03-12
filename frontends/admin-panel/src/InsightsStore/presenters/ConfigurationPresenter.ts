@@ -19,7 +19,12 @@ import { message } from "antd";
 import { uniq } from "lodash";
 import { autorun, flowResult, makeAutoObservable } from "mobx";
 
-import { createNewConfiguration } from "../../AdminPanelAPI/InsightsAPI";
+import {
+  createNewConfiguration,
+  promoteToDefault,
+  promoteToProduction,
+} from "../../AdminPanelAPI/InsightsAPI";
+import { gcpEnvironment } from "../../components/Utilities/EnvironmentUtilities";
 import { InsightsStore } from "../InsightsStore";
 import { InsightsConfiguration } from "../models/InsightsConfiguration";
 import { Hydratable, HydrationState } from "../types";
@@ -29,6 +34,8 @@ export default class ConfigurationPresenter implements Hydratable {
 
   stateCode: string;
 
+  envIsStaging: boolean;
+
   selectedFeatureVariant: string | null | undefined;
 
   constructor(private insightsStore: InsightsStore, stateCode: string) {
@@ -37,6 +44,8 @@ export default class ConfigurationPresenter implements Hydratable {
     this.hydrationState = { status: "needs hydration" };
 
     this.stateCode = stateCode;
+
+    this.envIsStaging = gcpEnvironment.isStaging;
 
     this.selectedFeatureVariant = undefined;
 
@@ -78,6 +87,49 @@ export default class ConfigurationPresenter implements Hydratable {
       return true;
     } catch (e) {
       message.error(`Error adding configuration: ${e}`);
+      return false;
+    }
+  }
+
+  async promoteSelectedVersionToProduction(
+    configId: number | undefined
+  ): Promise<boolean> {
+    if (!this.envIsStaging) {
+      message.error(
+        "Cannot promote config to production from an environment that is not staging"
+      );
+      return false;
+    }
+    if (!configId) {
+      message.error("Cannot promote config without config id selected");
+      return false;
+    }
+
+    try {
+      await promoteToProduction(configId, this.stateCode);
+      message.success("Configuration promoted to production!");
+      return true;
+    } catch (e) {
+      message.error(`Error promoting config ${configId} to production: ${e}`);
+      return false;
+    }
+  }
+
+  async promoteSelectedVersionToDefault(
+    configId: number | undefined
+  ): Promise<boolean> {
+    if (!configId) {
+      message.error("Cannot promote config without config id selected");
+      return false;
+    }
+
+    try {
+      await promoteToDefault(configId, this.stateCode);
+      message.success("Configuration promoted to default!");
+      this.hydrationState.status = "needs hydration";
+      return true;
+    } catch (e) {
+      message.error(`Error promoting config ${configId} to default: ${e}`);
       return false;
     }
   }

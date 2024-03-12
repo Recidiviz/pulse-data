@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { autorun, flowResult, makeAutoObservable } from "mobx";
+import { action, autorun, flowResult, makeAutoObservable } from "mobx";
 
 import {
   getInsightsConfigurations,
@@ -38,7 +38,11 @@ export class InsightsStore implements Hydratable {
   configurationPresenter?: ConfigurationPresenter;
 
   constructor() {
-    makeAutoObservable(this, undefined, { autoBind: true });
+    makeAutoObservable(
+      this,
+      { initializeConfigurationPresenter: action },
+      { autoBind: true }
+    );
     this.hydrationState = { status: "needs hydration" };
 
     autorun(() => {
