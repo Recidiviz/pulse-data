@@ -179,6 +179,20 @@ def create_jii_api_blueprint() -> Blueprint:
         )
         jii_update_docs = query.stream()
 
+        known_phone_number = False
+
+        jii_response = get_str_param_value("Body", request.values, preserve_case=True)
+        response_update = {
+            "responses": ArrayUnion(
+                [
+                    {
+                        "response": jii_response,
+                        "response_date": datetime.datetime.now(datetime.timezone.utc),
+                    },
+                ]
+            ),
+        }
+
         for jii_doc_snapshot in jii_update_docs:
             jii_doc = jii_doc_snapshot.to_dict()
 
@@ -186,29 +200,16 @@ def create_jii_api_blueprint() -> Blueprint:
                 continue
 
             # Store the individual's response and the datetime of their response
-            jii_response = get_str_param_value(
-                "Body", request.values, preserve_case=True
-            )
             logging.info(
                 "Storing jii response for doc: [%s]",
                 jii_doc_snapshot.reference.path,
             )
-            response_update = {
-                "responses": ArrayUnion(
-                    [
-                        {
-                            "response": jii_response,
-                            "response_date": datetime.datetime.now(
-                                datetime.timezone.utc
-                            ),
-                        },
-                    ]
-                ),
-            }
             firestore_client.update_document(
                 jii_doc_snapshot.reference.path,
                 response_update,
             )
+
+            known_phone_number = True
 
             # This endpoint may be hit multiple times per recipient, so check here if this is a new
             # opt out type from what we already have in Firestore.
@@ -229,6 +230,21 @@ def create_jii_api_blueprint() -> Blueprint:
                     doc_update,
                     merge=True,
                 )
+
+        if known_phone_number is False:
+            # A phone number that we do not have stored / associated with a jii document in the Firebase db
+            # has responded to our Twilio Campaign phone number. Let's store their response
+            # in our Firebase db in a separate collection
+
+            # Store the unknown individual's response and the datetime of their response
+            logging.info(
+                "Storing unknown jii response in unknown_phone_number_replies collection"
+            )
+            firestore_client.set_document(
+                f"unknown_phone_number_replies/{phone_number}",
+                response_update,
+                merge=True,
+            )
 
         return make_response(jsonify(), HTTPStatus.OK)
 

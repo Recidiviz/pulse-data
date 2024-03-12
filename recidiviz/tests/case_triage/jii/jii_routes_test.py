@@ -411,4 +411,19 @@ class TestJIIRoutes(JIIBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
         mock_firestore.return_value.update_document.assert_not_called()
-        mock_firestore.return_value.set_document.assert_not_called()
+        mock_firestore.return_value.set_document.assert_called_once_with(
+            "unknown_phone_number_replies/2222222222",
+            {
+                "responses": ArrayUnion(
+                    [
+                        {
+                            "response": opt_out_type,
+                            "response_date": datetime.datetime.now(
+                                datetime.timezone.utc
+                            ),
+                        },
+                    ]
+                ),
+            },
+            merge=True,
+        )
