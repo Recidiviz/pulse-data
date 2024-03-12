@@ -84,7 +84,7 @@ _QUERY_TEMPLATE = f"""
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-        latest_d1_sanction_start_date > latest_restrictive_housing_start_date AS meets_criteria,
+        latest_d1_sanction_start_date >= latest_restrictive_housing_start_date AS meets_criteria,
         TO_JSON(STRUCT(
             latest_d1_sanction_start_date,
             latest_restrictive_housing_start_date AS restrictive_housing_start_date
