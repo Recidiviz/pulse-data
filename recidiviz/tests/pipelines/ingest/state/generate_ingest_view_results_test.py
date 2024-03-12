@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Testing the GenerateIngestViewResults PTransform"""
+import unittest
 from datetime import datetime
 from typing import Dict, Iterable, Optional
 
@@ -25,10 +26,14 @@ from mock import patch
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
+)
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BQ_EMULATOR_PROJECT_ID,
 )
+from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
 
 
@@ -218,3 +223,160 @@ UNION ALL
             ),
             expected_result=expected_results,
         )
+
+
+class TestGenerateIngestViewQuery(unittest.TestCase):
+    """Tests for the generate_ingest_view_query() function."""
+
+    def setUp(self) -> None:
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id = "recidiviz-456"
+        self.mock_project_id_fn.return_value = self.mock_project_id
+
+        query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
+
+        self.ingest_view_query_builder = DirectIngestViewQueryBuilder(
+            ingest_view_name="ingest_view",
+            view_query_template=query,
+            region="us_xx",
+            order_by_cols="colA, colC",
+            region_module=fake_regions,
+        )
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    def test_dataflow_query_for_args(self) -> None:
+        dataflow_query = pipeline.GenerateIngestViewResults.generate_ingest_view_query(
+            self.ingest_view_query_builder,
+            DirectIngestInstance.PRIMARY,
+            upper_bound_datetime_inclusive=datetime(
+                year=2020, month=7, day=20, hour=1, minute=2, second=3, microsecond=4
+            ),
+        )
+        expected_query = """
+WITH view_results AS (
+    WITH
+file_tag_first_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT
+            * EXCEPT (recency_rank)
+        FROM (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                                   ORDER BY update_datetime DESC) AS recency_rank
+            FROM
+                `recidiviz-456.us_xx_raw_data.file_tag_first`
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
+        ) a
+        WHERE
+            recency_rank = 1
+            AND is_deleted = False
+    )
+    SELECT col_name_1a, col_name_1b
+    FROM filtered_rows
+),
+tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    filtered_rows AS (
+        SELECT *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT COL_1
+    FROM filtered_rows
+)
+select * from file_tag_first_generated_view JOIN tagFullHistoricalExport_generated_view USING (COL_1)
+)
+SELECT *,
+    CURRENT_DATETIME('UTC') AS __materialization_time,
+    DATETIME "2020-07-20T01:02:03.000004" AS __upper_bound_datetime_inclusive
+FROM view_results;
+"""
+        self.assertEqual(expected_query, dataflow_query)
+
+    def test_dataflow_query_for_args_handles_materialization_correctly(
+        self,
+    ) -> None:
+        dataflow_query = pipeline.GenerateIngestViewResults.generate_ingest_view_query(
+            self.ingest_view_query_builder,
+            DirectIngestInstance.PRIMARY,
+            upper_bound_datetime_inclusive=datetime(
+                year=2020, month=7, day=20, hour=1, minute=2, second=3, microsecond=4
+            ),
+        )
+        expected_query = """
+WITH view_results AS (
+    WITH
+file_tag_first_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT
+            * EXCEPT (recency_rank)
+        FROM (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                                   ORDER BY update_datetime DESC) AS recency_rank
+            FROM
+                `recidiviz-456.us_xx_raw_data.file_tag_first`
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
+        ) a
+        WHERE
+            recency_rank = 1
+            AND is_deleted = False
+    )
+    SELECT col_name_1a, col_name_1b
+    FROM filtered_rows
+),
+tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    filtered_rows AS (
+        SELECT *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT COL_1
+    FROM filtered_rows
+)
+select * from file_tag_first_generated_view JOIN tagFullHistoricalExport_generated_view USING (COL_1)
+)
+SELECT *,
+    CURRENT_DATETIME('UTC') AS __materialization_time,
+    DATETIME "2020-07-20T01:02:03.000004" AS __upper_bound_datetime_inclusive
+FROM view_results;
+"""
+        self.assertEqual(expected_query, dataflow_query)

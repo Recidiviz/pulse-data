@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A PTransform that generates ingest view results for a given ingest view."""
+import datetime
 import logging
 from typing import Any, Dict, Generator, Optional
 
@@ -23,13 +24,10 @@ from apache_beam.pvalue import PBegin
 from dateutil import parser
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
-    IngestViewMaterializerImpl,
-)
-from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -43,6 +41,16 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import ReadFromBigQuery
 from recidiviz.utils.string import StrictStringFormatter
+
+INGEST_VIEW_OUTPUT_QUERY_TEMPLATE = f"""
+WITH view_results AS (
+    {{view_query}}
+)
+SELECT *,
+    CURRENT_DATETIME('UTC') AS {MATERIALIZATION_TIME_COL_NAME},
+    {{upper_bound_datetime_inclusive}} AS {UPPER_BOUND_DATETIME_COL_NAME}
+FROM view_results;
+"""
 
 INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE = f"""
 SELECT
@@ -161,8 +169,9 @@ class GenerateIngestViewResults(beam.PTransform):
         logging.info("Raw date pairs query: %s", raw_date_pairs_query)
         return raw_date_pairs_query
 
-    @staticmethod
+    @classmethod
     def get_ingest_view_date_diff_query(
+        cls,
         date_pair: Dict[str, Any],
         state_code: StateCode,
         ingest_view_name: str,
@@ -178,20 +187,48 @@ class GenerateIngestViewResults(beam.PTransform):
                     region, [ingest_view_name]
                 ).get_query_builder_by_view_name(ingest_view_name=ingest_view_name)
             )
-            ingest_view_materialization_args = IngestViewMaterializationArgs(
-                ingest_view_name=ingest_view_name,
+            query = cls.generate_ingest_view_query(
+                view_builder=view_builder,
+                raw_data_source_instance=ingest_instance,
                 upper_bound_datetime_inclusive=parser.isoparse(
                     date_pair[UPPER_BOUND_DATETIME_COL_NAME]
                 ),
-                ingest_instance=ingest_instance,
-            )
-
-            query = IngestViewMaterializerImpl.dataflow_query_for_args(
-                view_builder=view_builder,
-                raw_data_source_instance=ingest_instance,
-                ingest_view_materialization_args=ingest_view_materialization_args,
             )
 
             logging.info("Ingest view query: %s", query)
 
             yield beam.io.ReadFromBigQueryRequest(query=query, use_standard_sql=True)
+
+    @staticmethod
+    def generate_ingest_view_query(
+        view_builder: DirectIngestViewQueryBuilder,
+        raw_data_source_instance: DirectIngestInstance,
+        upper_bound_datetime_inclusive: datetime.datetime,
+    ) -> str:
+        """Returns a version of the ingest view query for the provided args that can
+        be run in Dataflow. Augments the ingest view query with metadata columns that
+        will be output to materialized ingest view results tables.
+
+        A note that this query for Dataflow cannot use materialized tables or temporary
+        tables."""
+        view_query = (
+            view_builder.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                    raw_data_source_instance=raw_data_source_instance,
+                    raw_data_datetime_upper_bound=upper_bound_datetime_inclusive,
+                    use_order_by=False,
+                )
+            )
+            .rstrip()
+            .rstrip(";")
+        )
+
+        upper_bound_datetime_inclusive_clause = datetime_clause(
+            upper_bound_datetime_inclusive
+        )
+
+        return StrictStringFormatter().format(
+            INGEST_VIEW_OUTPUT_QUERY_TEMPLATE,
+            view_query=view_query,
+            upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_clause,
+        )
