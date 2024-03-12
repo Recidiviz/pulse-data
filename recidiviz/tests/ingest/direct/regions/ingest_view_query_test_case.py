@@ -289,8 +289,7 @@ class IngestViewQueryTester:
                 # needed for test determinism since we always sort the results by all
                 # columns before comparing.
                 use_order_by=True,
-            ),
-            using_dataflow=True,
+            )
         )
         return query_view(self.helper, ingest_view.ingest_view_name, view_query)
 

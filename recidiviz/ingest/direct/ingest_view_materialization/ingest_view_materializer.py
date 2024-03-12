@@ -71,8 +71,7 @@ class IngestViewMaterializerImpl:
                     raw_data_source_instance=raw_data_source_instance,
                     raw_data_datetime_upper_bound=upper_bound_datetime_inclusive,
                     use_order_by=False,
-                ),
-                using_dataflow=True,
+                )
             )
             .rstrip()
             .rstrip(";")

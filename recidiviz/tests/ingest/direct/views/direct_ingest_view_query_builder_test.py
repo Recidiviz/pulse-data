@@ -85,7 +85,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -136,7 +136,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
@@ -156,7 +156,7 @@ ORDER BY col1, col2;"""
             r"^Cannot use undocumented raw file \[tagColumnsMissing\] as a dependency "
             r"in an ingest view.$",
         ):
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True)
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
 
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -186,7 +186,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_date_parameterized_view_query = """WITH
@@ -217,7 +217,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_date_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
@@ -248,7 +248,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
@@ -286,7 +286,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -338,7 +338,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
         # Also check that appending whitespace before the WITH prefix produces the same results
@@ -359,11 +359,11 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
@@ -382,7 +382,7 @@ USING (col1);"""
         with self.assertRaisesRegex(
             ValueError, r"Found unexpected raw table tag \[file_tag_not_in_config\]"
         ):
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True)
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
 
     def test_direct_ingest_preprocessed_view_other_materialized_subquery_fails(
         self,
@@ -455,7 +455,7 @@ ORDER BY col1, col2
         )
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=latest_config, using_dataflow=True),
+            view.build_query(config=latest_config),
         )
 
         expected_parameterized_view_query = """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
@@ -522,7 +522,7 @@ ORDER BY col1, col2
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=parametrized_config, using_dataflow=True),
+            view.build_query(config=parametrized_config),
         )
 
     def test_direct_ingest_preprocessed_view_with_update_datetime(self) -> None:
@@ -547,7 +547,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -577,7 +577,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_with_current_date(self) -> None:
@@ -712,7 +712,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -752,7 +752,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_all_rows_dependency_mixed_with_latest_same_table(self) -> None:
@@ -800,7 +800,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.build_query(config=self.DEFAULT_LATEST_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -840,7 +840,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG, using_dataflow=True),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_invalid_raw_table_dependency(self) -> None:
