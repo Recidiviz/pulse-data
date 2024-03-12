@@ -18,6 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
@@ -80,7 +81,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             sentence_id,
             start_date,
             end_date,
-            /* Note: using COALSECE(LOGICAL_AND(), FALSE) prevents the problem of ending
+            /* Note: using COALESCE(LOGICAL_AND(), FALSE) prevents the problem of ending
             up with NULL for the meets_criteria_ fields, which can happen if there is no
             row in the relevant view for that person-sentence span (i.e., there's
             nothing going into the LOGICAL_AND). By using COALESCE here, we ensure that
@@ -92,27 +93,35 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             COALESCE(LOGICAL_AND(no_convictions_since_sentence_start_date), FALSE) AS meets_criteria_no_convictions_since_sentence_start_date,
         FROM sub_sessions_with_attributes
         GROUP BY 1, 2, 3, 4, 5
+    ),
+    sentence_eligibility_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            sentence_id,
+            start_date,
+            end_date,
+            (meets_criteria_sentence_date
+                AND meets_criteria_served_6_months
+                AND meets_criteria_served_half_of_sentence
+                AND meets_criteria_statute
+                AND meets_criteria_no_convictions_since_sentence_start_date
+            ) AS is_eligible,
+            meets_criteria_sentence_date,
+            meets_criteria_served_6_months,
+            meets_criteria_served_half_of_sentence,
+            meets_criteria_statute,
+            meets_criteria_no_convictions_since_sentence_start_date,
+        FROM sub_sessions_with_attributes_condensed
+    ),
+    sentence_eligibility_spans_aggregated AS (
+        {aggregate_adjacent_spans("sentence_eligibility_spans",
+                                  index_columns=['state_code', 'person_id', 'sentence_id'],
+                                  attribute=['is_eligible', 'meets_criteria_sentence_date', 'meets_criteria_served_6_months', 'meets_criteria_served_half_of_sentence', 'meets_criteria_statute', 'meets_criteria_no_convictions_since_sentence_start_date'])}
     )
     SELECT
-        state_code,
-        person_id,
-        sentence_id,
-        start_date,
-        end_date,
-        (meets_criteria_sentence_date
-            AND meets_criteria_served_6_months
-            AND meets_criteria_served_half_of_sentence
-            AND meets_criteria_statute
-            AND meets_criteria_no_convictions_since_sentence_start_date
-        ) AS is_eligible,
-        meets_criteria_sentence_date,
-        meets_criteria_served_6_months,
-        meets_criteria_served_half_of_sentence,
-        meets_criteria_statute,
-        meets_criteria_no_convictions_since_sentence_start_date,
-    FROM sub_sessions_with_attributes_condensed
-    /* TODO(#26880): Apply aggregate_adjacent_spans to the end of this query to reduce
-    the number of rows. */
+        * EXCEPT (session_id, date_gap_id)
+    FROM sentence_eligibility_spans_aggregated
 """
 
 US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
