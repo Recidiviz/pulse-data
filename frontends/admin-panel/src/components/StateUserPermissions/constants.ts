@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2023 Recidiviz, Inc.
+// Copyright (C) 2024 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,29 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { InfoCircleFilled } from "@ant-design/icons";
-import { Form, Input } from "antd";
-
-export const ReasonInput = ({ label }: { label: string }): JSX.Element => {
-  return (
-    <Form.Item
-      name="reason"
-      label={<strong>{label}</strong>}
-      tooltip={{
-        title:
-          'Short description of change, e.g., "new DOC employee needs access" or "launching [product] to district". Used for audits.',
-        icon: <InfoCircleFilled />,
-      }}
-      rules={[
-        {
-          required: true,
-          message: "Please input a reason for the change.",
-        },
-      ]}
-    >
-      <Input />
-    </Form.Item>
-  );
+export const layout = {
+  gutter: 24,
+  colSpan: 12,
 };
-
-export default ReasonInput;
