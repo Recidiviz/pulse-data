@@ -329,20 +329,10 @@ class DirectIngestViewQueryBuilder:
         return self._order_by_cols
 
     def build_query(
-        self,
-        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        # TODO(#20928) Remove this parameter once we've migrated to Dataflow
-        using_dataflow: bool,
+        self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
         """Formats this view's template according to the provided config, with expanded subqueries for each raw table
         dependency."""
-
-        if not using_dataflow:
-            raise ValueError(
-                "Cannot set using_dataflow=False post-IID. All built ingest view queries"
-                "are now Dataflow compatible."
-            )
-
         query = self._format_expanded_view_query(config=config)
         return self._query_builder.build_query(
             project_id=metadata.project_id(),
@@ -365,8 +355,7 @@ class DirectIngestViewQueryBuilder:
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_data_source_instance=raw_data_source_instance,
                     raw_data_datetime_upper_bound=datetime.datetime.now(tz=pytz.UTC),
-                ),
-                using_dataflow=True,
+                )
             )
         )
         print(
@@ -377,8 +366,7 @@ class DirectIngestViewQueryBuilder:
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_data_source_instance=raw_data_source_instance,
                     raw_data_datetime_upper_bound=None,
-                ),
-                using_dataflow=True,
+                )
             )
         )
 

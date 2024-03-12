@@ -97,8 +97,7 @@ def query_ingest_view(
         config=DirectIngestViewQueryBuilder.QueryStructureConfig(
             raw_data_datetime_upper_bound=None,
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
-        ),
-        using_dataflow=True,
+        )
     )
 
     logging.info(
