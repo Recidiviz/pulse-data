@@ -16,7 +16,6 @@
 # =============================================================================
 """Defines types used for direct ingest."""
 import abc
-import datetime
 from typing import Any, Dict, Optional, Type
 
 import attr
@@ -64,21 +63,3 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
         return DirectIngestInstanceFactory.for_ingest_bucket(
             self.raw_data_file_path.bucket_path
         )
-
-
-# TODO(#20930): Move this class to another location now that it isn't specifically used
-#  for cloud tasks.
-@attr.s(frozen=True)
-class IngestViewMaterializationArgs:
-    """Arguments for an ingest view materialization job."""
-
-    # The file tag of the ingest view to export. Used to determine which query to run
-    # to generate the exported file.
-    ingest_view_name: str = attr.ib()
-
-    # The upper bound date for updates this query should include. Updates will only
-    # reflect data received up until this date.
-    upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
-
-    # The instance the ingest view is being generated in.
-    ingest_instance: DirectIngestInstance = attr.ib()
