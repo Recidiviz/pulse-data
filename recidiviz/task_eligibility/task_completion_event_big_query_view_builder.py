@@ -29,6 +29,8 @@ from recidiviz.task_eligibility.dataset_config import (
 
 
 class TaskCompletionEventType(Enum):
+    """Enum describing the type of task completion event"""
+
     FULL_TERM_DISCHARGE = "FULL_TERM_DISCHARGE"
     EARLY_DISCHARGE = "EARLY_DISCHARGE"
     TRANSFER_TO_LIMITED_SUPERVISION = "TRANSFER_TO_LIMITED_SUPERVISION"
