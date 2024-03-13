@@ -118,12 +118,14 @@ output:
               $raw_text:
                 $concat:
                   $values:
+                    - bed_assignment
                     - facility
                     - $conditional:
                         - $if:
                             $not_null: start_date
                           $then: start_date
                         - $else: end_date
+                  $separator: "|"
               $custom_parser: us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates
           specialized_purpose_for_incarceration:
             $enum_mapping:
