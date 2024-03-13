@@ -1516,3 +1516,163 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(history.new_value, None)
             self.assertEqual(history.old_upload_method, None)
             self.assertEqual(history.new_upload_method, None)
+
+    def test_join_for_aggregate_metric(self) -> None:
+        """
+        Tests that join_report_datapoints_to_metric_interfaces() correctly adds report
+        datapoints that represent a metric's aggregate value to the metric interface.
+        """
+        metric_interfaces_by_key = {
+            prisons.funding.key: MetricInterface(
+                key=prisons.funding.key,
+            )
+        }
+        report_datapoints = [
+            Datapoint(
+                report_id=11111,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                value=10000,
+            )
+        ]
+        result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
+            metric_interfaces_by_key=metric_interfaces_by_key,
+            report_datapoints=report_datapoints,
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[prisons.funding.key].value, 10000)
+
+    def test_join_with_disaggregated_metric_present(self) -> None:
+        """
+        Tests that join_report_datapoints_to_metric_interfaces() correctly adds report
+        datapoints breakdown values to a metric's aggregate value to the metric interface.
+        """
+        metric_interfaces_by_key = {
+            prisons.funding.key: MetricInterface(
+                key=prisons.funding.key,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={FundingType.GRANTS: True}
+                    ),
+                ],
+            )
+        }
+        report_datapoints = [
+            Datapoint(
+                report_id=11111,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                dimension_identifier_to_member={
+                    "metric/prisons/funding/type": "GRANTS"
+                },
+                value=7000,
+            ),
+            Datapoint(
+                report_id=11111,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                dimension_identifier_to_member={"metric/prisons/funding/type": "OTHER"},
+                value=3000,
+            ),
+        ]
+        result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
+            metric_interfaces_by_key=metric_interfaces_by_key,
+            report_datapoints=report_datapoints,
+        )
+
+        self.assertEqual(len(result), 1)
+        interface = result[prisons.funding.key]
+        self.assertEqual(len(interface.aggregated_dimensions), 1)
+        self.assertEqual(
+            interface.aggregated_dimensions[0].dimension_to_value,
+            {FundingType.GRANTS: 7000, FundingType.OTHER: 3000},
+        )
+
+    def test_join_handles_absent_metric_interface(self) -> None:
+        """
+        Tests that join_report_datapoints_to_metric_interfaces() will create an empty
+        MetricInterface object if there is no metric interface in `metric_interfaces_by_key`
+        which matches datapoints `metric_definition_key`
+        """
+        metric_interfaces_by_key: dict[str, MetricInterface] = {}
+        report_datapoints = [
+            Datapoint(
+                report_id=11111,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                value=10000,
+            )
+        ]
+        result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
+            metric_interfaces_by_key=metric_interfaces_by_key,
+            report_datapoints=report_datapoints,
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[prisons.funding.key].value, 10000)
+
+    def test_join_with_disaggregated_metric_not_present(self) -> None:
+        """
+        Tests that join_report_datapoints_to_metric_interfaces() correctly adds report
+        datapoints breakdown values to a metric's aggregate value to the metric interface.
+        This test case makes sure that we cover the (unlikely but still possible) case
+        where a metric interface does not have agency settings saved for the breakdown
+        metric but has a report datapoint for it anyway.
+        """
+        metric_interfaces_by_key = {
+            prisons.funding.key: MetricInterface(
+                key=prisons.funding.key,
+            )
+        }
+        report_datapoints = [
+            Datapoint(
+                report_id=11111,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                dimension_identifier_to_member={
+                    "metric/prisons/funding/type": "GRANTS"
+                },
+                value=7000,
+            )
+        ]
+        result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
+            metric_interfaces_by_key=metric_interfaces_by_key,
+            report_datapoints=report_datapoints,
+        )
+
+        self.assertEqual(len(result), 1)
+        interface = result[prisons.funding.key]
+        self.assertEqual(len(interface.aggregated_dimensions), 1)
+        self.assertEqual(
+            interface.aggregated_dimensions[0].dimension_to_value,
+            {FundingType.GRANTS: 7000},
+        )
+
+    def test_join_raises_error_if_not_report_datapoint(self) -> None:
+        """
+        Tests that join_report_datapoints_to_metric_interfaces() raises an error if a
+        non-report datapoint is passed through `report_datapoints`.
+        """
+        metric_interfaces_by_key = {
+            prisons.funding.key: MetricInterface(
+                key=prisons.funding.key,
+            )
+        }
+        report_datapoints = [
+            Datapoint(
+                report_id=None,
+                metric_definition_key=prisons.funding.key,
+                is_report_datapoint=True,
+                dimension_identifier_to_member={
+                    "metric/prisons/funding/type": "GRANTS"
+                },
+                value=7000,
+            )
+        ]
+        try:
+            DatapointInterface.join_report_datapoints_to_metric_interfaces(
+                metric_interfaces_by_key=metric_interfaces_by_key,
+                report_datapoints=report_datapoints,
+            )
+            assert False
+        except ValueError:
+            assert True
