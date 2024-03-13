@@ -45,14 +45,16 @@ const InsightsConfigurationsView = (): JSX.Element => {
             setStateCode(state.code);
           }}
         />
-        <Button
-          onClick={() => {
-            setAddConfigFormVisible(true);
-          }}
-          disabled={!stateCode}
-        >
-          Create new version
-        </Button>
+        {(store.envIsStaging || store.envIsDevelopment) && (
+          <Button
+            onClick={() => {
+              setAddConfigFormVisible(true);
+            }}
+            disabled={!stateCode}
+          >
+            Create new version
+          </Button>
+        )}
       </Space>
       {configurationPresenter && (
         <ConfigurationsTable presenter={configurationPresenter} />

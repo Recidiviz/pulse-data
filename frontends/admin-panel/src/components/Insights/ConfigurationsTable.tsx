@@ -117,14 +117,17 @@ const ConfigurationsTable = ({
   ];
 
   // Create copy columns which have standard attributes
-  const copyColumnNames = Object.keys(configs[0]).filter(
-    (d) =>
-      !metadataColumns
-        .map((c) => {
-          return c.key;
-        })
-        .includes(d)
-  );
+  const copyColumnNames =
+    configs.length > 0
+      ? Object.keys(configs[0]).filter(
+          (d) =>
+            !metadataColumns
+              .map((c) => {
+                return c.key;
+              })
+              .includes(d)
+        )
+      : [];
   const copyColumns = copyColumnNames.map((c) => {
     return {
       title: c,

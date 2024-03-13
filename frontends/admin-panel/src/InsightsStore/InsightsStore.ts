@@ -22,6 +22,7 @@ import {
   getInsightsStateCodeInfo,
 } from "../AdminPanelAPI/InsightsAPI";
 import { StateCodeInfo } from "../components/general/constants";
+import { gcpEnvironment } from "../components/Utilities/EnvironmentUtilities";
 import { InsightsConfiguration } from "./models/InsightsConfiguration";
 import ConfigurationPresenter from "./presenters/ConfigurationPresenter";
 import { Hydratable, HydrationState } from "./types";
@@ -37,6 +38,10 @@ export class InsightsStore implements Hydratable {
 
   configurationPresenter?: ConfigurationPresenter;
 
+  envIsStaging: boolean;
+
+  envIsDevelopment: boolean;
+
   constructor() {
     makeAutoObservable(
       this,
@@ -44,6 +49,9 @@ export class InsightsStore implements Hydratable {
       { autoBind: true }
     );
     this.hydrationState = { status: "needs hydration" };
+
+    this.envIsStaging = gcpEnvironment.isStaging;
+    this.envIsDevelopment = gcpEnvironment.isDevelopment;
 
     autorun(() => {
       if (this.stateCode) {
