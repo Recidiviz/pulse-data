@@ -155,7 +155,7 @@ def create_jii_api_blueprint() -> Blueprint:
         except FlaskException as error:
             return make_response(str(error.description), error.status_code)
 
-        return make_response(jsonify(), HTTPStatus.OK)
+        return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 
     @jii_api.post("/webhook/twilio_incoming_message")
     def handle_twilio_incoming_message() -> Response:
@@ -165,7 +165,7 @@ def create_jii_api_blueprint() -> Blueprint:
         phone_number = get_str_param_value("From", request.values, preserve_case=True)
 
         if not phone_number:
-            return make_response(jsonify(), HTTPStatus.OK)
+            return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 
         # recipient phone numbers are prefixed with +1 in the request, but do not contain that prefix in Firestore
         phone_number = phone_number[2:]
@@ -246,6 +246,6 @@ def create_jii_api_blueprint() -> Blueprint:
                 merge=True,
             )
 
-        return make_response(jsonify(), HTTPStatus.OK)
+        return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 
     return jii_api
