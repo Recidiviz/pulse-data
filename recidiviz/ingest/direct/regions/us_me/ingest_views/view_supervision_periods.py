@@ -169,32 +169,32 @@ VIEW_QUERY_TEMPLATE = f"""
             END AS end_date,
             current_status,
             IF(
-                DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS INT64), 
                 LAG(current_status) OVER status_seq, 
                 NULL
             ) AS previous_status,
             IF(
-                DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS INT64), 
                 LAG(current_jurisdiction_location_type) OVER status_seq, 
                 NULL
             ) AS previous_jurisdiction_location_type,
             IF(
-                DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                DATE_DIFF(start_datetime, LAG(end_datetime) OVER status_seq, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS INT64), 
                 LAG(current_jurisdiction_location) OVER status_seq, 
                 NULL
             ) AS previous_jurisdiction_location,
             IF(
-                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS INT64), 
                 LEAD(current_status) OVER status_seq, 
                 NULL
             ) AS next_status,
             IF(
-                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS INT64), 
                 LEAD(current_jurisdiction_location_type) OVER status_seq, 
                 NULL
             ) AS next_jurisdiction_location_type,
             IF(
-                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS integer), 
+                DATE_DIFF(LEAD(start_datetime) OVER status_seq, end_datetime, DAY) <= CAST({NUM_DAYS_STATUS_LOOK_BACK} AS INT64), 
                 LEAD(current_jurisdiction_location) OVER status_seq, 
                 NULL
             ) AS next_jurisdiction_location,

@@ -31,7 +31,7 @@ SELECT
   CompletionDate,
   OverallScore,
   ResultNote,
-  SPLIT(REGEXP_EXTRACT(ResultNote, r'\\[Desc\\]= ([^\\|]+) \\|'),'=')[OFFSET(0)] AS legacy_assessment_degree_level,
+  SPLIT(REGEXP_EXTRACT(ResultNote, r'\\[Desc\\]= ([^\\|]+) \\|'),'=')[SAFE_OFFSET(0)] AS legacy_assessment_degree_level,
   AssessmentDegreeId,
   AssessmentDegreeDesc
 FROM {asm_Assessment} 

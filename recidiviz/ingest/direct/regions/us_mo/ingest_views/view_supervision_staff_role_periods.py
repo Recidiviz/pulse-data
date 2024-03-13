@@ -16,9 +16,7 @@
 # =============================================================================
 """Query containing APFX supervision staff role period information."""
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans_postgres,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -80,7 +78,7 @@ apfx_all AS (
 ),
 collapsed AS (
     -- Collapses bordering periods from the previous CTE into one period.
-    {aggregate_adjacent_spans_postgres(
+    {aggregate_adjacent_spans(
         table_name="apfx_all",
         attribute=["CLSTTL"],
         index_columns=["BDGNO"])}

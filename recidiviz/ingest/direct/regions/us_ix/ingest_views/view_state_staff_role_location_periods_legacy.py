@@ -15,9 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query that generates state staff role periods and location periods information."""
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans_postgres,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -62,7 +60,7 @@ VIEW_QUERY_TEMPLATE = f"""
         WHERE (start_date < last_appearance_date or start_date = last_file_update_datetime)
     ),
     final_periods as (
-        {aggregate_adjacent_spans_postgres(
+        {aggregate_adjacent_spans(
             table_name="preliminary_periods",
             attribute=["empl_title", "fac_cd", "InActive"],
             index_columns=["empl_cd"])}

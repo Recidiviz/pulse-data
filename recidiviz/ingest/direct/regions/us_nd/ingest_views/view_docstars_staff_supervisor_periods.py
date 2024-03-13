@@ -26,7 +26,7 @@ VIEW_QUERY_TEMPLATE = """
 WITH critical_dates AS (
 SELECT * FROM (
     SELECT
-        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(OFFICER AS INT64) AS OFFICER,
         FNAME,
         LNAME,
         SUPERVISOR,

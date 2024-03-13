@@ -116,7 +116,7 @@ VIEW_QUERY_TEMPLATE = """
   -- movements are excluded later anyway.
   WINDOW person_window AS (
     PARTITION BY OFFENDER_BOOK_ID 
-    ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE, DIRECTION_CODE)
+    ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT64), MOVEMENT_REASON_CODE, DIRECTION_CODE)
 ), full_periods AS (
   SELECT 
     ROW_NUMBER() OVER person_window AS period_sequence, 
@@ -138,7 +138,7 @@ FROM (
     FROM dates_with_all_attributes
     WINDOW person_window AS (
       PARTITION BY OFFENDER_BOOK_ID 
-      ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE, DIRECTION_CODE)
+      ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT64), MOVEMENT_REASON_CODE, DIRECTION_CODE)
     ) sub
     WHERE facility != 'OUT'
      -- Exclude rows that begin with a release or escape
@@ -155,7 +155,7 @@ FROM (
     AND NOT (admission_reason_code = 'ERR' AND release_reason_code = 'READMN')
     WINDOW person_window AS (
       PARTITION BY OFFENDER_BOOK_ID 
-      ORDER BY start_date, CAST(MOVEMENT_SEQ AS INT), admission_reason_code)
+      ORDER BY start_date, CAST(MOVEMENT_SEQ AS INT64), admission_reason_code)
 ), 
 infer_missing_attributes AS (
   SELECT 

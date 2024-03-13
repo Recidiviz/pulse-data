@@ -20,14 +20,17 @@ ingest view queries.
 import abc
 import datetime
 import os.path
+from concurrent import futures
 from typing import List, Tuple
 
 import pandas as pd
 import pytest
 import pytz
 from google.cloud import bigquery
+from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
@@ -209,18 +212,35 @@ class IngestViewQueryTester:
         """Loads mock raw data tables from fixture files used by the given ingest view.
         All raw fixture files must have names matching |raw_fixtures_name|.
         """
-        for raw_table_dependency_config in ingest_view.raw_table_dependency_configs:
-            raw_data_df = self._get_raw_data(
-                region_code,
-                raw_table_dependency_config,
-                raw_fixtures_name,
-                file_update_dt,
-            )
-            self.helper.load_mock_raw_table(
-                region_code=region_code,
-                file_tag=raw_table_dependency_config.file_tag,
-                mock_data=raw_data_df,
-            )
+        with futures.ThreadPoolExecutor(
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        ) as executor:
+            to_create = []
+
+            for raw_table_dependency_config in ingest_view.raw_table_dependency_configs:
+                raw_data_df = self._get_raw_data(
+                    region_code,
+                    raw_table_dependency_config,
+                    raw_fixtures_name,
+                    file_update_dt,
+                )
+                to_create.append((raw_table_dependency_config.file_tag, raw_data_df))
+
+            create_table_futures = {
+                executor.submit(
+                    self.helper.load_mock_raw_table,
+                    region_code=region_code,
+                    file_tag=file_tag,
+                    mock_data=raw_data_df,
+                )
+                for (file_tag, raw_data_df) in to_create
+            }
+
+        for future in futures.as_completed(create_table_futures):
+            future.result()
 
     @staticmethod
     def columns_from_raw_file_config(
@@ -415,6 +435,16 @@ class IngestViewEmulatorQueryTestCase(
     def run_ingest_view_test(
         self, fixtures_files_name: str, create_expected: bool = False
     ) -> None:
+        self.bq_client.create_dataset_if_necessary(
+            dataset_ref=DatasetReference(
+                project=self.project_id,
+                dataset_id=raw_tables_dataset_for_region(
+                    state_code=StateCode(self.region_code),
+                    instance=DirectIngestInstance.PRIMARY,
+                ),
+            )
+        )
+
         self.tester.run_ingest_view_test(
             test_method_name=self._testMethodName,
             fixtures_files_name=fixtures_files_name,
@@ -444,6 +474,8 @@ class IngestViewEmulatorQueryTestCase(
                 raw_file_config=region_config.raw_file_configs[file_tag],
                 columns=mock_data.columns.values,
             ),
+            check_exists=False,
+            create_dataset=False,
         )
         self.load_rows_into_table(address, mock_data.to_dict("records"))
 

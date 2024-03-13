@@ -17,9 +17,7 @@
 
 """Query containing state staff role period information."""
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans_postgres,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -48,7 +46,7 @@ VIEW_QUERY_TEMPLATE = f"""
     ),
     -- aggregate adjacent spans if no attribute information has changed
     final_periods AS (
-        {aggregate_adjacent_spans_postgres(
+        {aggregate_adjacent_spans(
             table_name="preliminary_periods",
             attribute=["position", "default_location_id","active_flag"],
             index_columns=["employee_id_omni"])}

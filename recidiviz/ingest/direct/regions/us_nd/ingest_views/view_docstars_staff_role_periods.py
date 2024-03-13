@@ -26,7 +26,7 @@ VIEW_QUERY_TEMPLATE = """
 WITH staff_from_directory AS (
     SELECT
         -- make officer IDs uniform across sources 
-        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(OFFICER AS INT64) AS OFFICER,
         CAST(update_datetime AS DATETIME) AS edge_date,
         '(1)' AS STATUS, 
         MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
@@ -37,7 +37,7 @@ WITH staff_from_directory AS (
 staff_from_docstars AS (
     SELECT DISTINCT
         -- make officer IDs uniform across sources 
-        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(OFFICER AS INT64) AS OFFICER,
         CAST(RecDate AS DATETIME) AS edge_date, 
         STATUS,
         MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,

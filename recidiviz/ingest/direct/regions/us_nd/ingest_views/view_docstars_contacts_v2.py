@@ -77,7 +77,7 @@ SELECT
   CATEGORY,
   contacts_with_split_supervisor_name.LNAME,
   contacts_with_split_supervisor_name.FNAME,
-  CAST(OFFICER AS INT) AS OFFICER, 
+  CAST(OFFICER AS INT64) AS OFFICER, 
   FROM contacts_with_split_supervisor_name LEFT JOIN
   latest_officer_info officers
   ON (

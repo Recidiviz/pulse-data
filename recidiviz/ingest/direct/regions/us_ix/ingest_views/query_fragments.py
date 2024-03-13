@@ -16,9 +16,7 @@
 # =============================================================================
 """Shared helper fragments for the US_IX ingest view queries."""
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans_postgres,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 
 # Query fragments that rely only on raw data tables
 
@@ -892,7 +890,7 @@ CURRENT_ATLAS_EMPLOYEE_INFO_CTE = """
                                     UPPER(LastName)
                         ORDER BY emp.Inactive,
                                  (DATE(emp.InsertDate)) DESC,
-                                 CAST(EmployeeId as INT) DESC) as recency_rnk
+                                 CAST(EmployeeId as INT64) DESC) as recency_rnk
             FROM {ref_Employee} emp
             LEFT JOIN {ref_Location} USING(LocationId)
         ) as recency_ranked
@@ -997,7 +995,7 @@ STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
         WHERE (start_date < last_appearance_date or start_date = last_file_update_datetime)
     ),
     aggregated_periods as (
-        {aggregate_adjacent_spans_postgres(
+        {aggregate_adjacent_spans(
             table_name="preliminary_periods",
             attribute=["supervisor_EmployeeId", "ACTIVE"],
             index_columns=["officer_EmployeeId"])}

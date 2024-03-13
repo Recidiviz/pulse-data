@@ -16,9 +16,7 @@
 # =============================================================================
 """Query that generates state staff role periods and location periods information."""
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans_postgres,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -51,7 +49,7 @@ VIEW_QUERY_TEMPLATE = f"""
         LEFT JOIN {{ref_EmployeeType}} ref USING(EmployeeTypeId)
     ),
     final_periods as (
-        {aggregate_adjacent_spans_postgres(
+        {aggregate_adjacent_spans(
             table_name="preliminary_periods",
             attribute=["EmployeeTypeName", "LocationId", "InActive"],
             index_columns=["EmployeeId"])}

@@ -26,7 +26,7 @@ from typing import Dict, Optional
 
 from sqlalchemy.engine import URL
 
-from conftest import get_pytest_worker_id
+from recidiviz.tests.test_setup_utils import get_pytest_worker_id
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils import environment
 from recidiviz.utils.environment import in_ci
