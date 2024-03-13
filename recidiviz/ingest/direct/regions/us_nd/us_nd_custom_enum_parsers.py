@@ -275,7 +275,10 @@ def _datetime_str_is_before_2017_custodial_authority_cutoff(
 def custodial_authority_from_facility_and_dates(
     raw_text: str,
 ) -> StateCustodialAuthority:
-    facility, datetime_str_for_comparison = raw_text.split("-", maxsplit=1)
+    bed_assignment, facility, datetime_str_for_comparison = raw_text.split("|")
+    # Ensure that work release programs have StateCustodialAuthority.STATE_PRISON
+    if bed_assignment in ("CJ-WRK-WAR", "CJ-WRK-STA"):
+        return StateCustodialAuthority.STATE_PRISON
 
     if facility in OTHER_STATE_FACILITY:
         return StateCustodialAuthority.OTHER_STATE
