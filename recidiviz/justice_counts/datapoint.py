@@ -37,6 +37,9 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
+from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
+    MetricAggregatedDimensionData,
+)
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
@@ -48,6 +51,7 @@ from recidiviz.justice_counts.utils.constants import (
 from recidiviz.justice_counts.utils.datapoint_utils import (
     filter_deprecated_datapoints,
     get_dimension,
+    get_dimension_id,
     get_dimension_id_and_member,
     get_dimension_member,
     get_value,
@@ -210,6 +214,87 @@ class DatapointInterface:
         }
 
     ### Get Path: Both Agency and Report Datapoints ###
+
+    @staticmethod
+    def join_report_datapoints_to_metric_interfaces(
+        report_datapoints: List[schema.Datapoint],
+        metric_interfaces_by_key: Dict[str, MetricInterface],
+    ) -> Dict[str, MetricInterface]:
+        """
+        Populates the MetricInterfaces in `metric_interfaces_by_key` with the values
+        stored in `report_datapoints`.
+        Expects that the MetricInterfaces in `metric_interfaces_by_key` contains all
+        metric settings that an agency reports for, but that their report datapoint
+        fields are empty (`value` and `aggregated_dimensions.dimension_to_value`).
+        """
+        for datapoint in report_datapoints:
+            if datapoint.report_id is None or datapoint.is_report_datapoint is False:
+                raise ValueError(
+                    f"Expected report_id to be non-null and is_report_datapoint to be True. Instead got {datapoint.report_id} and {datapoint.is_report_datapoint}."
+                )
+            if datapoint.context_key is not None:
+                # There are some deprecated report datapoints that used to store context
+                # for report data. Skip these.
+                continue
+
+            # If an agency has report datapoints for metrics they have not configured
+            # yet, we will create an empty metric interface for this metric.
+            if datapoint.metric_definition_key not in metric_interfaces_by_key:
+                metric_interfaces_by_key[
+                    datapoint.metric_definition_key
+                ] = MetricInterface(key=datapoint.metric_definition_key)
+
+            metric_interface = metric_interfaces_by_key[datapoint.metric_definition_key]
+
+            # Populate top-level metric.
+            if datapoint.dimension_identifier_to_member is None:
+                metric_interface.value = get_value(datapoint=datapoint)
+                continue
+
+            # Populate breakdown metric.
+            dimension_enum_member, success = get_dimension(datapoint=datapoint)
+            if not success:
+                # This datapoint has a deprecated dimension identifier or value,
+                # so just skip over it.
+                continue
+            if dimension_enum_member is None:
+                raise JusticeCountsServerError(
+                    code="invalid_datapoint",
+                    description=(
+                        "Report datapoint does not represent a dimension or an "
+                        "aggregate value."
+                    ),
+                )
+            dimension_in_metric_interface = list(
+                filter(
+                    lambda x, dim=get_dimension_id(datapoint=datapoint): dim  # type: ignore[arg-type]
+                    == x.dimension_identifier(),
+                    metric_interface.aggregated_dimensions,
+                )
+            )
+            if len(dimension_in_metric_interface) > 1:
+                raise ValueError(
+                    "A metric interface must only have one dimension entry"
+                    "in aggregated_dimension per type."
+                )
+
+            # The dimension is in the metric interface's `aggregated_dimensions`.
+            if len(dimension_in_metric_interface) == 1:
+                if dimension_in_metric_interface[0].dimension_to_value is None:
+                    dimension_in_metric_interface[0].dimension_to_value = {}
+                dimension_in_metric_interface[0].dimension_to_value[
+                    dimension_enum_member
+                ] = get_value(datapoint=datapoint)
+                continue
+
+            # Dimension is not in `aggregated_dimensions`. Add a new entry for it.
+            dimension_data = MetricAggregatedDimensionData()
+            dimension_data.dimension_to_value = {
+                dimension_enum_member: get_value(datapoint=datapoint)
+            }
+            metric_interface.aggregated_dimensions.append(dimension_data)
+
+        return metric_interfaces_by_key
 
     @staticmethod
     def build_metric_key_to_datapoints(
