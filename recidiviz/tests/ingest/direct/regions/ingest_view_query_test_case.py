@@ -20,14 +20,16 @@ ingest view queries.
 import abc
 import datetime
 import os.path
+from collections import defaultdict
 from concurrent import futures
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 import pytest
 import pytz
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
+from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
@@ -48,6 +50,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
     DirectIngestViewRawFileDependency,
+    RawFileHistoricalRowsFilterType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
@@ -220,7 +223,28 @@ class IngestViewQueryTester:
         ) as executor:
             to_create = []
 
+            configs_by_file_tag: Dict[
+                str, List[DirectIngestViewRawFileDependency]
+            ] = defaultdict(list)
             for raw_table_dependency_config in ingest_view.raw_table_dependency_configs:
+                configs_by_file_tag[raw_table_dependency_config.file_tag].append(
+                    raw_table_dependency_config
+                )
+
+            for file_tag, dependency_configs in configs_by_file_tag.items():
+                if len(dependency_configs) == 1:
+                    raw_table_dependency_config = dependency_configs[0]
+                else:
+                    # When we have more than one dependency to the same raw file tag,
+                    # we are dealing with a view that references both LATEST ({myTag})
+                    # and ALL ({myTag@ALL}) versions of the data. In this case we only
+                    # load the ALL data since the LATEST data can be derived from it.
+                    raw_table_dependency_config = one(
+                        c
+                        for c in dependency_configs
+                        if c.filter_type == RawFileHistoricalRowsFilterType.ALL
+                    )
+
                 raw_data_df = self._get_raw_data(
                     region_code,
                     raw_table_dependency_config,
@@ -264,6 +288,9 @@ class IngestViewQueryTester:
         raw_fixtures_name: str,
         file_update_dt: datetime.datetime,
     ) -> pd.DataFrame:
+        """Loads the raw data fixture file for the provided dependency into a Dataframe,
+        augmenting with extra metadata columns as appropriate.
+        """
         raw_fixture_path = DirectIngestTestFixturePath.for_raw_file_fixture(
             region_code=region_code,
             raw_file_dependency_config=raw_file_dependency_config,
@@ -281,8 +308,18 @@ class IngestViewQueryTester:
         raw_data_df = load_dataframe_from_path(raw_fixture_path, fixture_columns)
 
         if not raw_file_dependency_config.filter_to_latest:
-            # We don't add metadata columns since this fixture file should already
-            # have an update_datetime column and the file_id will never be referenced.
+            # The fixture files for @ALL files have update_datetime, but not file_id.
+            # We derive a file_id from the update_datetime, assuming that all data with
+            # the same update_datetime came from the same file.
+            raw_data_df["file_id"] = (
+                raw_data_df["update_datetime"]
+                .rank(
+                    # The "dense" method assigns the same value where update_datetime
+                    # values are the same.
+                    method="dense"
+                )
+                .astype(int)
+            )
             return raw_data_df
 
         return augment_raw_data_df_with_metadata_columns(
