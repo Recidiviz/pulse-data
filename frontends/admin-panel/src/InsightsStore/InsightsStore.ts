@@ -18,7 +18,7 @@
 import { action, autorun, flowResult, makeAutoObservable } from "mobx";
 
 import {
-  getInsightsConfigurations,
+  getInsightsConfigs,
   getInsightsStateCodeInfo,
 } from "../AdminPanelAPI/InsightsAPI";
 import { StateCodeInfo } from "../components/general/constants";
@@ -84,7 +84,7 @@ export class InsightsStore implements Hydratable {
     InsightsConfiguration[]
   > {
     if (!this.stateCode) throw new Error("missing state code");
-    this.configs = yield getInsightsConfigurations(this.stateCode);
+    this.configs = yield getInsightsConfigs(this.stateCode);
   }
 
   *populateStateCodeInfo(): Generator<

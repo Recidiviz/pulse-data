@@ -61,6 +61,10 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #ffffff;
 }
 
+.ant-message-error {
+  white-space: pre;
+}
+
 .success {
   color: #ffffff;
   background-color: #389e0d;
