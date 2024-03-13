@@ -280,6 +280,7 @@ def main() -> int:
             {
                 "recidiviz.airflow.tests",
                 "recidiviz.tests.pipelines",
+                "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.postgres.local_postgres_helpers",
                 *valid_calculation_dag_prefixes,
             }
@@ -313,6 +314,7 @@ def main() -> int:
                 "recidiviz.airflow.tests",
                 "recidiviz.tools.utils.script_helpers",
                 "recidiviz.tools.postgres.local_postgres_helpers",
+                "recidiviz.tests.test_setup_utils",
             }
         ),
     )

@@ -17,9 +17,7 @@
 
 """Query containing state staff role period information."""
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans_postgres,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -65,7 +63,7 @@ case_manager_spans_w_active_flag AS (
 ),
 -- aggregate adjacent spans
 final_periods AS (
-    {aggregate_adjacent_spans_postgres(
+    {aggregate_adjacent_spans(
         table_name="case_manager_spans_w_active_flag",
         attribute=["active_flag"],
         index_columns=["Case_Manager_Omnni_Employee_Id"])}

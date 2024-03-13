@@ -283,9 +283,10 @@ jobs:
     name: BigQuery Emulator Tests
     runs-on: ubuntu-20.04
     strategy:
+      fail-fast: false
       matrix:
-        suite: [1, 2]
-        suite-count: [2]
+        suite: [1, 2, 3]
+        suite-count: [3]
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
@@ -298,24 +299,44 @@ jobs:
         run: pipenv run pull-bq-emulator
       # TODO(#20786): Replace ghcr.io/recidiviz with ghcr.io/goccy to move back to the
       # upstream bigquery emulator.
-      - name: Start emulator
+      # Start two emulator processes for each of the running pytest processes.
+      # We must run one emulator per process specified in `pytest -n` below.
+      - name: Start emulator (1)
         run: |
           docker run -d -p 9050:9050 \
-            --name=recidiviz-bq-emulator \
+            --name=recidiviz-bq-emulator-1 \
+            --cpus 1 \
+            --cpuset-cpus 0 \
             ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.7 \
             /bin/bigquery-emulator \
+            --port=9050 \
+            --project=recidiviz-bq-emulator-project \
+            --log-level=info
+      - name: Start emulator (2)
+        run: |
+          docker run -d -p 9051:9051 \
+            --name=recidiviz-bq-emulator-2 \
+            --cpus 1 \
+            --cpuset-cpus 1 \
+            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.7 \
+            /bin/bigquery-emulator \
+            --port=9051 \
             --project=recidiviz-bq-emulator-project \
             --log-level=info
       - name: Run unittests
         run: |
           pipenv run pytest recidiviz/tests \
             -m 'uses_bq_emulator' \
+            -n 2 \
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
             --durations=25
-      - name: Show logs
-        if: ${{ failure() }}
-        run: docker logs recidiviz-bq-emulator
+      - name: Show logs (1)
+        if: ${{ failure() || cancelled() }}
+        run: docker logs recidiviz-bq-emulator-1
+      - name: Show logs (2)
+        if: ${{ failure() || cancelled() }}
+        run: docker logs recidiviz-bq-emulator-2
       - name: Stop the container
         if: ${{ always() }}
-        run: docker stop recidiviz-bq-emulator && docker rm recidiviz-bq-emulator
+        run: docker stop recidiviz-bq-emulator-1 && docker rm recidiviz-bq-emulator-1 && docker stop recidiviz-bq-emulator-2 && docker rm recidiviz-bq-emulator-2

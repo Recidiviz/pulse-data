@@ -26,7 +26,7 @@ VIEW_QUERY_TEMPLATE = """
 WITH staff_from_directory AS (
     SELECT
         -- Make officer IDs uniform across sources 
-        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(OFFICER AS INT64) AS OFFICER,
         -- Transform district names into district external IDs
         xref.supervising_district_external_id AS location,
         CAST(update_datetime AS DATETIME) AS edge_date,
@@ -40,7 +40,7 @@ WITH staff_from_directory AS (
 staff_from_docstars AS (
     SELECT DISTINCT
         -- Make officer IDs uniform across sources 
-        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(OFFICER AS INT64) AS OFFICER,
         SITEID AS location,
         CAST(RecDate AS DATETIME) AS edge_date, 
         STATUS,
@@ -72,7 +72,7 @@ combined_data AS (
 critical_dates AS (
 SELECT * FROM (
     SELECT
-        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(OFFICER AS INT64) AS OFFICER,
         location,
         LAG(location) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_location, 
         edge_date,

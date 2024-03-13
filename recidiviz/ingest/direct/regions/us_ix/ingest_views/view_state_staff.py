@@ -38,7 +38,7 @@ unioned as (
     (SELECT DISTINCT
         'ATLAS' as Source,
         EmployeeId as SourceId,
-        UPPER(COALESCE(StaffId, SPLIT(Email, '@')[OFFSET(0)])) as StaffId,
+        UPPER(COALESCE(StaffId, SPLIT(Email, '@')[SAFE_OFFSET(0)])) as StaffId,
         FirstName,
         MiddleName,
         LastName,
@@ -55,7 +55,7 @@ unioned as (
         'CIS' as Source,
         empl_cd as SourceId,
         UPPER(empl_sdesc) as StaffId,
-        SPLIT(first_plus_middle, ' ')[OFFSET(0)] as FirstName,
+        SPLIT(first_plus_middle, ' ')[SAFE_OFFSET(0)] as FirstName,
         CASE
             WHEN first_plus_middle like '% %'
             THEN SPLIT(first_plus_middle, ' ')[OFFSET(1)] 

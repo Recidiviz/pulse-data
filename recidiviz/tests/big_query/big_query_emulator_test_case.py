@@ -18,6 +18,7 @@
 emulator.
 """
 import unittest
+from concurrent import futures
 from typing import Any, Dict, Iterable, List
 from unittest.mock import Mock, patch
 
@@ -26,11 +27,15 @@ import pytest
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import (
+    BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClientImpl,
+)
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.tests.big_query.big_query_test_helper import BigQueryTestHelper
+from recidiviz.tests.test_setup_utils import get_pytest_bq_emulator_port
 from recidiviz.tools.utils.script_helpers import does_command_fail, run_command
 
 BQ_EMULATOR_PROJECT_ID = "recidiviz-bq-emulator-project"
@@ -66,7 +71,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         # Lists all running containers and looks for one with port 9050 exposed (this
         # is the port used by the BQ emulator).
         bq_emulator_container_ids = run_command(
-            'docker ps --filter "expose=9050" -q',
+            f'docker ps --filter "expose={get_pytest_bq_emulator_port()}" -q',
             timeout_sec=10,
         )
         if not bq_emulator_container_ids:
@@ -94,12 +99,24 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         self.project_id_patcher.stop()
 
     def _wipe_emulator_data(self) -> None:
-        for dataset_list_item in self.bq_client.list_datasets():
-            self.bq_client.delete_dataset(
-                self.bq_client.dataset_ref_for_id(dataset_list_item.dataset_id),
-                delete_contents=True,
-                not_found_ok=True,
-            )
+        with futures.ThreadPoolExecutor(
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        ) as executor:
+            to_delete = [
+                executor.submit(
+                    self.bq_client.delete_dataset,
+                    self.bq_client.dataset_ref_for_id(dataset_list_item.dataset_id),
+                    delete_contents=True,
+                    not_found_ok=True,
+                )
+                for dataset_list_item in self.bq_client.list_datasets()
+            ]
+
+        for future in futures.as_completed(to_delete):
+            future.result()
 
     def query(self, query: str) -> pd.DataFrame:
         return self.bq_client.run_query_async(
@@ -122,11 +139,14 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         self,
         address: BigQueryAddress,
         schema: List[bigquery.SchemaField],
+        check_exists: bool | None = True,
+        create_dataset: bool | None = True,
     ) -> None:
         dataset_ref = self.bq_client.dataset_ref_for_id(address.dataset_id)
-        self.bq_client.create_dataset_if_necessary(dataset_ref)
+        if create_dataset:
+            self.bq_client.create_dataset_if_necessary(dataset_ref)
 
-        if self.bq_client.table_exists(dataset_ref, address.table_id):
+        if check_exists and self.bq_client.table_exists(dataset_ref, address.table_id):
             raise ValueError(
                 f"Table [{address}] already exists. Test cleanup not working properly."
             )

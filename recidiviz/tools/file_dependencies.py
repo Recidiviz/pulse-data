@@ -117,6 +117,51 @@ def convert_path_to_recidiviz_module(path: str) -> str:
     )
 
 
+NodeLineage = dict[ast.AST, ast.AST | None]
+
+
+class Lineage(ast.NodeTransformer):
+    parent: ast.AST | None
+
+    def __init__(self, node_lineage: NodeLineage) -> None:
+        self.parent = None
+        self.node_lineage = node_lineage
+
+    def visit(self, node: ast.AST) -> ast.AST:
+        # set parent for this node
+        self.node_lineage[node] = self.parent
+        # This node becomes the new parent
+        self.parent = node
+        # Do any work required by super class
+        node = super().visit(node)
+        # If we have a valid node (ie. node not being removed)
+        if isinstance(node, ast.AST):
+            # update the parent, since this may have been transformed
+            # to a different node by super
+            self.parent = self.node_lineage[node]
+        return node
+
+
+def matching_test_guard_node_in_lineage(
+    node: ast.AST,
+    node_lineage: NodeLineage,
+) -> bool:
+    """Walks the node parent lineage to see if there is a matching in_test guard node"""
+    parent_node: ast.AST | None = node
+    while parent_node in node_lineage:
+        match parent_node:
+            case ast.If(
+                test=ast.Call(
+                    func=ast.Attribute(value=ast.Name(id="environment"), attr="in_test")
+                )
+            ):
+                return True
+
+        parent_node = node_lineage[parent_node]
+
+    return False
+
+
 def _get_direct_dependencies(
     module: str,
 ) -> Tuple[Dict[str, List[Callsite]], Dict[str, List[Callsite]]]:
@@ -139,11 +184,24 @@ def _get_direct_dependencies(
     with open(filepath, encoding="utf-8") as fh:
         root = ast.parse(fh.read(), filepath)
 
+    # Create map of nodes to parent nodes
+    node_lineage: NodeLineage = {}
+    Lineage(node_lineage).visit(root)
+
     for node in ast.walk(root):
         if isinstance(node, ast.ImportFrom) and node.module:
             callsite = Callsite(
                 filepath=filepath, lineno=node.lineno, col_offset=node.col_offset
             )
+            if node.module.startswith("recidiviz.tests"):
+                is_guarded_by_in_test = matching_test_guard_node_in_lineage(
+                    node=node,
+                    node_lineage=node_lineage,
+                )
+
+                # Test modules that are only imported while environment.in_test() are not added to module dependencies
+                if is_guarded_by_in_test:
+                    continue
 
             if node.module.startswith(RECIDIVIZ_PACKAGE):
                 if os.path.isdir(

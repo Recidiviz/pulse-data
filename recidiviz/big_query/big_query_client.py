@@ -58,6 +58,7 @@ from recidiviz.ingest.direct.dataset_config import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment, metadata
+from recidiviz.utils.environment import in_ci
 from recidiviz.utils.size import total_size
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -75,6 +76,7 @@ DEFAULT_VANTA_DATASET_OWNER = "joshua"
 
 
 def client(project_id: str, region: str) -> bigquery.Client:
+    """Returns a BigQuery client for the given project / region"""
     if (
         project_id not in _clients_by_project_id_by_region
         or region not in _clients_by_project_id_by_region[project_id]
@@ -82,7 +84,14 @@ def client(project_id: str, region: str) -> bigquery.Client:
         if environment.in_test():
             # If we are running from inside a test, the BQ Client should talk to the
             # local BQ emulator.
-            client_options = ClientOptions(api_endpoint="http://0.0.0.0:9050")
+            # Import test setup utils inline as an extra precaution against importing test code in production envs
+            from recidiviz.tests.test_setup_utils import (  # pylint: disable=import-outside-toplevel
+                get_pytest_bq_emulator_port,
+            )
+
+            client_options = ClientOptions(
+                api_endpoint=f"http://0.0.0.0:{get_pytest_bq_emulator_port()}"
+            )
             new_client = bigquery.Client(
                 project_id,
                 client_options=client_options,
@@ -923,7 +932,11 @@ class BigQueryClientImpl(BigQueryClient):
         The dataset must already exist, otherwise there will not be any owners.
         """
         date = datetime.date.today().isoformat()
-        script_name = os.path.splitext(os.path.basename(__main__.__file__))[0]
+        # __main__ has no __file__ attribute when pytest-xdist is running the process
+        if in_ci() and not hasattr(__main__, "__file__"):
+            script_name = "UNKNOWN"
+        else:
+            script_name = os.path.splitext(os.path.basename(__main__.__file__))[0]
         # Get "individual" (non service account) owners of the dataset
         owner_emails = [
             entry.entity_id

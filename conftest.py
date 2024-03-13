@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Custom configuration for how pytest should run."""
-import os
 from typing import List
 
 from _pytest.config import Config
@@ -84,10 +83,3 @@ def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
     deselect_by_mark(items, config)
 
     items[:] = get_suite(items, suite_count, suite_id)
-
-
-def get_pytest_worker_id() -> int:
-    """Retrieves the worker number from the appropriate environment variable
-    https://github.com/pytest-dev/pytest-xdist#identifying-the-worker-process-during-a-test
-    """
-    return int(os.environ.get("PYTEST_XDIST_WORKER", "gw0")[2:])

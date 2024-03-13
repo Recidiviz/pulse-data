@@ -270,122 +270,12 @@ FROM (
             FROM {table_name}
             )
         )
+        -- TODO(goccy/go-zetasqlite#123): Workaround emulator unsupported QUALIFY without WHERE/HAVING/GROUP BY clause
+        WHERE TRUE
         QUALIFY ROW_NUMBER() OVER w = 1
         WINDOW w AS (PARTITION BY {index_col_str}, {session_id_output_name}{attribute_grouping_str})
     )
 """
-
-
-# TODO(#21639) Remove this function and migrate all uses of this function to aggregate_adjacent_spans once the BQ emulator works for Qualify
-def aggregate_adjacent_spans_postgres(
-    table_name: str,
-    index_columns: Optional[List[str]] = None,
-    attribute: Optional[Union[str, List[str]]] = None,
-    session_id_output_name: Optional[str] = "session_id",
-    is_struct: Optional[bool] = False,
-    end_date_field_name: str = "end_date",
-) -> str:
-    """
-    Same as the original aggregate_adjacent_spans function above, but syntax modified for postgres to pass ingest view tests
-    """
-    # Default index columns are `person_id` and `state_code`.
-    if index_columns is None:
-        index_columns = ["person_id", "state_code"]
-    index_col_str = list_to_query_string(index_columns)
-
-    # If no attribute is specified, the attribute column string and the attribute aggregation strings are left blank.
-    attribute_col_str = ""
-    attribute_grouping_str = ""
-
-    if attribute:
-        # If only one attribute is specified, turn it into a single-element list. This is done to reduce
-        # repeated logic below to handle both situations separately.
-        attribute_list = [attribute] if not isinstance(attribute, List) else attribute
-
-        if len(attribute_list) > 1 and is_struct:
-            raise ValueError("Sessionization on struct only allows one attribute value")
-
-        # Create a string from the column names in the list to be used in the query.
-        attribute_col_str = list_to_query_string(attribute_list)
-
-        # Casts all attribute columns to string before creating list, so that attributes can be used in partitions
-        attribute_col_string_cast_str = list_to_query_string(
-            [f"CAST({attribute} AS STRING)" for attribute in attribute_list]
-        )
-
-        # If a struct is specified, use a string representation of the struct.
-        attribute_grouping_str = (
-            f", TO_JSON_STRING({attribute_col_str})"
-            if is_struct
-            else f", {attribute_col_string_cast_str}"
-        )
-
-    # Query string used for partitioning session boundaries based on both index columns and attributes
-    partition_with_attributes_str = (
-        f"(PARTITION BY {index_col_str}{attribute_grouping_str} "
-        f"ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})"
-    )
-
-    # Query string used for partitioning session boundaries only based index columns
-    partition_str = (
-        f"(PARTITION BY {index_col_str} "
-        f"ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})"
-    )
-
-    query_string = f"""
-    SELECT
-        {index_col_str},
-        -- Recalculate session-ids after aggregation
-        ROW_NUMBER() OVER (
-            PARTITION BY {index_col_str} 
-            ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')}{attribute_grouping_str}
-        ) AS {session_id_output_name},
-        date_gap_id,
-        start_date,
-        {end_date_field_name},
-        {attribute_col_str}
-    FROM (
-        SELECT *
-        FROM
-        (
-            SELECT
-                {index_col_str},
-                {session_id_output_name},
-                date_gap_id,
-                MIN(start_date) OVER(PARTITION BY {index_col_str}, {session_id_output_name}{attribute_grouping_str}) AS start_date,
-                {revert_nonnull_end_date_clause(f'MAX({end_date_field_name}) OVER(PARTITION BY {index_col_str}, {session_id_output_name}{attribute_grouping_str})')} AS {end_date_field_name},
-                {attribute_col_str},
-                ROW_NUMBER() OVER(PARTITION BY {index_col_str}, {session_id_output_name}{attribute_grouping_str}) as rn
-            FROM 
-                (
-                SELECT *
-                FROM
-                    (
-                    SELECT 
-                        *,
-                        SUM(CAST(session_boundary AS INT64)) OVER {partition_with_attributes_str} AS {session_id_output_name},
-                        SUM(CAST(date_gap AS INT64)) OVER {partition_str} AS date_gap_id,
-                    FROM
-                        (
-                        SELECT
-                            {index_col_str},
-                            start_date,
-                            {nonnull_end_date_clause(f'{end_date_field_name}')} AS {end_date_field_name},
-                            -- Define a session boundary if there is no prior adjacent span with the same attribute columns
-                            COALESCE(LAG({end_date_field_name}) OVER {partition_with_attributes_str} != start_date, TRUE) AS session_boundary,
-                            -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
-                            COALESCE(LAG({end_date_field_name}) OVER {partition_str} != start_date, TRUE) AS date_gap,
-                            {attribute_col_str},
-                        FROM {table_name}
-                        ) subquery1
-                    ) subquery2
-            ) subquery3
-        ) subquery4
-        WHERE rn=1
-    ) subquery5
-    """
-
-    return str.replace(query_string, '"', "'")
 
 
 def _compartment_where_clause(

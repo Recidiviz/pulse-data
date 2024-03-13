@@ -16,9 +16,7 @@
 # =============================================================================
 """Query that generates state staff caseload type periods information (which is pulled FROM the supervisor roster)."""
 
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans_postgres,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.ingest.direct.regions.us_ix.ingest_views.query_fragments import (
     CURRENT_ATLAS_EMPLOYEE_INFO_CTE,
     SUPERVISOR_ROSTER_EMPLOYEE_IDS_CTE,
@@ -56,7 +54,7 @@ VIEW_QUERY_TEMPLATE = f""",
         WHERE (start_date < last_appearance_date or start_date = last_file_update_datetime)
     ),
     aggregated_periods AS (
-        {aggregate_adjacent_spans_postgres(
+        {aggregate_adjacent_spans(
             table_name="preliminary_periods",
             attribute=["caseload_type_raw", "ACTIVE"],
             index_columns=["officer_EmployeeId"])}

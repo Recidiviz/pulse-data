@@ -26,7 +26,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH staff_from_directory AS (
 SELECT DISTINCT
-    CAST(OFFICER AS INT) AS OFFICER,
+    CAST(OFFICER AS INT64) AS OFFICER,
     UPPER(LastName) AS LastName,
     UPPER(FirstName) AS FirstName,
     email
@@ -40,17 +40,17 @@ SELECT
     EMAIL 
 FROM (
     SELECT 
-        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(OFFICER AS INT64) AS OFFICER,
         LNAME,
         FNAME,
         -- Null out emails for entries like "Bismarck CS", which sometimes appear
         -- as terminating officers in supervision periods, but are not real people.
         IF(LOGINNAME LIKE '%% %%', NULL, CONCAT(LOWER(LOGINNAME), '@nd.gov')) AS EMAIL,
         ROW_NUMBER() OVER (
-            PARTITION BY CAST(OFFICER AS INT)
+            PARTITION BY CAST(OFFICER AS INT64)
             ORDER BY CAST(RecDate AS DATETIME) DESC) AS recency_rank
     FROM {docstars_officers}
-    WHERE CAST(OFFICER AS INT) NOT IN (
+    WHERE CAST(OFFICER AS INT64) NOT IN (
         SELECT DISTINCT OFFICER 
         FROM staff_from_directory)
     ) sub
