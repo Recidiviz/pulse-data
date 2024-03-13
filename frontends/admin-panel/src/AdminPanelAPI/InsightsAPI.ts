@@ -19,14 +19,14 @@ import {
   InsightsConfiguration,
   insightsConfigurationSchema,
 } from "../InsightsStore/models/InsightsConfiguration";
-import { get, post } from "./utils";
+import { get, post, put } from "./utils";
 
 // Get enabled states for Insights
 export const getInsightsStateCodeInfo = async (): Promise<StateCodeInfo[]> => {
   return get("/admin/outliers/enabled_state_codes");
 };
 
-export const getInsightsConfigurations = async (
+export const getInsightsConfigs = async (
   stateCode: string
 ): Promise<InsightsConfiguration[]> => {
   const response = await get(`/admin/outliers/${stateCode}/configurations`);
@@ -36,14 +36,14 @@ export const getInsightsConfigurations = async (
   });
 };
 
-export const createNewConfiguration = async (
+export const createNewConfig = async (
   request: InsightsConfiguration,
   stateCode: string
 ): Promise<Response> => {
   return post(`/admin/outliers/${stateCode}/configurations`, request);
 };
 
-export const promoteToProduction = async (
+export const promoteConfigToProduction = async (
   configId: number,
   stateCode: string
 ): Promise<Response> => {
@@ -52,11 +52,29 @@ export const promoteToProduction = async (
   );
 };
 
-export const promoteToDefault = async (
+export const promoteConfigToDefault = async (
   configId: number,
   stateCode: string
 ): Promise<Response> => {
   return post(
     `/admin/outliers/${stateCode}/configurations/${configId}/promote/default`
+  );
+};
+
+export const reactivateConfig = async (
+  configId: number,
+  stateCode: string
+): Promise<Response> => {
+  return post(
+    `/admin/outliers/${stateCode}/configurations/${configId}/reactivate`
+  );
+};
+
+export const deactivateConfig = async (
+  configId: number,
+  stateCode: string
+): Promise<Response> => {
+  return put(
+    `/admin/outliers/${stateCode}/configurations/${configId}/deactivate`
   );
 };

@@ -39,7 +39,7 @@ const PromoteButtonContainer = styled.div`
   }
 `;
 
-const PromoteDropdown = ({
+const ManageConfigDropdown = ({
   presenter,
   selectedConfigId,
 }: {
@@ -47,8 +47,10 @@ const PromoteDropdown = ({
   selectedConfigId?: number;
 }): JSX.Element => {
   const {
-    promoteSelectedVersionToProduction,
-    promoteSelectedVersionToDefault,
+    promoteSelectedConfigToProduction,
+    promoteSelectedConfigToDefault,
+    reactivateSelectedConfig,
+    deactivateSelectedConfig,
     envIsStaging,
   } = presenter;
 
@@ -56,8 +58,34 @@ const PromoteDropdown = ({
     {
       label: (
         <Popconfirm
+          title="Are you sure you want to reactivate this config? If there is another ACTIVE config with the same feature variant it will be deactivated."
+          onConfirm={() => reactivateSelectedConfig(selectedConfigId)}
+          disabled={!selectedConfigId}
+        >
+          Reactivate
+        </Popconfirm>
+      ),
+      key: "reactivate",
+      disabled: !selectedConfigId,
+    },
+    {
+      label: (
+        <Popconfirm
+          title="Are you sure you want to deactivate this config? Only configs that are not the ACTIVE, default config can be deactivated."
+          onConfirm={() => deactivateSelectedConfig(selectedConfigId)}
+          disabled={!selectedConfigId}
+        >
+          Deactivate
+        </Popconfirm>
+      ),
+      key: "deactivate",
+      disabled: !selectedConfigId,
+    },
+    {
+      label: (
+        <Popconfirm
           title="Are you sure you want to promote this config to default?"
-          onConfirm={() => promoteSelectedVersionToDefault(selectedConfigId)}
+          onConfirm={() => promoteSelectedConfigToDefault(selectedConfigId)}
           disabled={!selectedConfigId}
         >
           Promote to default
@@ -70,10 +98,10 @@ const PromoteDropdown = ({
       label: (
         <Popconfirm
           title="Are you sure you want to promote this config to production?"
-          onConfirm={() => promoteSelectedVersionToProduction(selectedConfigId)}
+          onConfirm={() => promoteSelectedConfigToProduction(selectedConfigId)}
           disabled={!selectedConfigId || !envIsStaging}
         >
-          Promote to production
+          Promote to production (from staging)
         </Popconfirm>
       ),
       key: "production",
@@ -85,12 +113,12 @@ const PromoteDropdown = ({
     <PromoteButtonContainer>
       <Dropdown trigger={["click"]} menu={{ items }}>
         <Tooltip
-          title="Select a configuration to promote to default, or promote to production (from staging only)"
+          title="Select a configuration to manage"
           key="leftButton"
           placement="top"
         >
           <Space>
-            Promote
+            Manage
             <DownOutlined />
           </Space>
         </Tooltip>
@@ -99,4 +127,4 @@ const PromoteDropdown = ({
   );
 };
 
-export default observer(PromoteDropdown);
+export default observer(ManageConfigDropdown);

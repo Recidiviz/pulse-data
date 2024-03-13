@@ -138,7 +138,7 @@ export const deleteResource = async (
 
 interface RequestProps {
   path: string;
-  method: "GET" | "POST" | "PATCH" | "DELETE";
+  method: "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
   body?: Record<string, unknown>;
   retrying?: boolean;
 }
@@ -187,6 +187,13 @@ export const post = async (
   body: Record<string, unknown> = {}
 ): Promise<any> => {
   return request({ path, body, method: "POST" });
+};
+
+export const put = async (
+  path: string,
+  body: Record<string, unknown> = {}
+): Promise<any> => {
+  return request({ path, body, method: "PUT" });
 };
 
 export const patch = async (

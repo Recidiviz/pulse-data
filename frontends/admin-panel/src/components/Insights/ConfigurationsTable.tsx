@@ -24,7 +24,7 @@ import styled from "styled-components/macro";
 import { InsightsConfiguration } from "../../InsightsStore/models/InsightsConfiguration";
 import ConfigurationPresenter from "../../InsightsStore/presenters/ConfigurationPresenter";
 import { optionalStringSort } from "../Utilities/GeneralUtilities";
-import PromoteDropdown from "./PromoteDropdown";
+import ManageConfigDropdown from "./ManageConfigDropdown";
 
 const TableContainer = styled.div`
   padding-top: 1rem;
@@ -149,7 +149,7 @@ const ConfigurationsTable = ({
           onChange: (_selectedRowKeys, selectedRows) =>
             setSelectedConfigId(selectedRows[0].id),
           columnTitle: (
-            <PromoteDropdown
+            <ManageConfigDropdown
               presenter={presenter}
               selectedConfigId={selectedConfigId}
             />

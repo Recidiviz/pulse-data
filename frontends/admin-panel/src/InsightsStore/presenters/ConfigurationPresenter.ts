@@ -20,9 +20,11 @@ import { uniq } from "lodash";
 import { autorun, flowResult, makeAutoObservable } from "mobx";
 
 import {
-  createNewConfiguration,
-  promoteToDefault,
-  promoteToProduction,
+  createNewConfig,
+  deactivateConfig,
+  promoteConfigToDefault,
+  promoteConfigToProduction,
+  reactivateConfig,
 } from "../../AdminPanelAPI/InsightsAPI";
 import { InsightsStore } from "../InsightsStore";
 import { InsightsConfiguration } from "../models/InsightsConfiguration";
@@ -83,17 +85,21 @@ export default class ConfigurationPresenter implements Hydratable {
 
   async createNewVersion(request: InsightsConfiguration): Promise<boolean> {
     try {
-      await createNewConfiguration(request, this.stateCode);
+      await createNewConfig(request, this.stateCode);
       message.success("Configuration added!");
       this.hydrationState.status = "needs hydration";
       return true;
     } catch (e) {
-      message.error(`Error adding configuration: ${e}`);
+      message.error(
+        `Error adding configuration:
+        \n${e}`,
+        10
+      );
       return false;
     }
   }
 
-  async promoteSelectedVersionToProduction(
+  async promoteSelectedConfigToProduction(
     configId: number | undefined
   ): Promise<boolean> {
     if (!this.envIsStaging) {
@@ -108,16 +114,20 @@ export default class ConfigurationPresenter implements Hydratable {
     }
 
     try {
-      await promoteToProduction(configId, this.stateCode);
+      await promoteConfigToProduction(configId, this.stateCode);
       message.success("Configuration promoted to production!");
       return true;
     } catch (e) {
-      message.error(`Error promoting config ${configId} to production: ${e}`);
+      message.error(
+        `Error promoting config ${configId} to production:
+        \n${e}`,
+        10
+      );
       return false;
     }
   }
 
-  async promoteSelectedVersionToDefault(
+  async promoteSelectedConfigToDefault(
     configId: number | undefined
   ): Promise<boolean> {
     if (!configId) {
@@ -126,12 +136,62 @@ export default class ConfigurationPresenter implements Hydratable {
     }
 
     try {
-      await promoteToDefault(configId, this.stateCode);
+      await promoteConfigToDefault(configId, this.stateCode);
       message.success("Configuration promoted to default!");
       this.hydrationState.status = "needs hydration";
       return true;
     } catch (e) {
-      message.error(`Error promoting config ${configId} to default: ${e}`);
+      message.error(
+        `Error promoting config ${configId} to default:
+        \n${e}`,
+        10
+      );
+      return false;
+    }
+  }
+
+  async reactivateSelectedConfig(
+    configId: number | undefined
+  ): Promise<boolean> {
+    if (!configId) {
+      message.error("Cannot reactivate config without config id selected");
+      return false;
+    }
+
+    try {
+      await reactivateConfig(configId, this.stateCode);
+      message.success("Configuration reactivated!");
+      this.hydrationState.status = "needs hydration";
+      return true;
+    } catch (e) {
+      message.error(
+        `Error reactivating config ${configId}:
+        \n${e}`,
+        10
+      );
+      return false;
+    }
+  }
+
+  async deactivateSelectedConfig(
+    configId: number | undefined
+  ): Promise<boolean> {
+    if (!configId) {
+      message.error("Cannot deactivate config without config id selected");
+      return false;
+    }
+
+    try {
+      await deactivateConfig(configId, this.stateCode);
+      message.success("Configuration deactivated!");
+      this.hydrationState.status = "needs hydration";
+      return true;
+    } catch (e) {
+      message.error(
+        `Error deactivating config ${configId}:
+        \n${e}`,
+        10
+      );
       return false;
     }
   }
