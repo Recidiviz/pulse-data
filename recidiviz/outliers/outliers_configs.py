@@ -38,8 +38,8 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
 )
 
-OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
-    StateCode.US_IX: OutliersBackendConfig(
+_OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
+    StateCode.US_ID: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS,
@@ -258,6 +258,13 @@ Denominator is the average daily caseload for the officer over the given time pe
 METRICS_BY_OUTCOME_TYPE: Dict[MetricOutcome, Set[OutliersMetricConfig]] = defaultdict(
     set
 )
-for config in OUTLIERS_CONFIGS_BY_STATE.values():
+for config in _OUTLIERS_CONFIGS_BY_STATE.values():
     for metric in config.metrics:
         METRICS_BY_OUTCOME_TYPE[metric.outcome_type].add(metric)
+
+
+def get_outliers_backend_config(state_code: str) -> OutliersBackendConfig:
+    if state_code == StateCode.US_IX.value:
+        return _OUTLIERS_CONFIGS_BY_STATE[StateCode.US_ID]
+
+    return _OUTLIERS_CONFIGS_BY_STATE[StateCode(state_code)]

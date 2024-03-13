@@ -15,13 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for building Outliers views"""
-from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states_for_bigquery,
+)
+from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 
 
 def format_state_specific_officer_aggregated_metric_filters() -> str:
     state_specific_ctes = []
 
-    for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
+    for state_code in get_outliers_enabled_states_for_bigquery():
+        config = get_outliers_backend_config(state_code)
         state_specific_ctes.append(
             f"""
     SELECT 
@@ -31,7 +35,7 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
     INNER JOIN `{{project_id}}.outliers_views.supervision_officers_materialized` o
         ON m.state_code = o.state_code AND m.officer_id = o.external_id
     WHERE 
-        m.state_code = '{state_code.value}' {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""}
+        m.state_code = '{state_code}' {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""}
         -- currently, the Outliers product only references metrics for 12-month periods
         AND m.period = 'YEAR'
 """
@@ -43,7 +47,8 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
 def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
     state_specific_ctes = []
 
-    for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
+    for state_code in get_outliers_enabled_states_for_bigquery():
+        config = get_outliers_backend_config(state_code)
         for metric in config.metrics:
             state_specific_ctes.append(
                 f"""
@@ -55,7 +60,7 @@ def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
         CAST(NULL AS STRING) AS attributes
     FROM `{{project_id}}.analyst_data.person_events_materialized`
     WHERE 
-        state_code = '{state_code.value}' 
+        state_code = '{state_code}' 
         -- Limit the events lookback to minimize the size of the subqueries
         AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
         {f"AND ({metric.metric_event_conditions_string})" if metric.metric_event_conditions_string else ""}
