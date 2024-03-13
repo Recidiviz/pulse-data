@@ -369,6 +369,8 @@ class SupervisionOfficerEntity:
     outlier_metrics: list = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
+        # TODO(#28217): To refine when designing Insights with disaggregated caseload types
+        self.caseload_type = None
         return cattrs.unstructure(self)
 
 
