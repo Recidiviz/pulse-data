@@ -24,7 +24,6 @@ import {
   promoteToDefault,
   promoteToProduction,
 } from "../../AdminPanelAPI/InsightsAPI";
-import { gcpEnvironment } from "../../components/Utilities/EnvironmentUtilities";
 import { InsightsStore } from "../InsightsStore";
 import { InsightsConfiguration } from "../models/InsightsConfiguration";
 import { Hydratable, HydrationState } from "../types";
@@ -36,6 +35,8 @@ export default class ConfigurationPresenter implements Hydratable {
 
   envIsStaging: boolean;
 
+  envIsDevelopment: boolean;
+
   selectedFeatureVariant: string | null | undefined;
 
   constructor(private insightsStore: InsightsStore, stateCode: string) {
@@ -45,7 +46,8 @@ export default class ConfigurationPresenter implements Hydratable {
 
     this.stateCode = stateCode;
 
-    this.envIsStaging = gcpEnvironment.isStaging;
+    this.envIsStaging = insightsStore.envIsStaging;
+    this.envIsDevelopment = insightsStore.envIsDevelopment;
 
     this.selectedFeatureVariant = undefined;
 
