@@ -21,12 +21,16 @@ from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
-from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states_for_bigquery,
+)
+from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import OutliersMetricValueType
 
 
 def supervision_metric_query_template(
-    unit_of_analysis: MetricUnitOfAnalysis, cte_source: Optional[str] = None
+    unit_of_analysis: MetricUnitOfAnalysis,
+    cte_source: Optional[str] = None,
 ) -> str:
     """
     Helper for querying supervision_<unit_of_analysis>_aggregated_metrics views
@@ -38,7 +42,9 @@ def supervision_metric_query_template(
     )
 
     subqueries = []
-    for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
+    for state_code in get_outliers_enabled_states_for_bigquery():
+        config = get_outliers_backend_config(state_code)
+
         subqueries.append(
             f"""
 SELECT
@@ -49,7 +55,7 @@ SELECT
     avg_daily_population AS metric_value,
     "{OutliersMetricValueType.AVERAGE.value}" AS value_type
 FROM {source_table}
-WHERE state_code = '{state_code.value}'
+WHERE state_code = '{state_code}'
 AND period = "YEAR"
         """
         )
@@ -64,7 +70,7 @@ SELECT
     {metric.name} AS metric_value,
     "{OutliersMetricValueType.COUNT.value}" AS value_type
 FROM {source_table}
-WHERE state_code = '{state_code.value}'
+WHERE state_code = '{state_code}'
 AND period = "YEAR"
 """
 
@@ -77,7 +83,7 @@ SELECT
     {metric.name} / avg_daily_population AS metric_value,
     "{OutliersMetricValueType.RATE.value}" AS value_type
 FROM {source_table}
-WHERE state_code = '{state_code.value}'
+WHERE state_code = '{state_code}'
 AND period = "YEAR"
 """
 

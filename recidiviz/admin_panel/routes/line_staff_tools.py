@@ -38,11 +38,13 @@ from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import is_date_str
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
-from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.reporting import data_retrieval, email_delivery
 from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.email_reporting_handler import (
@@ -100,7 +102,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                 raise ValueError(f"{report_type.value} is not a valid ReportType")
 
             if report_type in [ReportType.OutliersSupervisionOfficerSupervisor]:
-                if state_code not in OUTLIERS_CONFIGS_BY_STATE:
+                if state_code_str not in get_outliers_enabled_states():
                     raise ValueError(
                         f"{ReportType.OutliersSupervisionOfficerSupervisor} report is not configured for this state"
                     )

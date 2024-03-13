@@ -20,10 +20,9 @@ from recidiviz.calculator.query.bq_utils import (
     today_between_start_date_and_nullable_end_date_clause,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
-    get_outliers_enabled_states,
+    get_outliers_enabled_states_for_bigquery,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
+from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 
 
 def staff_query_template(role: str) -> str:
@@ -55,8 +54,8 @@ def staff_query_template(role: str) -> str:
     else:
         raise ValueError(f"Unexpected role provided: {'None' if not role else role}")
 
-    for state in get_outliers_enabled_states():
-        config = OUTLIERS_CONFIGS_BY_STATE[StateCode(state)]
+    for state in get_outliers_enabled_states_for_bigquery():
+        config = get_outliers_backend_config(state)
         state_queries.append(
             f"""
     SELECT

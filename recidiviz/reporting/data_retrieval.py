@@ -29,7 +29,7 @@ import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
+from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.reporting import email_generation
 from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.context.available_context import get_report_context
@@ -184,7 +184,7 @@ def retrieve_data(
         Provides logging for debug purposes whenever possible.
     """
     if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
-        outliers_config = OUTLIERS_CONFIGS_BY_STATE[batch.state_code]
+        outliers_config = get_outliers_backend_config(batch.state_code.value)
         # Get data from querier
         results_by_supervisor = (
             retrieve_data_for_outliers_supervision_officer_supervisor(batch)

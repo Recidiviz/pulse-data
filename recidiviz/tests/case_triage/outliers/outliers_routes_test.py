@@ -148,7 +148,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         super().setUp()
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="recidiviz", allowed_states=["US_IX", "US_PA"]
+            state_code="recidiviz", allowed_states=["US_ID", "US_PA"]
         )
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
@@ -209,7 +209,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
         response = self.test_client.get(
-            "/outliers/us_ix/configuration",
+            "/outliers/us_id/configuration",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -230,7 +230,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="1", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_get_supervision_officer_entities.return_value = [
             SupervisionOfficerSupervisorEntity(
@@ -266,7 +266,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             state_code="us_pa", external_id="1", pseudonymized_id="hash-1"
         )
 
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.get(
             "/outliers/US_PA/supervisors",
@@ -297,7 +297,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         with SessionFactory.using_database(self.database_key) as session:
             mock_get_supervisor.return_value = (
@@ -372,7 +372,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", external_id="101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         with SessionFactory.using_database(self.database_key) as session:
             mock_get_supervisor.return_value = (
@@ -441,7 +441,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_get_supervisor.return_value = None
 
@@ -470,7 +470,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_outliers: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_get_outliers.return_value = [
             {
@@ -503,7 +503,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.get(
             "/outliers/US_PA/officer/officerhash3/events?metric_id=absconsions_bench_warrants&period_end_date=23-05-01",
@@ -530,7 +530,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -561,7 +561,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -596,7 +596,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_officer_entity: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -639,7 +639,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -715,7 +715,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -790,7 +790,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -840,7 +840,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -909,7 +909,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
@@ -989,7 +989,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
@@ -1068,7 +1068,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
@@ -1152,7 +1152,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
@@ -1227,7 +1227,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_officer_entity: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1270,7 +1270,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1342,7 +1342,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1391,7 +1391,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_pa", "101", can_access_all_supervisors=True
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1444,7 +1444,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="102", pseudonymized_id="hashhash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
             full_name=PersonName(
@@ -1478,7 +1478,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="101", pseudonymized_id="hash-101"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.get(
             "/outliers/US_PA/user-info/hashhash",
@@ -1508,7 +1508,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="RECIDIVIZ", external_id="RECIDIVIZ", allowed_states=["US_PA"]
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
             full_name=PersonName(
@@ -1546,7 +1546,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="102", pseudonymized_id="hashhash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
             full_name=PersonName(
@@ -1583,7 +1583,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="101", pseudonymized_id="hash-101"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
@@ -1609,7 +1609,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="RECIDIVIZ", external_id="RECIDIVIZ", allowed_states=["US_PA"]
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
@@ -1635,7 +1635,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
@@ -1660,7 +1660,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
@@ -1686,7 +1686,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="101", pseudonymized_id="hashhash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.patch(
             "/outliers/US_PA/user-info/hashhash",
@@ -1710,7 +1710,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         response = self.test_client.get(
             "/outliers/US_PA/client/clienthash1/events?metric_id=violations",
@@ -1735,7 +1735,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1775,7 +1775,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="102",
             pseudonymized_id="officerhash",
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1830,7 +1830,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1880,7 +1880,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1930,7 +1930,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="102",
             pseudonymized_id="officerhash",
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -1984,7 +1984,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -2037,7 +2037,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="102", pseudonymized_id="hash"
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
@@ -2090,7 +2090,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="CSG", external_id=None
         )
-        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA"]
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],

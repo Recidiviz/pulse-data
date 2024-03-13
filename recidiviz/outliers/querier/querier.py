@@ -34,7 +34,7 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
 from recidiviz.case_triage.outliers.user_context import UserContext
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import DEFAULT_NUM_LOOKBACK_PERIODS
-from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
+from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import (
     ConfigurationStatus,
     MetricContext,
@@ -370,7 +370,7 @@ class OutliersQuerier:
         return metric_benchmark.target, target_status_strategy
 
     def get_outliers_config(self) -> OutliersBackendConfig:
-        return OUTLIERS_CONFIGS_BY_STATE[self.state_code]
+        return get_outliers_backend_config(self.state_code.value)
 
     def get_supervision_officer_supervisor_entities(
         self, pseudonymized_id: Optional[str] = None

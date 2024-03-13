@@ -47,3 +47,11 @@ def get_outliers_enabled_states() -> List[str]:
     ]
 
     return _outliers_enabled_states
+
+
+def get_outliers_enabled_states_for_bigquery() -> List[str]:
+    # Only US_IX data should be used while the US_IX -> US_ID migration is incomplete.
+    # The US_IX value will be overriden to US_ID during export to GCS.
+    return [state for state in get_outliers_enabled_states() if state != "US_ID"] + [
+        StateCode.US_IX.value
+    ]

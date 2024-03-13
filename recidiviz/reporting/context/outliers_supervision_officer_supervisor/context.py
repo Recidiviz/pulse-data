@@ -58,7 +58,7 @@ from recidiviz.outliers.constants import (
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
-from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
+from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import (
     MetricOutcome,
     OfficerSupervisorReportData,
@@ -376,7 +376,7 @@ if __name__ == "__main__":
         test_report_date = datetime.datetime.now()
         test_state_code = known_args.state_code
 
-        test_config = OUTLIERS_CONFIGS_BY_STATE[test_state_code]
+        test_config = get_outliers_backend_config(test_state_code.value)
 
         # # init the database collection to fetch from local
         database_manager = StateSegmentedDatabaseManager(
