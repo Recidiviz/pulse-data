@@ -221,7 +221,7 @@ output:
                   - SHOCK Incarceration Commitment
           facility: facility
           housing_unit: housing_unit
-          # All housing and custody level mapings rely on the assumption that a documented
+          # All housing and custody level mappings rely on the assumption that a documented
           # custody level of "detention" OR a unit's current use being "Detention" or
           # "Protective Custody" means a person in that unit is in restrictive housing (solitary).
           # TODO(#27201): Clarify housing unit, custody level, and "current use" specifics with AZ.
