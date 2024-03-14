@@ -32,15 +32,14 @@ from recidiviz.big_query.view_update_manager import (
 )
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
-    GcsfsDirectoryPath,
-    GcsfsFilePath,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
+)
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_direct_ingest_temporary_output_directory_path,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -155,8 +154,8 @@ def import_raw_files_to_bq_sandbox(
         import_manager = DirectIngestRawFileImportManager(
             region=region,
             fs=fs,
-            temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
-                source_bucket, "temp_raw_data"
+            temp_output_directory_path=gcsfs_direct_ingest_temporary_output_directory_path(
+                subdir=sandbox_dataset_prefix
             ),
             csv_reader=csv_reader,
             big_query_client=big_query_client,

@@ -16,15 +16,14 @@
 # =============================================================================
 """Tests for directory_path_utils.py."""
 import datetime
-from unittest import TestCase
-
-from mock import Mock, patch
+from unittest import TestCase, mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_deprecated_storage_directory_path_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
+    gcsfs_direct_ingest_temporary_output_directory_path,
     gcsfs_sftp_download_bucket_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -33,9 +32,14 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 class TestDirectoryPathUtils(TestCase):
     """Tests for directory_path_utils.py."""
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
+    def setUp(self) -> None:
+        self.mocck_project_id = "recidiviz-staging"
+        self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
+        self.metadata_patcher.start().return_value = self.mocck_project_id
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
     def test_get_state_storage_directory_path(self) -> None:
         self.assertEqual(
             gcsfs_direct_ingest_storage_directory_path_for_state(
@@ -45,9 +49,6 @@ class TestDirectoryPathUtils(TestCase):
             "recidiviz-staging-direct-ingest-state-storage/us_nd/",
         )
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
     def test_get_state_storage_directory_path_secondary(self) -> None:
         self.assertEqual(
             gcsfs_direct_ingest_storage_directory_path_for_state(
@@ -57,9 +58,6 @@ class TestDirectoryPathUtils(TestCase):
             "recidiviz-staging-direct-ingest-state-storage-secondary/us_nd/",
         )
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
     def test_get_state_ingest_bucket_path_for_region(self) -> None:
         self.assertEqual(
             gcsfs_direct_ingest_bucket_for_state(
@@ -69,9 +67,6 @@ class TestDirectoryPathUtils(TestCase):
             "recidiviz-staging-direct-ingest-state-us-nd",
         )
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
     def test_get_state_ingest_bucket_path_for_region_secondary(self) -> None:
         self.assertEqual(
             gcsfs_direct_ingest_bucket_for_state(
@@ -81,18 +76,12 @@ class TestDirectoryPathUtils(TestCase):
             "recidiviz-staging-direct-ingest-state-us-nd-secondary",
         )
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
     def test_gcsfs_sftp_download_directory_path_for_region(self) -> None:
         self.assertEqual(
             gcsfs_sftp_download_bucket_path_for_state("us_nd"),
             GcsfsBucketPath("recidiviz-staging-direct-ingest-state-us-nd-sftp"),
         )
 
-    @patch(
-        "recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging")
-    )
     def test_gcsfs_direct_ingest_deprecated_storage_directory_path_for_region(
         self,
     ) -> None:
@@ -103,4 +92,40 @@ class TestDirectoryPathUtils(TestCase):
                 deprecated_on_date=datetime.date(2020, 1, 1),
             ).abs_path(),
             "recidiviz-staging-direct-ingest-state-storage/us_nd/deprecated/deprecated_on_2020-01-01/",
+        )
+
+    def test_gcsfs_direct_ingest_temporary_output_directory_path_no_args(self) -> None:
+        self.assertEqual(
+            gcsfs_direct_ingest_temporary_output_directory_path().abs_path(),
+            "recidiviz-staging-direct-ingest-temporary-files",
+        )
+
+    def test_gcsfs_direct_ingest_temporary_output_directory_path_custom_project(
+        self,
+    ) -> None:
+        self.assertEqual(
+            gcsfs_direct_ingest_temporary_output_directory_path(
+                project_id="fake-recidiviz-project"
+            ).abs_path(),
+            "fake-recidiviz-project-direct-ingest-temporary-files",
+        )
+
+    def test_gcsfs_direct_ingest_temporary_output_directory_path_custom_subdir(
+        self,
+    ) -> None:
+        self.assertEqual(
+            gcsfs_direct_ingest_temporary_output_directory_path(
+                subdir="my-fancy-subdir"
+            ).abs_path(),
+            "recidiviz-staging-direct-ingest-temporary-files/my-fancy-subdir/",
+        )
+
+    def test_gcsfs_direct_ingest_temporary_output_directory_path_custom_subdir_and_project(
+        self,
+    ) -> None:
+        self.assertEqual(
+            gcsfs_direct_ingest_temporary_output_directory_path(
+                project_id="fake-recidiviz-project", subdir="my-fancy-subdir"
+            ).abs_path(),
+            "fake-recidiviz-project-direct-ingest-temporary-files/my-fancy-subdir/",
         )
