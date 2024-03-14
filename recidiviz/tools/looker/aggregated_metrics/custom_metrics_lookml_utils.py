@@ -447,13 +447,15 @@ def generate_assignments_view(
     )
 
     # Assembles a query fragment for filtering over the set of index columns across all units of analysis
-    all_attribute_columns = list(
-        set(
-            col
-            for (_, unit_of_analysis_type) in assignment_types_dict.values()
-            for col in METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
-                unit_of_analysis_type
-            ].index_columns
+    all_attribute_columns = sorted(
+        list(
+            set(
+                col
+                for (_, unit_of_analysis_type) in assignment_types_dict.values()
+                for col in METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
+                    unit_of_analysis_type
+                ].index_columns
+            )
         )
     )
     attribute_columns_conditional = "\nAND ".join(
@@ -562,12 +564,87 @@ def generate_assignments_view(
 
 def generate_assignments_with_attributes_view(
     view_name: str,
+    time_dependent_person_attribute_query: str,
+    time_dependent_person_attribute_fields: List[str],
 ) -> LookMLView:
-    """Generates LookMLView that joins assignment sessions view to a set of attributes"""
+    """
+    Generates LookMLView that joins assignment sessions view to attributes about the underlying justice-involved
+    persons, to allow for on-the-fly filtering of the clients constituting an aggregated metric in the custom metrics
+    explores.
 
+    These attributes include 1) a set of default static attributes (race, gender, experiment assignment attributes)
+    that are true for a given person over all time, and 2) time-dependent attribute fields supplied by the user
+    and sourced from the time_dependent_person_attribute_query, which are true for a given person over a span of
+    time defined by the `start_date` and `end_date_exclusive` of the sessionized input view.
+
+    The `time_dependent_person_attribute_query` must include all fields in `time_dependent_person_attribute_fields`
+    in addition to a `start_date` and `end_date_exclusive` field.
+    """
+
+    # Check that time-dependent attribute fields do not have overlap with any default static attributes
+    static_attribute_fields = [
+        "experiment_id",
+        "variant_id",
+        "variant_date",
+        "gender",
+        "is_female",
+        "race",
+        "is_nonwhite",
+    ]
+    repeat_attributes = list(
+        set(static_attribute_fields) & set(time_dependent_person_attribute_fields)
+    )
+    if len(repeat_attributes) > 0:
+        raise ValueError(
+            f"Found time-dependent attribute field(s) that are already included as a static field: {repeat_attributes}"
+        )
+
+    time_dependent_person_attribute_fields_query_fragment_with_prefix = (
+        ",\n            ".join(
+            [
+                f"time_dependent_attributes.{field}"
+                for field in time_dependent_person_attribute_fields
+            ]
+        )
+    )
+    time_dependent_person_attribute_fields_query_fragment_no_prefix = ", ".join(
+        time_dependent_person_attribute_fields
+    )
+    time_dependent_person_attribute_fields_liquid_wrap = "\n".join(
+        [
+            f"""
+        {{% if {view_name}.{field}._in_query %}}
+        {field},
+        {{% endif %}}"""
+            for field in time_dependent_person_attribute_fields
+        ]
+    )
     derived_table_query = f"""
+    WITH assignments_with_time_dependent_attributes AS (
+        SELECT
+            assignment_sessions.* EXCEPT(assignment_date, assignment_end_date),
+            {time_dependent_person_attribute_fields_query_fragment_with_prefix},
+            GREATEST(assignment_sessions.assignment_date, time_dependent_attributes.start_date) AS assignment_date,
+            {revert_nonnull_end_date_clause(
+                f'LEAST({nonnull_end_date_clause("assignment_sessions.assignment_end_date")}, {nonnull_end_date_clause("time_dependent_attributes.end_date_exclusive")})'
+            )} AS assignment_end_date,
+        FROM
+            ${{assignments_{view_name}.SQL_TABLE_NAME}} assignment_sessions
+        LEFT JOIN
+            ({time_dependent_person_attribute_query}) time_dependent_attributes
+        ON
+            assignment_sessions.person_id = time_dependent_attributes.person_id
+        AND (
+            assignment_sessions.assignment_date BETWEEN time_dependent_attributes.start_date AND {nonnull_end_date_clause("time_dependent_attributes.end_date_exclusive")}
+            OR time_dependent_attributes.start_date BETWEEN assignment_sessions.assignment_date AND {nonnull_end_date_clause("assignment_sessions.assignment_end_date")}
+        )
+    )
+    -- Join to static attribute tables
     SELECT
-        assignments.*,
+        assignments.* EXCEPT({time_dependent_person_attribute_fields_query_fragment_no_prefix}),
+        -- time-dependent attributes
+        {time_dependent_person_attribute_fields_liquid_wrap}
+
         {{% if {view_name}.event_time_toggle._parameter_value == "true" or {view_name}.experiment_id._in_query %}}
         experiment_id,
         {{% endif %}}
@@ -628,11 +705,14 @@ def generate_assignments_with_attributes_view(
         pd.prioritized_race_or_ethnicity != "WHITE" AS is_nonwhite,
         {{% endif %}}
 
+        -- time-dependent attributes
+        {time_dependent_person_attribute_fields_liquid_wrap}
+
         TRUE AS dummy_attribute -- here so last column not followed by comma and always non null
       )) AS all_attributes,
 
     FROM
-        ${{assignments_{view_name}.SQL_TABLE_NAME}} assignments
+        assignments_with_time_dependent_attributes assignments
     {{% if {view_name}.gender._in_query
         or {view_name}.is_female._in_query
         or {view_name}.race._in_query
@@ -676,7 +756,7 @@ def generate_assignments_with_attributes_view(
       AND {{% condition {view_name}.variant_date %}}variant_date{{% endcondition %}}
     """
 
-    person_attribute_dimensions = [
+    static_person_attribute_dimensions = [
         DimensionLookMLViewField(
             field_name="gender",
             parameters=[
@@ -723,6 +803,19 @@ def generate_assignments_with_attributes_view(
         ),
     ]
 
+    time_dependent_attribute_dimensions = [
+        DimensionLookMLViewField(
+            field_name=field,
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.view_label("Attributes"),
+                LookMLFieldParameter.group_label("Dynamic Attributes"),
+                LookMLFieldParameter.sql(f"${{TABLE}}.{field}"),
+            ],
+        )
+        for field in time_dependent_person_attribute_fields
+    ]
+
     experiment_attribute_dimensions = [
         DimensionLookMLViewField(
             field_name="experiment_id",
@@ -766,7 +859,8 @@ def generate_assignments_with_attributes_view(
         view_name=f"assignments_with_attributes_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[
-            *person_attribute_dimensions,
+            *static_person_attribute_dimensions,
+            *time_dependent_attribute_dimensions,
             *experiment_attribute_dimensions,
         ],
     )
