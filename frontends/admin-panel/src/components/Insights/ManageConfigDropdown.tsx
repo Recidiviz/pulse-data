@@ -52,7 +52,10 @@ const ManageConfigDropdown = ({
     reactivateSelectedConfig,
     deactivateSelectedConfig,
     envIsStaging,
+    getConfigForId,
   } = presenter;
+
+  const selectedConfig = getConfigForId(selectedConfigId);
 
   const items: MenuProps["items"] = [
     {
@@ -86,13 +89,22 @@ const ManageConfigDropdown = ({
         <Popconfirm
           title="Are you sure you want to promote this config to default?"
           onConfirm={() => promoteSelectedConfigToDefault(selectedConfigId)}
-          disabled={!selectedConfigId}
+          disabled={
+            !selectedConfigId ||
+            (selectedConfig?.status === "INACTIVE" &&
+              !selectedConfig?.featureVariant)
+          }
         >
           Promote to default
         </Popconfirm>
       ),
       key: "default",
-      disabled: !selectedConfigId,
+      // If the config is INACTIVE and there is no featureVariant, config should be
+      // reactivated instead of promoted to default
+      disabled:
+        !selectedConfigId ||
+        (selectedConfig?.status === "INACTIVE" &&
+          !selectedConfig?.featureVariant),
     },
     {
       label: (

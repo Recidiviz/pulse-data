@@ -64,6 +64,10 @@ export default class ConfigurationPresenter implements Hydratable {
     return this.insightsStore.configs;
   }
 
+  getConfigForId(configId?: number): InsightsConfiguration | undefined {
+    return this.configs?.find((c) => c.id === configId);
+  }
+
   setSelectedFeatureVariant(variant: string | undefined): void {
     this.selectedFeatureVariant = variant;
   }
