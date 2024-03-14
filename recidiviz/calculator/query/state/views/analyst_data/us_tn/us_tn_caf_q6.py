@@ -42,12 +42,33 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
     /* For this question, there are two types of critical dates:
     1) All disciplinaries that recieved a Guilty (not Guilty-Verbal) disposition and are 
     not missing disciplinary class
-    2) Incarceration session starts (since a "new admission/parole violator" scores a 0)
+    2) Incarceration session starts to a TDOC facility (since a "new admission/parole violator" scores a 0)
     
-    This CTE unions in these 2 types of critical dates
+    The first CTE identifies the relevant starts, the next CTE unions together these 2 types of critical dates
+    
+    We've confirmed with a TN Counselor that if someone returns to prison, even if they had a disciplinary
+    in the past 6 months, they receive a score of 0. There is an exception to this if the disciplinary is
+    serious or an escape, in which case the logic should consider the last 18 months of someone's incarceration. We're
+    not currently implementing this exception but will in TODO(#28196)
     */
-    
-    WITH critical_dates AS (
+    WITH incarceration_state_prison_sub_sessions AS (
+      SELECT cs.*
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` cs
+      INNER JOIN `{{project_id}}.reference_views.location_metadata_materialized`
+        ON facility = location_external_id
+      WHERE cs.state_code = 'US_TN'
+        AND compartment_level_1 = 'INCARCERATION'  
+        AND compartment_level_2 = 'GENERAL'
+        AND location_type = 'STATE_PRISON'
+    ),
+    incarceration_state_prison_sub_sessions_adjacent_spans AS (
+        SELECT *
+        -- After identifying starts to TDOC facilities, we aggregate adjacent spans so critical dates
+        -- accurately represent TDOC facility starts, not other changes that can lead to a new span in sub-sessions
+        FROM ({aggregate_adjacent_spans(table_name='incarceration_state_prison_sub_sessions',
+                                    end_date_field_name="end_date_exclusive")})
+    ),
+    critical_dates AS (
       SELECT
         DISTINCT
         state_code,
@@ -65,18 +86,15 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             AND incident_class IS NOT NULL
       
       UNION DISTINCT 
-    
-      SELECT
-        state_code,
-        person_id,
-        start_date AS critical_date,
-        NULL AS incident_date,
-        start_date AS session_start_date,
-        0 AS disciplinary,
-      FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
-      WHERE state_code = 'US_TN'
-        AND compartment_level_1 = 'INCARCERATION'  
-        AND compartment_level_2 = 'GENERAL'  
+         
+        SELECT
+            state_code,
+            person_id,
+            start_date AS critical_date,
+            NULL AS incident_date,
+            start_date AS session_start_date,
+            0 AS disciplinary,
+        FROM incarceration_state_prison_sub_sessions_adjacent_spans
     ),
     /* Each critical date can be relevant 6, 12, and 18 months after the date, since those are the boundaries when
     someone's score can change. This CTE joins an array of those months as well as computing the next critical date.
@@ -140,13 +158,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             end_date_exclusive AS end_date,
             start_date AS session_start_date,
             0 AS disciplinary,
-          FROM
-            `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
-          WHERE
-            state_code = 'US_TN'
-            AND compartment_level_1 = 'INCARCERATION'
-            AND compartment_level_2 = 'GENERAL'
-            
+          FROM incarceration_state_prison_sub_sessions_adjacent_spans            
     ),
     {create_sub_sessions_with_attributes('spans_cte')},
     dedup_cte AS (
