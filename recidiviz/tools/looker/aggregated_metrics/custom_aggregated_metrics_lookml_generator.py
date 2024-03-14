@@ -91,6 +91,22 @@ def main(output_directory: str, view_name: str) -> None:
 
         generate_assignments_with_attributes_view(
             view_name,
+            time_dependent_person_attribute_query="SELECT * FROM sessions.compartment_sub_sessions_materialized",
+            time_dependent_person_attribute_fields=[
+                "age",
+                "assessment_score",
+                "case_type",
+                "compartment_level_1",
+                "compartment_level_2",
+                "correctional_level",
+                "correctional_level_raw_text",
+                "housing_unit",
+                "housing_unit_type",
+                "supervision_district",
+                "supervision_district_name",
+                "supervision_office",
+                "supervision_office_name",
+            ],
         ).write(output_subdirectory, source_script_path=__file__)
 
         generate_assignments_with_attributes_and_time_periods_view(
