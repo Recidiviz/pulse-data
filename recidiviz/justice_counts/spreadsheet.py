@@ -272,12 +272,20 @@ class SpreadsheetInterface:
             session=session, agency=agency
         )
 
-        child_agency_name_to_agency = {
-            CHILD_AGENCY_NAME_TO_UPLOAD_NAME.get(
-                a.name.strip().lower(), a.name.strip().lower()
-            ): a
-            for a in child_agencies
-        }
+        if agency.id == 110:
+            # This is a special case. Ohio Office of Criminal Justice Services (OCJS)
+            # uploads shorthand names rather than full names of child agencies. This mapping
+            # should not be used for any other agency
+            child_agency_name_to_agency = {
+                CHILD_AGENCY_NAME_TO_UPLOAD_NAME.get(
+                    a.name.strip().lower(), a.name.strip().lower()
+                ): a
+                for a in child_agencies
+            }
+        else:
+            child_agency_name_to_agency = {
+                a.name.strip().lower(): a for a in child_agencies
+            }
 
         uploader = WorkbookUploader(
             agency=agency,
