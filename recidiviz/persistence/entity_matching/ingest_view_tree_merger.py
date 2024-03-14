@@ -191,8 +191,6 @@ class IngestViewTreeMerger:
                     merged_children.append(merged_child)
             primary_entity.set_field_from_list(field, merged_children)
 
-        # TODO(#7908): Collect root_entity_ingest_types here so we have a
-        #  comprehensive list.
         return primary_entity, seen_objects
 
     def _bucket_ingested_single_id_entities(
