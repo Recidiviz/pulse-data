@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows when hearings that were scheduled have occurred, regardless
-of whether they were on time.
-TODO(#26722): Deprecate once new opportunities are live.
+"""Defines a view that shows when initial Restrictive Housing hearings that were scheduled have occurred, 
+regardless of whether they were on time.
 """
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
@@ -27,40 +25,23 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows when hearings that were scheduled have occurred, regardless
-of whether they were on time.
+_DESCRIPTION = """Defines a view that shows when initial Restrictive Housing hearings have occurred
 """
 
 _QUERY_TEMPLATE = """
-    WITH hearings_with_review_dates AS (
-        SELECT
-            state_code,
-            person_id,
-            hearing_date,
-            LEAD(hearing_date) OVER hearing_window AS next_hearing_date,
-            next_review_date
-        FROM `{project_id}.{analyst_views_dataset}.us_mo_classification_hearings_preprocessed_materialized` hearings
-        WHERE next_review_date IS NOT NULL
-        WINDOW hearing_window AS (
-            PARTITION BY state_code, person_id
-            ORDER BY hearing_date ASC
-        )
-    )
     SELECT
         state_code,
         person_id,
-        next_hearing_date AS completion_event_date,
-    FROM hearings_with_review_dates
-    WHERE next_hearing_date IS NOT NULL
+        hearing_date AS completion_event_date,
+    FROM `{project_id}.analyst_data.us_mo_classification_hearings_preprocessed_materialized` hearings
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_MO,
-        completion_event_type=TaskCompletionEventType.SCHEDULED_HEARING_OCCURRED,
+        completion_event_type=TaskCompletionEventType.HEARING_OCCURRED,
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
-        analyst_views_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 
