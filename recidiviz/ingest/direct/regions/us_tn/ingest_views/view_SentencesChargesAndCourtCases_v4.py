@@ -230,6 +230,35 @@ all_sentence_sources_joined AS (
     SELECT * 
     FROM cleaned_ISCSentence_view
 ),
+all_latest_sentences_joined AS (
+    SELECT 
+        OffenderID,
+        ConvictionCounty,
+        CaseYear,
+        CaseNumber,
+        CountNumber
+    FROM {{Sentence}} 
+
+    UNION ALL 
+
+    SELECT 
+        OffenderID,
+        ConvictionCounty,
+        CaseYear,
+        CaseNumber,
+        CountNumber
+    FROM {{Diversion}}
+
+    UNION ALL 
+
+    SELECT 
+        OffenderID,
+        Jurisdiction AS ConvictionCounty,
+        CaseYear,
+        CaseNumber,
+        CountNumber
+    FROM {{ISCSentence}}
+),
 most_recent_sentence_information AS (
     SELECT t.* 
     FROM (
@@ -317,12 +346,12 @@ most_recent_sentence_information AS (
     FROM all_sentence_sources_joined) Sentences
   GROUP BY 1,2,3,4,5
  )
-SELECT 
-    OffenderID,
-    ConvictionCounty,
-    CaseYear,
-    CaseNumber,
-    CountNumber,
+SELECT DISTINCT
+    a1.OffenderID,
+    a1.ConvictionCounty,
+    a1.CaseYear,
+    a1.CaseNumber,
+    a1.CountNumber,
     MostRecentSentenceAction,
     SentenceStatus,
     SentencedTo,
@@ -357,8 +386,14 @@ SELECT
     ReleaseEligibilityDate,
     sentence_source,
     Task_Dates
-FROM most_recent_sentence_information 
+FROM most_recent_sentence_information mr
 LEFT JOIN discharge_task_deadline_array USING(OffenderID, ConvictionCounty,CaseYear,CaseNumber,CountNumber)
+INNER JOIN all_latest_sentences_joined a1
+ON a1.OffenderID = mr.OffenderID
+    AND a1.ConvictionCounty = mr.ConvictionCounty
+    AND a1.CaseYear = mr.CaseYear
+    AND a1.CaseNumber = mr.CaseNumber
+    AND a1.CountNumber = mr.CountNumber
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
