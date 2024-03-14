@@ -1,0 +1,125 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_PSIReport
+file_description: |-
+  This table contains a record of each pre-sentence investigation record in Idaho. 
+  Contains information from the module that pre-sentence investigators fill out when they're first assigned a PSI report.
+data_classification: source
+primary_key_cols:
+  - PSIReportId
+columns:
+  - name: PSIReportId
+    description: |-
+      ID of this PSI report.
+  - name: LocationId
+    description: |-
+      ID of the location of the report. Links with the ref_Location table.
+    is_pii: True
+  - name: CourtId
+    description: |-
+      ID of the court that issued the report.
+  - name: AssignedByUserId
+    description: |-
+      ID of the user that assigned the report. Links with ref_Employee on EmployeeId.
+    is_pii: True
+  - name: AssignedToUserId
+    description: |-
+      ID of the user that had the report assigned to them. Links with ref_Employee on EmployeeId.
+    is_pii: True
+  - name: OrderDate
+    description: |-
+      Date the report was ordered.
+    field_type: datetime
+  - name: ReceivedDate
+    description: |-
+      Date the report was recieved.
+    field_type: datetime
+  - name: SentenceDate
+    description: |-
+      Date the JII was sentenced?
+    field_type: datetime
+  - name: CompletedReasonId
+    description: |-
+      ID of completed reason.
+  - name: CompletedDate
+    description: |-
+      Date the PSI report was completed.
+    field_type: datetime
+  - name: DueDate
+    description: |-
+      Date the PSI report is due.
+    field_type: datetime
+  - name: FinalizedReasonId
+    description: |-
+      ID of finalized reason.
+  - name: AssignedDate
+    description: |-
+      Date the report was assigned.
+    field_type: datetime
+  - name: FinalizedDate
+    description: |-
+      Date the report was finalized.
+    field_type: datetime
+  - name: Notes
+    description: |-
+      Notes from the report.
+    is_pii: True
+  - name: Addendum
+    description: |-
+      Addendum (additional material) of the report.
+    is_pii: True
+  - name: TrialDisposition
+    description: |-
+      Disposition of the trial.
+  - name: OffenderId
+    description: |-
+      Id of the JII that the report is based on.
+    is_pii: True
+  - name: PrintDropdownId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: IsLegacy
+    description: |-
+      Boolean to determine whether this PSIReport is part of legacy date system.
+    is_pii: True
+  - name: Locking
+    description: |-
+      Locking number.
+    is_pii: True
+  - name: InsertUserId
+    description: |-
+      ID of user who inserted this record.
+    is_pii: True
+  - name: InsertDate
+    description: |-
+      Date of when this record was inserted.
+    field_type: datetime
+  - name: UpdateUserId
+    description: |-
+      ID of user who updated this record.
+    is_pii: True
+  - name: UpdateDate
+    description: |-
+      Date of when this record was updated.
+    field_type: datetime
+  - name: InvestigationStatusId
+    description: |-
+      ID of the status of investigation.
+  - name: ApprovedByEmployeeId
+    description: |-
+      ID of employee that approved this report. Links with ref_Employee on EmployeeId.
+    is_pii: True
+  - name: ApprovedDate
+    description: |-
+      Date this report was approved.
+    field_type: datetime
+  - name: ValuesAndOutlook
+    description: |-
+      The values and outlook of the JII.
+    is_pii: True
+  - name: Recommendation
+    description: |-
+      The recommendation that was made based on the report.
+  - name: OpeningStatement
+    description: |-
+      The opening statement of the report.
+    is_pii: True
