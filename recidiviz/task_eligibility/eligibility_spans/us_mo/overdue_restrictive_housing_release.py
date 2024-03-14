@@ -20,8 +20,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
-    release_from_restrictive_housing,
+from recidiviz.task_eligibility.completion_events.general import (
+    transfer_out_of_solitary_confinement,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     d1_sanction_after_most_recent_hearing,
@@ -48,7 +48,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         d1_sanction_after_most_recent_hearing.VIEW_BUILDER,
         d1_sanction_after_restrictive_housing_start.VIEW_BUILDER,
     ],
-    completion_event_builder=release_from_restrictive_housing.VIEW_BUILDER,
+    completion_event_builder=transfer_out_of_solitary_confinement.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

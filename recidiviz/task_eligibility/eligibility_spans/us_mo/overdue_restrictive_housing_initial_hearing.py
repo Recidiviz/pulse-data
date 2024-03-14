@@ -21,7 +21,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
-    initial_hearing_occurred,
+    hearing_occurred,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     in_restrictive_housing,
@@ -48,7 +48,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_hearing_after_restrictive_housing_start.VIEW_BUILDER,
         no_d1_sanction_after_restrictive_housing_start.VIEW_BUILDER,
     ],
-    completion_event_builder=initial_hearing_occurred.VIEW_BUILDER,
+    completion_event_builder=hearing_occurred.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
