@@ -32,16 +32,19 @@ from recidiviz.utils import metadata
 
 
 def gcsfs_direct_ingest_temporary_output_directory_path(
-    project_id: Optional[str] = None,
+    project_id: Optional[str] = None, subdir: Optional[str] = None
 ) -> GcsfsDirectoryPath:
     if project_id is None:
         project_id = metadata.project_id()
         if not project_id:
             raise ValueError("Project id not set")
 
-    return GcsfsDirectoryPath.from_absolute_path(
+    bucket = GcsfsBucketPath.from_absolute_path(
         f"{project_id}-direct-ingest-temporary-files"
     )
+    if not subdir:
+        return bucket
+    return GcsfsDirectoryPath.from_dir_and_subdir(bucket, subdir)
 
 
 def _bucket_suffix_for_ingest_instance(ingest_instance: DirectIngestInstance) -> str:
