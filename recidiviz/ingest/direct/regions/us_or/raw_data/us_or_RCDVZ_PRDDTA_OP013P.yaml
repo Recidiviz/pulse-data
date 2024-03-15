@@ -61,6 +61,7 @@ columns:
   - name: ID_NUMBER
     description: |-
       Unique DOCNO for each adult in custody.
+    is_pii: True
   - name: RESPONSIBLE_DIVISION
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -70,18 +71,23 @@ columns:
   - name: FIRST_NAME
     description: |-
       First Name of the Adult in Custody (AIC).
+    is_pii: True
   - name: LAST_NAME
     description: |-
       Last Name of the Adult in Custody (AIC).
+    is_pii: True
   - name: MIDDLE_NAME
     description: |-
       Middle Name of the Adult in Custody (AIC).
+    is_pii: True
   - name: NAME_KEY
     description: |-
-      Indicates if name is alias, true name, etc.
+      Full name of AIC.
+    is_pii: True
   - name: BIRTHDATE
     description: |-
       Birthdate of the Adult in Custody (AIC).
+    is_pii: True
   - name: CELL_NUMBER
     description: |-
       Current cell number of the Adult in Custody (AIC).

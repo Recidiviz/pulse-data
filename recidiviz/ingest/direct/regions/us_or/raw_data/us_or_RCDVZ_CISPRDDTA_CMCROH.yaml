@@ -6,6 +6,7 @@ data_classification: source
 primary_key_cols:
   - CASELOAD
   - RECORD_KEY
+  - NEXT_NUMBER
 columns:
   - name: CASELOAD
     description: |-
@@ -21,11 +22,11 @@ columns:
       Number generated for row.
   - name: CHRONO_WHAT
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Additional description of contact that took place, infrequently populated.
+    is_pii: True
   - name: CHRONO_WHO
     description: |-
       Who the communication was made with.
-    is_pii: True
   - name: CHRONO_TYPE
     description: |-
       Type of communication made.
