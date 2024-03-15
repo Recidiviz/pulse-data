@@ -753,11 +753,26 @@ def get_api_blueprint(
                 for metric in agency_metrics
             ]
 
+            child_agency_json = []
+            if agency.is_superagency:
+                child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
+                    session=current_session, agency_ids=[agency.id]
+                )
+                for child_agency in child_agencies:
+                    child_agency_json.append(
+                        {
+                            "id": child_agency.id,
+                            "name": child_agency.name,
+                            "sectors": child_agency.systems,
+                        }
+                    )
+
             return jsonify(
                 {
                     "agency_metrics": agency_metrics_json,
                     "monthly_report": latest_monthly_report_definition_json,
                     "annual_reports": latest_annual_reports_json,
+                    "child_agencies": child_agency_json,
                 }
             )
         except Exception as e:
