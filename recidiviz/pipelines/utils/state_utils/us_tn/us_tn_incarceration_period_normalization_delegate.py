@@ -21,7 +21,6 @@ from typing import List, Optional
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
@@ -215,7 +214,6 @@ def _us_tn_infer_additional_periods(
                         release_date=sp.termination_date,
                         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
                         custodial_authority=StateCustodialAuthority.COUNTY,
-                        custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
                         incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
                         specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
                     )
@@ -238,7 +236,6 @@ def _us_tn_infer_additional_periods(
                     admission_date=sp.start_date,
                     admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
                     custodial_authority=StateCustodialAuthority.COUNTY,
-                    custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
                     incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
                 )
