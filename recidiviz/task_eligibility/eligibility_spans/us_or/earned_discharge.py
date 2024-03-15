@@ -21,7 +21,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import early_discharge
+from recidiviz.task_eligibility.completion_events.state_specific.us_or import (
+    early_discharge,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_or import (
     no_supervision_sanctions_within_6_months,
     sentence_eligible,
