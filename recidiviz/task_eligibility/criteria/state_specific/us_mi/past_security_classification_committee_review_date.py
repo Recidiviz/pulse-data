@@ -21,7 +21,6 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
@@ -44,26 +43,7 @@ see an SCC review take place. SCC reviews are summed over the solitary confineme
 will restart for each new session. """
 
 _QUERY_TEMPLATE = f"""
-   WITH solitary_sessions_without_start_preprocessed AS (
-   /* This CTE sessionizes all adjacent solitary housing_unit_type sessions with the exception of START sessions,
-   which are mapped to `OTHER_SOLITARY_CONFINEMENT` in Michigan. Because clients who are part of START are in 
-   solitary, but do not require SCC reviews with the same date cadence, they are removed from this query */
-        SELECT
-            * EXCEPT (housing_unit_type),
-            IF(
-                (CONTAINS_SUBSTR(housing_unit_type, 'SOLITARY_CONFINEMENT') AND
-                NOT CONTAINS_SUBSTR(housing_unit_type, 'OTHER_SOLITARY_CONFINEMENT')),
-                'SOLITARY_CONFINEMENT',
-                housing_unit_type
-            ) AS housing_unit_type_collapsed_solitary,
-        FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized`
-    ),
-    solitary_sessions_without_start AS ({aggregate_adjacent_spans(
-        table_name="solitary_sessions_without_start_preprocessed",
-        attribute="housing_unit_type_collapsed_solitary",
-        end_date_field_name='end_date_exclusive'
-    )}),
-       review_dates_preprocessed AS (
+   WITH review_dates_preprocessed AS (
        /* This CTE gathers all solitary confinement session start dates, and associates the first scc review. 
        If that review is within 7 days, that date is used to calculate subsequent review due dates, 
        otherwise, 7 days from the solitary start is used. */
@@ -73,7 +53,7 @@ _QUERY_TEMPLATE = f"""
             h.start_date,
             h.end_date_exclusive,
             COALESCE(s.completion_event_date, DATE_ADD(h.start_date, INTERVAL 7 DAY)) AS first_review_date,
-        FROM  solitary_sessions_without_start h
+        FROM `{{project_id}}.{{sessions_dataset}}.us_mi_facility_housing_unit_type_collapsed_solitary_sessions` h
         LEFT JOIN `{{project_id}}.{{analyst_views_dataset}}.us_mi_security_classification_committee_review_materialized` s
             ON s.person_id = h.person_id
             AND s.state_code = h.state_code
@@ -82,11 +62,16 @@ _QUERY_TEMPLATE = f"""
             AND DATE_DIFF(s.completion_event_date,h.start_date,  DAY) < 7
         WHERE h.housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
             AND h.state_code = 'US_MI'
+        --for facility/housing unit sessions where multiple scc reviews happen within the first week
+        --take the latest scc review within that time period as the initial review date
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY h.person_id, h.start_date ORDER BY s.completion_event_date DESC)=1
     ),
     review_dates AS(
         /* This CTE generates the dates for which an scc review should occur. The first date is the start date of the
         solitary confinement session. The rest of the days are 30 days after the least of the first review 
-        and 7 days after the start date, repeating. */
+        and 7 days after the start date, repeating.
+         
+         Additionally, due to data quality, we only include review dates after the COMS migration (2023-08-14) */
         SELECT 
             state_code,
             person_id, 
@@ -96,19 +81,20 @@ _QUERY_TEMPLATE = f"""
         WHERE
         --calculate recurring scc reviews until the solitary session ends or for 100 years
           offset <= DATE_DIFF({nonnull_end_date_exclusive_clause('end_date_exclusive')}, start_date, DAY)
-          --**REMOVE THIS CLAUSE IF WE WANT TO ACCRUE DATES HISTORIALLY **
-           --AND DATE_ADD(start_date, INTERVAL offset DAY) >= '2024-01-01' 
+          AND DATE_ADD(start_date, INTERVAL offset DAY) >= '2023-08-14' 
         UNION ALL
         SELECT 
             state_code,
             person_id, 
             start_date AS change_date,
         FROM review_dates_preprocessed 
+        WHERE start_date >= '2023-08-14'
     ),
     population_change_dates AS (
     /* this CTE gathers all dates at which eligibility might change */ 
         
-        --add 1 for each expected SCC review
+        --add 1 for each expected SCC review (this includes the start dates for solitary sessions that happen 
+        --after the COMS migration)  
         SELECT
             state_code,
             person_id,
@@ -116,7 +102,24 @@ _QUERY_TEMPLATE = f"""
             1 AS expected_review,
             1 AS activity_type,
         FROM review_dates
-            
+        
+        UNION ALL   
+        
+        --include a population change date for solitary sessions that happen before the COMS migration, 
+        --so that even though we aren't accruing expected reviews before then, we can still aggregate within sessions. 
+        SELECT 
+            state_code,
+            person_id,
+            start_date AS change_date,
+            0 AS expected_review,
+            0 AS activity_type,
+        FROM
+            `{{project_id}}.{{sessions_dataset}}.us_mi_facility_housing_unit_type_collapsed_solitary_sessions` h
+        WHERE
+            state_code = 'US_MI'
+            AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
+            AND start_date <= '2023-08-14'
+       
         UNION ALL
         
         -- add a change date for when the solitary session ends
@@ -127,29 +130,13 @@ _QUERY_TEMPLATE = f"""
             0 AS expected_review,
             0 AS activity_type,
         FROM
-            solitary_sessions_without_start h
+            `{{project_id}}.{{sessions_dataset}}.us_mi_facility_housing_unit_type_collapsed_solitary_sessions` h
         WHERE
             state_code = 'US_MI'
             AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
         
         UNION ALL
         
-        /*REMOVE THIS CTE IF WE WANT TO ACCRUE DATES HISTORICALLY*/
-        # SELECT 
-        #     state_code,
-        #     person_id,
-        #     start_date AS change_date,
-        #     0 AS expected_review,
-        #     0 AS activity_type,
-        # FROM
-        #     `{{project_id}}.{{sessions_dataset}}.housing_unit_type_collapsed_solitary_sessions_materialized` h
-        # WHERE
-        #     state_code = 'US_MI'
-        #     AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
-        #     AND start_date < '2024-01-01'
-        # UNION ALL
-        
-        /* SCC dates */ 
         --add -1 for every time we observe a review 
         SELECT 
             state_code,
@@ -159,6 +146,7 @@ _QUERY_TEMPLATE = f"""
             -1 AS activity_type,
         FROM
             `{{project_id}}.{{analyst_views_dataset}}.us_mi_security_classification_committee_review_materialized` s
+
     ),
     population_change_dates_agg AS (
         SELECT 
@@ -207,10 +195,10 @@ _QUERY_TEMPLATE = f"""
         FROM
             time_spans ts
         INNER JOIN
-            solitary_sessions_without_start hu
+            `{{project_id}}.{{sessions_dataset}}.us_mi_facility_housing_unit_type_collapsed_solitary_sessions` hu
             ON ts.person_id = hu.person_id
             AND ts.start_date < {nonnull_end_date_clause('hu.end_date_exclusive')}
-            AND hu.start_date < COALESCE(ts.end_date, "9999-12-31")
+            AND hu.start_date < {nonnull_end_date_clause('ts.end_date')}
             AND hu.housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
     )
     SELECT 
@@ -220,6 +208,7 @@ _QUERY_TEMPLATE = f"""
         t.end_date,
         t.reviews_due > 0 AS meets_criteria,
         TO_JSON(STRUCT(
+                housing_start_date AS facility_solitary_start_date,
                 t.expected_reviews AS number_of_expected_reviews,
                 t.expected_reviews-t.reviews_due AS number_of_reviews,
                 p.change_date AS latest_scc_review_date
@@ -228,7 +217,7 @@ _QUERY_TEMPLATE = f"""
     LEFT JOIN population_change_dates  p
         ON p.state_code = t.state_code
         AND p.person_id = t.person_id 
-        AND p.change_date BETWEEN t.start_date AND {nonnull_end_date_exclusive_clause('housing_end_date')}
+        AND p.change_date BETWEEN housing_start_date AND {nonnull_end_date_exclusive_clause('housing_end_date')}
         AND p.change_date < {nonnull_end_date_exclusive_clause('t.end_date')}
         --only join SCC reviews
         AND p.activity_type = -1
