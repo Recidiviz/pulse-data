@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - CASELOAD
+  - NEXT_NUMBER
+  - CHRONO_DATE
+  - CHRONO_WHO
+  - CHRONO_WHAT
+  - CHRONO_TYPE
+unused_columns:
+  - CHRONO_WHAT # rarely populated but additional information about contact
+  - CHRONO_WHO # Filtered to always be "O" (Adult on Supervision)
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - CASELOAD
+                - NEXT_NUMBER
+          contacting_staff_external_id: CASELOAD
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: CASELOAD
+                $then: $literal("US_OR_CASELOAD")
+          contact_date: CHRONO_DATE
+          contact_type: $literal_enum(StateSupervisionContactType.DIRECT)
+          contact_method:
+            $enum_mapping:
+              $raw_text: CHRONO_TYPE
+              $mappings:
+                StateSupervisionContactMethod.IN_PERSON:
+                  - "O" # Office - old code
+                  - "OV" # Office - new code
+                  - "H" # Home Visit
+                StateSupervisionContactMethod.TELEPHONE:
+                  - "TV" # Telephone Visit
+                StateSupervisionContactMethod.VIRTUAL:
+                  - "VV" # Virtual Visit
+                StateSupervisionContactMethod.INTERNAL_UNKNOWN:
+                  - "CORT" # Court
+                  - "DAYR" # Day Reporting
+                  - "E" # Employment
+                  - "FLD" # Field
+                  - "J" # Jail
+                  - "TX" # Treatment
+          status: $literal_enum(StateSupervisionContactStatus.COMPLETED)
+          location:
+            $enum_mapping:
+              $raw_text: CHRONO_TYPE
+              $mappings:
+                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - "E" # Employment
+                StateSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - "DAYR" # Day Reporting
+                  - "O" # Office - old code
+                  - "OV" # Office - new code
+                StateSupervisionContactLocation.JAIL:
+                  - "J" # Jail
+                StateSupervisionContactLocation.FIELD:
+                  - "FLD" # Field
+                StateSupervisionContactLocation.RESIDENCE:
+                  - "H" # Home Visit
+                StateSupervisionContactLocation.COURT:
+                  - "CORT" # Court
+                StateSupervisionContactLocation.TREATMENT_PROVIDER:
+                  - "TX" # Treatment
+                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - "TV" # Telephone Visit
+                  - "VV" # Virtual Visit
+
