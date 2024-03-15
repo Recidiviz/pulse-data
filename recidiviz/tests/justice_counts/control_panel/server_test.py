@@ -224,6 +224,33 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             annual_report_fiscal_latest.id,
         )
 
+    def test_get_superagency_home_metadata(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        child_agency = self.test_schema_objects.test_prison_affiliate_A
+        self.session.add_all(
+            [
+                user,
+                super_agency,
+                child_agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=user, agency=super_agency
+                ),
+            ]
+        )
+        self.session.commit()
+        self.session.refresh(super_agency)
+        child_agency.super_agency_id = super_agency.id
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.get(f"/api/home/{super_agency.id}")
+
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(len(response_json["child_agencies"]), 1)
+        self.assertEqual(response_json["child_agencies"][0]["name"], child_agency.name)
+
     def test_get_guidance_progress(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         agency_A = self.test_schema_objects.test_agency_A
