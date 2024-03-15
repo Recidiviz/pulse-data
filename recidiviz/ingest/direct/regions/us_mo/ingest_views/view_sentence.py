@@ -72,7 +72,7 @@ WHERE
     )
 """
 
-# TODO(#26621): Include data for what was StateSupervisionSentence
+# TODO(#26621): Update external ID with context of supervision sentences. Denote this view is just incarceration
 VIEW_QUERY_TEMPLATE = f"""
 WITH
     base_sentence_info AS ({BASE_SENTENCE_INFO}),
@@ -104,6 +104,7 @@ LEFT JOIN incarceration_sentence_detail_info
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
+    # TODO(#26620) Rename to incarceration_sentence
     ingest_view_name="sentence",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="BS_DOC, BS_CYC, BS_SEO",

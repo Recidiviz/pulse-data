@@ -21,6 +21,7 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.constants.state.state_sentence import StateSentenceType
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
@@ -219,6 +220,37 @@ class UsMoSentenceStatus(BuildableAttr):
             return StateSupervisionSentenceSupervisionType.PAROLE
 
         return StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
+
+    # This is to identify the type of supervision a sentence has
+    # based on the status at imposition.
+    supervision_sentence_type_status_classification: Optional[
+        StateSentenceType
+    ] = attr.ib()
+
+    # TODO(#28189): Expand status code knowledge/coverage for supervision type classification
+    @supervision_sentence_type_status_classification.default
+    def _supervision_sentence_type_status_classification(
+        self,
+    ) -> Optional[StateSentenceType]:
+        """Calculates what the sentence supervision type should be associated with this sentence if this is the
+        critical status for determining supervision type.
+        """
+        if (
+            self.supervision_type_status_classification
+            == StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
+        ):
+            return StateSentenceType.INTERNAL_UNKNOWN
+        if (
+            self.supervision_type_status_classification
+            == StateSupervisionSentenceSupervisionType.PROBATION
+        ):
+            return StateSentenceType.PROBATION
+        if (
+            self.supervision_type_status_classification
+            == StateSupervisionSentenceSupervisionType.PAROLE
+        ):
+            return StateSentenceType.PAROLE
+        return None
 
 
 @attr.s(frozen=True)

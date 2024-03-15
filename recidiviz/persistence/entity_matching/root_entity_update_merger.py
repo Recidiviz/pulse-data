@@ -58,7 +58,7 @@ from recidiviz.pipelines.ingest.state.constants import ExternalId
 from recidiviz.utils.types import T, assert_type
 
 # Schema classes that can have multiple parents of different types.
-_MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge]
+_MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge, entities.StateChargeV2]
 
 
 def state_person_alias_key(alias: StatePersonAlias) -> str:
