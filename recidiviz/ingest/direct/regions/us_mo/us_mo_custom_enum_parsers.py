@@ -36,7 +36,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -45,6 +48,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.regions.custom_enum_parser_utils import (
     invert_enum_to_str_mappings,
+)
+from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    UsMoSentenceStatus,
 )
 
 TAK026_STATUS_CYCLE_TERMINATION_REGEX = re.compile(r"99O\d{4}")
@@ -1272,3 +1278,21 @@ def get_recidiviz_sentence_status(raw_text: str) -> StateSentenceStatus:
         return StateSentenceStatus.SERVING
 
     return StateSentenceStatus.EXTERNAL_UNKNOWN
+
+
+# TODO(#28189): Expand status code knowledge/coverage for supervision type classification
+def parse_state_sentence_type_from_supervision_status(
+    raw_text: str,
+) -> StateSentenceType:
+    """Returns the StateSentenceType for a StateSentence based on the status code at imposition."""
+    status_code, status_description = raw_text.split("@@")
+    status = UsMoSentenceStatus(
+        sentence_status_external_id="0-0-0",
+        sentence_external_id="0-0-0",
+        status_date=None,
+        status_code=status_code,
+        status_description=status_description,
+    )
+    if sentence_type := status.supervision_sentence_type_status_classification:
+        return sentence_type
+    return StateSentenceType.INTERNAL_UNKNOWN

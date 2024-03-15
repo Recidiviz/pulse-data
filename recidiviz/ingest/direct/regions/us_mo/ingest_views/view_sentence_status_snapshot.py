@@ -30,7 +30,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#26620) Include supervision status info, BU_FSO <-> BV_FSO
+# TODO(#26620) Include supervision status info, BU_FSO <-> BV_FSO. Incarceration has an implicit _FSO = 0
 VIEW_QUERY_TEMPLATE = """
 SELECT 
     base_sentence.BS_DOC,                         -- unique for each person

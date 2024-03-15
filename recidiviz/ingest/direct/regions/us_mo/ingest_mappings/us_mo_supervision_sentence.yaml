@@ -1,14 +1,15 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 # This file associates the columns outputted from the query in `view_offender_sentence_institution` to
 #  corresponding Ingest Object fields.
-# TODO(#26620) Rename to us_mo_incarceration_sentence
 manifest_language: 1.0.0
 input_columns:
   - BS_DOC # unique for each person
   - BS_CYC # unique for each sentence group
-  - BS_SEO # unique for each sentence
+  - BS_SEO # unique for each charge
+  - BU_SF # imposed date
+  - imposition_status
+  - FH_SDE # status code description
   - BS_CNS # StateSentence.county_code
-  - BT_SD # StateSentence.imposed_date
   - BS_DO # StateChargeV2.offense_date
   - BS_ASO # StateChargeV2.statute
   - BS_CLT # StateChargeV2.classification_type
@@ -17,51 +18,69 @@ input_columns:
   - BS_CRC # StateChargeV2.judicial_district_code
   - BS_NCI # StateChargeV2.ncic_code
   - BS_CNT # StateChargeV2.county_code
-  - BT_CRR # Sentence.is_life
-  - BT_SDI # Sentence.is_capital_punishment
-  - BS_CCI
-  - BS_CRQ
-unused_columns:
-  # TODO(#26817) hydrate the parent_sentence_external_id_array.
-  - BS_CCI
-  - BS_CRQ
+unused_columns: []
 variables:
   - sentence_group_external_id:
       $concat:
         $values:
           - BS_DOC
           - BS_CYC
+  - charge_external_id:
+      $concat:
+        $values:
+          - BS_DOC
+          - BS_CYC
+          - BS_SEO
+  # Each charge can have a supervision and incarceration sentence, so we append a label
+  # to differentiate external IDs
   - sentence_external_id:
       $concat:
         $values:
           - BS_DOC
           - BS_CYC
           - BS_SEO
+          - $literal("SUPERVISION")
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
           external_id: BS_DOC
           id_type: $literal("US_MO_DOC")
-    # TODO(#26817) hydrate the parent_sentence_external_id_array.
     sentences:
       - StateSentence:
           external_id: $variable(sentence_external_id)
           sentence_group_external_id: $variable(sentence_group_external_id)
-          sentence_type: $literal_enum(StateSentenceType.STATE_PRISON)
-          imposed_date: BT_SD
+          sentence_type:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - imposition_status
+                    - FH_SDE
+              $custom_parser: us_mo_custom_enum_parsers.parse_state_sentence_type_from_supervision_status
+          is_life:
+            $in:
+              $value: imposition_status
+              $options:
+                - $literal("35I6010") # Release from DMH for SVP Supv
+                - $literal("35I6020") # Lifetime Supervision Revisit
+                - $literal("40O6010") # Release for SVP Commit Hearing
+                - $literal("40O6020") # Release for Lifetime Supv
+                # These indicate a transition to lifetime supervision (electronic monitoring).
+                # They are still serving the sentence in this case.
+                - $literal("90O1070") # Director's Rel Comp-Life Supv
+                - $literal("95O1020") # Court Prob Comp-Lifetime Supv
+                - $literal("95O2060") # Parole / CR Comp-Lifetime Supv
+          imposed_date: BU_SF
           county_code:
             $custom:
               $function: us_mo_custom_parsers.normalize_county_code
               $args:
                 county_code: BS_CNS
-          is_life:
-            $equal: [BT_CRR, $literal("LIF")]
-          is_capital_punishment:
-            $equal: [BT_SDI, $literal("Y")]
           charges:
             - StateChargeV2:
-                external_id: $variable(sentence_external_id)
+                external_id: $variable(charge_external_id)
                 status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
                 offense_date:
                   $conditional:
