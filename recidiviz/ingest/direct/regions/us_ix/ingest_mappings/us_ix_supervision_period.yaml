@@ -222,6 +222,7 @@ output:
                         - Return Other Jurisdictions
                         - Serving Local Jail Sentence
                         - Serving Out of State Sentence
+                        - Serving Other Jurisdiction
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - Offender Moves Location
                       StateSupervisionPeriodTerminationReason.ABSCONSION:
@@ -337,6 +338,8 @@ output:
                         - Expanded CRC
                         - DUI Court
                         - Out ST Custody
+                        # Not sure why this comes up, but as of 3/15/24 there are only 3 periods that come up
+                        - Parole
                       StateSupervisionLevel.WARRANT:
                         - Bench Warrant
                         # Not exactly a warrant, but mapping to WARRANT so that they can be excluded in workflows
@@ -415,6 +418,7 @@ output:
                         - O/R High
                         - Level 4
                         - Maximum
+                        - Parole
                       StateSupervisionCaseType.SEX_OFFENSE:
                         - Sex Offense # Maybe?
                         - SO Low
