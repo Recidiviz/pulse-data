@@ -689,7 +689,7 @@ class Datapoint(JusticeCountsBase):
     report_id = Column(Integer, nullable=True)
 
     # Agency datapoints will have a non-null source_id.
-    source_id = Column(Integer, nullable=True)
+    source_id = Column(Integer, nullable=True, index=True)
 
     # Indicates if a datapoint is a Report datapoint (True) or an Agency datapoint (False)
     is_report_datapoint = Column(Boolean, index=True)
