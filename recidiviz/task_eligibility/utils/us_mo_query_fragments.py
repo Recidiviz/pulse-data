@@ -154,3 +154,33 @@ def current_bed_stay_cte() -> str:
                 start_date DESC
         )
     )"""
+
+
+def latest_d1_sanction_spans_cte() -> str:
+    return """d1_sanctions_dedup AS (
+            -- Multiple D1 sanctions incurred on the same day may be distinct, but we only
+            -- need to count them once in determining when someone's last sanction began.
+            SELECT DISTINCT
+                state_code,
+                person_id,
+                date_effective
+            FROM `{project_id}.normalized_state.state_incarceration_incident_outcome`
+            WHERE outcome_type_raw_text = 'D1'
+        )
+        ,
+        latest_d1_sanction_spans AS (
+            SELECT
+                state_code,
+                person_id,
+                -- When someone begins an active sanction, their "latest sanction start date" 
+                -- will be that sanction's start date until the next time they incur a sanction.
+                date_effective AS start_date,
+                LEAD(date_effective) OVER w AS end_date,
+                date_effective AS latest_d1_sanction_start_date,
+            FROM d1_sanctions_dedup
+            WINDOW w AS (
+                PARTITION BY state_code, person_id
+                ORDER BY date_effective ASC
+            )
+        )
+    """

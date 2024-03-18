@@ -24,6 +24,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.us_mo_query_fragments import (
+    latest_d1_sanction_spans_cte,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -51,22 +54,7 @@ _QUERY_TEMPLATE = f"""
         )
     )
     ,
-    latest_d1_sanction_spans AS (
-        -- Duplicate D1 sanctions with identical start and end date are likely data entry
-        -- errors. Multiple D1 sanctions are served consecutively, not concurrently.
-        SELECT DISTINCT
-            state_code,
-            person_id,
-            date_effective AS start_date,
-            LEAD(date_effective) OVER w AS end_date,
-            date_effective AS latest_d1_sanction_start_date,
-        FROM `{{project_id}}.normalized_state.state_incarceration_incident_outcome`
-        WHERE outcome_type_raw_text = 'D1'
-        WINDOW w AS (
-            PARTITION BY state_code, person_id
-            ORDER BY date_effective ASC
-        )
-    )
+    {latest_d1_sanction_spans_cte()}
     ,
     intersection_spans AS (
         {create_intersection_spans(

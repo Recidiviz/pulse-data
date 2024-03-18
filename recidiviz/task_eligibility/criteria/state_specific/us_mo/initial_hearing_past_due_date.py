@@ -33,7 +33,7 @@ _DESCRIPTION = """Spans when someone does not have a future initial hearing sche
 """
 
 _QUERY_TEMPLATE = f"""
-    WITH tasc_hearing_due_date_spans_scheduled AS (
+    WITH itsc_entries AS (
         SELECT
             pei.state_code,
             pei.person_id,
@@ -53,6 +53,21 @@ _QUERY_TEMPLATE = f"""
         ON
             itsc.JV_DOC = pei.external_id
             AND pei.state_code = 'US_MO'
+    )
+    ,
+    tasc_hearing_due_date_spans_scheduled AS (
+        SELECT DISTINCT
+            state_code,
+            person_id,
+            hearing_scheduled_date,
+            FIRST_VALUE(next_review_date) OVER hearing_window AS next_review_date,
+        FROM itsc_entries
+        WHERE next_review_date IS NOT NULL
+        -- Prioritize ITSC entries with scheduled review dates, with preference for the soonest (and non-null) date
+        WINDOW hearing_window AS (
+            PARTITION BY state_code, person_id, hearing_scheduled_date
+            ORDER BY {nonnull_end_date_clause('next_review_date')} ASC
+        )
     )
     ,
     -- Someone has been in solitary confinement less than 7 business days, and they haven't had a hearing yet.
@@ -174,8 +189,10 @@ _QUERY_TEMPLATE = f"""
             due_date_inferred AS due_date_inferred
         )) AS reason
     FROM critical_date_has_passed_spans
-    -- Exclude spans that start in the future
-    WHERE start_date <= CURRENT_DATE('US/Pacific')
+    WHERE 
+        -- Exclude spans that start in the future
+        start_date <= CURRENT_DATE('US/Pacific')
+
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
