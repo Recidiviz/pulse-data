@@ -234,6 +234,12 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolera
 from recidiviz.calculator.query.state.views.analyst_data.workflows_officer_events import (
     WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events import (
+    WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
+    WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
@@ -242,6 +248,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
     WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
+    WORKFLOWS_PERSON_EVENTS_VIEW_BUILDER,
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
     PSA_RISK_SCORES_VIEW_BUILDER,
@@ -308,4 +315,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
     US_TN_MAX_STAYS_VIEW_BUILDER,
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
+    WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 ]

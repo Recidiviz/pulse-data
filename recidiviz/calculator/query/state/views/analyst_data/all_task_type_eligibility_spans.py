@@ -62,6 +62,12 @@ sessionized_cte AS
 )
 SELECT
     *,
+    # Flags when someone became newly eligible or almost eligible on this date after a period of ineligibility
+    # This indicates that someone would have been newly resurfaced on the Workflows app,
+    # resetting other usage-related statuses from the previous stint of eligibility.
+    (is_eligible OR is_almost_eligible)
+    AND NOT LAG(is_eligible OR is_almost_eligible) OVER (PARTITION BY person_id, task_type ORDER BY start_date) 
+    AS eligibility_reset,
 FROM sessionized_cte
 """
 
