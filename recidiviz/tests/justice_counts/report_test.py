@@ -1759,12 +1759,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 )
                 session.commit()
                 reports = ReportInterface.get_latest_annual_reports_by_agency_id(
-                    session=session, agency_id=agency.id
+                    session=session,
+                    agency_id=agency.id,
+                    days_after_time_period_to_send_email=1,
+                    today=datetime.date.today(),
                 )
                 self.assertEqual(len(reports), 2)
                 self.assertEqual(
-                    reports[0].instance, "Test Annual Calendar-Year Report"
+                    reports[0].instance, "Test Annual Fiscal-Year Report 2023"
                 )
                 self.assertEqual(
-                    reports[1].instance, "Test Annual Fiscal-Year Report 2023"
+                    reports[1].instance, "Test Annual Calendar-Year Report"
                 )

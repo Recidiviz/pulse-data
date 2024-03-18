@@ -19,8 +19,8 @@ import datetime
 import json
 from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
+from dateutil.relativedelta import relativedelta
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session, joinedload, lazyload
 
@@ -378,9 +378,11 @@ class ReportInterface:
             "month": report.date_range_start.month,
             "frequency": reporting_frequency.value,
             "last_modified_at": report.last_modified_at,
-            "last_modified_at_timestamp": report.last_modified_at.timestamp()
-            if report.last_modified_at is not None
-            else None,
+            "last_modified_at_timestamp": (
+                report.last_modified_at.timestamp()
+                if report.last_modified_at is not None
+                else None
+            ),
             "editors": editor_json,
             "status": report.status.value,
             "is_recurring": report.is_recurring,
@@ -630,12 +632,14 @@ class ReportInterface:
                 report.source_id,
                 datapoint.metric_definition_key,
                 datapoint.context_key,
-                datapoint.dimension_identifier_to_member
-                if (
-                    isinstance(datapoint.dimension_identifier_to_member, str)
-                    or datapoint.dimension_identifier_to_member is None
-                )
-                else json.dumps(datapoint.dimension_identifier_to_member),
+                (
+                    datapoint.dimension_identifier_to_member
+                    if (
+                        isinstance(datapoint.dimension_identifier_to_member, str)
+                        or datapoint.dimension_identifier_to_member is None
+                    )
+                    else json.dumps(datapoint.dimension_identifier_to_member)
+                ),
             ): datapoint
             for report in reports
             for datapoint in report.datapoints
@@ -744,16 +748,43 @@ class ReportInterface:
 
     @staticmethod
     def get_latest_monthly_report_by_agency_id(
-        session: Session, agency_id: int
-    ) -> schema.Report:
-        today = datetime.date.today()
-        starting_month = today.month - 1 if today.month != 1 else 12
-        starting_year = today.year if today.month != 1 else today.year - 1
+        session: Session,
+        agency_id: int,
+        days_after_time_period_to_send_email: int,
+        today: datetime.date,
+    ) -> Optional[schema.Report]:
+        """
+        Fetches the latest monthly report for a given agency, considering a specified time period for sending email alerts.
+
+        Args:
+            session (Session): SQLAlchemy session to interact with the database.
+            agency_id (int): Unique identifier for the agency.
+            days_after_time_period_to_send_email (int): Number of days after the end of the time period to send email alerts.
+            today (datetime.date): Current date.
+
+        Returns:
+            List[schema.Report]: List of latest annual reports for the specified agency.
+
+        """
+        report_end_date = today - relativedelta(
+            days=days_after_time_period_to_send_email
+            - 1
+            # Since the date_range_end of a monthly report is not inclusive (i.e first day of
+            # the following month, not the last day of the current month), subtract 1 from
+            # days_after_time_period_to_send_email to catch the exclusive end-date. For
+            # example if days_after_time_period_send_email = 15, without the -1, we wouldn't
+            # actually send emails until the 16th of the month.
+        )
+
+        if report_end_date.day != 1:
+            # As an optimization, only query for the report if the end date is the start
+            # of the month, making it a legitimate report
+            return None
+
         return (
             session.query(schema.Report)
             .filter(
-                func.extract("month", schema.Report.date_range_start) == starting_month,
-                func.extract("year", schema.Report.date_range_start) == starting_year,
+                schema.Report.date_range_end == report_end_date,
                 schema.Report.type == schema.ReportingFrequency.MONTHLY.value,
                 schema.Report.source_id == agency_id,
             )
@@ -763,40 +794,80 @@ class ReportInterface:
 
     @staticmethod
     def get_latest_annual_reports_by_agency_id(
-        session: Session, agency_id: int
+        session: Session,
+        agency_id: int,
+        days_after_time_period_to_send_email: int,
+        today: datetime.date,
     ) -> List[schema.Report]:
-        """Returns the latest calendar-year and fiscal-year reports for an agency."""
-        today = datetime.date.today()
+        """
+        Fetches the latest annual reports for a given agency, considering a specified time period for sending email alerts.
+
+        Args:
+            session (Session): SQLAlchemy session to interact with the database.
+            agency_id (int): Unique identifier for the agency.
+            days_after_time_period_to_send_email (int): Number of days after the end of the time period to send email alerts.
+            today (datetime.date): Current date.
+
+        Returns:
+            List[schema.Report]: List of latest annual reports for the specified agency.
+
+        """
+
+        report_end_date = today - relativedelta(
+            days=days_after_time_period_to_send_email
+            - 1
+            # Since the date_range_end of an annual report is not inclusive (i.e first day of
+            # the following year, not the last day of the current year), subtract 1 from
+            # days_after_time_period_to_send_email to catch the exclusive end-date. For
+            # example if days_after_time_period_send_email = 15, without the -1, we wouldn't
+            # actually send emails until the 16th of the month.
+        )
+
+        if report_end_date.day != 1:
+            return []
+
         reports = (
             session.query(schema.Report)
             .filter(
-                # Any annual reports that have end dates that have passed in
-                # the current year should be included
-                func.extract("month", schema.Report.date_range_start) <= today.month,
-                func.extract("year", schema.Report.date_range_end) == today.year,
+                schema.Report.date_range_end <= report_end_date,
                 schema.Report.type == "ANNUAL",
                 schema.Report.source_id == agency_id,
             )
             .options(joinedload(schema.Report.datapoints))
+            .order_by(schema.Report.date_range_end.desc())
+            .limit(
+                2
+            )  # limit to two because we want query for the most recent calendar-year and non-calendar-year reports
             .all()
         )
 
-        if any({report.date_range_start.month != 1 for report in reports}) is True:
-            return reports
+        # Filtering reports: We only want to alert the user about a reports if 1) this is the
+        # exact day specified in the offset or 2) it is equal step with the offset.
 
-        # If no fiscal report was caught in the first query, check if there
-        # is one for the previous time period.
-
-        fiscal_reports_from_previous_year = (
-            session.query(schema.Report)
-            .filter(
-                func.extract("month", schema.Report.date_range_start) != 1,
-                func.extract("year", schema.Report.date_range_end) == today.year - 1,
-                schema.Report.type == "ANNUAL",
-                schema.Report.source_id == agency_id,
+        # For example,imagine today = Feb 15 and days_after_time_period_to_send_email = 15.
+        # Then report_end_date is Feb 1. We fetch the two most recent annual reports whose
+        # date_range_end is <= Feb 1. Imagine one of them is a calendar year report whose date_range_end
+        # is Jan 1. We won't be in the first condition, because Jan 1 != Feb 1. However,
+        # we'll be in the second condition, because report_end_date is Feb 1. If instead today = Feb 20,
+        # report_end_date will be Feb 5. We will still fetch this calendar report in our query because
+        # Jan 1 <= Feb 5. However we won't pass either condition because Jan 1 != Feb 5 and also Feb 5
+        # is not the first of the month.
+        reports = [
+            r
+            for r in reports
+            if r.date_range_end
+            == report_end_date  # include report if it the exact date that the offset specified
+            or (
+                r.date_range_end < report_end_date  # or we have passed the offset date
+                and report_end_date.day == 1  # and it is in equal step with the offset!
             )
-            .options(joinedload(schema.Report.datapoints))
-            .all()
-        )
+        ]
 
-        return reports + fiscal_reports_from_previous_year
+        if (
+            len(reports) == 2
+            and reports[0].date_range_start.month == reports[1].date_range_start.month
+        ):
+            # If both reports are calendar-year or both reports are fiscal-year, just return the first (most recent) report.
+            return reports[:1]
+
+        return reports
