@@ -161,7 +161,7 @@ class DeactivateConfigurationByIdAPI(MethodView):
     "<state_code_str>/configurations/<int:config_id>/promote/production"
 )
 class PromoteToProdConfigurationsAPI(MethodView):
-    """CRUD endpoints for /admin/outliers/<state_code_str>/configurations/<config_id>/promote"""
+    """CRUD endpoints for /admin/outliers/<state_code_str>/configurations/<config_id>/promote/production"""
 
     @outliers_blueprint.response(HTTPStatus.OK)
     def post(self, state_code_str: str, config_id: int) -> str:
@@ -178,13 +178,6 @@ class PromoteToProdConfigurationsAPI(MethodView):
         state_code = StateCode(state_code_str.upper())
         querier = OutliersQuerier(state_code)
         config = querier.get_configuration(config_id)
-
-        if config.status != ConfigurationStatus.ACTIVE.value:
-            abort(
-                HTTPStatus.BAD_REQUEST,
-                message="Must promote an active configuration",
-            )
-
         config_dict = config.to_dict()
 
         # The updated_by of the promoted config should be the email of the user,
@@ -198,6 +191,11 @@ class PromoteToProdConfigurationsAPI(MethodView):
         config_dict.pop("id")
         config_dict.pop("updated_at")
         config_dict.pop("status")
+
+        logging.info(
+            "Making request to /configurations API in production for [%s]",
+            str(config_dict),
+        )
 
         # Make request
         response = requests.post(
