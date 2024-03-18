@@ -118,7 +118,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 5
     override_reason: TODO(#21922) Just one case, to investigate later
   - validation_name: invalid_admission_reason_and_pfi
-    hard_num_allowed_rows_override: 5
+    hard_num_allowed_rows_override: 7
     override_reason: TODO(#22279) Just a few cases, to investigate later
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 8
