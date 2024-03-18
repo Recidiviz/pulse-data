@@ -36,6 +36,8 @@ from recidiviz.persistence.database.schema.workflows.schema import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.workflows.types import (
+    FullOpportunityConfig,
+    FullOpportunityInfo,
     OpportunityConfig,
     OpportunityInfo,
     WorkflowsSystemType,
@@ -61,7 +63,7 @@ class WorkflowsQuerier:
     def database_session(self) -> sessionmaker:
         return self.database_manager.get_session(self.state_code)
 
-    def get_opportunities(self) -> List[OpportunityInfo]:
+    def get_opportunities(self) -> List[FullOpportunityInfo]:
         """Returns all opportunities configured in a state
         irrespective of feature-variant gating or system."""
         with self.database_session() as session:
@@ -71,13 +73,13 @@ class WorkflowsQuerier:
                 Opportunity.gating_feature_variant,
             )
 
-            infos: List[OpportunityInfo] = []
+            infos: List[FullOpportunityInfo] = []
 
             for opportunity in opportunities:
                 config = get_config_for_opportunity(opportunity.opportunity_type)
 
                 infos.append(
-                    OpportunityInfo(
+                    FullOpportunityInfo(
                         state_code=opportunity.state_code,
                         opportunity_type=opportunity.opportunity_type,
                         gating_feature_variant=opportunity.gating_feature_variant,
@@ -113,7 +115,7 @@ class WorkflowsQuerier:
 
     def get_active_configs_for_opportunity_types(
         self, opportunity_types: List[str]
-    ) -> List[OpportunityConfig]:
+    ) -> List[FullOpportunityConfig]:
         """Returns all active configs for the given opportunity types. Does not
         filter based on active feature variants."""
         with self.database_session() as session:
@@ -123,7 +125,7 @@ class WorkflowsQuerier:
             )
 
             return [
-                OpportunityConfig(
+                FullOpportunityConfig(
                     id=config.id,
                     state_code=config.state_code,
                     opportunity_type=config.opportunity_type,
@@ -180,7 +182,9 @@ class WorkflowsQuerier:
                     )
                     gated_configs.sort(key=lambda c: c.created_at)
 
-                config_map[opportunity_type] = gated_configs[0]
+                config_map[opportunity_type] = OpportunityConfig.from_full_config(
+                    gated_configs[0]
+                )
             else:
                 default_configs = [c for c in configs if c.feature_variant is None]
                 if len(default_configs) == 0:
@@ -192,8 +196,12 @@ class WorkflowsQuerier:
                         opportunity_type,
                     )
                     default_configs.sort(key=lambda c: c.created_at)
-                    config_map[opportunity_type] = default_configs[-1]
+                    config_map[opportunity_type] = OpportunityConfig.from_full_config(
+                        default_configs[-1]
+                    )
                 else:
-                    config_map[opportunity_type] = default_configs[0]
+                    config_map[opportunity_type] = OpportunityConfig.from_full_config(
+                        default_configs[0]
+                    )
 
         return config_map

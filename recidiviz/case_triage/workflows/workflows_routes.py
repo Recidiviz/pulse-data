@@ -19,7 +19,7 @@ import datetime
 import logging
 import uuid
 from http import HTTPStatus
-from typing import Optional
+from typing import List, Optional
 
 import requests
 import werkzeug.wrappers
@@ -28,6 +28,9 @@ from flask_smorest import Blueprint
 from flask_wtf.csrf import generate_csrf
 from twilio.rest import Client as TwilioClient
 
+from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
+    get_workflows_enabled_states,
+)
 from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.helpers import (
@@ -76,6 +79,8 @@ from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.params import get_str_param_value
 from recidiviz.utils.secrets import get_secret
+from recidiviz.workflows.querier.querier import WorkflowsQuerier
+from recidiviz.workflows.types import OpportunityConfigResponse, WorkflowsSystemType
 
 if in_gcp():
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage-web")
@@ -751,47 +756,32 @@ def create_workflows_api_blueprint() -> Blueprint:
     @workflows_api.response(HTTPStatus.OK, WorkflowsConfigurationsResponseSchema)
     def get_opportunities(state: str) -> Response:
         state_code = state.upper()
-        if state_code != "US_ID":
+        if state_code not in get_workflows_enabled_states():
             return make_response(jsonify({"enabledConfigs": {}}), HTTPStatus.OK)
 
-        config_fixture = {
-            "usIdCRCWorkRelease": {
-                "stateCode": "US_ID",
-                "urlSection": "CRCWorkRelease",
-                "systemType": "INCARCERATION",
-                "displayName": "go work outside",
-                "featureVariant": "usIdCRC",
-                "dynamicEligibilityText": "resident[|s] may be eligible to work outside",
-                "callToAction": "Review residents and let them work outside",
-                "firestoreCollection": "US_ID-CRCWorkReleaseReferrals",
-                "snooze": {
-                    "defaultSnoozeDays": 10,
-                    "maxSnoozeDays": 30,
-                },
-                "denialReasons": {
-                    "WEATHER": "The weather is bad",
-                    "COMPUTER": "My computer is broken",
-                    "Other": "Other, please specify a reason",
-                },
-                "eligibleCriteriaCopy": {
-                    "custodyLevelIsMinimum": {
-                        "text": "This person is on minimum. Let them work outside.",
-                    },
-                    "notServingForSexualOffense": {
-                        "text": "You should let them work outside",
-                    },
-                },
-                "ineligibleCriteriaCopy": {},
-                "sidebarComponents": [
-                    "Incarceration",
-                    "UsIdPastTwoYearsAlert",
-                    "CaseNotes",
-                ],
-                "methodologyUrl": "https://drive.google.com/file/d/1pum9mrOIvGoBIwwE3dQEITod7O5mcYGm/view?usp=sharing",
-            }
+        feature_variants: List[str] = list(g.get("feature_variants", {}).keys())
+
+        querier = WorkflowsQuerier(StateCode(state_code))
+
+        opps = querier.get_enabled_opportunities(
+            [WorkflowsSystemType.INCARCERATION, WorkflowsSystemType.SUPERVISION],
+            feature_variants,
+        )
+
+        opp_types = [o.opportunity_type for o in opps]
+
+        enabled_configs = querier.get_top_config_for_opportunity_types(
+            opp_types, feature_variants
+        )
+
+        config_response = {
+            opp.opportunity_type: OpportunityConfigResponse.from_opportunity_and_config(
+                opp, enabled_configs[opp.opportunity_type]
+            ).to_dict()
+            for opp in opps
         }
 
-        response_blob = {"enabledConfigs": config_fixture}
+        response_blob = {"enabledConfigs": config_response}
 
         return make_response(jsonify(response_blob), HTTPStatus.OK)
 

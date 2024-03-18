@@ -61,6 +61,8 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     g.authenticated_user_email = claims.get(
         f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
     )
+    app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
+    g.feature_variants = app_metadata.get("featureVariants", {})
 
 
 def get_workflows_external_request_enabled_states() -> List[str]:

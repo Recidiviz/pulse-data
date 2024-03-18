@@ -17,8 +17,10 @@
 """Type definitions for Workflows products"""
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, Optional
 
 import attr
+import cattrs
 
 from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
 
@@ -37,6 +39,16 @@ class OpportunityInfo:
     system_type: WorkflowsSystemType = attr.ib()
     url_section: str = attr.ib()
     firestore_collection: str = attr.ib()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+
+@attr.s
+class FullOpportunityInfo(OpportunityInfo):
+    """The opportunity info with additional fields not used in the client
+    such as gating information."""
+
     gating_feature_variant: str = attr.ib(default=None)
 
 
@@ -46,19 +58,74 @@ class OpportunityConfig:
     is displayed in the client front-end. Managed and updated via
     the admin panel. May vary from user to user."""
 
-    id: int = attr.ib()
     state_code: str = attr.ib()
     opportunity_type: str = attr.ib()
-    created_by: str = attr.ib()
-    created_at: datetime = attr.ib()
-    description: str = attr.ib()
-    status: OpportunityStatus = attr.ib()
     display_name: str = attr.ib()
     methodology_url: str = attr.ib()
     initial_header: str = attr.ib()
     dynamic_eligibility_text: str = attr.ib()
     call_to_action: str = attr.ib()
     snooze: str = attr.ib()
+    is_alert: bool = attr.ib()
+    denial_text: Optional[str] = attr.ib()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+    @classmethod
+    def from_full_config(
+        cls, full_config: "FullOpportunityConfig"
+    ) -> "OpportunityConfig":
+        return OpportunityConfig(
+            state_code=full_config.state_code,
+            opportunity_type=full_config.opportunity_type,
+            display_name=full_config.display_name,
+            methodology_url=full_config.methodology_url,
+            initial_header=full_config.initial_header,
+            dynamic_eligibility_text=full_config.dynamic_eligibility_text,
+            call_to_action=full_config.call_to_action,
+            snooze=full_config.snooze,
+            is_alert=full_config.is_alert,
+            denial_text=full_config.denial_text,
+        )
+
+
+@attr.s
+class FullOpportunityConfig(OpportunityConfig):
+    """The opportunity config with additional fields not used in the client
+    such as metadata around creation and use."""
+
+    id: int = attr.ib()
+    created_by: str = attr.ib()
+    created_at: datetime = attr.ib()
+    description: str = attr.ib()
+    status: OpportunityStatus = attr.ib()
     feature_variant: str = attr.ib(default=None)
-    is_alert: bool = attr.ib(default=False)
-    denial_text: str = attr.ib(default=None)
+
+
+@attr.s
+class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
+    """A combination of all the configuration information the API returns"""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
+    @classmethod
+    def from_opportunity_and_config(
+        cls, opportunity: OpportunityInfo, config: OpportunityConfig
+    ) -> "OpportunityConfigResponse":
+        return OpportunityConfigResponse(
+            state_code=opportunity.state_code,
+            opportunity_type=opportunity.opportunity_type,
+            system_type=opportunity.system_type,
+            url_section=opportunity.url_section,
+            firestore_collection=opportunity.firestore_collection,
+            display_name=config.display_name,
+            methodology_url=config.methodology_url,
+            initial_header=config.initial_header,
+            dynamic_eligibility_text=config.dynamic_eligibility_text,
+            call_to_action=config.call_to_action,
+            snooze=config.snooze,
+            is_alert=config.is_alert,
+            denial_text=config.denial_text,
+        )

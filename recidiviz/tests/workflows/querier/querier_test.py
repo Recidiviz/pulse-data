@@ -41,7 +41,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.workflows import fixtures
 from recidiviz.workflows.querier.querier import WorkflowsQuerier
-from recidiviz.workflows.types import OpportunityInfo, WorkflowsSystemType
+from recidiviz.workflows.types import FullOpportunityInfo, WorkflowsSystemType
 
 
 def load_model_fixture(
@@ -63,7 +63,7 @@ def load_model_fixture(
     return results
 
 
-WORK_RELEASE_INFO = OpportunityInfo(
+WORK_RELEASE_INFO = FullOpportunityInfo(
     state_code="US_ID",
     opportunity_type="usIdCrcWorkRelease",
     system_type=WorkflowsSystemType.SUPERVISION,
@@ -71,7 +71,7 @@ WORK_RELEASE_INFO = OpportunityInfo(
     firestore_collection="work_release_collection",
 )
 
-FAST_FTRD_INFO = OpportunityInfo(
+FAST_FTRD_INFO = FullOpportunityInfo(
     state_code="US_ID",
     opportunity_type="usIdFastFTRD",
     system_type=WorkflowsSystemType.SUPERVISION,
@@ -80,7 +80,7 @@ FAST_FTRD_INFO = OpportunityInfo(
     firestore_collection="fast_collection",
 )
 
-SLD_INFO = OpportunityInfo(
+SLD_INFO = FullOpportunityInfo(
     state_code="US_ID",
     opportunity_type="usIdSLD",
     system_type=WorkflowsSystemType.SUPERVISION,
@@ -303,7 +303,7 @@ class TestOutliersQuerier(TestCase):
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual(actual["usIdSLD"].description, "shorter snooze")
+        self.assertEqual(actual["usIdSLD"].call_to_action, "Downgrade all of them")
         self.snapshot.assert_match(actual, name="test_get_top_config_from_multiple_available")  # type: ignore[attr-defined]
 
     def test_get_top_config_from_multiple_available_no_relevant_fv_set(self) -> None:
@@ -312,7 +312,7 @@ class TestOutliersQuerier(TestCase):
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual(actual["usIdSLD"].description, "base config")
+        self.assertEqual(actual["usIdSLD"].call_to_action, "Downgrades all around")
         self.snapshot.assert_match(actual, name="test_get_top_config_from_multiple_available_no_relevant_fv_set")  # type: ignore[attr-defined]
 
     def test_get_top_config_returns_config_for_each_type(self) -> None:
@@ -321,8 +321,10 @@ class TestOutliersQuerier(TestCase):
         )
 
         self.assertEqual(2, len(actual))
-        self.assertEqual(actual["usIdSLD"].description, "shorter snooze")
-        self.assertEqual(actual["usIdCrcWorkRelease"].description, "base config")
+        self.assertEqual(actual["usIdSLD"].call_to_action, "Downgrade all of them")
+        self.assertEqual(
+            actual["usIdCrcWorkRelease"].call_to_action, "Approve them all"
+        )
         self.snapshot.assert_match(actual, name="test_get_top_config_returns_config_for_each_type")  # type: ignore[attr-defined]
 
     def test_get_top_config_ignores_inactive_configs_even_if_fv_matches(self) -> None:
@@ -331,5 +333,7 @@ class TestOutliersQuerier(TestCase):
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual(actual["usIdCrcWorkRelease"].description, "base config")
+        self.assertEqual(
+            actual["usIdCrcWorkRelease"].call_to_action, "Approve them all"
+        )
         self.snapshot.assert_match(actual, name="test_get_top_config_ignores_inactive_configs_even_if_fv_matches")  # type: ignore[attr-defined]

@@ -38,6 +38,11 @@ from recidiviz.case_triage.workflows.workflows_routes import (
     create_workflows_api_blueprint,
 )
 from recidiviz.utils.types import assert_type
+from recidiviz.workflows.types import (
+    OpportunityConfig,
+    OpportunityInfo,
+    WorkflowsSystemType,
+)
 
 PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
@@ -1801,7 +1806,33 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    def test_workflows_config_static(self) -> None:
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
+    def test_workflows_config_response(self, mock_workflows_querier: MagicMock) -> None:
+        mock_workflows_querier.return_value.get_enabled_opportunities.return_value = [
+            OpportunityInfo(
+                state_code="US_ID",
+                opportunity_type="oppType",
+                system_type=WorkflowsSystemType.SUPERVISION,
+                url_section="urlSection",
+                firestore_collection="firestoreCollection",
+            )
+        ]
+
+        mock_workflows_querier.return_value.get_top_config_for_opportunity_types.return_value = {
+            "oppType": OpportunityConfig(
+                state_code="US_ID",
+                opportunity_type="oppType",
+                display_name="Opportunity",
+                methodology_url="example.com",
+                initial_header="header",
+                dynamic_eligibility_text="dynamic text[|s]",
+                call_to_action="action",
+                snooze='{"foo": 12}',
+                is_alert=False,
+                denial_text=None,
+            )
+        }
+
         with self.test_app.test_request_context():
             response = self.test_client.get(
                 "/workflows/US_ID/opportunities",
@@ -1809,12 +1840,12 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertIn("usIdCRCWorkRelease", response.get_json()["enabledConfigs"])  # type: ignore
+        self.assertIn("oppType", response.get_json()["enabledConfigs"])  # type: ignore
 
     def test_workflows_config_disabled_state(self) -> None:
         with self.test_app.test_request_context():
             response = self.test_client.get(
-                "/workflows/US_MI/opportunities",
+                "/workflows/US_RI/opportunities",
                 headers={"Origin": "http://localhost:3000"},
             )
 
