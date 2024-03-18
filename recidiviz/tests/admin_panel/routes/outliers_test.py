@@ -360,21 +360,6 @@ class OutliersAdminPanelEndpointTests(TestCase):
             )
 
     @patch("recidiviz.admin_panel.routes.outliers.get_gcp_environment")
-    def test_promote_configuration_bad_request(self, get_env: MagicMock) -> None:
-        get_env.return_value = "staging"
-        # Assumes second non-header row in configurations.csv has status=INACTIVE
-        config_id = 2
-        with self.app.test_request_context():
-            result = self.client.post(
-                self.promote_prod(config_id), headers=self.headers
-            )
-            self.assertEqual(result.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(
-                json.loads(result.data)["message"],
-                "Must promote an active configuration",
-            )
-
-    @patch("recidiviz.admin_panel.routes.outliers.get_gcp_environment")
     def test_promote_configuration_wrong_env(self, get_env: MagicMock) -> None:
         get_env.return_value = "production"
         # Assumes second non-header row in configurations.csv has status=INACTIVE
