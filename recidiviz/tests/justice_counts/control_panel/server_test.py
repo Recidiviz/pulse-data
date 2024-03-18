@@ -3085,7 +3085,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             agency_id=agency.id,
         )
 
+        subscribed_users = AgencyUserAccountAssociationInterface.get_subscribed_user_associations_by_agency_id(
+            session=self.session, agency_id=agency.id
+        )
+
         self.assertEqual(subscribed_user_emails, ["testA@email.com"])
+        self.assertEqual(len(subscribed_users), 1)
+        self.assertEqual(subscribed_users[0].user_account.email, "testA@email.com")
 
     def test_update_user_agency_visit(self) -> None:
         user = self.test_schema_objects.test_user_A

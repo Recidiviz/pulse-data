@@ -17,9 +17,10 @@
 """This class implements tests for the Justice Counts Publisher emails."""
 import datetime
 import itertools
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
+from freezegun import freeze_time
 
 from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
@@ -149,7 +150,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             Dict[schema.System, List[MetricDefinition]],
         ],
         agency: schema.Agency,
-        monthly_report_date_range: Tuple[datetime.date, datetime.date],
+        monthly_report_date_range: Optional[Tuple[datetime.date, datetime.date]] = None,
     ) -> None:
         """
         Shared tests for test_get_missing_metrics_empty_reports and
@@ -245,7 +246,7 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             Dict[schema.System, List[MetricDefinition]],
         ],
         agency: schema.Agency,
-        monthly_report_date_range: Tuple[datetime.date, datetime.date],
+        monthly_report_date_range: Optional[Tuple[datetime.date, datetime.date]] = None,
     ) -> None:
         """
         Shared tests for test_get_missing_metrics_empty_reports and
@@ -292,7 +293,11 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 (monthly_report.date_range_start, monthly_report.date_range_end),
             )
 
+    @freeze_time(
+        datetime.date.today().replace(month=datetime.date.today().month, day=15)
+    )
     def test_get_missing_metrics_empty_reports(self) -> None:
+        frozen_today = datetime.date.today()
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A
             agency.systems = [
@@ -338,7 +343,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 date_range_to_system_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
+            ) = get_missing_metrics(
+                agency=agency,
+                session=session,
+                today=frozen_today,
+                days_after_time_period_to_send_email=15,
+            )
 
             self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
                 system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
@@ -369,7 +379,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             system_to_missing_monthly_metrics,
             date_range_to_system_to_missing_annual_metrics,
             monthly_report_date_range,
-        ) = get_missing_metrics(agency=agency, session=session, today=self.today)
+        ) = get_missing_metrics(
+            agency=agency,
+            session=session,
+            today=frozen_today,
+            days_after_time_period_to_send_email=15,
+        )
 
         self._test_missing_metrics_functionality_law_enforcement_and_prison_agency_disabled_metrics(
             agency=agency,
@@ -378,7 +393,11 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             monthly_report_date_range=monthly_report_date_range,
         )
 
+    @freeze_time(
+        datetime.date.today().replace(month=datetime.date.today().month, day=15)
+    )
     def test_get_missing_metrics_partially_filled_reports(self) -> None:
+        frozen_today = datetime.date.today()
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A
             agency.systems = [
@@ -425,7 +444,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 date_range_to_system_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
+            ) = get_missing_metrics(
+                agency=agency,
+                session=session,
+                today=frozen_today,
+                days_after_time_period_to_send_email=15,
+            )
 
             # No monthly metrics are enabled, so no monthly metrics are missing
             self.assertEqual(
@@ -456,14 +480,17 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 {law_enforcement.funding.key},
             )
 
-            monthly_report = self.get_monthly_report(agency=agency)
             self.assertEqual(
                 monthly_report_date_range,
-                (monthly_report.date_range_start, monthly_report.date_range_end),
+                None,  # monthly_report_date_range is None because no monthly report was surfaced
             )
 
+    @freeze_time(
+        datetime.date.today().replace(month=datetime.date.today().month, day=15)
+    )
     def test_get_missing_metrics_no_missing_metrics(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            frozen_today = datetime.date.today()
             agency = self.test_schema_objects.test_agency_A
             agency.systems = [
                 schema.System.LAW_ENFORCEMENT.value,
@@ -503,7 +530,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 system_to_starting_month_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
+            ) = get_missing_metrics(
+                agency=agency,
+                session=session,
+                today=frozen_today,
+                days_after_time_period_to_send_email=15,
+            )
 
             # No monthly metrics are enabled
             self.assertEqual(
@@ -517,13 +549,16 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 0,
             )
 
-            monthly_report = self.get_monthly_report(agency=agency)
             self.assertEqual(
                 monthly_report_date_range,
-                (monthly_report.date_range_start, monthly_report.date_range_end),
+                None,  # monthly_report_date_range is None because no metrics were enabled
             )
 
+    @freeze_time(
+        datetime.date.today().replace(month=datetime.date.today().month, day=15)
+    )
     def test_get_missing_metrics_supervision_subsystem(self) -> None:
+        frozen_today = datetime.date.today()
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A
             agency.systems = [
@@ -587,7 +622,12 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 system_to_missing_monthly_metrics,
                 date_range_to_system_to_missing_annual_metrics,
                 monthly_report_date_range,
-            ) = get_missing_metrics(agency=agency, session=session, today=self.today)
+            ) = get_missing_metrics(
+                agency=agency,
+                session=session,
+                today=frozen_today,
+                days_after_time_period_to_send_email=15,
+            )
 
             # No monthly metrics are enabled
             self.assertEqual(
@@ -650,13 +690,16 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 {METRIC_KEY_TO_METRIC["PROBATION_FUNDING"].key},
             )
 
-            monthly_report = self.get_monthly_report(agency=agency)
             self.assertEqual(
                 monthly_report_date_range,
-                (monthly_report.date_range_start, monthly_report.date_range_end),
+                None,  # monthly_report_date_range is None because no monthly metrics were surfaced
             )
 
+    @freeze_time(
+        datetime.date.today().replace(month=datetime.date.today().month, day=15)
+    )
     def test_get_missing_metrics_superagency(self) -> None:
+        frozen_today = datetime.date.today()
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_prison_super_agency
             child_agency_A = self.test_schema_objects.test_prison_affiliate_A
@@ -751,7 +794,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             ) = get_missing_metrics_for_superagencies(
                 agencies=[agency, child_agency_A, child_agency_B],
                 session=session,
-                today=self.today,
+                today=frozen_today,
+                days_after_time_period_to_send_email=15,
             )
 
             self.assertEqual(
@@ -826,7 +870,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             ) = get_missing_metrics_for_superagencies(
                 agencies=[agency, child_agency_A, child_agency_B],
                 session=session,
-                today=self.today,
+                today=frozen_today,
+                days_after_time_period_to_send_email=15,
             )
 
             # Only one child agency will be missing the admissions metric
@@ -837,3 +882,119 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 ],
                 1,
             )
+
+    def test_no_missing_metrics_when_offset_is_for_different_date(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
+            agency.systems = [
+                schema.System.LAW_ENFORCEMENT.value,
+                schema.System.PRISONS.value,
+            ]
+
+            monthly_report = self.get_monthly_report(agency=agency)
+            annual_calendar_year_report = self.get_annual_calendar_year_report(
+                agency=agency
+            )
+            annual_fiscal_year_report = self.annual_fiscal_year_report(agency=agency)
+
+            # Enable all metrics
+            enabled_metrics = self.get_enabled_metric_setting_datapoints(
+                metric_definitions=METRICS_BY_SYSTEM[
+                    schema.System.LAW_ENFORCEMENT.value
+                ]
+                + METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                agency=agency,
+            )
+
+            # Set expenses to be reported fiscally
+            custom_reported_metrics = self.get_custom_reported_metrics(
+                starting_month=7,
+                agency=agency,
+                metric_definitions=[prisons.expenses, law_enforcement.expenses],
+            )
+            session.add_all(
+                [
+                    agency,
+                    monthly_report,
+                    annual_calendar_year_report,
+                    annual_fiscal_year_report,
+                ]
+                + enabled_metrics
+                + custom_reported_metrics
+            )
+            session.commit()
+
+            with freeze_time(
+                datetime.date.today().replace(month=datetime.date.today().month, day=12)
+            ):
+                frozen_today = datetime.date.today()
+                (
+                    system_to_missing_monthly_metrics,
+                    date_range_to_system_to_missing_annual_metrics,
+                    monthly_report_date_range,
+                ) = get_missing_metrics(
+                    agency=agency,
+                    session=session,
+                    today=frozen_today,
+                    days_after_time_period_to_send_email=15,
+                )
+
+                # No monthly metrics are surfaced as missing because the date does not match the offset. The default
+                # offset is 15, and the date that this test is frozen at is the 12th of the current month.
+                self.assertEqual(
+                    len(system_to_missing_monthly_metrics),
+                    0,
+                )
+
+                # No annual metrics are surfaced as missing because the date does not match the offset
+                self.assertEqual(
+                    len(date_range_to_system_to_missing_annual_metrics),
+                    0,
+                )
+
+                monthly_report = self.get_monthly_report(agency=agency)
+                self.assertEqual(
+                    monthly_report_date_range,
+                    None,  # monthly_report_date_range is None because no monthly report was surfaced
+                )
+
+            with freeze_time(
+                datetime.date.today().replace(month=datetime.date.today().month, day=15)
+            ):
+                frozen_today = datetime.date.today()
+                (
+                    system_to_missing_monthly_metrics,
+                    date_range_to_system_to_missing_annual_metrics,
+                    monthly_report_date_range,
+                ) = get_missing_metrics(
+                    agency=agency,
+                    session=session,
+                    today=frozen_today,
+                    days_after_time_period_to_send_email=15,
+                )
+
+                # All monthly metrics are surfaced as missing because the date matches the offset. The default
+                # offset is 15.
+                self.assertEqual(
+                    len(system_to_missing_monthly_metrics),
+                    2,
+                )
+
+                # All annual metrics are surfaced as missing because the date matches the offset.
+                self.assertEqual(
+                    len(date_range_to_system_to_missing_annual_metrics),
+                    2,
+                )
+
+                monthly_report = self.get_monthly_report(agency=agency)
+                self.assertEqual(
+                    monthly_report_date_range,
+                    (monthly_report.date_range_start, monthly_report.date_range_end),
+                )
+
+                self._test_missing_metrics_functionality_law_enforcement_and_prison_agency(
+                    system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
+                    date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
+                    monthly_report_date_range=monthly_report_date_range,
+                    agency=agency,
+                )

@@ -421,6 +421,20 @@ class AgencyUserAccountAssociationInterface:
         return subscribed_user_emails
 
     @staticmethod
+    def get_subscribed_user_associations_by_agency_id(
+        session: Session, agency_id: int
+    ) -> List[schema.AgencyUserAccountAssociation]:
+        return (
+            session.query(schema.AgencyUserAccountAssociation)
+            .filter(
+                schema.AgencyUserAccountAssociation.agency_id == agency_id,
+                schema.AgencyUserAccountAssociation.subscribed == true(),
+            )
+            .options(joinedload(schema.AgencyUserAccountAssociation.user_account))
+            .all()
+        )
+
+    @staticmethod
     def record_user_agency_page_visit(
         session: Session, user_id: int, agency_id: int
     ) -> None:

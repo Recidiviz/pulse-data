@@ -22,7 +22,6 @@ import os
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
-from dateutil.relativedelta import relativedelta
 from google.cloud import storage
 from jinja2 import Template
 from sqlalchemy.orm import Session
@@ -144,15 +143,13 @@ def send_reminder_emails_for_superagency(
     their own superagency metrics.
     """
 
-    subscribed_user_emails = (
-        AgencyUserAccountAssociationInterface.get_subscribed_user_emails_by_agency_id(
-            session=session, agency_id=int(agency_id)
-        )
+    subscribed_user_associations = AgencyUserAccountAssociationInterface.get_subscribed_user_associations_by_agency_id(
+        session=session, agency_id=int(agency_id)
     )
 
     msg = "DRY_RUN " if dry_run is True else ""
 
-    if len(subscribed_user_emails) == 0:
+    if len(subscribed_user_associations) == 0:
         msg += "No users subscribed, no emails to send"
         logger.info(msg)
         return
@@ -163,54 +160,70 @@ def send_reminder_emails_for_superagency(
         session=session, agency=agency
     )
 
-    (
-        system_to_monthly_metric_to_num_child_agencies,
-        date_range_to_system_to_annual_metric_to_num_child_agencies,
-        monthly_report_date_range,
-    ) = get_missing_metrics_for_superagencies(
-        agencies=[agency] + child_agencies, today=today, session=session
-    )
+    for user_association in subscribed_user_associations:
+        (
+            system_to_monthly_metric_to_num_child_agencies,
+            date_range_to_system_to_annual_metric_to_num_child_agencies,
+            monthly_report_date_range,
+        ) = get_missing_metrics_for_superagencies(
+            agencies=[agency] + child_agencies,
+            today=today,
+            session=session,
+            days_after_time_period_to_send_email=(
+                user_association.days_after_time_period_to_send_email
+                if user_association.days_after_time_period_to_send_email is not None
+                else 15
+            ),
+        )
 
-    if (
-        len(system_to_monthly_metric_to_num_child_agencies) == 0
-        and len(date_range_to_system_to_annual_metric_to_num_child_agencies) == 0
-    ):
-        # Don't send reminder email if no metrics are missing
-        msg += "No missing metrics, not sending email"
-        logger.info(msg)
-        return
+        if (
+            len(system_to_monthly_metric_to_num_child_agencies) == 0
+            and len(date_range_to_system_to_annual_metric_to_num_child_agencies) == 0
+        ):
+            # Don't send reminder email if no metrics are missing
+            msg += "No missing metrics, not sending email"
+            logger.info(msg)
+            return
 
-    domain = "publisher-staging" if in_gcp_staging() is True else "publisher"
-    html = _reminder_email_builder_superagency(
-        agency=agency,
-        system_to_monthly_metric_to_num_child_agencies=system_to_monthly_metric_to_num_child_agencies,
-        date_range_to_system_to_annual_metric_to_num_child_agencies=date_range_to_system_to_annual_metric_to_num_child_agencies,
-        domain=domain,
-        monthly_report_date_range=monthly_report_date_range,
-    )
+        domain = "publisher-staging" if in_gcp_staging() is True else "publisher"
+        html = _reminder_email_builder_superagency(
+            agency=agency,
+            system_to_monthly_metric_to_num_child_agencies=system_to_monthly_metric_to_num_child_agencies,
+            date_range_to_system_to_annual_metric_to_num_child_agencies=date_range_to_system_to_annual_metric_to_num_child_agencies,
+            domain=domain,
+            monthly_report_date_range=monthly_report_date_range,
+        )
 
-    _save_reminder_email_to_GCP(
-        agency=agency, html=html, today=today, logger=logger, dry_run=dry_run, msg=msg
-    )
+        _save_reminder_email_to_GCP(
+            agency=agency,
+            html=html,
+            today=today,
+            logger=logger,
+            dry_run=dry_run,
+            msg=msg,
+        )
 
-    _send_reminder_email(
-        agency=agency,
-        html=html,
-        logger=logger,
-        dry_run=dry_run,
-        subscribed_user_emails=subscribed_user_emails,
-    )
+        _send_reminder_email(
+            agency=agency,
+            html=html,
+            logger=logger,
+            dry_run=dry_run,
+            subscribed_user_email=user_association.user_account.email,
+        )
 
 
 def get_missing_metrics_for_superagencies(
-    agencies: List[schema.Agency], today: datetime.date, session: Session
+    agencies: List[schema.Agency],
+    today: datetime.date,
+    session: Session,
+    days_after_time_period_to_send_email: int,
 ) -> Tuple[
     Dict[schema.System, Dict[str, int]],
     Dict[
         Tuple[datetime.date, datetime.date],
         Dict[schema.System, Dict[str, int]],
     ],
-    Tuple[datetime.date, datetime.date],
+    Optional[Tuple[datetime.date, datetime.date]],
 ]:
     """
     Retrieves the missing monthly and annual metrics for a superagency along with the
@@ -234,13 +247,24 @@ def get_missing_metrics_for_superagencies(
         Tuple[datetime.date, datetime.date],
         Dict[schema.System, Dict[str, int]],
     ] = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
-
+    monthly_report_date_range = None
     for agency in agencies:
         (
             system_to_missing_monthly_metrics,
             date_range_to_system_to_missing_annual_metrics,
-            monthly_report_date_range,
-        ) = get_missing_metrics(agency=agency, today=today, session=session)
+            agency_monthly_report_date_range,
+        ) = get_missing_metrics(
+            agency=agency,
+            today=today,
+            session=session,
+            days_after_time_period_to_send_email=days_after_time_period_to_send_email,
+        )
+
+        monthly_report_date_range = (
+            agency_monthly_report_date_range
+            if agency_monthly_report_date_range is not None
+            else monthly_report_date_range
+        )
 
         for (
             system,
@@ -277,15 +301,13 @@ def send_reminder_emails(
     emails to notify them that they have data missing from their most recent annual / fiscal-year
     reports.
     """
-    subscribed_user_emails = (
-        AgencyUserAccountAssociationInterface.get_subscribed_user_emails_by_agency_id(
-            session=session, agency_id=int(agency_id)
-        )
+    subscribed_user_associations = AgencyUserAccountAssociationInterface.get_subscribed_user_associations_by_agency_id(
+        session=session, agency_id=int(agency_id)
     )
 
     msg = "DRY_RUN " if dry_run is True else ""
 
-    if len(subscribed_user_emails) == 0:
+    if len(subscribed_user_associations) == 0:
         msg += "No users subscribed, no emails to send"
         logger.info(msg)
         return
@@ -293,41 +315,56 @@ def send_reminder_emails(
     agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
     today = datetime.date.today()
 
-    (
-        system_to_missing_monthly_metrics,
-        date_range_to_system_to_missing_annual_metrics,
-        monthly_report_date_range,
-    ) = get_missing_metrics(agency=agency, today=today, session=session)
+    for user_association in subscribed_user_associations:
+        (
+            system_to_missing_monthly_metrics,
+            date_range_to_system_to_missing_annual_metrics,
+            monthly_report_date_range,
+        ) = get_missing_metrics(
+            agency=agency,
+            today=today,
+            session=session,
+            days_after_time_period_to_send_email=(
+                user_association.days_after_time_period_to_send_email
+                if user_association.days_after_time_period_to_send_email is not None
+                else 15
+            ),
+        )
 
-    if (
-        len(system_to_missing_monthly_metrics) == 0
-        and len(date_range_to_system_to_missing_annual_metrics) == 0
-    ):
-        # Don't send reminder email if no metrics are missing
-        msg += "No missing metrics, not sending email"
-        logger.info(msg)
-        return
+        if (
+            len(system_to_missing_monthly_metrics) == 0
+            and len(date_range_to_system_to_missing_annual_metrics) == 0
+        ):
+            # Don't send reminder email if no metrics are missing
+            msg += "No missing metrics, not sending email"
+            logger.info(msg)
+            return
 
-    domain = "publisher-staging" if in_gcp_staging() is True else "publisher"
-    html = _reminder_email_builder(
-        agency=agency,
-        system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
-        date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
-        domain=domain,
-        monthly_report_date_range=monthly_report_date_range,
-    )
+        domain = "publisher-staging" if in_gcp_staging() is True else "publisher"
+        html = _reminder_email_builder(
+            agency=agency,
+            system_to_missing_monthly_metrics=system_to_missing_monthly_metrics,
+            date_range_to_system_to_missing_annual_metrics=date_range_to_system_to_missing_annual_metrics,
+            domain=domain,
+            monthly_report_date_range=monthly_report_date_range,
+        )
 
-    _save_reminder_email_to_GCP(
-        agency=agency, html=html, today=today, logger=logger, dry_run=dry_run, msg=msg
-    )
+        _save_reminder_email_to_GCP(
+            agency=agency,
+            html=html,
+            today=today,
+            logger=logger,
+            dry_run=dry_run,
+            msg=msg,
+        )
 
-    _send_reminder_email(
-        agency=agency,
-        html=html,
-        logger=logger,
-        dry_run=dry_run,
-        subscribed_user_emails=subscribed_user_emails,
-    )
+        _send_reminder_email(
+            agency=agency,
+            html=html,
+            logger=logger,
+            dry_run=dry_run,
+            subscribed_user_email=user_association.user_account.email,
+        )
 
 
 def _reminder_email_builder_superagency(
@@ -337,8 +374,8 @@ def _reminder_email_builder_superagency(
         Tuple[datetime.date, datetime.date],
         Dict[schema.System, Dict[str, int]],
     ],
-    monthly_report_date_range: Tuple[datetime.date, datetime.date],
     domain: str,
+    monthly_report_date_range: Optional[Tuple[datetime.date, datetime.date]] = None,
 ) -> str:
     """This is a helper function that constructs a string used for the reminder email
     html. The html and subject are constructed based on what monthly and
@@ -381,8 +418,8 @@ def _reminder_email_builder(
     date_range_to_system_to_missing_annual_metrics: Dict[
         Tuple[datetime.date, datetime.date], Dict[schema.System, List[MetricDefinition]]
     ],
-    monthly_report_date_range: Tuple[datetime.date, datetime.date],
     domain: str,
+    monthly_report_date_range: Optional[Tuple[datetime.date, datetime.date]] = None,
 ) -> str:
     """This is a helper function that constructs a string used for the reminder email
     html. The html and subject are constructed based on what monthly and
@@ -422,13 +459,16 @@ def _reminder_email_builder(
 
 
 def get_missing_metrics(
-    agency: schema.Agency, today: datetime.date, session: Session
+    agency: schema.Agency,
+    today: datetime.date,
+    session: Session,
+    days_after_time_period_to_send_email: int,
 ) -> Tuple[
     Dict[schema.System, List[MetricDefinition]],
     Dict[
         Tuple[datetime.date, datetime.date], Dict[schema.System, List[MetricDefinition]]
     ],
-    Tuple[datetime.date, datetime.date],
+    Optional[Tuple[datetime.date, datetime.date]],
 ]:
     """
     Retrieves the missing monthly and annual metrics for the agency. Returns a tuple:
@@ -444,7 +484,10 @@ def get_missing_metrics(
     """
 
     latest_monthly_report = ReportInterface.get_latest_monthly_report_by_agency_id(
-        session=session, agency_id=agency.id
+        session=session,
+        agency_id=agency.id,
+        days_after_time_period_to_send_email=days_after_time_period_to_send_email,
+        today=today,
     )
 
     monthly_report_date_range = (
@@ -453,14 +496,14 @@ def get_missing_metrics(
             latest_monthly_report.date_range_end,
         )
         if latest_monthly_report is not None
-        else (
-            (today - relativedelta(months=1)).replace(day=1),
-            today.replace(day=1),
-        )
+        else None
     )
 
     latest_annual_reports = ReportInterface.get_latest_annual_reports_by_agency_id(
-        session=session, agency_id=agency.id
+        session=session,
+        agency_id=agency.id,
+        days_after_time_period_to_send_email=days_after_time_period_to_send_email,
+        today=today,
     )
 
     metric_setting_datapoints = DatapointInterface.get_agency_datapoints(
@@ -473,7 +516,11 @@ def get_missing_metrics(
     ) = _get_missing_metrics_by_system(
         session=session,
         agency_datapoints=metric_setting_datapoints,
-        reports=[latest_monthly_report] + latest_annual_reports,
+        reports=(
+            [latest_monthly_report] + latest_annual_reports
+            if latest_monthly_report is not None
+            else latest_annual_reports
+        ),
         is_superagency=agency.is_superagency,
     )
 
@@ -629,7 +676,7 @@ def _save_reminder_email_to_GCP(
 
 
 def _send_reminder_email(
-    subscribed_user_emails: List[str],
+    subscribed_user_email: str,
     logger: logging.Logger,
     dry_run: bool,
     html: str,
@@ -637,21 +684,23 @@ def _send_reminder_email(
 ) -> None:
     """Sends reminder email to all users that belong to an except for CSG users"""
     send_grid_client = SendGridClientWrapper(key_type="justice_counts")
+    try:
+        if dry_run is True:
+            logger.info("DRY_RUN: Would send email to %s", subscribed_user_email)
+            return
 
-    for user_email in subscribed_user_emails:
-        try:
-            if dry_run is True:
-                logger.info("DRY_RUN: Would send email to %s", user_email)
-                continue
-
-            logger.info("Sending email to %s", user_email)
-            send_grid_client.send_message(
-                to_email=user_email,
-                from_email="no-reply@justice-counts.org",
-                from_email_name="Justice Counts",
-                subject=f"Reminder to Upload Metrics for {agency.name} in Publisher",
-                html_content=html,
-                disable_link_click=True,
-            )
-        except Exception as e:
-            logger.exception("Failed to send reminder email to %s. %s", user_email, e)
+        logger.info("Sending email to %s", subscribed_user_email)
+        send_grid_client.send_message(
+            to_email=subscribed_user_email,
+            from_email="no-reply@justice-counts.org",
+            from_email_name="Justice Counts",
+            subject=f"Reminder to Upload Metrics for {agency.name} in Publisher",
+            html_content=html,
+            disable_link_click=True,
+        )
+    except Exception as e:
+        logger.exception(
+            "Failed to send reminder email to %s. %s",
+            subscribed_user_email,
+            e,
+        )
