@@ -26,10 +26,11 @@ VIEW_QUERY_TEMPLATE = """
     term_base AS (
         SELECT
             TermId,
-            FtrdApprovedDate,
+            -- Coalesce FtrdApprovedDate to string 'NULL' if NULL so that later on we can distinguish instances where FTRD was NULLed out in the raw data
+            COALESCE(FtrdApprovedDate, 'NULL') AS FtrdApprovedDate,
             OffenderId,
             update_datetime,
-            LAG(FtrdApprovedDate) OVER (PARTITION BY TermId ORDER BY update_datetime) AS PREV_FtrdApprovedDate,
+            LAG(COALESCE(FtrdApprovedDate, 'NULL')) OVER (PARTITION BY TermId ORDER BY update_datetime) AS PREV_FtrdApprovedDate,
             LAG(TermId) OVER (PARTITION BY TermId ORDER BY update_datetime) AS PREV_TermId,        
         FROM {scl_Term@ALL} 
     ),
@@ -48,7 +49,7 @@ VIEW_QUERY_TEMPLATE = """
 
     sentences_base AS (
     -- Gather critical info about each relevant sentence which we will be joining to the @ALL tables later
-    -- This returns one row per SentenceId.
+    -- This returns one row per SentenceId - updatedatetime.
         SELECT
             sent.SentenceId,
             sent.OffenderId,
@@ -76,9 +77,10 @@ VIEW_QUERY_TEMPLATE = """
             SentenceId,
             OffenderId,
             TermId,
-            CorrectionsCompactEndDate,
+            -- Coalesce CorrectionsCompactEndDate to string 'NULL' if NULL so that later on we can distinguish instances where CorrectionsCompactEndDate was NULLed out in the raw data
+            COALESCE(CorrectionsCompactEndDate, 'NULL') AS CorrectionsCompactEndDate,
             update_datetime,
-            LAG(CorrectionsCompactEndDate) OVER (PARTITION BY SentenceId ORDER BY update_datetime) AS PREV_CorrectionsCompactEndDate,
+            LAG(COALESCE(CorrectionsCompactEndDate, 'NULL')) OVER (PARTITION BY SentenceId ORDER BY update_datetime) AS PREV_CorrectionsCompactEndDate,
             -- Using lag on SentenceId to determine if it's the first row
             LAG(SentenceId) OVER (PARTITION BY SentenceID ORDER BY update_datetime) AS PREV_SentenceId
         FROM sentences_base
@@ -99,22 +101,22 @@ VIEW_QUERY_TEMPLATE = """
 
     rows_with_eligible AS
     (
-       SELECT 
+       SELECT DISTINCT
             t1.OffenderId,
             t1.TermId,
             t1.CorrectionsCompactEndDate,
             t1.SentenceId,
-            NULL as FTRDApprovedDate,
+            CAST(NULL AS STRING) as FTRDApprovedDate,
             t1.update_datetime
         FROM 
             SentenceOrderDates t1
 
         UNION ALL
 
-        SELECT 
+        SELECT DISTINCT
             t2.OffenderId,
             t2.TermId,
-            NULL as CorrectionsCompactEndDate,
+            CAST(NULL AS STRING) as CorrectionsCompactEndDate,
             s.SentenceId,
             t2.FTRDApprovedDate,
             t2.update_datetime
@@ -124,22 +126,42 @@ VIEW_QUERY_TEMPLATE = """
             ON s.TermId = t2.TermId
     ),
     
+    -- collapse so that there's only one row per update_datetime
+    collapsed_by_update_datetime AS 
+    (
+        SELECT 
+            OffenderId,
+            TermId,
+            SentenceId,
+            update_datetime,
+            MAX(CorrectionsCompactEndDate) AS CorrectionsCompactEndDate,
+            MAX(FTRDApprovedDate) AS FTRDApprovedDate
+        FROM rows_with_eligible
+        GROUP BY 1,2,3,4
+    ),
+
     last_val_cte AS (
         SELECT
             OffenderId,
             TermId,
             SentenceId,
-            LAST_VALUE(CorrectionsCompactEndDate) OVER (PARTITION BY SentenceId ORDER BY update_datetime RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS sentence_eligible_date,
-            LAST_VALUE(FtrdApprovedDate) OVER (PARTITION BY TermId ORDER BY update_datetime RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS term_eligible_date,
+            CorrectionsCompactEndDate,
+            FtrdApprovedDate,
+            LAST_VALUE(CorrectionsCompactEndDate IGNORE NULLS) OVER (PARTITION BY TermId, SentenceId ORDER BY update_datetime ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS sentence_eligible_date,
+            LAST_VALUE(FtrdApprovedDate IGNORE NULLS) OVER (PARTITION BY TermId, SentenceId ORDER BY update_datetime ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS term_eligible_date,
             update_datetime
-        FROM rows_with_eligible
-        where update_datetime IS NOT NULL
+        FROM collapsed_by_update_datetime
+        WHERE update_datetime IS NOT NULL
+        ORDER BY TermId, SentenceId
     )
 
     SELECT DISTINCT
        lvc.OffenderId,
        lvc.SentenceId,
-       COALESCE(lvc.term_eligible_date,lvc.sentence_eligible_date) AS eligible_date,
+       COALESCE(
+            NULLIF(lvc.term_eligible_date, 'NULL'),
+            NULLIF(lvc.sentence_eligible_date, 'NULL')
+       ) AS eligible_date,
        lvc.update_datetime
     FROM last_val_cte lvc
     WHERE SentenceId IS NOT NULL
