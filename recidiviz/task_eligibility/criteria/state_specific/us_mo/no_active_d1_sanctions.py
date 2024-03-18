@@ -44,6 +44,8 @@ _QUERY_TEMPLATE = f"""
         FROM `{{project_id}}.normalized_state.state_incarceration_incident_outcome`
         WHERE
             outcome_type_raw_text = 'D1'
+            -- Exclude 0-day sanctions
+            AND date_effective != projected_end_date
     )
     ,
     {create_sub_sessions_with_attributes(
@@ -52,7 +54,7 @@ _QUERY_TEMPLATE = f"""
     ,
     dedup_cte AS
     /*
-    If a person has overlapping sanctions, hey will have duplicate sub-sessions for the period of
+    If a person has overlapping sanctions, they will have duplicate sub-sessions for the period of
     time where there were more than 1 sanction. We deduplicate below so that we surface the
     most-recent sanction that is relevant at each time. 
     */
