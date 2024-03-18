@@ -42,6 +42,7 @@ from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploa
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
@@ -408,15 +409,26 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         # Update existing report by updating metric
         report_metric = self.test_schema_objects.arrests_metric
+        inserts: List[schema.Datapoint] = []
+        updates: List[schema.Datapoint] = []
+        histories: List[schema.DatapointHistory] = []
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=monthly_report_1,
             report_metric=report_metric,
             user_account=user_A,
             upload_method=UploadMethod.BULK_UPLOAD,
         )
+        DatapointInterface.flush_report_datapoints(
+            session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
+        )
         self.session.commit()
-
         with self.app.test_request_context():
             g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
             response = self.client.get(
@@ -891,8 +903,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.add_all([report_unpublished, report_published, user_A])
 
         report_metric = self.test_schema_objects.reported_admissions_metric
+        inserts: List[schema.Datapoint] = []
+        updates: List[schema.Datapoint] = []
+        histories: List[schema.DatapointHistory] = []
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report_unpublished,
             report_metric=report_metric,
             user_account=user_A,
@@ -900,10 +918,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report_published,
             report_metric=report_metric,
             user_account=user_A,
             upload_method=UploadMethod.BULK_UPLOAD,
+        )
+        DatapointInterface.flush_report_datapoints(
+            session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
         )
         self.session.commit()
 
@@ -1023,8 +1050,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         reported_admissions_metric = self.test_schema_objects.reported_admissions_metric
         arrests_metric = self.test_schema_objects.arrests_metric
+        inserts: List[schema.Datapoint] = []
+        updates: List[schema.Datapoint] = []
+        histories: List[schema.DatapointHistory] = []
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report_published,
             report_metric=reported_admissions_metric,
             user_account=user_A,
@@ -1032,6 +1065,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report_published,
             report_metric=arrests_metric,
             user_account=user_A,
@@ -1039,6 +1075,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report_2_published,
             report_metric=reported_admissions_metric,
             user_account=user_A,
@@ -1046,10 +1085,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report_2_published,
             report_metric=arrests_metric,
             user_account=user_A,
             upload_method=UploadMethod.BULK_UPLOAD,
+        )
+        DatapointInterface.flush_report_datapoints(
+            session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
         )
         self.session.commit()
 
@@ -2408,12 +2456,24 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         report_metric = self.test_schema_objects.arrests_metric
+        inserts: List[schema.Datapoint] = []
+        updates: List[schema.Datapoint] = []
+        histories: List[schema.DatapointHistory] = []
         ReportInterface.add_or_update_metric(
             session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report,
             report_metric=report_metric,
             user_account=user_A,
             upload_method=UploadMethod.BULK_UPLOAD,
+        )
+        DatapointInterface.flush_report_datapoints(
+            session=self.session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
         )
         self.session.commit()
 

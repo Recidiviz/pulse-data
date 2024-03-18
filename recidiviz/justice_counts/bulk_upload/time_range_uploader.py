@@ -74,6 +74,9 @@ class TimeRangeUploader:
     def upload_time_range(
         self,
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         time_range_to_year_month: Dict[
             Tuple[datetime.date, datetime.date], Tuple[int, int]
         ],
@@ -114,6 +117,9 @@ class TimeRangeUploader:
 
         datapoint_json_list = ReportInterface.add_or_update_metric(
             session=session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
             report=report,
             report_metric=report_metric,
             user_account=self.user_account,

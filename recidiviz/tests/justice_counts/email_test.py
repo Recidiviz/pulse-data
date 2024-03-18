@@ -401,8 +401,14 @@ class TestEmails(JusticeCountsDatabaseTestCase):
             )
 
             # Add data for expenses metric
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=annual_calendar_year_report,
                 agency=agency,
                 report_metric=MetricInterface(
@@ -473,8 +479,14 @@ class TestEmails(JusticeCountsDatabaseTestCase):
                 agency=agency
             )
             # Add data for funding metric
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=annual_calendar_year_report,
                 agency=agency,
                 report_metric=MetricInterface(

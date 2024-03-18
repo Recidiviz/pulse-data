@@ -1191,6 +1191,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            session.commit()
             # Check that reports have not been set to draft (no changes were actually made)
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1215,6 +1216,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            session.commit()
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
@@ -1249,6 +1251,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            session.commit()
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
@@ -1281,6 +1284,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 upload_filetype=BulkUploadFileType.XLSX,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            session.commit()
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
