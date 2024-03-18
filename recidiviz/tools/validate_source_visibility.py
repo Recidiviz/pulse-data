@@ -385,6 +385,7 @@ def main() -> int:
                 "recidiviz.firestore",
                 "recidiviz.monitoring",
                 "recidiviz.outliers",
+                "recidiviz.workflows",
                 "recidiviz.persistence",
                 "recidiviz.tools.utils.fixture_helpers",
                 "recidiviz.utils",
