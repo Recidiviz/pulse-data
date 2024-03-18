@@ -123,6 +123,9 @@ from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_sessio
 from recidiviz.calculator.query.state.views.sessions.person_age_sessions import (
     PERSON_AGE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.person_caseload_location_sessions import (
+    PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.person_demographics import (
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
 )
@@ -384,4 +387,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     WORK_RELEASE_SESSIONS_VIEW_BUILDER,
+    PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
 ]
