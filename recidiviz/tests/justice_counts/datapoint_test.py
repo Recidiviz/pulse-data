@@ -18,6 +18,7 @@
 
 
 import datetime
+from typing import List
 
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
@@ -44,6 +45,7 @@ from recidiviz.justice_counts.utils.constants import (
     UploadMethod,
 )
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Datapoint,
     DatapointHistory,
@@ -71,8 +73,14 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             monthly_report = self.test_schema_objects.test_report_monthly
             created_datetime = datetime.datetime.now()
 
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=monthly_report,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
@@ -82,13 +90,22 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 current_time=created_datetime,
                 upload_method=UploadMethod.MANUAL_ENTRY,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
             session.commit()
-            session.refresh(monthly_report)
-            report_id = monthly_report.id
 
-            # Update datapoint with new value
+            # Update datapoint with new value. Since we are adding two datapoints with
+            # the same unique key, we need to insert/update them in two separate steps
+            # (a.k.a. not in the same bulk update).
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=monthly_report,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
@@ -98,7 +115,15 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 current_time=created_datetime + datetime.timedelta(days=2),
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
+            report_id = monthly_report.id
         with SessionFactory.using_database(self.database_key) as session:
             datapoints = DatapointInterface.get_datapoints_by_report_ids(
                 session, [report_id]
@@ -565,10 +590,16 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             session.add_all([monthly_report, user])
             current_time = datetime.datetime.now(tz=datetime.timezone.utc)
 
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             try:
                 # When a report is in Draft mode, no errors are raised when the value is invalid
                 DatapointInterface.add_report_datapoint(
                     session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                         reports=[monthly_report]
                     ),
@@ -579,6 +610,13 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     current_time=current_time,
                     upload_method=UploadMethod.BULK_UPLOAD,
                 )
+                DatapointInterface.flush_report_datapoints(
+                    session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
+                )
+                session.commit()
                 assert True
             except ValueError:
                 assert False
@@ -594,6 +632,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 )
                 DatapointInterface.add_report_datapoint(
                     session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                         reports=[monthly_report]
                     ),
@@ -604,6 +645,13 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     current_time=current_time,
                     upload_method=UploadMethod.BULK_UPLOAD,
                 )
+                DatapointInterface.flush_report_datapoints(
+                    session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
+                )
+                session.commit()
 
     def test_get_disaggregated_by_supervision_subsystems_agency_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -676,8 +724,14 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             session.refresh(monthly_report)
             current_time = datetime.datetime(2022, 6, 1)
 
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
                 ),
@@ -689,6 +743,13 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 agency=monthly_report.source,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             report_ids = [
                 monthly_report.id,
@@ -731,6 +792,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
                 ),
@@ -741,6 +805,13 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 current_time=current_time,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             report_ids = [
                 monthly_report.id,
@@ -791,8 +862,14 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
                 reports=[report]
             )
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=100,
@@ -802,6 +879,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=50,
@@ -812,6 +892,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=20,
@@ -822,6 +905,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=30,
@@ -830,22 +916,52 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ABSCONDED"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             # Make sure datapoints are there
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 4)
             self.assertEqual(int(datapoints[0].value), 100)
-            self.assertEqual(datapoints[0].created_at, current_time)
-            self.assertEqual(datapoints[0].last_updated, current_time)
+            self.assertEqual(
+                datapoints[0].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[0].last_updated.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
             self.assertEqual(int(datapoints[1].value), 50)
-            self.assertEqual(datapoints[1].created_at, current_time)
-            self.assertEqual(datapoints[1].last_updated, current_time)
+            self.assertEqual(
+                datapoints[1].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[1].last_updated.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
             self.assertEqual(int(datapoints[2].value), 20)
-            self.assertEqual(datapoints[2].created_at, current_time)
-            self.assertEqual(datapoints[2].last_updated, current_time)
+            self.assertEqual(
+                datapoints[2].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[2].last_updated.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
             self.assertEqual(int(datapoints[3].value), 30)
-            self.assertEqual(datapoints[3].created_at, current_time)
-            self.assertEqual(datapoints[3].last_updated, current_time)
+            self.assertEqual(
+                datapoints[3].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[3].last_updated.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
 
             # Update datapoint values
             updated_time = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -854,6 +970,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=90,
@@ -863,6 +982,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=40,
@@ -873,6 +995,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=15,
@@ -883,6 +1008,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=35,
@@ -891,23 +1019,53 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ABSCONDED"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             # Make sure values and last_updated have changed
             # created_at should have remained the same
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 4)
             self.assertEqual(int(datapoints[0].value), 90)
-            self.assertEqual(datapoints[0].created_at, current_time)
-            self.assertEqual(datapoints[0].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[0].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[0].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
             self.assertEqual(int(datapoints[1].value), 40)
-            self.assertEqual(datapoints[1].created_at, current_time)
-            self.assertEqual(datapoints[1].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[1].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[1].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
             self.assertEqual(int(datapoints[2].value), 15)
-            self.assertEqual(datapoints[2].created_at, current_time)
-            self.assertEqual(datapoints[2].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[2].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[2].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
             self.assertEqual(int(datapoints[3].value), 35)
-            self.assertEqual(datapoints[3].created_at, current_time)
-            self.assertEqual(datapoints[3].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[3].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[3].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
 
             # If we update datapoints but they have the same values, ensure that
             # both created_at and last_updated do not change
@@ -918,6 +1076,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=90,
@@ -927,6 +1088,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=40,
@@ -937,6 +1101,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=15,
@@ -947,6 +1114,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 existing_datapoints_dict=existing_datapoints_dict,
                 value=35,
@@ -955,23 +1125,54 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 dimension=DailyPopulationType["ABSCONDED"],
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             # Since new values are the same as old values, last_updated should not have
             # changed
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 4)
             self.assertEqual(int(datapoints[0].value), 90)
-            self.assertEqual(datapoints[0].created_at, current_time)
-            self.assertEqual(datapoints[0].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[0].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[0].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
             self.assertEqual(int(datapoints[1].value), 40)
-            self.assertEqual(datapoints[1].created_at, current_time)
-            self.assertEqual(datapoints[1].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[1].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[1].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
             self.assertEqual(int(datapoints[2].value), 15)
-            self.assertEqual(datapoints[2].created_at, current_time)
-            self.assertEqual(datapoints[2].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[2].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[2].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
             self.assertEqual(int(datapoints[3].value), 35)
-            self.assertEqual(datapoints[3].created_at, current_time)
-            self.assertEqual(datapoints[3].last_updated, updated_time)
+            self.assertEqual(
+                datapoints[3].created_at.astimezone(tz=datetime.timezone.utc),
+                current_time,
+            )
+            self.assertEqual(
+                datapoints[3].last_updated.astimezone(tz=datetime.timezone.utc),
+                updated_time,
+            )
 
     def test_agency_datapoints_last_updated(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -1122,8 +1323,14 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             monthly_report = self.test_schema_objects.test_report_monthly
             created_datetime = datetime.datetime.now()
 
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=monthly_report,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
@@ -1132,6 +1339,12 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 metric_definition_key=law_enforcement.funding.key,
                 current_time=created_datetime,
                 upload_method=UploadMethod.MANUAL_ENTRY,
+            )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
             )
             session.commit()
             session.refresh(monthly_report)
@@ -1143,6 +1356,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             # Update datapoint with new value
             DatapointInterface.add_report_datapoint(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=monthly_report,
                 existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
                     reports=[monthly_report]
@@ -1152,6 +1368,13 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 current_time=created_datetime + datetime.timedelta(days=2),
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             datapoint_histories = session.query(DatapointHistory).all()
             self.assertEqual(len(datapoint_histories), 1)

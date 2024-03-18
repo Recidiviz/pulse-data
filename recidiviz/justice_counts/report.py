@@ -485,6 +485,9 @@ class ReportInterface:
     @staticmethod
     def add_or_update_metric(
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         report: schema.Report,
         report_metric: MetricInterface,
         upload_method: UploadMethod,
@@ -530,6 +533,9 @@ class ReportInterface:
             datapoint_json_list.append(
                 DatapointInterface.add_report_datapoint(
                     session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     existing_datapoints_dict=existing_datapoints_dict,
                     user_account=user_account,
                     current_time=current_time,
@@ -562,6 +568,9 @@ class ReportInterface:
                 datapoint_json_list.append(
                     DatapointInterface.add_report_datapoint(
                         session=session,
+                        inserts=inserts,
+                        updates=updates,
+                        histories=histories,
                         existing_datapoints_dict=existing_datapoints_dict,
                         user_account=user_account,
                         current_time=current_time,
@@ -587,6 +596,9 @@ class ReportInterface:
             datapoint_json_list.append(
                 DatapointInterface.add_report_datapoint(
                     session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     existing_datapoints_dict=existing_datapoints_dict,
                     user_account=user_account,
                     current_time=current_time,

@@ -190,6 +190,9 @@ class WorkbookUploader:
         # 3. Now run through all sheets and process each in turn.
         invalid_sheet_names: List[str] = []
         sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
+        inserts: List[schema.Datapoint] = []
+        updates: List[schema.Datapoint] = []
+        histories: List[schema.DatapointHistory] = []
         for sheet_name in actual_sheet_names:
             logging.info("Uploading %s", sheet_name)
             df = sheet_name_to_df[sheet_name]
@@ -217,6 +220,9 @@ class WorkbookUploader:
             )
             spreadsheet_uploader.upload_sheet(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 rows=rows,
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
@@ -239,6 +245,12 @@ class WorkbookUploader:
             metric_definitions=metric_definitions,
             actual_sheet_names=actual_sheet_names,
             upload_filetype=upload_filetype,
+        )
+        DatapointInterface.flush_report_datapoints(
+            session=session,
+            inserts=inserts,
+            updates=updates,
+            histories=histories,
         )
 
         return (

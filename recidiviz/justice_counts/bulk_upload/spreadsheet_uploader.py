@@ -85,6 +85,9 @@ class SpreadsheetUploader:
     def upload_sheet(
         self,
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
         invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
@@ -113,6 +116,9 @@ class SpreadsheetUploader:
             )
             self._upload_super_agency_sheet(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 agency_name_to_rows=agency_name_to_rows,
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
@@ -127,6 +133,9 @@ class SpreadsheetUploader:
             )
             self._upload_supervision_sheet(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 system_to_rows=system_to_rows,
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
@@ -137,6 +146,9 @@ class SpreadsheetUploader:
         else:
             self._upload_rows(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 rows=rows,
                 system=self.system,
                 invalid_sheet_names=invalid_sheet_names,
@@ -150,6 +162,9 @@ class SpreadsheetUploader:
     def _upload_super_agency_sheet(
         self,
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         agency_name_to_rows: Dict[str, List[Dict[str, Any]]],
         invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
@@ -201,6 +216,9 @@ class SpreadsheetUploader:
                 )
                 self._upload_supervision_sheet(
                     session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     system_to_rows=system_to_rows,
                     invalid_sheet_names=invalid_sheet_names,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
@@ -213,6 +231,9 @@ class SpreadsheetUploader:
             else:
                 self._upload_rows(
                     session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     rows=current_rows,
                     system=self.system,
                     invalid_sheet_names=invalid_sheet_names,
@@ -227,6 +248,9 @@ class SpreadsheetUploader:
     def _upload_supervision_sheet(
         self,
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         system_to_rows: Dict[schema.System, List[Dict[str, Any]]],
         invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
@@ -244,6 +268,9 @@ class SpreadsheetUploader:
         for current_system, current_rows in system_to_rows.items():
             self._upload_rows(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 rows=current_rows,
                 system=current_system,
                 invalid_sheet_names=invalid_sheet_names,
@@ -258,6 +285,9 @@ class SpreadsheetUploader:
     def _upload_rows(
         self,
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
         system: schema.System,
         invalid_sheet_names: List[str],
@@ -292,10 +322,12 @@ class SpreadsheetUploader:
         existing_datapoint_json_list = metric_key_to_datapoint_jsons[
             metricfile.definition.key
         ]
-
         try:
             new_datapoint_json_list = self._upload_rows_for_metricfile(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 rows=rows,
                 metricfile=metricfile,
                 metric_key_to_errors=metric_key_to_errors,
@@ -321,6 +353,9 @@ class SpreadsheetUploader:
     def _upload_rows_for_metricfile(
         self,
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         rows: List[Dict[str, Any]],
         metricfile: MetricFile,
         metric_key_to_errors: Dict[
@@ -410,7 +445,6 @@ class SpreadsheetUploader:
             if child_agency_name is None or len(child_agency_name) == 0
             else self.child_agency_name_to_agency[child_agency_name]
         )
-
         for time_range, rows_for_this_time_range in rows_by_time_range.items():
             try:
                 time_range_uploader = TimeRangeUploader(
@@ -433,6 +467,9 @@ class SpreadsheetUploader:
                     datapoint_json_list_for_time_range,
                 ) = time_range_uploader.upload_time_range(
                     session=session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     time_range_to_year_month=time_range_to_year_month,
                     existing_report=existing_report,
                     metric_key_to_errors=metric_key_to_errors,

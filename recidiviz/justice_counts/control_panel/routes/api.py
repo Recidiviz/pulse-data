@@ -988,7 +988,9 @@ def get_api_blueprint(
             existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
                 reports=[report]
             )
-
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             for metric_json in request_json.get("metrics", []):
                 report_metric = MetricInterface.from_json(
                     json=metric_json,
@@ -996,6 +998,9 @@ def get_api_blueprint(
                 )
                 ReportInterface.add_or_update_metric(
                     session=current_session,
+                    inserts=inserts,
+                    updates=updates,
+                    histories=histories,
                     report=report,
                     report_metric=report_metric,
                     user_account=user,
@@ -1013,6 +1018,12 @@ def get_api_blueprint(
                 editor_id_to_json=editor_id_to_json,
             )
 
+            DatapointInterface.flush_report_datapoints(
+                session=current_session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
             current_session.commit()
             return jsonify(report_json)
         except Exception as e:

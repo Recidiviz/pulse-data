@@ -18,6 +18,7 @@
 
 
 import datetime
+from typing import List
 
 from freezegun import freeze_time
 
@@ -104,14 +105,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             monthly_report = ReportInterface.get_report_by_id(
                 session, report_id=monthly_report_id
             )
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=monthly_report,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(datapoints), 2)
 
@@ -603,14 +616,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_add_budget_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
-
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 2)
 
@@ -635,8 +660,14 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_add_empty_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.get_funding_metric(
                     value=None,
@@ -645,6 +676,13 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 1)
             # There should be no datapoints with values associated with the metric
@@ -664,14 +702,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     emergency_value=None, unknown_value=None
                 )
             )
-
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=incomplete_report,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             total_datapoints = session.query(schema.Datapoint).all()
             # 1 aggregate datapoint, 4 breakdown datapoints, and 1 context datapoint
@@ -704,13 +754,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
     def test_add_calls_for_service_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             report_metric = self.test_schema_objects.reported_calls_for_service_metric
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 6)
@@ -752,13 +815,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             report = self.test_schema_objects.test_report_monthly
             report_metric = self.test_schema_objects.arrests_metric
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 25)
@@ -834,13 +910,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             report = self.test_schema_objects.test_report_monthly
             session.add(report)
             report = session.query(schema.Report).one_or_none()
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 2)
 
@@ -854,13 +943,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             # This should be a no-op, because the metric definition is the same
             # according to our unique constraints, so we update the existing records
             # (which does nothing, since nothing has changed)
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             queried_datapoints_no_op = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
@@ -875,13 +977,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             session.add(self.test_schema_objects.test_user_A)
             report_metric = self.test_schema_objects.reported_calls_for_service_metric
 
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             total_datapoints = session.query(schema.Datapoint).all()
             # One aggregate datapoint, 4 breakdowns, one context
@@ -923,13 +1038,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     value=1000,
                 )
             )
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=new_report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -966,13 +1094,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
     def test_update_metric_with_new_contexts(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_user_A)
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             total_datapoints = session.query(schema.Datapoint).all()
             self.assertEqual(len(total_datapoints), 6)
             datapoints_with_value = (
@@ -987,8 +1128,14 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(contexts), 1)
 
             # Update a context
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
                     nullify_contexts_and_disaggregations=True
@@ -996,6 +1143,13 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             queried_datapoints = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
@@ -1112,13 +1266,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             report = ReportInterface.get_report_by_id(
                 session=session, report_id=report_id
             )
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=report,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             metrics = ReportInterface.get_metrics_by_report(
                 report=report, session=session
             )
@@ -1210,49 +1377,101 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
     def test_datapoint_histories(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_user_A)
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             # First update
             report_metric = JusticeCountsSchemaTestObjects.get_funding_metric(
                 value=1000,
             )
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             # Second update
             report_metric = JusticeCountsSchemaTestObjects.get_funding_metric(
                 value=100,
             )
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             # Third update
             report_metric = JusticeCountsSchemaTestObjects.get_funding_metric(
                 value=10,
             )
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             datapoint_history = (
                 session.query(schema.DatapointHistory)
@@ -1275,13 +1494,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
     def test_delete_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_user_A)
+            inserts: List[schema.Datapoint] = []
+            updates: List[schema.Datapoint] = []
+            histories: List[schema.DatapointHistory] = []
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
 
             datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -1307,13 +1539,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 )
             )
 
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
@@ -1331,13 +1576,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     value=None, nullify_contexts_and_disaggregations=True
                 )
             )
+            inserts.clear()
+            updates.clear()
+            histories.clear()
             ReportInterface.add_or_update_metric(
                 session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=report_metric,
                 user_account=self.test_schema_objects.test_user_A,
                 upload_method=UploadMethod.BULK_UPLOAD,
             )
+            DatapointInterface.flush_report_datapoints(
+                session=session,
+                inserts=inserts,
+                updates=updates,
+                histories=histories,
+            )
+            session.commit()
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))

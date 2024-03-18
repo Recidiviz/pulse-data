@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import false
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import case
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
@@ -432,6 +433,9 @@ class DatapointInterface:
     @staticmethod
     def add_report_datapoint(
         session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
         report: schema.Report,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         value: Any,
@@ -445,14 +449,26 @@ class DatapointInterface:
         user_account: Optional[schema.UserAccount] = None,
         agency: Optional[schema.Agency] = None,
     ) -> Optional[DatapointJson]:
-        """Given a Report and a MetricInterface, add a row to the datapoint table.
-        All datapoints associated with a metric are saved, even if the value is None.
+        """
+        Given a Report and a MetricInterface, add the new datapoint to either the
+        `inserts` or `updates` lists.
 
+        * If the datapoint is new (not found in `existing_datapoints_dict`), we
+        will add it to `inserts`.
+
+        * If the datapoint is updating an existing datapoint, we add it to `updates`.
+        The datapoints in `inserts` and `updates` are not written to the database in
+        this method. Instead, the user must call `flush_report_datapoints()` which will
+        bulk insert/update them to the datapoint table.
+
+        * For each `update`, we also record a DatapointHistory entry in `histories` which
+        also must be passed to `flush_report_datapoints()` for writing.
+
+        All datapoints associated with a metric will be saved, even if the value is None.
         The only exception to the above is if `uploaded_via_breakdown_sheet`
-        is True. in this case, if `datapoint.value` is None, we ignore it,
-        and fallback to whatever value is already in the db. If `datapoint.value`
-        is specified, prefer the existing value in the db, unless there isn't one,
-        in which case we save the incoming value.
+        is True. In this case, if `datapoint.value` is None, we ignore it. If
+        `datapoint.value` is specified, prefer the existing value in the db, unless
+        there isn't one, in which case we save the incoming value.
         """
 
         # Don't save invalid datapoint values when publishing
@@ -506,6 +522,7 @@ class DatapointInterface:
             created_at=current_time
             if existing_datapoint is None
             else existing_datapoint.created_at,
+            last_updated=current_time,
             report=report,
             dimension_identifier_to_member={
                 dimension.dimension_identifier(): dimension.dimension_name
@@ -524,42 +541,36 @@ class DatapointInterface:
 
         # Creating the new datapoint might have added it to the session;
         # to avoid constraint violation errors, remove it before adding
-        # it back later in this method.
+        # it back later.
         expunge_existing(session, new_datapoint)
 
         if existing_datapoint is None:
-            existing_datapoint_value = None
             equal_to_existing = False
-            new_datapoint.last_updated = current_time
-            session.add(new_datapoint)
+            inserts.append(new_datapoint)
         else:
             # Compare values using `get_value` so e.g. 3 == 3.0
             equal_to_existing = get_value(datapoint=new_datapoint) == get_value(
                 datapoint=existing_datapoint
             )
-            new_datapoint.id = existing_datapoint.id
-            if equal_to_existing:
-                new_datapoint.last_updated = existing_datapoint.last_updated
-            else:
-                new_datapoint.last_updated = current_time
-            # Save existing datapoint values before overwritting it in merge.
-            existing_datapoint_value = existing_datapoint.value
-            old_upload_method = existing_datapoint.upload_method
-            new_datapoint = session.merge(new_datapoint)
             if not equal_to_existing:
-                session.add(
-                    schema.DatapointHistory(
-                        datapoint_id=existing_datapoint.id,
-                        user_account_id=user_account.id
-                        if user_account is not None
-                        else None,
-                        timestamp=current_time,
-                        old_value=existing_datapoint_value,
-                        new_value=str(value) if value is not None else value,
-                        old_upload_method=old_upload_method,
-                        new_upload_method=upload_method.value,
-                    )
+                new_datapoint.id = existing_datapoint.id
+                updates.append(new_datapoint)
+                datapoint_history = schema.DatapointHistory(
+                    datapoint_id=existing_datapoint.id,
+                    user_account_id=user_account.id
+                    if user_account is not None
+                    else None,
+                    timestamp=current_time,
+                    old_value=existing_datapoint.value,
+                    new_value=str(value) if value is not None else value,
+                    old_upload_method=existing_datapoint.upload_method,
+                    new_upload_method=upload_method.value,
                 )
+                # Creating the new datapoint history might have added it to the session;
+                # to avoid constraint violation errors, remove it before adding
+                # it back later.
+                expunge_existing(session, datapoint_history)
+                histories.append(datapoint_history)
 
         # Return datapoint json because datapoint values and metadata will be
         # used in the bulk upload data summary pages.
@@ -568,12 +579,74 @@ class DatapointInterface:
                 datapoint=new_datapoint,
                 is_published=report.status == schema.ReportStatus.PUBLISHED,
                 frequency=schema.ReportingFrequency[report.type],
-                old_value=existing_datapoint_value if not equal_to_existing else None,
+                old_value=existing_datapoint.value
+                if not equal_to_existing and existing_datapoint is not None
+                else None,
                 agency_name=agency.name if agency is not None else None,
             )
             if new_datapoint is not None
             else None
         )
+
+    @staticmethod
+    def flush_report_datapoints(
+        session: Session,
+        inserts: List[schema.Datapoint],
+        updates: List[schema.Datapoint],
+        histories: List[schema.DatapointHistory],
+    ) -> None:
+        """
+        Bulk writes the datapoints in `inserts`, bulk updates the datapoints in
+        `updates`, and bulk writes the datapoint_histories in `histories`.
+
+        Clears the `inserts`, `updates`, and `histories` lists after writing.
+
+        Make sure to call session.commit() at some point after flush_report_datapoints.
+        """
+        # Flush inserts
+        if len(inserts) > 0:
+            session.add_all(inserts)
+
+        # Flush updates.
+        # Only modifies `value`, `upload_method`, and `last_updated` columns since all
+        # other columns stay constant for a report datapoint update.
+        if len(updates) > 0:
+            update_ids = [update.id for update in updates]
+            success_count = (
+                session.query(schema.Datapoint)
+                .filter(schema.Datapoint.id.in_(update_ids))
+                .update(
+                    {
+                        schema.Datapoint.value: case(
+                            {update.id: update.value for update in updates},
+                            value=schema.Datapoint.id,
+                        ),
+                        schema.Datapoint.upload_method: case(
+                            {update.id: update.upload_method for update in updates},
+                            value=schema.Datapoint.id,
+                        ),
+                        schema.Datapoint.last_updated: case(
+                            {update.id: update.last_updated for update in updates},
+                            value=schema.Datapoint.id,
+                        ),
+                    },
+                    # No attributes in this session to sync with.
+                    synchronize_session=False,
+                )
+            )
+            if success_count != len(update_ids):
+                raise ValueError(
+                    f"Bulk update failed. Updates not committed. Expected {len(update_ids)} updates but only committed {success_count} updates."
+                )
+
+        # Flush histories
+        if len(histories) > 0:
+            session.add_all(histories)
+
+        # Clear inserts, updates, and histories.
+        inserts.clear()
+        updates.clear()
+        histories.clear()
 
     ### Save Path: Agency Datapoints ###
 
