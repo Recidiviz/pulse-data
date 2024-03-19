@@ -31,7 +31,6 @@ from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
 from opentelemetry.trace import set_tracer_provider
 from werkzeug import Response
 
-from recidiviz.admin_panel.routes.outliers import outliers_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import users_blueprint
 from recidiviz.monitoring.flask_insrumentation import instrument_flask_app
@@ -117,7 +116,6 @@ if not in_gunicorn():
 
 @auth_endpoint_blueprint.before_request
 @users_blueprint.before_request
-@outliers_blueprint.before_request
 @requires_gae_auth
 def authorization_middleware() -> None:
     pass
