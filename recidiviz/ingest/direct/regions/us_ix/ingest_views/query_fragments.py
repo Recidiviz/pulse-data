@@ -68,6 +68,28 @@ bed_assignment_periods_cte AS (
         USING (FacilityLevelId)
 )"""
 
+SECURITY_LEVEL_PERIODS_CTE = """
+security_level_periods_cte as (
+    SELECT 
+        OffenderId,
+        SecurityLevelName,
+        CAST(startDate AS DATETIME) AS startDate,
+        CAST(LEAD(startDate) OVER (PARTITION BY OffenderId ORDER BY startDate) AS DATETIME) as endDate
+    FROM (
+        SELECT 
+            OffenderId,
+            ApprovedDate AS startDate,
+            SecurityLevelId, 
+            LAG(SecurityLevelId) OVER (PARTITION BY OffenderId ORDER BY ApprovedDate) as prev_level,
+            LAG(ApprovedDate) OVER (PARTITION BY OffenderId ORDER BY ApprovedDate) as prev_ApprovedDate 
+        FROM {ind_OffenderSecurityLevel}
+    ) o
+    LEFT JOIN {hsn_SecurityLevel} s
+            ON o.SecurityLevelId = s.SecurityLevelId
+    WHERE prev_level IS NULL OR o.SecurityLevelId != prev_level
+)
+"""
+
 LEGAL_STATUS_PERIODS_CTE = """
 -- Returns one row per legal status period. End dates are non-null, but current legal
 -- status periods are represented with an EndDate of '9999-12-31'.

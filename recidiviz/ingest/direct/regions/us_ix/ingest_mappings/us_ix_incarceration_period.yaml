@@ -12,8 +12,8 @@ input_columns:
   - DOCLocationToName
   - DOCLocationToTypeName
   - LegalStatusDesc
-  - Bed_SecurityLevelDesc
   - LevelPath
+  - SecurityLevelName
 unused_columns: []
 output:
   StatePerson:
@@ -47,18 +47,21 @@ output:
           release_date: End_TransferDate
           custody_level:
             $enum_mapping:
-              $raw_text: Bed_SecurityLevelDesc
+              $raw_text: SecurityLevelName
               $mappings:
                 StateIncarcerationPeriodCustodyLevel.CLOSE: Close
                 StateIncarcerationPeriodCustodyLevel.MEDIUM: Medium
                 StateIncarcerationPeriodCustodyLevel.MINIMUM: Minimum
-                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN: Rider
+                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
+                  - Rider
+                  - Community
+                  - Life-Death
           facility: DOCLocationToName
           specialized_purpose_for_incarceration:
             $conditional:
               - $if:
                   $equal:
-                    - Bed_SecurityLevelDesc
+                    - SecurityLevelName
                     - $literal("Rider")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
               - $else:
