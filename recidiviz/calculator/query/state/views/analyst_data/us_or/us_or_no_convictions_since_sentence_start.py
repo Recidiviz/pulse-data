@@ -68,7 +68,6 @@ US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_QUERY_TEMPLATE = f"""
             sentences.state_code,
             sentences.person_id,
             sentences.sentence_id,
-            sentences.sentence_type,
             sentences.start_date AS start_datetime,
             sentences.end_date AS end_datetime,
             next_offense_date AS critical_date,
@@ -76,10 +75,7 @@ US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_QUERY_TEMPLATE = f"""
         LEFT JOIN sentences_with_later_convictions
         USING (person_id, sentence_id)
     ),
-    {critical_date_has_passed_spans_cte(attributes=[
-    'sentence_id',
-    'sentence_type'
-    ])}
+    {critical_date_has_passed_spans_cte(attributes=['sentence_id'])}
         SELECT
             state_code,
             person_id,

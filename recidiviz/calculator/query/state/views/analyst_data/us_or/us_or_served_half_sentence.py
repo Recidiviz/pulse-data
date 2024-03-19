@@ -34,7 +34,6 @@ US_OR_SERVED_HALF_SENTENCE_VIEW_NAME = "us_or_served_half_sentence"
 
 US_OR_SERVED_HALF_SENTENCE_VIEW_DESCRIPTION = """Identifies individuals' supervision sentences for which at least half the sentence has been served"""
 
-# TODO(#26623): Account for absconsions, which should not be counted as time served.
 US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
     WITH sentences AS (
         /* NB: this query pulls from sentences_preprocessed (not sentence_spans, even
@@ -55,16 +54,19 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             sentence_id,
-            sentence_type,
             start_date AS start_datetime,
             end_date AS end_datetime,
-            DATE_ADD(start_date, INTERVAL CAST(max_sentence_length_days_calculated / 2 AS INT64) DAY) AS critical_date,
+            /* OR accounts for time in absconsion when recording the maximum completion
+            date for a sentence. We therefore don't need to account for absconsions
+            ourselves. We can instead just use the sentence length and sentence end date
+            to find the point in time at which someone has half their sentence
+            remaining. */
+            DATE_SUB(end_date,
+                     INTERVAL CAST(FLOOR(max_sentence_length_days_calculated / 2) AS INT64) DAY
+            ) AS critical_date,
         FROM sentences
     ),
-    {critical_date_has_passed_spans_cte(attributes=[
-    'sentence_id', 
-    'sentence_type',
-    ])}
+    {critical_date_has_passed_spans_cte(attributes=['sentence_id'])}
     SELECT
         state_code,
         person_id,
