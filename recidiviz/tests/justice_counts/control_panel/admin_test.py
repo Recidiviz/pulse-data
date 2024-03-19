@@ -406,18 +406,18 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             .filter(schema.Agency.name == "Agency Alpha")
             .one()
         )
+        agency.is_superagency = True
+        self.session.commit()
+
         response = self.client.get(f"/admin/agency/{agency.id}")
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
-        self.assertEqual(
-            response_json["roles"], [enum.value for enum in schema.UserAccountRole]
-        )
         agency_json = response_json["agency"]
-        self.assertEqual(agency_json["child_agency_ids"], [])
+        metrics = response_json["metrics"]
         self.assertEqual(agency_json["name"], agency.name)
         self.assertEqual(agency_json["id"], agency.id)
-        self.assertEqual(len(agency_json["team"]), 1)
-        self.assertEqual(agency_json["team"][0]["name"], "Jane Doe")
+        self.assertTrue(len(metrics) > 0)
+        self.assertEqual(metrics[0]["sector"], "LAW ENFORCEMENT")
 
     def test_create_or_update_agency(self) -> None:
         self.load_users_and_agencies()
@@ -558,8 +558,14 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             .one()
         )
 
-        child_agency = schema.Agency(
+        child_agency_1 = schema.Agency(
             name="Agency Alpha Child Agency",
+            super_agency_id=super_agency.id,
+            systems=["LAW_ENFORCEMENT"],
+        )
+
+        child_agency_2 = schema.Agency(
+            name="Agency Beta Child Agency",
             super_agency_id=super_agency.id,
             systems=["LAW_ENFORCEMENT"],
         )
@@ -584,12 +590,19 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         self.session.add_all(
-            [child_agency, disabled_metric, custom_reporting_frequency]
+            [
+                child_agency_1,
+                child_agency_2,
+                disabled_metric,
+                custom_reporting_frequency,
+            ]
         )
         self.session.commit()
-        self.session.refresh(child_agency)
+        self.session.refresh(child_agency_1)
+        self.session.refresh(child_agency_2)
         self.session.refresh(super_agency)
-        child_agency_id = child_agency.id
+        child_agency_1_id = child_agency_1.id
+        child_agency_2_id = child_agency_2.id
         super_agency_id = super_agency.id
 
         copy_metric_settings(
@@ -599,7 +612,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             current_session=self.session,
         )
         agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_id
+            session=self.session, agency_id=child_agency_1_id
         )
 
         # There will be two agency datapoints, one that is a default
@@ -624,7 +637,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             current_session=self.session,
         )
         agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=self.session, agency_id=child_agency_id
+            session=self.session, agency_id=child_agency_1_id
         )
 
         # There will be two agency datapoints, one that is a default
@@ -661,3 +674,45 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             else:
                 for datapoint in datapoints:
                     self.assertIsNone(datapoint.value)
+
+        # Now test copying just for one child agency
+        disabled_metric_2 = schema.Datapoint(
+            metric_definition_key=law_enforcement.expenses.key,
+            enabled=False,
+            source_id=super_agency.id,
+            is_report_datapoint=False,
+        )
+        self.session.add(disabled_metric_2)
+
+        copy_metric_settings(
+            super_agency_id=super_agency_id,
+            dry_run=False,
+            metric_definition_key_subset=["ALL"],
+            child_agency_id_subset=[child_agency_2_id],
+            current_session=self.session,
+        )
+
+        agency_1_datapoints = DatapointInterface.get_agency_datapoints(
+            session=self.session, agency_id=child_agency_1_id
+        )
+        agency_2_datapoints = DatapointInterface.get_agency_datapoints(
+            session=self.session, agency_id=child_agency_2_id
+        )
+        for i, datapoints in enumerate([agency_1_datapoints, agency_2_datapoints]):
+            metric_key_to_agency_datapoints = defaultdict(list)
+            for datapoint in datapoints:
+                metric_key_to_agency_datapoints[datapoint.metric_definition_key].append(
+                    datapoint
+                )
+            expenses_datapoints = metric_key_to_agency_datapoints[
+                law_enforcement.expenses.key
+            ]
+            disabled_datapoint = [
+                dp for dp in expenses_datapoints if dp.enabled is False
+            ]
+            if i == 0:
+                # Child agency 1 should have no disabled datapoints
+                self.assertTrue(len(disabled_datapoint) == 0)
+            else:
+                # Child agency 2 should have a disabled datapoint
+                self.assertTrue(len(disabled_datapoint) == 1)

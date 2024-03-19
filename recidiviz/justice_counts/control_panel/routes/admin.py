@@ -29,6 +29,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import (
@@ -257,18 +258,31 @@ def get_admin_blueprint(
             session=current_session, agency_id=agency_id
         )
 
-        child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
-            session=current_session, agency=agency
-        )
+        metrics = []
+        if agency.is_superagency is True:
+            # Pull the list of metrics that the agency has done configuration for
+            # This list will be shown on the frontend so the user can choose which
+            # metric settings to copy over to child agencies
+            metric_settings = DatapointInterface.get_metric_settings_by_agency(
+                session=current_session,
+                agency=agency,
+            )
+            for setting in metric_settings:
+                metrics.append(
+                    {
+                        "key": setting.key,
+                        "name": setting.metric_definition.display_name,
+                        "sector": setting.metric_definition.system.name.replace(
+                            "_", " "
+                        ),
+                    }
+                )
 
-        agency_json = agency.to_json(with_team=True)
-        agency_json["child_agency_ids"] = child_agency_ids
+        agency_json = agency.to_json(with_team=False, with_settings=False)
         return jsonify(
             {
                 "agency": agency_json,
-                # also send list of possible roles to use in the dropdown
-                # when users can assign a new role to user.
-                "roles": [role.value for role in schema.UserAccountRole],
+                "metrics": metrics,
             }
         )
 
@@ -386,7 +400,11 @@ def get_admin_blueprint(
         metric_definition_key_subset = (
             assert_type(request_json.get("metric_definition_key_subset"), list) or []
         )
+        child_agency_id_subset = (
+            assert_type(request_json.get("child_agency_id_subset"), list) or []
+        )
         metric_definition_key_subset_as_string = ",".join(metric_definition_key_subset)
+        child_agency_id_subset_as_string = ",".join(child_agency_id_subset)
         project_id = (
             GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
             if in_gcp_production() is True
@@ -412,6 +430,8 @@ def get_admin_blueprint(
                         str(agency_name),
                         "--metric_definition_key_subset",
                         metric_definition_key_subset_as_string,
+                        "--child_agency_ids_subset",
+                        child_agency_id_subset_as_string,
                         "--user_email",
                         str(user_email),
                     ]

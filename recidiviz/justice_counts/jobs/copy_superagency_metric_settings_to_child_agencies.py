@@ -115,14 +115,13 @@ in the metric name with the name of the subsystem (i.e SUPERVISION_FUNDING -> PA
 
 import argparse
 import logging
-from typing import List
+from typing import List, Optional
 
 import sentry_sdk
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.utils.constants import (
     JUSTICE_COUNTS_SENTRY_DSN,
@@ -145,25 +144,23 @@ def copy_metric_settings(
     dry_run: bool,
     metric_definition_key_subset: List[str],
     current_session: Session,
+    child_agency_id_subset: Optional[List[int]] = None,
 ) -> None:
-    """Copies all (or a subset of) metric settings from a super agency to its child agencies"""
+    """Copies all (or a subset of) metric settings from a super agency to
+    all (or a subset of) its child agencies.
+    """
 
     if dry_run is True:
         logger.info("DRY RUN! THE FOLLOWING CHANGES WILL NOT BE COMMITTED.")
-    super_agency_list = AgencyInterface.get_agencies_by_id(
-        session=current_session, agency_ids=[super_agency_id]
+
+    metric_definition_key_set = set(metric_definition_key_subset)
+    child_agency_id_set = (
+        set(child_agency_id_subset) if child_agency_id_subset else None
     )
 
-    if len(super_agency_list) == 0:
-        logger.info(
-            "No agency was found with the super_agency_id provided. Please check that you are running the script in the right environment"
-        )
-        raise JusticeCountsServerError(
-            code="superagency_not_found",
-            description=f"No agency with id {super_agency_id} was found.",
-        )
-
-    super_agency = super_agency_list.pop()
+    super_agency = AgencyInterface.get_agency_by_id(
+        session=current_session, agency_id=super_agency_id
+    )
 
     child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
         session=current_session, agency_ids=[super_agency_id]
@@ -175,23 +172,40 @@ def copy_metric_settings(
 
     for child_agency in child_agencies:
         logger.info("Child Agency: %s", child_agency.name)
-        for metric_setting in super_agency_metric_settings:
-            if "ALL" in set(
-                metric_definition_key_subset
-            ) or metric_setting.metric_definition.key in set(
-                metric_definition_key_subset
-            ):
-                logger.info("Metric %s, is being updated", metric_setting.key)
-                if metric_setting.metric_definition.key not in METRIC_KEY_TO_METRIC:
-                    logger.info(
-                        "Metric deprecated: %s, skipping",
-                        metric_setting.metric_definition.key,
-                    )
-                DatapointInterface.add_or_update_agency_datapoints(
-                    session=current_session,
-                    agency=child_agency,
-                    agency_metric=metric_setting,
+
+        if child_agency_id_set is not None:
+            if child_agency.id not in child_agency_id_set:
+                logger.info(
+                    "Skipping Child Agency because it is not in subset: %s",
+                    child_agency.name,
                 )
+                continue
+
+        for metric_setting in super_agency_metric_settings:
+            if (
+                "ALL" not in metric_definition_key_set
+                and metric_setting.metric_definition.key
+                not in metric_definition_key_set
+            ):
+                logger.info(
+                    "Skipping metric because it is not in subset: %s",
+                    metric_setting.key,
+                )
+                continue
+
+            if metric_setting.metric_definition.key not in METRIC_KEY_TO_METRIC:
+                logger.info(
+                    "Metric deprecated: %s, skipping",
+                    metric_setting.metric_definition.key,
+                )
+                continue
+
+            logger.info("Metric %s is being updated", metric_setting.key)
+            DatapointInterface.add_or_update_agency_datapoints(
+                session=current_session,
+                agency=child_agency,
+                agency_metric=metric_setting,
+            )
 
     if dry_run is False:
         current_session.commit()
@@ -239,14 +253,26 @@ if __name__ == "__main__":
         help="List of metrics definition keys that should be copied over.",
         required=True,
     )
+    parser.add_argument(
+        "--child_agency_id_subset",
+        type=str_to_list,
+        help="List of child agency IDs that should get metrics copied to.",
+        required=False,
+    )
     args = parser.parse_args()
 
     send_grid_client = SendGridClientWrapper(key_type="justice_counts")
+    _child_agency_id_subset = (
+        list(map(int, args.child_agency_id_subset))
+        if args.child_agency_id_subset
+        else []
+    )
     try:
         copy_metric_settings(
             dry_run=False,
             super_agency_id=args.super_agency_id,
             metric_definition_key_subset=args.metric_definition_key_subset,
+            child_agency_id_subset=_child_agency_id_subset,
             current_session=session,
         )
     except Exception as e:
