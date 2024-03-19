@@ -17,7 +17,7 @@
 
 """
 Defines a criteria view that shows spans of time for which residents
-are within 12 or less months of their parole review date.
+are within 6 or less months of their parole review date.
 """
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -28,18 +28,18 @@ from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ND_INCARCERATION_WITHIN_12_MONTHS_OF_PAROLE_REVIEW_DATE"
+_CRITERIA_NAME = "US_ND_INCARCERATION_WITHIN_6_MONTHS_OF_PAROLE_REVIEW_DATE"
 
 _DESCRIPTION = """
 Defines a criteria view that shows spans of time for which residents
-are within 12 or less months of their parole review date.
+are within 6 or less months of their parole review date.
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     parole_review_date_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        date_interval=12,
+        date_interval=6,
         date_part="MONTH",
     )
 )
