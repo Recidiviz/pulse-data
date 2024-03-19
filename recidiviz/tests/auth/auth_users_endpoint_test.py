@@ -119,6 +119,10 @@ class AuthUsersEndpointTestCase(TestCase):
         )
         self.generate_pseudonymized_ids_auth_users_endpoint_patcher.start()
 
+        self.get_secret_patcher = patch("recidiviz.auth.helpers.get_secret")
+        self.mock_get_secret = self.get_secret_patcher.start()
+        self.mock_get_secret.return_value = "123"
+
         with self.app.test_request_context():
             self.users = lambda state_code=None: flask.url_for(
                 "users.UsersAPI", state_code=state_code
@@ -135,6 +139,7 @@ class AuthUsersEndpointTestCase(TestCase):
         )
         self.generate_pseudonymized_ids_auth_endpoint_patcher.stop()
         self.generate_pseudonymized_ids_auth_users_endpoint_patcher.stop()
+        self.get_secret_patcher.stop()
 
     def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
         self.assertIn(

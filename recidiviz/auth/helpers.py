@@ -25,6 +25,7 @@ from flask import request
 
 from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 from recidiviz.utils import metadata, validate_jwt
+from recidiviz.utils.secrets import get_secret
 
 _UNKNOWN_USER = "unknown"
 _REASON_KEY = "reason"
@@ -88,12 +89,18 @@ def get_authenticated_user_email() -> Tuple[str, Optional[str]]:
     if not project_number:
         raise RuntimeError("Expected project_number to be set")
 
+    backend_service_id = get_secret(LOAD_BALANCER_SERVICE_ID_SECRET_NAME)
+    if not backend_service_id:
+        raise RuntimeError(
+            f"Missing backend service id secret named {LOAD_BALANCER_SERVICE_ID_SECRET_NAME}"
+        )
+
     (
         _user_id,
         user_email,
         error_str,
     ) = validate_jwt.validate_iap_jwt_from_compute_engine(
-        jwt, project_number, LOAD_BALANCER_SERVICE_ID_SECRET_NAME
+        jwt, project_number, backend_service_id
     )
     return user_email or _UNKNOWN_USER, error_str
 

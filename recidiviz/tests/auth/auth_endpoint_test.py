@@ -120,6 +120,10 @@ class AuthEndpointTests(TestCase):
         engine = setup_scoped_sessions(self.app, SchemaType.CASE_TRIAGE, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
+        self.get_secret_patcher = patch("recidiviz.auth.helpers.get_secret")
+        self.mock_get_secret = self.get_secret_patcher.start()
+        self.mock_get_secret.return_value = "123"
+
         with self.app.test_request_context():
             self.users = flask.url_for("users.UsersAPI")
             self.user = flask.url_for(
@@ -171,6 +175,7 @@ class AuthEndpointTests(TestCase):
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.database_key
         )
+        self.get_secret_patcher.stop()
 
     def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
         self.assertIn(
@@ -1184,10 +1189,8 @@ class AuthEndpointTests(TestCase):
     def test_import_ingested_users_successful(
         self, mock_generate_pseudonymized_id: MagicMock
     ) -> None:
-        mock_generate_pseudonymized_id.side_effect = (
-            lambda state_code, external_id: f"hashed-{external_id}"
-            if external_id
-            else None
+        mock_generate_pseudonymized_id.side_effect = lambda state_code, external_id: (
+            f"hashed-{external_id}" if external_id else None
         )
         self.fs.upload_from_contents_handle_stream(
             self.ingested_users_gcs_csv_uri,
