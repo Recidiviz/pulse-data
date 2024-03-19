@@ -17,6 +17,7 @@
 """Combines sentence-level eligibility determinations for OR earned discharge"""
 
 from recidiviz.calculator.query.sessions_query_fragments import (
+    create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -41,13 +42,13 @@ _DESCRIPTION = (
 
 _QUERY_TEMPLATE = f"""
     WITH sentences AS (
-        -- NB: this query pulls from sentences_preprocessed (not sentence_spans)
+        -- NB: this query pulls from `sentences_preprocessed` (not `sentence_spans`)
         SELECT
             * EXCEPT (start_date, end_date),
             start_date AS sentence_start_date,
             end_date as sentence_end_date,
         FROM ({sentence_attributes()})
-        WHERE state_code='US_OR'
+        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
     ),
     sentence_eligibility_spans AS (
         SELECT *
@@ -73,24 +74,28 @@ _QUERY_TEMPLATE = f"""
         WHERE (sentences.offense_date <= ssa.start_date)
         GROUP BY 1, 2, 3, 4
     ),
-    absconsions_during_sentence AS (
-        /* Here, for each sentence, we pull sessions of absconsion occurring during that
-        sentence. */
-        /* TODO(#26623): Once we know how we're accounting for absconsions in OR earned
-        discharge, then (if possible/necessary) use `create_intersection_spans` to
-        create this CTE, rather than creating it manually here. */
+    absconsion_sessions AS (
         SELECT
             state_code,
             person_id,
-            sentences.sentence_id,
-            IF(sess.start_date<sentences.sentence_start_date, sentences.sentence_start_date, sess.start_date) AS absconsion_start_date,
-            IF((sess.end_date_exclusive>sentences.sentence_end_date) OR (sess.end_date_exclusive IS NULL), sentences.sentence_end_date, sess.end_date_exclusive) AS absconsion_end_date,
-        FROM sentences
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
-        USING (state_code, person_id)
-        WHERE sess.compartment_level_2='ABSCONSION'
-            AND sess.start_date<=sentences.sentence_end_date
-            AND sess.end_date>=sentences.sentence_start_date
+            start_date,
+            end_date_exclusive,
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+        WHERE compartment_level_2='ABSCONSION'
+    ),
+    absconsions_during_sentence AS (
+        /* Here, for each sentence, we pull sessions of absconsion occurring during that
+        sentence. */
+        SELECT
+            * EXCEPT (start_date, end_date_exclusive),
+            start_date AS absconsion_start_date,
+            end_date_exclusive AS absconsion_end_date,
+        FROM ({create_intersection_spans(table_1_name='sentences',
+                                         table_2_name='absconsion_sessions',
+                                         index_columns=['state_code', 'person_id'],
+                                         table_1_columns=['sentence_id'],
+                                         table_1_start_date_field_name='sentence_start_date',
+                                         table_1_end_date_field_name='sentence_end_date')})
     ),
     days_absconded_by_span AS (
         /* Here, for each person-sentence span of time, we pull the total number of days
@@ -103,11 +108,14 @@ _QUERY_TEMPLATE = f"""
             /* We're only counting the number of days of absconsion prior to the start
             of the span, so if the absconsion goes into the span, we count only the
             days of absconsion up to the span start date. */
-            SUM(DATE_DIFF(IF(absconsion_end_date>ssa.start_date, ssa.start_date, absconsion_end_date), absconsion_start_date, DAY)) AS days_absconded
+            SUM(DATE_DIFF(IF(absconsion_end_date>ssa.start_date, ssa.start_date, absconsion_end_date),
+                          absconsion_start_date,
+                          DAY)
+            ) AS days_absconded,
         FROM sub_sessions_with_attributes ssa
         LEFT JOIN absconsions_during_sentence
             USING (state_code, person_id, sentence_id)
-        WHERE absconsion_start_date <= ssa.end_date
+        WHERE absconsion_start_date < ssa.start_date
         GROUP BY 1, 2, 3, 4
     ),
     sub_sessions_with_attributes_with_reasons AS (
@@ -131,14 +139,14 @@ _QUERY_TEMPLATE = f"""
                 sentence. This means that the "latest_conviction_date" field might be
                 out of date later in a span, because it may not be updated to include
                 subsequent offenses if a sentence is already ineligible because of the 
-                first new offense. */
+                first new offense. This field is mainly used for internal/debugging
+                purposes and is not surfaced in the tool currently. */
                 most_recent_offenses.most_recent_offense_date AS latest_conviction_date,
                 /* This is the total number of days of absconsion prior to the start of
                 the given span. This field might be out of date later in a span if
-                an individual is actively in absconsion during that span. */
-                /* TODO(#26623): Ensure that we're calculating num_days_absconsion
-                in a manner consistent with how OR tracks & considers days in 
-                absconsion when determining ED eligibility. */
+                an individual is actively in absconsion during that span. This field is
+                mainly used for internal/debugging purposes and is not surfaced in the
+                tool currently. */
                 COALESCE(days_absconded_by_span.days_absconded, 0) AS num_days_absconsion,
                 sentences.statute AS sentence_statute,
                 sentence_id AS sentence_id
