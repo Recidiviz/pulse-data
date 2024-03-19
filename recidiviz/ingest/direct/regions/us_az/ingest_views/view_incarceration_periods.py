@@ -96,7 +96,7 @@ base_with_locations AS (
   FROM base_with_descriptions
   LEFT JOIN locations_preprocessed loc_codes_in
   ON(loc_codes_in.LOCATOR_CODE_ID = base_with_descriptions.LOCATOR_CODE_ID 
-  -- The right row for this code is the one that was current at the time of the movement. 
+  -- The right row for this code is the one that was active at the time of the movement. 
   AND (MOVEMENT_DATE >= loc_codes_in.CREATE_DTM OR loc_codes_in.CREATE_DTM IS NULL)
   AND (MOVEMENT_DATE < loc_codes_in.UPDT_DTM OR loc_codes_in.ACTIVE='Y' 
   -- Case when there's only one entry

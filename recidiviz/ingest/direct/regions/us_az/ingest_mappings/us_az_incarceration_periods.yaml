@@ -92,6 +92,7 @@ output:
                   - RTRN CUSTDY ITP
                   - Transit Driver
                   - Rule 11
+                  - Temp Absent to Escape Status
           release_date: release_date
           release_reason:
             $enum_mapping:

@@ -39,10 +39,10 @@ VIEW_QUERY_TEMPLATE = """
             THEN 1
             ELSE 0
         END AS parole_possible,
-        commit.SENTENCED_DTM AS imposed_date,
+        CAST(commit.SENTENCED_DTM AS DATETIME) AS imposed_date,
         county.DESCRIPTION AS county_code,
         doc.PERSON_ID AS person_id,
-        off.NUM_JAIL_CREDIT_DAYS AS jail_credit_days
+        IF(off.NUM_JAIL_CREDIT_DAYS = 'NULL', '0', off.NUM_JAIL_CREDIT_DAYS) AS jail_credit_days
     FROM {AZ_DOC_SC_OFFENSE} off
     LEFT JOIN {LOOKUPS} life ON life.LOOKUP_ID = off.LIFE_OR_DEATH_ID
     LEFT JOIN {LOOKUPS} parole ON parole.LOOKUP_ID = off.PAROLE_ELIGIBILITY_ID
@@ -50,6 +50,8 @@ VIEW_QUERY_TEMPLATE = """
     LEFT JOIN {AZ_DOC_SC_EPISODE} sc_episode ON commit.SC_EPISODE_ID = sc_episode.SC_EPISODE_ID
     LEFT JOIN {DOC_EPISODE} doc ON sc_episode.DOC_ID = doc.DOC_ID
     LEFT JOIN {LOOKUPS} county ON county.LOOKUP_ID = commit.COUNTY_ID
+    -- very rare edge case that breaks ingest
+    WHERE doc.PERSON_ID IS NOT NULL
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",
