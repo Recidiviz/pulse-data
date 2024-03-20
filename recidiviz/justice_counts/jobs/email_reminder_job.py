@@ -23,6 +23,7 @@ Remote Usage: Execute the `email_reminder_job` Cloud Run Job
 """
 
 import argparse
+import datetime
 import logging
 
 import sentry_sdk
@@ -45,16 +46,32 @@ from recidiviz.utils.params import str_to_bool
 
 logger = logging.getLogger(__name__)
 
+today = datetime.date.today()
+
 
 def create_parser() -> argparse.ArgumentParser:
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
+    parser.add_argument("--day", type=int, default=today.day)
+    parser.add_argument("--month", type=int, default=today.month)
+    parser.add_argument("--year", type=int, default=today.year)
     return parser
 
 
-def send_reminder_emails_to_all_agencies(engine: Engine, dry_run: bool) -> None:
+def send_reminder_emails_to_all_agencies(
+    engine: Engine, dry_run: bool, day: int, month: int, year: int
+) -> None:
+    """Sends reminder emails to subscribed users for all agencies based upon their specified offset.
+    This script will run everyday. The day, month, and year params are optional. If they are provided
+    we will patch the current date with the date provided.
+    """
+
     session = Session(bind=engine)
     agencies = AgencyInterface.get_agencies(session=session)
+    date = datetime.date(month=month, day=day, year=year)
+    msg = f"DATE: {month:02d}/{day:02d}/{year}"
+    logger.info(msg)
     for agency in agencies:
         msg = "DRY_RUN " if dry_run is True else ""
         if agency.super_agency_id is not None:
@@ -66,11 +83,19 @@ def send_reminder_emails_to_all_agencies(engine: Engine, dry_run: bool) -> None:
 
         if agency.is_superagency is not True:
             send_reminder_emails(
-                session=session, agency_id=agency.id, dry_run=dry_run, logger=logger
+                session=session,
+                agency_id=agency.id,
+                dry_run=dry_run,
+                logger=logger,
+                today=date,
             )
         else:
             send_reminder_emails_for_superagency(
-                session=session, agency_id=agency.id, dry_run=dry_run, logger=logger
+                session=session,
+                agency_id=agency.id,
+                dry_run=dry_run,
+                logger=logger,
+                today=date,
             )
         logger.info("-----------------------------------\n\n")
 
@@ -91,5 +116,9 @@ if __name__ == "__main__":
     )
     args = create_parser().parse_args()
     send_reminder_emails_to_all_agencies(
-        engine=justice_counts_engine, dry_run=args.dry_run
+        engine=justice_counts_engine,
+        dry_run=args.dry_run,
+        day=args.day,
+        month=args.month,
+        year=args.year,
     )
