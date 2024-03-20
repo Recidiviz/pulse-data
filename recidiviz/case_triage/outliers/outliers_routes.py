@@ -98,17 +98,11 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.get("/<state>/configuration")
     def state_configuration(state: str) -> Response:
         state_code = StateCode(state.upper())
-        config = OutliersQuerier(state_code).get_outliers_config()
-        config_json = config.to_json()
-
-        # Include the deprecated metrics in the response so that the frontend will
-        # handle displaying the correct metrics based on the responses from
-        # other endpoints
-        deprecated_metrics = config_json.pop("deprecated_metrics")
-        config_json["metrics"].extend(deprecated_metrics)
+        user_context: UserContext = g.user_context
+        config = OutliersQuerier(state_code).get_product_configuration(user_context)
 
         config_json = convert_nested_dictionary_keys(
-            config_json,
+            config.to_json(),
             snake_to_camel,
         )
         return jsonify({"config": config_json})
@@ -243,7 +237,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         querier = OutliersQuerier(state_code)
 
-        state_config = querier.get_outliers_config()
+        state_config = querier.get_outliers_backend_config()
         state_metrics = [metric.name for metric in state_config.get_all_metrics()]
 
         # Check that the requested metrics are configured for the state
@@ -516,7 +510,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         querier = OutliersQuerier(state_code)
 
-        state_config = querier.get_outliers_config()
+        state_config = querier.get_outliers_backend_config()
         state_client_events = [event.name for event in state_config.client_events]
 
         # Check that the requested events are configured for the state

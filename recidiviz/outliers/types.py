@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Outliers-related types"""
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -159,7 +160,7 @@ class OutliersMetricConfig:
         event_name: str,
         event_name_singular: str,
         event_name_past_tense: str,
-        # TODO(#27074): Remove the default value when the copy is ready for PA and IX
+        # TODO(#27455): Remove the default value when the copy is ready for PA and IX
         description_markdown: str = "",
     ) -> "OutliersMetricConfig":
         return cls(
@@ -192,7 +193,6 @@ class OutliersClientEventConfig:
 class OutliersBackendConfig:
     """
     Information for a state's Outliers configuration represented as structured data.
-    TODO(#27075): Remove copy-related fields once they are being read from the OutliersConfig database entity
     """
 
     # List of metrics that are relevant for this state,
@@ -201,45 +201,6 @@ class OutliersBackendConfig:
     # add the metric to the deprecated_metrics field and create a ticket to remove it
     # once the metric changes are propogated through to production.
     metrics: List[OutliersMetricConfig] = attr.ib()
-
-    # URL that methodology/FAQ links can be pointed to
-    learn_more_url: str = attr.ib()
-
-    # The string that represents what a state calls its supervision staff member, e.g. "officer" or "agent"
-    supervision_officer_label: str = attr.ib(default="officer")
-
-    # The string that represents what a state calls a location-based group of offices, e.g. "district" or "region"
-    supervision_district_label: str = attr.ib(default="district")
-
-    # The string that represents what a state calls a group of supervision officers, e.g. "unit"
-    supervision_unit_label: str = attr.ib(default="unit")
-
-    # The string that represents what a state calls a supervisor, e.g. "supervisor"
-    supervision_supervisor_label: str = attr.ib(default="supervisor")
-
-    # The string that represents what a state calls someone who manages supervision supervisors, e.g. "district director"
-    supervision_district_manager_label: str = attr.ib(default="district director")
-
-    # The string that represents what a state calls a justice-impacted individual on supervision, e.g. "client"
-    supervision_jii_label: str = attr.ib(default="client")
-
-    # The string that goes in "None of the X on Y's unit ______. Keep checking back" when there are no outliers
-    # TODO(#27414): Allow for template strings in copy and replace this with a template that has more of the string.
-    none_are_outliers_label: str = attr.ib(default="are outliers")
-
-    # The string that describes a metric that is far worse than the statewide rate
-    worse_than_rate_label: str = attr.ib(default="Far worse than statewide rate")
-
-    # The string that describes a metric that is slightly worse than the statewide rate
-    slightly_worse_than_rate_label: str = attr.ib(
-        default="Slightly worse than statewide rate"
-    )
-
-    # The string that describes a metric that is at or below the statewide rate
-    at_or_below_rate_label: str = attr.ib(default="At or below statewide rate")
-
-    # A description of why some officers may be excluded from the list.
-    exclusion_reason_description: str = attr.ib(default="")
 
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
@@ -400,3 +361,78 @@ class UserInfo:
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
+
+
+@attr.s
+class OutliersProductConfiguration:
+    """
+    Class that contains all of the information that is configured for a state
+    and needed by products externally. This is a combination of what's configured for
+    a state via the OutliersBackendConfig and the Configuration entity defined in
+    outliers/schema.py.
+    """
+
+    # Who authored the copy configuration
+    updated_by: str = attr.ib()
+
+    # When the copy configuration was implemented
+    updated_at: datetime = attr.ib()
+
+    # The feature variant that gates this configuration (if necessary)
+    feature_variant: Optional[str] = attr.ib()
+
+    # where each element corresponds to a column name in an aggregated_metrics views
+    metrics: List[OutliersMetricConfig] = attr.ib()
+
+    # URL that methodology/FAQ links can be pointed to
+    learn_more_url: str = attr.ib()
+
+    # The string that represents what a state calls its supervision staff member, e.g. "officer" or "agent"
+    supervision_officer_label: str = attr.ib()
+
+    # The string that represents what a state calls a location-based group of offices, e.g. "district" or "region"
+    supervision_district_label: str = attr.ib()
+
+    # The string that represents what a state calls a group of supervision officers, e.g. "unit"
+    supervision_unit_label: str = attr.ib()
+
+    # The string that represents what a state calls a supervisor, e.g. "supervisor"
+    supervision_supervisor_label: str = attr.ib()
+
+    # The string that represents what a state calls someone who manages supervision supervisors, e.g. "district director"
+    supervision_district_manager_label: str = attr.ib()
+
+    # The string that represents what a state calls a justice-impacted individual on supervision, e.g. "client"
+    supervision_jii_label: str = attr.ib()
+
+    # The string that goes in "None of the X on Y's unit ______. Keep checking back" when there are no outliers
+    # TODO(#27414): Allow for template strings in copy and replace this with a template that has more of the string.
+    none_are_outliers_label: str = attr.ib(default="")
+
+    # The string that describes a metric that is worse than the statewide rate
+    worse_than_rate_label: str = attr.ib(default="")
+
+    # A description of why some officers may be excluded from the list.
+    exclusion_reason_description: str = attr.ib(default="")
+
+    # The string that describes a metric that is slightly worse than the statewide rate
+    slightly_worse_than_rate_label: str = attr.ib(
+        default="Slightly worse than statewide rate"
+    )
+
+    # The string that describes a metric that is at or below the statewide rate
+    at_or_below_rate_label: str = attr.ib(default="At or below statewide rate")
+
+    # Mapping of client event types that are relevant for this state to a config with relevant info
+    client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
+
+    def to_json(self) -> Dict[str, Any]:
+        c = cattrs.Converter()
+
+        # Omit the conditions string since this is only used in BQ views.
+        metrics_unst_hook = make_dict_unstructure_fn(
+            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+        )
+        c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
+
+        return c.unstructure(self)

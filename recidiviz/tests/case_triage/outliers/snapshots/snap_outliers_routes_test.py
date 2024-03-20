@@ -305,7 +305,8 @@ snapshots[
     "config": {
         "atOrBelowRateLabel": "At or below statewide rate",
         "clientEvents": [{"displayName": "Sanctions", "name": "violation_responses"}],
-        "exclusionReasonDescription": "",
+        "exclusionReasonDescription": "description",
+        "featureVariant": None,
         "learnMoreUrl": "https://recidiviz.org",
         "metrics": [
             {
@@ -332,15 +333,17 @@ Incarceration rate denominator description""",
                 "titleDisplayName": "Absconsion Rate",
             },
         ],
-        "noneAreOutliersLabel": "are outliers on any metrics",
+        "noneAreOutliersLabel": "label1",
         "slightlyWorseThanRateLabel": "Slightly worse than statewide rate",
         "supervisionDistrictLabel": "district",
-        "supervisionDistrictManagerLabel": "district director",
+        "supervisionDistrictManagerLabel": "district manager",
         "supervisionJiiLabel": "client",
         "supervisionOfficerLabel": "officer",
         "supervisionSupervisorLabel": "supervisor",
         "supervisionUnitLabel": "unit",
-        "worseThanRateLabel": "Much worse than statewide rate",
+        "updatedAt": "Mon, 01 Jan 2024 00:00:00 GMT",
+        "updatedBy": "alexa@recidiviz.org",
+        "worseThanRateLabel": "label2",
     }
 }
 

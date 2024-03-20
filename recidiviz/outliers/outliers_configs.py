@@ -38,7 +38,7 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
 )
 
-_OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
+_OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
     StateCode.US_ID: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
@@ -82,11 +82,9 @@ _OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 event_name_past_tense="requested earned discharge",
             ),
         ],
-        supervision_officer_label="officer",
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
-        learn_more_url="https://drive.google.com/file/d/1nMRMNGRFMzk_e7zAcCvuKvMP9YBOeesU/view",
         supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER')",
     ),
     StateCode.US_PA: OutliersBackendConfig(
@@ -116,13 +114,11 @@ _OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 event_name_past_tense="absconded",
             ),
         ],
-        supervision_officer_label="agent",
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75
         AND (avg_population_community_confinement / avg_daily_population) <= 0.05""",
-        learn_more_url="https://drive.google.com/file/d/1NvTuKhN-N1-ba1KMI562_z9ka932JqXQ/view",
-        supervision_staff_exclusions="COALESCE(supervision_district_id, supervision_district_id_inferred, '') NOT IN ('FAST', 'CO', 'FAST UNIT')",
+        supervision_staff_exclusions="COALESCE(supervision_district_id, supervision_district_id_inferred, '') NOT IN ('FAST', 'CO')",
     ),
     StateCode.US_MI: OutliersBackendConfig(
         metrics=[
@@ -177,16 +173,10 @@ Denominator is the average daily caseload for the agent over the given time peri
                 event=VIOLATION_RESPONSES, display_name="Sanctions"
             ),
         ],
-        supervision_officer_label="agent",
-        none_are_outliers_label="are outliers on any metrics",
-        exclusion_reason_description="We've excluded agents from this list with particularly large or small average daily caseloads (larger than 150 or smaller than 10). We also excluded agents who didn’t have a caseload of at least 10 clients for at least 75% of the observation period.",
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75
         AND (avg_population_unsupervised_supervision_level/avg_daily_population) <= 0.50 """,
-        learn_more_url="https://drive.google.com/file/d/1bbjsV6jBr4bkOwTJa8LIfK7oYYxAqa2t/view",
-        supervision_district_manager_label="region manager",
-        supervision_district_label="region",
         # If we were to add supervision_staff_exclusions for US_MI, we might have to refactor us_mi_insights_workflows_details_for_leadership.
         # See https://github.com/Recidiviz/pulse-data/pull/27833#discussion_r1504426734
     ),
@@ -239,32 +229,23 @@ Denominator is the average daily caseload for the officer over the given time pe
                 event=VIOLATION_RESPONSES, display_name="Sanctions"
             ),
         ],
-        supervision_jii_label="client",
-        supervision_officer_label="officer",
-        supervision_supervisor_label="manager",
-        supervision_unit_label="unit",
-        supervision_district_manager_label="district director",
-        worse_than_rate_label="Much higher than statewide rate",
-        slightly_worse_than_rate_label="Slightly higher than statewide rate",
-        exclusion_reason_description="We've excluded officers from this list with particularly large or small average daily caseloads (larger than 175 or smaller than 10). We also excluded officers who didn’t have a caseload of at least 10 clients for at least 75% of the observation period.",
         supervision_officer_metric_exclusions="""
     --TODO(#25695): Revisit this after excluding admin supervision levels    
     AND avg_daily_population BETWEEN 10 AND 175
     AND prop_period_with_critical_caseload >= 0.75""",
-        learn_more_url="https://drive.google.com/file/d/1WCNEeftLeTf-c7bcKXKYteg5HykrRba1/view",
     ),
 }
 
 METRICS_BY_OUTCOME_TYPE: Dict[MetricOutcome, Set[OutliersMetricConfig]] = defaultdict(
     set
 )
-for config in _OUTLIERS_CONFIGS_BY_STATE.values():
+for config in _OUTLIERS_BACKEND_CONFIGS_BY_STATE.values():
     for metric in config.metrics:
         METRICS_BY_OUTCOME_TYPE[metric.outcome_type].add(metric)
 
 
 def get_outliers_backend_config(state_code: str) -> OutliersBackendConfig:
     if state_code == StateCode.US_IX.value:
-        return _OUTLIERS_CONFIGS_BY_STATE[StateCode.US_ID]
+        return _OUTLIERS_BACKEND_CONFIGS_BY_STATE[StateCode.US_ID]
 
-    return _OUTLIERS_CONFIGS_BY_STATE[StateCode(state_code)]
+    return _OUTLIERS_BACKEND_CONFIGS_BY_STATE[StateCode(state_code)]

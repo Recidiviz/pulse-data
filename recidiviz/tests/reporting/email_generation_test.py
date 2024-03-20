@@ -24,8 +24,10 @@ from unittest.mock import patch
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.outliers.constants import INCARCERATION_STARTS_TECHNICAL_VIOLATION
-from recidiviz.outliers.types import OfficerSupervisorReportData, OutliersBackendConfig
+from recidiviz.outliers.types import (
+    OfficerSupervisorReportData,
+    OutliersProductConfiguration,
+)
 from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
@@ -35,7 +37,7 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context
     OutliersSupervisionOfficerSupervisorContext,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
-    metric_fixtures,
+    config_fixture,
 )
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.email_generation import generate
@@ -94,14 +96,8 @@ class OutliersSupervisionOfficerSupervisorGenerationTest(EmailGenerationTests):
         )
 
     @property
-    def config(self) -> OutliersBackendConfig:
-        return OutliersBackendConfig(
-            metrics=[
-                metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
-            ],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
-        )
+    def config(self) -> OutliersProductConfiguration:
+        return config_fixture
 
     @property
     def report(self) -> OfficerSupervisorReportData:

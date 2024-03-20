@@ -39,11 +39,13 @@ from recidiviz.outliers.types import (
     OutliersBackendConfig,
     OutliersClientEventConfig,
     OutliersMetricConfig,
+    OutliersProductConfiguration,
     PersonName,
     SupervisionOfficerEntity,
     SupervisionOfficerSupervisorEntity,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    Configuration,
     SupervisionClientEvent,
     SupervisionClients,
     SupervisionOfficerSupervisor,
@@ -164,6 +166,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 session.add(SupervisionClientEvent(**event))
             for client in load_model_fixture(SupervisionClients):
                 session.add(SupervisionClients(**client))
+            for config in load_model_fixture(Configuration):
+                session.add(Configuration(**config))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -195,17 +199,25 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_product_configuration",
     )
     def test_get_state_configuration_success(self, mock_config: MagicMock) -> None:
-        mock_config.return_value = OutliersBackendConfig(
-            metrics=[TEST_METRIC_1],
-            deprecated_metrics=[TEST_METRIC_3],
+        mock_config.return_value = OutliersProductConfiguration(
+            updated_at=datetime(2024, 1, 1),
+            updated_by="alexa@recidiviz.org",
+            feature_variant=None,
+            supervision_district_label="district",
+            supervision_district_manager_label="district manager",
+            supervision_jii_label="client",
+            supervision_unit_label="unit",
+            supervision_supervisor_label="supervisor",
+            metrics=[TEST_METRIC_1, TEST_METRIC_3],
             client_events=[TEST_CLIENT_EVENT],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
-            none_are_outliers_label="are outliers on any metrics",
-            worse_than_rate_label="Much worse than statewide rate",
+            none_are_outliers_label="label1",
+            worse_than_rate_label="label2",
+            exclusion_reason_description="description",
         )
 
         response = self.test_client.get(
@@ -522,7 +534,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_only_invalid_metric_ids(
         self,
@@ -534,8 +546,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         response = self.test_client.get(
@@ -553,7 +563,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_one_valid_one_invalid_metric_id(
         self,
@@ -565,8 +575,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         response = self.test_client.get(
@@ -587,7 +595,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_officer_not_found(
         self,
@@ -600,8 +608,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = None
@@ -627,7 +633,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_mismatched_supervisor(
         self,
@@ -643,8 +649,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -702,7 +706,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_mismatched_supervisor_can_access_all(
         self,
@@ -719,8 +723,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -778,7 +780,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_no_outlier_metrics(
         self,
@@ -794,8 +796,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -830,7 +830,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_correct_supervisor_but_not_outlier_on_requested(
         self,
@@ -844,8 +844,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -899,7 +897,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_correct_supervisor_requested_nonoutlier_metric(
         self,
@@ -913,8 +911,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -976,7 +972,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_called_with_one_requested_metric(
         self,
@@ -993,8 +989,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -1055,7 +1049,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_success(
         self,
@@ -1072,8 +1066,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -1139,7 +1131,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_officer_success_with_null_dates(
         self,
@@ -1156,8 +1148,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -1218,7 +1208,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_officer_not_found(
         self,
@@ -1231,8 +1221,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = None
@@ -1258,7 +1246,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_officer_mismatched_supervisor(
         self,
@@ -1274,8 +1262,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -1330,7 +1316,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_officer_not_outlier(
         self,
@@ -1346,8 +1332,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -1379,7 +1363,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_officer_success(
         self,
@@ -1395,8 +1379,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         mock_get_officer_entity.return_value = SupervisionOfficerEntity(
@@ -1727,7 +1709,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_client_one_valid_one_invalid_metric_id(
         self,
@@ -1739,8 +1721,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -1762,7 +1742,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_client_supervisor_not_outlier(
         self,
@@ -1779,8 +1759,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -1818,7 +1796,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_client_success(
         self,
@@ -1834,8 +1812,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -1868,7 +1844,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_events_by_client_success_default_metrics(
         self,
@@ -1884,8 +1860,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -1917,7 +1891,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_client_not_outlier(
         self,
@@ -1934,8 +1908,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -1973,7 +1945,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_client_not_found(
         self,
@@ -1988,8 +1960,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -2025,7 +1995,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     def test_get_client_success(
         self,
@@ -2041,8 +2011,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 
@@ -2074,7 +2042,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.CSG_ALLOWED_OUTLIERS_STATES",
@@ -2094,8 +2062,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_3],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
             client_events=[TEST_CLIENT_EVENT_1],
         )
 

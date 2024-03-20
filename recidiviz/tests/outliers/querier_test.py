@@ -178,14 +178,14 @@ class TestOutliersQuerier(TestCase):
             cls.temp_db_dir
         )
 
-    @patch("recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_config")
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
     def test_get_officer_level_report_data_by_supervisor(
         self, mock_config: MagicMock
     ) -> None:
         mock_config.return_value = OutliersBackendConfig(
             metrics=[TEST_METRIC_1, TEST_METRIC_2],
-            supervision_officer_label="officer",
-            learn_more_url="https://recidiviz.org",
         )
 
         actual = OutliersQuerier(
@@ -590,3 +590,8 @@ class TestOutliersQuerier(TestCase):
             querier.get_configuration(config_id_to_deactivate).status,
             ConfigurationStatus.INACTIVE.value,
         )
+
+    def test_get_product_configuration(self) -> None:
+        querier = OutliersQuerier(StateCode.US_PA)
+        result = querier.get_product_configuration(user_context=None)
+        self.snapshot.assert_match(result, name="test_get_product_configuration")  # type: ignore[attr-defined]

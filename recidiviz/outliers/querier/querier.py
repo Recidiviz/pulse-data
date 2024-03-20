@@ -17,11 +17,12 @@
 """Implements Querier abstractions for Outliers data sources"""
 import logging
 from copy import copy
-from datetime import date
+from datetime import date, datetime
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Tuple
 
 import attr
+import cattrs
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
@@ -44,6 +45,7 @@ from recidiviz.outliers.types import (
     OutlierMetricInfo,
     OutliersBackendConfig,
     OutliersMetricConfig,
+    OutliersProductConfiguration,
     PersonName,
     SupervisionOfficerEntity,
     SupervisionOfficerSupervisorEntity,
@@ -143,7 +145,7 @@ class OutliersQuerier:
                 .all()
             )
 
-            state_config = self.get_outliers_config()
+            state_config = self.get_outliers_backend_config()
 
             metric_name_to_metric_context = {
                 metric: self._get_metric_context_from_db(
@@ -369,7 +371,7 @@ class OutliersQuerier:
 
         return metric_benchmark.target, target_status_strategy
 
-    def get_outliers_config(self) -> OutliersBackendConfig:
+    def get_outliers_backend_config(self) -> OutliersBackendConfig:
         return get_outliers_backend_config(self.state_code.value)
 
     def get_supervision_officer_supervisor_entities(
@@ -1158,3 +1160,34 @@ class OutliersQuerier:
 
             config.status = ConfigurationStatus.INACTIVE.value
             session.commit()
+
+    def get_product_configuration(
+        self, user_context: Optional[UserContext] = None
+    ) -> OutliersProductConfiguration:
+        """
+        Gets the configuration information used externally, i.e. copy, for products for
+        the user from the Configuration database entity and the backend configuration.
+        """
+        config_dict = {}
+
+        backend_config = self.get_outliers_backend_config().to_json()
+        # Include the deprecated metrics in the product configuration so that the
+        # frontend will handle displaying the correct metrics based on the responses
+        # from other endpoints.
+        deprecated_metrics = backend_config.pop("deprecated_metrics")
+        backend_config["metrics"].extend(deprecated_metrics)
+        config_dict.update(backend_config)
+
+        user_config = self.get_configuration_for_user(user_context).to_dict()
+        config_dict.update(user_config)
+
+        # The below fields are only used internally, so omit them from the result
+        config_dict.pop("status")
+        config_dict.pop("id")
+
+        # Without the below lines, I was getting StructureHandlerNotFoundError for the
+        # updated_at field.
+        c = cattrs.Converter()
+        c.register_structure_hook(datetime, lambda dt, _: dt)
+
+        return c.structure(config_dict, OutliersProductConfiguration)

@@ -31,6 +31,7 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_re
     retrieve_data_for_outliers_supervision_officer_supervisor,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
+    config_fixture,
     create_fixture,
     highlighted_officers_fixture_adverse,
     metric_fixtures,
@@ -42,6 +43,9 @@ from recidiviz.reporting.data_retrieval import start
 
 @patch(
     "recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval.OutliersQuerier.get_officer_level_report_data_for_all_officer_supervisors"
+)
+@patch(
+    "recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval.OutliersQuerier.get_product_configuration"
 )
 class RetrieveDataTest(TestCase):
     """Tests for the Outliers supervisor report data retrieval"""
@@ -66,7 +70,9 @@ class RetrieveDataTest(TestCase):
         self.project_id_patcher.stop()
         self.email_generation_patcher.stop()
 
-    def test_exclude_recipients_without_metrics(self, query_mock: MagicMock) -> None:
+    def test_exclude_recipients_without_metrics(
+        self, config_mock: MagicMock, query_mock: MagicMock
+    ) -> None:
         report_without_outliers = OfficerSupervisorReportData(
             metrics=[],
             metrics_without_outliers=[
@@ -78,6 +84,8 @@ class RetrieveDataTest(TestCase):
         )
         query_mock.return_value = {"abc": report_without_outliers}
 
+        config_mock.return_value = config_fixture
+
         test_batch = Batch(
             StateCode.US_XX,
             report_type=ReportType.OutliersSupervisionOfficerSupervisor,
@@ -88,7 +96,7 @@ class RetrieveDataTest(TestCase):
             retrieve_data_for_outliers_supervision_officer_supervisor(test_batch), {}
         )
 
-    def test_start(self, query_mock: MagicMock) -> None:
+    def test_start(self, config_mock: MagicMock, query_mock: MagicMock) -> None:
         """Test that the start() function succeeds for the recipient."""
 
         report_with_outliers = OfficerSupervisorReportData(
@@ -109,6 +117,8 @@ class RetrieveDataTest(TestCase):
             additional_recipients=[],
         )
         query_mock.return_value = {"abc": report_with_outliers}
+
+        config_mock.return_value = config_fixture
 
         test_batch = Batch(
             StateCode.US_IX,
