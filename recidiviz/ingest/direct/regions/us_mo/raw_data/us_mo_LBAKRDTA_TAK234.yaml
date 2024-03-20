@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK234
 file_description: |-
   Violations data information (CDV) - Parties Involved. Column prefix: IR.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - IR_DOC
   - IR_CYC

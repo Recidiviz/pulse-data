@@ -3,6 +3,7 @@ file_tag: DSAA_MOST_RECENT_RCA
 file_description: |-
   File that pulls most recent risk classification assessment for a given person
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - DOC_ID
   - ASSESSMENT_DATE

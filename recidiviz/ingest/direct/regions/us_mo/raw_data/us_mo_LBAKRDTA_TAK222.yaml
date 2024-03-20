@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK222
 file_description: |-
   Parole Board Violation Decision Cross Reference. Column prefix: IB # TODO(#13474) Fill in definition with more details.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - IB_DOC
   - IB_CYC

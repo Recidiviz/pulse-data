@@ -1,8 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: FOCTEST_ORAS_ASSESSMENTS_WEEKLY
 file_description: |-
-  ORAS assessment scores (Snapshot of scores through 2021)
+  ORAS assessment scores (Snapshot of scores through 2021). This is an old table and should not be used anymore in favor of ORAS_WEEKLY_SUMMARY_UPDATE.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - E04
   - FOCLIST

@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK032
 file_description: |-
   Offender Institutional Work File. Column prefix: CC.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - CC_DOC
   - CC_CYC

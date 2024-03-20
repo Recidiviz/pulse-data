@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK223
 file_description: |-
   Parole Board Violation Decisions. Column prefix: IE # TODO(#13474) Fill in definition with more details.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - IE_DOC
   - IE_CYC

@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK216
 file_description: |-
   SF CBRS Details. Column prefix: SI.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - SI_DOC
   - SICBSQ

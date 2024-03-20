@@ -4,6 +4,7 @@ file_description: |-
   Supervision Case Plan Objectives. This table contains the objectives connected to a persons's goals in a Case Plan. 
   They are defined as short-term steps to reach broad goal and many will have several objectives to reach ultimate goal.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFFENDER_ID
   - CASE_PLAN_ID

@@ -3,6 +3,7 @@ file_tag: DSAA_OFFENDER_ID_LOOKUP
 file_description: |-
   File that maps all DOC_IDs to MOCIS_IDs to allow for mapping between the two data systems.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFNDR_CYCLE_REF_ID
 columns:

@@ -4,6 +4,7 @@ file_description: |-
   XXX
 # TODO(#17289): fill in once we have documentation
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - QUESTION_REF_ID
 columns:
