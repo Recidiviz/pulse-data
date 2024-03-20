@@ -329,6 +329,18 @@ def parse_admission_reason(
             for mr in move_reason_list
         ):
             return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+        if any(
+            mr
+            in [
+                "55",  # Supervision Sanction
+                "T1",  # Sanction Incarceration to SSP
+                "T0",  # SSP County Jail Backup
+                "89",  # Act 570 Jail Sanctions
+                "B7",  # Act 423 Jail Sanctions
+            ]
+            for mr in move_reason_list
+        ):
+            return StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
 
         return StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
     if any(

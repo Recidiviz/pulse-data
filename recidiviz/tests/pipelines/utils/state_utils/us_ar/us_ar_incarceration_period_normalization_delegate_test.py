@@ -16,10 +16,36 @@
 #  =============================================================================
 """Tests us_ar_incarceration_period_normalization_delegate.py."""
 import unittest
+from copy import deepcopy
+from datetime import date
 
+import mock
+
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    clear_entity_id_index_cache,
+)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.us_ar.us_ar_incarceration_period_normalization_delegate import (
     UsArIncarcerationNormalizationDelegate,
+)
+from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_sp_index_for_tests,
 )
 
 _STATE_CODE = StateCode.US_AR.value
@@ -30,5 +56,439 @@ class TestUsArIncarcerationNormalizationDelegate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsArIncarcerationNormalizationDelegate()
+        self.person_id = 20000000000
+        self.maxDiff = None
+
+        clear_entity_id_index_cache()
+        self.unique_id_patcher = mock.patch(
+            "recidiviz.persistence.entity."
+            "normalized_entities_utils._fixed_length_object_id_for_entity"
+        )
+        self.mock_unique_id = self.unique_id_patcher.start()
+        self.mock_unique_id.return_value = 5678
+
+    @staticmethod
+    def _build_delegate() -> UsArIncarcerationNormalizationDelegate:
+        return UsArIncarcerationNormalizationDelegate()
 
     # ~~ Add new tests here ~~
+    def test_normalize_admitted_from_supervision_basic(
+        self,
+    ) -> None:
+        sp_rev_just_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            start_date=date(2018, 11, 1),
+            termination_date=date(2019, 11, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            sequence_num=0,
+        )
+        sp_rev_day_of_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            start_date=date(2015, 11, 1),
+            termination_date=date(2020, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            sequence_num=0,
+        )
+        sp_non_rev_just_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            start_date=date(2018, 11, 1),
+            termination_date=date(2019, 11, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+            sequence_num=0,
+        )
+        sp_rev_long_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            start_date=date(2015, 11, 1),
+            termination_date=date(2017, 11, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            sequence_num=0,
+        )
+        sp_rev_after_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            start_date=date(2015, 11, 1),
+            termination_date=date(2023, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            sequence_num=0,
+        )
+
+        ip_adm_from_sup = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2022, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        ip_specific_adm_from_sup_type = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            release_date=date(2022, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_period_normalized_to_revocation = deep_entity_update(
+            deepcopy(ip_adm_from_sup),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+        )
+        incarceration_period_normalized_to_unknown = deep_entity_update(
+            deepcopy(ip_adm_from_sup),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+        )
+        incarceration_period_unchanged_admission_reason = deepcopy(
+            ip_specific_adm_from_sup_type
+        )
+
+        # Supervision period terminates in REVOCATION less than 12 months prior to an IP with
+        # admission reason ADMITTED_FROM_SUPERVISION: admission reason is inferred to be REVOCATION.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                original_sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            incarceration_period_normalized_to_revocation,
+        )
+        # Same as above, but with the supervision termination and incarceration admission
+        # on the same day: admission reason is inferred to be REVOCATION.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                original_sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_day_of_ip]
+                ),
+            ),
+            incarceration_period_normalized_to_revocation,
+        )
+
+        # Supervision period terminates less than 12 months prior to an IP with admission reason
+        # ADMITTED_FROM_SUPERVISION, but the SP termination reason is not REVOCATION:
+        # admission reason is set to INTERNAL_UNKNOWN.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                original_sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_non_rev_just_before_ip]
+                ),
+            ),
+            incarceration_period_normalized_to_unknown,
+        )
+
+        # Supervision period terminates in REVOCATION *more* than 12 months prior to an IP with admission
+        # reason ADMITTED_FROM_SUPERVISION: admission reason is set to INTERNAL_UNKNOWN.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                original_sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_long_before_ip]
+                ),
+            ),
+            incarceration_period_normalized_to_unknown,
+        )
+        # Supervision period terminates in REVOCATION after the IP with admission reason
+        # ADMITTED_FROM_SUPERVISION: admission reason is set to INTERNAL_UNKNOWN.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                original_sorted_incarceration_periods=deepcopy([ip_adm_from_sup]),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_after_ip]
+                ),
+            ),
+            incarceration_period_normalized_to_unknown,
+        )
+        # Supervision period terminates in REVOCATION less than 12 months prior to an IP representing
+        # a commitment from supervision, but with a specific admission reason set at ingest
+        # (SANCTION_ADMISSION or TEMPORARY_CUSTODY). Normalization only looks at IPs with the
+        # generic ADMITTED_FROM_SUPERVISION admission reason, so this IP is unchanged.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy([ip_specific_adm_from_sup_type]),
+                original_sorted_incarceration_periods=deepcopy(
+                    [ip_specific_adm_from_sup_type]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            incarceration_period_unchanged_admission_reason,
+        )
+
+    def test_normalize_admitted_from_supervision_multiple_periods(
+        self,
+    ) -> None:
+        sp_rev_just_before_ip = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            start_date=date(2018, 11, 1),
+            termination_date=date(2019, 11, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            sequence_num=0,
+        )
+
+        ip_before_rev = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="111-1",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2017, 8, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        ip_after_rev_before_adm_from_sup = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="111-2",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2019, 11, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2019, 12, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        ip_adm_from_sup = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="111-3",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2021, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        ip_transfer_after_rev = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="111-4",
+            state_code=_STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2021, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2022, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        # Supervision period ends in revocation, then incarceration period begins with
+        # ADMITTED_FROM_SUPERVISION, then another incarceration period follows:
+        # admission reason for the first IP gets normalized to REVOCATION.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy(
+                    [ip_adm_from_sup, ip_transfer_after_rev]
+                ),
+                original_sorted_incarceration_periods=deepcopy(
+                    [ip_adm_from_sup, ip_transfer_after_rev]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            deep_entity_update(
+                deepcopy(ip_adm_from_sup),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            ),
+        )
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=1,
+                sorted_incarceration_periods=deepcopy(
+                    [ip_adm_from_sup, ip_transfer_after_rev]
+                ),
+                original_sorted_incarceration_periods=deepcopy(
+                    [ip_adm_from_sup, ip_transfer_after_rev]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            deepcopy(ip_transfer_after_rev),
+        )
+
+        # Same case as above but with another incarceration period between the date of the
+        # supervision period's REVOCATION termination and the date of the incarceration period's
+        # ADMITTED_FROM_SUPERVISION admission. ADMITTED_FROM_SUPERVISION admission reasons
+        # are only normalized to REVOCATION if there are no other IPs between the admission date
+        # and the REVOCATION SP termination. Since that's not the case here, the ADMITTED_FROM_SUPERVISION
+        # admission reason is set to INTERNAL_UNKNOWN, and the other IPs are unchanged.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                original_sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            deepcopy(ip_after_rev_before_adm_from_sup),
+        )
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=1,
+                sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                original_sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            deep_entity_update(
+                deepcopy(ip_adm_from_sup),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            ),
+        )
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=2,
+                sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                original_sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            deepcopy(ip_transfer_after_rev),
+        )
+
+        # Normalization for IP ADMITTED_FROM_SUPERVISION admission reasons only looks for
+        # other IPs between the supervision termination date and the given IP's admission date.
+        # IPs prior to the supervision revocation don't affect this logic.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=1,
+                sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_before_rev,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                original_sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_before_rev,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            deep_entity_update(
+                deepcopy(ip_adm_from_sup),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            ),
+        )
+
+        # If there are IPs preceding the IP being normalized, which fall both before and after
+        # the supervision period ending in revocation, then the IP occurring after the revocation
+        # should still be considered when normalizing the ADMITTED_FROM_SUPERVISION period.
+        self.assertEqual(
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=2,
+                sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_before_rev,
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                original_sorted_incarceration_periods=deepcopy(
+                    [
+                        ip_before_rev,
+                        ip_after_rev_before_adm_from_sup,
+                        ip_adm_from_sup,
+                        ip_transfer_after_rev,
+                    ]
+                ),
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[sp_rev_just_before_ip]
+                ),
+            ),
+            deep_entity_update(
+                deepcopy(ip_adm_from_sup),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            ),
+        )
