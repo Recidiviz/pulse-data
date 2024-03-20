@@ -339,7 +339,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
                 AS form_information_supervision_type,
             agg_charge.form_information_full_term_release_dates,
             so.supervision_officer_name AS form_information_supervision_officer_name,
-            ncic.review_date AS from_information_ncic_check_date,
+            ncic.review_date AS form_information_ncic_check_date,
             agg_charge.form_information_charge_descriptions,
             agg_charge.form_information_judge_names,
             agg_charge.form_information_county_names,
