@@ -10,7 +10,7 @@ input_columns:
   - SupervisionLevel
   - period_sequence_number
   - BadgeNumber
-  - supervision_site
+  - upper_ParoleUnit
 unused_columns: []
 output:
   StatePerson:
@@ -97,7 +97,7 @@ output:
                       - In-Custody MISD
                       - EX and SX
                       - CS P36 Specialized Caseload
-          supervision_site: supervision_site
+          supervision_site: upper_ParoleUnit
           supervision_type:
             $conditional:
               - $if:

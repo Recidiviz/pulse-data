@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.location
     LocationMetadataKey,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,11 +38,14 @@ locations in CA that can be associated with a person or staff member.
 US_CA_LOCATION_METADATA_QUERY_TEMPLATE = f"""
 SELECT 
   'US_CA' AS state_code, 
-  UPPER(CONCAT(ParoleUnit, '@@', ParoleDistrict,'@@',ParoleRegion)) AS location_external_id,
-  ParoleUnit as location_name,
+  UPPER(ParoleUnit) as location_external_id,
+  UPPER(ParoleUnit) as location_name,
   TO_JSON(
     STRUCT(
-      -- ParoleUnit is the lowest level of location in CA, but is analogous to the Recidiviz term "office"
+      -- ParoleUnit is the lowest level of location in CA, but is analogous to the
+      -- Recidiviz term "office". If any of these fields are ints, we replace them with
+      -- null to avoid breaking the `location_metadata_human_readable_metadata_name`
+      -- validation; see #27374. 
       CASE WHEN SAFE_CAST(ParoleUnit AS INT64) IS NULL THEN UPPER(ParoleUnit) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
       CASE WHEN SAFE_CAST(ParoleDistrict AS INT64) IS NULL THEN UPPER(ParoleDistrict) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
       CASE WHEN SAFE_CAST(ParoleRegion AS INT64) IS NULL THEN UPPER(ParoleRegion) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value},
@@ -54,10 +57,13 @@ SELECT
   'SUPERVISION_LOCATION' as location_type
 FROM (
     SELECT DISTINCT
-        ifnull(ParoleUnit, 'NULL') AS ParoleUnit,
-        ifnull(ParoleDistrict, 'NULL') AS ParoleDistrict,
-        ifnull(ParoleRegion, 'NULL') AS ParoleRegion
-    FROM `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest`
+      ifnull(ParoleUnit, 'NULL') AS ParoleUnit,
+      ifnull(ParoleDistrict, 'NULL') AS ParoleDistrict,
+      ifnull(ParoleRegion, 'NULL') AS ParoleRegion
+    FROM `{{project_id}}.{{us_ca_raw_data}}.PersonParole`
+    -- This qualify statement ensures we select the most recent ParoleDistrict and
+    -- ParoleRegion for a given ParoleUnit.
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY ParoleUnit ORDER BY update_datetime desc) = 1
 )
 """
 
@@ -66,7 +72,7 @@ US_CA_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_CA_LOCATION_METADATA_VIEW_NAME,
     view_query_template=US_CA_LOCATION_METADATA_QUERY_TEMPLATE,
     description=US_CA_LOCATION_METADATA_DESCRIPTION,
-    us_ca_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+    us_ca_raw_data=raw_tables_dataset_for_region(
         state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
