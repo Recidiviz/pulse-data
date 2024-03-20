@@ -3,6 +3,7 @@ file_tag: DSAA_PRISON_POPULATION
 file_description: |-
   Detailed population table that contains one row for each stay in incarceration for a given DOC_ID.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - DOC_ID
   - CYC

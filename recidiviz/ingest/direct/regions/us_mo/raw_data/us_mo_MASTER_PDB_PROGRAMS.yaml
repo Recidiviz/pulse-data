@@ -3,6 +3,7 @@ file_tag: MASTER_PDB_PROGRAMS
 file_description: |-
   XXX # TODO(#17289): fill in once we have documentation
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - PROGRAM_REF_ID
 columns:

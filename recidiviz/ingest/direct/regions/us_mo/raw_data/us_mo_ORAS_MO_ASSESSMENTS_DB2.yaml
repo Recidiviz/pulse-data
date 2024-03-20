@@ -3,6 +3,7 @@ file_tag: ORAS_MO_ASSESSMENTS_DB2
 file_description: |-
   ORAS assessment information
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFFENDER_ID
   - ASSESSMENT_ID

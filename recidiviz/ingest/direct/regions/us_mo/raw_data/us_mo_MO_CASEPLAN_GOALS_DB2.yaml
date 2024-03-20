@@ -4,6 +4,7 @@ file_description: |-
   Supervision Case Plan Goals. This table contains the goals, known as the long-term outcomes, connected to a person's target in their Case Plans. 
   There should be one goal for each individualized target. It does not have to be measurable andd states a desired behavioral change.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFFENDER_ID
   - CASE_PLAN_ID

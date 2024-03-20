@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK090
 file_description: |-
   Fines and Fees for Presumptive Release Dates. Column prefix: DD. # TODO(#13474) Fill in definition with more details.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - DD_DOC
   - DD_CYC

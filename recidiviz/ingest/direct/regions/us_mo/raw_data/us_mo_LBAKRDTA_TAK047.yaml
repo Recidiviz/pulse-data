@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK047
 file_description: |-
   P&P Offender Parole Guideline Reasons. Column prefix: CJ.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - CJ_DOC
   - CJ_CYC

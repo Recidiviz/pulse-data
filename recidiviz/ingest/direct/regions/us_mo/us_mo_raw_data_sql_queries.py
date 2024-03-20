@@ -33,10 +33,10 @@ import os
 from typing import List, Optional, Tuple
 
 # Y?YYddd e.g. January 1, 2016 --> 116001; November 2, 1982 --> 82306;
-julian_format_lower_bound_update_date = 0
+julian_format_lower_bound_update_date = 124060
 
 # YYYY-MM-DD e.g. January 1, 2016 --> 2016-01-01; November 2, 1982 --> 1982-11-02;
-iso_format_lower_bound_update_date = 0
+iso_format_lower_bound_update_date = "2023-03-01"
 
 
 ORAS_WEEKLY_SUMMARY_UPDATE = """
@@ -61,6 +61,30 @@ ORAS_WEEKLY_SUMMARY_UPDATE = """
         CREATED_DATE
     FROM
         ORAS.WEEKLY_SUMMARY_UPDATE;
+    """
+
+ORAS_MO_ASSESSMENTS_DB2 = """
+    SELECT 
+        OFFENDER_ID,
+        ASSESSMENT_ID,
+        DOC_ID,
+        MOCIS_DOC_ID,
+        FOCLIST,
+        OWNING_AGENCY,
+        ASSESSMENT_NAME,
+        OVERALL_ASSESSMENT_SCORE,
+        RISK_LEVEL,
+        OVERRIDE_RISK_LEVEL,
+        OFFENDER_FIRST_NAME,
+        OFFENDER_LAST_NAME,
+        OFFICER_NAME,
+        CREATED_AT,
+        UPDATED_AT,
+        BACKDATED,
+        DELETED_AT,
+        ASSESSMENT_DATE
+    FROM
+        ORAS.MO_ASSESSMENTS_DB2;
     """
 
 LANTERN_DA_RA_LIST = """
@@ -1384,6 +1408,60 @@ LBAKRDTA_TAK294 = f"""
         MAX(COALESCE(ISDUPT, '0001-01-01'), COALESCE(ISDCRT, '0001-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
 
+LBAKRDTA_TAK295 = """
+    SELECT
+        JV$DOC,
+        JV$CYC,
+        JV$SEQ,
+        JV$PIN,
+        JV$PLN,
+        JV$LOC,
+        JV$COM,
+        JV$LRM,
+        JV$LBD,
+        JV$LC1,
+        JV$CP1,
+        JV$RO1,
+        JV$BD1,
+        JV$BA,
+        JV$BH1,
+        JV$BM1,
+        JV$YAP,
+        JV$STE,
+        JV$PO2,
+        JVVRUL,
+        JV$FTX,
+        JV$PON,
+        JV$CON,
+        JV$RES,
+        JV$PO1,
+        JV$AY,
+        JV$DCR,
+        JV$TCR,
+        JV$UID,
+        JV$DLU,
+        JV$TLU,
+        JV$UIU
+    FROM
+        LBAKRDTA.TAK295;
+    """
+
+LBAKRDTA_TAK296 = """
+    SELECT
+        JW$DOC,
+        JW$CYC,
+        JW$SEQ,
+        JW$CFT,
+        JW$DCR,
+        JW$TCR,
+        JW$UID,
+        JW$DLU,
+        JW$TLU,
+        JW$UIU
+    FROM
+        LBAKRDTA.TAK296;
+    """
+
 LBAKRDTA_VAK003 = f"""
     SELECT 
         DOC_ID_DOB,
@@ -1693,6 +1771,58 @@ CODE_PDB_CLASS_EXIT_REASON_CODES = """
         UPDATE_TS
     FROM
         CODE_PDB.CLASS_EXIT_REASON_CODES;
+    """
+
+DSAA_MOST_RECENT_RCA = """
+    SELECT 
+        DOC_ID,
+        ASSESSMENT_DATE,
+        OFNDR_CYCLE_REF_ID,
+        ASSESSMENT_TOOL_REF_ID,
+        OFNDR_ASMNT_REF_ID,
+        FOCLIST,
+        I_SCORE,
+        OVERRIDE_CLASSIFICATION,
+        EVAL_OVERRIDE_DESC,
+        OVERRIDE_COMMENT
+    FROM
+        DSAA.MOST_RECENT_RCA;
+    """
+
+DSAA_OFFENDER_ID_LOOKUP = """
+    SELECT 
+        OFNDR_CYCLE_REF_ID,
+        MOCIS_DOC_ID,
+        MOCIS_CYC,
+        DOC_ID,
+        CYC
+    FROM
+        DSAA.OFFENDER_ID_LOOKUP;
+    """
+
+DSAA_PRISON_POPULATION = """
+    SELECT 
+        DOC_ID,
+        CYC,
+        FOCLIST,
+        ENTRY_PLACE,
+        ENTRY_DT,
+        ENTRY_DTS,
+        EXIT_PLACE,
+        EXIT_DT,
+        EXIT_DTS,
+        DAYS,
+        STAY,
+        AGE,
+        AGE_GROUP,
+        AGE_AT_ENTRY,
+        SEX,
+        RACE_ETHNICITY,
+        MOCIS_DOC_ID,
+        MOCIS_CYC,
+        CNTR1
+    FROM
+        DSAA.PRISON_POPULATION;
     """
 
 MASTER_PDB_ASSESSMENT_EVALUATIONS = f"""
@@ -2018,10 +2148,13 @@ MO_CASEPLAN_TECHNIQUES_DB2 = """
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
-        ("CODE_PDB_ASMNT_PRIMARY_TYPE_CODES", CODE_PDB_ASMNT_PRIMARY_TYPE_CODES),
-        ("CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES", CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES),
+        # ("CODE_PDB_ASMNT_PRIMARY_TYPE_CODES", CODE_PDB_ASMNT_PRIMARY_TYPE_CODES), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES", CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES), # Only pulled ad-hoc as requested as of 3-20-2024
         ("CODE_PDB_CLASS_EXIT_REASON_CODES", CODE_PDB_CLASS_EXIT_REASON_CODES),
-        ("CODE_PDB_CLASS_PRIORITY_CODES", CODE_PDB_CLASS_PRIORITY_CODES),
+        # ("CODE_PDB_CLASS_PRIORITY_CODES", CODE_PDB_CLASS_PRIORITY_CODES), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("DSAA_MOST_RECENT_RCA", DSAA_MOST_RECENT_RCA) # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("DSAA_OFFENDER_ID_LOOKUP", DSAA_OFFENDER_ID_LOOKUP) # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("DSAA_PRISON_POPULATION", DSAA_PRISON_POPULATION) # Only pulled ad-hoc as requested as of 3-20-2024
         ("LANTERN_DA_RA_LIST", LANTERN_DA_RA_LIST),
         ("LBAKRCOD_TAK146", LBAKRCOD_TAK146),
         ("LBAKRDTA_TAK001", LBAKRDTA_TAK001),
@@ -2042,26 +2175,26 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK042", LBAKRDTA_TAK042),
         ("LBAKRDTA_TAK044", LBAKRDTA_TAK044),
         ("LBAKRDTA_TAK046", LBAKRDTA_TAK046),
-        ("LBAKRDTA_TAK047", LBAKRDTA_TAK047),
+        # ("LBAKRDTA_TAK047", LBAKRDTA_TAK047), # Only pulled ad-hoc as requested as of 3-20-2024
         ("LBAKRDTA_TAK065", LBAKRDTA_TAK065),
         ("LBAKRDTA_TAK068", LBAKRDTA_TAK068),
         ("LBAKRDTA_TAK071", LBAKRDTA_TAK071),
         ("LBAKRDTA_TAK076", LBAKRDTA_TAK076),
-        ("LBAKRDTA_TAK090", LBAKRDTA_TAK090),
+        # ("LBAKRDTA_TAK090", LBAKRDTA_TAK090), # Only pulled ad-hoc as requested as of 3-20-2024
         # ("LBAKRDTA_TAK130", LBAKRDTA_TAK130), # Currently too big to add into automated transfer each week as full historical
         ("LBAKRDTA_TAK142", LBAKRDTA_TAK142),
         ("LBAKRDTA_TAK158", LBAKRDTA_TAK158),
         ("LBAKRDTA_TAK194", LBAKRDTA_TAK194),
         ("LBAKRDTA_TAK204", LBAKRDTA_TAK204),
-        ("LBAKRDTA_TAK216", LBAKRDTA_TAK216),
-        ("LBAKRDTA_TAK217", LBAKRDTA_TAK217),
-        ("LBAKRDTA_TAK222", LBAKRDTA_TAK222),
-        ("LBAKRDTA_TAK223", LBAKRDTA_TAK223),
+        # ("LBAKRDTA_TAK216", LBAKRDTA_TAK216), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("LBAKRDTA_TAK217", LBAKRDTA_TAK217), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("LBAKRDTA_TAK222", LBAKRDTA_TAK222), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("LBAKRDTA_TAK223", LBAKRDTA_TAK223), # Only pulled ad-hoc as requested as of 3-20-2024
         ("LBAKRDTA_TAK233", LBAKRDTA_TAK233),
-        ("LBAKRDTA_TAK234", LBAKRDTA_TAK234),
-        ("LBAKRDTA_TAK235", LBAKRDTA_TAK235),
+        # ("LBAKRDTA_TAK234", LBAKRDTA_TAK234), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("LBAKRDTA_TAK235", LBAKRDTA_TAK235), # Only pulled ad-hoc as requested as of 3-20-2024
         ("LBAKRDTA_TAK236", LBAKRDTA_TAK236),
-        ("LBAKRDTA_TAK237", LBAKRDTA_TAK237),
+        # ("LBAKRDTA_TAK237", LBAKRDTA_TAK237),
         # (
         #     "LBAKRDTA_TAK238",
         #     LBAKRDTA_TAK238,
@@ -2069,19 +2202,20 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK291", LBAKRDTA_TAK291),
         ("LBAKRDTA_TAK292", LBAKRDTA_TAK292),
         ("LBAKRDTA_TAK293", LBAKRDTA_TAK293),
-        ("LBAKRDTA_TAK294", LBAKRDTA_TAK294),
+        ("LBAKRDTA_TAK295", LBAKRDTA_TAK295),
+        ("LBAKRDTA_TAK296", LBAKRDTA_TAK296),
         ("LBAKRDTA_VAK003", LBAKRDTA_VAK003),
         ("LBCMDATA_APFX90", LBCMDATA_APFX90),
         ("LBCMDATA_APFX91", LBCMDATA_APFX91),
         ("MASTER_PDB_ASSESSMENT_EVALUATIONS", MASTER_PDB_ASSESSMENT_EVALUATIONS),
-        ("MASTER_PDB_ASSESSMENT_QUESTIONS", MASTER_PDB_ASSESSMENT_QUESTIONS),
-        ("MASTER_PDB_ASSESSMENT_RESPONSES", MASTER_PDB_ASSESSMENT_RESPONSES),
-        ("MASTER_PDB_ASSESSMENT_SECTIONS", MASTER_PDB_ASSESSMENT_SECTIONS),
+        # ("MASTER_PDB_ASSESSMENT_QUESTIONS", MASTER_PDB_ASSESSMENT_QUESTIONS), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("MASTER_PDB_ASSESSMENT_RESPONSES", MASTER_PDB_ASSESSMENT_RESPONSES), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("MASTER_PDB_ASSESSMENT_SECTIONS", MASTER_PDB_ASSESSMENT_SECTIONS), # Only pulled ad-hoc as requested as of 3-20-2024
         ("MASTER_PDB_CLASSES", MASTER_PDB_CLASSES),
         ("MASTER_PDB_CLASS_LOCATIONS", MASTER_PDB_CLASS_LOCATIONS),
         ("MASTER_PDB_CLASS_SCHEDULES", MASTER_PDB_CLASS_SCHEDULES),
         ("MASTER_PDB_LOCATIONS", MASTER_PDB_LOCATIONS),
-        ("MASTER_PDB_PROGRAMS", MASTER_PDB_PROGRAMS),
+        # ("MASTER_PDB_PROGRAMS", MASTER_PDB_PROGRAMS), # Only pulled ad-hoc as requested as of 3-20-2024
         ("OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS", OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS),
         (
             "OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW",
@@ -2090,10 +2224,11 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("OFNDR_PDB_OFNDR_ASMNTS", OFNDR_PDB_OFNDR_ASMNTS),
         ("OFNDR_PDB_OFNDR_ASMNT_SCORES", OFNDR_PDB_OFNDR_ASMNT_SCORES),
         ("OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF", OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF),
-        ("OFNDR_PDB_RESIDENCES", OFNDR_PDB_RESIDENCES),
+        # ("OFNDR_PDB_RESIDENCES", OFNDR_PDB_RESIDENCES), # Only pulled ad-hoc as requested as of 3-20-2024
+        # ("ORAS_MO_ASSESSMENTS_DB2", ORAS_MO_ASSESSMENTS_DB2) # Only pulled ad-hoc as requested as of 3-20-2024
         ("ORAS_WEEKLY_SUMMARY_UPDATE", ORAS_WEEKLY_SUMMARY_UPDATE),
         # These queries should only be run ad-hoc for now. See above for more details.
-        # ("OFNDR_PDB_OFNDR_ASMNT_RESPONSES", OFNDR_PDB_OFNDR_ASMNT_RESPONSES),
+        # *("OFNDR_PDB_OFNDR_ASMNT_RESPONSES", OFNDR_PDB_OFNDR_ASMNT_RESPONSES),
         # ("MO_CASEPLANS_DB2", MO_CASEPLANS_DB2),
         # ("MO_CASEPLAN_INFO_DB2", MO_CASEPLAN_INFO_DB2),
         # ("MO_CASEPLAN_TARGETS_DB2", MO_CASEPLAN_TARGETS_DB2),

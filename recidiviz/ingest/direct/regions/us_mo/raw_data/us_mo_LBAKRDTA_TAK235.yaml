@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK235
 file_description: |-
   Violations data information (CDV) - Alternate Rules. Column prefix: IT.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - IT_DOC
   - IT_CYC

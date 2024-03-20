@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK130
 file_description: |-
   Offender Chronological Sort File. Column prefix: D2.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - D2_DOC
   - D2_CYC

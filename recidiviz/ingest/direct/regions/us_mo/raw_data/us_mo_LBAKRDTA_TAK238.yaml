@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK238
 file_description: |-
   Violations data information (CDV) - Comments. Column prefix: IS.
 data_classification: source
+update_cadence: IRREGULAR
 no_valid_primary_keys: True
 primary_key_cols: []
 columns:

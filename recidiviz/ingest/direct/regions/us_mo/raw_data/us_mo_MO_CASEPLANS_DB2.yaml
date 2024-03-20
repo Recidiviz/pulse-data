@@ -3,6 +3,7 @@ file_tag: MO_CASEPLANS_DB2
 file_description: |-
   MO Supervision Case Plans - Main Table. This tables lists all case plans for people who have been assessed with ORAS assessment tool.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFFENDER_ID
   - CASE_PLAN_ID

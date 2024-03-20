@@ -4,6 +4,7 @@ file_description: |-
   Supervision Case Plan Techniques. This table lists the techniques connected to objectives in a persons's Case Plan. 
   Techniques are provider responsibilities to assist offender with change. Each objective should have a corresponding technique.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFFENDER_ID
   - CASE_PLAN_ID

@@ -3,6 +3,7 @@ file_tag: LBAKRDTA_TAK237
 file_description: |-
   Violations data information (CDV) - Events. Column prefix: IV.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - IV_DOC
   - IV_CYC
