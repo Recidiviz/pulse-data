@@ -34,7 +34,7 @@ _CRITERIA_NAME = "US_TN_NO_HIGH_SANCTIONS_IN_PAST_YEAR"
 _DESCRIPTION = """Describes the spans of time when a TN client has not had a sanction for 12 months.
 """
 
-_QUERY_TEMPLATE = f"""
+_REASON_QUERY = f"""
     WITH sanction_sessions_cte AS
     (
     SELECT DISTINCT
@@ -101,7 +101,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_TN,
         criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
+        criteria_spans_query_template=_REASON_QUERY,
         description=_DESCRIPTION,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
