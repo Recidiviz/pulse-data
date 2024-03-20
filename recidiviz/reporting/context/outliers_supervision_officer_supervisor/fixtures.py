@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Fixtures for developing and testing the OutliersSupervisionOfficerSupervisor report"""
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from recidiviz.outliers.constants import (
@@ -32,6 +33,7 @@ from recidiviz.outliers.querier.querier import (
 )
 from recidiviz.outliers.types import (
     OutliersMetricConfig,
+    OutliersProductConfiguration,
     PersonName,
     TargetStatusStrategy,
 )
@@ -86,6 +88,25 @@ metric_fixtures = {
         event_name_past_tense="had a technical incarceration",
     ),
 }
+
+config_fixture = OutliersProductConfiguration(
+    updated_at=datetime(2024, 1, 1),
+    updated_by="alexa@recidiviz.org",
+    feature_variant=None,
+    supervision_district_label="district",
+    supervision_district_manager_label="district manager",
+    supervision_jii_label="client",
+    supervision_unit_label="unit",
+    supervision_supervisor_label="supervisor",
+    metrics=[
+        metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+    ],
+    supervision_officer_label="officer",
+    learn_more_url="https://recidiviz.org",
+    none_are_outliers_label="are outliers",
+    worse_than_rate_label="worse",
+    exclusion_reason_description="",
+)
 
 target_fixture_adverse = 0.05428241659992843
 

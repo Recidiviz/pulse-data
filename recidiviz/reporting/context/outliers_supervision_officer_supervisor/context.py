@@ -58,12 +58,12 @@ from recidiviz.outliers.constants import (
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
-from recidiviz.outliers.outliers_configs import get_outliers_backend_config
+from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
     MetricOutcome,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
-    OutliersBackendConfig,
+    OutliersProductConfiguration,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
@@ -178,7 +178,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         return self.recipient_data["report"]
 
     @property
-    def _config(self) -> OutliersBackendConfig:
+    def _config(self) -> OutliersProductConfiguration:
         return self.recipient_data["config"]
 
     def _prepare_metric(self, metric_info: OutlierMetricInfo) -> dict:
@@ -361,7 +361,16 @@ if __name__ == "__main__":
         test_report_date = datetime.datetime.now()
         test_state_code = StateCode.US_OZ
 
-        test_config = OutliersBackendConfig(
+        test_config = OutliersProductConfiguration(
+            updated_at=datetime.datetime(2024, 1, 1),
+            updated_by="alexa@recidiviz.org",
+            feature_variant=None,
+            supervision_district_label="district",
+            supervision_district_manager_label="district manager",
+            supervision_jii_label="client",
+            supervision_unit_label="unit",
+            supervision_supervisor_label="supervisor",
+            supervision_officer_label="officer",
             metrics=[
                 metric_fixtures[INCARCERATION_STARTS],
                 metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
@@ -369,14 +378,11 @@ if __name__ == "__main__":
                 metric_fixtures[TASK_COMPLETIONS_FULL_TERM_DISCHARGE],
                 metric_fixtures[TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION],
             ],
-            supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
         )
     elif known_args.cmd == "db":
         test_report_date = datetime.datetime.now()
         test_state_code = known_args.state_code
-
-        test_config = get_outliers_backend_config(test_state_code.value)
 
         # # init the database collection to fetch from local
         database_manager = StateSegmentedDatabaseManager(
@@ -384,6 +390,8 @@ if __name__ == "__main__":
         )
         database_key = database_manager.database_key_for_state(test_state_code.value)
         outliers_engine = SQLAlchemyEngineManager.get_engine_for_database(database_key)
+
+        test_config = OutliersQuerier(test_state_code).get_product_configuration()
 
     else:
         raise NotImplementedError()
