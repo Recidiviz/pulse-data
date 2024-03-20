@@ -135,7 +135,11 @@ def _confirmation_email_builder(
 
 
 def send_reminder_emails_for_superagency(
-    session: Session, agency_id: int, dry_run: bool, logger: logging.Logger
+    session: Session,
+    agency_id: int,
+    dry_run: bool,
+    logger: logging.Logger,
+    today: datetime.date,
 ) -> None:
     """Every month we send a reminder email to all users subscribed to their agency's
     emails to notify them that they have data missing from their most recent annual / fiscal-year
@@ -155,7 +159,6 @@ def send_reminder_emails_for_superagency(
         return
 
     agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
-    today = datetime.date.today()
     child_agencies = AgencyInterface.get_child_agencies_for_agency(
         session=session, agency=agency
     )
@@ -295,7 +298,11 @@ def get_missing_metrics_for_superagencies(
 
 
 def send_reminder_emails(
-    session: Session, agency_id: int, dry_run: bool, logger: logging.Logger
+    session: Session,
+    agency_id: int,
+    dry_run: bool,
+    logger: logging.Logger,
+    today: datetime.date,
 ) -> None:
     """Every month we send a reminder email to all users subscribed to their agency's
     emails to notify them that they have data missing from their most recent annual / fiscal-year
@@ -313,7 +320,6 @@ def send_reminder_emails(
         return
 
     agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
-    today = datetime.date.today()
 
     for user_association in subscribed_user_associations:
         (

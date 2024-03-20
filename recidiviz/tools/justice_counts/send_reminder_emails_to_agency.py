@@ -21,6 +21,7 @@ email reminder project, emails will be sent on the 15th of every month if the ag
 is missing metrics in their most recent annual or monthly report.
 """
 import argparse
+import datetime
 import logging
 
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -42,6 +43,8 @@ from recidiviz.utils.params import str_to_bool
 
 logger = logging.getLogger(__name__)
 
+today = datetime.date.today()
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
@@ -60,6 +63,9 @@ def create_parser() -> argparse.ArgumentParser:
         help="ID of the agency you want to send emails to",
         required=True,
     )
+    parser.add_argument("--day", type=int, default=today.day)
+    parser.add_argument("--month", type=int, default=today.month)
+    parser.add_argument("--year", type=int, default=today.year)
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
     return parser
 
@@ -88,6 +94,9 @@ if __name__ == "__main__":
                         agency_id=args.agency_id,
                         dry_run=args.dry_run,
                         logger=logger,
+                        today=datetime.date(
+                            day=args.day, month=args.month, year=args.year
+                        ),
                     )
                 else:
                     send_reminder_emails_for_superagency(
@@ -95,4 +104,7 @@ if __name__ == "__main__":
                         agency_id=args.agency_id,
                         dry_run=args.dry_run,
                         logger=logger,
+                        today=datetime.date(
+                            day=args.day, month=args.month, year=args.year
+                        ),
                     )
