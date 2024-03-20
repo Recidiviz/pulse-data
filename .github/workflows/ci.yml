@@ -182,7 +182,7 @@ jobs:
       - name: Run unit tests in parallel
         run: |
           pipenv run pytest recidiviz/tests \
-            -n auto \
+            -n logical \
             -m 'not uses_db and not isolated and not uses_bq_emulator' \
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
@@ -273,7 +273,7 @@ jobs:
       - name: Run db tests
         run: |
           pipenv run pytest recidiviz/tests \
-            -n auto \
+            -n logical \
             -m 'uses_db' \
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
