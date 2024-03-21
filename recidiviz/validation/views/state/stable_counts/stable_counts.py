@@ -144,12 +144,17 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
             DateCol(
                 date_column_name="start_date",
                 exemptions={
-                    # CA: We exclude validations for 2023-01 because this is the month we began receiving
-                    # data for CA. We have some historical information, but not much, which causes
-                    # many validation failures on 2023-01.
+                    # CA: We exclude validations for 2023-01 because this is the month
+                    # we began receiving data for CA. We have some historical
+                    # information, but not much, which causes many validation failures
+                    # on 2023-01. We ignore 2023-05 and 2023-08 because badge numbers
+                    # were removed in May and reintroduced in August, which start many
+                    # supervision periods for this change.
                     StateCode.US_CA: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
+                        date(2023, 5, 1),
+                        date(2023, 8, 1),
                     ],
                     StateCode.US_PA: [
                         date(2023, 1, 1),
@@ -194,12 +199,17 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
             DateCol(
                 date_column_name="termination_date",
                 exemptions={
-                    # CA: We exclude validations for 2023-01 because this is the month we began receiving
-                    # data for CA. We have some historical information, but not much, which causes
-                    # many validation failures on 2023-01.
+                    # CA: We exclude validations for 2023-01 because this is the month
+                    # we began receiving data for CA. We have some historical
+                    # information, but not much, which causes many validation failures
+                    # on 2023-01. We ignore 2023-05 and 2023-08 because badge numbers
+                    # were removed in May and reintroduced in August, which start many
+                    # supervision periods for this change.
                     StateCode.US_CA: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
+                        date(2023, 5, 1),
+                        date(2023, 8, 1),
                     ],
                     StateCode.US_PA: [
                         date(2023, 1, 1),
@@ -249,9 +259,10 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
             DateCol(
                 date_column_name="response_date",
                 exemptions={
-                    # CA: We exclude validations for 2023-01 because this is the month we began receiving
-                    # data for CA. We have some historical information, but not much, which causes
-                    # many validation failures on 2023-01.
+                    # CA: We exclude validations for 2023-01 because this is the month
+                    # we began receiving data for CA. We have some historical
+                    # information, but not much, which causes many validation failures
+                    # on 2023-01.
                     StateCode.US_CA: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
