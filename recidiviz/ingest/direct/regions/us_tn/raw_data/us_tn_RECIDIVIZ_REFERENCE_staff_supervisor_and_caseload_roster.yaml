@@ -4,6 +4,7 @@ file_description: |-
   This table maps staff to their supervisors and caseload types in Tennessee. This was originally manually created in Q4 2023 in pursuit of the Outliers launch.
   The google sheet used to create this can be found at the following link: https://docs.google.com/spreadsheets/d/1Z64JrTWovqZXAdtIEbLCfP6tKx8KhqTkzFhTsC8BGdY/edit#gid=691213718
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - external_id
 columns:
