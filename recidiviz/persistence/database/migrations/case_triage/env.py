@@ -26,11 +26,6 @@ from recidiviz.persistence.database.migrations.base_env import (
     run_migrations_online,
 )
 
-# Import anything from the case_triage schema.py files to ensure the table class
-# declarations are run within the Alembic environment
-# pylint:disable=unused-import
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
-
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

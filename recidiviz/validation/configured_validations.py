@@ -36,9 +36,6 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
-from recidiviz.validation.views.case_triage.employment_freshness_validation import (
-    EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.active_in_population_after_death_date import (
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
 )
@@ -420,10 +417,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=INVALID_RELEASE_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
-            validation_category=ValidationCategory.FRESHNESS,
         ),
         ExistenceDataValidationCheck(
             view_builder=INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,

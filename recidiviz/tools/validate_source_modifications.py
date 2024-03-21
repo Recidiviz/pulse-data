@@ -196,18 +196,6 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
         )
         for region_code in get_existing_region_codes()
     ],
-    # case triage demo data
-    CASE_TRIAGE_FIXTURES_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {f"recidiviz/tools/case_triage/fixtures/etl_{data_type}.csv"}
-            ),
-            then_modified_files=frozenset(
-                {f"recidiviz/case_triage/fixtures/demo_{data_type}.json"}
-            ),
-        )
-        for data_type in ["clients", "opportunities", "client_events"]
-    ],
     ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
     # ignore files
     IGNORE_KEY: [

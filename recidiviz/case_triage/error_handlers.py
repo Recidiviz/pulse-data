@@ -21,7 +21,6 @@ from flask_wtf.csrf import CSRFError
 from jwt import MissingRequiredClaimError
 from marshmallow import ValidationError
 
-from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
 from recidiviz.case_triage.pathways.exceptions import (
     MetricMappingError,
     MetricNotEnabledError,
@@ -42,7 +41,11 @@ def handle_auth_error(ex: FlaskException) -> Response:
 
 def handle_validation_error(ex: ValidationError) -> Response:
     return handle_auth_error(
-        CaseTriageBadRequestException(code="bad_request", description=ex.messages)
+        FlaskException(
+            code="bad_request",
+            description=ex.messages,
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
     )
 
 
@@ -58,18 +61,20 @@ def handle_csrf_error(error: CSRFError) -> Response:
 
 def handle_missing_required_claim_error(error: MissingRequiredClaimError) -> Response:
     return handle_auth_error(
-        CaseTriageBadRequestException(
-            "missing_required_claim",
-            f"{error.claim} was missing from the provided token",
+        FlaskException(
+            code="missing_required_claim",
+            description=f"{error.claim} was missing from the provided token",
+            status_code=HTTPStatus.BAD_REQUEST,
         )
     )
 
 
 def handle_metric_mapping_error(error: MetricMappingError) -> Response:
     return handle_auth_error(
-        CaseTriageBadRequestException(
-            "metric_mapping_error",
-            error.message,
+        FlaskException(
+            code="metric_mapping_error",
+            description=error.message,
+            status_code=HTTPStatus.BAD_REQUEST,
         )
     )
 

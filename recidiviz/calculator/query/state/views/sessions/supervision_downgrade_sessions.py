@@ -30,7 +30,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_all_primary_supervision_external_id_types,
 )
-from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -70,7 +69,7 @@ day_zero_reports AS (
         AND day_zero_reports.person_external_id = pei.external_id
         AND pei.id_type IN {get_all_primary_supervision_external_id_types()}
     WHERE
-        opportunity_type = "{OpportunityType.OVERDUE_DOWNGRADE.value}"
+        opportunity_type = "OVERDUE_DOWNGRADE"
 )
 
 -- dates when a client was surfaced in a monthly report

@@ -378,11 +378,6 @@ class TestCaseTriageMigrations(MigrationsTestBase):
     def schema_type(cls) -> SchemaType:
         return SchemaType.CASE_TRIAGE
 
-    def expected_missing_indices(self) -> Set[str]:
-        # TODO(#17979): Remove `etl_clients_pkey` from exemption below once duplicates
-        #  from `etl_clients` are removed or the table itself is deleted.
-        return {"etl_clients_pkey"}
-
 
 class TestJusticeCountsMigrations(MigrationsTestBase):
     __test__ = True
