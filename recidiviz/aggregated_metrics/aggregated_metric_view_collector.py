@@ -178,6 +178,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION,
     TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION,
     TREATMENT_REFERRALS,
+    TREATMENT_STARTS,
     UNSUCCESSFUL_SUPERVISION_TERMINATIONS,
     VIOLATION_RESPONSES,
     VIOLATION_RESPONSES_BY_TYPE_METRICS,
@@ -379,6 +380,8 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         MAX_DAYS_STABLE_EMPLOYMENT_365,
         ## Program Referrals
         TREATMENT_REFERRALS,
+        ## Program Starts
+        TREATMENT_STARTS,
         # TODO(#18344): Use task population_types to only calculate relevant workflows metrics for a single population
         ## Workflows - eligibility metrics
         *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,

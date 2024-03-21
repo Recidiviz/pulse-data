@@ -2188,6 +2188,18 @@ TREATMENT_REFERRALS = EventCountMetric(
     ],
 )
 
+TREATMENT_STARTS = EventCountMetric(
+    name="treatment_starts",
+    display_name="Treatment Starts",
+    description="Number of treatment starts",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.TREATMENT_START,
+            event_conditions_dict={},
+        ),
+    ],
+)
+
 UNSUCCESSFUL_SUPERVISION_TERMINATIONS = EventCountMetric(
     name="unsuccessful_supervision_terminations",
     display_name="Unsuccessful Supervision Terminations",
