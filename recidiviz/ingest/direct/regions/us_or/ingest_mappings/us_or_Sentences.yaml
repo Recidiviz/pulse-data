@@ -43,6 +43,7 @@ input_columns:
   - PPS_SENTENCE_DAYS
   - PPS_SENTENCE_MONTHS
   - PPS_SENTENCE_YEARS
+  - FLAG_137635
 unused_columns:
   - CURRENT_STATUS
 output:
@@ -119,6 +120,14 @@ output:
                     CONSEC_SENT: CONSEC_TO
                     MERGED_SENT: MERGE_SENTENCE
                     COURT_CASE_NUMBER: COURT_CASE_NUMBER
+                    FLAG_137635: FLAG_137635
+                    CHARGE_ID:
+                      $concat:
+                        $values:
+                          - RECORD_KEY
+                          - CUSTODY_NUMBER
+                          - ADMISSION_NUMBER
+                          - OFFENSE_NUMBER
                 charges:
                   - StateCharge:
                       external_id:
@@ -249,9 +258,20 @@ output:
                 earned_time_days: EARNED_TIME_DAYS
                 sentence_metadata:
                   $json_dict:
+                    PPS_SENTENCE_DAYS: PPS_SENTENCE_DAYS
+                    PPS_SENTENCE_MONTHS: PPS_SENTENCE_MONTHS
+                    PPS_SENTENCE_YEARS: PPS_SENTENCE_YEARS
                     CONSEC_SENT: CONSEC_TO
                     MERGED_SENT: MERGE_SENTENCE
                     COURT_CASE_NUMBER: COURT_CASE_NUMBER
+                    FLAG_137635: FLAG_137635
+                    CHARGE_ID:
+                      $concat:
+                        $values:
+                          - RECORD_KEY
+                          - CUSTODY_NUMBER
+                          - ADMISSION_NUMBER
+                          - OFFENSE_NUMBER
                 charges:
                   - StateCharge:
                       external_id:
