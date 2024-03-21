@@ -4,5 +4,5 @@ US_PA,absconsions_bench_warrants,2023-04-01,222,"{""given_names"": ""OLIVIA"", "
 US_PA,absconsions_bench_warrants,2022-04-01,333,"{""given_names"": ""TAYLOR"", ""surname"": ""SWIFT""}",03,2022-01-01,2023-06-01,2022-01-01,2023-06-01,PROBATION,,clienthash3,officerhash3
 US_PA,incarceration_starts_and_inferred,2023-04-01,222,"{""given_names"": ""OLIVIA"", ""surname"": ""RODRIGO""}",03,2022-01-01,2023-06-01,2022-01-01,2023-06-01,PROBATION,,clienthash2,officerhash3
 US_PA,incarceration_starts_and_inferred,,444,"{""given_names"": ""BARBIE"", ""middle_names"": ""MILLICENT"", ""surname"": ""ROBERTS""}",03,,,,,PROBATION,,clienthash4,officerhash3
-US_PA,violations,2023-05-01,111,"{""given_names"": ""HARRY"", ""surname"": ""POTTER""}",03,2022-01-01,2023-06-01,2022-01-01,2023-06-01,PROBATION,{"test_key": "test_value"},clienthash1,officerhash3
+US_PA,violations,2023-05-01,111,"{""given_names"": ""HARRY"", ""surname"": ""POTTER""}",03,2022-01-01,2023-06-01,2022-01-01,2023-06-01,PROBATION,"{""test_key"": ""test_value""}",clienthash1,officerhash3
 US_PA,violations,2022-03-01,111,"{""given_names"": ""HARRY"", ""surname"": ""POTTER""}",03,2022-01-01,2023-06-01,2022-01-01,2023-06-01,PROBATION,,clienthash1,officerhash3

@@ -24,7 +24,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.outliers.schema import (
     OutliersBase,
-    SupervisionDistrict,
+    SupervisionOfficer,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -116,19 +116,19 @@ class TestLoadLocalDb(TestCase):
         bucket = "recidiviz-456-outliers-etl-data"
         fake_gcs = FakeGCSFileSystem()
         fake_csv_path = GcsfsFilePath.from_absolute_path(
-            f"gs://{bucket}/US_XX/supervision_districts.csv"
+            f"gs://{bucket}/US_XX/supervision_officers.csv"
         )
         fake_gcs.upload_from_string(
             path=fake_csv_path,
             # Columns here are in the order they're exported in the BQ views
-            contents="US_XX,1,District 1",
+            contents='US_XX,02,00002,"{""surname"": ""DOE""}",officerhash2,101,1,OTHER',
             content_type="text/csv",
         )
         import_outliers_from_gcs(
-            self.engine, [SupervisionDistrict], bucket, "US_XX", fake_gcs
+            self.engine, [SupervisionOfficer], bucket, "US_XX", fake_gcs
         )
 
         with SessionFactory.using_database(
             self.db_key, autocommit=False
         ) as read_session:
-            self.assertTrue(len(read_session.query(SupervisionDistrict).all()) > 0)
+            self.assertTrue(len(read_session.query(SupervisionOfficer).all()) > 0)
