@@ -151,7 +151,7 @@ columns:
       TODO(#17148): Fill in with answer from OR
   - name: FLAG_137635
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      A flag for determinate sentences required for certain felony convictions. Relevant for someone to qualify for earned discharge or not.
   - name: DANG_OFFENDER
     description: |-
       Indicates if dangerous offense.
