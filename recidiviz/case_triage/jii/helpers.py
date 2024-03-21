@@ -19,13 +19,20 @@
 """
 File with helper functions used by recidiviz/case_triage/jii/send_id_lsu_texts.py
 """
+import datetime
 import logging
 from ast import literal_eval
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Generator, Optional
 
 from google.cloud import bigquery
 
+from recidiviz.case_triage.workflows.utils import (
+    TwilioStatus,
+    get_consolidated_status,
+    get_jii_texting_error_message,
+)
+from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.string import StrictStringFormatter
 
 INITIAL_TEXT = "Hi {given_name}, we are reaching out to notify you that we will be sending text messages to this phone number on behalf of the Idaho Department of Correction. These texts will share information about options available on supervision."
@@ -157,3 +164,55 @@ def construct_text_body(
 
     text_body += ALL_CLOSER
     return text_body
+
+
+def update_status_helper(
+    message_status: Optional[str],
+    firestore_client: FirestoreClientImpl,
+    jii_updates_docs: Generator,
+    error_code: Optional[str],
+) -> set:
+    """
+    Iterates through documents from the JII Firestore database and updates the document's
+    status, status_last_updated, and raw_status fields if the document's raw_status does
+    not match the message_status from Twilio.
+
+    Additionally, this helper returns a set of external_ids in which the previously sent
+    message has the status 'undelivered'. This set of external_ids will be used to
+    attempt to resend previously undelivered messages.
+    """
+    external_ids = set()
+    for doc in jii_updates_docs:
+        jii_message = doc.to_dict()
+
+        if jii_message is None:
+            continue
+
+        if message_status == TwilioStatus.UNDELIVERED.value:
+            external_id = doc.reference.path.split("/")[1]
+            external_ids.add(external_id)
+
+        # This endpoint will be hit multiple times per message, so check here if this is a new status change from
+        # what we already have in Firestore.
+        if jii_message.get("raw_status", "") != message_status:
+            logging.info(
+                "Updating Twilio message status for doc: [%s] with status: [%s]",
+                doc.reference.path,
+                message_status,
+            )
+            doc_update = {
+                "status": get_consolidated_status(message_status),
+                "status_last_updated": datetime.datetime.now(datetime.timezone.utc),
+                "raw_status": message_status,
+            }
+            if error_code:
+                doc_update["error_code"] = error_code
+                error_message = get_jii_texting_error_message(error_code)
+                doc_update["errors"] = [error_message]
+            firestore_client.set_document(
+                doc.reference.path,
+                doc_update,
+                merge=True,
+            )
+
+    return external_ids

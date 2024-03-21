@@ -31,11 +31,8 @@ from recidiviz.case_triage.helpers import (
     validate_cors_helper,
     validate_request_helper,
 )
-from recidiviz.case_triage.workflows.utils import (
-    TWILIO_CRITICAL_ERROR_CODES,
-    get_consolidated_status,
-    get_jii_texting_error_message,
-)
+from recidiviz.case_triage.jii.helpers import update_status_helper
+from recidiviz.case_triage.workflows.utils import TWILIO_CRITICAL_ERROR_CODES
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
@@ -112,34 +109,13 @@ def create_jii_api_blueprint() -> Blueprint:
         )
         jii_updates_docs = query.stream()
 
-        for doc in jii_updates_docs:
-            jii_message = doc.to_dict()
+        update_status_helper(
+            message_status=message_status,
+            firestore_client=firestore_client,
+            jii_updates_docs=jii_updates_docs,
+            error_code=error_code,
+        )
 
-            if jii_message is None:
-                continue
-
-            # This endpoint will be hit multiple times per message, so check here if this is a new status change from
-            # what we already have in Firestore.
-            if jii_message.get("raw_status", "") != message_status:
-                logging.info(
-                    "Updating Twilio message status for doc: [%s] with status: [%s]",
-                    doc.reference.path,
-                    message_status,
-                )
-                doc_update = {
-                    "status": get_consolidated_status(message_status),
-                    "status_last_updated": datetime.datetime.now(datetime.timezone.utc),
-                    "raw_status": message_status,
-                }
-                if error_code:
-                    doc_update["error_code"] = error_code
-                    error_message = get_jii_texting_error_message(error_code)
-                    doc_update["errors"] = [error_message]
-                firestore_client.set_document(
-                    doc.reference.path,
-                    doc_update,
-                    merge=True,
-                )
         try:
             # Raise an exception if the error code from Twilio is an
             # error with our account (vs a receiver or carrier error)

@@ -16,6 +16,7 @@
 #  =============================================================================
 """Utilities for api calls."""
 import datetime
+import enum
 import logging
 from http import HTTPStatus
 from typing import Optional
@@ -114,3 +115,18 @@ def get_jii_texting_error_message(error_code: Optional[str]) -> Optional[str]:
     }
 
     return error_code_to_message.get(error_code)
+
+
+class TwilioStatus(enum.Enum):
+    """Enum for possible Twilio Message Statuses"""
+
+    ACCEPTED = "accepted"
+    SCHEDULED = "scheduled"
+    QUEUED = "queued"
+    SENDING = "sending"
+    SENT = "sent"
+    DELIVERY_UNKNOWN = "delivery_unknown"
+    DELIVERED = "delivered"
+    UNDELIVERED = "undelivered"
+    FAILED = "failed"
+    RECEIVED = "received"
