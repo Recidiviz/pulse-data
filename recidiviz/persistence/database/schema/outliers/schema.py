@@ -45,16 +45,6 @@ OutliersBase: DeclarativeMeta = declarative_base(
 )
 
 
-class SupervisionDistrict(OutliersBase):
-    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_districts`"""
-
-    __tablename__ = "supervision_districts"
-
-    state_code = Column(String, primary_key=True)
-    external_id = Column(String, primary_key=True)
-    name = Column(String, nullable=True)
-
-
 class PersonBase:
     """Base class that includes attributes that all person entities must define"""
 

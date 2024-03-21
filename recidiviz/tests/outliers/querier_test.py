@@ -48,7 +48,6 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     OutliersBase,
     SupervisionClientEvent,
     SupervisionClients,
-    SupervisionDistrict,
     SupervisionDistrictManager,
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
@@ -152,8 +151,6 @@ class TestOutliersQuerier(TestCase):
                 session.add(SupervisionOfficerOutlierStatus(**status))
             for supervisor in load_model_fixture(SupervisionOfficerSupervisor):
                 session.add(SupervisionOfficerSupervisor(**supervisor))
-            for district in load_model_fixture(SupervisionDistrict):
-                session.add(SupervisionDistrict(**district))
             for manager in load_model_fixture(SupervisionDistrictManager):
                 session.add(SupervisionDistrictManager(**manager))
             for benchmark in load_model_fixture(MetricBenchmark):

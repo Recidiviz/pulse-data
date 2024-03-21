@@ -22,7 +22,10 @@ map to anything in location metadata
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import OUTLIERS_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    OUTLIERS_VIEWS_DATASET,
+    REFERENCE_VIEWS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
@@ -95,6 +98,13 @@ _QUERY_TEMPLATE = """
         SELECT 
             *
         FROM district_managers
+    ),
+    locations AS (
+        SELECT 
+            state_code,
+            TRIM(JSON_VALUE(location_metadata, '$.supervision_district_name')) AS supervision_district_name,
+            TRIM(JSON_VALUE(location_metadata, '$.supervision_district_id')) AS supervision_district_id
+        FROM `{project_id}.{reference_views_dataset}.location_metadata_materialized` l
     )
 
     SELECT
@@ -102,13 +112,14 @@ _QUERY_TEMPLATE = """
         relevant_supervision_staff.external_id as external_id,
         relevant_supervision_staff.role_subtype,
         relevant_supervision_staff.supervision_district as supervision_district_of_staff,
-        d.name as supervision_district_in_location_metadata
+        l.supervision_district_name as supervision_district_in_location_metadata
     FROM relevant_supervision_staff
-    LEFT JOIN `{project_id}.{outliers_dataset}.supervision_districts_materialized` d 
-        ON relevant_supervision_staff.state_code = d.state_code AND UPPER(relevant_supervision_staff.supervision_district) = UPPER(d.name)
+    LEFT JOIN locations l
+        ON relevant_supervision_staff.state_code = l.state_code 
+        AND UPPER(relevant_supervision_staff.supervision_district) = UPPER(l.supervision_district_name)
     WHERE 
         relevant_supervision_staff.supervision_district IS NULL 
-        OR d.external_id IS NULL
+        OR l.supervision_district_id IS NULL
 """
 
 CURRENT_SUPERVISION_STAFF_MISSING_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -118,6 +129,7 @@ CURRENT_SUPERVISION_STAFF_MISSING_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuil
     description=_VIEW_DESCRIPTION,
     should_materialize=True,
     outliers_dataset=OUTLIERS_VIEWS_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
