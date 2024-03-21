@@ -119,16 +119,6 @@ class TestSchemaUtils(unittest.TestCase):
 
     def test_get_all_table_classes(self) -> None:
         case_triage_table_names = [
-            "etl_clients",
-            "etl_officers",
-            "etl_opportunities",
-            "etl_client_events",
-            "case_update_actions",
-            "client_info",
-            "officer_notes",
-            "opportunity_deferrals",
-            "dashboard_user_restrictions",
-            "officer_metadata",
             "roster",
             "user_override",
             "state_role_permissions",
@@ -330,8 +320,8 @@ class TestSchemaUtils(unittest.TestCase):
 
     def test_get_database_entity_by_table_name(self) -> None:
         assert (
-            get_database_entity_by_table_name(case_triage_schema, "etl_clients")
-            == case_triage_schema.ETLClient
+            get_database_entity_by_table_name(case_triage_schema, "roster")
+            == case_triage_schema.Roster
         )
 
         with self.assertRaisesRegex(

@@ -34,11 +34,7 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     import_gcs_csv_to_cloud_sql,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    ETLClient,
-    ETLOpportunity,
-    Roster,
-)
+from recidiviz.persistence.database.schema.case_triage.schema import Roster
 from recidiviz.persistence.database.schema.outliers.schema import SupervisionClientEvent
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
@@ -310,68 +306,6 @@ class TestGCSImportToCloudSQL(TestCase):
 
             destination_table_rows = session.query(Roster).all()
             self.assertEqual(len(destination_table_rows), 1)
-
-    def test_additional_queries_etl_clients(self) -> None:
-        """Assert that no constraints are applied to `etl_clients` (#8579)."""
-        self.mock_cloud_sql_client.import_gcs_csv.return_value = []
-        self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
-
-        import_gcs_csv_to_cloud_sql(
-            database_key=self.database_key,
-            model=ETLClient,
-            gcs_uri=GcsfsFilePath.from_absolute_path("US_ID/etl_clients.csv"),
-            columns=[],
-            region_code="US_ID",
-        )
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            constraint_count = len(
-                session.execute(
-                    build_list_constraints_query("public", "etl_clients")
-                ).fetchall()
-            )
-
-            unique_index_count = len(
-                session.execute(
-                    build_list_unique_indexes_query("public", "etl_clients")
-                ).fetchall()
-            )
-
-            self.assertEqual(constraint_count, 0, "Expected no constraints")
-            self.assertEqual(unique_index_count, 0, "Expected no unique indexes")
-
-    def test_additional_queries_etl_opportunities(self) -> None:
-        """Assert that no constraints are applied to `etl_opportunities` (#9292)."""
-        self.mock_cloud_sql_client.import_gcs_csv.return_value = []
-        self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
-
-        import_gcs_csv_to_cloud_sql(
-            database_key=self.database_key,
-            model=ETLOpportunity,
-            gcs_uri=GcsfsFilePath.from_absolute_path("US_ID/etl_opportunities.csv"),
-            columns=[],
-            region_code="US_ID",
-        )
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            constraint_count = len(
-                session.execute(
-                    build_list_constraints_query("public", "etl_opportunities")
-                ).fetchall()
-            )
-
-            unique_index_count = len(
-                session.execute(
-                    build_list_unique_indexes_query("public", "etl_opportunities")
-                ).fetchall()
-            )
-
-            self.assertEqual(constraint_count, 0, "Expected no constraints")
-            self.assertEqual(unique_index_count, 0, "Expected no unique indexes")
 
     def test_retry(self) -> None:
         # Client first raises a Conflict error, then returns a successful operation ID.

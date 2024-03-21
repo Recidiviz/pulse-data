@@ -59,9 +59,6 @@ num_allowed_rows_overrides:
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 500
     override_reason: TODO(#4618), TODO(#10577), TODO(#10685) - Needs investigation.
-  - validation_name: case_triage_employment_freshness
-    hard_num_allowed_rows_override: 1
-    override_reason: Needs investigation.
   - validation_name: incarceration_release_prior_to_admission
     hard_num_allowed_rows_override: 20
     override_reason:

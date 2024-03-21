@@ -36,10 +36,6 @@ from sqlalchemy.sql.ddl import (
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    ETLClient,
-    ETLOpportunity,
-)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -51,28 +47,9 @@ def get_temporary_table_name(table: Table) -> str:
     return f"tmp__{table.name}"
 
 
-temporary_etl_clients_name = get_temporary_table_name(ETLClient.__table__)
-temporary_etl_opps_name = get_temporary_table_name(ETLOpportunity.__table__)
+CONSTRAINTS_TO_DROP: dict[str, list[str]] = defaultdict(list)
 
-CONSTRAINTS_TO_DROP = defaultdict(list)
-CONSTRAINTS_TO_DROP[temporary_etl_clients_name] = [
-    f"uniq_{temporary_etl_clients_name}",
-    f"{temporary_etl_clients_name}_pkey",
-]
-CONSTRAINTS_TO_DROP[temporary_etl_opps_name] = [f"{temporary_etl_opps_name}_pkey"]
-
-ADDITIONAL_DDL_QUERIES_BY_TABLE_NAME = {
-    # TODO(#8579): Remove when the duplicates in `etl_clients` have been removed
-    temporary_etl_clients_name: [
-        f"ALTER TABLE {temporary_etl_clients_name} DROP CONSTRAINT {constraint_name};"
-        for constraint_name in CONSTRAINTS_TO_DROP[temporary_etl_clients_name]
-    ],
-    # TODO(#9292): Remove when the duplicates in `etl_opportunities` have been removed
-    temporary_etl_opps_name: [
-        f"ALTER TABLE {temporary_etl_opps_name} DROP CONSTRAINT {constraint_name};"
-        for constraint_name in CONSTRAINTS_TO_DROP[temporary_etl_opps_name]
-    ],
-}
+ADDITIONAL_DDL_QUERIES_BY_TABLE_NAME: dict[str, list[str]] = {}
 
 
 def retry_predicate(exception: BaseException) -> bool:

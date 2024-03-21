@@ -34,18 +34,11 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    DashboardUserRestrictions,
-    ETLClient,
-    ETLClientEvent,
-    ETLOfficer,
-    ETLOpportunity,
     PermissionsOverride,
     Roster,
     StateRolePermissions,
     UserOverride,
 )
-
-# from recidiviz.case_triage.views.view_config import ETL_TABLES
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -54,20 +47,17 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.tools.utils.fixture_helpers import reset_fixtures
 from recidiviz.utils.environment import in_development
 
+case_triage_tables = [
+    Roster,
+    UserOverride,
+    StateRolePermissions,
+    PermissionsOverride,
+]
+
 
 def reset_case_triage_fixtures(engine: Engine) -> None:
     """Deletes all ETL data and re-imports data from our fixture files"""
-    case_triage_tables = [
-        DashboardUserRestrictions,
-        ETLClient,
-        ETLOfficer,
-        ETLOpportunity,
-        ETLClientEvent,
-        Roster,
-        UserOverride,
-        StateRolePermissions,
-        PermissionsOverride,
-    ]
+
     reset_fixtures(
         engine=engine,
         tables=case_triage_tables,
