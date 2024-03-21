@@ -253,6 +253,7 @@ state_incarceration_type = Enum(
     name="state_incarceration_type",
 )
 
+
 state_person_address_type = Enum(
     state_enum_strings.state_person_address_type_physical_residence,
     state_enum_strings.state_person_address_type_physical_other,
@@ -481,6 +482,19 @@ state_supervision_period_supervision_type = Enum(
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_supervision_period_supervision_type",
+)
+
+state_supervision_period_legal_authority = Enum(
+    state_enum_strings.state_supervision_period_legal_authority_county,
+    state_enum_strings.state_supervision_period_legal_authority_court,
+    state_enum_strings.state_supervision_period_legal_authority_federal,
+    state_enum_strings.state_supervision_period_legal_authority_other_country,
+    state_enum_strings.state_supervision_period_legal_authority_other_state,
+    state_enum_strings.state_supervision_period_legal_authority_state_prison,
+    state_enum_strings.state_supervision_period_legal_authority_supervision_authority,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_supervision_period_legal_authority",
 )
 
 state_incarceration_incident_type = Enum(
@@ -1998,6 +2012,16 @@ class StateSupervisionPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     supervision_type_raw_text = Column(
         String(255),
         comment="The raw text value of the supervision period" " supervision type.",
+    )
+    legal_authority = Column(
+        state_supervision_period_legal_authority,
+        comment="The type of government entity responsible for making decisions "
+        "about a person’s path through the system. Not necessarily the same entity "
+        "responsible for the person during this period of time.",
+    )
+    legal_authority_raw_text = Column(
+        String(255),
+        comment="The raw text value of the supervision period legal authority.",
     )
     start_date = Column(
         Date, comment="The date the person began this period of supervision."
