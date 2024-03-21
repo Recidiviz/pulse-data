@@ -131,6 +131,7 @@ state_incarceration_type_federal_prison = "FEDERAL_PRISON"
 state_incarceration_type_out_of_state = "OUT_OF_STATE"
 state_incarceration_type_state_prison = "STATE_PRISON"
 
+
 # state_incarceration_incident.py
 state_incarceration_incident_type_contraband = "CONTRABAND"
 state_incarceration_incident_type_disorderly_conduct = "DISORDERLY_CONDUCT"
@@ -250,6 +251,7 @@ state_incarceration_period_release_reason_transfer_to_other_jurisdiction = (
 )
 state_incarceration_period_release_reason_vacated = "VACATED"
 
+
 # state_person_address_period.py
 state_person_address_type_physical_residence = "PHYSICAL_RESIDENCE"
 state_person_address_type_physical_other = "PHYSICAL_OTHER"
@@ -342,6 +344,14 @@ state_supervision_period_supervision_type_dual = "DUAL"
 state_supervision_period_supervision_type_community_confinement = (
     "COMMUNITY_CONFINEMENT"
 )
+state_supervision_period_legal_authority_county = "COUNTY"
+state_supervision_period_legal_authority_court = "COURT"
+state_supervision_period_legal_authority_federal = "FEDERAL"
+state_supervision_period_legal_authority_other_country = "OTHER_COUNTRY"
+state_supervision_period_legal_authority_other_state = "OTHER_STATE"
+state_supervision_period_legal_authority_state_prison = "STATE_PRISON"
+state_supervision_period_legal_authority_supervision_authority = "SUPERVISION_AUTHORITY"
+
 # TODO(#26027): Rename BENCH_WARRANT to something more descriptive to differentiate
 # it from WARRANT_STATUS
 state_supervision_period_supervision_type_bench_warrant = "BENCH_WARRANT"
