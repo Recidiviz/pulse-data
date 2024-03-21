@@ -896,6 +896,21 @@ FROM
         event_date_col="referral_date",
     ),
     EventQueryBuilder(
+        event_type=EventType.TREATMENT_START,
+        description="Treatment starts, keeping at most one per person per program-staff-status per day",
+        sql_source="""SELECT *
+FROM
+    `{project_id}.normalized_state.state_program_assignment`
+""",
+        attribute_cols=[
+            "program_id",
+            "referring_staff_id",
+            "referral_metadata",
+            "participation_status",
+        ],
+        event_date_col="start_date",
+    ),
+    EventQueryBuilder(
         event_type=EventType.VARIANT_ASSIGNMENT,
         description="Assignment to a tracked experiment, with one variant assignment per person-day-experiment-variant",
         sql_source="""SELECT *
