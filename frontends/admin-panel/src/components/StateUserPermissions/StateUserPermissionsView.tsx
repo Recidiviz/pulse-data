@@ -16,7 +16,7 @@
 // =============================================================================
 import { Button, message, PageHeader, Space, Spin, Table } from "antd";
 import * as React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   blockUser,
@@ -64,6 +64,16 @@ const StateUserPermissionsView = (): JSX.Element => {
   const [userToEnable, setUserToEnable] = useState<
     StateUserPermissionsResponse | undefined
   >();
+
+  // This canScroll state is used to prevent a ResizeObserver loop error
+  // A bug in rc-resize-observer is requiring us to do this as a workaround
+  // https://github.com/ant-design/ant-design/issues/26621#issuecomment-1798004981
+  const [canScroll, setCanScroll] = useState(false);
+  useEffect(() => {
+    if (!loading && !!data) {
+      setCanScroll(true);
+    }
+  }, [data, loading]);
 
   // control row selection
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -247,6 +257,7 @@ const StateUserPermissionsView = (): JSX.Element => {
             setAddVisible(false);
           }}
           stateRoleData={stateRoleData}
+          userData={data}
         />
         <Button
           disabled={selectedRowKeys.length < 1}
@@ -274,6 +285,7 @@ const StateUserPermissionsView = (): JSX.Element => {
           onRevokeAccess={onRevokeAccess}
           selectedUsers={selectedRows}
           stateRoleData={stateRoleData}
+          userData={data}
         />
         <UploadStateUserRosterModal
           visible={uploadRosterVisible}
@@ -301,7 +313,7 @@ const StateUserPermissionsView = (): JSX.Element => {
           stateRoleData,
           setUserToEnable
         )}
-        scroll={{ x: 2000 }}
+        scroll={canScroll ? { x: 2000 } : undefined}
         key={tableKey}
         pagination={{ showSizeChanger: true }}
       />

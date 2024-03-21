@@ -17,33 +17,47 @@
 import { Col, Form, Input, Row, Select } from "antd";
 import { useState } from "react";
 
-import { AddUserRequest, StateRolePermissionsResponse } from "../../types";
+import {
+  AddUserRequest,
+  StateRolePermissionsResponse,
+  StateUserPermissionsResponse,
+} from "../../types";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import { layout } from "./constants";
+import CustomInputSelect from "./CustomInputSelect";
 import ReasonInput from "./ReasonInput";
-import { validateAndFocus } from "./utils";
+import { getStateDistricts, getStateRoles, validateAndFocus } from "./utils";
 
 export const AddUserForm = ({
   addVisible,
   addOnCreate,
   addOnCancel,
   stateRoleData,
+  userData,
 }: {
   addVisible: boolean;
   addOnCreate: (arg0: AddUserRequest) => Promise<void>;
   addOnCancel: () => void;
   stateRoleData: StateRolePermissionsResponse[];
+  userData: StateUserPermissionsResponse[];
 }): JSX.Element => {
   const [form] = Form.useForm();
+  const [stateSelected, setStateSelected] = useState(false);
   const [roles, setRoles] = useState([] as string[]);
+  const [districts, setDistricts] = useState([] as string[]);
   const { gutter, colSpan } = layout;
 
   const handleSelectStateCode = (stateCode: string) => {
-    const permissionsForState = stateRoleData?.filter(
-      (d) => d.stateCode === stateCode
-    );
-    const rolesForState = permissionsForState?.map((p) => p.role);
+    setStateSelected(true);
+    const stateCodeForUser = [stateCode];
+
+    // Determine roles available for state
+    const rolesForState = getStateRoles(stateCodeForUser, stateRoleData);
     if (rolesForState) setRoles(rolesForState);
+
+    // Determine districts available for state
+    const districtsForState = getStateDistricts(stateCodeForUser, userData);
+    if (districtsForState) setDistricts(districtsForState);
   };
 
   const stateCodes = stateRoleData
@@ -133,7 +147,7 @@ export const AddUserForm = ({
                 options={roles.map((r) => {
                   return { value: r, label: r };
                 })}
-                disabled={roles.length === 0}
+                disabled={!stateSelected}
               />
             </Form.Item>
           </Col>
@@ -146,7 +160,23 @@ export const AddUserForm = ({
           </Col>
           <Col span={colSpan}>
             <Form.Item name="district" label="District">
-              <Input />
+              <Select
+                // eslint-disable-next-line react/no-unstable-nested-components
+                dropdownRender={(menu) => (
+                  <CustomInputSelect
+                    menu={menu}
+                    items={districts}
+                    setItems={setDistricts}
+                    field="district"
+                    setField={form.setFieldValue}
+                  />
+                )}
+                options={districts
+                  .map((d) => ({ value: d, label: d }))
+                  .sort((a, b) => a.value.localeCompare(b.value))}
+                disabled={!stateSelected}
+                allowClear
+              />
             </Form.Item>
           </Col>
         </Row>

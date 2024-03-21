@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Button, Form, Input, Popconfirm, Select } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   StateRolePermissionsResponse,
@@ -23,10 +23,11 @@ import {
   StateUserPermissionsResponse,
 } from "../../types";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import CustomInputSelect from "./CustomInputSelect";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import ReasonInput from "./ReasonInput";
 import { Note } from "./styles";
-import { validateAndFocus } from "./utils";
+import { getStateDistricts, getStateRoles, validateAndFocus } from "./utils";
 
 export const EditUserForm = ({
   editVisible,
@@ -35,6 +36,7 @@ export const EditUserForm = ({
   onRevokeAccess,
   selectedUsers,
   stateRoleData,
+  userData,
 }: {
   editVisible: boolean;
   editOnCreate: (arg0: StateUserForm) => Promise<void>;
@@ -42,19 +44,28 @@ export const EditUserForm = ({
   onRevokeAccess: (reason: string) => Promise<void>;
   selectedUsers: StateUserPermissionsResponse[];
   stateRoleData: StateRolePermissionsResponse[];
+  userData: StateUserPermissionsResponse[];
 }): JSX.Element => {
   const { Option } = Select;
   const [form] = Form.useForm();
+  const [stateCodes, setStateCodes] = useState([] as string[]);
+  const [roles, setRoles] = useState([] as string[]);
+  const [districts, setDistricts] = useState([] as string[]);
 
-  const stateCodes = selectedUsers
-    .map((u) => u.stateCode)
-    .filter((v, i, a) => a.indexOf(v) === i);
+  useEffect(() => {
+    const stateCodesForUsers = selectedUsers
+      .map((u) => u.stateCode)
+      .filter((v, i, a) => a.indexOf(v) === i);
+    if (stateCodesForUsers) setStateCodes(stateCodesForUsers);
 
-  // Determine roles available for selected user(s)
-  const permissionsForState = stateRoleData?.filter((d) =>
-    stateCodes.includes(d.stateCode)
-  );
-  const rolesForState = permissionsForState?.map((p) => p.role);
+    // Determine roles available for selected user(s)
+    const rolesForState = getStateRoles(stateCodesForUsers, stateRoleData);
+    if (rolesForState) setRoles(rolesForState);
+
+    // Determine districts available for selected user(s)
+    const districtsForState = getStateDistricts(stateCodesForUsers, userData);
+    if (districtsForState) setDistricts(districtsForState);
+  }, [userData, selectedUsers, stateRoleData]);
 
   // control useCustomPermissions
   const [hidePermissions, setHidePermissions] = useState(true);
@@ -131,10 +142,10 @@ export const EditUserForm = ({
         <hr />
         <Form.Item name="role" label="Role" labelCol={{ span: 5 }}>
           <Select
-            options={rolesForState.map((r) => {
+            options={roles.map((r) => {
               return { value: r, label: r };
             })}
-            disabled={rolesForState.length === 0 || stateCodes.length > 1}
+            disabled={roles.length === 0 || stateCodes.length > 1}
             placeholder={singleUserEdit ? selectedUsers[0].role : undefined}
           />
         </Form.Item>
@@ -142,8 +153,22 @@ export const EditUserForm = ({
           <Input disabled={!singleUserEdit} />
         </Form.Item>
         <Form.Item name="district" label="District" labelCol={{ span: 5 }}>
-          <Input
-            placeholder={selectedUsers.map((u) => u.district).join(", ")}
+          <Select
+            // eslint-disable-next-line react/no-unstable-nested-components
+            dropdownRender={(menu) => (
+              <CustomInputSelect
+                menu={menu}
+                items={districts}
+                setItems={setDistricts}
+                field="district"
+                setField={form.setFieldValue}
+              />
+            )}
+            options={districts
+              .map((d) => ({ value: d, label: d }))
+              .sort((a, b) => a.value.localeCompare(b.value))}
+            disabled={stateCodes.length > 1}
+            allowClear
           />
         </Form.Item>
         <Form.Item name="firstName" label="First Name" labelCol={{ span: 5 }}>

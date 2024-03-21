@@ -497,3 +497,29 @@ export const formatFeatureVariants = (
     })
     .join("\n");
 };
+
+export const getStateRoles = (
+  stateCodes: string[],
+  stateRoleData: StateRolePermissionsResponse[]
+): string[] => {
+  const permissionsForState = stateRoleData?.filter((d) =>
+    stateCodes.includes(d.stateCode)
+  );
+  const rolesForState = permissionsForState?.map((p) => p.role);
+
+  return rolesForState;
+};
+
+export const getStateDistricts = (
+  stateCodes: string[],
+  userData: StateUserPermissionsResponse[]
+): string[] => {
+  const usersForState = userData?.filter((d) =>
+    stateCodes.includes(d.stateCode)
+  );
+  const districtsForState = usersForState
+    ?.map((u) => u.district)
+    .filter((v, i, a) => a.indexOf(v) === i && v);
+
+  return districtsForState;
+};
