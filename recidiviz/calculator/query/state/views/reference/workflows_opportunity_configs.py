@@ -338,6 +338,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.CLIENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_ND,
+        opportunity_type="usNdWorkRelease",
+        experiment_id="US_ND_WORK_RELEASE_WORKFLOWS",
+        opportunity_record_view_name="us_nd_work_release_form_record_materialized",
+        task_completion_event=TaskCompletionEventType.GRANTED_WORK_RELEASE,
+        source_filename="us_nd_work_release_form_record.json",
+        export_collection_name="US_ND-workReleaseReferrals",
+        opportunity_type_path_str="WorkRelease",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_OR,
         opportunity_type="usOrEarnedDischarge",
         experiment_id="US_OR_EARNED_DISCHARGE_WORKFLOWS",
