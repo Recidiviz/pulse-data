@@ -46,10 +46,7 @@ WITH
   current_supervision_pop_cte AS ( {join_current_task_eligibility_spans_with_external_id(state_code="'US_PA'",
       tes_task_query_view='complete_transfer_to_administrative_supervision_request_materialized',
       id_type="'US_PA_PBPP'")} )
-SELECT
-  *
-FROM
-  {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
+  {clients_eligible(from_cte = 'current_supervision_pop_cte')}
 """
 
 US_PA_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
