@@ -17,17 +17,108 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Usage:
+For a given JII ID LSU launch, we plan to run this script 4 times as follows:
+
+1. Attempt to send initial texts to all individuals.
 python -m recidiviz.case_triage.jii.send_id_lsu_texts \
     --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
-    --dry-run True \
+    --dry-run false \
     --message-type initial_text
+
+2. After at least 4 hours, attempt to send initial texts to individuals in which the first initial text (from step 1)
+was not delivered.
+python -m recidiviz.case_triage.jii.send_id_lsu_texts \
+    --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
+    --dry-run false \
+    --message-type initial_text \
+    --previous-batch-id-to-update-status-for mm_dd_YYYY_HH_MM_SS \
+    --redeliver-failed-messages true
+
+3. Attempt to send eligibility texts to all individuals.
+python -m recidiviz.case_triage.jii.send_id_lsu_texts \
+    --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
+    --dry-run false \
+    --message-type eligibility_text \
+    
+4. After at least 4 hours, attempt to send eligibility texts to individuals in which the first eligibility text
+(from step 3) was not delivered.
+python -m recidiviz.case_triage.jii.send_id_lsu_texts \
+    --bigquery-view recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test \
+    --dry-run false \
+    --message-type eligibility_text \
+    --previous-batch-id-to-update-status-for mm_dd_YYYY_HH_MM_SS \
+    --redeliver-failed-messages true
+
+
+In general, we have 8 combinations of the following 3 arguments (dry-run, previous-batch-id-to-update-status-for, and redeliver-failed-messages):
+
+1. dry-run is True, previous-batch-id-to-update-status-for is None and redeliver-failed-messages is False
+a. First-attempt messages are not sent
+b. No message statuses are updated in Firestore
+c. No previously failed messages are re-delivered
+
+2. dry-run is False, previous-batch-id-to-update-status-for is None and redeliver-failed-messages is False
+a. First-attempt messages are sent
+b. No message statuses are updated in Firestore
+c. No previously failed messages are re-delivered
+
+3. dry-run is True, previous-batch-id-to-update-status-for is None and redeliver-failed-messages is True (same result as 1 above)
+a. First-attempt messages are not sent
+b. No message statuses are updated in Firestore
+c. No previously failed messages are re-delivered
+
+4. dry-run is False, previous-batch-id-to-update-status-for is None and redeliver-failed-messages is True (same result as 2 above)
+a. First-attempt messages are sent
+b. No message statuses are updated in Firestore
+c. No previously failed messages are re-delivered
+
+5. dry-run is True, previous-batch-id-to-update-status-for is not None and redeliver-failed-messages is False
+a. First-attempt messages are not sent
+b. Message statuses are updated in Firestore
+c. No previously failed messages are re-delivered
+
+6. dry-run is False, previous-batch-id-to-update-status-for is not None and redeliver-failed-messages is False
+a. First-attempt messages are sent
+b. Message statuses are updated in Firestore
+c. No previously failed messages are re-delivered
+
+7. dry-run is True, previous-batch-id-to-update-status-for is not None and redeliver-failed-messages is True (same result as 5 above)
+a. First-attempt messages are not sent
+b. Message statuses are updated in Firestore
+c. No previously failed messages are re-delivered
+
+8. dry-run is False, previous-batch-id-to-update-status-for is not None and redeliver-failed-messages is True
+a. First-attempt messages are not sent
+b. Message statuses are updated in Firestore
+c. Previously failed messages are re-delivered
+
+
+The only results we currently do not cover are:
+
+A.
+a. First-attempt messages are sent
+b. Message statuses are updated in Firestore
+c. Previously failed messages are re-delivered
+
+B.
+a. First-attempt messages are not sent
+b. Message statuses are not updated in Firestore
+c. Previously failed messages are re-delivered
+
+C.
+a. First-attempt messages are sent
+b. Message statuses are not updated in Firestore
+c. Previously failed messages are re-delivered
+
+This is because we make the following assumptions:
+- either a or c can happen (we are either sending out first-attempt texts or retries, never both)
+- c can only happen if b happens (we are only sending re-tries if all statuses are updated)
 """
 
 import argparse
 import datetime
 import logging
-from typing import Optional
+from typing import Optional, Set
 
 from google.cloud.firestore_v1 import ArrayUnion, FieldFilter
 from twilio.rest import Client as TwilioClient
@@ -36,6 +127,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.case_triage.jii.helpers import (
     generate_eligibility_text_messages_dict,
     generate_initial_text_messages_dict,
+    update_status_helper,
 )
 from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.utils import ExternalSystemRequestStatus
@@ -80,6 +172,18 @@ def create_parser() -> argparse.ArgumentParser:
             MessageType.ELIGIBILITY_TEXT.value.lower(),
         ],
     )
+    parser.add_argument(
+        "--previous-batch-id-to-update-status-for",
+        required=False,
+        help="A string representing a datetime of a previous run of this script. Used to update the statuses of messages in the Firestore db.",
+    )
+    parser.add_argument(
+        "--redeliver-failed-messages",
+        required=False,
+        type=str_to_bool,
+        default=False,
+        help="Whether or not you would like to attempt to resend texts that were previously undelivered. If provided, you must also specify the --previous-batch-id-to-update-status-for-to-update-status-for flag.",
+    )
     return parser
 
 
@@ -91,6 +195,8 @@ def send_id_lsu_texts(
     bigquery_view: str,
     dry_run: bool,
     message_type: str,
+    redeliver_failed_messages: bool,
+    previous_batch_id: Optional[str] = None,
     callback_url: Optional[str] = None,
 ) -> None:
     """Given a bigquery view, fetches to bigquery data. We then iterate through each
@@ -102,13 +208,22 @@ def send_id_lsu_texts(
     eligibility text messages. Initial text messages are simply an introduction and allow
     the opportunity for jii to opt-out of future messages. Eligibility text messages are
     messages that actually notify whether or not the jii is eligible for lsu.
+
+
+    previous_batch_id is a string representing a datetime of a previous run of this script.
+    If provided, this is used to update the statuses of messages in the Firestore db.
+
+    If redeliver_failed_messages is True, we will look up which messages were undelivered during
+    that previous attempt to send text messages. For each previously undelivered message,
+    we attempt to re-send a text message to that individual. If redeliver_failed_messages is True,
+    previous_batch_id must be supplied (cannot be None).
     """
     account_sid = get_secret("twilio_sid")
     auth_token = get_secret("twilio_auth_token")
     messaging_service_sid = get_secret("twilio_us_id_messaging_service_sid")
 
-    client = TwilioClient(account_sid, auth_token)
-    batch_id = datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+    twilio_client = TwilioClient(account_sid, auth_token)
+    current_batch_id = datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
     query = f"SELECT * FROM {bigquery_view}"
     query_job = BigQueryClientImpl().run_query_async(
@@ -166,6 +281,13 @@ def send_id_lsu_texts(
 
     state_code = StateCode.US_ID.value.lower()
 
+    if previous_batch_id is not None:
+        external_ids_to_retry = _update_statuses_from_previous_batch(
+            twilio_client=twilio_client,
+            firestore_client=firestore_client,
+            previous_batch_id=previous_batch_id,
+        )
+
     # FOR TEST PURPOSES
     if bigquery_view in [
         "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_playtesting",
@@ -181,6 +303,11 @@ def send_id_lsu_texts(
             for phone_number, text_body in phone_num_to_text_dict.items():
                 document_id = f"{state_code}_{external_id}"
                 logging.info("document_id: %s", document_id)
+
+                if previous_batch_id is not None and redeliver_failed_messages is True:
+                    # Filter to only send texts to individuals if previous text failed
+                    if document_id not in external_ids_to_retry:
+                        continue
 
                 # Check that current document_id has not opted-out
                 if document_id in opt_out_document_ids:
@@ -227,7 +354,9 @@ def send_id_lsu_texts(
                         "DRY RUN: Would send the following text to individual with document id: %s",
                         document_id,
                     )
-                    with open(f"{batch_id}_texts.txt", "a", encoding="utf-8") as file:
+                    with open(
+                        f"{current_batch_id}_texts.txt", "a", encoding="utf-8"
+                    ) as file:
                         file.write(phone_number)
                         file.write("\n")
                         file.write(text_body)
@@ -241,7 +370,7 @@ def send_id_lsu_texts(
                 )
                 firestore_individual_path = f"twilio_messages/{document_id}"
                 try:
-                    response = client.messages.create(
+                    response = twilio_client.messages.create(
                         body=text_body,
                         messaging_service_sid=messaging_service_sid,
                         to=phone_number,
@@ -265,7 +394,7 @@ def send_id_lsu_texts(
                     )
 
                     # Next, update their message level doc
-                    firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{batch_id}"
+                    firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{current_batch_id}"
                     logging.info(
                         "Updating individual's message level doc with document id: %s",
                         document_id,
@@ -297,6 +426,60 @@ def send_id_lsu_texts(
                     )
 
 
+def _update_statuses_from_previous_batch(
+    twilio_client: TwilioClient,
+    firestore_client: FirestoreClientImpl,
+    previous_batch_id: str,
+) -> set:
+    """
+    Given a previous_batch_id (identifies a previous run of the send_id_lsu_texts.py script), poll the Twilio API
+    for the status of each message in that batch. If the status does not match the one we have in the Firestore database,
+    update the status of that message.
+    """
+    previous_batch_id_split = previous_batch_id.split("_")
+    date_sent = f"{previous_batch_id_split[2]}-{previous_batch_id_split[0]}-{previous_batch_id_split[1]}"
+    # Construct a set of external_ids in which messages were undelivered
+    external_ids_to_retry: Set[str] = set()
+    # Query Twilio for message attempts
+    all_attempted_messages = twilio_client.messages.list(
+        from_=get_secret("jii_twilio_phone_number"), date_sent=date_sent
+    )
+
+    for attempted_message in all_attempted_messages:
+        message_status = attempted_message.status
+        message_sid = attempted_message.sid
+        error_code = attempted_message.error_code
+
+        # Get the previously stored message
+        jii_messages_ref = firestore_client.get_collection_group(
+            collection_path="lsu_eligibility_messages"
+        )
+        query = jii_messages_ref.where(
+            filter=FieldFilter("message_sid", "==", message_sid)
+        )
+        jii_updates_docs = query.stream()
+
+        external_ids = update_status_helper(
+            message_status=message_status,
+            firestore_client=firestore_client,
+            jii_updates_docs=jii_updates_docs,
+            error_code=error_code,
+        )
+        external_ids_to_retry.update(external_ids)
+
+    logging.info(
+        "Number of phone numbers with undelivered messages from %s: %s",
+        date_sent,
+        len(external_ids_to_retry),
+    )
+    logging.info(
+        "External_ids with undelivered messages from %s: %s",
+        date_sent,
+        external_ids_to_retry,
+    )
+    return external_ids_to_retry
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
@@ -307,4 +490,6 @@ if __name__ == "__main__":
             dry_run=args.dry_run,
             callback_url=args.callback_url,
             message_type=args.message_type,
+            previous_batch_id=args.previous_batch_id_to_update_status_for,
+            redeliver_failed_messages=args.redeliver_failed_messages,
         )
