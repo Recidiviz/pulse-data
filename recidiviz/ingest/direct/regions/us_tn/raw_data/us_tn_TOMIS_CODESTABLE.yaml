@@ -3,6 +3,7 @@ file_tag: TOMIS_CODESTABLE
 file_description: |-
   This table contains the decoded descriptions from all codes used in TOMIS. TN sends us this file every so often with updated values.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - CodesTable
   - Code

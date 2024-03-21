@@ -4,6 +4,7 @@ file_description: |-
   This table maps supervision offices to their district and region within Tennessee. This was originally manually created in Q2 2022 in pursuit of the Pathways launch.
   The google sheet used to create this can be found at the following link: https://docs.google.com/spreadsheets/d/142p3zZs05wlzE2o4yTxycS0XJ1-fZ6vk8HNTT-SJVcU/edit#gid=1476300821
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - site_code
 columns:
