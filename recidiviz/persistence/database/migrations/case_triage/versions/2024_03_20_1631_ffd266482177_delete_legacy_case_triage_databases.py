@@ -16,23 +16,25 @@ down_revision = "a061a9b08330"
 branch_labels = None
 depends_on = None
 
-etl_index_names = [
+tmp_index_names = [
+    "dashboard_user_restrictions_restricted_user_email",
+    "dashboard_user_restrictions_state_code",
+    "etl_client_events_person_external_id",
+    "etl_client_events_state_code",
+    "etl_clients_person_external_id",
+    "etl_clients_state_code",
+    "etl_clients_supervising_officer_external_id",
+    "etl_officers_external_id",
+    "etl_officers_state_code",
     "etl_opportunities_opportunity_type",
     "etl_opportunities_person_external_id",
     "etl_opportunities_state_code",
     "etl_opportunities_supervising_officer_external_id",
-    "etl_clients_person_external_id",
-    "etl_clients_state_code",
-    "etl_clients_supervising_officer_external_id",
-    "etl_client_events_person_external_id",
-    "etl_client_events_state_code",
-    "etl_officers_external_id",
-    "etl_officers_state_code",
 ]
 
 
 def upgrade() -> None:
-    for index_name in etl_index_names:
+    for index_name in tmp_index_names:
         op.execute(
             f"ALTER INDEX IF EXISTS ix_tmp__{index_name} RENAME TO ix_{index_name};"
         )
