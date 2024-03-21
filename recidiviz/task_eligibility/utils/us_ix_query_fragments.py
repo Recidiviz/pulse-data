@@ -509,9 +509,10 @@ def dor_query(
         # Offense types
         INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_DorOffenseType_latest` dot
             USING (DorOffenseTypeId)
-        #Need to join to dsc_DADecisionOfficer to get decision id and filter out dors that were dismissed
-        #TODO(#25524): remove dismissed dors to the query
         WHERE SUBSTR(dot.DorOffenseCode, 1, 1) IN {str(tuple(classes_to_include))}
+        -- Remove dismissed DORs
+            AND dac.DAProcedureStatusId NOT IN ('3','7','15','18','21','22','25')
+            -- According to ID, affirmed DORs are (2,6,11,17,20,23,26)
         #Only keep the latest record for each offender-case
         QUALIFY ROW_NUMBER() OVER(PARTITION BY dap.DACaseId, dap.OffenderId ORDER BY dap.InsertDate DESC) = 1
     )"""
