@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Factory class for building DirectIngestControllers of various types."""
+"""Factory class for building IngestRawFileImportControllers."""
 from types import ModuleType
 from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
+from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
+    IngestRawFileImportController,
     check_is_region_launched_in_env,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -35,10 +35,8 @@ from recidiviz.ingest.direct.types.errors import (
 from recidiviz.utils import metadata
 
 
-# TODO(#20930): Delete this factory entirely - all logic related to checking the region
-#  can be moved into the BaseDirectIngestController constructor.
-class DirectIngestControllerFactory:
-    """Factory class for building DirectIngestControllers of various types."""
+class IngestRawFileImportControllerFactory:
+    """Factory class for building IngestRawFileImportControllers."""
 
     @classmethod
     def build(
@@ -48,10 +46,8 @@ class DirectIngestControllerFactory:
         ingest_instance: DirectIngestInstance,
         allow_unlaunched: bool,
         region_module_override: Optional[ModuleType] = None,
-    ) -> BaseDirectIngestController:
-        """Retrieve a direct ingest BaseDirectIngestController associated with a
-        particular region and ingest instance.
-        """
+    ) -> IngestRawFileImportController:
+        """Retrieve a IngestRawFileImportController associated with a particular region and ingest instance."""
         if (
             not StateCode.is_state_code(region_code.upper())
             or (state_code := StateCode(region_code.upper()))
@@ -70,7 +66,7 @@ class DirectIngestControllerFactory:
         if not allow_unlaunched:
             check_is_region_launched_in_env(region)
 
-        return BaseDirectIngestController(
+        return IngestRawFileImportController(
             state_code=state_code,
             ingest_instance=ingest_instance,
             region_module_override=region_module_override,

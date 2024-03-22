@@ -40,12 +40,14 @@ from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
-from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
+from recidiviz.ingest.direct.controllers import (
+    ingest_raw_file_import_controller_factory,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
-    DirectIngestControllerFactory,
+from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
+    IngestRawFileImportController,
+)
+from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller_factory import (
+    IngestRawFileImportControllerFactory,
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
@@ -181,7 +183,7 @@ class DirectIngestRegionDirStructureBase:
         ingest_instance: DirectIngestInstance,
         allow_unlaunched: bool,
         region_module_override: Optional[ModuleType],
-    ) -> BaseDirectIngestController:
+    ) -> IngestRawFileImportController:
         """Builds a controller for the given region code and ingest instance."""
         # Seed the DB with an initial status
         DirectIngestInstanceStatusManager(
@@ -189,15 +191,15 @@ class DirectIngestRegionDirStructureBase:
             ingest_instance=ingest_instance,
         ).add_instance_status(DirectIngestStatus.INITIAL_STATE)
 
-        controller = DirectIngestControllerFactory.build(
+        controller = IngestRawFileImportControllerFactory.build(
             region_code=region_code,
             ingest_instance=DirectIngestInstance.PRIMARY,
             allow_unlaunched=allow_unlaunched,
             region_module_override=region_module_override,
         )
-        if not isinstance(controller, BaseDirectIngestController):
+        if not isinstance(controller, IngestRawFileImportController):
             raise ValueError(
-                f"Expected type BaseDirectIngestController, found [{controller}] "
+                f"Expected type IngestRawFileImportController, found [{controller}] "
                 f"with type [{type(controller)}]."
             )
         return controller
@@ -529,7 +531,7 @@ class DirectIngestRegionTemplateDirStructure(
 
         # Ensures StateCode.US_XX is properly loaded
         self.supported_regions_patcher = patch(
-            f"{direct_ingest_controller_factory.__name__}.get_direct_ingest_states_existing_in_env"
+            f"{ingest_raw_file_import_controller_factory.__name__}.get_direct_ingest_states_existing_in_env"
         )
         self.mock_supported_regions = self.supported_regions_patcher.start()
         self.mock_supported_regions.return_value = self.state_codes

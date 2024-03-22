@@ -29,7 +29,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+from recidiviz.tests.ingest.direct.fakes.fake_ingest_raw_file_import_controller import (
     FakeDirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.utils.fake_region import fake_region

@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+from recidiviz.tests.ingest.direct.fakes.fake_ingest_raw_file_import_controller import (
     FakeDirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.utils.fake_region import fake_region

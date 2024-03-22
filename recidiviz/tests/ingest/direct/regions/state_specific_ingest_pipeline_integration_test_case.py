@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class with basic functionality for tests of all region-specific
-BaseDirectIngestControllers.
+IngestRawFileImportControllers.
 """
 import abc
 import datetime
