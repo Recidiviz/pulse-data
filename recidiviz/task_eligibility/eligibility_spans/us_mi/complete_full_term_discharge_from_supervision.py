@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import full_term_discharge
 from recidiviz.task_eligibility.criteria.general import (
-    supervision_one_day_past_full_term_completion_date,
+    supervision_two_days_past_full_term_completion_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -41,7 +41,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_one_day_past_full_term_completion_date.VIEW_BUILDER,
+        supervision_two_days_past_full_term_completion_date.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
 )
