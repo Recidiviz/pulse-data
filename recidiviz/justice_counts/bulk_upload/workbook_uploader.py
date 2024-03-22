@@ -306,9 +306,11 @@ class WorkbookUploader:
 
             ReportInterface.update_report_metadata(
                 report=updated_report,
-                editor_id=self.user_account.id
-                if self.user_account is not None
-                else AUTOMATIC_UPLOAD_ID,
+                editor_id=(
+                    self.user_account.id
+                    if self.user_account is not None
+                    else AUTOMATIC_UPLOAD_ID
+                ),
                 status=ReportStatus.DRAFT.value,
             )
 
@@ -341,9 +343,11 @@ class WorkbookUploader:
 
                 ReportInterface.update_report_metadata(
                     report=updated_report,
-                    editor_id=self.user_account.id
-                    if self.user_account is not None
-                    else AUTOMATIC_UPLOAD_ID,
+                    editor_id=(
+                        self.user_account.id
+                        if self.user_account is not None
+                        else AUTOMATIC_UPLOAD_ID
+                    ),
                     status=ReportStatus.DRAFT.value,
                 )
 
@@ -387,16 +391,23 @@ class WorkbookUploader:
                         breakdown_df = metric_df[
                             metric_df["breakdown_category"] == breakdown_category
                         ]
-                        # Need to get proper/expected sheet name for breakdown
-                        sheet_name = METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME[
-                            metric, breakdown_category
-                        ]
-                        breakdown_df = self._process_metric_df(
-                            df=breakdown_df, breakdown_category=breakdown_category
-                        )
-                        breakdown_df.to_excel(
-                            writer, sheet_name=sheet_name, index=False
-                        )
+                        try:
+                            # Need to get proper/expected sheet name for breakdown
+                            sheet_name = METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME[
+                                metric, breakdown_category
+                            ]
+                            breakdown_df = self._process_metric_df(
+                                df=breakdown_df, breakdown_category=breakdown_category
+                            )
+                            breakdown_df.to_excel(
+                                writer, sheet_name=sheet_name, index=False
+                            )
+                        except KeyError:
+                            # Don't raise error if the we cannot find the sheet name based
+                            # upon the metric / breakdown category. The Category Not Recognized Warning
+                            # will be added to metric_key_to_error in the fuzzy_match_against_options
+                            # method.
+                            continue
 
         xls = pd.ExcelFile(filename)
         return xls
