@@ -340,12 +340,6 @@ class IngestViewQueryTester:
             config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_data_datetime_upper_bound=query_run_dt,
-                # Only use the ORDER BY clause here to test that the columns exist in
-                # the query output. We should be able to remove order_by_cols entirely
-                # now that we're not using them in the Dataflow pipeline. This is not
-                # needed for test determinism since we always sort the results by all
-                # columns before comparing.
-                use_order_by=True,
             )
         )
         return query_view(self.helper, ingest_view.ingest_view_name, view_query)

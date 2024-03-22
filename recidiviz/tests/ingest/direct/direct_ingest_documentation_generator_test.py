@@ -54,17 +54,15 @@ class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderColl
                 region=self.region.region_code,
                 ingest_view_name=tag,
                 view_query_template=(f"SELECT * FROM {{{tag}}}"),
-                order_by_cols="",
             )
             for tag in self.expected_ingest_views
         ]
 
         builders.append(
             DirectIngestViewQueryBuilder(
-                ingest_view_name="gatedTagNotInTagsList",
                 region=self.region.region_code,
+                ingest_view_name="gatedTagNotInTagsList",
                 view_query_template="SELECT * FROM {tagBasicData} LEFT OUTER JOIN {tagBasicData} USING (col);",
-                order_by_cols="",
             )
         )
 

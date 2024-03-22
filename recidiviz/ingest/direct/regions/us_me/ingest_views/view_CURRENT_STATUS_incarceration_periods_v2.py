@@ -573,7 +573,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_me",
     ingest_view_name="CURRENT_STATUS_incarceration_periods_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="client_id",
 )
 
 if __name__ == "__main__":

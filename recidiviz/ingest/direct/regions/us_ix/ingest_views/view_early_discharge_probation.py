@@ -40,7 +40,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="early_discharge_probation",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderId, InvestigationId",
 )
 
 if __name__ == "__main__":

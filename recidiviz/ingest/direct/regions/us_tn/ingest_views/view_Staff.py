@@ -50,10 +50,7 @@ WITH
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_tn",
-    ingest_view_name="Staff",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="StaffID",
+    region="us_tn", ingest_view_name="Staff", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

@@ -72,7 +72,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="discharge_from_supervision_deadline",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderId, SentenceId",
 )
 
 if __name__ == "__main__":

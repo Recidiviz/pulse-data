@@ -62,7 +62,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="sentence_status_snapshot",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="BS_DOC, BS_CYC, BS_SEO, BW_SSO",
 )
 
 if __name__ == "__main__":

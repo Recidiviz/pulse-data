@@ -62,7 +62,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="dbo_Offender_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="ParoleNumber",
 )
 
 if __name__ == "__main__":

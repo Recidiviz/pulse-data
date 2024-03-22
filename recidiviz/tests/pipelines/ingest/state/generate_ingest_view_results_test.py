@@ -108,10 +108,9 @@ class TestGenerateIngestViewQuery(unittest.TestCase):
         query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
 
         self.ingest_view_query_builder = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view",
             view_query_template=query,
-            region="us_xx",
-            order_by_cols="colA, colC",
             region_module=fake_regions,
         )
 

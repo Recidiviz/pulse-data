@@ -90,7 +90,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="oras_assessments_weekly_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="DOC_ID",
 )
 
 if __name__ == "__main__":

@@ -102,7 +102,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak291_tak292_tak024_citations",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="JT_DOC, JT_CYC, JT_CSQ",
 )
 
 if __name__ == "__main__":

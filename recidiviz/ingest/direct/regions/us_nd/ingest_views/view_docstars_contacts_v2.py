@@ -90,7 +90,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_contacts_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="SID",
 )
 
 if __name__ == "__main__":

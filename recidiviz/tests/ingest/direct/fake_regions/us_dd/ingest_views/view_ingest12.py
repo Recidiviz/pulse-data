@@ -32,10 +32,7 @@ ON t1.COL1 = t2.COL1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_dd",
-    ingest_view_name="ingest12",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="COL1",
+    region="us_dd", ingest_view_name="ingest12", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

@@ -55,7 +55,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_oz",
     ingest_view_name="lotr_person",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="ID",
 )
 
 if __name__ == "__main__":

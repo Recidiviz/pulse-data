@@ -188,7 +188,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="elite_movements_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="offender_book_id, period_sequence",
 )
 
 if __name__ == "__main__":

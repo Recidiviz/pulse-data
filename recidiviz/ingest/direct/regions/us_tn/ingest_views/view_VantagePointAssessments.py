@@ -45,7 +45,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="VantagePointAssessments",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderID, AssessmentID",
 )
 
 if __name__ == "__main__":

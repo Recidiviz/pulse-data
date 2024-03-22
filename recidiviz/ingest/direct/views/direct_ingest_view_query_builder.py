@@ -211,10 +211,6 @@ class DirectIngestViewQueryBuilder:
         # If set, the ingest view does not load any rows.
         limit_zero: bool = attr.ib(default=False)
 
-        # If set, the ingest view uses order by columns.
-        # TODO(#20930) Remove flag once switched to Dataflow.
-        use_order_by: bool = attr.ib(default=True)
-
         def __attrs_post_init__(self) -> None:
             if (
                 self.destination_dataset_id
@@ -260,20 +256,18 @@ class DirectIngestViewQueryBuilder:
     def __init__(
         self,
         *,
+        region: str,
         ingest_view_name: str,
         view_query_template: str,
-        region: str,
-        order_by_cols: str,
         region_module: ModuleType = regions,
     ):
         """Builds a view for holding direct ingest pre-processing SQL queries, that can be used to export files for
         import into our Postgres DB.
 
         Args:
+            region: (str) The region this view corresponds to.
             ingest_view_name: (str) The name of the view.
             view_query_template: (str) The template for the query, formatted for hydration of raw table views.
-            region: (str) The region this view corresponds to.
-            order_by_cols: (str) A comma-separated string of columns to sort the final results by.
             region_module: (ModuleType) Module containing all region raw data config files.
         """
         DirectIngestViewQueryBuilder._validate_order_by(
@@ -288,7 +282,6 @@ class DirectIngestViewQueryBuilder:
         self.ingest_view_name = ingest_view_name
 
         self._view_query_template = view_query_template
-        self._order_by_cols = order_by_cols
         self._region_module = region_module
 
         if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
@@ -314,19 +307,6 @@ class DirectIngestViewQueryBuilder:
             )
 
         return self._raw_table_dependency_configs
-
-    @property
-    def order_by_cols(self) -> str:
-        """String containing any columns used to order the ingest view query results. This string will be appended to
-        ingest view queries in the format `ORDER BY {order_by_cols}, and therefore |order_by_cols| must create valid
-        SQL when appended in that fashion.
-
-        Examples values:
-            "col1, col2"
-            "col1 ASC, col2 DESC"
-            "CAST(col1) AS INT64, col2"
-        """
-        return self._order_by_cols
 
     def build_query(
         self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
@@ -385,11 +365,6 @@ class DirectIngestViewQueryBuilder:
         return f"{prefix}{dependency_name}_generated_view"
 
     @staticmethod
-    def add_order_by_suffix(query: str, order_by_cols: str) -> str:
-        query = query.rstrip().rstrip(";")
-        return f"{query}\nORDER BY {order_by_cols};"
-
-    @staticmethod
     def add_limit_zero_suffix(query: str) -> str:
         query = query.rstrip().rstrip(";")
         return f"{query}\nLIMIT 0;"
@@ -423,10 +398,6 @@ class DirectIngestViewQueryBuilder:
             raw_table_subquery_clause = raw_table_subquery_clause + ","
 
         select_query_clause = f"{raw_table_subquery_clause}\n{view_query_template}"
-        if config.use_order_by:
-            select_query_clause = self.add_order_by_suffix(
-                query=select_query_clause, order_by_cols=self._order_by_cols
-            )
         if config.limit_zero:
             select_query_clause = self.add_limit_zero_suffix(query=select_query_clause)
         select_query_clause = select_query_clause.rstrip().rstrip(";")
@@ -598,10 +569,7 @@ class DirectIngestViewQueryBuilder:
             window_count > 0 and order_by_count > as_count
         ):
             raise ValueError(
-                f"Found ORDER BY not associated with a WINDOW clause after the final FROM statement in the SQL"
-                f"view_query_template for {ingest_view_name}. Please ensure that all ordering of the final query is"
-                f"done by specifying DirectIngestViewQueryBuilder.order_by_cols instead of putting an ORDER BY "
-                f"clause in DirectIngestViewQueryBuilder.view_query_template. If this ORDER BY is a result"
-                f"of an inline subquery in the final SELECT statement, please consider moving alias-ing the subquery "
-                f"or otherwise refactoring the query so no ORDER BY statements occur after the final `FROM`"
+                f"Found ORDER BY not associated with a WINDOW clause after the final FROM statement in the SQL "
+                f"view_query_template for {ingest_view_name}. You should not commit ingest view queries with ordered "
+                f"results as this is unnecessarily inefficient."
             )

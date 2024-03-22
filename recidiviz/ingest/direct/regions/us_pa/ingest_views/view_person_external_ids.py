@@ -39,7 +39,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="person_external_ids",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="recidiviz_primary_person_id",
 )
 
 if __name__ == "__main__":

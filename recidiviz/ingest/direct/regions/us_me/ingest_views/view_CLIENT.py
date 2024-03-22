@@ -41,10 +41,7 @@ VIEW_QUERY_TEMPLATE = f""" # nosec
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_me",
-    ingest_view_name="CLIENT",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="Client_Id",
+    region="us_me", ingest_view_name="CLIENT", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

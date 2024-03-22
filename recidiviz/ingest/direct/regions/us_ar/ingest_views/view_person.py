@@ -112,10 +112,7 @@ USING(ADDRESSID)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_ar",
-    ingest_view_name="person",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OFFENDERID",
+    region="us_ar", ingest_view_name="person", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

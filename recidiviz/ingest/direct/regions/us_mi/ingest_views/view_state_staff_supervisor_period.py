@@ -39,7 +39,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="state_staff_supervisor_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="Staff_Omni_Employee_Id, period_id",
 )
 
 if __name__ == "__main__":

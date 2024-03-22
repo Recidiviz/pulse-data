@@ -41,10 +41,7 @@ WHERE PARTYTYPE = '1'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_ar",
-    ingest_view_name="staff",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="PARTYID",
+    region="us_ar", ingest_view_name="staff", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

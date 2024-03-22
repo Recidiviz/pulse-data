@@ -253,7 +253,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="ccis_incarceration_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="control_number, inmate_number, start_date",
 )
 
 if __name__ == "__main__":
