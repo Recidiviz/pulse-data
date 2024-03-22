@@ -30,13 +30,7 @@ output:
                   $enum_mapping:
                     $raw_text: Violation_Type
                     $mappings:
-                      # Violation_Type is derived from case_type for probation
-                      # violations and violation_type for parole violations. The
-                      # comments below specify whether the raw text that is being mapped
-                      # belongs to a parole or a probation violation.
-                      StateSupervisionViolationType.ABSCONDED:
-                        # Probation
-                        - "Probation Violation Abscond"
+                      # We currently only have violation type information for parole violations
                       StateSupervisionViolationType.FELONY:
                         # Parole
                         - "Felony"
@@ -46,12 +40,7 @@ output:
                       StateSupervisionViolationType.TECHNICAL:
                         # Parole
                         - "Technical"
-                          # Probation
-                        - "Probation Violation Administrative"
                       StateSupervisionViolationType.INTERNAL_UNKNOWN:
-                        # Probation
-                        - "Probation Violation Regular Court Liaison"
-                        - "Probation Violation Regular"
                         # Parole
                         - "Incident"
                         - "Investigation"
