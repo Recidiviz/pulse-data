@@ -115,3 +115,6 @@ num_allowed_rows_overrides:
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 180000
     override_reason: Current failing level as of 2/13/24 is 176,927 rows #TODO(#20404)
+  - validation_name: current_supervision_staff_missing_district
+    hard_num_allowed_rows_override: 2
+    override_reason: Current failing level as of 3/22/24 is 2 rows #TODO(#28381)
