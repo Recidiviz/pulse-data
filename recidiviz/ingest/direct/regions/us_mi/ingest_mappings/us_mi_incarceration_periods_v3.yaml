@@ -17,6 +17,7 @@ input_columns:
   - cell_type_id
   - wing_name
   - period_id
+  - offender_designation_code_id
 unused_columns: []
 output:
   StatePerson:
@@ -283,6 +284,17 @@ output:
                         - location_code
                         - $literal("PRF")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
+              - $else_if:
+                  $or:
+                    - $equal:
+                        - location_type_id
+                        - $literal("226") # SAI - Special Alternative Incarceration
+                    - $in:
+                        $value: location_code
+                        $options:
+                          - $literal("ZLI") # SAI SPECIAL ALTERNATIVE INCARCERATION
+                          - $literal("ZLW") # SAI SPECIAL ALTERNATIVE INCARCERATION WOMEN'S
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
           custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
           custody_level:
             $enum_mapping:
@@ -343,6 +355,26 @@ output:
                           - reporting_station_name
                           - wing_name
                     $custom_parser: us_mi_custom_enum_parsers.map_housing_unit_type_START
+              # If offender designation is not missing, then use that to map housing unit type
+              - $else_if:
+                  $not_null: offender_designation_code_id
+                $then:
+                  $enum_mapping:
+                    $raw_text: offender_designation_code_id
+                    $mappings:
+                      StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
+                        - "11672" # Adminstrative Segregation
+                        - "11670" # Graded in Segregation
+                      StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                        - "11389" # Temporary Segregation
+                      StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY:
+                        - "11668" # Protection
+                      StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT:
+                        - "11669" # Observation (Suicide Watch)
+                      StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT:
+                        - "11671" # Detention
+                      StateIncarcerationPeriodHousingUnitType.HOSPITAL:
+                        - "11390" # Hospital
               # Otherwise map based on cell type
               - $else:
                   $enum_mapping:
