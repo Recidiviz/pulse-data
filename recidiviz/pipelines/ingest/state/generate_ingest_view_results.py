@@ -17,7 +17,7 @@
 """A PTransform that generates ingest view results for a given ingest view."""
 import datetime
 import logging
-from typing import Any, Dict, Generator, Optional
+from typing import Any, Dict, Optional
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
@@ -27,7 +27,6 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -99,105 +98,48 @@ class GenerateIngestViewResults(beam.PTransform):
 
         self.project_id = project_id
         self.state_code = state_code
+        self.region = direct_ingest_regions.get_direct_ingest_region(
+            region_code=state_code.value
+        )
         self.ingest_view_name = ingest_view_name
-        self.raw_data_tables_to_upperbound_dates = raw_data_tables_to_upperbound_dates
+        self.view_builder: DirectIngestViewQueryBuilder = (
+            DirectIngestViewQueryBuilderCollector(
+                self.region, [ingest_view_name]
+            ).get_query_builder_by_view_name(ingest_view_name=ingest_view_name)
+        )
+        parsed_upperbound_dates = {
+            parser.isoparse(upper_bound_date_str_opt)
+            for upper_bound_date_str_opt in raw_data_tables_to_upperbound_dates.values()
+            if upper_bound_date_str_opt
+        }
+        self.upper_bound_datetime_inclusive: Optional[datetime.datetime] = (
+            max(parsed_upperbound_dates) if parsed_upperbound_dates else None
+        )
         self.ingest_instance = ingest_instance
 
     def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
-        # TODO(#20930): Remove the date bound tuple logic entirely from the pipeline -
-        #  we can just query now using the single upper bound date per table.
+        # If upper_bound_datetime_inclusive is None, that means that none of the raw table dependencies of this view
+        # have imported any data, so we skip the view.
+        if not self.upper_bound_datetime_inclusive:
+            return (
+                input_or_inputs
+                | f"Skip querying {self.ingest_view_name} - no raw data"
+                >> beam.Create([])
+            )
+
+        query = self.generate_ingest_view_query(
+            view_builder=self.view_builder,
+            raw_data_source_instance=self.ingest_instance,
+            upper_bound_datetime_inclusive=self.upper_bound_datetime_inclusive,
+        )
+
+        logging.info("Ingest view query for [%s]: %s", self.ingest_view_name, query)
+
         return (
             input_or_inputs
-            | f"Read {self.ingest_view_name} date pairs based on raw data tables."
-            >> ReadFromBigQuery(
-                query=self.generate_date_bound_tuples_query(
-                    project_id=self.project_id,
-                    state_code=self.state_code,
-                    ingest_instance=self.ingest_instance,
-                    raw_data_tables_to_upperbound_dates=self.raw_data_tables_to_upperbound_dates,
-                )
-            )
-            | f"Generate date diff queries for {self.ingest_view_name} based on date pairs."
-            >> beam.ParDo(
-                self.get_ingest_view_date_diff_query,
-                state_code=self.state_code,
-                ingest_view_name=self.ingest_view_name,
-                ingest_instance=self.ingest_instance,
-            )
-            | f"Read {self.ingest_view_name} date diff queries based on date pairs."
-            >> beam.io.ReadAllFromBigQuery()
+            | f"Read {self.ingest_view_name} ingest view results from BigQuery."
+            >> ReadFromBigQuery(query=query)
         )
-
-    @staticmethod
-    def generate_date_bound_tuples_query(
-        project_id: str,
-        state_code: StateCode,
-        ingest_instance: DirectIngestInstance,
-        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
-    ) -> str:
-        """Returns a SQL query that will return a list of upper and lower bound date tuples
-        which can each be used to generate an individual ingest view query."""
-        raw_data_dataset = raw_tables_dataset_for_region(
-            state_code=state_code, instance=ingest_instance
-        )
-        raw_data_table_sql_statements = [
-            StrictStringFormatter().format(
-                INDIVIDUAL_TABLE_QUERY_WITH_WHERE_CLAUSE_TEMPLATE,
-                project_id=project_id,
-                raw_data_dataset=raw_data_dataset,
-                file_tag=table,
-                upper_bound_date=upper_bound_date_str_opt,
-            )
-            if upper_bound_date_str_opt
-            else StrictStringFormatter().format(
-                INDIVIDUAL_TABLE_QUERY_LIMIT_ZERO_TEMPLATE,
-                project_id=project_id,
-                raw_data_dataset=raw_data_dataset,
-                file_tag=table,
-            )
-            for table, upper_bound_date_str_opt in sorted(
-                raw_data_tables_to_upperbound_dates.items()
-            )
-        ]
-        raw_data_tables_sql = "\nUNION ALL\n        ".join(
-            raw_data_table_sql_statements
-        )
-        raw_date_pairs_query = StrictStringFormatter().format(
-            INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE,
-            raw_data_tables=raw_data_tables_sql,
-        )
-        logging.info("Raw date pairs query: %s", raw_date_pairs_query)
-        return raw_date_pairs_query
-
-    @classmethod
-    def get_ingest_view_date_diff_query(
-        cls,
-        date_pair: Dict[str, Any],
-        state_code: StateCode,
-        ingest_view_name: str,
-        ingest_instance: DirectIngestInstance,
-    ) -> Generator[beam.io.ReadFromBigQueryRequest, None, None]:
-        """Returns a query that calculates the date diff between the upper and lower bound dates."""
-        if date_pair[UPPER_BOUND_DATETIME_COL_NAME]:
-            region = direct_ingest_regions.get_direct_ingest_region(
-                region_code=state_code.value
-            )
-            view_builder: DirectIngestViewQueryBuilder = (
-                DirectIngestViewQueryBuilderCollector(
-                    region, [ingest_view_name]
-                ).get_query_builder_by_view_name(ingest_view_name=ingest_view_name)
-            )
-            query = cls.generate_ingest_view_query(
-                view_builder=view_builder,
-                raw_data_source_instance=ingest_instance,
-                upper_bound_datetime_inclusive=parser.isoparse(
-                    date_pair[UPPER_BOUND_DATETIME_COL_NAME]
-                ),
-            )
-
-            logging.info("Ingest view query: %s", query)
-
-            yield beam.io.ReadFromBigQueryRequest(query=query, use_standard_sql=True)
 
     @staticmethod
     def generate_ingest_view_query(
