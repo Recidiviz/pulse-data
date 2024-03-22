@@ -153,7 +153,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak028_tak042_tak076_tak024_violation_reports",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="BY_DOC, BY_CYC, BY_VSN",
 )
 
 if __name__ == "__main__":

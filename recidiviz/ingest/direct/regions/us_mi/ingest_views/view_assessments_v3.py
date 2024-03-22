@@ -185,7 +185,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="assessments_v3",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="offendernumber, source, RecId",
 )
 
 if __name__ == "__main__":

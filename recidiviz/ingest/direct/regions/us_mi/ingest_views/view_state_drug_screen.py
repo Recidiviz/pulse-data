@@ -39,7 +39,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="state_drug_screen",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="substance_abuse_test_id",
 )
 
 if __name__ == "__main__":

@@ -148,7 +148,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nc",
     ingest_view_name="incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="doc_id",
 )
 
 if __name__ == "__main__":

@@ -288,7 +288,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="AssignedStaffSupervisionPeriod_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderID ASC, SupervisionPeriodSequenceNumber ASC",
 )
 
 if __name__ == "__main__":

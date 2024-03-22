@@ -247,7 +247,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="sentence_length",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="sentence_ext_id, critical_date",
 )
 
 if __name__ == "__main__":

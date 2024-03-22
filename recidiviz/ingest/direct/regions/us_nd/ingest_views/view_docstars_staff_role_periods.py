@@ -129,7 +129,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_staff_role_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OFFICER",
 )
 
 if __name__ == "__main__":

@@ -132,7 +132,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="state_staff",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="StaffId",
 )
 
 if __name__ == "__main__":

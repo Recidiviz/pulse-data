@@ -51,7 +51,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_offenders_early_term_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="SID,EARLY_TERMINATION_DATE",
 )
 
 if __name__ == "__main__":

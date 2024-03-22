@@ -137,10 +137,7 @@ VIEW_QUERY_TEMPLATE = """
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_ix",
-    ingest_view_name="person",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderId",
+    region="us_ix", ingest_view_name="person", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

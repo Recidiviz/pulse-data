@@ -73,7 +73,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_or",
     ingest_view_name="Supervision_Contact",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="RECORD_KEY, CHRONO_DATE",
 )
 
 if __name__ == "__main__":

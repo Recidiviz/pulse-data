@@ -32,7 +32,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="elite_offenderidentifier",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="ROOT_OFFENDER_ID",
 )
 
 if __name__ == "__main__":

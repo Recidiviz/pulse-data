@@ -189,7 +189,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="supervision_sentence",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="BS_DOC, BS_CYC, BS_SEO",
 )
 
 if __name__ == "__main__":

@@ -53,7 +53,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_or",
     ingest_view_name="Program_Assignment",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="RECORD_KEY, ENTRY_DATE, TREAT_ID",
 )
 
 if __name__ == "__main__":

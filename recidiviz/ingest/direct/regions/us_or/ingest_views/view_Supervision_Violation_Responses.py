@@ -152,7 +152,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_or",
     ingest_view_name="Supervision_Violation_Responses",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="RECORD_KEY, SANC_NUMBER",
 )
 
 if __name__ == "__main__":

@@ -113,7 +113,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="incarceration_incident",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="offender_booking_id,misconduct_incident_id",
 )
 
 if __name__ == "__main__":

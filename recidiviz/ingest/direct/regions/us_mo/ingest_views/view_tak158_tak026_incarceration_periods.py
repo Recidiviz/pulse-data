@@ -505,7 +505,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak158_tak026_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="DOC,CYC,SQN",
 )
 
 if __name__ == "__main__":

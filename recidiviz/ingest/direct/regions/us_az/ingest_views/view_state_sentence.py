@@ -57,7 +57,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",
     ingest_view_name="state_sentence",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="external_id",
 )
 
 if __name__ == "__main__":

@@ -59,10 +59,9 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -80,8 +79,7 @@ file_tag_second_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
@@ -131,8 +129,7 @@ file_tag_second_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
@@ -145,10 +142,9 @@ ORDER BY col1, col2;"""
         view_query_template = """SELECT * FROM {tagColumnsMissing};"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_ww",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_ww",
-            order_by_cols="any_col",
             region_module=fake_regions_module,
         )
         with self.assertRaisesRegex(
@@ -164,10 +160,9 @@ LEFT OUTER JOIN `{{project_id}}.reference_tables.my_table`
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -181,8 +176,7 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
@@ -212,8 +206,7 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_date_parameterized_view_query,
@@ -226,10 +219,9 @@ LEFT OUTER JOIN {file_tag_first}
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -243,8 +235,7 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_first_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
@@ -259,10 +250,9 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -281,8 +271,7 @@ file_tag_second_generated_view AS (
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
@@ -333,8 +322,7 @@ file_tag_second_generated_view AS (
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
@@ -345,10 +333,9 @@ ORDER BY col1, col2;"""
         view_query_template = "\n " + view_query_template
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -372,10 +359,9 @@ LEFT OUTER JOIN {file_tag_not_in_config}
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="any_col",
             region_module=fake_regions_module,
         )
 
@@ -399,7 +385,6 @@ SELECT * FROM my_subquery;"""
                 region="us_xx",
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
-                order_by_cols="col1, col2",
                 region_module=fake_regions_module,
             )
 
@@ -413,10 +398,9 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -443,7 +427,6 @@ foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
 USING (col1)
-ORDER BY col1, col2
 
 );"""
 
@@ -510,7 +493,6 @@ foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
 USING (col1)
-ORDER BY col1, col2
 
 );"""
 
@@ -530,10 +512,9 @@ ORDER BY col1, col2
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -542,8 +523,7 @@ file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 )
 SELECT * FROM file_tag_first_generated_view
-        WHERE col1 <= CURRENT_DATE('US/Eastern')
-ORDER BY col1, col2;"""
+        WHERE col1 <= CURRENT_DATE('US/Eastern');"""
 
         self.assertEqual(
             expected_view_query,
@@ -572,8 +552,7 @@ file_tag_first_generated_view AS (
     FROM filtered_rows
 )
 SELECT * FROM file_tag_first_generated_view
-        WHERE col1 <= DATETIME "2000-01-02T03:04:05.000006"
-ORDER BY col1, col2;"""
+        WHERE col1 <= DATETIME "2000-01-02T03:04:05.000006";"""
 
         self.assertEqual(
             expected_parameterized_view_query,
@@ -595,10 +574,9 @@ ORDER BY col1, col2;"""
                 "CURRENT_DATE functions. Consider using @update_timestamp instead.",
             ):
                 DirectIngestViewQueryBuilder(
+                    region="us_xx",
                     ingest_view_name="ingest_view_tag",
                     view_query_template=view_query_template,
-                    region="us_xx",
-                    order_by_cols="col1, col2",
                 )
 
     def test_query_structure_config_destination_table_type_dataset_id_validations(
@@ -680,10 +658,9 @@ LEFT OUTER JOIN {file_tag_second@ALL}
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -707,8 +684,7 @@ file_tag_second__ALL_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second__ALL_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
@@ -747,8 +723,7 @@ file_tag_second__ALL_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second__ALL_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
@@ -761,10 +736,9 @@ LEFT OUTER JOIN {file_tag_first@ALL}
 USING (col1);"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -795,8 +769,7 @@ file_tag_first__ALL_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_first__ALL_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_view_query,
@@ -835,8 +808,7 @@ file_tag_first__ALL_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_first__ALL_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
+USING (col1);"""
 
         self.assertEqual(
             expected_parameterized_view_query,
@@ -848,10 +820,9 @@ ORDER BY col1, col2;"""
         view_query_template = """SELECT * FROM {file_tag_first#ALL};"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 
@@ -867,10 +838,9 @@ ORDER BY col1, col2;"""
         view_query_template = """SELECT * FROM {file_tag_first@ALL_ROWS};"""
 
         view = DirectIngestViewQueryBuilder(
+            region="us_xx",
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region="us_xx",
-            order_by_cols="col1, col2",
             region_module=fake_regions_module,
         )
 

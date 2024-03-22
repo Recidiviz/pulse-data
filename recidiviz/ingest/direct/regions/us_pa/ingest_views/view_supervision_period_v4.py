@@ -536,7 +536,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="supervision_period_v4",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="parole_number ASC, period_sequence_number ASC",
 )
 
 if __name__ == "__main__":

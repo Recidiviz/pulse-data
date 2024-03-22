@@ -82,7 +82,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="state_staff_role_period_COMS",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="Case_Manager_Omnni_Employee_Id, period_id, start_date",
 )
 
 if __name__ == "__main__":

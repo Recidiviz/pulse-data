@@ -257,7 +257,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ar",
     ingest_view_name="supervision_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OFFENDERID, SEQ",
 )
 
 if __name__ == "__main__":

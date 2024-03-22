@@ -400,7 +400,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="SentencesChargesAndCourtCases_v4",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderID ASC, ConvictionCounty ASC, CaseYear ASC, CaseNumber ASC, CountNumber ASC",
 )
 
 if __name__ == "__main__":

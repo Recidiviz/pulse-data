@@ -107,7 +107,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     # TODO(#26620) Rename to incarceration_sentence
     ingest_view_name="sentence",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="BS_DOC, BS_CYC, BS_SEO",
 )
 
 if __name__ == "__main__":

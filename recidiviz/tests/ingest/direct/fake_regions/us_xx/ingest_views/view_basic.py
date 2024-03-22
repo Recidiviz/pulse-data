@@ -28,10 +28,7 @@ FROM {tagBasicData}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_xx",
-    ingest_view_name="basic",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="COL1",
+    region="us_xx", ingest_view_name="basic", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

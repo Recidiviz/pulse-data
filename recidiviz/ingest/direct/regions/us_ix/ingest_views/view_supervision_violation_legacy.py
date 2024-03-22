@@ -88,7 +88,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="supervision_violation_legacy",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="ofndr_num, ofndr_tst_id",
 )
 
 if __name__ == "__main__":

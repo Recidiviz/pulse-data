@@ -70,10 +70,7 @@ WHERE sentlink.SentenceLinkClassId = '1' -- only look at offense sentence record
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_ix",
-    ingest_view_name="charges",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderId, OffenseId",
+    region="us_ix", ingest_view_name="charges", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

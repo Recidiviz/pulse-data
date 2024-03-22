@@ -28,10 +28,7 @@ FROM {file_tag_first}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_yy",
-    ingest_view_name="basic",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="col_name_1a",
+    region="us_yy", ingest_view_name="basic", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

@@ -31,7 +31,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_ftr_episode",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="EPISODE_ID",
 )
 
 if __name__ == "__main__":

@@ -33,7 +33,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_dd",
     ingest_view_name="ingestMultipleParents",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="PERSON_ID, SENTENCE_ID, CHARGE_ID",
 )
 
 if __name__ == "__main__":

@@ -69,7 +69,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="CAFScoreAssessment",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderID, CAF_ID",
 )
 
 if __name__ == "__main__":

@@ -36,7 +36,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_oz",
     ingest_view_name="hunger_games_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="id",
 )
 
 if __name__ == "__main__":

@@ -101,7 +101,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ar",
     ingest_view_name="supervision_sentence",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OFFENDERID,COMMITMENTPREFIX,SENTENCECOMPONENT,SUPVTYPE,SUPVPERIODBEGINDATE,SUPVSTARTDATE",
 )
 
 if __name__ == "__main__":

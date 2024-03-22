@@ -32,10 +32,7 @@ WHERE CASELOAD IS NOT NULL
 
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_or",
-    ingest_view_name="Staff",
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="CASELOAD",
+    region="us_or", ingest_view_name="Staff", view_query_template=VIEW_QUERY_TEMPLATE
 )
 
 if __name__ == "__main__":

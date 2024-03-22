@@ -38,7 +38,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ca",
     ingest_view_name="ARMS_program_assignment",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OffenderId, Program_Name, Program_Start_Date, Program_End_Date",
 )
 
 if __name__ == "__main__":

@@ -73,7 +73,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="dbo_tblInmTestScore",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="Control_Number, Inmate_number",
 )
 
 if __name__ == "__main__":

@@ -240,7 +240,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_or",
     ingest_view_name="Sentences",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="RECORD_KEY, CUSTODY_NUMBER, ADMISSION_NUMBER, OFFENSE_NUMBER",
 )
 
 if __name__ == "__main__":

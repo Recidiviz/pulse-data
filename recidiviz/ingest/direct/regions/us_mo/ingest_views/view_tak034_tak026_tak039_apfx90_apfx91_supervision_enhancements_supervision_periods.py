@@ -567,7 +567,6 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="DOC, CYC",
 )
 
 if __name__ == "__main__":
