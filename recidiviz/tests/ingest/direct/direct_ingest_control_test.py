@@ -32,8 +32,8 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
+from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
+    IngestRawFileImportController,
 )
 from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     build_ingest_bucket_name,
@@ -94,7 +94,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.fs_patcher.start()
 
         self.controller_factory_patcher: Any = patch(
-            f"{CONTROL_PACKAGE_NAME}.DirectIngestControllerFactory"
+            f"{CONTROL_PACKAGE_NAME}.IngestRawFileImportControllerFactory"
         )
         self.mock_controller_factory = self.controller_factory_patcher.start()
 
@@ -120,7 +120,7 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
         """Tests that the start operation chains together the correct calls."""
 
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(environment="production")
         mock_environment.return_value = "production"
@@ -152,7 +152,7 @@ class TestDirectIngestControl(unittest.TestCase):
     def test_schedule_build_controller_throws_input_error(
         self, mock_region: mock.MagicMock
     ) -> None:
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
 
         self.mock_controller_factory.build.side_effect = DirectIngestError(
             msg="Test bad input error",
@@ -191,7 +191,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="production"
@@ -231,7 +231,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="production"
@@ -271,7 +271,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="staging"
@@ -315,7 +315,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="production"
@@ -350,7 +350,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
     ) -> None:
         mock_environment.return_value = "staging"
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="staging"
@@ -464,7 +464,7 @@ class TestDirectIngestControl(unittest.TestCase):
         """Tests that handle_new_files will run and rename files in unlaunched locations, but will not schedule a job to
         process any files."""
         mock_environment.return_value = "production"
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="staging"
@@ -520,10 +520,10 @@ class TestDirectIngestControl(unittest.TestCase):
             region_code: str,
             ingest_instance: DirectIngestInstance,
             allow_unlaunched: bool,
-        ) -> BaseDirectIngestController:
+        ) -> IngestRawFileImportController:
             self.assertTrue(allow_unlaunched)
 
-            mock_controller = Mock(__class__=BaseDirectIngestController)
+            mock_controller = Mock(__class__=IngestRawFileImportController)
             mock_controller.cloud_task_manager = mock_cloud_task_manager
             mock_controller.ingest_instance = ingest_instance
             mock_controller.region = fake_supported_regions[region_code.lower()]
@@ -571,7 +571,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
-        "recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskQueueManagerImpl"
+        "recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller.DirectIngestCloudTaskQueueManagerImpl"
     )
     def test_ensure_all_raw_file_paths_normalized_actual_regions(
         self,
@@ -606,7 +606,7 @@ class TestDirectIngestControl(unittest.TestCase):
         region_code = "us_xx"
 
         mock_environment.return_value = "staging"
-        mock_controller = create_autospec(BaseDirectIngestController)
+        mock_controller = create_autospec(IngestRawFileImportController)
         self.mock_controller_factory.build.return_value = mock_controller
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
@@ -676,9 +676,9 @@ class TestDirectIngestControl(unittest.TestCase):
             region_code: str,
             ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
             allow_unlaunched: bool,
-        ) -> BaseDirectIngestController:
+        ) -> IngestRawFileImportController:
             self.assertFalse(allow_unlaunched)
-            mock_controller = Mock(__class__=BaseDirectIngestController)
+            mock_controller = Mock(__class__=IngestRawFileImportController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
             region_to_mock_controller[region_code.lower()].append(mock_controller)
             return mock_controller
@@ -732,11 +732,11 @@ class TestDirectIngestControl(unittest.TestCase):
             region_code: str,
             ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
             allow_unlaunched: bool,
-        ) -> BaseDirectIngestController:
+        ) -> IngestRawFileImportController:
             self.assertFalse(allow_unlaunched)
             if region_code is None:
                 raise ValueError("Expected nonnull region code")
-            mock_controller = Mock(__class__=BaseDirectIngestController)
+            mock_controller = Mock(__class__=IngestRawFileImportController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
             region_to_mock_controller[region_code.lower()].append(mock_controller)
             return mock_controller
@@ -782,9 +782,9 @@ class TestDirectIngestControl(unittest.TestCase):
             region_code: str,
             ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
             allow_unlaunched: bool,
-        ) -> BaseDirectIngestController:
+        ) -> IngestRawFileImportController:
             self.assertFalse(allow_unlaunched)
-            mock_controller = Mock(__class__=BaseDirectIngestController)
+            mock_controller = Mock(__class__=IngestRawFileImportController)
             mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
             region_to_mock_controller[region_code.lower()] = mock_controller
             return mock_controller

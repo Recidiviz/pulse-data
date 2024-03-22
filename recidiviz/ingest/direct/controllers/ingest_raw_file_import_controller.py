@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Functionality to perform direct ingest.
+"""Functionality to perform raw data import.
 """
 import datetime
 import logging
@@ -77,9 +77,7 @@ from recidiviz.utils import environment
 _RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_RAW_FILE_"
 
 
-# TODO(#20930): Rename this class/file and related test classes/files to
-#  IngestRawFileImportController.
-class BaseDirectIngestController:
+class IngestRawFileImportController:
     """Parses and persists individual-level info from direct ingest partners."""
 
     def __init__(

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the DirectIngestControllerFactory."""
+"""Tests for the IngestRawFileImportControllerFactory."""
 import unittest
 
 import pytest
@@ -27,12 +27,14 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import templates
-from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
+from recidiviz.ingest.direct.controllers import (
+    ingest_raw_file_import_controller_factory,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
-    DirectIngestControllerFactory,
+from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller import (
+    IngestRawFileImportController,
+)
+from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller_factory import (
+    IngestRawFileImportControllerFactory,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     DirectIngestInstanceStatusManager,
@@ -47,12 +49,12 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
-CONTROLLER_FACTORY_PACKAGE_NAME = direct_ingest_controller_factory.__name__
+CONTROLLER_FACTORY_PACKAGE_NAME = ingest_raw_file_import_controller_factory.__name__
 
 
 @pytest.mark.uses_db
-class TestDirectIngestControllerFactory(unittest.TestCase):
-    """Tests for the DirectIngestControllerFactory."""
+class TestIngestRawFileImportControllerFactory(unittest.TestCase):
+    """Tests for the IngestRawFileImportControllerFactory."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: str
@@ -114,14 +116,14 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
         for region_code in get_existing_region_codes():
             for ingest_instance in DirectIngestInstance:
-                controller = DirectIngestControllerFactory.build(
+                controller = IngestRawFileImportControllerFactory.build(
                     region_code=region_code,
                     ingest_instance=ingest_instance,
                     allow_unlaunched=False,
                 )
 
                 self.assertIsNotNone(controller)
-                self.assertIsInstance(controller, BaseDirectIngestController)
+                self.assertIsInstance(controller, IngestRawFileImportController)
                 self.assertEqual(ingest_instance, controller.ingest_instance)
 
     def test_build_gcsfs_ingest_controller_all_regions_raw_import_secondary(
@@ -138,14 +140,14 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                 DirectIngestStatus.RAW_DATA_REIMPORT_STARTED
             )
 
-            controller = DirectIngestControllerFactory.build(
+            controller = IngestRawFileImportControllerFactory.build(
                 region_code=region_code,
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 allow_unlaunched=False,
             )
 
             self.assertIsNotNone(controller)
-            self.assertIsInstance(controller, BaseDirectIngestController)
+            self.assertIsInstance(controller, IngestRawFileImportController)
             self.assertEqual(DirectIngestInstance.SECONDARY, controller.ingest_instance)
 
     def test_build_gcsfs_ingest_controller_all_regions_do_not_allow_launched(
@@ -153,7 +155,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
     ) -> None:
         for region_code in get_existing_region_codes():
             for ingest_instance in DirectIngestInstance:
-                controller = DirectIngestControllerFactory.build(
+                controller = IngestRawFileImportControllerFactory.build(
                     region_code=region_code,
                     ingest_instance=ingest_instance,
                     allow_unlaunched=True,
@@ -161,7 +163,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
 
                 # Should still succeed for all controllers in the test environment
                 self.assertIsNotNone(controller)
-                self.assertIsInstance(controller, BaseDirectIngestController)
+                self.assertIsInstance(controller, IngestRawFileImportController)
                 self.assertEqual(ingest_instance, controller.ingest_instance)
 
     @patch(
@@ -188,7 +190,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                 DirectIngestError,
                 r"^Bad environment \[production\] for region \[us_xx\].$",
             ):
-                _ = DirectIngestControllerFactory.build(
+                _ = IngestRawFileImportControllerFactory.build(
                     region_code=mock_region.region_code,
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=False,
@@ -212,13 +214,13 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region",
             Mock(return_value=mock_region),
         ):
-            controller = DirectIngestControllerFactory.build(
+            controller = IngestRawFileImportControllerFactory.build(
                 region_code=mock_region.region_code,
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 allow_unlaunched=False,
             )
             self.assertIsNotNone(controller)
-            self.assertIsInstance(controller, BaseDirectIngestController)
+            self.assertIsInstance(controller, IngestRawFileImportController)
             self.assertEqual(DirectIngestInstance.PRIMARY, controller.ingest_instance)
 
     def test_build_for_unsupported_region_throws(self) -> None:
@@ -226,7 +228,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             DirectIngestError,
             r"^Unsupported direct ingest region \[US_XX\] in project \[recidiviz-456\]$",
         ):
-            _ = DirectIngestControllerFactory.build(
+            _ = IngestRawFileImportControllerFactory.build(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 allow_unlaunched=False,
