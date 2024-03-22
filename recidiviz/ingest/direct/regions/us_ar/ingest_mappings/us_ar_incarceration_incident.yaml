@@ -1,0 +1,380 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_person` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - VIOLATIONDATETIME
+  - DISCVIOLFAC
+  - DISCSTATUSCODE
+  - DISCVIOLSTATUSDT
+  - HRGDATETIME
+  - RPTDATETIME
+  - DISCCODEVIOL
+  - violation_seq
+  - outcome_list
+unused_columns: []
+variables:
+  - is_imposed:
+      $in:
+        $value: DISCSTATUSCODE
+        $options:
+          - $literal("F") # Finalized
+          - $literal("I") # Imposed
+          - $literal("E") # Extended
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - VIOLATIONDATETIME
+                - violation_seq
+          incident_type:
+            $enum_mapping:
+              $raw_text: DISCCODEVIOL
+              $mappings:
+                StateIncarcerationIncidentType.CONTRABAND:
+                  - 09-1 # Possession  Weapon
+                  - 09-10 # Possession/Introduction Of Gambling Paraph
+                  - 09-11 # Possession/Introduction of Unauth. Electronic Device
+                  - 09-12 # Possession of Tobacco Products
+                  - 09-13 # Possession/Introduction/Use of Cell Phone
+                  - 09-14 # Possession/Introduction/Use - unauthorized electronic device
+                  - 09-15 # Possession/Introduction/Use of Cell Phone
+                  - 09-16 # Unauthorized Use of Social Media
+                  - 09-17 # Conduct Gambling Operation
+                  - 09-2 # Possession/Introduce Firearm/Weapon
+                  - 09-3 # Possession/Introduce Drugs
+                  - 09-4 # Possession/Movement Of Money
+                  - 09-5 # Possession/Introduction Of Clothing
+                  - 09-6 # Possession Of Loose Script
+                  - 09-7 # Possession/Introduction Of Staff Uniforms
+                  - 15-1 # Purchase Of Unauthor Articles
+                  - 15-3 # Purchase Of Unauthor Articles
+                  - CR04A # Possess or Use of Weapons
+                  - CR05 # Possess or Use of Weapons
+                  - CR07A # Poss./Use Cont.Subs./Alcohol
+                  - CR09A # Poss/Use of Unauth. Currency
+                  - CR08 # Poss./Use Cont.Subs./Alcohol
+                  - CR21 # Poss/Use/Conceal Contraband
+                  - MR11 # Poss./Use Currency
+                  - "02" # Use,Poss,Buy,Sell Drugs
+                  - "04" # Poss Of Weapon For Offense/Def
+                  - "12" # Possession Of Contraband Items
+                  - "13" # Possession Of Money
+                  - "27" # Possession Of Stolen Property
+                  - CR26 # Unauth Currency/Comm Device
+                StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                  - 01-1 # Banding Together/Demonstration
+                  - 01-2 # Taking Over Part Physical Plnt
+                  - 01-3 # Write,Cir.Or Sign Petition
+                  - 01-6 # Write, Cir. Or Sign Petitition
+                  - 02-10 # Tattooing
+                  - 02-11 # Self-Mutilation
+                  - 02-12 # Keep Person/Quarters W Regulat
+                  - 02-13 # Breaking Into Or Disrupt Line
+                  - 02-14 # Not Wearing ID
+                  - 02-15 # Tampering W/Or Blocking Lock
+                  - 02-16 # Refusal To Submit To Testing
+                  - 02-17 # Creating Unnecessary Noise
+                  - 02-18 # Aggressive Or Disruptive Play
+                  - 02-19 # Tattooing, giving or receiving
+                  - 02-2 # Under the influence
+                  - 02-20 # Unauthorized Contacts W/Public
+                  - 02-21 # Resisting Apprehension
+                  - 02-22 # Interfering With Count
+                  - 02-3 # Monetary Misconduct
+                  - 02-4 # Employment Misconduct
+                  - 02-5 # Unauthorized Use Of Mail/Phone
+                  - 02-6 # Unauthorized Contacts W/Public
+                  - 02-7 # Violate Conduct Reg W/Visitor
+                  - 02-8 # Resisting Apprehension
+                  - 02-9 # Interfering With Count
+                  - 03-1 # Out Of Place Of Assignment
+                  - 03-2 # Outside Living Quart After Hrs
+                  - 03-3 # Unexcused Absence From Wk/Schl
+                  - 03-4 # Unauthorized Presence
+                  - 03-5 # Out Of Place Of Assignment
+                  - 05-5 # Provoking Or Agitating A Fight
+                  - 05-6 # Throwing Or Ejecting Fluids/Excrement
+                  - 05-8 # Throwing/Ejecting Bodily Fluids/Excrement Direction Another
+                  - 05-9 # Throwing/Ejecting Unknown Substance Direction Another
+                  - 06-1 # Demand/Receive Money Or Favors
+                  - 07-1 # Unauthorized Use Of State Prop
+                  - 07-2 # Breaking Into Another's Room
+                  - 07-3 # Taking Of Property
+                  - 07-4 # Theft Or Possession Of Stolen Property
+                  - 08-1 # Destruction Of State Property
+                  - 08-2 # Destruction Of State Property
+                  - 08-3 # Destruction Of Property To $11
+                  - 08-4 # Destruction Of Property
+                  - 08-5 # Setting A Fire
+                  - 08-6 # Adulteration Of Any Food/Drink
+                  - 08-7 # Destruction or Tamp. W/Fire Device
+                  - 08-8 # Destruct or Intentionally misplace State Prop.
+                  - 09-8 # Manufacture Of Intoxicants
+                  - 09-9 # Counterfeiting,Forging
+                  - 10-1 # Engaging In Sexual Activity
+                  - 10-2 # Making Sexual Proposals
+                  - 10-3 # Indecent Exposure
+                  - 10-4 # Bestiality
+                  - 10-5 # Masturbation in Presence of an Inmate
+                  - 10-6 # Engaging in Non-Abusive Sexual Activity with Another Person
+                  - 11-1 # Insolence To A Staff Member
+                  - 11-2 # Using Abusive/Obscene Language
+                  - 11-3 # Making Profane/Obscene Gesture
+                  - 12-1 # Failure To Obey Order Of Staff
+                  - 12-2 # Refuse to Participate in Treatment Pgm
+                  - 12-3 # Failure To Obey Order Of Staff
+                  - 12-4 # Refusing A Direct Verbal Order
+                  - 12-5 # Failure or Refusal to Leave
+                  - 13-1 # Giving Misinformation
+                  - 13-2 # Lying To A Staff Member
+                  - 13-3 # Malingering,Feigning Illness
+                  - 14-1 # Conduct Gambling Operation
+                  - 14-2 # Participating In Games
+                  - 15-2 # Asking/Offering Inducement
+                  - 16-2 # Failure To Return
+                  - CR01B # Stealing
+                  - CR02B # Damaging/Destroying Property
+                  - CR03B # Incite/Encourage Rule Viol.
+                  - CR07B # Engaging in Sexual Misconduct
+                  - CR08A # Refuse to Submit to Testing
+                  - CR09 # Refuse to Submit to Testing
+                  - CR12 # Refuse to Follow Order by Staf
+                  - CR12A # Refuse to Follow Order by Staf
+                  - CR13 # Tamper w/Safety Security Dev.
+                  - CR13A # Tamper w/Safety Security Dev.
+                  - CR15 # Submit False/Misleading Stmnt.
+                  - CR15A # Submit False/Misleading Stmnt.
+                  - CR23 # Damaging/Destroying Property
+                  - CR25 # Incite/Encourage Rule Viol.
+                  - CR18 # Disruption/Sabotage Count
+                  - CR19 # Engage/Promote Illicit Actions
+                  - CR20 # Stealing
+                  - HR05 # Devious Behavior
+                  - HR07 # Harras/Insult/Manipulate
+                  - HR09 # Disruptive Behavior
+                  - MR01 # Theft
+                  - MR02 # False Reporting
+                  - MR03 # Safety Violations
+                  - MR04 # Fighting
+                  - MR05 # Trafficking/Trading
+                  - MR06 # Identification Viol
+                  - MR07 # Gambling
+                  - MR08 # Visitation Viol
+                  - MR09 # Inappr Feedback Staff
+                  - MR10 # Horse Play
+                  - "03" # Fighting With/Without Weapons
+                  - 05C # Making Sexual Proposals
+                  - "06" # Creating Unnecessary Noise
+                  - "07" # Mutiny
+                  - "08" # Refusal Or Failure To Work
+                  - "09" # Damage,Destroy State Property
+                  - "10" # Self-Mutilation Or Disfigure
+                  - "11" # Talking Or Writing To People
+                  - "14" # Staying In Living Quarters
+                  - "15" # Leaving Place Of Assignment
+                  - "16" # Insubordination
+                  - "17" # Gambling
+                  - "18" # Cleanliness,Sanitation,Appear
+                  - "21" # Larceny Or Theft
+                  - "22" # Refusal To Obey Orders
+                  - "23" # Soliciting,Bribing,Coercing
+                  - "25" # False Information,Statement
+                  - "26" # Trading With Inmates,Employees
+                  - "28" # Provoking Or Agitating Fight
+                  - "29" # Conspiracy
+                  - "31" # Abuse Of Medication
+                StateIncarcerationIncidentType.ESCAPE:
+                  - 16-1 # Escape Or Attempt To Escape
+                  - 16-3 # Attempted Escape
+                  - CR01 # Escape/Att.Escape/Take Hostage
+                  - CR01A # Escape/Att.Escape/Take Hostage
+                StateIncarcerationIncidentType.VIOLENCE:
+                  - 01-4 # Banding w/another to Commit Assault or Battery
+                  - 01-5 # Seizing One or More Persons as Hostage
+                  - 04-1 # Battery
+                  - 04-10 # Rape or Forced Sexual Act with/on Inmate
+                  - 04-11 # Battery Upon Staff That Results in Serious Injury
+                  - 04-12 # Battery Upon Staff Without Serious Injury
+                  - 04-13 # Battery Upon Inmate That Results in Serious Injury
+                  - 04-14 # Battery Upon Inmate Without Serious Injury
+                  - 04-15 # Battery Upon Other Persons That Results in Serious Injury
+                  - 04-16 # Battery Upon Other Persons Without Serious Injury
+                  - 04-17 # Throwing/Ejecting of Bodily Fluids/Excrement Striking Person
+                  - 04-18 # Aggravated Battery Upon Inmate - Use of Weapon/Phys Force
+                  - 04-19 # Rape/Forced Sexual Act on Staff, Volunteer, Contractor, Oth
+                  - 04-2 # Aggravated Battery
+                  - 04-3 # Rape Or Forced Sexual Act
+                  - 04-4 # Battery - Use of Force on Staff
+                  - 04-5 # Aggravated Battery Upon Another
+                  - 04-6 # Battery upon Staff - Resulting in Injury
+                  - 04-7 # Rape or forced Sex. Act with Staff or Inmate
+                  - 04-8 # Battery - Use of Force on an Inmate
+                  - 04-9 # Aggravated Battery - on an Inmate
+                  - 05-1 # Seizing One Or More Persons
+                  - 05-10 # Attempt Throw/Eject Bodily Fluid/Excrement Direction Another
+                  - 05-11 # Attempt Throw/Eject Unknown Substance Direction Another
+                  - 05-2 # Written Threats Of Bodily Harm
+                  - 05-3 # Assault - verbal or written threat
+                  - 05-4 # Making Sexual Threats
+                  - 05-7 # Assault - Attempt or Threat upon Staff
+                  - 10-7 # Demand Sexual Contact in Trade/Protection from Physical Harm
+                  - CR02 # Arson or Attempt Arson
+                  - CR02A # Arson or Attempt Arson
+                  - CR03 # Assault
+                  - CR03A # Battery or Assault
+                  - CR04 # Battery
+                  - CR04B # Engage in Injurious Behavior
+                  - CR05A # Rape/Sex.Assault/Sex.Miscondct
+                  - CR06 # Rape/Sex.Assault/Sex.Miscondct
+                  - CR06A # Engaging in Sexual Harassment
+                  - CR07 # Engaging in Sexual Harassment
+                  - CR16 # Threat/Intimidate/Abuse Staff
+                  - CR17 # Threat/Intimd/Abuse Non-Staff
+                  - CR22 # Engage in Injurious Behavior
+                  - 05A # Rape,Sexual Assault Or Force
+                  - 05B # Sex Threat,Indecent Exposure
+                  - "19" # Assault On Staff Personnel
+                  - "20" # Assault On Fellow Inmates
+                  - "30" # Threatening
+                StateIncarcerationIncidentType.INTERNAL_UNKNOWN:
+                  - 01-7 # Any Viol. Related to STG
+                  - 02-1 # Aiding In Any Rule Violation
+                  - 17-1 # Any Felony Act Or Misdemeanor
+                  - 17-2 # Any Viol. Related to STG
+                  - 17-3 # Any Viol. Related to Telephone System
+                  - CR10 # Violation of Law
+                  - CR10A # Violation of Law
+                  - CR11 # Gang Activity/Representation
+                  - CR11A # Gang Activity/Representation
+                  - CR14 # Repeated Violations
+                  - CR14A # Repeated Violations
+                  - CR24 # Furlough - Violation of Law
+                  - HR01 # Be Professional
+                  - HR02 # Be Punctual
+                  - HR03 # Obey Rules/Pol./Proce
+                  - HR04 # Use Privil. Appropriately
+                  - HR06 # Be In Auth/Assgnd Area
+                  - HR08 # ACC Therapeutic Prgms
+                  - "01" # Acts Defined As Felony/Misd.
+                  - "24" # Habitual Offense
+                  # These parole codes should never show up due to filtering out violations
+                  # with DISCRPTFMT = 2, but do nonetheless in some isolated cases.
+                  - "501" # Reports
+                  - "502" # Laws And Ordinances
+                  - "503" # Weapons
+                  - "504" # Alcohol
+                  - "505" # Controlled Substances
+                  - "506" # Travel
+                  - "507" # Residence
+                  - "508" # Employment/Education
+                  - "509" # Association
+                  - "510" # Motor Vehicles
+                  - "511" # Credit Purchases
+                  - "512" # Marriage
+                  - "513" # Supervision Fee
+                  - "514" # Counseling/Special Condition
+                  - "515" # Curfew/Special Condition
+                  - "516" # Education/Special Condition
+                  - "517" # Restitution/Special Condition
+                  - "518" # Release
+                  - "519" # Cooperation
+          incident_date: VIOLATIONDATETIME
+          facility: DISCVIOLFAC
+          incarceration_incident_outcomes:
+            - $foreach:
+                $iterable:
+                  $split_json: outcome_list
+                $result:
+                  StateIncarcerationIncidentOutcome:
+                    external_id:
+                      $concat:
+                        $values:
+                          - OFFENDERID
+                          - VIOLATIONDATETIME
+                          - violation_seq
+                          - $json_extract:
+                              $key: outcome_type
+                              $json: $iter_item
+                    outcome_type:
+                      $conditional:
+                        - $if:
+                            $in:
+                              $value: DISCSTATUSCODE
+                              $options:
+                                - $literal("D") # Dismissed
+                                - $literal("V") # Reversed
+                          $then: $literal_enum(StateIncarcerationIncidentOutcomeType.DISMISSED)
+                        - $else_if:
+                            $equal:
+                              - DISCSTATUSCODE
+                              - $literal("U") # Not Guilty
+                          $then: $literal_enum(StateIncarcerationIncidentOutcomeType.NOT_GUILTY)
+                        - $else:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: outcome_type
+                                  $json: $iter_item
+                              $mappings:
+                                StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR: EXTRADUTYHOURSASSIGNED
+                                StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY: RESTITUTIONTOBEPAID
+                                StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS: TIMEFORFEITINDAYS
+                                StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS: RESTRICTDAYSMAX
+                                StateIncarcerationIncidentOutcomeType.SOLITARY: ISOLATIONDAYSTOSERVE
+                                StateIncarcerationIncidentOutcomeType.WARNING: REPRIMANDFLAG
+                    date_effective:
+                      $conditional:
+                        - $if:
+                            $in:
+                              $value: DISCSTATUSCODE
+                              $options:
+                                - $literal("F") # Finalized
+                                - $literal("I") # Imposed
+                          $then: DISCVIOLSTATUSDT
+                    hearing_date: HRGDATETIME
+                    report_date: RPTDATETIME
+                    punishment_length_days:
+                      $conditional:
+                        - $if:
+                            $and:
+                              - $variable(is_imposed)
+                              - $in:
+                                  $value:
+                                    $json_extract:
+                                      $key: outcome_type
+                                      $json: $iter_item
+                                  $options:
+                                    - $literal("RESTRICTDAYSMAX")
+                                    - $literal("ISOLATIONDAYSTOSERVE")
+                          $then:
+                            $json_extract:
+                              $key: outcome_data
+                              $json: $iter_item
+                    outcome_description:
+                      $conditional:
+                        - $if:
+                            $and:
+                              - $variable(is_imposed)
+                              - $in:
+                                  $value:
+                                    $json_extract:
+                                      $key: outcome_type
+                                      $json: $iter_item
+                                  $options:
+                                    - $literal("EXTRADUTYHOURSASSIGNED")
+                                    - $literal("RESTITUTIONTOBEPAID")
+                                    - $literal("TIMEFORFEITINDAYS")
+                          $then:
+                            $json_extract:
+                              $key: outcome_data
+                              $json: $iter_item
