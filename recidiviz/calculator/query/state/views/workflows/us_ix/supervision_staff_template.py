@@ -31,24 +31,32 @@ US_IX_SUPERVISION_STAFF_TEMPLATE = """
         SELECT
             UPPER(ids.id) AS id,
             ids.state_code,
-            COALESCE(districts.district_name, r.district) AS district,
-            email_address AS email,
+            COALESCE(
+                CASE s.supervision_district_id
+                    WHEN "DISTRICT 1" THEN "DISTRICT OFFICE 1, COEUR D'ALENE"
+                    WHEN "DISTRICT 2" THEN "DISTRICT OFFICE 2, LEWISTON"
+                    WHEN "DISTRICT 3" THEN "DISTRICT OFFICE 3, CALDWELL"
+                    WHEN "DISTRICT 4" THEN "DISTRICT OFFICE 4, BOISE"
+                    WHEN "DISTRICT 5" THEN "DISTRICT OFFICE 5, TWIN FALLS"
+                    WHEN "DISTRICT 6" THEN "DISTRICT OFFICE 6, POCATELLO"
+                    WHEN "DISTRICT 7" THEN "DISTRICT OFFICE 7, IDAHO FALLS"
+                    END,
+                -- Fall back to district from the product roster if we don't have it in our data
+                r.district) AS district,
+            s.email,
             true AS has_caseload,
             false AS has_facility_caseload,
-            COALESCE(names.given_names, first_name) as given_names,
-            COALESCE(names.surname, last_name) as surname,
-            CAST(NULL AS STRING) AS role_subtype,
+            s.given_names,
+            s.surname,
+            CAST(NULL AS STRING) AS role_subtype
         FROM caseload_staff_ids ids
-        LEFT JOIN `{project_id}.{reference_views_dataset}.product_roster_materialized` r
+        LEFT JOIN `{project_id}.reference_views.current_staff_materialized` s
+            ON UPPER(ids.id) = UPPER(s.external_id)
+            AND ids.state_code = s.state_code
+        LEFT JOIN `{project_id}.reference_views.product_roster_materialized` r
             ON UPPER(ids.id) = UPPER(r.external_id)
-            # The users in the roster all have US_ID state code
+            -- The users in the roster all have US_ID state code
             AND r.state_code = 'US_ID'
-        LEFT JOIN `{project_id}.reference_views.state_staff_with_names` names
-            ON UPPER(ids.id) = UPPER(names.legacy_supervising_officer_external_id) 
-            AND ids.state_code = names.state_code
-        LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
-            ON ids.state_code = districts.state_code 
-            AND ids.id = districts.supervising_officer_external_id
     )
     
     SELECT 

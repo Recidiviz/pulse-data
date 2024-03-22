@@ -103,6 +103,7 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
         )
         AND CASE ss.state_code
             WHEN "US_MI" THEN id_type = "US_MI_OMNI_USER"
+            WHEN "US_IX" THEN id_type = "US_IX_EMPLOYEE"
             ELSE TRUE
             END
     QUALIFY ROW_NUMBER() OVER (
