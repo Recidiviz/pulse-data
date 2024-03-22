@@ -184,10 +184,29 @@ final_movements AS (
     WHERE m.movement_reason_id NOT IN ('16', '158', '2', '131', '18', '106', '105')
 ),"""
 
+# In MI, individuals are designated into different types of segregation based on a committee's decision.
+# We'll pull in each person's designation to use as part of determining housing unit type.
+AD_SEG_CTE = """
+ad_seg_designation as (
+    select 
+        offender_designation_id, 
+        offender_id,
+        offender_designation_code_id,
+        CAST(start_date as DATETIME) as start_date, 
+        COALESCE(CAST(end_date as DATETIME), CAST( DATE(9999,9,9) as DATETIME)) as end_date,
+        CAST(last_update_date as DATETIME) as last_update_date
+    from {ADH_OFFENDER_DESIGNATION}
+    -- ignore designations related to PREA, holding cell, or writ
+    where offender_designation_code_id not in ('13214', '11388', '16134', '16181', '16133', '16132', '16131', '16130')
+),
+"""
+
+
 VIEW_QUERY_TEMPLATE = f"""
 WITH
 {LOCK_RECORDS_CTE}
 {MOVEMENTS_CTE}
+{AD_SEG_CTE}
 all_dates as (
   select offender_id, CAST(date_in as DATETIME) as period_date from internal_movements
   union all  
@@ -196,6 +215,10 @@ all_dates as (
   select offender_id, CAST(movement_date as DATETIME) as period_date from final_movements
   union all 
   select offender_id, CAST(next_movement_date as DATETIME) as period_date from final_movements
+  union all
+  select offender_id, CAST(start_date as DATETIME) as period_date from ad_seg_designation
+  union all 
+  select offender_id, CAST(end_date as DATETIME) as period_date from ad_seg_designation
 ),
 
 periods_basic as (
@@ -226,11 +249,15 @@ periods_with_info as (
     internal.cell_type_id,
     internal.security_level_id,
     internal.wing_name,
+    ad_seg.offender_designation_id,
+    ad_seg.offender_designation_code_id,
     ROW_NUMBER() 
         OVER(PARTITION BY basic.offender_id, basic.start_date, basic.end_date 
              ORDER BY internal.last_update_date desc,
+                      ad_seg.last_update_date desc,
                       move.last_update_date desc,
                       internal.offender_lock_id desc,
+                      ad_seg.offender_designation_id desc,
                       move.offender_external_movement_id desc) as rnk
   from periods_basic basic
   left join final_movements move 
@@ -239,6 +266,9 @@ periods_with_info as (
   left join internal_movements internal
     on basic.offender_id = internal.offender_id and
        internal.date_in <= basic.start_date and basic.end_date <= internal.date_out
+  left join ad_seg_designation ad_seg
+    on basic.offender_id = ad_seg.offender_id and
+       ad_seg.start_date <= basic.start_date and basic.end_date <= ad_seg.end_date  
   inner join (select distinct offender_id from {OFFENDER_IDS_TO_KEEP} sub) book on basic.offender_id = book.offender_id
   where basic.start_date is not null and basic.start_date <> CAST( DATE(9999,9,9) as DATETIME)
         and destination_location_type_id in ('225', '226', '14294')
@@ -261,7 +291,8 @@ select
     ROW_NUMBER() OVER (PARTITION BY offender_id 
                        ORDER BY start_date, 
                                 end_date NULLS LAST, 
-                                offender_lock_id, offender_external_movement_id) as period_id
+                                offender_lock_id, offender_external_movement_id) as period_id,
+    offender_designation_code_id
 from periods_with_info
 where rnk=1
 
