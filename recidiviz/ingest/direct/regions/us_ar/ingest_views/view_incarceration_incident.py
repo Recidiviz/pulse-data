@@ -178,7 +178,7 @@ unpivoted_violation_outcomes AS (
   WHERE OUTCOMEDETAILS IS NOT NULL
 )
 
-SELECT  
+SELECT
   OFFENDERID,
   VIOLATIONDATETIME,
   DISCVIOLFAC,
@@ -188,7 +188,7 @@ SELECT
   RPTDATETIME,
   DISCCODEVIOL,
   violation_seq,
-  TO_JSON_STRING(ARRAY_AGG(STRUCT<outcome_type string,outcome_data string>(VIOLATIONOUTCOME,OUTCOMEDETAILS))) AS outcome_list
+  TO_JSON_STRING(ARRAY_AGG(STRUCT<outcome_type string,outcome_data string>(VIOLATIONOUTCOME,OUTCOMEDETAILS) ORDER BY VIOLATIONOUTCOME, OUTCOMEDETAILS)) AS outcome_list
 FROM unpivoted_violation_outcomes 
 GROUP BY
   OFFENDERID,
