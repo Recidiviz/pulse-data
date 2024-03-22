@@ -47,10 +47,11 @@ from recidiviz.tests.auth.helpers import (
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 _PARAMETER_USER_HASH = "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0="
-_ADD_USER_HASH = "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE="
-_LEADERSHIP_USER_HASH = "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
-_SUPERVISION_STAFF_HASH = "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI="
 _USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
+# Hash values that might show up in snapshots, for verification
+# add_user@domain.org => "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE="
+# leadership@domain.org => "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
+# supervision_staff@domain.org => "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI="
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -60,6 +61,7 @@ _USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
     MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
 )
 @pytest.mark.uses_db
+@pytest.mark.usefixtures("snapshottest_snapshot")
 class AuthUsersEndpointTestCase(TestCase):
     """Integration tests of our flask auth endpoints"""
 
@@ -210,46 +212,12 @@ class AuthUsersEndpointTestCase(TestCase):
                 new_permissions,
             ],
         )
-        expected = [
-            {
-                "allowedSupervisionLocationIds": "",
-                "allowedSupervisionLocationLevel": "",
-                "blocked": True,
-                "district": "D1",
-                "emailAddress": "leadership@domain.org",
-                "externalId": "user_1_override.external_id",
-                "firstName": "Fake",
-                "lastName": "User",
-                "role": "user_1_override.role",
-                "stateCode": "US_ND",
-                "routes": {"overridden route": True},
-                "featureVariants": {"C": True, "new variant": False},
-                "userHash": _LEADERSHIP_USER_HASH,
-                "pseudonymizedId": "hashed-user_1_override",
-            },
-            {
-                "allowedSupervisionLocationIds": "",
-                "allowedSupervisionLocationLevel": "",
-                "blocked": False,
-                "district": "D3",
-                "emailAddress": "supervision_staff@domain.org",
-                "externalId": "abc",
-                "firstName": "John",
-                "lastName": "Doe",
-                "role": "supervision_staff",
-                "stateCode": "US_ID",
-                "routes": {},
-                "featureVariants": {},
-                "userHash": _SUPERVISION_STAFF_HASH,
-                "pseudonymizedId": "pseudo-abc",
-            },
-        ]
         with self.app.test_request_context():
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-        self.assertEqual(expected, json.loads(response.data))
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_users_some_overrides")  # type: ignore[attr-defined]
 
     def test_get_users_with_empty_overrides(self) -> None:
         user_1 = generate_fake_rosters(
@@ -267,30 +235,12 @@ class AuthUsersEndpointTestCase(TestCase):
             routes={"A": True},
         )
         add_entity_to_database_session(self.database_key, [user_1, default])
-        expected = [
-            {
-                "allowedSupervisionLocationIds": "4, 10A",
-                "allowedSupervisionLocationLevel": "level_1_supervision_location",
-                "blocked": False,
-                "district": "4, 10A",
-                "emailAddress": "leadership@domain.org",
-                "externalId": "12345",
-                "firstName": "Test A.",
-                "lastName": "User",
-                "role": "leadership_role",
-                "stateCode": "US_MO",
-                "routes": {"A": True},
-                "featureVariants": {},
-                "userHash": _LEADERSHIP_USER_HASH,
-                "pseudonymizedId": None,
-            },
-        ]
         with self.app.test_request_context():
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-        self.assertEqual(expected, json.loads(response.data))
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_users_with_empty_overrides")  # type: ignore[attr-defined]
 
     def test_get_users_with_null_values(self) -> None:
         user_1 = generate_fake_rosters(
@@ -317,30 +267,12 @@ class AuthUsersEndpointTestCase(TestCase):
         add_entity_to_database_session(
             self.database_key, [user_1, applicable_override, default_1, new_permissions]
         )
-        expected = [
-            {
-                "allowedSupervisionLocationIds": "",
-                "allowedSupervisionLocationLevel": "",
-                "blocked": True,
-                "district": None,
-                "emailAddress": "leadership@domain.org",
-                "externalId": "A1B2",
-                "firstName": None,
-                "lastName": None,
-                "role": "leadership_role",
-                "stateCode": "US_ME",
-                "routes": {"A": True, "B": True, "C": False},
-                "featureVariants": {"C": True},
-                "userHash": _LEADERSHIP_USER_HASH,
-                "pseudonymizedId": None,
-            },
-        ]
         with self.app.test_request_context():
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-        self.assertEqual(expected, json.loads(response.data))
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_users_with_null_values")  # type: ignore[attr-defined]
 
     def test_get_users_no_users(self) -> None:
         expected_restrictions: list[str] = []
@@ -362,30 +294,12 @@ class AuthUsersEndpointTestCase(TestCase):
             last_name="User",
         )
         add_entity_to_database_session(self.database_key, [user_1])
-        expected = [
-            {
-                "allowedSupervisionLocationIds": "",
-                "allowedSupervisionLocationLevel": "",
-                "blocked": False,
-                "district": "District 4",
-                "emailAddress": "leadership@domain.org",
-                "externalId": "12345",
-                "firstName": "Test A.",
-                "lastName": "User",
-                "role": "leadership_role",
-                "stateCode": "US_CO",
-                "routes": {},
-                "featureVariants": {},
-                "userHash": _LEADERSHIP_USER_HASH,
-                "pseudonymizedId": None,
-            },
-        ]
         with self.app.test_request_context():
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-        self.assertEqual(expected, json.loads(response.data))
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_users_no_permissions")  # type: ignore[attr-defined]
 
     ########
     # GET /user/...
@@ -415,27 +329,11 @@ class AuthUsersEndpointTestCase(TestCase):
         )
         add_entity_to_database_session(self.database_key, [user_1, user_2, default])
 
-        expected = {
-            "allowedSupervisionLocationIds": "",
-            "allowedSupervisionLocationLevel": "",
-            "blocked": False,
-            "district": "District",
-            "emailAddress": "parameter@domain.org",
-            "externalId": "ABC",
-            "firstName": None,
-            "lastName": None,
-            "role": "leadership_role",
-            "stateCode": "US_CO",
-            "routes": {"A": True, "B": False},
-            "featureVariants": {"D": "E"},
-            "userHash": _PARAMETER_USER_HASH,
-            "pseudonymizedId": "pseudo-ABC",
-        }
         response = self.client.get(
             self.user,
             headers=self.headers,
         )
-        self.assertEqual(expected, json.loads(response.data))
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_user")  # type: ignore[attr-defined]
 
     def test_get_user_not_found(self) -> None:
         user = generate_fake_rosters(
@@ -494,45 +392,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output, "adding user parameter@domain.org with reason: test"
             )
 
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "District",
-                    "emailAddress": "add_user@domain.org",
-                    "externalId": "ABC",
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_CO",
-                    "routes": {},
-                    "featureVariants": {},
-                    "userHash": _ADD_USER_HASH,
-                    "pseudonymizedId": None,
-                },
-                {  # handles MO's specific logic
-                    "allowedSupervisionLocationIds": "1, 2",
-                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
-                    "blocked": False,
-                    "district": "1, 2",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": None,
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_MO",
-                    "routes": {"A": True, "B": False},
-                    "featureVariants": {"D": "E"},
-                    "userHash": _PARAMETER_USER_HASH,
-                    "pseudonymizedId": None,
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-        self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_add_user")  # type: ignore[attr-defined]
 
     def test_add_user_bad_request(self) -> None:
         with self.app.test_request_context():
@@ -583,21 +447,10 @@ class AuthUsersEndpointTestCase(TestCase):
                     "reason": "Test",
                 },
             )
-            expected = {  # no default permissions
-                "district": "D1",
-                "emailAddress": "parameter@domain.org",
-                "externalId": "XYZ",
-                "firstName": "Test",
-                "lastName": "User",
-                "role": "leadership_role",
-                "stateCode": "US_ID",
-                "userHash": _PARAMETER_USER_HASH,
-                "pseudonymizedId": "pseudo-XYZ",
-            }
             self.assertEqual(
                 HTTPStatus.OK, user_override_user.status_code, user_override_user.data
             )
-            self.assertEqual(expected, json.loads(user_override_user.data))
+            self.snapshot.assert_match(json.loads(user_override_user.data), name="test_add_user_repeat_email")  # type: ignore[attr-defined]
             self.assertReasonLog(
                 log.output, "adding user parameter@domain.org with reason: Test"
             )
@@ -689,45 +542,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output,
                 "uploading roster for state US_XX with reason: test",
             )
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "3975",
-                    "firstName": "leadership",
-                    "lastName": "user",
-                    "role": "leadership_role",
-                    "stateCode": "US_XX",
-                    "routes": {"A": True},
-                    "featureVariants": {},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": "pseudo-3975",
-                },
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "supervision_staff@domain.org",
-                    "externalId": "3706",
-                    "firstName": "supervision",
-                    "lastName": "user",
-                    "role": "supervision_staff",
-                    "stateCode": "US_XX",
-                    "routes": {"B": True},
-                    "featureVariants": {},
-                    "userHash": _SUPERVISION_STAFF_HASH,
-                    "pseudonymizedId": "pseudo-3706",
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster")  # type: ignore[attr-defined]
 
     def test_upload_roster_with_missing_email_address(self) -> None:
         roster_leadership_user = generate_fake_rosters(
@@ -758,29 +577,11 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(error_message, json.loads(response.data)["message"])
 
             # Existing rows should not have been deleted
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "0000",
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_XX",
-                    "routes": {},
-                    "featureVariants": {},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": None,
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_with_missing_email_address")  # type: ignore[attr-defined]
 
     def test_upload_roster_with_malformed_email_address(self) -> None:
         roster_leadership_user = generate_fake_rosters(
@@ -809,29 +610,11 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(error_message, json.loads(response.data)["message"])
 
             # Existing rows should not have been deleted
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "0000",
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_XX",
-                    "routes": {},
-                    "featureVariants": {},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": None,
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_with_malformed_email_address")  # type: ignore[attr-defined]
 
     def test_upload_roster_with_missing_associated_role(self) -> None:
         roster_leadership_user = generate_fake_rosters(
@@ -861,29 +644,11 @@ class AuthUsersEndpointTestCase(TestCase):
             self.assertEqual(error_message, json.loads(response.data)["message"])
 
             # Existing rows should not have been deleted
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "0000",
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_XX",
-                    "routes": {},
-                    "featureVariants": {},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": None,
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_with_missing_associated_role")  # type: ignore[attr-defined]
 
     def test_upload_roster_update_user(self) -> None:
         roster_leadership_user = generate_fake_rosters(
@@ -940,45 +705,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output,
                 "uploading roster for state US_XX with reason: test",
             )
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "3975",
-                    "firstName": "leadership",
-                    "lastName": "user",
-                    "role": "leadership_role",
-                    "stateCode": "US_XX",
-                    "routes": {"A": True},
-                    "featureVariants": {},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": "pseudo-3975",
-                },
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "supervision_staff@domain.org",
-                    "externalId": None,
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "supervision_staff",
-                    "stateCode": "US_XX",
-                    "routes": {"B": True},
-                    "featureVariants": {},
-                    "userHash": _SUPERVISION_STAFF_HASH,
-                    "pseudonymizedId": None,
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_update_user")  # type: ignore[attr-defined]
 
     def test_upload_roster_update_user_with_override(self) -> None:
         roster_leadership_user = generate_fake_rosters(
@@ -1034,29 +765,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output,
                 "uploading roster for state US_XX with reason: test",
             )
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "3975",
-                    "firstName": "leadership",
-                    "lastName": "user",
-                    "role": "leadership_role",
-                    "stateCode": "US_XX",
-                    "routes": {"A": True},
-                    "featureVariants": {},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": "pseudo-3975",
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_update_user_with_override")  # type: ignore[attr-defined]
             existing_user_override = (
                 current_session.query(UserOverride)
                 .filter(UserOverride.email_address == "leadership@domain.org")
@@ -1105,29 +818,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output,
                 "uploading roster for state US_XX with reason: test",
             )
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "NEW DISTRICT",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "1234",
-                    "firstName": "leadership",
-                    "lastName": "user",
-                    "role": "leadership_role",
-                    "stateCode": "US_XX",
-                    "routes": {"A": True},
-                    "featureVariants": {},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                    "pseudonymizedId": None,
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_missing_external_id")  # type: ignore[attr-defined]
 
     ########
     # PATCH /users
@@ -1175,45 +870,11 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, updates.status_code, updates.data)
 
-            expected_users = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "D1",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": "123",
-                    "firstName": "Test",
-                    "lastName": "User",
-                    "role": "supervision_staff",
-                    "stateCode": "US_CO",
-                    "routes": {},
-                    "featureVariants": {},
-                    "userHash": _PARAMETER_USER_HASH,
-                    "pseudonymizedId": "pseudo-123",
-                },
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": None,
-                    "emailAddress": "user@domain.org",
-                    "externalId": "456",
-                    "firstName": "Original",
-                    "lastName": "Name",
-                    "role": "supervision_staff",
-                    "stateCode": "US_TN",
-                    "routes": {},
-                    "featureVariants": {},
-                    "userHash": _USER_HASH,
-                    "pseudonymizedId": None,
-                },
-            ]
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.assertEqual(expected_users, json.loads(response.data))
+            self.snapshot.assert_match(json.loads(response.data), name="test_update_users")  # type: ignore[attr-defined]
             self.assertReasonLog(
                 log.output, "updating user parameter@domain.org with reason: test"
             )
