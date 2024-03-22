@@ -176,6 +176,7 @@ supervising_officer_assignments_cte AS (
         USING (SupervisionAssignmentTypeId)
     LEFT JOIN {ref_EmployeeType}
         USING (EmployeeTypeId)
+    WHERE SupervisionAssignmentTypeDesc = 'Primary'
 )"""
 
 SUPERVISION_LEVEL_CHANGES_CTE = """
