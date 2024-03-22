@@ -18,13 +18,7 @@
 """View logic to prepare US_TN supervision staff data for Workflows"""
 
 US_TN_SUPERVISION_STAFF_TEMPLATE = """
-    WITH staff_from_report AS (
-        -- TODO(#22265): Remove when migration is complete
-        SELECT DISTINCT officer_id AS logic_staff
-        FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
-        
-        UNION DISTINCT 
-        
+    WITH staff_from_report AS (  
         SELECT DISTINCT officer_id AS logic_staff
         FROM `{project_id}.{workflows_dataset}.client_record_materialized` client
         WHERE client.state_code = "US_TN"

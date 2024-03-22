@@ -95,6 +95,6 @@ class WorkflowsDemoDataTest(TestCase):
             #  added to the fixture)
             load_all_demo_data()
 
-        # sanity check that all the pipelines ran: there are five fixtures,
+        # sanity check that all the pipelines ran: there are four fixtures,
         # we expect one commit for each since they are within the batch limit
-        self.assertEqual(len(mock_batch_writer.commit.call_args_list), 5)
+        self.assertEqual(len(mock_batch_writer.commit.call_args_list), 4)

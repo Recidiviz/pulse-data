@@ -37,7 +37,6 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
             client_last_name,
             date_today,
             tdoc_id,
-            tdoc_id AS external_id,
             compliant_reporting_eligible,
             physical_address,
             current_employer,
@@ -157,10 +156,11 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         WHERE compliant_reporting_eligible IS NOT NULL
         AND remaining_criteria_needed <= 1
     )
-    SELECT *
+    SELECT "US_TN" AS state_code, * EXCEPT (state_code)
     FROM o
     FULL OUTER JOIN `{project_id}.{workflows_dataset}.us_tn_transfer_to_compliant_reporting_record_materialized` n
-        USING (state_code, external_id)
+        ON o.state_code = n.state_code
+        AND o.tdoc_id = n.external_id
 """
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

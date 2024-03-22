@@ -102,7 +102,6 @@ SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "role_subtype",
     ],
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,

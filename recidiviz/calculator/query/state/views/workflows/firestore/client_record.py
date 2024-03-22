@@ -31,9 +31,6 @@ from recidiviz.calculator.query.state.views.reference.workflows_opportunity_conf
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ctes import (
     full_client_record,
 )
-from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_clients_template import (
-    US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -103,6 +100,8 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
             external_id AS person_external_id,
             "{config.opportunity_type}" AS opportunity_name,
         FROM `{{project_id}}.{{workflows_dataset}}.{config.opportunity_record_view_name}`
+        -- TODO(Recidiviz/recidiviz-dashboards#5003): Remove this conditional
+        WHERE external_id IS NOT NULL
         """
             for config in configs
         ]
@@ -124,33 +123,11 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
 
 CLIENT_RECORD_QUERY_TEMPLATE = f"""
     WITH 
-        # TODO(#22265) - Deprecate TN specific template
-        {US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
         {get_eligibility_ctes(WORKFLOWS_CONFIGS_WITH_CLIENTS)},
-        {full_client_record()},
-        # TODO(#22265) - Clean this up to not require TN specific logic 
-        tn_clients_wrangle AS (
-            SELECT *, 
-            FROM tn_clients standards
-            FULL OUTER JOIN (
-                SELECT {{new_fields}},  
-                FROM clients
-                WHERE state_code = "US_TN"
-            ) all_tn
-            ON
-                standards.person_external_id = all_tn.person_external_id_new
-                AND standards.state_code = all_tn.state_code_new
-        )
-        
+        {full_client_record()}
+          
         SELECT *,
-            {get_pseudonymized_id_query_str(HASH_VALUE_QUERY_STR)} AS pseudonymized_id FROM tn_clients_wrangle            
-        
-        UNION ALL
-            
-        SELECT *,
-            {{new_fields}}, 
             {get_pseudonymized_id_query_str(HASH_VALUE_QUERY_STR)} AS pseudonymized_id FROM clients
-            WHERE state_code != "US_TN"
 """
 
 
@@ -196,7 +173,6 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         WORKFLOWS_MILESTONES_STATES, quoted=True
     ),
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    new_fields=list_to_query_string([f"{x} as {x}_new" for x in client_record_fields]),
 )
 
 if __name__ == "__main__":
