@@ -4,6 +4,7 @@ file_description: |-
   A static list of NCIC codes used by North Dakota's Docstars team to denote a violent offense.
   Each row is one NCIC code that corresponds to a violent offense.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - CrimeCode
 columns:
