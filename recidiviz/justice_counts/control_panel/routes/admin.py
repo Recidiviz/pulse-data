@@ -380,6 +380,11 @@ def get_admin_blueprint(
                 if assoc.user_account_id not in user_account_ids:
                     current_session.delete(assoc)
 
+            # Re-fetching so that agency and users are associated in this session.
+            agency = AgencyInterface.get_agency_by_name(
+                session=current_session, name=name, with_users=True
+            )
+
         current_session.commit()
         child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
             session=current_session, agency=agency
