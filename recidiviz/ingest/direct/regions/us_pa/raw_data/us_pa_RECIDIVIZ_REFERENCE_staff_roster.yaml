@@ -1,42 +1,82 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RECIDIVIZ_REFERENCE_staff_roster
 file_description: |-
-  A table containing information about each agent and supervisor at PBPP. This is emailed
-  to us from PA in a google sheet as two separate tabs: "Agents" and "Supervisors", and 
-  requires preprocessing. Each tab is manually corrected to guarantee the following things: 
-    - All individuals listed as an agent's supervisor are included in the "Supervisors" tab,
-      with the same spelling and formatting of their name.
-    - The SupervisorInfo field in the "Agents" tab is split into components so that supervisors 
-      can be matched to their ID numbers using their first and last name.
-    - All individuals have an Employee ID.
-    - The column names match the column names in this configuration.
+  See this description with slightly more detail in "PA Staff Roster 101" at go/pennsylvania. 
 
-  The "Supervisor" and "Agents" tabs are concatenated to form one table, which is called
-  "All Staff". Then the following query is run on that table to join supervisor IDs to 
-  supervisor names.
+  Roughly once a month, we receive a current roster for supervision field staff via email, 
+  including everyone from parole agents to district directors. 
 
-  ```
-  SELECT * FROM (
-    SELECT DISTINCT
-        all_staff.*,
-        supervisors.EmployeeID AS Supervisor_EmpNum, 
-    FROM <ALL STAFF TABLE> all 
-    LEFT JOIN <SUPERVISORS TAB> supervisors
-    -- join on supervisor name to get supervisor ID
-    ON (CONCAT(TRIM(UPPER(all.SupervisorFirstName)), TRIM(UPPER(all.SupervisorLastName))) 
-        = CONCAT(TRIM(UPPER(supervisors.EmployeeFirstName)), TRIM(UPPER(supervisors.EmployeeLastName))))
-    )
-    ORDER BY EmployeeID;
-  ```
+  The format has changed at least slightly each time we have received a roster. 
+  It seems like with time, the changes will slow and the state will settle on a final 
+  format. Once that happens, the preprocessing on our end will likely become easier. 
+  For now, it is relatively manual and requires a decent amount of spot-checking.
 
-  To join caseload types: 
-  ```
-  SELECT DISTINCT 
-    all.*, special.AgentType,  
-  FROM <ALL STAFF TABLE WITH SUPERVISOR IDS> all
-  LEFT JOIN <SPECIALTY AGENTS ROSTER> special
-  ON(LPAD(PosNo6, 6, '0') = AMU_POS_NO)
-  ```
+  The roster is originally in a Google sheet. Each agent, supervisor, and state leader
+  theoretically has their own row in the table, with their own information and supervisor
+  in it. Folks in upper management tend to not have their own rows; when they do, they
+  often don’t include supervisor information.
+
+  In order to get from the Google sheet to something suitable to be uploaded to GCS 
+  and ingested as raw data using this config, follow the steps below.
+
+  Step 1. Download the roster from Google Sheets.
+  Step 2. Rename columns as needed so they match those in this raw data configuration. 
+  If there are any empty extra columns, delete them so the CSV is not malformed.
+  Step 3. Save the spreadsheet as a CSV and upload it to a scratch dataset in BQ. 
+  Step 4. Check for missing information. To discern which employees are listed as 
+  supervisors but not included in their own row in the table, you can run this query: 
+
+          SELECT * FROM (
+              SELECT DISTINCT
+                  all_staff.SPVR_POS_NO AS Pos_No,
+                  all_staff.SUPERVISOR_LASTNAME as as_supervisor_lname, 
+                  all_staff.SUPERVISOR_FIRSTNAME as as_supervisor_fname,
+                  supervisors.Emp_Last_Name as unique_row_lname, 
+                  supervisors.Emp_First_Name as unique_row_fname,
+                  supervisors.Emp_No 
+              FROM <ORIGINAL ROSTER> all_staff
+              LEFT JOIN <ORIGINAL ROSTER> supervisors
+              ON (all_staff.SPVR_POS_NO = supervisors.Pos_No)
+              )
+          WHERE Emp_No IS NULL;
+
+  This will almost always include state leaders. Up until this point, we haven’t needed 
+  to ingest the State Director or Regional Directors as staff, so it has been okay that 
+  they don’t have their own rows in this roster. This may change with development of the
+  Insights web tool, in which case we will need to ask for their Employee IDs. 
+  An SEM or PM can provide their email addresses. These pieces of information will need 
+  to be filled into the roster by hand if they are deemed necessary and can’t be included
+  in the original roster. 
+
+  If any supervisors who are not on the leadership level appear in the results above, 
+  you should ask the state for their information before continuing the process. 
+  The missing information will typically come in an email, and will need to be added by 
+  hand to the original roster.
+
+  Step 5. Once you have a complete roster uploaded to a scratch dataset in BQ, add a column 
+  for supervisor employee IDs. There will be three versions of the roster in the bucket
+  by the end of the process, and only one will be suitable for upload, so make sure you
+  give them easily differentiable names. 
+         
+          SELECT 
+            all_staff.*,
+            supervisors.Emp_No as Supervisor_EmpNum
+          FROM <ORIGINAL ROSTER> all_staff
+          LEFT JOIN <ORIGINAL ROSTER> supervisors
+          ON (all_staff.SPVR_POS_NO = supervisors.Pos_No)
+
+  Step 6. Join caseload types using Position Numbers and the `pa_specialty_agents`` 
+  reference table.
+                
+          SELECT DISTINCT 
+            all_staff.*, 
+            special.AgentType,  
+          FROM <ROSTER WITH SUPERVISOR IDS> all_staff
+          LEFT JOIN recidiviz-123.us_pa_raw_data_up_to_date_views.specialty_agents_latest special
+          ON(LPAD(all_staff.Pos_No, 6, '0') = LPAD(special.PosNo6, 6, '0'))
+
+  Step 7. Download the final roster - with supervisor Employee IDs, caseload types, 
+  and properly named columns - and upload it as raw data.
 data_classification: source
 update_cadence: IRREGULAR
 primary_key_cols:
