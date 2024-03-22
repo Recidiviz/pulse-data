@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: specialty_agents
 file_description: |-
-  A table containing a list of Agents in Pennsylvania with information such as name and district office.
+  A table containing a list of Specialty Agents in Pennsylvania with information such as 
+  name and district office. This reference table is not refreshed regularly. T
+  he most recent update was accurate as of January 2023. If there are complaints 
+  about agents’ caseload types being wrong in our tools, that is likely why.
 data_classification: source
 update_cadence: IRREGULAR
 primary_key_cols:
-  - AgentName
-  - DistrictOffice
-  - AgentType
-  - external_id
+  - PosNo6
 columns:
   - name: PosNo6
     is_pii: True
