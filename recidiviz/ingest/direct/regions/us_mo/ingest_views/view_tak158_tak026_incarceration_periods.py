@@ -71,12 +71,9 @@ WITH status_bw AS (
     ),
     -- This CTE filters for only periods where someone is listed as "I" (Institution).
     incarceration_subcycle_body_status AS (
-        SELECT
-            *
+        SELECT * 
         FROM {LBAKRDTA_TAK158} body_status_f1
         WHERE body_status_f1.F1_DOC IS NOT NULL
-            AND body_status_f1.F1_SST = 'I'
-            # TODO(#14717) - Consider adding in "F" Field statuses for those listed in facilties during these periods
     ),
     subcycle_partition_status_change_dates AS (
         SELECT
@@ -414,6 +411,7 @@ WITH status_bw AS (
                 se.EndDate as END_DATE,
                 se.CS_OLA as FACILITY,
                 se.BN_LRU as HOUSING_TYPE,
+                full_span_details.SST,
 
                 -- End status codes, end status subtypes, and the dates used to obtain status code
                 -- lists are no longer set for periods within the boundaries of a sub-subcycle
@@ -445,7 +443,14 @@ WITH status_bw AS (
                 AND se.CYC = full_span_details.CYC
                 AND se.StartDate >= full_span_details.SUB_SUBCYCLE_START_DT 
                 AND COALESCE(se.EndDate,'99990101') <= COALESCE(full_span_details.SUB_SUBCYCLE_END_DT,'99990101')
-            WHERE full_span_details.SUB_SUBCYCLE_START_DT IS NOT NULL
+            WHERE full_span_details.SUB_SUBCYCLE_START_DT IS NOT NULL AND 
+            (
+                full_span_details.SST = 'I' OR 
+                (
+                    full_span_details.SST IS NOT NULL AND
+                    (se.CS_OLA IS NOT NULL OR se.BN_LRU IS NOT NULL)
+                )
+            )
         ) ordered
         WHERE fsd_rn = 1
     )
@@ -500,7 +505,7 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak158_tak026_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="DOC, CYC, SQN",
+    order_by_cols="DOC,CYC,SQN",
 )
 
 if __name__ == "__main__":
