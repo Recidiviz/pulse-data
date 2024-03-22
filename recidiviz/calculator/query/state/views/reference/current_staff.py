@@ -109,7 +109,10 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
         PARTITION BY state_code, staff_id
         ORDER BY
             location.start_date DESC,
-            role_period.start_date DESC
+            role_period.start_date DESC,
+            is_supervision_officer_supervisor DESC,
+            is_supervision_officer DESC,
+            external_id DESC
     ) = 1
 """
 
