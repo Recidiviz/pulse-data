@@ -208,6 +208,12 @@ EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA = {
     "caseNotes": {},
 }
 
+TEST_DATA_WITH_NO_EXTERNAL_ID = {
+    "state_code": "US_XX",
+}
+
+TEST_DATA_WITH_NULL_EXTERNAL_ID = {"state_code": "US_XX", "external_id": None}
+
 
 class TestWorkflowsETLDelegate(TestCase):
     """Tests for the Workflows ETL delegate."""
@@ -318,6 +324,18 @@ class TestWorkflowsETLDelegate(TestCase):
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
         result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NESTED_CRITERIA))
         self.assertEqual(("234", EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA), result)
+
+    def test_transform_with_missing_external_id(self) -> None:
+        """Tests that the delegate outputs None for a document with no external id."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_TN)
+        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NO_EXTERNAL_ID))
+        self.assertEqual((None, None), result)
+
+    def test_transform_with_null_external_id(self) -> None:
+        """Tests that the delegate outputs None for a document with no external id."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_TN)
+        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NULL_EXTERNAL_ID))
+        self.assertEqual((None, None), result)
 
 
 class TestWorkflowsETLConfig(TestCase):

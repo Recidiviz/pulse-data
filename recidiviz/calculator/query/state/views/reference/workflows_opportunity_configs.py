@@ -59,7 +59,7 @@ class WorkflowsOpportunityConfig:
     task_completion_event: TaskCompletionEventType = attr.ib()
 
     # The name of the file in the GCS practices-etl-data bucket that is the source for the daily export to Firestore
-    # TODO(#22265): Once CR TES migration is completed, this field can be consolidated with opportunity_record_view_name
+    # TODO(Recidiviz/recidiviz-dashboards#5003): Once CR TES migration is completed, this field can be consolidated with opportunity_record_view_name
     source_filename: str = attr.ib()
 
     # The Firestore collection name used as the destination for the opportunity record export
@@ -359,7 +359,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type_path_str="earnedDischarge",
         person_record_type=PersonRecordType.CLIENT,
     ),
-    # TODO(#22265) - Replace with us_tn_transfer_to_compliant_reporting_record when we move over to new data entirely
+    # TODO(Recidiviz/recidiviz-dashboards#5003) - Replace with us_tn_transfer_to_compliant_reporting_record when we move over to new data entirely
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
         opportunity_type="compliantReporting",

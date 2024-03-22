@@ -39,13 +39,6 @@ CRITERIA_TO_DEPREFIX: List[str] = [
     "SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
 ]
 
-# TODO(#22265): Remove conditional for CR once migration to TES is completed because it currently has its own delegate
-WORKFLOWS_CONFIGS_WITHOUT_US_TN_CR = [
-    config
-    for config in WORKFLOWS_OPPORTUNITY_CONFIGS
-    if config.opportunity_type != "compliantReporting"
-]
-
 
 class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     """Generic delegate for loading Workflows' opportunity records into Firestore."""
@@ -69,13 +62,13 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
         return {
             config.source_filename: config.export_collection_name
-            for config in WORKFLOWS_CONFIGS_WITHOUT_US_TN_CR
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
         }
 
     def get_supported_files(self) -> List[str]:
         return [
             config.source_filename
-            for config in WORKFLOWS_CONFIGS_WITHOUT_US_TN_CR
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
             if config.state_code == self.state_code
             or (
                 # The bucket for US_IX files is still US_ID
@@ -117,11 +110,11 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
 
     def _process_criteria(self, criteria: List[Dict[str, Any]]) -> Dict[str, Any]:
         return {
-            self._preprocess_criterion_name(
-                reason["criteria_name"]
-            ): self._process_criteria(reason["reason"])
-            if self._is_reason_blob(reason["reason"])
-            else reason["reason"]
+            self._preprocess_criterion_name(reason["criteria_name"]): (
+                self._process_criteria(reason["reason"])
+                if self._is_reason_blob(reason["reason"])
+                else reason["reason"]
+            )
             for reason in criteria
         }
 
@@ -187,4 +180,6 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
 
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)
+        if data.get("external_id", None) is None:
+            return None, None
         return data["external_id"], self.build_document(data)

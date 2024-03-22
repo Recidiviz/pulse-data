@@ -32,9 +32,6 @@ from recidiviz.metrics.export.export_config import WORKFLOWS_VIEWS_OUTPUT_DIRECT
 from recidiviz.tools.archive import archive_etl_file
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
-from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_etl_delegate import (
-    CompliantReportingReferralRecordETLDelegate,
-)
 from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
 )
@@ -66,7 +63,6 @@ WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
 def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]:
     return [
-        CompliantReportingReferralRecordETLDelegate(state_code),
         WorkflowsOpportunityETLDelegate(state_code),
         # TODO(#25057): Remove WorkflowsStaffETLDelegate once we are fully using incarceration and supervision staff collections
         WorkflowsStaffETLDelegate(state_code),
