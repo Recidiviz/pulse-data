@@ -38,6 +38,7 @@ file_description: |-
   ON(LPAD(PosNo6, 6, '0') = AMU_POS_NO)
   ```
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - EmployeeID
 columns:

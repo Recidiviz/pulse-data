@@ -3,6 +3,7 @@ file_tag: specialty_agents
 file_description: |-
   A table containing a list of Agents in Pennsylvania with information such as name and district office.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - AgentName
   - DistrictOffice

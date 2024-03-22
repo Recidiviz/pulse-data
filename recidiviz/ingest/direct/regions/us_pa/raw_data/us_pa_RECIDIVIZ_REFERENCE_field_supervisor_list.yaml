@@ -10,6 +10,7 @@ file_description: |-
   included many times because they supervise many units in the same region. The secretary
   is listed once for each unit in the state, since he technically supervises all of them.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - ext_id
 columns:

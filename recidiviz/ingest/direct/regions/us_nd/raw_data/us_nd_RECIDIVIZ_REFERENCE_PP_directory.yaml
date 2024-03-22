@@ -31,6 +31,7 @@ file_description: |-
   If there are still officers with missing IDs in the roster, reach out to the state to 
   clarify IDs and email addresses for those staff members.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFFICER
 columns:

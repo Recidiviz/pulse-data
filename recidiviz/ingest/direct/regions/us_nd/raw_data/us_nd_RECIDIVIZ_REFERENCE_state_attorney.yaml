@@ -4,6 +4,7 @@ file_description: |-
   A list state's attorneys for each county in North Dakota. Contains name, address, and contact information.
   This table is maintained manually by DOCR and sent to us outside the usual data transfer process.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - county
   - full_name

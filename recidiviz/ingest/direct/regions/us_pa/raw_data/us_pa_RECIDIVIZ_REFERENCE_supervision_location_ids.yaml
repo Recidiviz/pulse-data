@@ -82,6 +82,7 @@ file_description: |-
   ORDER BY level_1_supervision_location_external_id, Org_cd;
   ```
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - Org_cd
 columns:

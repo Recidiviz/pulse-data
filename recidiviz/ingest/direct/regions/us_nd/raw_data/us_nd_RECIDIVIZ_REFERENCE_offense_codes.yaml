@@ -6,6 +6,7 @@ file_description: |-
   tend to apply only to charges that come from the Elite system and not the supervision-focused Docstars system, which
   is standardized around NCIC codes.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - OFFENCE_CODE
 columns:
