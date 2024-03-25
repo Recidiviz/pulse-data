@@ -56,6 +56,7 @@ from recidiviz.justice_counts.exceptions import (
     JusticeCountsServerError,
 )
 from recidiviz.justice_counts.feed import FeedInterface
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import (
     DatapointGetRequestEntryPoint,
@@ -1405,11 +1406,12 @@ def get_api_blueprint(
                 current_session.commit()
                 return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-            metric_key_to_agency_datapoints = (
-                DatapointInterface.get_metric_key_to_agency_datapoints(
-                    session=current_session, agency_id=agency.id
+            metric_key_to_metric_interface = (
+                MetricSettingInterface.get_metric_key_to_metric_interface(
+                    session=current_session, agency=agency
                 )
             )
+
             # Get and save ingested spreadsheet json to GCP bucket if not in test/ci
             ingested_spreadsheet_json = _get_ingest_spreadsheet_json(
                 agency=agency,
@@ -1420,7 +1422,7 @@ def get_api_blueprint(
                 metric_key_to_errors=metric_key_to_errors,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_definitions=metric_definitions,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface=metric_key_to_metric_interface,
                 spreadsheet=spreadsheet,
             )
             SpreadsheetInterface.save_ingested_spreadsheet_json(
@@ -1546,11 +1548,13 @@ def get_api_blueprint(
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
-            metric_key_to_agency_datapoints = (
-                DatapointInterface.get_metric_key_to_agency_datapoints(
-                    session=current_session, agency_id=agency.id
+
+            metric_key_to_metric_interface = (
+                MetricSettingInterface.get_metric_key_to_metric_interface(
+                    session=current_session, agency=agency
                 )
             )
+
             # get metric definitions for spreadsheet
             metric_definitions = (
                 SpreadsheetInterface.get_metric_definitions_for_workbook(
@@ -1570,7 +1574,7 @@ def get_api_blueprint(
                 auth0_user_id=auth0_user_id,
                 xls=xls,
                 agency=agency,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface=metric_key_to_metric_interface,
                 metric_definitions=metric_definitions,
                 filename=new_file_name,
                 upload_method=UploadMethod.BULK_UPLOAD,
@@ -1586,7 +1590,7 @@ def get_api_blueprint(
                 metric_key_to_errors=metric_key_to_errors,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_definitions=metric_definitions,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface=metric_key_to_metric_interface,
                 spreadsheet=spreadsheet,
             )
 
@@ -1616,7 +1620,7 @@ def get_api_blueprint(
         ],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_definitions: List[MetricDefinition],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
         spreadsheet: schema.Spreadsheet,
     ) -> Dict[str, Any]:
         child_agencies = AgencyInterface.get_child_agencies_for_agency(
@@ -1655,7 +1659,7 @@ def get_api_blueprint(
             metric_key_to_errors=metric_key_to_errors,
             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
             metric_definitions=metric_definitions,
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
             updated_report_jsons=updated_report_jsons,
             new_report_jsons=new_report_jsons,
             unchanged_report_jsons=unchanged_report_jsons,
