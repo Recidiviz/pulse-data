@@ -15,53 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state/schema_entity_converter.py."""
-from typing import List, Optional
+from typing import List
 from unittest import TestCase
-
-import pytest
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateEntityToSchemaConverter,
     StateSchemaToEntityConverter,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
-@pytest.mark.uses_db
 class TestStateSchemaEntityConverter(TestCase):
     """Tests for state/schema_entity_converter.py."""
-
-    # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-
-    def setUp(self) -> None:
-        self.maxDiff = None
-        local_persistence_helpers.use_on_disk_postgresql_database(
-            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        )
-
-    def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
-        )
 
     def _get_schema_class_for_objects(self, schema_objects: List[DatabaseEntity]):
         schema_classes = list({obj.__class__ for obj in schema_objects})
