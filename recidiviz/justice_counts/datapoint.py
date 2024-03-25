@@ -54,7 +54,6 @@ from recidiviz.justice_counts.utils.datapoint_utils import (
     get_dimension,
     get_dimension_id,
     get_dimension_id_and_member,
-    get_dimension_member,
     get_value,
 )
 from recidiviz.justice_counts.utils.persistence_utils import (
@@ -1042,25 +1041,17 @@ class DatapointInterface:
     ### Helpers ###
 
     @staticmethod
-    def is_metric_disabled(
+    def is_whole_metric_disabled(
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         metric_key: str,
-        dimension_id: Optional[str] = None,
     ) -> bool:
-        """This function returns true if a metric or disaggregation is turned off by
-        an agency."""
+        """
+        This function returns true if a whole metric is turned off by an agency.
+        """
         agency_datapoints = metric_key_to_agency_datapoints.get(metric_key, [])
 
         if len(agency_datapoints) == 0:
             return False
-
-        member_set = (
-            {
-                d.dimension_name for d in DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]  # type: ignore[attr-defined]
-            }
-            if dimension_id is not None
-            else set()
-        )
 
         for datapoint in agency_datapoints:
             # If a whole metric is disabled, then there is a disabled agency metric
@@ -1072,18 +1063,7 @@ class DatapointInterface:
                 and datapoint.dimension_identifier_to_member is None
             ):
                 return True
-
-            dimension_member = get_dimension_member(datapoint=datapoint)
-            if (
-                datapoint.context_key is None
-                and dimension_member is not None
-                and dimension_member in member_set
-            ):
-                member_set.remove(dimension_member)
-
-        # If a whole disaggregation is disabled, then there is a disabled
-        # agency datapoint for each breakdown.
-        return dimension_id is not None and len(member_set) == 0
+        return False
 
     @staticmethod
     def is_metric_disaggregated_by_supervision_subsystem(
