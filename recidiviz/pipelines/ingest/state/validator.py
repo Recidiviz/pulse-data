@@ -19,12 +19,6 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Type
 
-from recidiviz.persistence.database_invariant_validator.state.state_person_invariant_validators import (
-    state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_person,
-)
-from recidiviz.persistence.database_invariant_validator.state.state_staff_invariant_validators import (
-    state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_staff,
-)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -34,6 +28,27 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
 from recidiviz.utils.types import assert_type
+
+
+def state_allows_multiple_ids_same_type_for_state_person(state_code: str) -> bool:
+    if state_code.upper() in (
+        "US_ND",
+        "US_PA",
+        "US_MI",
+        "US_OR",
+    ):  # TODO(#18005): Edit to allow multiple id for OR id_number but not Record_key
+        return True
+
+    # By default, states don't allow multiple different ids of the same type
+    return False
+
+
+def state_allows_multiple_ids_same_type_for_state_staff(state_code: str) -> bool:
+    if state_code.upper() in ("US_MI", "US_IX"):
+        return True
+
+    # By default, states don't allow multiple different ids of the same type
+    return False
 
 
 def validate_root_entity(
