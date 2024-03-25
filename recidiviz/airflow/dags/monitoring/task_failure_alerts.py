@@ -72,7 +72,7 @@ DISCRETE_CONFIGURATION_PARAMETERS: Dict[str, List[str]] = {
 
 DAGS_TO_IGNORE_IN_ALERTING = ["airflow_monitoring"]
 
-INCIDENT_START_DATE_LOOKBACK = timedelta(days=7)
+INCIDENT_START_DATE_LOOKBACK = timedelta(days=21)
 
 
 @provide_session
