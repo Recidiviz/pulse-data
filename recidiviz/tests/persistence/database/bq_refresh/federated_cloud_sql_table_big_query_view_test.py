@@ -22,19 +22,13 @@ from unittest import mock
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
-from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
+from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view import (
     FederatedCloudSQLTableBigQueryView,
     FederatedCloudSQLTableBigQueryViewBuilder,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.view_registry.address_overrides_factory import (
-    address_overrides_for_view_builders,
-)
 
 
 class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
@@ -48,131 +42,7 @@ class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_build_view_state_primary(self) -> None:
-        table = one(
-            t for t in StateBase.metadata.sorted_tables if t.name == "state_person"
-        )
-        view_builder = FederatedCloudSQLTableBigQueryViewBuilder(
-            connection_region="us-east2",
-            table=table,
-            view_id=table.name,
-            cloud_sql_query="SELECT * FROM state_person;",
-            database_key=database_key_for_state(
-                DirectIngestInstance.PRIMARY,
-                StateCode.US_XX,
-            ),
-            materialized_address_override=BigQueryAddress(
-                dataset_id="materialized_dataset", table_id="materialized_table"
-            ),
-        )
-        expected_description = """View providing a connection to the [state_person]
-table in the [us_xx_primary] database in the [STATE] schema. This view is 
-managed outside of regular view update operations and the results can be found in the 
-schema-specific datasets (`state`, `justice_counts`, etc)."""
-
-        expected_view_query = """
-SELECT
-    *
-FROM EXTERNAL_QUERY(
-    "test-project.us-east2.state_v2_us_xx_primary_cloudsql",
-    "SELECT * FROM state_person;"
-)"""
-
-        # Build without dataset overrides
-        view = view_builder.build()
-
-        self.assertIsInstance(view, FederatedCloudSQLTableBigQueryView)
-        self.assertEqual(expected_view_query, view.view_query)
-        self.assertEqual(expected_description, view.description)
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="state_v2_us_xx_primary_cloudsql_connection",
-                table_id="state_person",
-            ),
-            view.address,
-        )
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="materialized_dataset", table_id="materialized_table"
-            ),
-            view.materialized_address,
-        )
-
-        # Build with dataset overrides
-        address_overrides = address_overrides_for_view_builders(
-            "test_prefix", [view_builder]
-        )
-        view_with_overrides = view_builder.build(address_overrides=address_overrides)
-
-        self.assertIsInstance(view, FederatedCloudSQLTableBigQueryView)
-        self.assertEqual(expected_view_query, view_with_overrides.view_query)
-        self.assertEqual(expected_description, view_with_overrides.description)
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="test_prefix_state_v2_us_xx_primary_cloudsql_connection",
-                table_id="state_person",
-            ),
-            view_with_overrides.address,
-        )
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="test_prefix_materialized_dataset",
-                table_id="materialized_table",
-            ),
-            view_with_overrides.materialized_address,
-        )
-
-    def test_build_view_state_secondary(self) -> None:
-        table = one(
-            t for t in StateBase.metadata.sorted_tables if t.name == "state_person"
-        )
-        view_builder = FederatedCloudSQLTableBigQueryViewBuilder(
-            connection_region="us-east2",
-            table=table,
-            view_id=table.name,
-            cloud_sql_query="SELECT * FROM state_person;",
-            database_key=database_key_for_state(
-                DirectIngestInstance.SECONDARY,
-                StateCode.US_XX,
-            ),
-            materialized_address_override=BigQueryAddress(
-                dataset_id="materialized_dataset", table_id="materialized_table"
-            ),
-        )
-        expected_description = """View providing a connection to the [state_person]
-table in the [us_xx_secondary] database in the [STATE] schema. This view is 
-managed outside of regular view update operations and the results can be found in the 
-schema-specific datasets (`state`, `justice_counts`, etc)."""
-
-        expected_view_query = """
-SELECT
-    *
-FROM EXTERNAL_QUERY(
-    "test-project.us-east2.state_v2_us_xx_secondary_cloudsql",
-    "SELECT * FROM state_person;"
-)"""
-
-        # Build without dataset overrides
-        view = view_builder.build()
-
-        self.assertIsInstance(view, FederatedCloudSQLTableBigQueryView)
-        self.assertEqual(expected_view_query, view.view_query)
-        self.assertEqual(expected_description, view.description)
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="state_v2_us_xx_secondary_cloudsql_connection",
-                table_id="state_person",
-            ),
-            view.address,
-        )
-        self.assertEqual(
-            BigQueryAddress(
-                dataset_id="materialized_dataset", table_id="materialized_table"
-            ),
-            view.materialized_address,
-        )
-
-    def test_build_view_non_multi_db_schema(self) -> None:
+    def test_build_view_operations_db(self) -> None:
         table = one(
             t
             for t in OperationsBase.metadata.sorted_tables

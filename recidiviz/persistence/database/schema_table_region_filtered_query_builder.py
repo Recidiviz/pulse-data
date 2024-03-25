@@ -20,14 +20,13 @@
     table.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 import sqlalchemy
 from more_itertools import one
 from sqlalchemy import ForeignKeyConstraint, Table
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_foreign_key_constraints,
@@ -47,16 +46,12 @@ class SchemaTableRegionFilteredQueryBuilder:
         Usage:
             # Returns a query that selects all columns to include from table.
             QueryBuilder(schema_type, table, columns_to_include).full_query()
-            QueryBuilder(schema_type, table, columns_to_include, region_codes_to_exclude=[]).full_query()
 
             # Returns a query that will return zero rows.
             QueryBuilder(schema_type, table, columns_to_include, region_codes_to_include=[]).full_query()
 
             # Returns a query that will return rows matching the provided region_codes
             QueryBuilder(schema_type, table, columns_to_include, region_codes_to_include=['US_ND']).full_query()
-
-            # Returns a query that will return rows that do NOT match the provided region codes
-            QueryBuilder(schema_type, table, columns_to_include, region_codes_to_exclude=['US_ID']).full_query()
     """
 
     def __init__(
@@ -65,20 +60,13 @@ class SchemaTableRegionFilteredQueryBuilder:
         table: Table,
         columns_to_include: List[str],
         region_codes_to_include: Optional[List[str]] = None,
-        region_codes_to_exclude: Optional[List[str]] = None,
     ):
-        if region_codes_to_include is not None and region_codes_to_exclude is not None:
-            raise ValueError(
-                f"Expected only one of region_codes_to_include ([{region_codes_to_include}])"
-                f"and region_codes_to_exclude ([{region_codes_to_exclude}]) to be not None"
-            )
         self.schema_type = schema_type
         self.metadata_base = schema_type_to_schema_base(schema_type)
         self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
         self.table = table
         self.columns_to_include = columns_to_include
         self.region_codes_to_include = region_codes_to_include
-        self.region_codes_to_exclude = region_codes_to_exclude
 
     @property
     def table_name(self) -> str:
@@ -92,10 +80,6 @@ class SchemaTableRegionFilteredQueryBuilder:
         ):
             return True
         return False
-
-    @property
-    def filters_by_region_codes(self) -> bool:
-        return bool(self.region_codes_to_include or self.region_codes_to_exclude)
 
     def _get_region_code_col(self) -> Optional[str]:
         if not schema_has_region_code_query_support(self.schema_type):
@@ -184,19 +168,12 @@ class SchemaTableRegionFilteredQueryBuilder:
     def filter_clause(self) -> Optional[str]:
         if self.excludes_all_rows:
             return "WHERE FALSE"
-        if not self.filters_by_region_codes:
+        if not self.region_codes_to_include:
             return None
 
         region_code_col = self._get_region_code_col()
-        operator = "NOT IN" if self.region_codes_to_exclude else "IN"
-        region_codes = (
-            self.region_codes_to_exclude
-            if self.region_codes_to_exclude
-            else self.region_codes_to_include
-        )
-        if not region_codes:
-            return None
-        return f"WHERE {region_code_col} {operator} ({self.format_region_codes_for_sql(region_codes)})"
+        region_codes = self.region_codes_to_include
+        return f"WHERE {region_code_col} IN ({self.format_region_codes_for_sql(region_codes)})"
 
     def full_query(self) -> str:
         return " ".join(
@@ -244,122 +221,41 @@ class BaseCloudSqlSchemaTableRegionFilteredQueryBuilder(
         ) and is_association_table(self.table_name)
 
 
-class CloudSqlSchemaTableRegionFilteredQueryBuilder(
-    BaseCloudSqlSchemaTableRegionFilteredQueryBuilder
-):
-    """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying tables
-    directly in CloudSQL (i.e. Postgres).
-    """
-
-    def _formatted_columns_for_select_clause(self) -> str:
-        return self._unmodified_qualified_columns_for_select_clause()
-
-
 class FederatedSchemaTableRegionFilteredQueryBuilder(
     BaseCloudSqlSchemaTableRegionFilteredQueryBuilder
 ):
     """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying tables
     in CloudSQL using a BigQuery `EXTERNAL_QUERY` federated query. BigQuery places some
     restrictions on the output columns that we must handle when doing this type of
-    query. This query also handles primary/foreign key translation in the case where
-    we're querying a multi-DB schema.
+    query.
     """
 
     def __init__(
-        self,
-        *,
-        schema_type: SchemaType,
-        table: Table,
-        columns_to_include: List[str],
-        region_code: Optional[str],
+        self, *, schema_type: SchemaType, table: Table, columns_to_include: List[str]
     ):
         super().__init__(
             schema_type=schema_type,
             table=table,
             columns_to_include=columns_to_include,
-            region_codes_to_include=[region_code] if region_code else None,
+            region_codes_to_include=None,
         )
-        should_translate_key_columns = schema_type.is_multi_db_schema
-        if should_translate_key_columns and not region_code:
+        if schema_type.is_multi_db_schema:
             raise ValueError(
-                f"Can only do primary/foreign key translation for single-region queries."
-                f"Schema [{schema_type}] requires translation."
+                f"No support for loading multi-DB schema [{schema_type.value}] - since multi-DB schems"
+                f"may have conflicting primary keys in each of the databses, they need to be loaded into BigQuery with"
+                f"caution."
             )
-        self.should_translate_key_columns = should_translate_key_columns
-        self.region_code = region_code
-
-    def _key_columns_to_translate(self) -> Set[str]:
-        """Returns a list of column names corresponding to columns in this table that
-        are primary/foreign keys and should have a region mask applied to prevent
-        conflicts when results from multiple databases are merged.
-        """
-        if not self.should_translate_key_columns:
-            return set()
-
-        foreign_key_columns = [fk.parent for fk in self.table.foreign_keys]
-        primary_key_columns = self.table.primary_key.columns
-
-        columns_to_translate = {*foreign_key_columns, *primary_key_columns}
-
-        for c in columns_to_translate:
-            if c.type.python_type != int:
-                raise ValueError(
-                    f"Can only translate integer columns! "
-                    f"Found integer key column [{c.name}] in table [{self.table_name}]"
-                )
-            if c.autoincrement != "auto":
-                raise ValueError(
-                    f"Expected to only translate auto-increment key columns! "
-                    f"Found non-increment column [{c.name}] in table [{self.table_name}]"
-                )
-        return {c.name for c in columns_to_translate}
-
-    def _get_translated_key_column_mask(self) -> int:
-        """Returns an integer mask to add to every primary/foreign key column in this
-        query. The mask is stable across all tables and derived from the region code.
-
-        Example: 46000000000000
-
-        For the above mask, if a primary key is 123456 in Postgres, then the translated
-        primary key would be 46000000123456.
-        """
-        if not self.region_code:
-            raise ValueError(
-                "Must have set region code to do primary/foreign key translation."
-            )
-        if not StateCode.is_state_code(self.region_code):
-            raise ValueError(
-                "No support yet for doing primary/foreign key translation on non-state "
-                "regions."
-            )
-        return StateCode(self.region_code).get_state_fips_mask()
-
-    def _translate_key_column_clause(
-        self, column_name: str, qualified_column_name: str
-    ) -> str:
-        """Returns a string column select clause that applies the key translation
-        mask to the given column.
-
-        Example: "(46000000000000 + state_charge.person_id) AS person_id"
-        """
-        mask = self._get_translated_key_column_mask()
-        return f"({mask} + {qualified_column_name}) AS {column_name}"
 
     def _formatted_columns_for_select_clause(self) -> str:
         qualified_names_map = self.qualified_column_names_map(
             self.columns_to_include, table_prefix=self.table_name
         )
         select_columns = []
-        key_columns_to_translate = self._key_columns_to_translate()
         for column in self.table.columns:
             if column.name not in self.columns_to_include:
                 continue
             qualified_name = qualified_names_map[column.name]
-            if column.name in key_columns_to_translate:
-                select_columns.append(
-                    self._translate_key_column_clause(column.name, qualified_name)
-                )
-            elif isinstance(column.type, sqlalchemy.Enum):
+            if isinstance(column.type, sqlalchemy.Enum):
                 select_columns.append(f"CAST({qualified_name} as VARCHAR)")
             elif isinstance(column.type, postgresql.UUID):
                 select_columns.append(f"CAST({qualified_name} as VARCHAR)")
@@ -393,14 +289,12 @@ class BigQuerySchemaTableRegionFilteredQueryBuilder(
         table: Table,
         columns_to_include: List[str],
         region_codes_to_include: Optional[List[str]] = None,
-        region_codes_to_exclude: Optional[List[str]] = None,
     ):
         super().__init__(
             schema_type,
             table,
             columns_to_include,
             region_codes_to_include,
-            region_codes_to_exclude,
         )
         self.project_id = project_id
         self.dataset_id = dataset_id
