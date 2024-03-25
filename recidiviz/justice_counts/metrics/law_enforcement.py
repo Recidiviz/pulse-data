@@ -119,7 +119,7 @@ funding = MetricDefinition(
                 ],
                 FundingType.COUNTY_APPROPRIATION: [
                     IncludesExcludesSet(
-                        members=LawEnforcementStateAppropriationIncludesExcludes,
+                        members=LawEnforcementCountyOrMunicipalAppropriation,
                         excluded_set={
                             LawEnforcementCountyOrMunicipalAppropriation.PRELIMINARY,
                             LawEnforcementCountyOrMunicipalAppropriation.PROPOSED,
