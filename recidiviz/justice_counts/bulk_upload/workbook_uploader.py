@@ -528,7 +528,7 @@ class WorkbookUploader:
             ]
             if (
                 metric_definition.disabled is True
-                or DatapointInterface.is_metric_disabled(
+                or DatapointInterface.is_whole_metric_disabled(
                     metric_key_to_agency_datapoints=self.metric_key_to_agency_datapoints,
                     metric_key=metric_definition.key,
                 )
