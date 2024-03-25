@@ -19,10 +19,7 @@ import os
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
-from recidiviz.persistence.database.base_schema import CaseTriageBase, StateBase
+from recidiviz.persistence.database.base_schema import CaseTriageBase, OperationsBase
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
@@ -30,45 +27,25 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 class SQLAlchemyDatabaseKeyTest(TestCase):
     """Tests for SQLAlchemyDatabaseKey."""
 
-    def test_for_schema_throws_state(self) -> None:
+    def test_for_schema_throws_multi_db(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "^Must provide db name information to create a STATE database key.$",
+            "^Must provide db name information to create a PATHWAYS database key.$",
         ):
-            _ = SQLAlchemyDatabaseKey.for_schema(SchemaType.STATE)
+            _ = SQLAlchemyDatabaseKey.for_schema(SchemaType.PATHWAYS)
 
-    def test_for_state_code(self) -> None:
-        primary = database_key_for_state(DirectIngestInstance.PRIMARY, StateCode.US_MN)
-        secondary = database_key_for_state(
-            DirectIngestInstance.SECONDARY, StateCode.US_MN
-        )
+    def test_key_attributes_operations(self) -> None:
+        key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
-        self.assertEqual(
-            SQLAlchemyDatabaseKey(
-                schema_type=SchemaType.STATE, db_name="us_mn_primary"
-            ),
-            primary,
-        )
-
-        self.assertEqual(
-            SQLAlchemyDatabaseKey(
-                schema_type=SchemaType.STATE, db_name="us_mn_secondary"
-            ),
-            secondary,
-        )
-
-    def test_key_attributes_state(self) -> None:
-        key = database_key_for_state(DirectIngestInstance.PRIMARY, StateCode.US_MN)
-
-        self.assertEqual(key.declarative_meta, StateBase)
+        self.assertEqual(key.declarative_meta, OperationsBase)
 
         self.assertTrue(os.path.exists(key.alembic_file))
-        self.assertTrue(key.alembic_file.endswith("migrations/state_alembic.ini"))
+        self.assertTrue(key.alembic_file.endswith("migrations/operations_alembic.ini"))
 
         self.assertTrue(os.path.exists(key.migrations_location))
-        self.assertTrue(key.migrations_location.endswith("/migrations/state"))
+        self.assertTrue(key.migrations_location.endswith("/migrations/operations"))
 
-        self.assertEqual(key.isolation_level, "SERIALIZABLE")
+        self.assertEqual(key.isolation_level, None)
 
     def test_key_attributes_case_triage(self) -> None:
         key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
@@ -84,7 +61,9 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
         self.assertEqual(key.isolation_level, None)
 
     def test_canonical_for_schema_local_only(self) -> None:
-        _ = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type=SchemaType.STATE)
+        _ = SQLAlchemyDatabaseKey.canonical_for_schema(
+            schema_type=SchemaType.OPERATIONS
+        )
 
         with patch(
             "recidiviz.utils.environment.get_gcp_environment",
@@ -92,7 +71,9 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
         ):
             with self.assertRaises(RuntimeError):
                 _ = SQLAlchemyDatabaseKey.canonical_for_schema(
-                    schema_type=SchemaType.STATE
+                    schema_type=SchemaType.OPERATIONS
                 )
 
-        _ = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type=SchemaType.STATE)
+        _ = SQLAlchemyDatabaseKey.canonical_for_schema(
+            schema_type=SchemaType.OPERATIONS
+        )

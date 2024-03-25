@@ -78,6 +78,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 secret_prefix_override=None,
             ): f"test-project:us-east2:{schema_type.value}-data"
             for schema_type in SchemaType
+            if schema_type.has_cloud_sql_instance
         }
         self.get_secret_patcher = mock.patch("recidiviz.utils.secrets.get_secret")
 

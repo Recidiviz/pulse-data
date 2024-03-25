@@ -21,6 +21,7 @@ readiness_check:
   app_start_timeout_sec: 120
 
 beta_settings:
+  # TODO(#20930): Remove dev-state-data* databases from this list when we actually delete the instance
   cloud_sql_instances: recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data, recidiviz-staging:us-east1:dev-justice-counts-data, recidiviz-staging:us-central1:dev-case-triage-data-0af0a, recidiviz-staging:us-east1:dev-operations-data-0x17a1b, recidiviz-staging:us-east1:dev-state-data-0x28b48, recidiviz-staging:us-central1:dev-outliers-data, justice-counts-staging:us-central1:dev-justice-counts-data
 
 env_variables:

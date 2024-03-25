@@ -185,8 +185,6 @@ class SQLAlchemyEngineManager:
     def _secret_manager_prefix_for_type(cls, schema_type: SchemaType) -> str:
         # TODO(#8282): Clean up the _v2 suffix eventually.
         match schema_type:
-            case SchemaType.STATE:
-                return "state_v2"
             case SchemaType.OPERATIONS:
                 return "operations_v2"
             case SchemaType.JUSTICE_COUNTS:

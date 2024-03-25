@@ -20,7 +20,6 @@ from typing import List
 from unittest import mock
 from unittest.case import TestCase
 
-import sqlalchemy
 from mock import call, patch
 from sqlalchemy.engine import URL
 
@@ -52,13 +51,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
             itertools.chain.from_iterable(
                 server_config.database_keys_for_schema_type(schema_type)
                 for schema_type in schema_utils.SchemaType
+                if schema_type.has_cloud_sql_instance
             )
         )
 
-    @patch(
-        f"{server_config.__name__}.get_direct_ingest_states_existing_in_env",
-        return_value=[StateCode.US_XX, StateCode.US_WW],
-    )
     @patch(
         f"{server_config.__name__}.get_pathways_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
@@ -86,7 +82,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
         _mock_workflows_enabled: mock.MagicMock,
         _mock_outliers_enabled: mock.MagicMock,
         _mock_pathways_enabled: mock.MagicMock,
-        mock_get_states: mock.MagicMock,
     ) -> None:
         # Arrange
         mock_in_gcp.return_value = True
@@ -159,62 +154,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_xx_primary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_ww_primary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_xx_secondary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_ww_secondary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
                         username="pathways_db_user_value",
                         password="pathways_db_password_value",
                         port=5432,
@@ -302,12 +241,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 ),
             ],
         )
-        mock_get_states.assert_called()
 
-    @patch(
-        f"{server_config.__name__}.get_direct_ingest_states_existing_in_env",
-        return_value=[StateCode.US_XX, StateCode.US_WW],
-    )
     @patch(
         f"{server_config.__name__}.get_pathways_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
@@ -333,7 +267,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
         _mock_workflows_enabled: mock.MagicMock,
         _mock_outliers_enabled: mock.MagicMock,
         _mock_pathways_enabled: mock.MagicMock,
-        mock_get_states: mock.MagicMock,
     ) -> None:
         # Arrange
         mock_in_gcp.return_value = True
@@ -403,62 +336,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_xx_primary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_ww_primary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_xx_secondary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_v2_db_user_value",
-                        password="state_v2_db_password_value",
-                        port=5432,
-                        database="us_ww_secondary",
-                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
                         username="pathways_db_user_value",
                         password="pathways_db_password_value",
                         port=5432,
@@ -546,7 +423,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 ),
             ],
         )
-        mock_get_states.assert_called()
 
     @patch("recidiviz.utils.secrets.get_secret")
     def testGetAllStrippedCloudSqlInstanceIds(
@@ -560,20 +436,15 @@ class SQLAlchemyEngineManagerTest(TestCase):
             "project:region:444",
             "project:region:555",
             "project:region:666",
-            "project:region:777",
         ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666", "777"])
+        self.assertEqual(ids, ["111", "222", "333", "444", "555", "666"])
         mock_secrets.assert_has_calls(
             [
-                # TODO(#20930): Before we delete the CloudSQL instance for STATE, we
-                #  should update the has_cloud_sql_instance value for SchemaType.STATE
-                #  so this call no longer happens.
-                mock.call("state_v2_cloudsql_instance_id"),
                 mock.call("operations_v2_cloudsql_instance_id"),
                 mock.call("justice_counts_cloudsql_instance_id"),
                 mock.call("case_triage_cloudsql_instance_id"),

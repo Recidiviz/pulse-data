@@ -49,8 +49,6 @@ class SQLAlchemyPoolConfiguration:
     pool_timeout: int = attr.ib(default=30)
 
 
-# TODO(#20930): Disallow creation of SQLAlchemyDatabaseKey for the STATE schema to
-#  ensure we are never trying to connect to the DB anymore.
 @attr.s(frozen=True)
 class SQLAlchemyDatabaseKey:
     """Contains information required to identify a single database within a CloudSQL
@@ -67,6 +65,13 @@ class SQLAlchemyDatabaseKey:
 
     # Identifies which individual database to connect to inside the instance
     db_name: str = attr.ib(validator=attr_validators.is_str)
+
+    def __attrs_post_init__(self) -> None:
+        if not self.schema_type.has_cloud_sql_instance:
+            raise ValueError(
+                f"Cannot create a database key for schema [{self.schema_type.value}] with no associated CloudSQL "
+                f"instance."
+            )
 
     @property
     def alembic_file(self) -> str:
@@ -104,20 +109,11 @@ class SQLAlchemyDatabaseKey:
         # this causes performance issues we may reconsider. See
         # https://www.postgresql.org/docs/9.1/applevel-consistency.html.
         #
-        # TODO(#3734): Consider doing this for all databases.
-        if self.schema_type == SchemaType.STATE:
-            return "SERIALIZABLE"
+        # TODO(#3734): Consider using SERIALIZABLE for all databases.
         return None
 
     @property
     def poolclass(self) -> Optional[Type[sqlalchemy.pool.Pool]]:
-        # Don't pool connections for State databases. We only run a single
-        # request at a time for a particular state database, so it is
-        # unnecessary to maintain a connection from every copy of our
-        # application to all databases all of the time. This does mean that
-        # each request using a State database has to setup its own connection.
-        if self.schema_type is SchemaType.STATE:
-            return sqlalchemy.pool.NullPool
         return None
 
     @property

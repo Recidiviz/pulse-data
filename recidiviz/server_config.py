@@ -32,11 +32,6 @@ from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states im
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_existing_in_env,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
@@ -59,13 +54,6 @@ def database_keys_for_schema_type(
         return [SQLAlchemyDatabaseKey.for_schema(schema_type)]
 
     match schema_type:
-        case SchemaType.STATE:
-            return [
-                database_key_for_state(ingest_instance, state_code)
-                for ingest_instance in DirectIngestInstance
-                for state_code in get_direct_ingest_states_existing_in_env()
-            ]
-
         case SchemaType.PATHWAYS:
             return [
                 PathwaysDatabaseManager.database_key_for_state(state_code)
