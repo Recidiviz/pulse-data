@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - CompletedByEmployeeId
+  - CompletedDate
+  - OffenderQuestionnaireTemplateId
+  - violation_date
+  - violation_type
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - OffenderQuestionnaireTemplateId
+                - $literal("SUPPLEMENTAL")
+          violation_date: violation_date
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: violation_type
+                    $mappings:
+                      StateSupervisionViolationType.ABSCONDED:
+                        - Absconding
+                      StateSupervisionViolationType.TECHNICAL:
+                        - Technical (enter details below)
+                      StateSupervisionViolationType.FELONY:
+                        - Non-Violent Felony
+                        - Violent Felony
+                        - New Felony
+                      StateSupervisionViolationType.MISDEMEANOR:
+                        - Violent Misdemeanor
+                        - Non-Violent Misdemeanor
+                        - New Misdemeanor
+                      StateSupervisionViolationType.LAW:
+                        - Violent Sex Offense
+                        - Non-Violent Sex Offense
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - OffenderId
+                      - OffenderQuestionnaireTemplateId
+                      - $literal("SUPPLEMENTAL")
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                response_date: CompletedDate
+                deciding_staff_external_id: CompletedByEmployeeId
+                deciding_staff_external_id_type:
+                  $conditional:
+                    - $if:
+                        $not_null: CompletedByEmployeeId
+                      $then: $literal("US_IX_EMPLOYEE")
