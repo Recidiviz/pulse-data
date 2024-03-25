@@ -71,6 +71,7 @@ us_ix_supervision_district_managers AS (
             state_code = "US_IX"
     ) districts USING (state_code, LocationId)
     WHERE role_subtype_raw_text IN ('DISTRICT MANAGER', 'DEPUTY DISTRICT MANAGER')
+    AND active_flag = 1
 )
 
 SELECT 
