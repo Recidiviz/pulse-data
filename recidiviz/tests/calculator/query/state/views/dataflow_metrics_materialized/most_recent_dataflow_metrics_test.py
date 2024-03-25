@@ -20,7 +20,10 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     make_most_recent_metric_view_builders,
 )
@@ -41,19 +44,19 @@ class MostRecentDataflowMetricsTest(BigQueryEmulatorTestCase):
         old_job_data = [
             # fmt: off
             # Job 1 - State A
-            {"state_code": "A", "metric_type": "X", "job_id": "1", "date": "2022-03-01", "value": 1},
-            {"state_code": "A", "metric_type": "X", "job_id": "1", "date": "2022-03-07", "value": 6},
-            {"state_code": "A", "metric_type": "X", "job_id": "1", "date": "2022-04-02", "value": 3},
+            {"state_code": "A", "metric_type": "X", "job_id": "1", "date": "2022-03-01", "person_id": 101, "prioritized_race_or_ethnicity": "WHITE", "value": 1},
+            {"state_code": "A", "metric_type": "X", "job_id": "1", "date": "2022-03-07", "person_id": 101, "prioritized_race_or_ethnicity": "WHITE", "value": 6},
+            {"state_code": "A", "metric_type": "X", "job_id": "1", "date": "2022-04-02", "person_id": 101, "prioritized_race_or_ethnicity": "WHITE", "value": 3},
             # fmt: on
         ]
         new_job_data = [
             # fmt: off
             # Job 2 - State A
-            {"state_code": "A", "metric_type": "X", "job_id": "2", "date": "2022-04-02", "value": 7},
-            {"state_code": "A", "metric_type": "X", "job_id": "2", "date": "2022-04-07", "value": 5},
+            {"state_code": "A", "metric_type": "X", "job_id": "2", "date": "2022-04-02", "person_id": 101, "prioritized_race_or_ethnicity": "WHITE", "value": 7},
+            {"state_code": "A", "metric_type": "X", "job_id": "2", "date": "2022-04-07", "person_id": 101, "prioritized_race_or_ethnicity": "WHITE", "value": 5},
             # Job 3 - State B
-            {"state_code": "B", "metric_type": "X", "job_id": "3", "date": "2022-04-02", "value": 7},
-            {"state_code": "B", "metric_type": "X", "job_id": "3", "date": "2022-04-07", "value": 6},
+            {"state_code": "B", "metric_type": "X", "job_id": "3", "date": "2022-04-02", "person_id": 201, "prioritized_race_or_ethnicity": "HISPANIC", "value": 7},
+            {"state_code": "B", "metric_type": "X", "job_id": "3", "date": "2022-04-07", "person_id": 201, "prioritized_race_or_ethnicity": "HISPANIC", "value": 6},
             # fmt: on
         ]
         self.create_mock_table(
@@ -63,12 +66,34 @@ class MostRecentDataflowMetricsTest(BigQueryEmulatorTestCase):
                 schema_field_for_type("metric_type", str),
                 schema_field_for_type("job_id", str),
                 schema_field_for_type("date", str),
+                schema_field_for_type("person_id", int),
+                schema_field_for_type("prioritized_race_or_ethnicity", str),
                 schema_field_for_type("value", int),
             ],
         )
         self.load_rows_into_table(
             address=address,
             data=old_job_data + new_job_data,
+        )
+        demographics_address = BigQueryAddress(
+            dataset_id=SESSIONS_DATASET, table_id="person_demographics_materialized"
+        )
+        self.create_mock_table(
+            address=demographics_address,
+            schema=[
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("person_id", int),
+                schema_field_for_type("prioritized_race_or_ethnicity", str),
+            ],
+        )
+        self.load_rows_into_table(
+            address=demographics_address,
+            data=[
+                # fmt: off
+                {"state_code": "A", "person_id": 101, "prioritized_race_or_ethnicity": "BLACK"},
+                {"state_code": "B", "person_id": 201, "prioritized_race_or_ethnicity": "INTERNAL_UNKNOWN"},
+                # fmt: on
+            ],
         )
 
         # Act / Assert
@@ -78,5 +103,15 @@ class MostRecentDataflowMetricsTest(BigQueryEmulatorTestCase):
             )
         )
         self.run_query_test(
-            query_str=query_builder.build().view_query, expected_result=new_job_data
+            query_str=query_builder.build().view_query,
+            expected_result=[
+                # fmt: off
+                # Job 2 - State A
+                {"state_code": "A", "metric_type": "X", "job_id": "2", "date": "2022-04-02", "person_id": 101, "value": 7, "prioritized_race_or_ethnicity": "BLACK"},
+                {"state_code": "A", "metric_type": "X", "job_id": "2", "date": "2022-04-07", "person_id": 101, "value": 5, "prioritized_race_or_ethnicity": "BLACK"},
+                # Job 3 - State B
+                {"state_code": "B", "metric_type": "X", "job_id": "3", "date": "2022-04-02", "person_id": 201, "value": 7, "prioritized_race_or_ethnicity": None},
+                {"state_code": "B", "metric_type": "X", "job_id": "3", "date": "2022-04-07", "person_id": 201, "value": 6, "prioritized_race_or_ethnicity": None},
+                # fmt: on
+            ],
         )
