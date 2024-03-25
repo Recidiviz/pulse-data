@@ -82,3 +82,19 @@ class MetricSettingInterface:
             for metric_interface in metric_interfaces
         }
         return metric_key_to_metric_interface
+
+    @staticmethod
+    def get_agency_id_to_metric_key_to_metric_interface(
+        session: Session,
+        agencies: List[schema.Agency],
+    ) -> Dict[int, Dict[str, MetricInterface]]:
+        agency_id_to_metric_key_to_metric_interface: Dict[
+            int, Dict[str, MetricInterface]
+        ] = {}
+        for agency in agencies:
+            agency_id_to_metric_key_to_metric_interface[
+                agency.id
+            ] = MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=session, agency=agency
+            )
+        return agency_id_to_metric_key_to_metric_interface

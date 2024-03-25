@@ -17,18 +17,13 @@
 """Base class for official Justice Counts metrics."""
 
 import enum
-from typing import Dict, List, Optional, Set, Tuple, Type
+from typing import Dict, List, Optional, Set, Type
 
 import attr
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.base import DimensionBase
-from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
-    CustomReportingFrequency,
-)
-from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.persistence.database.schema.justice_counts.schema import (
-    Datapoint,
     MeasurementType,
     MetricType,
     ReportingFrequency,
@@ -260,41 +255,3 @@ class MetricDefinition:
         if len(self.reporting_frequencies) > 1:
             raise ValueError("Multiple reporting frequencies are not yet supported.")
         return self.reporting_frequencies[0]
-
-    def get_reporting_frequency_to_use(
-        self, agency_datapoints: List[Datapoint]
-    ) -> Tuple[ReportingFrequency, Optional[int]]:
-        # Returns a tuple containing:
-        # - the reporting frequency based upon what the agency has set in metric settings.
-        # - the custom starting month of the reporting frequency (if specified) (None if not specified)
-        # Note that the custom starting month applies for custom reporting frequencies for annual metrics
-
-        default_frequency = self.reporting_frequency
-        if agency_datapoints is None:
-            # If there is no agency datapoint for the agency, return
-            # the default frequency
-            return default_frequency, None
-
-        frequency_datapoint_list = list(
-            filter(
-                lambda d: d.context_key == REPORTING_FREQUENCY_CONTEXT_KEY,
-                agency_datapoints,
-            )
-        )
-        if len(list(frequency_datapoint_list)) == 0:
-            # If there is no custom reporting frequency datapoint for
-            # the agency, return the default frequency
-            return default_frequency, None
-
-        frequency_datapoint = frequency_datapoint_list.pop()
-        custom_reporting_frequency = CustomReportingFrequency.from_datapoint(
-            frequency_datapoint
-        )
-        return (
-            (
-                custom_reporting_frequency.frequency,
-                custom_reporting_frequency.starting_month,
-            )
-            if custom_reporting_frequency.frequency is not None
-            else (default_frequency, None)
-        )

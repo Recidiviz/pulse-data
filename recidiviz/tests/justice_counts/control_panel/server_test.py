@@ -2688,7 +2688,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             agency=agency,
             system=schema.System.LAW_ENFORCEMENT,
             user_account=self.test_schema_objects.test_user_A,
-            metric_key_to_agency_datapoints={},
+            metric_key_to_metric_interface={},
         )
         uploader.upload_workbook(
             session=self.session,
@@ -2750,7 +2750,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             agency=agency,
             system=schema.System.LAW_ENFORCEMENT,
             user_account=self.test_schema_objects.test_user_A,
-            metric_key_to_agency_datapoints={},
+            metric_key_to_metric_interface={},
         )
         uploader.upload_workbook(
             session=self.session,

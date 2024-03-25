@@ -17,7 +17,7 @@
 """Base class for the reported value(s) for a Justice Counts metric."""
 
 import enum
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Type, TypeVar
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Type, TypeVar
 
 import attr
 
@@ -45,6 +45,9 @@ from recidiviz.justice_counts.metrics.metric_registry import (
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import DatapointGetRequestEntryPoint
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    ReportingFrequency,
+)
 
 MetricInterfaceT = TypeVar("MetricInterfaceT", bound="MetricInterface")
 
@@ -102,6 +105,25 @@ class MetricInterface:
             )
         )
         return metric_files_for_metric
+
+    def get_reporting_frequency_to_use(
+        self,
+    ) -> Tuple[ReportingFrequency, Optional[int]]:
+        # Returns a tuple containing:
+        # - the reporting frequency based upon what the agency has set in metric settings.
+        # - the custom starting month of the reporting frequency (if specified) (None if not specified)
+        # Note that the custom starting month applies for custom reporting frequencies for annual metrics
+
+        custom_reporting_frequency = self.custom_reporting_frequency
+        default_frequency = self.metric_definition.reporting_frequency
+        return (
+            (
+                custom_reporting_frequency.frequency,
+                custom_reporting_frequency.starting_month,
+            )
+            if custom_reporting_frequency.frequency is not None
+            else (default_frequency, None)
+        )
 
     ### To/From JSON ###
 

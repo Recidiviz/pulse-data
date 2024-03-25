@@ -33,6 +33,7 @@ from recidiviz.justice_counts.metrics import prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.types import BulkUploadFileType
@@ -88,7 +89,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
                     agency=agency,
-                    metric_key_to_agency_datapoints={},
+                    metric_key_to_metric_interface={},
                     metric_definitions=METRICS_BY_SYSTEM[
                         schema.System.LAW_ENFORCEMENT.value
                     ],
@@ -128,7 +129,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
@@ -155,6 +156,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             session.refresh(agency)
             # Agency datapoint that makes the supervision funding metric be
             # disaggregated by subsystem
+            metric_key_to_metric_interface = {}
             disaggregation_datapoint = schema.Datapoint(
                 metric_definition_key=supervision.funding.key,
                 source=agency,
@@ -163,6 +165,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 value=str(True),
                 is_report_datapoint=False,
             )
+            metric_key_to_metric_interface[supervision.funding.key] = MetricInterface(
+                key=supervision.funding.key,
+                disaggregated_by_supervision_subsystems=True,
+            )
             # Set metrics to Enabled
             setting_datapoint_enabled = schema.Datapoint(
                 metric_definition_key=supervision.expenses.key,
@@ -170,12 +176,22 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 enabled=True,
                 is_report_datapoint=False,
             )
+            metric_key_to_metric_interface[supervision.expenses.key] = MetricInterface(
+                key=supervision.expenses.key,
+                is_metric_enabled=True,
+            )
             # Set metrics to Disabled
             setting_datapoint_disabled = schema.Datapoint(
                 metric_definition_key=supervision.discharges.key,
                 source=agency,
                 enabled=False,
                 is_report_datapoint=False,
+            )
+            metric_key_to_metric_interface[
+                supervision.discharges.key
+            ] = MetricInterface(
+                key=supervision.discharges.key,
+                is_metric_enabled=False,
             )
 
             spreadsheet = self.test_schema_objects.get_test_spreadsheet(
@@ -191,13 +207,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     setting_datapoint_disabled,
                 ]
             )
-            metric_key_to_agency_datapoints = {
-                supervision.funding.key: [
-                    disaggregation_datapoint,
-                ],
-                supervision.expenses.key: [setting_datapoint_enabled],
-                supervision.discharges.key: [setting_datapoint_disabled],
-            }
             # Excel workbook will have an invalid sheet.
             file_path = create_excel_file(
                 system=schema.System.SUPERVISION,
@@ -222,7 +231,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface=metric_key_to_metric_interface,
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PAROLE.value]
                 + METRICS_BY_SYSTEM[schema.System.PROBATION.value]
                 + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
@@ -241,7 +250,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_errors=metric_key_to_errors,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_definitions=metric_definitions,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface=metric_key_to_metric_interface,
                 updated_report_jsons=[],
                 new_report_jsons=[],
                 unchanged_report_jsons=[],

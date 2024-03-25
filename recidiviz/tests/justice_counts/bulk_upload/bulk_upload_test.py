@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
-import itertools
 from typing import Dict, List
 
 import pandas as pd
@@ -48,6 +47,7 @@ from recidiviz.justice_counts.metrics import (
     prosecution,
     supervision,
 )
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import BulkUploadFileType
@@ -131,7 +131,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PROSECUTION,
                 agency=prosecution_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
@@ -184,7 +184,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 agency=prison_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             workbook_uploader.upload_workbook(
                 session=session,
@@ -239,7 +239,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 agency=prison_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
 
             # Convert csv file to excel
@@ -292,7 +292,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PROSECUTION,
                 agency=prosecution_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             workbook_uploader.upload_workbook(
                 session=session,
@@ -329,7 +329,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             workbook_uploader.upload_workbook(
                 session=session,
@@ -366,7 +366,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.SUPERVISION,
                 agency=supervision_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             workbook_uploader.upload_workbook(
                 session=session,
@@ -620,7 +620,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             workbook_uploader.upload_workbook(
                 session=session,
@@ -710,7 +710,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
@@ -815,7 +815,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
 
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
@@ -867,7 +867,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=law_enforcement_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
 
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
@@ -905,20 +905,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
 
-            # Get agency metric and construct metric_key_to_agency_datapoints dict.
-            agency_datapoints = DatapointInterface.get_agency_datapoints(
-                session=session, agency_id=agency.id
-            )
-            agency_datapoints_sorted_by_metric_key = sorted(
-                agency_datapoints, key=lambda d: d.metric_definition_key
-            )
-            metric_key_to_agency_datapoints = {
-                k: list(v)
-                for k, v in itertools.groupby(
-                    agency_datapoints_sorted_by_metric_key,
-                    key=lambda d: d.metric_definition_key,
-                )
-            }
             file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={
@@ -932,7 +918,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.LAW_ENFORCEMENT,
                 agency=agency,
                 user_account=user,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface={agency_metric.key: agency_metric},
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
@@ -964,12 +950,13 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 value=str(True),
                 is_report_datapoint=False,
             )
+            metric_interface = MetricInterface(
+                key=supervision.funding.key,
+                disaggregated_by_supervision_subsystems=True,
+            )
 
             session.add_all([user, agency, disaggregation_datapoint])
 
-            metric_key_to_agency_datapoints = {
-                supervision.funding.key: [disaggregation_datapoint]
-            }
             file_path = create_excel_file(
                 system=schema.System.SUPERVISION,
                 metric_key_to_subsystems={
@@ -985,7 +972,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.SUPERVISION,
                 agency=agency,
                 user_account=user,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface={metric_interface.key: metric_interface},
             )
             metric_key_to_datapoint_jsons, _ = workbook_uploader.upload_workbook(
                 session=session,
@@ -1046,7 +1033,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 agency=prison_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
@@ -1097,7 +1084,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 agency=prison_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
@@ -1154,7 +1141,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 agency=prison_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             # Get existing reports for this agency (there should not be any at first)
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1318,7 +1305,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 agency=prison_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
 
             # Create 9 reports
@@ -1415,7 +1402,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PRISONS,
                 agency=super_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
                 child_agency_name_to_agency={
                     a.name.strip().lower(): a for a in child_agencies
                 },
@@ -1460,7 +1447,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PROSECUTION,
                 agency=prosecution_agency,
                 user_account=user_account,
-                metric_key_to_agency_datapoints={},
+                metric_key_to_metric_interface={},
             )
             workbook_uploader.upload_workbook(
                 session=session,

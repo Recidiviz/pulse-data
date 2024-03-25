@@ -40,6 +40,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import BulkUploadFileType, DatapointJson
 from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID, UploadMethod
@@ -58,19 +59,20 @@ class WorkbookUploader:
         self,
         system: schema.System,
         agency: schema.Agency,
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
         child_agency_name_to_agency: Optional[Dict[str, schema.Agency]] = None,
         user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.system = system
         self.agency = agency
         self.user_account = user_account
-        # metric_key_to_agency_datapoints maps metric keys to a list of datapoints
-        # that represent an agency's configuration for that metric. These datapoints
-        # hold information such as if the metric is enabled or disabled, the metric's
-        # custom reporting frequency, etc. It is passed in already populated and won't be
-        # edited during the upload.
-        self.metric_key_to_agency_datapoints = metric_key_to_agency_datapoints
+        # metric_key_to_metric_interface maps metric keys to that agency's metric
+        # interface for that metric. These metric interfaces only hold metric setting
+        # information (such as if the metric is enabled or disabled, the metric's custom
+        # reporting frequency, etc.), and do not hold information from reports (such as
+        # aggregate or disaggregate report datapoints). The metric interfaces are passed
+        # in already populated and won't be edited during the upload.
+        self.metric_key_to_metric_interface = metric_key_to_metric_interface
         # metric_key_to_errors starts out empty and will be populated with
         # each metric's errors.
         self.metric_key_to_errors: Dict[
@@ -211,7 +213,7 @@ class WorkbookUploader:
                 system=self.system,
                 agency=self.agency,
                 user_account=self.user_account,
-                metric_key_to_agency_datapoints=self.metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface=self.metric_key_to_metric_interface,
                 sheet_name=sheet_name,
                 agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
                 existing_datapoints_dict=existing_datapoints_dict,
@@ -529,7 +531,7 @@ class WorkbookUploader:
             if (
                 metric_definition.disabled is True
                 or DatapointInterface.is_whole_metric_disabled(
-                    metric_key_to_agency_datapoints=self.metric_key_to_agency_datapoints,
+                    metric_key_to_metric_interface=self.metric_key_to_metric_interface,
                     metric_key=metric_definition.key,
                 )
             ):

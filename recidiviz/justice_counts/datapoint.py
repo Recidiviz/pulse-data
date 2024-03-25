@@ -1042,28 +1042,20 @@ class DatapointInterface:
 
     @staticmethod
     def is_whole_metric_disabled(
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
         metric_key: str,
     ) -> bool:
         """
         This function returns true if a whole metric is turned off by an agency.
         """
-        agency_datapoints = metric_key_to_agency_datapoints.get(metric_key, [])
-
-        if len(agency_datapoints) == 0:
+        if metric_key not in metric_key_to_metric_interface:
             return False
 
-        for datapoint in agency_datapoints:
-            # If a whole metric is disabled, then there is a disabled agency metric
-            # with both context key and dimension_identifier_to_member
-            # as None.
-            if (
-                datapoint.enabled is False
-                and datapoint.context_key is None
-                and datapoint.dimension_identifier_to_member is None
-            ):
-                return True
-        return False
+        metric_interface = metric_key_to_metric_interface[metric_key]
+        return (
+            metric_interface.is_metric_enabled is not None
+            and metric_interface.is_metric_enabled is False
+        )
 
     @staticmethod
     def is_metric_disaggregated_by_supervision_subsystem(
@@ -1105,23 +1097,3 @@ class DatapointInterface:
             )
         }
         return metric_key_to_agency_datapoints
-
-    @staticmethod
-    def get_agency_id_to_metric_key_to_datapoints(
-        session: Session,
-        agency_ids: List[int],
-    ) -> Dict[int, Dict[str, List[schema.Datapoint]]]:
-        agency_datapoints = (
-            DatapointInterface.get_agency_datapoints_for_multiple_agencies(
-                session=session, agency_ids=agency_ids
-            )
-        )
-        agency_id_to_metric_key_to_datapoints: Dict[
-            int, Dict[str, List[schema.Datapoint]]
-        ] = defaultdict(lambda: defaultdict(list))
-        for agency_datapoint in agency_datapoints:
-            agency_id_to_metric_key_to_datapoints[agency_datapoint.source_id][
-                agency_datapoint.metric_definition_key
-            ].append(agency_datapoint)
-
-        return agency_id_to_metric_key_to_datapoints

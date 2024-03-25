@@ -39,12 +39,12 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
     JusticeCountsServerError,
 )
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
@@ -53,12 +53,10 @@ from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.types import BulkUploadFileType, DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     CHILD_AGENCY_NAME_TO_UPLOAD_NAME,
-    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
     UploadMethod,
 )
-from recidiviz.justice_counts.utils.datapoint_utils import get_dimension_id
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
@@ -241,7 +239,7 @@ class SpreadsheetInterface:
         session: Session,
         xls: pd.ExcelFile,
         spreadsheet: schema.Spreadsheet,
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
         metric_definitions: List[MetricDefinition],
         agency: schema.Agency,
         filename: Optional[str],
@@ -292,7 +290,7 @@ class SpreadsheetInterface:
             system=spreadsheet.system,
             child_agency_name_to_agency=child_agency_name_to_agency,
             user_account=user_account,
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
         )
         (
             metric_key_to_datapoint_jsons,
@@ -365,7 +363,7 @@ class SpreadsheetInterface:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         metric_definitions: List[MetricDefinition],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
         updated_report_jsons: List[Dict[str, Any]],
         new_report_jsons: List[Dict[str, Any]],
         unchanged_report_jsons: List[Dict[str, Any]],
@@ -373,25 +371,15 @@ class SpreadsheetInterface:
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
-        metric_key_to_enabled = {
-            metric_definition.key: None for metric_definition in metric_definitions
-        }
+        metric_key_to_enabled = {}
         metric_key_to_disaggregation_status = {}
-        for _, agency_datapoints in metric_key_to_agency_datapoints.items():
-            for datapoint in agency_datapoints:
-                if (
-                    datapoint.report_id is None
-                    and datapoint.value is None
-                    and get_dimension_id(datapoint=datapoint) is None
-                ):
-                    metric_key_to_enabled[
-                        datapoint.metric_definition_key
-                    ] = datapoint.enabled
+        for key, metric_interface in metric_key_to_metric_interface.items():
+            metric_key_to_enabled[key] = metric_interface.is_metric_enabled
 
-                if datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS:
-                    metric_key_to_disaggregation_status[
-                        datapoint.metric_definition_key
-                    ] = datapoint.value == str(True)
+            if metric_interface.disaggregated_by_supervision_subsystems is not None:
+                metric_key_to_disaggregation_status[
+                    key
+                ] = metric_interface.disaggregated_by_supervision_subsystems
 
         for metric_definition in metric_definitions:
             # Do not add metric to response if the metric definition has
@@ -450,7 +438,7 @@ class SpreadsheetInterface:
                     "datapoints": metric_key_to_datapoint_jsons.get(
                         metric_definition.key, []
                     ),
-                    "enabled": metric_key_to_enabled[metric_definition.key],
+                    "enabled": metric_key_to_enabled.get(metric_definition.key),
                 }
             )
         # Errors that are not associated with a metric are non-metric errors.
@@ -555,9 +543,9 @@ class SpreadsheetInterface:
         # fetching data for the Uploaded Files page in the Settings tab.
         gcs_file_system.copy(source_path, destination_path)
 
-        metric_key_to_agency_datapoints = (
-            DatapointInterface.get_metric_key_to_agency_datapoints(
-                session=session, agency_id=agency.id
+        metric_key_to_metric_interface = (
+            MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=session, agency=agency
             )
         )
 
@@ -572,7 +560,7 @@ class SpreadsheetInterface:
             auth0_user_id=None,
             xls=xls,
             agency=agency,
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
             metric_definitions=metric_definitions,
             filename=filename,
             upload_method=upload_method,
