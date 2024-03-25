@@ -49,7 +49,7 @@ class ProsecutionFundingStateAppropriationsIncludesExcludes(enum.Enum):
 
 class ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes(enum.Enum):
     FINALIZED = "Finalized county or municipal appropriations"
-    PROPOSED = "Finalized county or municipal appropriations"
+    PROPOSED = "Proposed county or municipal appropriations"
     PRELIMINARY = "Preliminary county or municipal appropriations"
 
 
