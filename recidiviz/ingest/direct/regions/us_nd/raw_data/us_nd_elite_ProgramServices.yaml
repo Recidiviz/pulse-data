@@ -38,29 +38,28 @@ columns:
       The date this record was created.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: CREATE_USER_ID
     description: |-
       The user who created this record.
     is_pii: True
   - name: DESCRIPTION
     description: |-
-      Unclear. Can be the name of a program, a code, or a person's name. 
-      TODO(#18645): Clarify with ND.
+      The description of the program. Can be the name of a program, a code, or a person's name (presumably a case manager).
+    is_pii: True
   - name: END_DATE
     description: |-
-      The date the program ends, or potentially the date the person's referral to the program expires? 
-      TODO(#18645): Fill in with answer from ND
+      The date the program ends.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: EXPIRY_DATE
     description: |-
       The date the program ends, or potentially the date the person's referral to the program expires? 
       TODO(#18645): Fill in with answer from ND
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: FUNCTION_TYPE
     description: |-
       Unclear, always blank.
@@ -72,7 +71,7 @@ columns:
       The date the record was last modified.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: MODIFY_USER_ID
     description: |-
       The user who last modified the record.
@@ -123,7 +122,9 @@ columns:
       Always "PRG".
   - name: PROGRAM_CODE
     description: |-
-      An almost-human-readable code for the program type.
+      An almost-human-readable code for the program type. Can be a program name or 
+      a person's name.
+    is_pii: True
   - name: PROGRAM_ID
     description: |-
       The unique ID for this program.
@@ -145,7 +146,7 @@ columns:
       The date the program is expected to start.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
   - name: START_FLAG
     description: |-
       Y/N flag denoting whether the program has started.
