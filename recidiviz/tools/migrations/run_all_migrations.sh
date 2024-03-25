@@ -30,12 +30,14 @@ if [[ "$PROJECT_ID" = 'recidiviz-123' ]]; then
   run_migrations CASE_TRIAGE
   run_migrations PATHWAYS
   run_migrations OUTLIERS
+  run_migrations WORKFLOWS
 elif [[ "$PROJECT_ID" = 'recidiviz-staging' ]]; then
   run_migrations OPERATIONS
   run_migrations JUSTICE_COUNTS
   run_migrations CASE_TRIAGE
   run_migrations PATHWAYS
   run_migrations OUTLIERS
+  run_migrations WORKFLOWS
 else
   echo_error "Unrecognized project id for migration: ${PROJECT_ID}"
   exit 1
