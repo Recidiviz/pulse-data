@@ -18,7 +18,6 @@
 import unittest
 from unittest.mock import Mock, patch
 
-import mock
 from mock import MagicMock
 
 from recidiviz import server_config
@@ -43,29 +42,22 @@ class TestServerConfig(unittest.TestCase):
         f"{server_config.__name__}.get_pathways_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
-    @patch(
-        f"{server_config.__name__}.get_direct_ingest_states_existing_in_env",
-        return_value=[StateCode.US_XX, StateCode.US_WW],
-    )
     def test_get_database_keys_for_schema(
         self,
-        state_codes_fn: Mock,
         _pathways_enabled_states: Mock,
         _outliers_enabled_states: Mock,
         _workflows_enabled_states: Mock,
     ) -> None:
         all_keys = []
         for schema_type in SchemaType:
+            if not schema_type.has_cloud_sql_instance:
+                continue
             all_keys.extend(server_config.database_keys_for_schema_type(schema_type))
 
         expected_all_keys = [
             SQLAlchemyDatabaseKey(SchemaType.OPERATIONS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.JUSTICE_COUNTS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.CASE_TRIAGE, db_name="postgres"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_xx_primary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_primary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_xx_secondary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_secondary"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_xx"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_ww"),
             SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx"),
@@ -75,23 +67,3 @@ class TestServerConfig(unittest.TestCase):
         ]
 
         self.assertCountEqual(expected_all_keys, all_keys)
-
-        state_codes_fn.assert_called()
-
-    def test_get_database_keys_for_state_schema(
-        self,
-    ) -> None:
-        self.assertEqual(
-            32, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
-        )
-
-    @patch("recidiviz.utils.environment.in_gcp_production")
-    def test_get_database_keys_for_state_schema_in_production(
-        self, mock_in_prod: mock.MagicMock
-    ) -> None:
-        mock_in_prod.return_value = True
-
-        # Should skip primary/secondary in US_IX and US_OZ
-        self.assertEqual(
-            30, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
-        )

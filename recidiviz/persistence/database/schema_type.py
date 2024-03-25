@@ -41,5 +41,4 @@ class SchemaType(enum.Enum):
     @property
     def has_cloud_sql_instance(self) -> bool:
         """Returns True if this schema is ever loaded into a deployed CloudSQL instance."""
-        # TODO(#20930): Update to return False for STATE before we delete the instance.
-        return True
+        return self is not SchemaType.STATE
