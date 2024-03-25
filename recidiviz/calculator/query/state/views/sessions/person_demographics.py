@@ -59,6 +59,7 @@ WITH race_or_ethnicity_cte AS  (
     FROM
         race_or_ethnicity_cte
     LEFT JOIN
+        -- TODO(#19368): Replace this with `external_reference.state_resident_populations`
         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
     USING
         (state_code, race_or_ethnicity)
