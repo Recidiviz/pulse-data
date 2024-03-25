@@ -27,7 +27,6 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
-    CloudSqlSchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
     SchemaTableRegionFilteredQueryBuilder,
 )
@@ -106,6 +105,178 @@ class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         )
         self.mock_columns_to_include = ["column1", "state_code"]
         self.mock_operations_columns_to_include = ["column1", "region_code"]
+        self.fake_operations_table_complex_schema = sqlalchemy.Table(
+            "fake_operations_table_complex_schema",
+            OperationsBase.metadata,
+            sqlalchemy.Column("column1", sqlalchemy.Integer, primary_key=True),
+            sqlalchemy.Column("state_code", sqlalchemy.String(length=255)),
+            sqlalchemy.Column(
+                "column2", sqlalchemy.ARRAY(sqlalchemy.String(length=255))
+            ),
+            sqlalchemy.Column(
+                "column3", sqlalchemy.Enum("VAL1", "VAL2", name="my_enum")
+            ),
+            sqlalchemy.Column("column4", postgresql.UUID),
+        )
+
+        self.fake_operations_association_table = sqlalchemy.Table(
+            "fake_operations_table_association",
+            OperationsBase.metadata,
+            sqlalchemy.Column(
+                "column1_simple",
+                sqlalchemy.Integer,
+                sqlalchemy.ForeignKey("fake_operations_table.column1"),
+                index=True,
+            ),
+            sqlalchemy.Column(
+                "column1_complex",
+                sqlalchemy.Integer,
+                sqlalchemy.ForeignKey("fake_operations_table_complex_schema.column1"),
+                index=True,
+            ),
+        )
+        self.mock_association_table_columns_to_include = [
+            c.name for c in self.fake_operations_association_table.columns
+        ]
+
+    def tearDown(self) -> None:
+        OperationsBase.metadata.remove(self.fake_operations_table)
+        OperationsBase.metadata.remove(self.fake_operations_table_complex_schema)
+        OperationsBase.metadata.remove(self.fake_operations_association_table)
+
+
+class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
+    BaseSchemaTableRegionFilteredQueryBuilderTest
+):
+    """Tests for the CloudSqlSchemaTableRegionFilteredQueryBuilder class."""
+
+    @staticmethod
+    def sqlalchemy_columns(column_names: List[str]) -> List[sqlalchemy.Column]:
+        return [
+            sqlalchemy.Column(col_name, sqlalchemy.String(length=255))
+            for col_name in column_names
+        ]
+
+    def test_select_clause_state_schema(self) -> None:
+        """Given a SchemaType.STATE schema, it returns the basic select query for a table."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_table,
+            columns_to_include=self.mock_operations_columns_to_include,
+        )
+        expected_select = f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code"
+        self.assertEqual(expected_select, query_builder.select_clause())
+
+    def test_select_clause_state_association_table(self) -> None:
+        """Given a schema with an association table, it includes the state code in the select statement."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_association_table,
+            columns_to_include=self.mock_association_table_columns_to_include,
+        )
+        expected_select = (
+            f"SELECT {self.fake_operations_association_table.name}.column1_simple,"
+            f"{self.fake_operations_association_table.name}.column1_complex,"
+            f"{self.fake_operations_table.name}.region_code AS region_code"
+        )
+        self.assertEqual(expected_select, query_builder.select_clause())
+
+    def test_join_clause(self) -> None:
+        """Given a schema with an association table, it includes a join with the foreign key."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_association_table,
+            columns_to_include=self.mock_association_table_columns_to_include,
+        )
+        expected_join = (
+            f"JOIN {self.fake_operations_table.name} ON "
+            f"{self.fake_operations_table.name}.column1 = "
+            f"{self.fake_operations_association_table.name}.column1_simple"
+        )
+        self.assertEqual(expected_join, query_builder.join_clause())
+
+    def test_join_clause_not_association_table(self) -> None:
+        """No join clause for non-association table."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_table,
+            columns_to_include=self.mock_operations_columns_to_include,
+        )
+        self.assertEqual(None, query_builder.join_clause())
+
+    def test_join_clause_no_region_codes_in_schema(self) -> None:
+        """Given a SchemaType.OPERATIONS schema it returns None."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_table,
+            columns_to_include=self.mock_operations_columns_to_include,
+        )
+        self.assertEqual(None, query_builder.join_clause())
+
+    def test_filter_clause(self) -> None:
+        """Given no region codes to include, it returns None."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_table,
+            columns_to_include=self.mock_operations_columns_to_include,
+        )
+        self.assertEqual(None, query_builder.filter_clause())
+
+    def test_full_query(self) -> None:
+        """Given a table it returns a full query string."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_table,
+            columns_to_include=self.mock_operations_columns_to_include,
+        )
+        expected_query = (
+            f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
+            f"FROM {self.fake_operations_table.name}"
+        )
+        self.assertEqual(expected_query, query_builder.full_query())
+
+    def test_full_query_region_codes_to_include_is_none(self) -> None:
+        """Given the value None for region_codes_to_include, it returns a full query string that does not filter out
+        any rows.
+        """
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_table,
+            columns_to_include=self.mock_operations_columns_to_include,
+        )
+        expected_query = (
+            f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
+            f"FROM {self.fake_operations_table.name}"
+        )
+        self.assertEqual(expected_query, query_builder.full_query())
+
+    def test_full_query_association_table(self) -> None:
+        """Given an association table, it returns a full query string."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_association_table,
+            columns_to_include=self.mock_association_table_columns_to_include,
+        )
+        expected_query = (
+            f"SELECT {self.fake_operations_association_table.name}.column1_simple,"
+            f"{self.fake_operations_association_table.name}.column1_complex,"
+            f"{self.fake_operations_table.name}.region_code AS region_code "
+            f"FROM {self.fake_operations_association_table.name} "
+            f"JOIN {self.fake_operations_table.name} ON "
+            f"{self.fake_operations_table.name}.column1 = "
+            f"{self.fake_operations_association_table.name}.column1_simple"
+        )
+        self.assertEqual(expected_query, query_builder.full_query())
+
+
+class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
+    BaseSchemaTableRegionFilteredQueryBuilderTest
+):
+    """Tests for the BigQuerySchemaTableRegionFilteredQueryBuilder class."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.mock_columns_to_include = ["column1", "state_code"]
         self.fake_state_table = sqlalchemy.Table(
             "fake_state_table",
             StateBase.metadata,
@@ -148,366 +319,10 @@ class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         ]
 
     def tearDown(self) -> None:
-        OperationsBase.metadata.remove(self.fake_operations_table)
         StateBase.metadata.remove(self.fake_state_table)
         StateBase.metadata.remove(self.fake_table_complex_schema)
         StateBase.metadata.remove(self.fake_association_table)
-
-
-class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
-    BaseSchemaTableRegionFilteredQueryBuilderTest
-):
-    """Tests for the CloudSqlSchemaTableRegionFilteredQueryBuilder class."""
-
-    @staticmethod
-    def sqlalchemy_columns(column_names: List[str]) -> List[sqlalchemy.Column]:
-        return [
-            sqlalchemy.Column(col_name, sqlalchemy.String(length=255))
-            for col_name in column_names
-        ]
-
-    def test___init__(self) -> None:
-        """Test that an assertion is raised if both region_codes_to_include and region_codes_to_exclude are set"""
-        with self.assertRaises(ValueError):
-            CloudSqlSchemaTableRegionFilteredQueryBuilder(
-                SchemaType.STATE,
-                self.fake_operations_table,
-                self.mock_columns_to_include,
-                region_codes_to_include=[],
-                region_codes_to_exclude=["US_ID"],
-            )
-
-    def test___init__region_codes_none(self) -> None:
-        """Test that no assertion is raised if both region_codes_to_include and region_codes_to_exclude are None"""
-        CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_operations_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=None,
-            region_codes_to_exclude=None,
-        )
-
-    def test_select_clause_state_schema(self) -> None:
-        """Given a SchemaType.STATE schema, it returns the basic select query for a table."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE, self.fake_state_table, self.mock_columns_to_include
-        )
-        expected_select = f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code"
-        self.assertEqual(expected_select, query_builder.select_clause())
-
-    def test_select_clause_state_association_table(self) -> None:
-        """Given a SchemaType.STATE schema and an association table, it includes the state_code in the select statement."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_association_table,
-            self.mock_association_table_columns_to_include,
-        )
-        expected_select = (
-            f"SELECT {self.fake_association_table.name}.column1_simple,"
-            f"{self.fake_association_table.name}.column1_complex,"
-            f"{self.fake_state_table.name}.state_code AS state_code"
-        )
-        self.assertEqual(expected_select, query_builder.select_clause())
-
-    def test_join_clause(self) -> None:
-        """Given a SchemaType.STATE schema and an association table, it includes a join with the foreign key."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_association_table,
-            self.mock_association_table_columns_to_include,
-        )
-        expected_join = (
-            f"JOIN {self.fake_state_table.name} ON "
-            f"{self.fake_state_table.name}.column1 = "
-            f"{self.fake_association_table.name}.column1_simple"
-        )
-        self.assertEqual(expected_join, query_builder.join_clause())
-
-    def test_join_clause_not_association_table(self) -> None:
-        """No join clause for non-association table."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE, self.fake_state_table, self.mock_columns_to_include
-        )
-        self.assertEqual(None, query_builder.join_clause())
-
-    def test_join_clause_no_region_codes_in_schema(self) -> None:
-        """Given a SchemaType.OPERATIONS schema it returns None."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.OPERATIONS,
-            self.fake_operations_table,
-            self.mock_columns_to_include,
-        )
-        self.assertEqual(None, query_builder.join_clause())
-
-    def test_filter_clause_region_codes_to_exclude(self) -> None:
-        """Given a SchemaType.STATE schema and excluded region codes, it returns a
-        filter clause to exclude the region codes."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=["US_ND", "US_ID"],
-        )
-        expected_filter = "WHERE state_code NOT IN ('US_ND','US_ID')"
-        self.assertEqual(expected_filter, query_builder.filter_clause())
-
-    def test_filter_clause_region_codes_to_exclude_empty(self) -> None:
-        """Given an empty list for excluded region codes, it returns None."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=[],
-        )
-        self.assertEqual(None, query_builder.filter_clause())
-
-    def test_filter_clause_region_codes_to_include(self) -> None:
-        """Given a SchemaType.STATE schema and included region codes, it returns a filter clause to include
-        the region codes.
-        """
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=["US_ND", "US_ID"],
-        )
-        expected_filter = "WHERE state_code IN ('US_ND','US_ID')"
-        self.assertEqual(expected_filter, query_builder.filter_clause())
-
-    def test_filter_clause_no_region_codes(self) -> None:
-        """Given no region codes to include or exclude, it returns None."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=None,
-            region_codes_to_exclude=None,
-        )
-        self.assertEqual(None, query_builder.filter_clause())
-
-    def test_filter_clause_region_codes_to_include_empty(self) -> None:
-        """Given and empty list for region_codes_to_include, it returns a filter to exclude all rows."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=[],
-            region_codes_to_exclude=None,
-        )
-        expected_filter = "WHERE FALSE"
-        self.assertEqual(expected_filter, query_builder.filter_clause())
-
-    def test_full_query(self) -> None:
-        """Given a table it returns a full query string."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.OPERATIONS,
-            self.fake_operations_table,
-            self.mock_operations_columns_to_include,
-        )
-        expected_query = (
-            f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
-            f"FROM {self.fake_operations_table.name}"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_federated(self) -> None:
-        """Given a table it returns a full query string."""
-        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            schema_type=SchemaType.OPERATIONS,
-            table=self.fake_operations_table,
-            columns_to_include=self.mock_operations_columns_to_include,
-            region_code=None,
-        )
-        expected_query = (
-            f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
-            f"FROM {self.fake_operations_table.name}"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_federated_complex_schema(self) -> None:
-        """Given a table it returns a full query string."""
-        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            schema_type=SchemaType.STATE,
-            table=self.fake_table_complex_schema,
-            columns_to_include=[c.name for c in self.fake_table_complex_schema.columns],
-            region_code="US_XX",
-        )
-        expected_query = (
-            f"SELECT (90000000000000 + {self.fake_table_complex_schema.name}.column1) AS column1,"
-            f"{self.fake_table_complex_schema.name}.state_code,"
-            f"ARRAY_REPLACE({self.fake_table_complex_schema.name}.column2, NULL, '') "
-            f"as column2,"
-            f"CAST({self.fake_table_complex_schema.name}.column3 as VARCHAR),"
-            f"CAST({self.fake_table_complex_schema.name}.column4 as VARCHAR) "
-            f"FROM {self.fake_table_complex_schema.name} "
-            f"WHERE state_code IN ('US_XX')"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_federated_association_table(self) -> None:
-        """Given an association table it returns a full query string."""
-        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            schema_type=SchemaType.STATE,
-            table=self.fake_association_table,
-            columns_to_include=self.mock_association_table_columns_to_include,
-            region_code="US_XX",
-        )
-        expected_query = (
-            f"SELECT (90000000000000 + {self.fake_association_table.name}.column1_simple) AS column1_simple,"
-            f"(90000000000000 + {self.fake_association_table.name}.column1_complex) AS column1_complex,"
-            f"{self.fake_state_table.name}.state_code AS state_code "
-            f"FROM {self.fake_association_table.name} "
-            f"JOIN {self.fake_state_table.name} ON {self.fake_state_table.name}.column1 = "
-            f"{self.fake_association_table.name}.column1_simple "
-            f"WHERE state_code IN ('US_XX')"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_exclude(self) -> None:
-        """Given a list of region_codes_to_excludes, it returns a full query string that filters out the excluded
-        region codes.
-        """
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=["US_nd"],
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM {self.fake_state_table.name} "
-            "WHERE state_code NOT IN ('US_ND')"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_exclude_is_empty(self) -> None:
-        """Given an empty list for region_codes_to_exclude, it returns a full query string that does not
-        filter out anything.
-        """
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=[],
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM {self.fake_state_table.name}"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_exclude_is_none(self) -> None:
-        """Given the value None for region_codes_to_exclude, it returns a full query string that does not
-        filter out anything.
-        """
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=None,
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM {self.fake_state_table.name}"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_include(self) -> None:
-        """Given a list of region_codes_to_include, it returns a full query string that filters for rows matching the
-        the region codes to include.
-        """
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=["US_ND"],
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM {self.fake_state_table.name} WHERE state_code IN ('US_ND')"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_include_is_empty(self) -> None:
-        """Given an empty list of region_codes_to_include, it returns a full query string that returns zero rows."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=[],
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM {self.fake_state_table.name} WHERE FALSE"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_include_is_none(self) -> None:
-        """Given the value None for region_codes_to_include, it returns a full query string that does not filter out
-        any rows.
-        """
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=None,
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM {self.fake_state_table.name}"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_association_table(self) -> None:
-        """Given an association table with excluded region codes, it returns a full query string."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.STATE,
-            self.fake_association_table,
-            self.mock_association_table_columns_to_include,
-            region_codes_to_exclude=["US_nd"],
-        )
-        expected_query = (
-            f"SELECT {self.fake_association_table.name}.column1_simple,"
-            f"{self.fake_association_table.name}.column1_complex,"
-            f"{self.fake_state_table.name}.state_code AS state_code "
-            f"FROM {self.fake_association_table.name} "
-            f"JOIN {self.fake_state_table.name} ON "
-            f"{self.fake_state_table.name}.column1 = "
-            f"{self.fake_association_table.name}.column1_simple "
-            "WHERE state_code NOT IN ('US_ND')"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-
-class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
-    BaseSchemaTableRegionFilteredQueryBuilderTest
-):
-    """Tests for the BigQuerySchemaTableRegionFilteredQueryBuilder class."""
-
-    def test___init__(self) -> None:
-        """Test that an assertion is raised if both region_codes_to_include and region_codes_to_exclude are set"""
-        with self.assertRaises(ValueError):
-            BigQuerySchemaTableRegionFilteredQueryBuilder(
-                "recidiviz-456",
-                "my_dataset",
-                SchemaType.STATE,
-                self.fake_operations_table,
-                self.mock_columns_to_include,
-                region_codes_to_include=[],
-                region_codes_to_exclude=["US_ID"],
-            )
-
-    def test___init__region_codes_none(self) -> None:
-        """Test that no assertion is raised if both region_codes_to_include and region_codes_to_exclude are None"""
-        BigQuerySchemaTableRegionFilteredQueryBuilder(
-            "recidiviz-456",
-            "my_dataset",
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_include=None,
-            region_codes_to_exclude=None,
-        )
+        super().tearDown()
 
     def test_select_clause_operations_schema(self) -> None:
         """Given a SchemaType.OPERATIONS schema, it returns the basic select query for a table."""
@@ -546,7 +361,7 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         self.assertEqual(expected_select, query_builder.select_clause())
 
     def test_select_clause_state_association_table(self) -> None:
-        """Given a SchemaType.STATE schema and an association table, it includes the state_code in the select statement."""
+        """Given a schema with an association table, it includes the state_code in the select statement."""
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
             "recidiviz-456",
             "my_dataset",
@@ -562,7 +377,7 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         self.assertEqual(expected_select, query_builder.select_clause())
 
     def test_join_clause(self) -> None:
-        """Given a SchemaType.STATE schema and an association table, it does not join to get the region code, since the region
+        """Given a schema with an association table, it does not join to get the region code, since the region
         code should already be hydrated in all BQ tables.
         """
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
@@ -596,32 +411,6 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         )
         self.assertEqual(None, query_builder.join_clause())
 
-    def test_filter_clause_region_codes_to_exclude(self) -> None:
-        """Given a SchemaType.STATE schema and excluded region codes, it returns a
-        filter clause to exclude the region codes."""
-        query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
-            "recidiviz-456",
-            "my_dataset",
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=["US_ND", "US_ID"],
-        )
-        expected_filter = "WHERE state_code NOT IN ('US_ND','US_ID')"
-        self.assertEqual(expected_filter, query_builder.filter_clause())
-
-    def test_filter_clause_region_codes_to_exclude_empty(self) -> None:
-        """Given an empty list for excluded region codes, it returns None."""
-        query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
-            "recidiviz-456",
-            "my_dataset",
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=[],
-        )
-        self.assertEqual(None, query_builder.filter_clause())
-
     def test_filter_clause_region_codes_to_include(self) -> None:
         """Given a SchemaType.STATE schema and included region codes, it returns a filter clause to include
         the region codes.
@@ -638,7 +427,7 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         self.assertEqual(expected_filter, query_builder.filter_clause())
 
     def test_filter_clause_no_region_codes(self) -> None:
-        """Given no region codes to include or exclude, it returns None."""
+        """Given no region codes to include, it returns None."""
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
             "recidiviz-456",
             "my_dataset",
@@ -646,7 +435,6 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
             self.fake_state_table,
             self.mock_columns_to_include,
             region_codes_to_include=None,
-            region_codes_to_exclude=None,
         )
         self.assertEqual(None, query_builder.filter_clause())
 
@@ -659,7 +447,6 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
             self.fake_state_table,
             self.mock_columns_to_include,
             region_codes_to_include=[],
-            region_codes_to_exclude=None,
         )
         expected_filter = "WHERE FALSE"
         self.assertEqual(expected_filter, query_builder.filter_clause())
@@ -676,61 +463,6 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         expected_query = (
             f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
             f"FROM `recidiviz-456.my_dataset.{self.fake_operations_table.name}` {self.fake_operations_table.name}"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_exclude(self) -> None:
-        """Given a list of region_codes_to_excludes, it returns a full query string that filters out the excluded
-        region codes.
-        """
-        query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
-            "recidiviz-456",
-            "my_dataset",
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=["US_nd"],
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM `recidiviz-456.my_dataset.{self.fake_state_table.name}` {self.fake_state_table.name} "
-            "WHERE state_code NOT IN ('US_ND')"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_exclude_is_empty(self) -> None:
-        """Given an empty list for region_codes_to_exclude, it returns a full query string that does not
-        filter out anything.
-        """
-        query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
-            "recidiviz-456",
-            "my_dataset",
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=[],
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM `recidiviz-456.my_dataset.{self.fake_state_table.name}` {self.fake_state_table.name}"
-        )
-        self.assertEqual(expected_query, query_builder.full_query())
-
-    def test_full_query_region_codes_to_exclude_is_none(self) -> None:
-        """Given the value None for region_codes_to_exclude, it returns a full query string that does not
-        filter out anything.
-        """
-        query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
-            "recidiviz-456",
-            "my_dataset",
-            SchemaType.STATE,
-            self.fake_state_table,
-            self.mock_columns_to_include,
-            region_codes_to_exclude=None,
-        )
-        expected_query = (
-            f"SELECT {self.fake_state_table.name}.column1,{self.fake_state_table.name}.state_code "
-            f"FROM `recidiviz-456.my_dataset.{self.fake_state_table.name}` {self.fake_state_table.name}"
         )
         self.assertEqual(expected_query, query_builder.full_query())
 
@@ -789,20 +521,20 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         self.assertEqual(expected_query, query_builder.full_query())
 
     def test_full_query_association_table(self) -> None:
-        """Given an association table with excluded region codes, it returns a full query string."""
+        """Given an association table with filtered region codes, it returns a full query string."""
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
             "recidiviz-456",
             "my_dataset",
             SchemaType.STATE,
             self.fake_association_table,
             self.mock_association_table_columns_to_include,
-            region_codes_to_exclude=["US_nd"],
+            region_codes_to_include=["US_nd"],
         )
         expected_query = (
             f"SELECT {self.fake_association_table.name}.column1_simple,"
             f"{self.fake_association_table.name}.column1_complex,"
             f"{self.fake_association_table.name}.state_code AS state_code "
             f"FROM `recidiviz-456.my_dataset.{self.fake_association_table.name}` {self.fake_association_table.name} "
-            "WHERE state_code NOT IN ('US_ND')"
+            "WHERE state_code IN ('US_ND')"
         )
         self.assertEqual(expected_query, query_builder.full_query())

@@ -34,6 +34,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir, redirect_logging_to_file
 from recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas import (
     update_dataflow_output_schemas,
@@ -108,7 +109,7 @@ def update_cloud_sql_bq_refresh_output_schemas(
             else None,
             "bq_region_override": None,
         }
-        for table in CloudSqlToBQConfig(SchemaType.STATE).get_tables_to_export()
+        for table in list(get_all_table_classes_in_schema(SchemaType.STATE))
     ]
 
     update_all_cloud_sql_bq_refresh_output_schemas(

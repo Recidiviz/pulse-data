@@ -145,10 +145,7 @@ class CloudSqlToBQConfig:
         columns = self._get_table_columns_to_export(table)
 
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            schema_type=self.schema_type,
-            table=table,
-            columns_to_include=columns,
-            region_code=None,
+            schema_type=self.schema_type, table=table, columns_to_include=columns
         )
         return query_builder.full_query()
 
