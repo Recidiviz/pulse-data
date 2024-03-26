@@ -15,6 +15,7 @@ snapshots[
     "OutliersAdminPanelEndpointTests.OutliersAdminPanelEndpointTests test_add_configuration"
 ] = [
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -34,6 +35,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -53,6 +55,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -72,6 +75,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -91,6 +95,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -115,6 +120,7 @@ snapshots[
     "OutliersAdminPanelEndpointTests.OutliersAdminPanelEndpointTests test_add_configuration_with_updated_by"
 ] = [
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -134,6 +140,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -153,6 +160,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -172,6 +180,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -191,6 +200,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -215,6 +225,7 @@ snapshots[
     "OutliersAdminPanelEndpointTests.OutliersAdminPanelEndpointTests test_get_configurations"
 ] = [
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -234,6 +245,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -253,6 +265,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -272,6 +285,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -291,6 +305,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -315,6 +330,7 @@ snapshots[
     "OutliersAdminPanelEndpointTests.OutliersAdminPanelEndpointTests test_promote_default_configuration_success"
 ] = [
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": None,
@@ -334,6 +350,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -353,6 +370,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -372,6 +390,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -391,6 +410,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -410,6 +430,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -434,6 +455,7 @@ snapshots[
     "OutliersAdminPanelEndpointTests.OutliersAdminPanelEndpointTests test_reactivate_configuration_success"
 ] = [
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -453,6 +475,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -472,6 +495,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -491,6 +515,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -510,6 +535,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -529,6 +555,7 @@ snapshots[
         "worseThanRateLabel": "Far worse than statewide rate",
     },
     {
+        "abscondersLabel": "absconders",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",

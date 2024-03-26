@@ -264,6 +264,14 @@ class Configuration(OutliersBase):
     exclusion_reason_description = Column(String, nullable=False)
     slightly_worse_than_rate_label = Column(String, nullable=False)
     at_or_below_rate_label = Column(String, nullable=False)
+    # When adding new columns below, be sure to set a default value with the
+    # server_default parameter and autogenerate a migration so that existing values
+    # in the database have this column hydrated.
+    # Be sure to add this column to the below:
+    #     - recidiviz/admin_panel/line_staff_tools/outliers_api_schemas.py
+    #     - frontends/admin-panel/src/InsightsStore/models/InsightsConfiguration.ts
+    #     - frontends/admin-panel/src/components/Insights/AddConfigForm.tsx
+    absconders_label = Column(String, nullable=False, server_default="absconders")
 
     def to_dict(self) -> Dict[str, Any]:
         return {

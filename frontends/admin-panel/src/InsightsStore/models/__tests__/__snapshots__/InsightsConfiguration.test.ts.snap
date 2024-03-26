@@ -3,6 +3,7 @@
 exports[`transformation 1`] = `
 Array [
   Object {
+    "abscondersLabel": "absconders",
     "atOrBelowRateLabel": "At or below statewide rate",
     "exclusionReasonDescription": null,
     "featureVariant": null,
@@ -22,6 +23,7 @@ Array [
     "worseThanRateLabel": "Far worse than statewide rate",
   },
   Object {
+    "abscondersLabel": "absconders",
     "atOrBelowRateLabel": "At or below statewide rate",
     "exclusionReasonDescription": "not eligible",
     "featureVariant": "featureVariant1",
@@ -41,6 +43,7 @@ Array [
     "worseThanRateLabel": "Far worse than statewide rate",
   },
   Object {
+    "abscondersLabel": "absconders",
     "atOrBelowRateLabel": "At or below statewide rate",
     "exclusionReasonDescription": "not eligible",
     "featureVariant": "featureVariant1",

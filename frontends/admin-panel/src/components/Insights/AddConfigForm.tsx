@@ -261,6 +261,18 @@ const AddConfigForm = ({
         >
           <Input />
         </Form.Item>
+        <Form.Item
+          name="abscondersLabel"
+          label="Absconders Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string that describes what a state calls people who have absconded`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
       </Form>
     </DraggableModal>
   );
