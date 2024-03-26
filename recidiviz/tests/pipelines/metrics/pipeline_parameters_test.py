@@ -21,7 +21,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     REFERENCE_VIEWS_DATASET,
     STATE_BASE_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
@@ -51,7 +50,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
             ),
-            "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
             "output": "test_output",
@@ -83,7 +81,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
             ),
-            "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
             "ingest_instance": "PRIMARY",
@@ -113,7 +110,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
             ),
-            "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "output": "test_output",
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "-1",
@@ -150,7 +146,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "reference_view_input": "test_view",
             "state_data_input": "test_input",
             "normalized_input": "normalized_input",
-            "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "person_filter_ids": "123 12323 324",
             "ingest_instance": "PRIMARY",
         }
@@ -182,7 +177,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "state_data_input": "my_prefix_test_input",
             "reference_view_input": "my_prefix_test_view",
             "normalized_input": "my_prefix_normalized_input",
-            "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "metric_types": "TEST_METRIC",
             "person_filter_ids": "123 12323 324",
             "calculation_month_count": "36",

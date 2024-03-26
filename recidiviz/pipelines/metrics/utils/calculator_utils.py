@@ -33,7 +33,6 @@ from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
     RecidivizMetric,
     RecidivizMetricTypeT,
 )
@@ -46,7 +45,6 @@ from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_deleg
 def person_characteristics(
     person: StatePerson,
     person_age: Optional[int],
-    person_metadata: PersonMetadata,
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> Dict[str, Any]:
     """Adds the person's demographic characteristics to the given |characteristics|
@@ -59,10 +57,6 @@ def person_characteristics(
         characteristics["age"] = person_age
     if person.gender is not None:
         characteristics["gender"] = person.gender
-    if person_metadata and person_metadata.prioritized_race_or_ethnicity:
-        characteristics[
-            "prioritized_race_or_ethnicity"
-        ] = person_metadata.prioritized_race_or_ethnicity
 
     characteristics["person_id"] = person.person_id
 
@@ -221,7 +215,6 @@ def produce_standard_event_metrics(
     identifier_results: List[Event],
     metric_inclusions: Dict[RecidivizMetricTypeT, bool],
     calculation_month_count: int,
-    person_metadata: PersonMetadata,
     event_to_metric_classes: Dict[
         Type[Event],
         List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
@@ -264,7 +257,6 @@ def produce_standard_event_metrics(
                     metric_class=metric_class,
                     person=person,
                     person_age=age_at_date(person, event_date),
-                    person_metadata=person_metadata,
                     pipeline_job_id=pipeline_job_id,
                     additional_attributes={
                         "year": event_date.year,
@@ -283,7 +275,6 @@ def produce_standard_span_metrics(
     person: StatePerson,
     identifier_results: List[Span],
     metric_inclusions: Dict[RecidivizMetricTypeT, bool],
-    person_metadata: PersonMetadata,
     event_to_metric_classes: Dict[
         Type[Span],
         List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
@@ -328,7 +319,6 @@ def produce_standard_span_metrics(
                         metric_class=metric_class,
                         person=person,
                         person_age=age,
-                        person_metadata=person_metadata,
                         pipeline_job_id=pipeline_job_id,
                         metrics_producer_delegate=metric_classes_to_producer_delegates.get(
                             metric_class
@@ -346,7 +336,6 @@ def build_metric(
     metric_class: Type[RecidivizMetric],
     person: StatePerson,
     person_age: Optional[int],
-    person_metadata: PersonMetadata,
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
@@ -357,7 +346,7 @@ def build_metric(
     metric_attributes = attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
 
     person_attributes = person_characteristics(
-        person, person_age, person_metadata, metrics_producer_delegate
+        person, person_age, metrics_producer_delegate
     )
 
     metric_cls_builder = metric_class.builder()

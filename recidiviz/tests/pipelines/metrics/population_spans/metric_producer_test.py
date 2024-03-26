@@ -54,7 +54,6 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
     SupervisionPopulationSpan,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -109,7 +108,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                 )
             ],
         )
-        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="WHITE")
         self.metrics_producer_delegates: Dict[
             str, StateSpecificMetricsProducerDelegate
         ] = {
@@ -138,7 +136,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=self.person,
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -152,7 +149,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 3, 12),
@@ -187,7 +183,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=self.person,
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -201,7 +196,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 3, 12),
@@ -218,7 +212,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=18,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 8, 31),
@@ -235,7 +228,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=19,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2001, 8, 31),
@@ -267,7 +259,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=person_with_no_birthday,
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -280,7 +271,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 3, 12),
@@ -310,7 +300,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=self.person,
             identifier_results=[incarceration_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -323,7 +312,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     age=36,
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
@@ -340,7 +328,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     age=37,
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
@@ -376,7 +363,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=self.person,
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -390,7 +376,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 3, 12),
@@ -429,7 +414,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=self.person,
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -443,7 +427,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=17,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 3, 12),
@@ -464,7 +447,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=18,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 8, 31),
@@ -485,7 +467,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
                     age=19,
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2001, 8, 31),
@@ -526,7 +507,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=person_with_no_birthday,
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -539,7 +519,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     start_date_inclusive=date(2000, 3, 12),
@@ -578,7 +557,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=self.person,
             identifier_results=[supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -591,7 +569,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     age=36,
@@ -612,7 +589,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     age=37,
@@ -661,7 +637,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             person=self.person,
             identifier_results=[incarceration_span, supervision_span],
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            person_metadata=self.person_metadata,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -674,7 +649,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     age=32,
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
@@ -691,7 +665,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     age=33,
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
@@ -708,7 +681,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="DOC1341",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     age=34,
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
@@ -725,7 +697,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     age=34,
@@ -746,7 +717,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     age=35,
@@ -767,7 +737,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     age=36,
@@ -788,7 +757,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     person_external_id="SID9889",
                     job_id=PIPELINE_JOB_ID,
                     state_code="US_XX",
-                    prioritized_race_or_ethnicity="WHITE",
                     gender=StateGender.FEMALE,
                     created_on=CURRENT_DATE,
                     age=37,

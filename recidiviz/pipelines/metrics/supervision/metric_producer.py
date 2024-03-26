@@ -48,7 +48,6 @@ from recidiviz.pipelines.metrics.utils.calculator_utils import (
     get_calculation_month_upper_bound_date,
     include_in_output,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
@@ -100,7 +99,6 @@ class SupervisionMetricProducer(
         person: StatePerson,
         identifier_results: List[SupervisionEvent],
         metric_inclusions: Dict[SupervisionMetricType, bool],
-        person_metadata: PersonMetadata,
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
@@ -117,7 +115,6 @@ class SupervisionMetricProducer(
                     flags for whether or not to include that metric type in the calculations
             calculation_month_count: The number of months to limit the monthly calculation output to.
                     If set to -1, does not limit the calculations.
-            person_metadata: Contains information about the StatePerson that is necessary for the metrics.
             pipeline_job_id: The job_id of the pipeline that is currently running.
 
         Returns:
@@ -186,7 +183,6 @@ class SupervisionMetricProducer(
                         metric_class=metric_class,
                         person=person,
                         person_age=age_at_date(person, event_date),
-                        person_metadata=person_metadata,
                         pipeline_job_id=pipeline_job_id,
                         additional_attributes={
                             "year": event_date.year,

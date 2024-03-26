@@ -30,7 +30,6 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           [--normalized_input INPUT] \
           [--state_data_input INPUT] \
           [--reference_view_input REFERENCE_VIEW_INPUT] \
-          [--static_reference_input STATIC_REFERENCE_VIEW_INPUT] \
           [--raw_data_table_input RAW_DATA_INPUT] \
           [--ingest_view_results_output INGEST_VIEW_OUTPUT] \
           [--ingest_instance PRIMARY] \

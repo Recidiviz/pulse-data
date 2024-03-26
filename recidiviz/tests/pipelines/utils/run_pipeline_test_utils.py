@@ -312,11 +312,6 @@ def _additional_default_args_for_metrics_pipeline(
     metrics pipeline."""
     additional_args: List[str] = []
 
-    # TODO(#25244) Update this to use the original dataset_configs rather than overridden values
-    additional_args.extend(
-        ["--static_reference_input", FAKE_PIPELINE_TESTS_INPUT_DATASET]
-    )
-
     if include_calculation_limit_args:
         additional_args.extend(["--calculation_month_count", "-1"])
 

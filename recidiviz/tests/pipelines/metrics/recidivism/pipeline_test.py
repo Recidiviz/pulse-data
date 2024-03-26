@@ -22,11 +22,10 @@ import datetime
 import unittest
 from datetime import date
 from enum import Enum
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple
 from unittest import mock
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from dateutil.relativedelta import relativedelta
@@ -68,12 +67,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
 )
 from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
-)
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
-from recidiviz.pipelines.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    ExtractPersonEventsMetadata,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
     StateSpecificRecidivismMetricsProducerDelegate,
@@ -231,15 +224,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
@@ -247,7 +231,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -405,21 +388,11 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -582,19 +555,16 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         correct_output = [
             (
-                fake_person.person_id,
-                (
-                    fake_person,
-                    {
-                        initial_incarceration.release_date.year: [
-                            first_recidivism_release_event
-                        ],
-                        first_reincarceration.release_date.year: [
-                            second_recidivism_release_event
-                        ],
-                    },
-                ),
-            )
+                fake_person,
+                {
+                    initial_incarceration.release_date.year: [
+                        first_recidivism_release_event
+                    ],
+                    first_reincarceration.release_date.year: [
+                        second_recidivism_release_event
+                    ],
+                },
+            ),
         ]
 
         test_pipeline = TestPipeline()
@@ -667,15 +637,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         correct_output = [
             (
-                fake_person.person_id,
-                (
-                    fake_person,
-                    {
-                        only_incarceration.release_date.year: [
-                            non_recidivism_release_event
-                        ]
-                    },
-                ),
+                fake_person,
+                {only_incarceration.release_date.year: [non_recidivism_release_event]},
             )
         ]
 
@@ -752,7 +715,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_person_id = 12345
 
-        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"
         )
@@ -777,7 +739,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
-            static_reference_input="dataset_id",
             output="dataset_id",
             metric_types="ALL",
             region="region",
@@ -835,16 +796,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             )
         ]
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: person_release_events,
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
-
         # We do not track metrics for periods that start after today, so we need to subtract for some number of periods
         # that go beyond whatever today is.
         periods = relativedelta(date.today(), date(2010, 12, 4)).years + 1
@@ -868,8 +819,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
         output = (
             test_pipeline
-            | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
+            | beam.Create(person_release_events)
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -905,22 +855,11 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             (fake_person, {})
         ]
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: person_release_events,
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
-
         test_pipeline = TestPipeline()
 
         output = (
             test_pipeline
-            | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
+            | beam.Create(person_release_events)
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -945,7 +884,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([])
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -970,7 +908,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
     def testRecidivismMetricWritableDict(self) -> None:
         """Tests converting the ReincarcerationRecidivismMetric to a dictionary
         that can be written to BigQuery."""
-        metric = MetricGroup.recidivism_metric_with_race
+        metric = MetricGroup.recidivism_metric_with_age
 
         test_pipeline = TestPipeline()
 
@@ -1045,22 +983,6 @@ class MetricGroup:
         did_recidivate=True,
     )
 
-    recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
-        job_id="12345",
-        state_code="US_XX",
-        release_cohort=2015,
-        follow_up_period=1,
-        did_recidivate=True,
-    )
-
-    recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
-        job_id="12345",
-        state_code="US_XX",
-        release_cohort=2015,
-        follow_up_period=1,
-        did_recidivate=True,
-    )
-
     recidivism_metric_with_release_facility = ReincarcerationRecidivismRateMetric(
         job_id="12345",
         state_code="US_XX",
@@ -1100,8 +1022,6 @@ class MetricGroup:
         return [
             MetricGroup.recidivism_metric_with_age,
             MetricGroup.recidivism_metric_with_gender,
-            MetricGroup.recidivism_metric_with_race,
-            MetricGroup.recidivism_metric_with_ethnicity,
             MetricGroup.recidivism_metric_with_release_facility,
             MetricGroup.recidivism_metric_with_stay_length,
             MetricGroup.recidivism_metric_without_dimensions,

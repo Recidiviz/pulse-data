@@ -57,14 +57,8 @@ from recidiviz.pipelines.metrics.program.metrics import (
     ProgramMetricType,
     ProgramParticipationMetric,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    ExtractPersonEventsMetadata,
 )
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.pipelines.calculator_test_utils import (
@@ -215,15 +209,6 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
         data_dict_overrides: Dict[str, Iterable[Any]] = {
@@ -234,7 +219,6 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
@@ -419,15 +403,6 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
@@ -438,7 +413,6 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
 
@@ -546,7 +520,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             ),
         ]
 
-        correct_output = [(fake_person.person_id, (fake_person, program_events))]
+        correct_output = [(fake_person, program_events)]
 
         test_pipeline = TestPipeline()
 
@@ -641,7 +615,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             ),
         ]
 
-        correct_output = [(fake_person.person_id, (fake_person, program_events))]
+        correct_output = [(fake_person, program_events)]
 
         test_pipeline = TestPipeline()
 
@@ -801,7 +775,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_person_id = 12345
 
-        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"
         )
@@ -817,7 +790,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
-            static_reference_input="dataset_id",
             output="dataset_id",
             metric_types="ALL",
             region="region",
@@ -854,20 +826,11 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: [(fake_person, program_events)],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
+        inputs = [(fake_person, program_events)]
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Program Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -903,20 +866,13 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: [(fake_person, [])],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
+        inputs: list[tuple[StatePerson, list[ProgramParticipationMetric]]] = [
+            (fake_person, [])
         ]
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Program Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -943,7 +899,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([])
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Program Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),

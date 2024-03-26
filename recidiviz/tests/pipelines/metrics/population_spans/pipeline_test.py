@@ -66,15 +66,7 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
     SupervisionPopulationSpan,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-)
-from recidiviz.pipelines.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    ExtractPersonEventsMetadata,
-)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import Span
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
@@ -231,15 +223,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "ASIAN",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -247,7 +230,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         # Given the empty dictionaries, we ignore the overall type until we fill in data.
@@ -371,12 +353,12 @@ class TestClassifyResults(unittest.TestCase):
     ) -> Dict[str, List]:
         return {
             entities.StatePerson.__name__: [person],
-            entities.StateIncarcerationPeriod.__name__: incarceration_periods
-            if incarceration_periods
-            else [],
-            entities.StateSupervisionPeriod.__name__: supervision_periods
-            if supervision_periods
-            else [],
+            entities.StateIncarcerationPeriod.__name__: (
+                incarceration_periods if incarceration_periods else []
+            ),
+            entities.StateSupervisionPeriod.__name__: (
+                supervision_periods if supervision_periods else []
+            ),
             "supervision_location_ids_to_names": supervision_locations_to_names_associations_kv
             or [],
         }
@@ -459,7 +441,7 @@ class TestClassifyResults(unittest.TestCase):
             ),
         ]
 
-        correct_output = [(self.fake_person_id, (self.fake_person, spans))]
+        correct_output = [(self.fake_person, spans)]
 
         person_entities = self.load_person_entities_dict(
             person=self.fake_person,
@@ -490,7 +472,7 @@ class TestClassifyResults(unittest.TestCase):
 
     def test_classify_results_no_periods(self) -> None:
         """Tests the ClassifyResults DoFn with no periods for a person."""
-        correct_output: List[Tuple[int, Tuple[entities.StatePerson, List[Span]]]] = []
+        correct_output: List[Tuple[entities.StatePerson, List[Span]]] = []
 
         person_entities = self.load_person_entities_dict(
             person=self.fake_person,
@@ -522,8 +504,6 @@ class TestProduceMetrics(unittest.TestCase):
         self.fake_person_id = 12345
         self.incarceration_period_id = 23456
 
-        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="ASIAN")
-
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"
         )
@@ -548,7 +528,6 @@ class TestProduceMetrics(unittest.TestCase):
             state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
-            static_reference_input="dataset_id",
             output="dataset_id",
             metric_types="ALL",
             region="region",
@@ -602,20 +581,11 @@ class TestProduceMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: [(fake_person, population_span_events)],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
+        inputs = [(fake_person, population_span_events)]
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Population Span Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -643,7 +613,6 @@ class TestProduceMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([])
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Population Span Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),

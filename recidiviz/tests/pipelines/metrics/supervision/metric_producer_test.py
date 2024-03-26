@@ -66,7 +66,6 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
 from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
@@ -84,7 +83,6 @@ ALL_METRICS_INCLUSIONS_DICT = {
     metric_type: True for metric_type in SupervisionMetricType
 }
 
-_DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 _PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 
@@ -147,7 +145,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -211,7 +208,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -276,7 +272,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -343,7 +338,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -416,7 +410,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -490,7 +483,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -572,7 +564,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -660,7 +651,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -740,7 +730,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -805,7 +794,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -878,7 +866,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -969,7 +956,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1019,7 +1005,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1073,7 +1058,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1130,7 +1114,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1202,7 +1185,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1292,7 +1274,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             inclusions_dict,
             calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1386,7 +1367,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             inclusions_dict,
             calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1470,7 +1450,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             inclusions_dict,
             calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1549,7 +1528,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1612,7 +1590,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             inclusions_dict,
             calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1682,7 +1659,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             inclusions_dict,
             calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1749,7 +1725,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             inclusions_dict,
             calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1807,7 +1782,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             inclusions_dict,
             calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
@@ -1870,7 +1844,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()

@@ -86,17 +86,9 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
 from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    ExtractPersonEventsMetadata,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
@@ -359,15 +351,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": state_code,
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         us_mo_sentence_status_data: Iterable[Dict[str, Any]] = [
             {
                 "state_code": state_code,
@@ -447,7 +430,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -752,15 +734,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -773,7 +746,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
@@ -969,15 +941,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -989,7 +952,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
@@ -1051,25 +1013,25 @@ class TestClassifyEvents(unittest.TestCase):
     ) -> Dict[str, Iterable[Any]]:
         return {
             entities.StatePerson.__name__: [person],
-            entities.StateSupervisionPeriod.__name__: supervision_periods
-            if supervision_periods
-            else [],
+            entities.StateSupervisionPeriod.__name__: (
+                supervision_periods if supervision_periods else []
+            ),
             entities.StateAssessment.__name__: assessments if assessments else [],
-            entities.StateIncarcerationPeriod.__name__: incarceration_periods
-            if incarceration_periods
-            else [],
-            entities.StateIncarcerationSentence.__name__: incarceration_sentences
-            if incarceration_sentences
-            else [],
-            entities.StateSupervisionSentence.__name__: supervision_sentences
-            if supervision_sentences
-            else [],
-            entities.StateSupervisionViolationResponse.__name__: violation_responses
-            if violation_responses
-            else [],
-            entities.StateSupervisionContact.__name__: supervision_contacts
-            if supervision_contacts
-            else [],
+            entities.StateIncarcerationPeriod.__name__: (
+                incarceration_periods if incarceration_periods else []
+            ),
+            entities.StateIncarcerationSentence.__name__: (
+                incarceration_sentences if incarceration_sentences else []
+            ),
+            entities.StateSupervisionSentence.__name__: (
+                supervision_sentences if supervision_sentences else []
+            ),
+            entities.StateSupervisionViolationResponse.__name__: (
+                violation_responses if violation_responses else []
+            ),
+            entities.StateSupervisionContact.__name__: (
+                supervision_contacts if supervision_contacts else []
+            ),
             "supervision_location_ids_to_names": supervision_location_to_names_association
             or [],
         }
@@ -1190,7 +1152,7 @@ class TestClassifyEvents(unittest.TestCase):
             ),
         ]
 
-        correct_output = [(fake_person.person_id, (fake_person, expected_events))]
+        correct_output = [(fake_person, expected_events)]
 
         test_pipeline = TestPipeline()
 
@@ -1228,8 +1190,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([])
 
-        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
-
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"
         )
@@ -1254,7 +1214,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
-            static_reference_input="dataset_id",
             output="dataset_id",
             metric_types="ALL",
             region="region",
@@ -1305,20 +1264,11 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: [(fake_person, supervision_time_events)],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
+        inputs = [(fake_person, supervision_time_events)]
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -1352,22 +1302,13 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: [(fake_person, [])],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
+        inputs: list[tuple[StatePerson, list[SupervisionMetric]]] = [(fake_person, [])]
 
         test_pipeline = TestPipeline()
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -1394,7 +1335,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([])
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),

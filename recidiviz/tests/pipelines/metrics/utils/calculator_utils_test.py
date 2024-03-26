@@ -31,7 +31,6 @@ from recidiviz.pipelines.metrics.utils.calculator_utils import (
     age_at_date,
     person_characteristics,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_metrics_producer_delegates,
 )
@@ -234,18 +233,14 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        person_metadata = PersonMetadata(prioritized_race_or_ethnicity="ASIAN")
-
         updated_characteristics = person_characteristics(
             person,
             age_at_date(person, event_date),
-            person_metadata,
         )
 
         expected_output = {
             "person_id": person.person_id,
             "age": 26,
-            "prioritized_race_or_ethnicity": "ASIAN",
             "gender": StateGender.FEMALE,
         }
 
@@ -261,10 +256,8 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        person_metadata = PersonMetadata()
-
         updated_characteristics = person_characteristics(
-            person, age_at_date(person, event_date), person_metadata
+            person, age_at_date(person, event_date)
         )
 
         expected_output = {
@@ -280,10 +273,8 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        person_metadata = PersonMetadata()
-
         updated_characteristics = person_characteristics(
-            person, age_at_date(person, event_date), person_metadata
+            person, age_at_date(person, event_date)
         )
 
         expected_output = {"person_id": person.person_id}
@@ -314,12 +305,9 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        person_metadata = PersonMetadata()
-
         updated_characteristics = person_characteristics(
             person,
             age_at_date(person, event_date),
-            person_metadata,
             metrics_producer_delegate=self.TestUsXxMetricsProducerDelegate(),
         )
 
@@ -352,12 +340,9 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        person_metadata = PersonMetadata()
-
         updated_characteristics = person_characteristics(
             person,
             age_at_date(person, event_date),
-            person_metadata,
             metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegate(),
         )
 
