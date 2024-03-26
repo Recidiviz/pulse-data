@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for state_dataset_refresh.py"""
+"""Tests for update_state_dataset.py"""
 import unittest
 import uuid
 from typing import Optional
@@ -23,13 +23,13 @@ from unittest.mock import Mock, create_autospec
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
-from recidiviz.entrypoints.ingest import state_dataset_refresh
+from recidiviz.entrypoints.ingest import update_state_dataset
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 from recidiviz.utils.environment import GCPEnvironment
 
-REFRESH_ENTRYPOINT_PACKAGE_NAME = state_dataset_refresh.__name__
+REFRESH_ENTRYPOINT_PACKAGE_NAME = update_state_dataset.__name__
 
 
 @mock.patch(
@@ -92,7 +92,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
             mock_record_success
         )
 
-        state_dataset_refresh.execute_state_dataset_refresh(
+        update_state_dataset.execute_state_dataset_refresh(
             ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_prefix=None,
         )
@@ -105,7 +105,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
         self.mock_state_update_lock_manager.acquire_lock.side_effect = Exception("Fail")
 
         with self.assertRaisesRegex(Exception, "Fail"):
-            state_dataset_refresh.execute_state_dataset_refresh(
+            update_state_dataset.execute_state_dataset_refresh(
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 sandbox_prefix=None,
             )
@@ -118,7 +118,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
     def test_execute_state_dataset_refresh_combine_fails(self) -> None:
         self.mock_combine.side_effect = Exception("Fail")
         with self.assertRaisesRegex(Exception, "Fail"):
-            state_dataset_refresh.execute_state_dataset_refresh(
+            update_state_dataset.execute_state_dataset_refresh(
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 sandbox_prefix=None,
             )
@@ -134,7 +134,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
             Exception("Fail")
         )
         with self.assertRaisesRegex(Exception, "Fail"):
-            state_dataset_refresh.execute_state_dataset_refresh(
+            update_state_dataset.execute_state_dataset_refresh(
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 sandbox_prefix=None,
             )
@@ -150,7 +150,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
             ValueError,
             "Refresh can only proceed for secondary databases into a sandbox.",
         ):
-            state_dataset_refresh.execute_state_dataset_refresh(
+            update_state_dataset.execute_state_dataset_refresh(
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 sandbox_prefix=None,
             )

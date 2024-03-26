@@ -60,7 +60,8 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 
 _UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_managed_views_all"
 _VALIDATIONS_BRANCH_START = "validations.branch_start"
-_REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_STATE"
+_REFRESH_OPERATIONS_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_OPERATIONS"
+_UPDATE_STATE_DATASET_TASK_ID = "update_state"
 _EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
 
 
@@ -124,7 +125,9 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.project_environment_patcher.stop()
 
     def update_reference_views_downstream_initialize_dag(self) -> None:
-        """Tests that the `bq_refresh` task is downstream of initialize_dag."""
+        """Tests that the `update_managed_views_reference_views_only` task is downstream of
+        initialize_dag.
+        """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
@@ -139,20 +142,18 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             update_reference_views_group.upstream_group_ids,
         )
 
-    def test_bq_refresh_downstream_update_reference_views(self) -> None:
+    def test_bq_refresh_downstream_initialize_dag(self) -> None:
         """Tests that the `bq_refresh` task is downstream of initialize_dag."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         bq_refresh_group: TaskGroup = dag.task_group_dict["bq_refresh"]
-        update_reference_views = dag.get_task(
-            "update_managed_views_reference_views_only"
-        )
+        initialize_dag = dag.task_group_dict["initialize_dag"]
 
         self.assertIn(
-            update_reference_views.task_id,
-            bq_refresh_group.upstream_task_ids,
+            initialize_dag.group_id,
+            bq_refresh_group.upstream_group_ids,
         )
 
     def test_update_normalized_state_upstream_of_view_update(self) -> None:
@@ -382,7 +383,19 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        bq_refresh_task = dag.get_task(_REFRESH_BQ_DATASET_TASK_ID)
+        bq_refresh_task = dag.get_task(_REFRESH_OPERATIONS_BQ_DATASET_TASK_ID)
+
+        if not isinstance(bq_refresh_task, KubernetesPodOperator):
+            raise ValueError(
+                f"Expected type KubernetesPodOperator, found "
+                f"[{type(bq_refresh_task)}]."
+            )
+
+    def test_update_state_dataset_task_exists(self) -> None:
+        """Tests that refresh_bq_dataset_task triggers the proper script."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        bq_refresh_task = dag.get_task(_UPDATE_STATE_DATASET_TASK_ID)
 
         if not isinstance(bq_refresh_task, KubernetesPodOperator):
             raise ValueError(
@@ -537,14 +550,31 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        task = dag.get_task("bq_refresh.refresh_bq_dataset_STATE")
+        task = dag.get_task(_REFRESH_OPERATIONS_BQ_DATASET_TASK_ID)
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(
             task.arguments[4:],
             [
                 "--entrypoint=BigQueryRefreshEntrypoint",
-                "--schema_type=STATE",
+                "--schema_type=OPERATIONS",
+                "--ingest_instance=PRIMARY",
+            ],
+        )
+
+    def test_update_state_dataset(self) -> None:
+        """Tests that the `update_state` task is downstream of initialize_dag."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        task = dag.get_task(_UPDATE_STATE_DATASET_TASK_ID)
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
+
+        self.assertEqual(
+            task.arguments[4:],
+            [
+                "--entrypoint=UpdateStateEntrypoint",
                 "--ingest_instance=PRIMARY",
             ],
         )
@@ -724,6 +754,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 expected_skipped_ids=[
                     r"wait_to_continue_or_cancel",
                     r"handle_queueing_result",
+                    r"update_state",
                     r"bq_refresh",
                     r"manage_trigger_ingest_dag",
                     r"update_managed_views",

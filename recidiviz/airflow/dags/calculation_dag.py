@@ -164,6 +164,18 @@ def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
     )
 
 
+def execute_update_state() -> RecidivizKubernetesPodOperator:
+    return build_kubernetes_pod_task(
+        task_id="update_state",
+        container_name="update_state",
+        arguments=[
+            "--entrypoint=UpdateStateEntrypoint",
+            INGEST_INSTANCE_JINJA_ARG,
+            SANDBOX_PREFIX_JINJA_ARG,
+        ],
+    )
+
+
 def execute_validations_operator(state_code: str) -> RecidivizKubernetesPodOperator:
     return build_kubernetes_pod_task(
         task_id=f"execute_validations_{state_code}",
@@ -398,8 +410,9 @@ def create_calculation_dag() -> None:
     2. Update the metric output for each state.
     3. Trigger BigQuery exports for each state and other datasets."""
 
+    update_state_dataset = execute_update_state()
+
     with TaskGroup("bq_refresh") as bq_refresh:
-        state_bq_refresh_completion = refresh_bq_dataset_operator(SchemaType.STATE)
         operations_bq_refresh_completion = refresh_bq_dataset_operator(
             SchemaType.OPERATIONS
         )
@@ -407,20 +420,17 @@ def create_calculation_dag() -> None:
             SchemaType.CASE_TRIAGE
         )
 
-    (
-        initialize_calculation_dag_group()
-        >> update_managed_views_operator(
-            ManagedViewUpdateType.REFERENCE_VIEWS_ONLY
-        )  # TODO(#22528): Remove this once pipelines implicitly get the latest views.
-        >> bq_refresh
-    )
-    state_bq_refresh_completion >> manage_trigger_ingest_dag()
+    initialize_dag = initialize_calculation_dag_group()
+    update_reference_views = update_managed_views_operator(
+        ManagedViewUpdateType.REFERENCE_VIEWS_ONLY
+    )  # TODO(#22528): Remove this once pipelines implicitly get the latest views.
+    initialize_dag >> bq_refresh
+    initialize_dag >> update_state_dataset >> manage_trigger_ingest_dag()
 
     trigger_update_all_views = update_managed_views_operator(ManagedViewUpdateType.ALL)
 
     (
         [
-            state_bq_refresh_completion,
             operations_bq_refresh_completion,
             case_triage_bq_refresh_completion,
         ]
@@ -433,11 +443,16 @@ def create_calculation_dag() -> None:
         )
         create_branching_by_key(normalization_pipelines_by_state, get_state_code_filter)
 
-    update_normalized_state = execute_update_normalized_state()
+    update_normalized_state_dataset = execute_update_normalized_state()
 
     # Normalization pipelines should run after the BQ refresh is complete, but
     # complete before normalized_state dataset is refreshed.
-    (state_bq_refresh_completion >> normalization_task_group >> update_normalized_state)
+    (
+        update_state_dataset
+        >> update_reference_views
+        >> normalization_task_group
+        >> update_normalized_state_dataset
+    )
 
     with TaskGroup(
         group_id="post_normalization_pipelines"
@@ -452,7 +467,7 @@ def create_calculation_dag() -> None:
     # This ensures that all of the normalization pipelines for a state will
     # run and the normalized_state dataset will be updated before the
     # metric pipelines for the state are triggered.
-    update_normalized_state >> post_normalization_pipelines
+    update_normalized_state_dataset >> post_normalization_pipelines
 
     # Metric pipelines should complete before view update starts
     post_normalization_pipelines >> trigger_update_all_views

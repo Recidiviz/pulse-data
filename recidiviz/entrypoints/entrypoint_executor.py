@@ -41,6 +41,7 @@ from recidiviz.entrypoints.ingest.ingest_lock_management import (
 from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
     IngestPipelineShouldRunInDagEntrypoint,
 )
+from recidiviz.entrypoints.ingest.update_state_dataset import UpdateStateEntrypoint
 from recidiviz.entrypoints.metric_export.metric_view_export import (
     MetricViewExportEntrypoint,
 )
@@ -69,6 +70,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     MetricViewExportEntrypoint,
     MetricExportTimelinessEntrypoint,
     UpdateNormalizedStateEntrypoint,
+    UpdateStateEntrypoint,
     ValidationEntrypoint,
     UpdateAllManagedViewsEntrypoint,
     IngestAcquireLockEntrypoint,
