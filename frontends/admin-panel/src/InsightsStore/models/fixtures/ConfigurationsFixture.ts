@@ -36,6 +36,7 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     updatedAt: "2024-01-26T13:30:00",
     updatedBy: "alexa@recidiviz.org",
     worseThanRateLabel: "Far worse than statewide rate",
+    abscondersLabel: "absconders",
   },
   {
     featureVariant: "featureVariant1",
@@ -55,6 +56,7 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     updatedAt: "2024-02-26T13:30:00",
     updatedBy: "jen@recidiviz.org",
     worseThanRateLabel: "Far worse than statewide rate",
+    abscondersLabel: "absconders",
   },
   {
     featureVariant: "featureVariant1",
@@ -74,5 +76,6 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     updatedAt: "2024-01-23T13:30:00",
     updatedBy: "jen@recidiviz.org",
     worseThanRateLabel: "Far worse than statewide rate",
+    abscondersLabel: "absconders",
   },
 ];

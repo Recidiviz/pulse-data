@@ -42,6 +42,7 @@ class ConfigurationSchema(CamelCaseSchema):
     exclusion_reason_description = fields.Str(required=True)
     slightly_worse_than_rate_label = fields.Str(required=True)
     at_or_below_rate_label = fields.Str(required=True)
+    absconders_label = fields.Str(required=True)
 
 
 class FullConfigurationSchema(ConfigurationSchema):
