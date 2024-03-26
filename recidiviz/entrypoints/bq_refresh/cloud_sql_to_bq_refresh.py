@@ -18,9 +18,6 @@
 import argparse
 
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.entrypoints.ingest.state_dataset_refresh import (
-    execute_state_dataset_refresh,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     execute_cloud_sql_to_bq_refresh,
@@ -28,9 +25,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control i
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
-# TODO(#20930): Once the STATE refresh functionality is moved out of here, rename to
-#  CloudSQLToBQRefreshEntrypoint to make it clearer that this is only for refreshing
-#  schemas loaded from CloudSQL.
 class BigQueryRefreshEntrypoint(EntrypointInterface):
     """Entrypoint for CloudSQL to BigQuery refresh to occur for a given CloudSQL instance"""
 
@@ -63,16 +57,8 @@ class BigQueryRefreshEntrypoint(EntrypointInterface):
 
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
-        if args.schema_type == SchemaType.STATE:
-            # TODO(#20930): Separate this out into a completely separate type of
-            #  entrypoint defined in entrypoints/ingest/state_dataset_refresh.py.
-            execute_state_dataset_refresh(
-                ingest_instance=args.ingest_instance,
-                sandbox_prefix=args.sandbox_prefix,
-            )
-        else:
-            execute_cloud_sql_to_bq_refresh(
-                schema_type=args.schema_type,
-                ingest_instance=args.ingest_instance,
-                sandbox_prefix=args.sandbox_prefix,
-            )
+        execute_cloud_sql_to_bq_refresh(
+            schema_type=args.schema_type,
+            ingest_instance=args.ingest_instance,
+            sandbox_prefix=args.sandbox_prefix,
+        )

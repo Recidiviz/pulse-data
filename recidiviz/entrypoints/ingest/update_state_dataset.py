@@ -14,14 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Entrypoint for the `state` dataset refresh step. """
+"""Entrypoint for updating the `state` dataset in BigQuery with outputs from
+state-specific ingest pipelines.
+"""
 
+import argparse
 import datetime
 import uuid
 from typing import Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
+from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.union_dataflow_ingest import (
     combine_ingest_sources_into_single_state_dataset,
@@ -81,5 +85,35 @@ def execute_state_dataset_refresh(
         state_update_lock_manager.release_lock(state_update_lock_manager_lock_id)
 
 
-# TODO(#20930): Actually define a separate EntrypointInterface class here and call it
-#  from the calc DAG in place of BigQueryRefreshEntrypoint.
+class UpdateStateEntrypoint(EntrypointInterface):
+    """Entrypoint for updating the `state` dataset in BigQuery with outputs from state-specific ingest pipelines."""
+
+    @staticmethod
+    def get_parser() -> argparse.ArgumentParser:
+        """Parses arguments for the state dataset update process."""
+        parser = argparse.ArgumentParser()
+
+        parser.add_argument(
+            "--ingest_instance",
+            help=(
+                "The ingest instance for the specified state dataset update. Determines whether we read from "
+                "us_xx_primary or us_xx_secondary datasets."
+            ),
+            type=DirectIngestInstance,
+            choices=list(DirectIngestInstance),
+            required=True,
+        )
+        parser.add_argument(
+            "--sandbox_prefix",
+            help="The sandbox prefix for the update output dataset.",
+            type=str,
+        )
+
+        return parser
+
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        execute_state_dataset_refresh(
+            ingest_instance=args.ingest_instance,
+            sandbox_prefix=args.sandbox_prefix,
+        )
