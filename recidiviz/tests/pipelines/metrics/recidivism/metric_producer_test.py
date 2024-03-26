@@ -50,7 +50,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
 from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
@@ -322,7 +321,6 @@ _ALL_METRIC_INCLUSIONS_DICT = {
     MetricType.REINCARCERATION_RATE: True,
 }
 
-_DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
 _DEFAULT_METRICS_PRODUCER_CLASS: Dict[str, StateSpecificMetricsProducerDelegate] = {
     StateSpecificRecidivismMetricsProducerDelegate.__name__: UsXxRecidivismMetricsProducerDelegate()
@@ -390,7 +388,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -460,7 +457,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -536,7 +532,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -604,7 +599,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -677,7 +671,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -740,7 +733,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -797,7 +789,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -854,7 +845,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -917,7 +907,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -980,7 +969,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1049,7 +1037,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1109,7 +1096,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1168,7 +1154,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1229,7 +1214,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1284,7 +1268,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1341,7 +1324,6 @@ class TestProduceMetrics(unittest.TestCase):
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
-            _DEFAULT_PERSON_METADATA,
             _PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificRecidivismMetricsProducerDelegate.__name__: UsNdRecidivismMetricsProducerDelegate()

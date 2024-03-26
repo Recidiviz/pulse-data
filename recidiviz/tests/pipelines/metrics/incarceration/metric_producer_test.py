@@ -21,7 +21,6 @@ from collections import defaultdict
 from datetime import date
 from typing import Dict, Sequence, Type
 
-import mock
 from freezegun import freeze_time
 
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -58,10 +57,7 @@ from recidiviz.pipelines.metrics.incarceration.metrics import (
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetricType,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -77,7 +73,6 @@ ALL_METRICS_INCLUSIONS_DICT = {
 
 _COUNTY_OF_RESIDENCE = "county"
 
-_DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 
@@ -125,7 +120,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -193,7 +187,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -246,7 +239,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -295,7 +287,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -362,7 +353,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -408,7 +398,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -459,7 +448,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -515,7 +503,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=36,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -566,7 +553,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=37,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -624,7 +610,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
@@ -685,7 +670,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()

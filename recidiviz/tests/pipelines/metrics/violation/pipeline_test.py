@@ -43,10 +43,7 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ProduceMetrics,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.metrics.violation import pipeline
 from recidiviz.pipelines.metrics.violation.events import ViolationWithResponseEvent
 from recidiviz.pipelines.metrics.violation.identifier import ViolationIdentifier
@@ -56,11 +53,6 @@ from recidiviz.pipelines.metrics.violation.metric_producer import (
 from recidiviz.pipelines.metrics.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
-)
-from recidiviz.pipelines.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    ExtractPersonEventsMetadata,
 )
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
@@ -187,16 +179,6 @@ class TestViolationPipeline(unittest.TestCase):
         ]
         violation_types_data = [normalized_database_base_dict(violation_type)]
         violation_decisions_data = [normalized_database_base_dict(violation_decision)]
-
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "ASIAN",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
         data_dict_overrides: Dict[str, Iterable[Any]] = {
@@ -207,7 +189,6 @@ class TestViolationPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponse.__tablename__: violation_responses_data,
             schema.StateSupervisionViolationTypeEntry.__tablename__: violation_types_data,
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: violation_decisions_data,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -368,10 +349,8 @@ class TestClassifyViolationEvents(unittest.TestCase):
         ]
 
         correct_output: Iterable[
-            Tuple[
-                int, Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
-            ]
-        ] = [(self.fake_person_id, (self.fake_person, violation_events))]
+            Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
+        ] = [(self.fake_person, violation_events)]
 
         person_violations = {
             entities.StatePerson.__name__: [self.fake_person],
@@ -397,9 +376,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         """Tests the ClassifyViolationEvents DoFn with no violations for a person."""
 
         correct_output: Iterable[
-            Tuple[
-                int, Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
-            ]
+            Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
         ] = []
 
         person_violations = {
@@ -441,9 +418,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         violation_type.supervision_violation = violation
 
         correct_output: Iterable[
-            Tuple[
-                int, Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
-            ]
+            Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
         ] = []
 
         person_violations = {
@@ -473,8 +448,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
         self.fake_person_id = 12345
         self.fake_supervision_violation_id = 23456
 
-        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="ASIAN")
-
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"
         )
@@ -490,7 +463,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
             state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
-            static_reference_input="dataset_id",
             output="dataset_id",
             metric_types="ALL",
             region="region",
@@ -526,20 +498,11 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: [(fake_person, violation_events)],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
+        inputs = [(fake_person, violation_events)]
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Violation Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -569,7 +532,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([])
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce ViolationMetrics"
             >> beam.ParDo(
                 ProduceMetrics(),

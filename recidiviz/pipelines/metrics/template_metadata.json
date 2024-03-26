@@ -41,13 +41,6 @@
       "isOptional": true
     },
     {
-      "name": "static_reference_input",
-      "label": "BigQuery static reference table dataset to query.",
-      "helpText": "If specified, the pipeline query this BigQuery static reference table dataset instead of the default.",
-      "regexes": ["[0-9a-z_]+"],
-      "isOptional": true
-    },
-    {
       "name": "state_data_input",
       "label": "BigQuery dataset to query for state entities",
       "helpText": "If specified, the pipeline will query this dataset instead of the default.",

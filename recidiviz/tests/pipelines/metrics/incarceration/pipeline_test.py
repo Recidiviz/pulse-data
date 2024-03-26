@@ -74,17 +74,9 @@ from recidiviz.pipelines.metrics.incarceration.metrics import (
     IncarcerationReleaseMetric,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    ExtractPersonEventsMetadata,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
@@ -327,15 +319,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": state_code,
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -347,7 +330,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateAssessment.__tablename__: assessment_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
@@ -482,15 +464,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        state_race_ethnicity_population_count_data = [
-            {
-                "state_code": "US_XX",
-                "race_or_ethnicity": "BLACK",
-                "population_count": 1,
-                "representation_priority": 1,
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -503,7 +476,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
@@ -552,15 +524,15 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         return {
             StatePerson.__name__: [person],
             entities.StateAssessment.__name__: assessments or [],
-            entities.StateSupervisionPeriod.__name__: supervision_periods
-            if supervision_periods
-            else [],
-            entities.StateIncarcerationPeriod.__name__: incarceration_periods
-            if incarceration_periods
-            else [],
-            entities.StateSupervisionViolationResponse.__name__: violation_responses
-            if violation_responses
-            else [],
+            entities.StateSupervisionPeriod.__name__: (
+                supervision_periods if supervision_periods else []
+            ),
+            entities.StateIncarcerationPeriod.__name__: (
+                incarceration_periods if incarceration_periods else []
+            ),
+            entities.StateSupervisionViolationResponse.__name__: (
+                violation_responses if violation_responses else []
+            ),
             "persons_to_recent_county_of_residence": person_id_to_county_kv or [],
         }
 
@@ -650,7 +622,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             ),
         ]
 
-        correct_output = [(fake_person_id, (fake_person, incarceration_events))]
+        correct_output = [(fake_person, incarceration_events)]
 
         test_pipeline = TestPipeline()
 
@@ -718,8 +690,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_person_id = 12345
 
-        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
-
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"
         )
@@ -744,7 +714,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
-            static_reference_input="dataset_id",
             output="dataset_id",
             metric_types="ALL",
             region="region",
@@ -793,20 +762,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    PERSON_EVENTS_KEY: [(fake_person, incarceration_events)],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
-        ]
+        inputs = [(fake_person, incarceration_events)]
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Incarceration Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -842,20 +802,13 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        inputs = [
-            (
-                self.fake_person_id,
-                {
-                    "person_incarceration_events": [(fake_person, [])],
-                    PERSON_METADATA_KEY: [self.person_metadata],
-                },
-            )
+        inputs: list[tuple[StatePerson, list[IncarcerationMetric]]] = [
+            (fake_person, [])
         ]
 
         output = (
             test_pipeline
             | beam.Create(inputs)
-            | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Incarceration Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),

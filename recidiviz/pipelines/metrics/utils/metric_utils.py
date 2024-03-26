@@ -63,10 +63,6 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
     # The age of the person the metric describes
     age: Optional[int] = attr.ib(default=None)
 
-    # The race or ethnicity value of the persons the metric describes that is least represented in the state’s
-    # population
-    prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
-
     # The gender of the persons the metric describes
     gender: Optional[StateGender] = attr.ib(default=None)
 
@@ -123,15 +119,6 @@ class AssessmentMetricMixin(BuildableAttr):
 
     # Assessment type
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
-
-
-@attr.s(frozen=True)
-class PersonMetadata(BuildableAttr):
-    """Stores information about the StatePerson that is necessary for the metrics."""
-
-    # The race or ethnicity value of a person that is least represented in the state’s
-    # population
-    prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
 
 
 def json_serializable_list_value_handler(key: str, values: List[Any]) -> str:

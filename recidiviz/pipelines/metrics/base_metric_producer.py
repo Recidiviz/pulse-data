@@ -26,7 +26,6 @@ from recidiviz.pipelines.metrics.utils.calculator_utils import (
     produce_standard_event_metrics,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
     RecidivizMetric,
     RecidivizMetricType,
 )
@@ -59,7 +58,6 @@ class BaseMetricProducer(
         person: StatePerson,
         identifier_results: IdentifierResultT,
         metric_inclusions: Dict[RecidivizMetricTypeT, bool],
-        person_metadata: PersonMetadata,
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
@@ -72,7 +70,6 @@ class BaseMetricProducer(
                 flags for whether or not to include that metric type in the calculations.
             calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
                 limit the monthly calculation output to. If set to -1, does not limit the calculations.
-            person_metadata: Contains information about the StatePerson that is necessary for the metrics.
             pipeline_job_id: The job_id of the pipeline that is currently running.
             pipeline_name: The name of the pipeline producing these metrics
         Returns:
@@ -92,7 +89,6 @@ class BaseMetricProducer(
             identifier_results=identifier_results,  # type: ignore
             metric_inclusions=metric_inclusions,
             calculation_month_count=calculation_month_count,
-            person_metadata=person_metadata,
             event_to_metric_classes=self.event_to_metric_classes,  # type: ignore
             pipeline_job_id=pipeline_job_id,
             metrics_producer_delegate=metrics_producer_delegate,

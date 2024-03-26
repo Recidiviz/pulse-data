@@ -39,7 +39,6 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonEthnicity,
     StatePersonRace,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.pipelines.metrics.violation import metric_producer, pipeline
 from recidiviz.pipelines.metrics.violation.events import (
     ViolationEvent,
@@ -52,7 +51,6 @@ from recidiviz.pipelines.metrics.violation.metrics import (
 
 ALL_METRICS_INCLUSIONS_DICT = {metric_type: True for metric_type in ViolationMetricType}
 
-_DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
 PIPELINE_JOB_ID = "TEST_JOB_ID"
 
@@ -106,7 +104,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
             calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
         )
 
@@ -146,7 +143,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
             calculation_month_count=1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
         )
 
@@ -190,7 +186,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
             calculation_month_count=36,
-            person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
         )
 

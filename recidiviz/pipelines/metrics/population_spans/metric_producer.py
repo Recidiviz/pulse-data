@@ -35,10 +35,7 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
 from recidiviz.pipelines.metrics.utils.calculator_utils import (
     produce_standard_span_metrics,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
-    RecidivizMetric,
-)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import Span
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
@@ -73,7 +70,6 @@ class PopulationSpanMetricProducer(
         person: StatePerson,
         identifier_results: Sequence[Span],
         metric_inclusions: Dict[PopulationSpanMetricType, bool],
-        person_metadata: PersonMetadata,
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
@@ -86,7 +82,6 @@ class PopulationSpanMetricProducer(
                 flags for whether or not to include that metric type in the calculations.
             calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
                 limit the monthly calculation output to. If set to -1, does not limit the calculations.
-            person_metadata: Contains information about the StatePerson that is necessary for the metrics.
             pipeline_job_id: The job_id of the pipeline that is currently running.
         Returns:
             A list of RecidivizMetrics
@@ -107,7 +102,6 @@ class PopulationSpanMetricProducer(
             person=person,
             identifier_results=identifier_results,  # type: ignore
             metric_inclusions=metric_inclusions,
-            person_metadata=person_metadata,
             event_to_metric_classes=self.event_to_metric_classes,  # type: ignore
             pipeline_job_id=pipeline_job_id,
             metric_classes_to_producer_delegates=metric_classes_to_producer_delegates,

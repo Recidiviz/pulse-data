@@ -163,6 +163,8 @@ def _datasets_to_exclude_from_sandbox(
     # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the
     # dataflow_dataset_override is set
     if not dataflow_dataset_override:
+        # TODO(#28430): These are expensive, but we should still load them if these
+        # views have actually changed.
         datasets_to_exclude.add(DATAFLOW_METRICS_MATERIALIZED_DATASET)
     return datasets_to_exclude
 

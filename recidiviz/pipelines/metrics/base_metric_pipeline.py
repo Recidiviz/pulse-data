@@ -31,12 +31,9 @@ from typing import (
 )
 
 import apache_beam as beam
-from apache_beam.pvalue import AsList, PBegin
+from apache_beam.pvalue import PBegin
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
-from recidiviz.calculator.query.state.state_specific_query_strings import (
-    STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
@@ -54,22 +51,12 @@ from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.utils.metric_utils import (
-    PersonMetadata,
     RecidivizMetric,
     RecidivizMetricType,
     json_serializable_list_value_handler,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
-from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
-    ExtractDataForPipeline,
-    ImportTable,
-)
-from recidiviz.pipelines.utils.beam_utils.person_utils import (
-    PERSON_EVENTS_KEY,
-    PERSON_METADATA_KEY,
-    BuildPersonMetadata,
-    ExtractPersonEventsMetadata,
-)
+from recidiviz.pipelines.utils.beam_utils.extractor_utils import ExtractDataForPipeline
 from recidiviz.pipelines.utils.execution_utils import (
     TableRow,
     get_job_id,
@@ -213,17 +200,6 @@ class MetricPipeline(
             unifying_id_field_filter_set=person_id_filter_set,
         )
 
-        state_race_ethnicity_population_counts = (
-            p
-            | "Load state_race_ethnicity_population_counts"
-            >> ImportTable(
-                project_id=self.pipeline_parameters.project,
-                dataset_id=self.pipeline_parameters.static_reference_input,
-                table_id=STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
-                state_code_filter=self.pipeline_parameters.state_code,
-            )
-        )
-
         person_events = pipeline_data | "Get Events" >> beam.ParDo(
             ClassifyResults(),
             state_code=self.pipeline_parameters.state_code,
@@ -231,22 +207,8 @@ class MetricPipeline(
             state_specific_required_delegates=self.state_specific_required_delegates(),
         )
 
-        person_metadata = (
-            pipeline_data
-            | "Build the person_metadata dictionary"
-            >> beam.ParDo(
-                BuildPersonMetadata(),
-                state_race_ethnicity_population_counts=AsList(
-                    state_race_ethnicity_population_counts
-                ),
-            )
-        )
-
         metrics = (
-            {PERSON_EVENTS_KEY: person_events, PERSON_METADATA_KEY: person_metadata}
-            | "Group events with person-level metadata" >> beam.CoGroupByKey()
-            | "Organize StatePerson, PersonMetadata and events for calculations"
-            >> beam.ParDo(ExtractPersonEventsMetadata())
+            person_events
             | "Produce Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
@@ -298,8 +260,7 @@ class MetricPipeline(
 @with_input_types(
     beam.typehints.Tuple[
         entities.StatePerson,
-        Union[Dict[int, IdentifierResult], Iterable[IdentifierResult]],
-        PersonMetadata,
+        Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
     ],
     beam.typehints.Optional[str],
     beam.typehints.Optional[str],
@@ -321,8 +282,7 @@ class ProduceMetrics(beam.DoFn):
         self,
         element: Tuple[
             entities.StatePerson,
-            Union[Dict[int, IdentifierResult], Iterable[IdentifierResult]],
-            PersonMetadata,
+            Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
         ],
         project_id: str,
         region: str,
@@ -335,7 +295,7 @@ class ProduceMetrics(beam.DoFn):
         """Produces various metrics.
         Sends the metric_producer the StatePerson entity and their corresponding events for mapping all metrics.
         Args:
-            element: Dictionary containing the person, events, and person_metadata
+            element: Dictionary containing the person and events
             pipeline_job_args: Object storing information about the calculation
                 pipeline job currently running
             metric_producer: The metric producer to call to produce metrics
@@ -343,7 +303,7 @@ class ProduceMetrics(beam.DoFn):
 
         Yields:
             Each metric."""
-        person, results, person_metadata = element
+        person, results = element
         pipeline_job_id = job_id(
             project_id=project_id,
             region=region,
@@ -371,7 +331,6 @@ class ProduceMetrics(beam.DoFn):
             person=person,
             identifier_results=results,
             metric_inclusions=metric_inclusions,
-            person_metadata=person_metadata,
             pipeline_job_id=pipeline_job_id,
             calculation_month_count=calculation_month_count,
             metrics_producer_delegates=metrics_producer_delegates,
@@ -387,8 +346,8 @@ class ProduceMetrics(beam.DoFn):
 )
 @with_output_types(
     beam.typehints.Tuple[
-        int,
-        beam.typehints.Tuple[entities.StatePerson, List[IdentifierResult]],
+        entities.StatePerson,
+        Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
     ]
 )
 class ClassifyResults(beam.DoFn):
@@ -405,7 +364,10 @@ class ClassifyResults(beam.DoFn):
         identifier: BaseIdentifier,
         state_specific_required_delegates: List[Type[StateSpecificDelegate]],
     ) -> Generator[
-        Tuple[int, Tuple[entities.StatePerson, List[IdentifierResult]]],
+        Tuple[
+            entities.StatePerson,
+            Union[Dict[int, Iterable[IdentifierResult]], Iterable[IdentifierResult]],
+        ],
         None,
         None,
     ]:
@@ -430,10 +392,7 @@ class ClassifyResults(beam.DoFn):
         results = identifier.identify(person, all_kwargs)
 
         if results:
-            person_id = person.person_id
-            if person_id is None:
-                raise ValueError("Found unexpected null person_id.")
-            yield person_id, (person, results)
+            yield person, results
 
 
 @with_input_types(RecidivizMetric)
