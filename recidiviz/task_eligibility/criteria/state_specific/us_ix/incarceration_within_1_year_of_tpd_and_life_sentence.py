@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which someone is 
+Defines a criteria span view that shows spans of time during which someone is
 1 year away from the tentative parole date (TPD) AND has a life sentence.
 """
 from recidiviz.common.constants.states import StateCode
@@ -45,7 +45,7 @@ Defines a criteria span view that shows spans of time during which someone is
 
 _CRITERIA_QUERY_1 = f"""
     SELECT
-        * EXCEPT (reason, meets_criteria),
+        * EXCEPT (reason, reason_v2, meets_criteria),
         NOT meets_criteria AS meets_criteria,
         NULL AS tentative_parole_date,
         NOT meets_criteria AS life_sentence,
@@ -54,7 +54,7 @@ _CRITERIA_QUERY_1 = f"""
 
 _CRITERIA_QUERY_2 = f"""
     SELECT
-        * EXCEPT (reason),
+        * EXCEPT (reason, reason_v2),
         {extract_object_from_json(object_column = 'tentative_parole_date', 
                                   object_type = 'DATE')} AS tentative_parole_date,
         False AS life_sentence,

@@ -18,12 +18,16 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from google.cloud import bigquery
+
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+    get_template_with_reasons_as_json,
 )
 
 
@@ -60,7 +64,23 @@ class TestStateSpecificTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(view.view_query, "SELECT * FROM `recidiviz-456.raw_data.foo`;")
+        expected_query_template = """
+WITH criteria_query_base AS (
+SELECT * FROM `recidiviz-456.raw_data.foo`
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    CAST(NULL AS JSON) AS reason_v2,
+FROM
+    criteria_query_base
+"""
+
+        self.assertEqual(view.view_query, expected_query_template)
 
     def test_build_with_address_overrides(self) -> None:
         builder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -95,9 +115,23 @@ class TestStateSpecificTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(
-            view.view_query, "SELECT * FROM `recidiviz-456.my_prefix_raw_data.foo`;"
-        )
+        expected_query_template = """
+WITH criteria_query_base AS (
+SELECT * FROM `recidiviz-456.my_prefix_raw_data.foo`
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    CAST(NULL AS JSON) AS reason_v2,
+FROM
+    criteria_query_base
+"""
+
+        self.assertEqual(view.view_query, expected_query_template)
 
     def test_no_state_prefix_on_criteria_throws(self) -> None:
         with self.assertRaisesRegex(
@@ -172,10 +206,23 @@ class TestStateAgnosticTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
                 table_id="simple_criteria_materialized",
             ),
         )
+        expected_query_template = """
+WITH criteria_query_base AS (
+SELECT * FROM `recidiviz-456.ingested_data.foo`
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    CAST(NULL AS JSON) AS reason_v2,
+FROM
+    criteria_query_base
+"""
 
-        self.assertEqual(
-            view.view_query, "SELECT * FROM `recidiviz-456.ingested_data.foo`;"
-        )
+        self.assertEqual(view.view_query, expected_query_template)
 
     def test_build_with_address_overrides(self) -> None:
         builder = StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -208,10 +255,23 @@ class TestStateAgnosticTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(
-            view.view_query,
-            "SELECT * FROM `recidiviz-456.my_prefix_ingested_data.foo`;",
-        )
+        expected_query_template = """
+WITH criteria_query_base AS (
+SELECT * FROM `recidiviz-456.my_prefix_ingested_data.foo`
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    CAST(NULL AS JSON) AS reason_v2,
+FROM
+    criteria_query_base
+"""
+
+        self.assertEqual(view.view_query, expected_query_template)
 
     def test_lowercase_criteria_name_throws(self) -> None:
         with self.assertRaisesRegex(
@@ -224,3 +284,60 @@ class TestStateAgnosticTaskCriteriaBigQueryViewBuilder(unittest.TestCase):
                 description="Simple criteria description",
                 ingested_data_dataset="ingested_data",
             )
+
+    def test_get_template_with_reasons_as_json_empty(self) -> None:
+        query_template = "SELECT * FROM my_table"
+        expected_query = """
+WITH criteria_query_base AS (
+SELECT * FROM my_table
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    CAST(NULL AS JSON) AS reason_v2,
+FROM
+    criteria_query_base
+"""
+        actual_query = get_template_with_reasons_as_json(
+            query_template, reasons_fields=[]
+        )
+        self.assertEqual(expected_query, actual_query)
+
+    def test_get_template_with_reasons_as_json_with_reasons(self) -> None:
+        query_template = "SELECT * FROM another_table"
+        reasons_fields = [
+            ReasonsField(
+                name="fees_owed",
+                type=bigquery.enums.SqlTypeNames("FLOAT"),
+                description="Amount of fees owed",
+            ),
+            ReasonsField(
+                name="offense_type",
+                type=bigquery.enums.SqlTypeNames("STRING"),
+                description="Offense type that person is serving",
+            ),
+        ]
+        expected_query = """
+WITH criteria_query_base AS (
+SELECT * FROM another_table
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    TO_JSON(STRUCT(
+        fees_owed,
+        offense_type
+    )) AS reason_v2,
+FROM
+    criteria_query_base
+"""
+        actual_query = get_template_with_reasons_as_json(query_template, reasons_fields)
+        self.assertEqual(expected_query, actual_query)

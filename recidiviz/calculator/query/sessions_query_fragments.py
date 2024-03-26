@@ -426,3 +426,21 @@ def generate_largest_value_query_fragment(
             for table_column, priority_columns in table_columns_with_priority_columns.items()
         ]
     )
+
+
+def convert_cols_to_json(cols: List[str]) -> str:
+    """Returns a SQL clause that will produce a BQ JSON value from the provided columns."""
+    cols_str = ",\n".join([f"        {col}" for col in cols])
+    return f"""TO_JSON(STRUCT(
+{cols_str}
+    ))"""
+
+
+def convert_cols_to_json_string(cols: List[str]) -> str:
+    """Returns a SQL clause that will produce a string that can be parsed as JSON from the provided columns."""
+    attribute_cols_str_with_cast = ",\n".join(
+        [f"        CAST({col} AS STRING) AS {col}" for col in cols]
+    )
+    return f"""TO_JSON_STRING(STRUCT(
+{attribute_cols_str_with_cast}
+    ))"""
