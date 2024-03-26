@@ -359,6 +359,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type_path_str="earnedDischarge",
         person_record_type=PersonRecordType.CLIENT,
     ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_PA,
+        opportunity_type="usPaAdminSupervision",
+        experiment_id="US_PA_ADMIN_SUPERVISION_WORKFLOWS",
+        opportunity_record_view_name="us_pa_transfer_to_administrative_supervision_form_record_materialized",
+        task_completion_event=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
+        source_filename="us_pa_transfer_to_administrative_supervision_form_record.json",
+        export_collection_name="US_PA-adminSupervisionReferrals",
+        opportunity_type_path_str="adminSupervision",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
     # TODO(Recidiviz/recidiviz-dashboards#5003) - Replace with us_tn_transfer_to_compliant_reporting_record when we move over to new data entirely
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
