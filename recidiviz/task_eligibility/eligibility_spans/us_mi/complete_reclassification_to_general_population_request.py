@@ -22,13 +22,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import (
-    transfer_out_of_solitary_confinement,
-)
-from recidiviz.task_eligibility.criteria.general import (
-    housing_unit_type_is_solitary_confinement,
+    transfer_out_of_disciplinary_or_temporary_solitary_confinement,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
-    detention_sanction_timeframe_has_expired,
+    eligible_for_reclassification_from_solitary_to_general,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -41,14 +38,13 @@ _DESCRIPTION = """Shows the spans of time during which someone in MI is eligible
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
-    task_name="COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION",
+    task_name="COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        detention_sanction_timeframe_has_expired.VIEW_BUILDER,
-        housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
+        eligible_for_reclassification_from_solitary_to_general.VIEW_BUILDER
     ],
-    completion_event_builder=transfer_out_of_solitary_confinement.VIEW_BUILDER,
+    completion_event_builder=transfer_out_of_disciplinary_or_temporary_solitary_confinement.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

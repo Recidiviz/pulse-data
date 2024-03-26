@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all releases from temporary solitary confinement.
+"""Defines a view that shows all releases from temporary or disciplinary solitary confinement to a non-solitary
+compartment.
 """
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
@@ -26,12 +27,14 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """ Defines a view that shows all releases from temporary solitary confinement.
+_DESCRIPTION = """ Defines a view that shows all releases from temporary or disciplinary solitary confinement to a
+non-solitary compartment. If a client goes from TEMPORARY --> DISCIPLINARY --> TEMPORARY --> GENERAL only the last
+transition will be counted.
 """
 
 _QUERY_TEMPLATE = f"""
-/* Get any TEMPORARY_SOLITARY_CONFINEMENT housing_unit_type_session that ends in a housing_unit_type that is not 
-solitary (including nulls). */
+/* Get any DISCIPLINARY or TEMPORARY solitary confinement housing_unit_type_session that ends in a housing_unit_type
+that is not solitary (including nulls). */
 #TODO(#27658) Account for false transitions
 WITH housing_units AS (
     SELECT 
@@ -47,15 +50,15 @@ SELECT
     person_id,
     completion_event_date
 FROM housing_units
-WHERE housing_unit_type = 'TEMPORARY_SOLITARY_CONFINEMENT'
-    -- do not include open TEMPORARY_SOLITARY_CONFINEMENT periods 
+WHERE housing_unit_type IN ('TEMPORARY_SOLITARY_CONFINEMENT', 'DISCIPLINARY_SOLITARY_CONFINEMENT')
+    -- do not include open periods 
     AND {nonnull_end_date_clause('completion_event_date')}<= CURRENT_DATE('US/Eastern')
     -- only chose sub sessions that transfer to a non solitary housing_unit_type
     AND COALESCE(next_housing_type, '') NOT LIKE '%SOLITARY%'
 """
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = StateAgnosticTaskCompletionEventBigQueryViewBuilder(
-    completion_event_type=TaskCompletionEventType.TRANSFER_OUT_OF_TEMPORARY_SOLITARY_CONFINEMENT,
+    completion_event_type=TaskCompletionEventType.TRANSFER_OUT_OF_DISCIPLINARY_OR_TEMPORARY_SOLITARY_CONFINEMENT,
     description=_DESCRIPTION,
     completion_event_query_template=_QUERY_TEMPLATE,
     sessions_dataset=dataset_config.SESSIONS_DATASET,

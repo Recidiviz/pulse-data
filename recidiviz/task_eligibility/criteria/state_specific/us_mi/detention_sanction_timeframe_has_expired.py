@@ -18,12 +18,15 @@
 for a resident has expired. Policy dictates that detention should not exceed 10 days for
 each violation or 20 days for all violations arising from a specific incident.
 """
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.bq_utils import revert_nonnull_start_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -41,68 +44,50 @@ each violation or 20 days for all violations arising from a specific incident.
 """
 
 _QUERY_TEMPLATE = f"""
-WITH detention_sanction_spans AS (
-/* This cte queries incarceration incidents to identify the detention sanction timeframe (should be
-either 10 or 20 according to policy) */
-    SELECT
+WITH sanctions_and_locations AS (
+/* This cte queries incarceration incidents to identify the detention sanctions and the spans of time they are effective.
+ It then unions all disciplinary solitary confinement sessions and sets a default sanction expiration date of the 
+ start date of that session. (This ensures that a resident is surfaced as eligible if they are in disciplinary 
+ solitary confinement with no sanction). */
+    SELECT DISTINCT
         state_code,
         person_id,
         date_effective AS start_date, 
-        --there are only 6 examples of null end dates, but where these exist, project an end date by adding
-        --punishment_length_days to the date_effective
-        COALESCE(projected_end_date, DATE_ADD(date_effective, INTERVAL punishment_length_days DAY)) AS end_date,
-        --according to policy, the detention sanction can be at most 20 days 
-        LEAST(punishment_length_days, 20) AS punishment_length_days,
+        LEAST(projected_end_date, DATE_ADD(date_effective, INTERVAL  LEAST(punishment_length_days, 20) DAY)) AS end_date,
+        --if the sanction is greater than 20 days, we convert it to 20 as per policy
+        DATE_ADD(date_effective, INTERVAL LEAST(punishment_length_days, 20) DAY) AS critical_date
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome`
     WHERE outcome_type = 'RESTRICTED_CONFINEMENT'
         AND punishment_length_days IS NOT NULL
         AND date_effective IS NOT NULL
         AND state_code = 'US_MI'
+    
+    UNION ALL 
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        start_date AS critical_date
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` 
+    WHERE state_code = 'US_MI'
+        AND housing_unit_type = 'DISCIPLINARY_SOLITARY_CONFINEMENT' 
 ),
-detention_designation_spans AS (
-/* This cte queries the actual spans of time a resident has a 'DETENTION' designation */
+/* Sub sessions are created where all detention sanction spans are associated with their expiration dates and all 
+disciplinary solitary confinement spans are associated with a default expiration date */
+{create_sub_sessions_with_attributes('sanctions_and_locations')},
+critical_date_spans AS (
+/* The MAX of all expiration dates that are active for a given span is used as the critical date */
     SELECT 
         state_code,
         person_id,
-        offender_id,
-        DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', start_date)) AS start_date,
-        DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', end_date)) AS end_date,
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_OFFENDER_DESIGNATION_latest` d
-    INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest` r
-        on d.offender_designation_code_id = r.reference_code_id
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON pei.external_id = d.offender_id
-        AND pei.id_type = 'US_MI_DOC_ID'
-    WHERE r.description = 'Detention'
-    AND DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', start_date)) < {nonnull_end_date_clause("DATE(PARSE_DATETIME('%Y-%m-%d %H:%M:%S', end_date))")}
+        start_date AS start_datetime,
+        end_date AS end_datetime,
+        MAX({revert_nonnull_start_date_clause('critical_date')}) AS critical_date
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4
 ),
-critical_date_spans AS (
-    SELECT
-        dd.state_code,
-        dd.person_id,
-        dd.start_date AS start_datetime,
-        dd.end_date AS end_datetime,
-        --if we don't see a detention sanction, set the critical date to 10 days later 
-        DATE_ADD(dd.start_date, INTERVAL IFNULL(d.punishment_length_days, 10) DAY) AS critical_date
-    FROM ({aggregate_adjacent_spans(table_name='detention_designation_spans')}) dd
-     LEFT JOIN detention_sanction_spans d
-        ON dd.person_id = d.person_id 
-        AND dd.state_code = d.state_code
-        --revisit this logic, and dedup? 
-        AND dd.start_date < {nonnull_end_date_clause('d.end_date')}
-        AND d.start_date < {nonnull_end_date_clause('dd.end_date')}
-),
-{critical_date_has_passed_spans_cte()},
-distinct_critical_date_has_passed_spans AS(
-    SELECT DISTINCT
-        cd.state_code,
-        cd.person_id,
-        cd.start_date,
-        cd.end_date,
-        cd.critical_date_has_passed,
-        cd.critical_date,
-    FROM critical_date_has_passed_spans cd
-)
+{critical_date_has_passed_spans_cte()}
 SELECT
     cd.state_code,
     cd.person_id,
@@ -110,11 +95,9 @@ SELECT
     cd.end_date,
     cd.critical_date_has_passed AS meets_criteria,
     TO_JSON(STRUCT(
-        cd.critical_date AS eligible_date,
-        cd.critical_date_has_passed AS detention_sanction_has_expired
+        cd.critical_date AS eligible_date
     )) AS reason,
-FROM distinct_critical_date_has_passed_spans cd
-
+FROM critical_date_has_passed_spans cd
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -124,10 +107,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MI,
-            instance=DirectIngestInstance.PRIMARY,
-        ),
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 
