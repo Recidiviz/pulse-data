@@ -12,7 +12,6 @@ columns:
   - name: COMMITMENT_ID
     description: |-
       fk to doc_sc_commitment
-    is_pii: True
   - name: OFFENSE_NUMBER
     description: |-
       court generated number  aka - count
