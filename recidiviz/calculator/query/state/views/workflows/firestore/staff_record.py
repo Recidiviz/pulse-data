@@ -43,6 +43,9 @@ from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_staff_te
 from recidiviz.calculator.query.state.views.workflows.us_or.supervision_staff_template import (
     US_OR_SUPERVISION_STAFF_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.workflows.us_pa.supervision_staff_template import (
+    US_PA_SUPERVISION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_tn.incarceration_staff_template import (
     US_TN_INCARCERATION_STAFF_TEMPLATE,
 )
@@ -69,6 +72,7 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
         tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE})
         , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})
         , or_staff AS ({US_OR_SUPERVISION_STAFF_TEMPLATE})
+        , pa_staff AS ({US_PA_SUPERVISION_STAFF_TEMPLATE})
         , id_staff AS ({US_ID_SUPERVISION_STAFF_TEMPLATE})
         , ix_staff AS ({US_IX_SUPERVISION_STAFF_TEMPLATE})
         , me_staff AS ({US_ME_STAFF_TEMPLATE})
@@ -94,6 +98,8 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
     SELECT {{columns}} FROM ca_staff
     UNION ALL
     SELECT {{columns}} FROM or_staff
+    UNION ALL
+    SELECT {{columns}} FROM pa_staff
     UNION ALL
     SELECT {{columns}} FROM tn_facility_staff
 """
