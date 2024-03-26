@@ -223,7 +223,7 @@ all_criteria AS (
 {population_span_cte},
 {completion_event_span_cte},
 combined_cte AS (
-    SELECT * EXCEPT(meets_criteria, reason) FROM criteria_spans
+    SELECT * EXCEPT(meets_criteria, reason, reason_v2) FROM criteria_spans
     UNION ALL
     -- Add an indicator for the population spans so the population sub-sessions can be
     -- used as the base spans in the span collapsing logic below

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils functions for common query logic used for span and event query builders"""
+"""Class that represents a column that provides additional information about the meets_criteria value
+in a given row in a TES criteria query."""
+import attr
+from google.cloud import bigquery
 
-from typing import List
 
-
-def package_json_attributes(attribute_cols: List[str]) -> str:
-    """
-    Returns a query fragment that casts attribute columns and combines into JSON blob.
-    """
-    attribute_cols_str_with_cast = ",\n".join(
-        [f"        CAST({col} AS STRING) AS {col}" for col in attribute_cols]
-    )
-    return f"""TO_JSON_STRING(STRUCT(
-{attribute_cols_str_with_cast}
-    ))"""
+@attr.define(frozen=True, kw_only=True)
+class ReasonsField:
+    name: str
+    type: bigquery.enums.SqlTypeNames
+    description: str

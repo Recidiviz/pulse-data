@@ -21,12 +21,12 @@ from typing import List, Union
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.sessions_query_fragments import (
+    convert_cols_to_json_string,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfObservationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.query_builder_utils import (
-    package_json_attributes,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
     SpanType,
@@ -93,7 +93,7 @@ SELECT DISTINCT
     "{self.span_type.value}" AS span,
     {self.span_start_date_col} AS start_date,
     {self.span_end_date_col} AS end_date,
-    {package_json_attributes(self.attribute_cols)} AS span_attributes,
+    {convert_cols_to_json_string(self.attribute_cols)} AS span_attributes,
 FROM
     {self.source_query_fragment}
 """

@@ -21,15 +21,15 @@ from typing import List, Union
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.sessions_query_fragments import (
+    convert_cols_to_json_string,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
     EventType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfObservationType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.query_builder_utils import (
-    package_json_attributes,
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.str_field_utils import snake_to_title
@@ -91,7 +91,7 @@ SELECT DISTINCT
     {unit_of_observation.get_primary_key_columns_query_string()},
     "{self.event_type.value}" AS event,
     {self.event_date_col} AS event_date,
-    {package_json_attributes(self.attribute_cols)} AS event_attributes,
+    {convert_cols_to_json_string(self.attribute_cols)} AS event_attributes,
 FROM
     {self.source_query_fragment}
 """

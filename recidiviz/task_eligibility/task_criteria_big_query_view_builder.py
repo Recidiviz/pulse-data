@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,10 +17,39 @@
 """Defines BigQueryViewBuilders that can be used to define single criteria span views.
 These views are used as inputs to a task eligibility spans view.
 """
-from typing import Union
+from typing import List, Optional, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import convert_cols_to_json
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
+
+
+def get_template_with_reasons_as_json(
+    query_template: str, reasons_fields: Optional[List[ReasonsField]] = None
+) -> str:
+    # If no reason fields are provided, default to NULL
+    reasons_query_fragment = "CAST(NULL AS JSON)"
+    # Package reason fields into a json, maintaining original typing of fields
+    if reasons_fields:
+        reasons_query_fragment = convert_cols_to_json(
+            [field.name for field in reasons_fields]
+        )
+    return f"""
+WITH criteria_query_base AS (
+{query_template.rstrip().rstrip(";")}
+)
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    meets_criteria,
+    reason,
+    {reasons_query_fragment} AS reason_v2,
+FROM
+    criteria_query_base
+"""
 
 
 class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -37,6 +66,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_spans_query_template: str,
         description: str,
         meets_criteria_default: bool = False,
+        reasons_fields: Optional[List[ReasonsField]] = None,
         # TODO(#14311): Add arguments to allow bounding the policy to specific dates
         #  and use those values in the span-collapsing logic in the
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
@@ -56,7 +86,10 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             dataset_id=f"task_eligibility_criteria_{state_code.value.lower()}",
             view_id=view_id,
             description=description,
-            view_query_template=criteria_spans_query_template,
+            view_query_template=get_template_with_reasons_as_json(
+                query_template=criteria_spans_query_template,
+                reasons_fields=reasons_fields,
+            ),
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
@@ -81,6 +114,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_spans_query_template: str,
         description: str,
         meets_criteria_default: bool = False,
+        reasons_fields: Optional[List[ReasonsField]] = None,
         **query_format_kwargs: str,
     ) -> None:
         if criteria_name.upper() != criteria_name:
@@ -90,7 +124,10 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             dataset_id="task_eligibility_criteria_general",
             view_id=criteria_name.lower(),
             description=description,
-            view_query_template=criteria_spans_query_template,
+            view_query_template=get_template_with_reasons_as_json(
+                query_template=criteria_spans_query_template,
+                reasons_fields=reasons_fields,
+            ),
             should_materialize=True,
             materialized_address_override=None,
             projects_to_deploy=None,
