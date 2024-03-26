@@ -111,6 +111,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_f
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_security_classification_committee_review_form_record import (
     US_MI_COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_reclassification_to_general_population_request_record import (
+    US_MI_COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_transfer_to_telephone_reporting_request_record import (
     US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -192,6 +195,7 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
+    US_MI_COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
     US_MI_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
