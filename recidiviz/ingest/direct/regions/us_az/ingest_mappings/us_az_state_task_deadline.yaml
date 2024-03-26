@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - transition_release_eligibility_date
+  - actual_or_expected_release_date
+  - update_datetime_external
+  - sequence_num
+  - PERSON_ID
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    task_deadlines:
+      - StateTaskDeadline:
+          eligible_date: transition_release_eligibility_date
+          due_date: actual_or_expected_release_date
+          update_datetime: update_datetime_external
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+          task_subtype: $literal("Standard Transition Release")
+          sequence_num: sequence_num
