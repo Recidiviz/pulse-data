@@ -118,7 +118,9 @@ class SQLAlchemyDatabaseKey:
 
     @property
     def pool_configuration(self) -> Optional[SQLAlchemyPoolConfiguration]:
-        # TODO(#20930): Revisit whether this setting is necessary in a post-IID world.
+        # TODO(#28239): Revisit whether this setting is necessary in a post-IID,
+        #  post-raw data import in Airflow world where the operations DB connection
+        #  patterns are much more consistent.
         if self.schema_type is SchemaType.OPERATIONS:
             # The operations database has many concurrent / distributed connections from various
             # endpoints. In addition, for pre-ingest, (N~100) database operations are performed
