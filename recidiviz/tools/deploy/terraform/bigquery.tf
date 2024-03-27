@@ -565,3 +565,68 @@ resource "google_bigquery_table" "outliers_supervision_officers_archive" {
 EOF
 
 }
+
+resource "google_bigquery_table" "workflows_snooze_status_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "workflows_snooze_status_archive"
+  description         = "This table contains daily archives of active opportunity snoozes and denials, exported from Firestore."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-snooze-statuses/*.json"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "state_code",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "person_external_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "opportunity_type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "snoozed_by",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "snooze_start_date",
+        "type": "DATE",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "snooze_end_date",
+        "type": "DATE",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "denial_reasons",
+        "type": "STRING",
+        "mode": "REPEATED"
+    },
+    {
+        "name": "other_reason",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "as_of",
+        "type": "DATE",
+        "mode": "NULLABLE"
+    }
+]
+EOF
+
+}
