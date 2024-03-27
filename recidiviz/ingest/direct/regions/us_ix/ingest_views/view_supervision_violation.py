@@ -49,7 +49,11 @@ state_violation AS (
     OffenderId,
     ViolationId,
     ViolationTypeDesc,
-    LEAST(ArrestDatetime, ReportSubmissionDatetime) AS EstimatedViolationDate,
+    CASE 
+      WHEN ArrestDatetime IS NOT NULL and ReportSubmissionDatetime IS NOT NULL 
+      THEN LEAST(ArrestDatetime, ReportSubmissionDatetime)
+      ELSE COALESCE(ArrestDatetime, ReportSubmissionDatetime)
+    END AS EstimatedViolationDate,
     ArrestDatetime,
     ReportSubmissionDatetime,
     ViolationReportStatusDesc,
