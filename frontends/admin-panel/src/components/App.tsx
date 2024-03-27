@@ -41,7 +41,7 @@ import DatasetView from "./Datasets/DatasetView";
 import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
-import IngestDataflowView from "./IngestDataflow";
+import IngestStatusView from "./IngestStatus";
 import InsightsConfigurationsView from "./Insights/InsightsConfigurationsView";
 import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
@@ -267,7 +267,7 @@ const App = (): JSX.Element => {
           />
           <Route
             path={IngestOperations.INGEST_DATAFLOW_ROUTE}
-            component={IngestDataflowView}
+            component={IngestStatusView}
           />
           <Route
             exact

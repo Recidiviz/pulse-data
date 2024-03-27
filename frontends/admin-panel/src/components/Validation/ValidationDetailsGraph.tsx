@@ -34,7 +34,7 @@ import XYFrame from "semiotic/lib/XYFrame";
 import {
   IngestInstanceStatusInfo,
   IngestStatus,
-} from "../IngestDataflow/constants";
+} from "../IngestStatus/constants";
 import ColorLegend from "../Utilities/ColorLegend";
 import { formatDatetime } from "../Utilities/GeneralUtilities";
 import {

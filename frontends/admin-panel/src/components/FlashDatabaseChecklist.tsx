@@ -49,7 +49,7 @@ import {
   DirectIngestInstance,
   IngestRawFileProcessingStatus,
   QueueState,
-} from "./IngestDataflow/constants";
+} from "./IngestStatus/constants";
 import { fetchCurrentIngestInstanceStatus } from "./Utilities/IngestInstanceUtilities";
 import StateSelector from "./Utilities/StateSelector";
 

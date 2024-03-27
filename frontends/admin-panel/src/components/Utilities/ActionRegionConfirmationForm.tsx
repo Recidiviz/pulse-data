@@ -20,7 +20,7 @@ import { rem } from "polished";
 import * as React from "react";
 
 import { GCP_STORAGE_BASE_URL } from "../general/constants";
-import { DirectIngestInstance } from "../IngestDataflow/constants";
+import { DirectIngestInstance } from "../IngestStatus/constants";
 import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
 
 export enum RegionAction {
