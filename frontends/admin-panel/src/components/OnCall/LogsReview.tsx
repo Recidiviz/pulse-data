@@ -356,6 +356,7 @@ const Component: React.FC = () => {
                   { label: "Asset Generation", value: "asset-generation" },
                   { label: "Case Triage", value: "case-triage-web" },
                   { label: "Justice Counts", value: "justice-counts-web" },
+                  { label: "Admin Panel", value: "admin-panel" },
                 ]}
               />
             </Form.Item>
