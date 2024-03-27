@@ -137,6 +137,7 @@ class TestSchemaUtils(unittest.TestCase):
             "spreadsheet",
             "agency_setting",
             "agency_jurisdictions",
+            "metric_setting",
         ]
         pathways_table_names = [
             "metric_metadata",
