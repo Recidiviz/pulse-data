@@ -31,7 +31,6 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
@@ -189,7 +188,7 @@ def migrate_agency_data(
 
                     logger.info("Migrating Metric Settings...")
                     for metric_setting in agency_name_to_metric_settings[agency_name]:
-                        DatapointInterface.add_or_update_agency_datapoints(
+                        MetricSettingInterface.add_or_update_agency_metric_setting(
                             session=session,
                             agency=curr_agency,
                             agency_metric=metric_setting,

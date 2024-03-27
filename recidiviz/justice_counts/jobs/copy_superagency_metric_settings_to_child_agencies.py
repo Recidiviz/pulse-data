@@ -121,7 +121,6 @@ import sentry_sdk
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.utils.constants import (
@@ -202,7 +201,7 @@ def copy_metric_settings(
                 continue
 
             logger.info("Metric %s is being updated", metric_setting.key)
-            DatapointInterface.add_or_update_agency_datapoints(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 session=current_session,
                 agency=child_agency,
                 agency_metric=metric_setting,

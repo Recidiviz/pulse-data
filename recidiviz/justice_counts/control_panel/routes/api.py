@@ -1232,7 +1232,7 @@ def get_api_blueprint(
                     json=metric_json,
                     entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
                 )
-                DatapointInterface.add_or_update_agency_datapoints(
+                MetricSettingInterface.add_or_update_agency_metric_setting(
                     session=current_session,
                     agency_metric=agency_metric,
                     agency=agency,
