@@ -21,7 +21,7 @@
 import logging
 from typing import Any
 
-from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -52,13 +52,6 @@ def create_new_report(
     ):
         logger.info("Generating Reports for Agency %s", agency.name)
 
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=session, agency_id=agency.id
-        )
-        metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
-            agency_datapoints
-        )
-
         (
             monthly_report,
             yearly_report,
@@ -73,7 +66,10 @@ def create_new_report(
             previous_month=previous_month,
             previous_year=previous_year,
             systems={schema.System[sys] for sys in agency.systems},
-            metric_key_to_datapoints=metric_key_to_datapoints,
+            metric_key_to_metric_interface=MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=session,
+                agency=agency,
+            ),
         )
 
         if monthly_report is not None:

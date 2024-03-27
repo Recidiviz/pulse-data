@@ -27,6 +27,7 @@ from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
@@ -227,7 +228,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
                 },
-                metric_key_to_datapoints={},
+                metric_key_to_metric_interface={},
             )
             self.assertIsNotNone(new_monthly_report_A)
             if new_monthly_report_A:
@@ -272,7 +273,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
                 },
-                metric_key_to_datapoints={},
+                metric_key_to_metric_interface={},
             )
             self.assertIsNotNone(new_monthly_report_A)
             self.assertIsNotNone(new_yearly_report_A)
@@ -323,7 +324,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
                 },
-                metric_key_to_datapoints={},
+                metric_key_to_metric_interface={},
             )
             self.assertEqual(new_monthly_report_A, None)
             self.assertEqual(new_yearly_report_A, None)
@@ -334,24 +335,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             february_fiscal_frequency = CustomReportingFrequency(
                 starting_month=2, frequency=schema.ReportingFrequency.ANNUAL
             )
-            metric_interfaces = DatapointInterface.get_metric_settings_by_agency(
+            metric_interfaces = MetricSettingInterface.get_agency_metric_interfaces(
                 agency=self.test_schema_objects.test_agency_A, session=session
             )
-            datapoints = []
             for metric in metric_interfaces:
-                datapoint = schema.Datapoint(
-                    metric_definition_key=metric.key,
-                    source_id=agency_id_A,
-                    context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-                    value=february_fiscal_frequency.to_json_str(),
-                    is_report_datapoint=False,
-                )
-                datapoints.append(datapoint)
-                session.add(datapoint)
-                session.commit()
-            metric_key_to_agency_datapoints = (
-                DatapointInterface.build_metric_key_to_datapoints(datapoints)
-            )
+                metric.custom_reporting_frequency = february_fiscal_frequency
 
             # Case 3 (Neither Monthly nor Annual report created (no metrics available))
             (
@@ -371,7 +359,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
                 },
-                metric_key_to_datapoints=metric_key_to_agency_datapoints,
+                metric_key_to_metric_interface={
+                    interface.key: interface for interface in metric_interfaces
+                },
             )
             self.assertEqual(new_monthly_report_A, None)
             self.assertEqual(new_yearly_report_A, None)

@@ -32,6 +32,7 @@ from typing import Any, Dict, List
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -344,9 +345,11 @@ def get_agency_data(
                 global agency_name_to_user_jsons
                 agency_name_to_user_jsons = defaultdict(list)
                 for agency in agencies_to_migrate:
-                    metric_settings = DatapointInterface.get_metric_settings_by_agency(
-                        session=session,
-                        agency=agency,
+                    metric_settings = (
+                        MetricSettingInterface.get_agency_metric_interfaces(
+                            session=session,
+                            agency=agency,
+                        )
                     )
                     agency_name_to_metric_settings[agency.name] = metric_settings
                     agency_name_to_user_jsons[agency.name] = [

@@ -141,16 +141,11 @@ class DatapointInterface:
         return filter_deprecated_datapoints(datapoints=datapoints)
 
     @staticmethod
-    def get_datapoints_for_agency_dashboard(
+    def get_report_datapoints_for_agency_dashboard(
         session: Session,
-        agency_id: int,
         report_ids: List[int],
     ) -> List[schema.Datapoint]:
-        """Returns datapoints that we need to render the agency dashboard.
-        This includes both:
-            - Datapoints belonging to one of the specified reports
-            (We only want datapoints belonging to published reports)
-            - Agency datapoints
+        """Returns report datapoints that we need to render the agency dashboard.
         To improve performance, rather than returning fully instantiated
         datapoint objects, we return a tuple of their properties.
         """
@@ -159,11 +154,6 @@ class DatapointInterface:
             .filter(
                 # Published report datapoints
                 (schema.Datapoint.report_id.in_(report_ids))
-                # Agency datapoints
-                | (
-                    (schema.Datapoint.source_id == agency_id)
-                    & (schema.Datapoint.is_report_datapoint == false())
-                )
             )
             .order_by(schema.Datapoint.start_date.asc())
         )
@@ -218,19 +208,19 @@ class DatapointInterface:
     @staticmethod
     def join_report_datapoints_to_metric_interfaces(
         report_datapoints: List[schema.Datapoint],
-        metric_interfaces_by_key: Dict[str, MetricInterface],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
     ) -> Dict[str, MetricInterface]:
         """
-        Populates the MetricInterfaces in `metric_interfaces_by_key` with the values
+        Populates the MetricInterfaces in `metric_key_to_metric_interface` with the values
         stored in `report_datapoints`.
-        Expects that the MetricInterfaces in `metric_interfaces_by_key` contains all
+        Expects that the MetricInterfaces in `metric_key_to_metric_interface` contains all
         metric settings that an agency reports for, but that their report datapoint
         fields are empty (`value` and `aggregated_dimensions.dimension_to_value`).
         """
         for datapoint in report_datapoints:
-            if datapoint.report_id is None or datapoint.is_report_datapoint is False:
+            if datapoint.is_report_datapoint is False:
                 raise ValueError(
-                    f"Expected report_id to be non-null and is_report_datapoint to be True. Instead got {datapoint.report_id} and {datapoint.is_report_datapoint}."
+                    f"Expected is_report_datapoint to be True. Instead got {datapoint.is_report_datapoint}."
                 )
             if datapoint.context_key is not None:
                 # There are some deprecated report datapoints that used to store context
@@ -239,12 +229,14 @@ class DatapointInterface:
 
             # If an agency has report datapoints for metrics they have not configured
             # yet, we will create an empty metric interface for this metric.
-            if datapoint.metric_definition_key not in metric_interfaces_by_key:
-                metric_interfaces_by_key[
+            if datapoint.metric_definition_key not in metric_key_to_metric_interface:
+                metric_key_to_metric_interface[
                     datapoint.metric_definition_key
                 ] = MetricInterface(key=datapoint.metric_definition_key)
 
-            metric_interface = metric_interfaces_by_key[datapoint.metric_definition_key]
+            metric_interface = metric_key_to_metric_interface[
+                datapoint.metric_definition_key
+            ]
 
             # Populate top-level metric.
             if datapoint.dimension_identifier_to_member is None:
@@ -294,7 +286,7 @@ class DatapointInterface:
             }
             metric_interface.aggregated_dimensions.append(dimension_data)
 
-        return metric_interfaces_by_key
+        return metric_key_to_metric_interface
 
     @staticmethod
     def build_metric_key_to_datapoints(
@@ -661,6 +653,12 @@ class DatapointInterface:
             agency_datapoints = DatapointInterface.get_agency_datapoints(
                 session=session, agency_id=agency.id
             )
+        # To prevent circularity, we actually need this implemention to remain. We allow
+        # ourselves a method which can convert agency datapoints into unpopulated MetricInterfaces.
+        # This will be the same logic we use to build the script for parity in the
+        # MetricSettings table.
+        # TODO(#28389): Deprecate get_metric_settings_by_agency in favor of reading directly
+        # from the MetricSetting table.
         metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
             datapoints=agency_datapoints
         )

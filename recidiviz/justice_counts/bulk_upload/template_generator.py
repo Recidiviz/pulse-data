@@ -28,7 +28,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_METRICFILES,
@@ -80,7 +80,7 @@ def generate_bulk_upload_template(
 
     metric_key_to_interface = {
         metric_interface.key: metric_interface
-        for metric_interface in DatapointInterface.get_metric_settings_by_agency(
+        for metric_interface in MetricSettingInterface.get_agency_metric_interfaces(
             session,
             agency,
         )

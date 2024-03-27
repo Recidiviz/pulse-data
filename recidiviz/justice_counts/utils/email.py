@@ -554,9 +554,6 @@ def _get_missing_metrics_by_system(
     grouped by system.
 
     Args:
-        metric_key_to_datapoints (Dict[str, DatapointsForMetric]): A dict
-        mapping metric definition key to DatapointsForMetric object for the corresponding
-        metric
 
         agency (schema.Agency): The agency to fetch the missing metrics for.
     """
