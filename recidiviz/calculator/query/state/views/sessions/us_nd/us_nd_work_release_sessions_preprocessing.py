@@ -18,7 +18,6 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -69,10 +68,10 @@ WITH wr_facilities AS (
       state_code,
       person_id,
       start_date,
-      end_date,
-      facility,  
-      facility_name,
-    FROM `{{project_id}}.{{sessions_dataset}}.location_sessions_materialized`
+      end_date_exclusive,
+      facility,
+      housing_unit,
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
     WHERE state_code = 'US_ND'
       AND facility IN {_WR_FACILITIES}
 ),
@@ -102,7 +101,7 @@ wr_as_program AS (
 ),
 
 wr_sessions AS (
-    -- Folks in MRCC are only on WR if they are assigned explicitly to a WR program
+    -- In MRCC, folks are only on WR if they are assigned explicitly to a WR program
     SELECT
         f.state_code,
         f.person_id,
@@ -114,56 +113,34 @@ wr_sessions AS (
             p.start_date
         ) AS start_date ,
         LEAST(
-            f.end_date,
-            DATE_SUB(p.end_date_exclusive, INTERVAL 1 DAY)
+            f.end_date_exclusive,
+            p.end_date_exclusive
         ) AS end_date,
-        f.facility,  
-        f.facility_name,
+        f.facility,
+        f.housing_unit,
     FROM wr_facilities f
     INNER JOIN wr_as_program p
         ON f.person_id = p.person_id
         AND f.state_code = p.state_code
         AND f.start_date < {nonnull_end_date_exclusive_clause('p.end_date_exclusive')}
-        AND p.start_date < {nonnull_end_date_clause('f.end_date')}
+        AND p.start_date < {nonnull_end_date_exclusive_clause('f.end_date_exclusive')}
     WHERE f.facility IN ('MRCC')
 
     UNION ALL 
 
-
-    -- Folks in BTC are only on WR if they are not in the Women's Treatment and Recovery Unit (WTRU)
-    SELECT 
-        f.state_code,
-        f.person_id,
-        -- Given we are excluding periods where people were on WTRU, the start_date and 
-        --      end_date of the wr_sessions may not be completely accurate. 
-        GREATEST(
-            f.start_date,
-            hus.start_date
-        ) AS start_date ,
-        LEAST(
-            f.end_date,
-            DATE_SUB(hus.end_date_exclusive, INTERVAL 1 DAY)
-        ) AS end_date,
-        f.facility,  
-        f.facility_name,
-    FROM wr_facilities f
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized` hus
-        ON f.state_code = hus.state_code
-        AND f.person_id = hus.person_id
-        -- We want to get the overlap between folks housed in BTC and those in a 
-        --      non-WTRU housing unit. Folks on WTRU are not on work release.
-        AND f.start_date < {nonnull_end_date_exclusive_clause('hus.end_date_exclusive')}
-        AND hus.start_date < {nonnull_end_date_clause('f.end_date')}
-    WHERE f.facility = 'BTC'
-        AND hus.facility = 'BTC'
-        AND hus.state_code = 'US_ND'
-        AND NOT REGEXP_CONTAINS(housing_unit, r'WTRU')
+    -- In BTC, folks are only on WR if they are not in the Women's Treatment 
+    --    and Recovery Unit (WTRU)
+    SELECT *
+    FROM wr_facilities
+    WHERE 
+        -- Not in BTC's WTRU
+        facility = 'BTC' AND NOT REGEXP_CONTAINS(housing_unit, r'WTRU')
 
     UNION ALL
 
     SELECT *
     FROM wr_facilities
-    WHERE facility NOT IN ('MRCC', 'BTC')
+    WHERE facility NOT IN ('MRCC', 'BTC', 'JRCC')
 ),
 
 {create_sub_sessions_with_attributes("wr_sessions")},
