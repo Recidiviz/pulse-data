@@ -20,7 +20,11 @@ output:
           id_type: $literal("US_ND_ELITE_BOOKING")
     program_assignments:
       - StateProgramAssignment:
-          external_id: OFF_PRGREF_ID
+          external_id:
+            $concat:
+              $values:
+                - OFFENDER_BOOK_ID
+                - OFF_PRGREF_ID
           program_id: DESCRIPTION
           program_location_id: AGY_LOC_ID
           participation_status:
