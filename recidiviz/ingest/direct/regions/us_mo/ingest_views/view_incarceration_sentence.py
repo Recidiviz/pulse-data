@@ -72,17 +72,47 @@ WHERE
     )
 """
 
-# TODO(#26621): Update external ID with context of supervision sentences. Denote this view is just incarceration
 VIEW_QUERY_TEMPLATE = f"""
-WITH
-    base_sentence_info AS ({BASE_SENTENCE_INFO}),
-    incarceration_sentence_detail_info AS ({INCARCERATION_SENTENCE_DETAIL_INFO})
+WITH consecutive_parent_sentences AS (
+    SELECT
+        BS_DOC, -- unique for each person
+        BS_CYC, -- unique for each sentence group
+        BS_SEO, -- unique for each sentence
+        concat(BS_DOC, '-', BS_CYC, '-', BS_CRQ, '-', 'INCARCERATION') AS parent_sentence_external_id_array,
+    FROM 
+        {{LBAKRDTA_TAK022}} AS _consecutive
+    WHERE
+        BS_CCI = 'CS'
+),
+concurrent_parent_sentences AS (
+    SELECT
+        _concurrent.BS_DOC,
+        _concurrent.BS_CYC,
+        _concurrent.BS_SEO,
+        -- we want the consecutive sentence that this sentence is concurrent with
+        consecutive_parent_sentences.parent_sentence_external_id_array
+    FROM 
+        {{LBAKRDTA_TAK022}} AS _concurrent
+    JOIN
+        consecutive_parent_sentences   
+    ON
+        _concurrent.BS_DOC = consecutive_parent_sentences.BS_DOC AND
+        _concurrent.BS_CYC = consecutive_parent_sentences.BS_CYC AND
+        _concurrent.BS_CRQ = consecutive_parent_sentences.BS_SEO
+    WHERE
+        _concurrent.BS_CCI = 'CC'
+),
+parent_sentence_arrays AS (
+    SELECT * FROM consecutive_parent_sentences 
+    UNION ALL
+    SELECT * FROM concurrent_parent_sentences 
+),
+base_sentence_info AS ({BASE_SENTENCE_INFO}),
+incarceration_sentence_detail_info AS ({INCARCERATION_SENTENCE_DETAIL_INFO})
 SELECT
     base_sentence_info.BS_DOC,                 -- unique for each person
     base_sentence_info.BS_CYC,                 -- unique for each sentence group
     base_sentence_info.BS_SEO,                 -- unique for each sentence
-    base_sentence_info.BS_CCI,                 -- sentence con_ind
-    base_sentence_info.BS_CRQ,                 -- sentence con_xref
     base_sentence_info.BS_CNS,                 -- sentence county_code,
     base_sentence_info.BS_NCI,                 -- charge ncic_code,
     base_sentence_info.BS_ASO,                 -- charge statute,
@@ -94,18 +124,26 @@ SELECT
     base_sentence_info.BS_CRC,                 -- charge judicial_district_code
     incarceration_sentence_detail_info.BT_SD,  -- sentence imposed_date
     incarceration_sentence_detail_info.BT_CRR, -- sentence is_life
-    incarceration_sentence_detail_info.BT_SDI -- sentence is_capital_punishment
+    incarceration_sentence_detail_info.BT_SDI, -- sentence is_capital_punishment
+    parent_sentence_arrays.parent_sentence_external_id_array
 FROM base_sentence_info
-LEFT JOIN incarceration_sentence_detail_info 
-       ON base_sentence_info.BS_DOC = incarceration_sentence_detail_info.BT_DOC
-      AND base_sentence_info.BS_CYC = incarceration_sentence_detail_info.BT_CYC
-      AND base_sentence_info.BS_SEO = incarceration_sentence_detail_info.BT_SEO
+JOIN 
+    incarceration_sentence_detail_info 
+ON 
+    base_sentence_info.BS_DOC = incarceration_sentence_detail_info.BT_DOC AND 
+    base_sentence_info.BS_CYC = incarceration_sentence_detail_info.BT_CYC AND 
+    base_sentence_info.BS_SEO = incarceration_sentence_detail_info.BT_SEO
+LEFT JOIN
+    parent_sentence_arrays
+ON 
+    base_sentence_info.BS_DOC = parent_sentence_arrays.BS_DOC AND 
+    base_sentence_info.BS_CYC = parent_sentence_arrays.BS_CYC AND 
+    base_sentence_info.BS_SEO = parent_sentence_arrays.BS_SEO
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
-    # TODO(#26620) Rename to incarceration_sentence
-    ingest_view_name="sentence",
+    ingest_view_name="incarceration_sentence",
     view_query_template=VIEW_QUERY_TEMPLATE,
 )
 

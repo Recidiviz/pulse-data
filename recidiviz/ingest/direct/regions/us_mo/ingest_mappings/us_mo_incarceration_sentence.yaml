@@ -1,7 +1,6 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 # This file associates the columns outputted from the query in `view_offender_sentence_institution` to
 #  corresponding Ingest Object fields.
-# TODO(#26620) Rename to us_mo_incarceration_sentence
 manifest_language: 1.0.0
 input_columns:
   - BS_DOC # unique for each person
@@ -19,37 +18,42 @@ input_columns:
   - BS_CNT # StateChargeV2.county_code
   - BT_CRR # Sentence.is_life
   - BT_SDI # Sentence.is_capital_punishment
-  - BS_CCI
-  - BS_CRQ
-unused_columns:
-  # TODO(#26817) hydrate the parent_sentence_external_id_array.
-  - BS_CCI
-  - BS_CRQ
+  - parent_sentence_external_id_array
+unused_columns: []
 variables:
   - sentence_group_external_id:
       $concat:
         $values:
           - BS_DOC
           - BS_CYC
+  - charge_external_id:
+      $concat:
+        $values:
+          - BS_DOC
+          - BS_CYC
+          - BS_SEO
+  # We add INCARCERATION to differentiate external IDs from the supervision sentence
+  # stemming from the same charge.
   - sentence_external_id:
       $concat:
         $values:
           - BS_DOC
           - BS_CYC
           - BS_SEO
+          - $literal("INCARCERATION")
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
           external_id: BS_DOC
           id_type: $literal("US_MO_DOC")
-    # TODO(#26817) hydrate the parent_sentence_external_id_array.
     sentences:
       - StateSentence:
           external_id: $variable(sentence_external_id)
           sentence_group_external_id: $variable(sentence_group_external_id)
           sentence_type: $literal_enum(StateSentenceType.STATE_PRISON)
           imposed_date: BT_SD
+          parent_sentence_external_id_array: parent_sentence_external_id_array
           county_code:
             $custom:
               $function: us_mo_custom_parsers.normalize_county_code
@@ -61,7 +65,7 @@ output:
             $equal: [BT_SDI, $literal("Y")]
           charges:
             - StateChargeV2:
-                external_id: $variable(sentence_external_id)
+                external_id: $variable(charge_external_id)
                 status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
                 offense_date:
                   $conditional:
