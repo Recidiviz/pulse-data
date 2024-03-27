@@ -49,7 +49,7 @@ MOST_RECENT_JOBS_TEMPLATE: str = """
         )
     )    
     SELECT
-        metric.* EXCEPT(prioritized_race_or_ethnicity),
+        metric.*,
         -- TODO(#28413): Person demographics passes *UNKNOWN through, and replaces NULL with PRESENT_WITHOUT_INFO, while the metric pipelines return NULL in these cases.
         IF(demographics.prioritized_race_or_ethnicity IN ('INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'PRESENT_WITHOUT_INFO'),
            NULL,
