@@ -38,15 +38,16 @@ _WR_FACILITIES = (
     "('"
     + "', '".join(
         [
-            "FTPFAR",  # Centre Fargo - Female
-            "MTPFAR",  # Centre Fargo - Male
-            "GFC",  # Centre Grand Forks
-            "FTPMND",  # Centre Mandan - Female
-            "MTPMND",  # Centre Mandan - Male
-            "BTC",  # Bismarck Transition Center
+            "FTPFAR",  # Centre Fargo - Female (ATP)
+            "MTPFAR",  # Centre Fargo - Male (ATP)
+            "GFC",  # Centre Grand Forks (ATP)
+            "FTPMND",  # Centre Mandan - Female (ATP)
+            "MTPMND",  # Centre Mandan - Male (ATP)
+            "BTC",  # Bismarck Transition Center (ATP)
+            "SWMCCC",  # SW Multi-County Correctional Center - Work Release (ATP)
+            "WCJWRP",  # Ward County Jail - Work Release Program (ATP)
             "MRCC",  # Missouri River Correctional Center
-            "SWMCCC",  # SW Multi-County Correctional Center - Work Release
-            "WCJWRP",  # Ward County Jail - Work Release Program
+            "JRCC",  # James River Correctional Center
         ]
     )
     + "')"
@@ -77,7 +78,7 @@ WITH wr_facilities AS (
 ),
 
 wr_as_program AS (
-    -- All programs that are work release programs
+    -- All work release programs
     SELECT 
       peid.state_code,
       peid.person_id,
@@ -101,11 +102,11 @@ wr_as_program AS (
 ),
 
 wr_sessions AS (
-    -- In MRCC, folks are only on WR if they are assigned explicitly to a WR program
+    -- In MRCC and JRCC, folks are only on WR if they are assigned explicitly to a WR program
     SELECT
         f.state_code,
         f.person_id,
-        -- Given that someone could start at MRCC without being in a WR program, we may 
+        -- Given that someone could start at MRCC/JRCC without being in a WR program, we may 
         --      need to use the start_date of the WR program to determine when they 
         --      started WR.
         GREATEST(
@@ -124,7 +125,7 @@ wr_sessions AS (
         AND f.state_code = p.state_code
         AND f.start_date < {nonnull_end_date_exclusive_clause('p.end_date_exclusive')}
         AND p.start_date < {nonnull_end_date_exclusive_clause('f.end_date_exclusive')}
-    WHERE f.facility IN ('MRCC')
+    WHERE f.facility IN ('MRCC', 'JRCC')
 
     UNION ALL 
 
