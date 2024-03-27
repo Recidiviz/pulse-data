@@ -44,6 +44,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    IS_DELETED_COL_NAME,
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -188,7 +189,7 @@ class IngestViewQueryTester:
         else:
             # We expect all fixtures for {myTable@ALL} type tags to have an
             # update_datetime column.
-            expected_extra_columns = [UPDATE_DATETIME_COL_NAME]
+            expected_extra_columns = [IS_DELETED_COL_NAME, UPDATE_DATETIME_COL_NAME]
         columns_to_check = [
             col for col in fixture_columns if col not in expected_extra_columns
         ]
