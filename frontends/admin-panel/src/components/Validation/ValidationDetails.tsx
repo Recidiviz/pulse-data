@@ -42,7 +42,7 @@ import {
   ValidationStatusRecord,
   ValidationStatusRecords,
 } from "../../recidiviz/admin_panel/models/validation_pb";
-import { IngestInstanceStatusInfo } from "../IngestDataflow/constants";
+import { IngestInstanceStatusInfo } from "../IngestStatus/constants";
 import { gcpEnvironment } from "../Utilities/EnvironmentUtilities";
 import { formatDatetime } from "../Utilities/GeneralUtilities";
 import {

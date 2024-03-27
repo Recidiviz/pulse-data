@@ -236,54 +236,6 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "case_triage_cloudsql_connection",
         "case_triage_federated_regional",
     },
-    SchemaType.STATE: {
-        # TODO(#8282): Remove this once we delete the v1 databases.
-        "state_us_id_primary_cloudsql_connection",
-        "state_v2_us_id_primary_cloudsql_connection",
-        # TODO(#8282): Remove this once we delete the v1 databases.
-        "state_us_mi_primary_cloudsql_connection",
-        "state_v2_us_mi_primary_cloudsql_connection",
-        # TODO(#8282): Remove this once we delete the v1 databases.
-        "state_us_mo_primary_cloudsql_connection",
-        "state_v2_us_mo_primary_cloudsql_connection",
-        # TODO(#8282): Remove this once we delete the v1 databases.
-        "state_us_nd_primary_cloudsql_connection",
-        "state_v2_us_nd_primary_cloudsql_connection",
-        # TODO(#8282): Remove this once we delete the v1 databases.
-        "state_us_pa_primary_cloudsql_connection",
-        "state_v2_us_pa_primary_cloudsql_connection",
-        "state_v2_us_co_primary_cloudsql_connection",
-        # TODO(#8282): Remove this once we delete the v1 databases.
-        "state_us_tn_primary_cloudsql_connection",
-        "state_v2_us_tn_primary_cloudsql_connection",
-        "state_v2_us_ar_primary_cloudsql_connection",
-        "state_v2_us_ca_primary_cloudsql_connection",
-        "state_v2_us_ia_primary_cloudsql_connection",
-        "state_v2_us_me_primary_cloudsql_connection",
-        "state_v2_us_nc_primary_cloudsql_connection",
-        "state_v2_us_or_primary_cloudsql_connection",
-        "state_v2_us_oz_primary_cloudsql_connection",
-        "state_v2_us_az_primary_cloudsql_connection",
-        # TODO(#10703): Remove this after merging US_IX into US_ID
-        "state_v2_us_ix_primary_cloudsql_connection",
-        "us_ar_state_regional",
-        "us_ca_state_regional",
-        "us_co_state_regional",
-        "us_ia_state_regional",
-        "us_id_state_regional",
-        # TODO(#10703): Remove this after merging US_IX into US_ID
-        "us_ix_state_regional",
-        "us_mi_state_regional",
-        "us_mo_state_regional",
-        "us_nc_state_regional",
-        "us_nd_state_regional",
-        "us_or_state_regional",
-        "us_oz_state_regional",
-        "us_pa_state_regional",
-        "us_tn_state_regional",
-        "us_me_state_regional",
-        "us_az_state_regional",
-    },
     SchemaType.OPERATIONS: {
         # TODO(#8282): Remove this once we delete the v1 databases.
         "operations_cloudsql_connection",
@@ -305,29 +257,6 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "us_tn_operations_regional",
         "us_me_operations_regional",
         "us_az_operations_regional",
-        "operations_regional",
-    },
-}
-
-# A list of all datasets that have ever held managed views that were updated by the
-# step in our CloudSQL into Bigquery refresh process that unions the contents of
-# state-segmented datasets and copies the results to a dataset that lives in the same
-# region as the CloudSQL instance. This list is used to identify places where we
-# should look for legacy views that we need to clean up.
-# NOTE: This list DOES NOT contain all datasets used in the CloudSQL to BigQuery
-# refresh process. The rest of the datasets are stored in
-# CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA.
-# DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY
-# DELETED FROM BOTH PROD AND STAGING.
-CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
-    SchemaType, Set[str]
-] = {
-    SchemaType.STATE: {
-        # TODO(#20930): Actually delete this dataset manually out of prod/staging, then
-        #  delete CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA.
-        "state_regional",
-    },
-    SchemaType.OPERATIONS: {
         "operations_regional",
     },
 }

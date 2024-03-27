@@ -20,7 +20,7 @@ import {
   SamenessPerViewValidationResultDetails,
   ValidationStatusRecord,
 } from "../../recidiviz/admin_panel/models/validation_pb";
-import { IngestInstanceStatusInfo } from "../IngestDataflow/constants";
+import { IngestInstanceStatusInfo } from "../IngestStatus/constants";
 
 export const ANCHOR_VALIDATION_FAILURE_SUMMARY = "failure-summary";
 export const ANCHOR_VALIDATION_HARD_FAILURES = "hard-failures";

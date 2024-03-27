@@ -159,8 +159,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
         return jsonify(ingest_queue_states), HTTPStatus.OK
 
-    # TODO(#20930): Update this endpoint to only return raw data import resource info
-    #  and rename accordingly.
     # Get summary of an ingest instance for a state
     @bp.route(
         "/api/ingest_operations/<state_code_str>/get_ingest_instance_resources/<ingest_instance_str>"

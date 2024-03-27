@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { getCurrentIngestInstanceStatus } from "../../AdminPanelAPI";
-import { DirectIngestInstance } from "../IngestDataflow/constants";
+import { DirectIngestInstance } from "../IngestStatus/constants";
 
 export const fetchCurrentIngestInstanceStatus = async (
   stateCode: string,

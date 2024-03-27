@@ -17,7 +17,7 @@
 import {
   DirectIngestInstance,
   QueueState,
-} from "../components/IngestDataflow/constants";
+} from "../components/IngestStatus/constants";
 import { getResource, postWithURLAndBody } from "./utils";
 
 // Fetch states with ingest
