@@ -49,11 +49,6 @@ class MetricSettingInterface:
             user_account=user_account,
         )
 
-    # TODO(#27956): Replace these DatapointInterface methods.
-    #   get_agency_datapoints
-    #   get_agency_datapoints_for_multiple_agencies
-    #   get_agency_datapoints_for_multiple_agencies
-    #   get_datapoints_for_agency_dashboard
     @staticmethod
     def get_agency_metric_interfaces(
         session: Session,
@@ -68,8 +63,6 @@ class MetricSettingInterface:
             session=session, agency=agency, agency_datapoints=agency_datapoints
         )
 
-    # TODO(#27956): Replace these DatapointInterface methods.
-    #   get_metric_key_to_agency_datapoints.
     @staticmethod
     def get_metric_key_to_metric_interface(
         session: Session,

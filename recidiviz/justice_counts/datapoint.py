@@ -17,7 +17,6 @@
 """Interface for working with the Datapoint model."""
 import datetime
 import enum
-import itertools
 import json
 import logging
 from collections import defaultdict
@@ -106,6 +105,7 @@ class DatapointInterface:
         )
         return filter_deprecated_datapoints(datapoints=datapoints)
 
+    # TODO(#28469): Deprecate/delete this after the MetricSetting migration.
     @staticmethod
     def get_agency_datapoints(
         session: Session,
@@ -118,23 +118,6 @@ class DatapointInterface:
         datapoints = (
             session.query(schema.Datapoint).filter(
                 schema.Datapoint.source_id == agency_id,
-                schema.Datapoint.is_report_datapoint == false(),
-            )
-        ).all()
-        return filter_deprecated_datapoints(datapoints=datapoints)
-
-    @staticmethod
-    def get_agency_datapoints_for_multiple_agencies(
-        session: Session,
-        agency_ids: List[int],
-    ) -> List[schema.Datapoint]:
-        """Given a list of agency ids, get all "Agency Datapoints" -- i.e. datapoints
-        that provide configuration information, rather than report data, for each agency.
-        Filter out datapoints with a deprecated dimension identifier or value.
-        """
-        datapoints = (
-            session.query(schema.Datapoint).filter(
-                schema.Datapoint.source_id.in_(agency_ids),
                 schema.Datapoint.is_report_datapoint == false(),
             )
         ).all()
@@ -288,6 +271,7 @@ class DatapointInterface:
 
         return metric_key_to_metric_interface
 
+    # TODO(#28469): Deprecate/delete this after the MetricSetting migration.
     @staticmethod
     def build_metric_key_to_datapoints(
         datapoints: List[schema.Datapoint],
@@ -641,6 +625,7 @@ class DatapointInterface:
 
     ### Save Path: Agency Datapoints ###
 
+    # TODO(#28469): Deprecate/delete this after the MetricSetting migration.
     @staticmethod
     def get_metric_settings_by_agency(
         session: Session,
@@ -711,6 +696,7 @@ class DatapointInterface:
             )
         return agency_metrics
 
+    # TODO(#28469): Deprecate/delete this after the MetricSetting migration.
     @staticmethod
     def record_agency_datapoint_history(
         session: Session,
@@ -753,6 +739,8 @@ class DatapointInterface:
         )
         return
 
+    # TODO(#28469): Deprecate/delete this after the MetricSetting migration.
+    # Also create a MetricSetting alternative for historical datapoints.
     @staticmethod
     def add_agency_datapoint(
         session: Session,
@@ -776,6 +764,8 @@ class DatapointInterface:
             user_account=user_account,
         )
 
+    # TODO(#28469): Deprecate/delete this after the MetricSetting migration.
+    # Also create a MetricSetting alternative for historical datapoints.
     @staticmethod
     def add_or_update_agency_datapoints(
         session: Session,
@@ -1006,6 +996,7 @@ class DatapointInterface:
                         agency_metric=agency_metric,
                     )
 
+    # TODO(#28469): Deprecate/delete this after the MetricSetting migration.
     @staticmethod
     def add_includes_excludes_datapoint(
         session: Session,
@@ -1054,44 +1045,3 @@ class DatapointInterface:
             metric_interface.is_metric_enabled is not None
             and metric_interface.is_metric_enabled is False
         )
-
-    @staticmethod
-    def is_metric_disaggregated_by_supervision_subsystem(
-        agency_datapoints: List[schema.Datapoint],
-    ) -> bool:
-        """This function returns true if a metric is disaggregated by supervision subsystems"""
-
-        if len(agency_datapoints) == 0:
-            return False
-
-        for datapoint in agency_datapoints:
-            # If a metric is disaggregated_by_supervision_subsystem, then there is an
-            # agency datapoint with a context key of DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
-            # and a value of True.
-            if (
-                datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
-                and datapoint.value == str(True)
-            ):
-                return True
-
-        return False
-
-    @staticmethod
-    def get_metric_key_to_agency_datapoints(
-        session: Session,
-        agency_id: int,
-    ) -> Dict[str, List[schema.Datapoint]]:
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=session, agency_id=agency_id
-        )
-        agency_datapoints_sorted_by_metric_key = sorted(
-            agency_datapoints, key=lambda d: d.metric_definition_key
-        )
-        metric_key_to_agency_datapoints = {
-            k: list(v)
-            for k, v in itertools.groupby(
-                agency_datapoints_sorted_by_metric_key,
-                key=lambda d: d.metric_definition_key,
-            )
-        }
-        return metric_key_to_agency_datapoints

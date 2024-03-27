@@ -23,7 +23,6 @@ import pytest
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
@@ -41,6 +40,7 @@ from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import (
     law_enforcement,
     prisons,
@@ -898,7 +898,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=False
             )
-            DatapointInterface.add_or_update_agency_datapoints(
+            MetricSettingInterface.add_or_update_agency_metric_setting(
                 agency_metric=agency_metric,
                 agency=agency,
                 session=session,
