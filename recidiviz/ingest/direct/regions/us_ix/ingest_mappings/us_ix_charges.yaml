@@ -46,6 +46,8 @@ variables:
                       - "700"
                     StateChargeClassificationType.MISDEMEANOR:
                       - "701"
+                    StateChargeClassificationType.INTERNAL_UNKNOWN:
+                      - "702"
         offense_type: OffenseTypeId # This is the id for a specific crime, not a crime category
         is_violent:
           $equal:
