@@ -17,7 +17,7 @@
 """Interface for working with the Reports model."""
 import datetime
 import json
-from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
@@ -25,12 +25,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session, joinedload, lazyload
 
 from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
-from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_definition import (
     MetricDefinition,
     ReportingFrequency,
@@ -42,8 +42,6 @@ from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 from .utils.date_utils import convert_date_range_to_year_month
-
-DatapointsForMetricT = TypeVar("DatapointsForMetricT", bound="DatapointsForMetric")
 
 
 class ReportInterface:
@@ -229,7 +227,7 @@ class ReportInterface:
         previous_month: int,
         previous_year: int,
         systems: Set[schema.System],
-        metric_key_to_datapoints: Dict[str, DatapointsForMetricT],
+        metric_key_to_metric_interface: Dict[str, MetricInterface],
     ) -> Tuple[
         Optional[schema.Report],
         Optional[schema.Report],
@@ -244,11 +242,13 @@ class ReportInterface:
 
         # Check that the agency required monthly metrics for this month
         try:
-            monthly_metric_defs = DatapointsForMetric.get_metric_definitions_for_report(
-                systems=systems,
-                metric_key_to_datapoints=metric_key_to_datapoints,
-                report_frequency=ReportingFrequency.MONTHLY.value,
-                starting_month=previous_month,
+            monthly_metric_defs = (
+                MetricSettingInterface.get_metric_definitions_for_report(
+                    systems=systems,
+                    metric_key_to_metric_interface=metric_key_to_metric_interface,
+                    report_frequency=ReportingFrequency.MONTHLY.value,
+                    starting_month=previous_month,
+                )
             )
         except JusticeCountsServerError:
             monthly_metric_defs = []
@@ -266,11 +266,13 @@ class ReportInterface:
 
         # Check that the agency required annual metrics for this month
         try:
-            annual_metric_defs = DatapointsForMetric.get_metric_definitions_for_report(
-                systems=systems,
-                metric_key_to_datapoints=metric_key_to_datapoints,
-                report_frequency=ReportingFrequency.ANNUAL.value,
-                starting_month=current_month,
+            annual_metric_defs = (
+                MetricSettingInterface.get_metric_definitions_for_report(
+                    systems=systems,
+                    metric_key_to_metric_interface=metric_key_to_metric_interface,
+                    report_frequency=ReportingFrequency.ANNUAL.value,
+                    starting_month=current_month,
+                )
             )
         except JusticeCountsServerError:
             annual_metric_defs = []
@@ -415,34 +417,35 @@ class ReportInterface:
            metric, its values will be None; otherwise they will be populated from the data
            already stored in our database.
         """
-
         if agency_datapoints is None:
             agency_datapoints = DatapointInterface.get_agency_datapoints(
                 session=session, agency_id=report.source_id
             )
-
-        # If data has already been reported for some metrics on this report,
-        # then `report.datapoints` will be non-empty. We also send build the
-        # DatapointsForMetric class with agency datapoints to see
-        # what metrics are enabled and disabled.
-        metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
-            datapoints=report.datapoints + agency_datapoints
+        # Gets all metric interfaces for the agency and populates them with report
+        # datapoints if data has already been reported for the metrics on this report.
+        # We use the MetricInterfaces to see what metrics are enabled/disabled.
+        metric_key_to_metric_interface = DatapointInterface.join_report_datapoints_to_metric_interfaces(
+            report_datapoints=report.datapoints,
+            metric_key_to_metric_interface=MetricSettingInterface.get_metric_key_to_metric_interface(
+                session=session,
+                agency=report.agency,
+                agency_datapoints=agency_datapoints,
+            ),
         )
 
         # We determine which metrics to include on this report based on:
         #   - Agency system (e.g. only law enforcement)
         #   - Report frequency (e.g. only annual metrics)
-        metric_definitions = DatapointsForMetric.get_metric_definitions_for_report(
+        metric_definitions = MetricSettingInterface.get_metric_definitions_for_report(
             report_frequency=report.type,
             systems={schema.System[system] for system in report.agency.systems or []},
             starting_month=report.date_range_start.month,
-            metric_key_to_datapoints=metric_key_to_datapoints,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
         )
 
-        report_metrics = []
         # For each metric that should be filled out on this report,
-        # construct a MetricInterface object
-
+        # return a MetricInterface object.
+        report_metrics = []
         for metric_definition in metric_definitions:
             # For superagencies: only include superagency metrics and
             # exclude all other system metrics
@@ -452,33 +455,11 @@ class ReportInterface:
             ):
                 continue
 
-            reported_datapoints = metric_key_to_datapoints.get(
-                metric_definition.key,
-                DatapointsForMetric(),
-            )
-
-            # If this is a supervision subsystem metric, and the metric is not
-            # supposed to be disaggregated by supervision subsystems, then
-            # disable the metric
-            enabled = reported_datapoints.is_metric_enabled
-            if reported_datapoints.is_metric_enabled is None:
-                if (
-                    metric_definition.system in schema.System.supervision_subsystems()
-                    and not reported_datapoints.disaggregated_by_supervision_subsystems
-                ):
-                    enabled = False
-
-            report_metrics.append(
-                MetricInterface(
-                    key=metric_definition.key,
-                    value=reported_datapoints.aggregated_value,
-                    is_metric_enabled=enabled,
-                    aggregated_dimensions=reported_datapoints.get_aggregated_dimension_data(
-                        # convert dimension datapoints to MetricAggregatedDimensionData
-                        metric_definition=metric_definition
-                    ),
+            if metric_definition.key not in metric_key_to_metric_interface:
+                raise ValueError(
+                    f"Metric key {metric_definition.key} not found in metric_key_to_metric_interface."
                 )
-            )
+            report_metrics.append(metric_key_to_metric_interface[metric_definition.key])
 
         return report_metrics
 

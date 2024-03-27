@@ -29,6 +29,7 @@ from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonFundingTimeframeIncludesExcludes,
 )
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
@@ -662,13 +663,13 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             session.refresh(supervision_agency)
             session.refresh(law_enforcement_agency)
             supervision_agency_metrics = (
-                DatapointInterface.get_metric_settings_by_agency(
+                MetricSettingInterface.get_agency_metric_interfaces(
                     session=session, agency=supervision_agency
                 )
             )
 
             law_enforcement_agency_metrics = (
-                DatapointInterface.get_metric_settings_by_agency(
+                MetricSettingInterface.get_agency_metric_interfaces(
                     session=session, agency=law_enforcement_agency
                 )
             )
@@ -698,7 +699,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             session.flush()
 
             supervision_agency_metrics = (
-                DatapointInterface.get_metric_settings_by_agency(
+                MetricSettingInterface.get_agency_metric_interfaces(
                     session=session, agency=supervision_agency
                 )
             )
@@ -1745,7 +1746,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         Tests that join_report_datapoints_to_metric_interfaces() correctly adds report
         datapoints that represent a metric's aggregate value to the metric interface.
         """
-        metric_interfaces_by_key = {
+        metric_key_to_metric_interface = {
             prisons.funding.key: MetricInterface(
                 key=prisons.funding.key,
             )
@@ -1759,7 +1760,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
         ]
         result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
-            metric_interfaces_by_key=metric_interfaces_by_key,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
             report_datapoints=report_datapoints,
         )
         self.assertEqual(len(result), 1)
@@ -1770,7 +1771,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         Tests that join_report_datapoints_to_metric_interfaces() correctly adds report
         datapoints breakdown values to a metric's aggregate value to the metric interface.
         """
-        metric_interfaces_by_key = {
+        metric_key_to_metric_interface = {
             prisons.funding.key: MetricInterface(
                 key=prisons.funding.key,
                 aggregated_dimensions=[
@@ -1799,7 +1800,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             ),
         ]
         result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
-            metric_interfaces_by_key=metric_interfaces_by_key,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
             report_datapoints=report_datapoints,
         )
 
@@ -1814,10 +1815,10 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
     def test_join_handles_absent_metric_interface(self) -> None:
         """
         Tests that join_report_datapoints_to_metric_interfaces() will create an empty
-        MetricInterface object if there is no metric interface in `metric_interfaces_by_key`
+        MetricInterface object if there is no metric interface in `metric_key_to_metric_interface`
         which matches datapoints `metric_definition_key`
         """
-        metric_interfaces_by_key: dict[str, MetricInterface] = {}
+        metric_key_to_metric_interface: dict[str, MetricInterface] = {}
         report_datapoints = [
             Datapoint(
                 report_id=11111,
@@ -1827,7 +1828,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
         ]
         result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
-            metric_interfaces_by_key=metric_interfaces_by_key,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
             report_datapoints=report_datapoints,
         )
         self.assertEqual(len(result), 1)
@@ -1841,7 +1842,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         where a metric interface does not have agency settings saved for the breakdown
         metric but has a report datapoint for it anyway.
         """
-        metric_interfaces_by_key = {
+        metric_key_to_metric_interface = {
             prisons.funding.key: MetricInterface(
                 key=prisons.funding.key,
             )
@@ -1858,7 +1859,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
         ]
         result = DatapointInterface.join_report_datapoints_to_metric_interfaces(
-            metric_interfaces_by_key=metric_interfaces_by_key,
+            metric_key_to_metric_interface=metric_key_to_metric_interface,
             report_datapoints=report_datapoints,
         )
 
@@ -1875,16 +1876,15 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         Tests that join_report_datapoints_to_metric_interfaces() raises an error if a
         non-report datapoint is passed through `report_datapoints`.
         """
-        metric_interfaces_by_key = {
+        metric_key_to_metric_interface = {
             prisons.funding.key: MetricInterface(
                 key=prisons.funding.key,
             )
         }
         report_datapoints = [
             Datapoint(
-                report_id=None,
                 metric_definition_key=prisons.funding.key,
-                is_report_datapoint=True,
+                is_report_datapoint=False,
                 dimension_identifier_to_member={
                     "metric/prisons/funding/type": "GRANTS"
                 },
@@ -1893,7 +1893,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         ]
         try:
             DatapointInterface.join_report_datapoints_to_metric_interfaces(
-                metric_interfaces_by_key=metric_interfaces_by_key,
+                metric_key_to_metric_interface=metric_key_to_metric_interface,
                 report_datapoints=report_datapoints,
             )
             assert False

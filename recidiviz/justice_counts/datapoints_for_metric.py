@@ -17,7 +17,7 @@
 """Interface for working with the Datapoint model."""
 import enum
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, TypeVar
+from typing import Any, Dict, List, Optional, TypeVar
 
 import attr
 
@@ -38,7 +38,6 @@ from recidiviz.justice_counts.metrics.metric_definition import (
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
     MetricContextData,
-    MetricInterface,
 )
 from recidiviz.justice_counts.utils.datapoint_utils import get_dimension, get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -321,65 +320,3 @@ class DatapointsForMetric:
                     dimension_id_to_dimension_dicts[dimension_id] = curr_dimension_dict
                     # update dimension_id_to_dimension_values_dicts dictionary -> {"global/gender/restricted": {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
         return dimension_id_to_dimension_dicts
-
-    @staticmethod
-    def should_add_metric_definition_to_report(
-        report_frequency: str,
-        metric_frequency: str,
-        report_starting_month: int,
-        metric_starting_month: int,
-    ) -> bool:
-        """Returns True if the reporting frequency of the metric
-        matches that of the report."""
-        if metric_frequency == report_frequency:
-            if metric_frequency == "MONTHLY":
-                return True
-            if metric_frequency == "ANNUAL":
-                return report_starting_month == metric_starting_month
-
-        return False
-
-    @staticmethod
-    def get_metric_definitions_for_report(
-        systems: Set[schema.System],
-        metric_key_to_datapoints: Dict[str, DatapointsForMetricT],
-        report_frequency: str,
-        starting_month: int,
-    ) -> List[MetricDefinition]:
-        """Returns the metric definitions on a report based upon the reports
-        custom reporting frequencies."""
-        metrics = MetricInterface.get_metric_definitions_by_systems(
-            systems=systems,
-        )
-        metric_definitions = []
-        for metric in metrics:
-            datapoints = metric_key_to_datapoints.get(metric.key, DatapointsForMetric())  # type: ignore[arg-type]
-            if datapoints.aggregated_value is not None or any(
-                len(datapoints) > 0
-                for datapoints in datapoints.dimension_id_to_report_datapoints.values()
-            ):
-                # If there are report datapoints for this metric already,
-                # add metric to metric_definitions. We do this to make sure
-                # that even if you changed this metric's reporting frequency
-                # after this report was created, it should still show up in
-                # the report.
-                metric_definitions.append(metric)
-                continue
-
-            # If there are no report datapoints yet for this metric, add it
-            # to the report if the custom reporting frequency matches report_frequency.
-            # If there is no custom reporting frequency, add the metric if the default
-            # reporting frequency matches report_frequency.
-            if DatapointsForMetric.should_add_metric_definition_to_report(
-                report_starting_month=starting_month,
-                report_frequency=report_frequency,
-                metric_starting_month=datapoints.custom_reporting_frequency.starting_month
-                if datapoints.custom_reporting_frequency.starting_month is not None
-                else 1,
-                metric_frequency=datapoints.custom_reporting_frequency.frequency.value
-                if datapoints.custom_reporting_frequency.frequency is not None
-                else metric.reporting_frequency.value,
-            ):
-                metric_definitions.append(metric)
-
-        return metric_definitions

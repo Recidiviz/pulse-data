@@ -95,6 +95,20 @@ class MetricInterface:
         return METRIC_KEY_TO_METRIC[self.key]
 
     @property
+    def has_report_datapoints(self) -> bool:
+        if self.value is not None:
+            return True
+
+        for aggregated_dimension in self.aggregated_dimensions:
+            if aggregated_dimension.dimension_to_value is None:
+                continue
+            # Check that all values of aggregated dimensions are None.
+            for _, value in aggregated_dimension.dimension_to_value.items():
+                if value is not None:
+                    return True
+        return False
+
+    @property
     def metric_files(self) -> List[MetricFile]:
         # MetricFiles that this MetricInterface corresponds to
         system_metric_files = SYSTEM_TO_METRICFILES[self.metric_definition.system]

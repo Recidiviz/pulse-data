@@ -122,6 +122,7 @@ from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.utils.constants import (
     JUSTICE_COUNTS_SENTRY_DSN,
@@ -165,7 +166,7 @@ def copy_metric_settings(
     child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
         session=current_session, agency_ids=[super_agency_id]
     )
-    super_agency_metric_settings = DatapointInterface.get_metric_settings_by_agency(
+    super_agency_metric_settings = MetricSettingInterface.get_agency_metric_interfaces(
         session=current_session,
         agency=super_agency,
     )

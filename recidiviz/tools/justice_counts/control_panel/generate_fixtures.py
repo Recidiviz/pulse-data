@@ -26,9 +26,10 @@ from typing import Iterable, List, cast
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.justice_counts import ValueType
+from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     MetricDefinition,
@@ -90,17 +91,24 @@ def _create_dimension_datapoints(
 def _get_datapoints_for_report(
     report: schema.Report, system: schema.System, session: Session
 ) -> List[schema.Datapoint]:
-    agency_datapoints = DatapointInterface.get_agency_datapoints(
+
+    agency = AgencyInterface.get_agency_by_id(
         session=session, agency_id=report.source_id
     )
-    metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
-        datapoints=report.datapoints + agency_datapoints
+
+    metric_key_to_metric_interface = DatapointInterface.join_report_datapoints_to_metric_interfaces(
+        report_datapoints=report.datapoints,
+        metric_key_to_metric_interface=MetricSettingInterface.get_metric_key_to_metric_interface(
+            session=session,
+            agency=agency,
+        ),
     )
-    metric_definitions = DatapointsForMetric.get_metric_definitions_for_report(
+
+    metric_definitions = MetricSettingInterface.get_metric_definitions_for_report(
         report_frequency=report.type,
         systems={system},
         starting_month=report.date_range_start.month,
-        metric_key_to_datapoints=metric_key_to_datapoints,
+        metric_key_to_metric_interface=metric_key_to_metric_interface,
     )
     return list(
         itertools.chain(
@@ -154,6 +162,10 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
         )
         for i in range(num_users)
     ]
+    session.add_all(users)
+    session.execute(
+        "SELECT pg_catalog.setval(pg_get_serial_sequence('user_account', 'id'), MAX(id)) FROM user_account;"
+    )
     object_groups.append(users)
 
     # Next add a group of Agencies
@@ -194,6 +206,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
                 fips_county_code="us_ny_new_york",
             )
         )
+    session.add_all(agencies)
     object_groups.append(agencies)
 
     # Finally add a group of reports (which depend on agencies already being in the DB)
@@ -232,6 +245,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
                     )
                 monthly_report.datapoints = monthly_report_datapoints
                 reports.append(monthly_report)
+    session.add_all(reports)
     object_groups.append(reports)
     # Add AgencyUserAccountAssociation for every user in every agency
     assocs = []
@@ -251,6 +265,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
                     ),
                 )
             )
+    session.add_all(assocs)
     object_groups.append(assocs)
 
     return object_groups

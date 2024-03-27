@@ -744,7 +744,7 @@ def get_api_blueprint(
                 ] = latest_annual_report_metrics_json
                 latest_annual_reports_json[month] = latest_annual_report_definition_json
 
-            agency_metrics = DatapointInterface.get_metric_settings_by_agency(
+            agency_metrics = MetricSettingInterface.get_agency_metric_interfaces(
                 session=current_session,
                 agency=agency,
                 agency_datapoints=agency_datapoints,
@@ -1197,7 +1197,7 @@ def get_api_blueprint(
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
-            metrics = DatapointInterface.get_metric_settings_by_agency(
+            metrics = MetricSettingInterface.get_agency_metric_interfaces(
                 session=current_session, agency=agency
             )
             metrics_json = [
@@ -1936,7 +1936,7 @@ def get_api_blueprint(
                         datapoint.metric_definition_key
                     ].append(datapoint_json)
 
-            metrics = DatapointInterface.get_metric_settings_by_agency(
+            metrics = MetricSettingInterface.get_agency_metric_interfaces(
                 session=current_session, agency=agency
             )
             metrics_json = [
@@ -1990,10 +1990,11 @@ def get_api_blueprint(
                 report.id: ReportInterface.get_reporting_frequency(report)
                 for report in reports
             }
-            datapoints = DatapointInterface.get_datapoints_for_agency_dashboard(
-                session=current_session,
-                report_ids=report_ids,
-                agency_id=agency_id,
+            report_datapoints = (
+                DatapointInterface.get_report_datapoints_for_agency_dashboard(
+                    session=current_session,
+                    report_ids=report_ids,
+                )
             )
 
             # Group aggregate datapoints by metric key.
@@ -2009,8 +2010,14 @@ def get_api_blueprint(
                 ]
             ) = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
-            agency_datapoints = []
-            for datapoint in datapoints:
+            for datapoint in report_datapoints:
+                if (
+                    datapoint.is_report_datapoint is False
+                    or datapoint.report_id is None
+                ):
+                    raise ValueError(
+                        f"Expected get_report_datapoints_for_agency_dashboard to only return report datapoints. Instead, got a datapoint object with is_report_datapoint as {datapoint.is_report_datapoint} and report_id as {datapoint.report_id}."
+                    )
                 if datapoint.dimension_identifier_to_member is None:
                     dimension_id, dimension_member = None, None
                 else:
@@ -2019,35 +2026,24 @@ def get_api_blueprint(
                         dimension_member,
                     ) = get_dimension_id_and_member(datapoint=datapoint)
 
-                if datapoint.is_report_datapoint:
-                    datapoint_json = DatapointInterface.to_json_response(
-                        datapoint=datapoint,
-                        is_published=True,
-                        frequency=report_id_to_frequency[datapoint.report_id],
-                    )
+                datapoint_json = DatapointInterface.to_json_response(
+                    datapoint=datapoint,
+                    is_published=True,
+                    frequency=report_id_to_frequency[datapoint.report_id],
+                )
 
-                    if dimension_id is not None and dimension_member is not None:
-                        metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
-                            datapoint.metric_definition_key
-                        ][
-                            dimension_id
-                        ][
-                            dimension_member
-                        ].append(
-                            datapoint_json
-                        )
-                    else:
-                        metric_key_to_aggregate_datapoints_json[
-                            datapoint.metric_definition_key
-                        ].append(datapoint_json)
-
+                if dimension_id is not None and dimension_member is not None:
+                    metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
+                        datapoint.metric_definition_key
+                    ][dimension_id][dimension_member].append(datapoint_json)
                 else:
-                    agency_datapoints.append(datapoint)
+                    metric_key_to_aggregate_datapoints_json[
+                        datapoint.metric_definition_key
+                    ].append(datapoint_json)
 
-            metrics = DatapointInterface.get_metric_settings_by_agency(
+            metrics = MetricSettingInterface.get_agency_metric_interfaces(
                 session=current_session,
                 agency=agency,
-                agency_datapoints=agency_datapoints,
             )
 
             metrics_json = [
