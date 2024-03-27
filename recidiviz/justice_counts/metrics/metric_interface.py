@@ -65,7 +65,7 @@ class MetricInterface:
     # total, aggregate value summed across all dimensions.
     value: Optional[float] = attr.field(default=None)
 
-    # Weather or not the metric is enabled for an agency.
+    # Whether or not the metric is enabled for an agency.
     is_metric_enabled: Optional[bool] = attr.field(default=None)
 
     # Additional context that the agency reported on this metric
@@ -119,6 +119,53 @@ class MetricInterface:
             )
         )
         return metric_files_for_metric
+
+    def to_storage_json(self) -> Dict[str, Any]:
+        """
+        Returns the json form of the MetricInterface object to be stored in the database.
+        This differs from to_json() in that it drops many fields that are empty so that
+        the json object is smaller for storage. We also drop all report datapoints,
+        which should instead be stored in the datapoint table.
+        """
+        return {
+            "key": self.key,
+            # Type: Optional[bool]
+            "is_metric_enabled": self.is_metric_enabled,
+            # Type: List[MetricContextData]
+            "contexts": [
+                {
+                    "key": context.key.value,
+                    "value": context.value,
+                }
+                for context in self.contexts
+            ],
+            # Type: List[MetricAggregatedDimensionData]
+            "aggregated_dimensions": [
+                aggregated_dimension.to_storage_json()
+                for aggregated_dimension in self.aggregated_dimensions
+            ],
+            # Type: Optional[bool]
+            "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
+            # Type: Dict[enum.Enum, Optional[IncludesExcludesSetting]]
+            "includes_excludes_member_to_setting": [
+                {
+                    "member": member.value,
+                    "include_excludes_setting": include_excludes_setting.value,
+                }
+                for member, include_excludes_setting in self.includes_excludes_member_to_setting.items()
+                if include_excludes_setting is not None
+            ],
+            # Type: CustomReportingFrequency
+            # Fields:
+            #   frequency: Optional[schema.ReportingFrequency]
+            #   starting_month: Optional[int]
+            "custom_reporting_frequency": {
+                "custom_frequency": self.custom_reporting_frequency.frequency.value
+                if self.custom_reporting_frequency.frequency is not None
+                else None,
+                "starting_month": self.custom_reporting_frequency.starting_month,
+            },
+        }
 
     def get_reporting_frequency_to_use(
         self,
