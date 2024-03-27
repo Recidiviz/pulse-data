@@ -91,6 +91,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         FROM `{{project_id}}.reference_views.current_staff_materialized`
         WHERE state_code IN ({{state_staff_states}})
         AND email IS NOT NULL
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, email ORDER BY external_id) = 1
     ),
     all_users AS (
         SELECT * FROM mo_users
@@ -115,7 +116,7 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_staff_states=list_to_query_string(["US_MI"], quoted=True),
+    state_staff_states=list_to_query_string(["US_MI", "US_PA"], quoted=True),
     columns=[
         "state_code",
         "email_address",
