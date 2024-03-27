@@ -767,6 +767,45 @@ class Datapoint(JusticeCountsBase):
     )
 
 
+class MetricSetting(JusticeCountsBase):
+    """Stores a metric interface for an agency and metric_definition_key combination."""
+
+    __tablename__ = "metric_setting"
+
+    id = Column(Integer, autoincrement=True)
+
+    # The agency that this metric setting is published by.
+    agency_id = Column(Integer, nullable=False, index=True)
+
+    # The key of the metric (i.e. `MetricDefinition.key`) that is reported.
+    metric_definition_key = Column(String, nullable=False)
+
+    # A json representation of a MetricInterface object. We strip the metric interface
+    # of all report datapoints (both aggregated and disaggregated) before storing it in
+    # the database.
+    metric_interface = Column(String, nullable=True)
+
+    # Date of the most recent update to the metric setting.
+    last_updated = Column(DateTime, nullable=True)
+
+    # Date created
+    created_at = Column(DateTime, nullable=True)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(
+                agency_id,
+                metric_definition_key,
+                name="unique_metric_setting",
+            ),
+            ForeignKeyConstraint(
+                [agency_id], [Agency.id], name="agency_foreign_key_constraint"
+            ),
+        ]
+    )
+
+
 class ReportTableInstance(JusticeCountsBase):
     """An instance of a table that contains an actual set of data points along a shared set of dimensions.
 
