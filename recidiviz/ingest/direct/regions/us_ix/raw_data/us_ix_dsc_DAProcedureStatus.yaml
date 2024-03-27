@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dsc_DAProcedureStatus
+file_description: Atlas table with disciplinary action (DA) procedure status information
+data_classification: source
+primary_key_cols:
+  - DAProcedureStatusId
+columns:
+  - name: DAProcedureStatusId
+    description: Atlas-generated ID for disciplinary action status
+  - name: DAProcedureStatusDesc
+    description: Description of DAProcedureStatus
+  - name: Inactive
+    description: Inactive boolean
+  - name: DisplayOrder
+    description: |-
+      TODO(#23206): Fill in column description
+  - name: InsertUserId
+    description: User who first inserted record
+    is_pii: True
+  - name: InsertDate
+    description: Date record first inserted
+    field_type: datetime
+  - name: UpdateUserId
+    description: User who last updated record
+    is_pii: True
+  - name: UpdateDate
+    description: Date record last updated
+    field_type: datetime
+  - name: Locking
+  - name: IsCustom
+    description: IsCustom boolean
