@@ -684,6 +684,128 @@ class TestMetricInterface(TestCase):
             ),
         )
 
+    def test_to_storage_json_disabled_metric(self) -> None:
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=False
+        )
+        self.assertEqual(
+            metric_interface.to_storage_json(),
+            {
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "is_metric_enabled": False,
+                "contexts": [],
+                "aggregated_dimensions": [
+                    {
+                        "dimension_to_enabled_status": [
+                            {"dimension": "Emergency Calls", "enabled": False},
+                            {"dimension": "Non-emergency Calls", "enabled": False},
+                            {"dimension": "Unknown Calls", "enabled": False},
+                        ],
+                        "dimension_to_includes_excludes_member_to_setting": [],
+                        "dimension_to_contexts": [],
+                    }
+                ],
+                "disaggregated_by_supervision_subsystems": None,
+                "includes_excludes_member_to_setting": [],
+                "custom_reporting_frequency": {
+                    "custom_frequency": None,
+                    "starting_month": None,
+                },
+            },
+        )
+
+    def test_to_storage_json_disabled_dimensions(self) -> None:
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True, include_disaggregation=True
+        )
+        self.assertEqual(
+            metric_interface.to_storage_json(),
+            {
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "is_metric_enabled": True,
+                "contexts": [],
+                "aggregated_dimensions": [
+                    {
+                        "dimension_to_enabled_status": [
+                            {"dimension": "Emergency Calls", "enabled": False},
+                            {"dimension": "Non-emergency Calls", "enabled": False},
+                            {"dimension": "Unknown Calls", "enabled": False},
+                        ],
+                        "dimension_to_includes_excludes_member_to_setting": [],
+                        "dimension_to_contexts": [],
+                    }
+                ],
+                "disaggregated_by_supervision_subsystems": None,
+                "includes_excludes_member_to_setting": [],
+                "custom_reporting_frequency": {
+                    "custom_frequency": None,
+                    "starting_month": None,
+                },
+            },
+        )
+
+    def test_to_storage_json_prefilled_contexts(self) -> None:
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True, include_disaggregation=True
+        )
+        self.assertEqual(
+            metric_interface.to_storage_json(),
+            {
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "is_metric_enabled": True,
+                "contexts": [],
+                "aggregated_dimensions": [
+                    {
+                        "dimension_to_enabled_status": [
+                            {"dimension": "Emergency Calls", "enabled": False},
+                            {"dimension": "Non-emergency Calls", "enabled": False},
+                            {"dimension": "Unknown Calls", "enabled": False},
+                        ],
+                        "dimension_to_includes_excludes_member_to_setting": [],
+                        "dimension_to_contexts": [],
+                    }
+                ],
+                "disaggregated_by_supervision_subsystems": None,
+                "includes_excludes_member_to_setting": [],
+                "custom_reporting_frequency": {
+                    "custom_frequency": None,
+                    "starting_month": None,
+                },
+            },
+        )
+
+    def test_to_storage_json_partially_enabled_disaggregation(self) -> None:
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True,
+            include_disaggregation=True,
+            use_partially_disabled_disaggregation=True,
+        )
+        self.assertEqual(
+            metric_interface.to_storage_json(),
+            {
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "is_metric_enabled": True,
+                "contexts": [],
+                "aggregated_dimensions": [
+                    {
+                        "dimension_to_enabled_status": [
+                            {"dimension": "Emergency Calls", "enabled": True},
+                            {"dimension": "Non-emergency Calls", "enabled": False},
+                            {"dimension": "Unknown Calls", "enabled": False},
+                        ],
+                        "dimension_to_includes_excludes_member_to_setting": [],
+                        "dimension_to_contexts": [],
+                    }
+                ],
+                "disaggregated_by_supervision_subsystems": None,
+                "includes_excludes_member_to_setting": [],
+                "custom_reporting_frequency": {
+                    "custom_frequency": None,
+                    "starting_month": None,
+                },
+            },
+        )
+
     def test_to_json_disabled_disaggregation(self) -> None:
         metric_definition = law_enforcement.funding
         metric_json = {

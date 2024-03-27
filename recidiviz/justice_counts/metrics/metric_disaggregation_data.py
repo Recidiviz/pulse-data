@@ -77,6 +77,54 @@ class MetricAggregatedDimensionData:
         )
 
     ### To/From JSON ###
+    def to_storage_json(self) -> Dict[str, Any]:
+        """
+        Convert the MetricAggregatedDimensionData object to a json object for storage in
+        the database. We drop the `dimension_to_value` field for storage. Report
+        datapoints are stored in the datapoints table.
+        """
+        return {
+            # Optional[Dict[DimensionBase, Any]]
+            "dimension_to_enabled_status": [
+                {
+                    "dimension": dimension.to_enum().value,
+                    "enabled": enabled,
+                }
+                for dimension, enabled in self.dimension_to_enabled_status.items()
+                if enabled is not None
+            ]
+            if self.dimension_to_enabled_status is not None
+            else None,
+            # Dict[DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]]
+            "dimension_to_includes_excludes_member_to_setting": [
+                {
+                    "dimension": dimension.to_enum().value,
+                    "includes_excludes_member_to_setting": [
+                        {
+                            "member": member.value,
+                            "include_excludes_setting": include_excludes_setting.value,
+                        }
+                        for member, include_excludes_setting in includes_excludes_member_to_setting.items()
+                        if include_excludes_setting is not None
+                    ],
+                }
+                for dimension, includes_excludes_member_to_setting in self.dimension_to_includes_excludes_member_to_setting.items()
+            ],
+            # Dict[DimensionBase, List[MetricContextData]]
+            "dimension_to_contexts": [
+                {
+                    "dimension": dimension.to_enum().value,
+                    "contexts": [
+                        {
+                            "key": context.key.value,
+                            "value": context.value,
+                        }
+                        for context in contexts
+                    ],
+                }
+                for dimension, contexts in self.dimension_to_contexts.items()
+            ],
+        }
 
     def to_json(
         self,
