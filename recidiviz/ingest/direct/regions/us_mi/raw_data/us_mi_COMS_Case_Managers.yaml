@@ -7,7 +7,7 @@ data_classification: source
 separator: †
 custom_line_terminator: ‡
 encoding: WINDOWS-1252
-always_historical_export: False
+always_historical_export: True
 primary_key_cols:
   - Case_Manager_Id
 columns:
