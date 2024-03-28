@@ -50,6 +50,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
 snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user_repeat_email"
 ] = {
+    "blocked": False,
     "district": "D1",
     "emailAddress": "parameter@domain.org",
     "externalId": "XYZ",
@@ -177,6 +178,67 @@ snapshots[
         "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
     }
 ]
+
+snapshots[
+    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_in_roster"
+] = [
+    {
+        "allowedSupervisionLocationIds": "",
+        "allowedSupervisionLocationLevel": "",
+        "blocked": False,
+        "district": "D1",
+        "emailAddress": "parameter@domain.org",
+        "externalId": "123",
+        "featureVariants": {},
+        "firstName": "Test",
+        "lastName": "User",
+        "pseudonymizedId": "pseudo-123",
+        "role": "leadership_role",
+        "routes": {},
+        "stateCode": "US_CO",
+        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+    }
+]
+
+snapshots[
+    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_in_user_override"
+] = [
+    {
+        "allowedSupervisionLocationIds": "",
+        "allowedSupervisionLocationLevel": "",
+        "blocked": False,
+        "district": None,
+        "emailAddress": "parameter@domain.org",
+        "externalId": "UPDATED ID",
+        "featureVariants": {},
+        "firstName": "Updated",
+        "lastName": "Name",
+        "pseudonymizedId": "pseudo-UPDATED ID",
+        "role": "leadership_role",
+        "routes": {},
+        "stateCode": "US_TN",
+        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+    }
+]
+
+snapshots[
+    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_missing_state_code"
+] = {
+    "allowedSupervisionLocationIds": "",
+    "allowedSupervisionLocationLevel": "",
+    "blocked": False,
+    "district": None,
+    "emailAddress": "parameter@domain.org",
+    "externalId": "UPDATED ID",
+    "featureVariants": {},
+    "firstName": "Updated",
+    "lastName": "Name",
+    "pseudonymizedId": "pseudo-UPDATED ID",
+    "role": "leadership_role",
+    "routes": {},
+    "stateCode": "US_TN",
+    "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
+}
 
 snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_users"] = [
     {

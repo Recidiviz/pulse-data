@@ -42,7 +42,10 @@ from recidiviz.auth.auth_api_schemas import (
     UserRequestSchema,
     UserSchema,
 )
-from recidiviz.auth.auth_endpoint import _create_user_override, _upsert_roster_rows
+from recidiviz.auth.auth_endpoint import (
+    _lookup_user_attrs_from_hash,
+    _upsert_roster_rows,
+)
 from recidiviz.auth.helpers import (
     generate_pseudonymized_id,
     generate_user_hash,
@@ -118,6 +121,41 @@ def get_users_query(session: Session) -> Query:
             == PermissionsOverride.email_address,
         )
     )
+
+
+def _create_user_override(session: Session, user_dict: Dict[str, Any]) -> UserOverride:
+    """Creates a UserOverride object based on the existing UserOverride for the user represented
+    in user_dict (if it exists) and any updates in user_dict."""
+
+    user_hash = user_dict["user_hash"]
+
+    if (attrs := _lookup_user_attrs_from_hash(session, user_hash)) is None:
+        raise ValueError(
+            f"User not found for email address hash {user_hash}, please file a bug"
+        )
+    (email, state_code) = attrs
+
+    user_dict["email_address"] = email
+    user_dict["state_code"] = user_dict.get("state_code", state_code)
+    log_reason(user_dict, f"updating user {user_dict['email_address']}")
+
+    if "external_id" in user_dict:
+        # If the user was added entirely, they won't have a pseudo id yet so create one for them.
+        # Otherwise, if they were modified and external_id is present in the modification,
+        # generate a new pseudo id based on their new external_id.
+        user_dict["pseudonymized_id"] = generate_pseudonymized_id(
+            user_dict["state_code"], user_dict["external_id"]
+        )
+
+    existing = (
+        session.query(UserOverride).filter(UserOverride.user_hash == user_hash).first()
+    )
+
+    if existing:
+        for key, value in user_dict.items():
+            setattr(existing, key, value)
+        return existing
+    return UserOverride(**user_dict)
 
 
 @users_blueprint.route("")
@@ -284,3 +322,20 @@ class UsersByHashAPI(MethodView):
                 HTTPStatus.NOT_FOUND,
                 message=f"User not found for email address hash {user_hash}, please file a bug",
             )
+
+    @users_blueprint.arguments(
+        # set "partial" on schema so all fields are optional. we can derive the user from the hash.
+        UserRequestSchema(partial=True),
+        # Return BAD_REQUEST on schema validation errors
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @users_blueprint.response(HTTPStatus.OK, FullUserSchema)
+    def patch(self, user_dict: Dict[str, Any], user_hash: str) -> Row:
+        """
+        Edits an existing user's info by adding or updating an entry for that user in UserOverride.
+        Returns the updated user.
+        """
+        user_dict["user_hash"] = user_hash
+        current_session.add(_create_user_override(current_session, user_dict))
+        current_session.commit()
+        return self.get(user_hash)

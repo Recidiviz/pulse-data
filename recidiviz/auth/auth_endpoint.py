@@ -21,7 +21,7 @@ import json
 import logging
 import os
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import pandas as pd
 import sqlalchemy.orm.exc
@@ -88,11 +88,16 @@ def _validate_state_code(state_code: str) -> None:
         )
 
 
-def _lookup_email_from_hash(session: Session, user_hash: str) -> Optional[str]:
+def _lookup_user_attrs_from_hash(
+    session: Session, user_hash: str
+) -> tuple[str, str] | None:
     return (
         session.query(
             func.coalesce(UserOverride.email_address, Roster.email_address).label(
                 "email_address"
+            ),
+            func.coalesce(UserOverride.state_code, Roster.state_code).label(
+                "state_code"
             ),
         )
         .select_from(Roster)
@@ -102,7 +107,7 @@ def _lookup_email_from_hash(session: Session, user_hash: str) -> Optional[str]:
             full=True,
         )
         .filter(func.coalesce(UserOverride.user_hash, Roster.user_hash) == user_hash)
-        .scalar()
+        .one_or_none()
     )
 
 
@@ -462,83 +467,6 @@ def delete_state_role(
         return (f"{error}", HTTPStatus.BAD_REQUEST)
 
 
-def _create_user_override(session: Session, user_dict: Dict[str, Any]) -> UserOverride:
-    """Creates a UserOverride object based on the existing UserOverride for the user represented
-    in user_dict (if it exists) and any updates in user_dict."""
-
-    if "state_code" not in user_dict:
-        raise ValueError("Must provide a state_code when updating a user")
-
-    user_hash = user_dict["user_hash"]
-
-    if (email := _lookup_email_from_hash(session, user_hash)) is None:
-        raise ValueError(
-            f"User not found for email address hash {user_hash}, please file a bug"
-        )
-
-    user_dict["email_address"] = email
-    log_reason(user_dict, f"updating user {user_dict['email_address']}")
-
-    if "external_id" in user_dict:
-        # If the user was added entirely, they won't have a pseudo id yet so create one for them.
-        # Otherwise, if they were modified and external_id is present in the modification,
-        # generate a new pseudo id based on their new external_id.
-        user_dict["pseudonymized_id"] = generate_pseudonymized_id(
-            user_dict["state_code"], user_dict["external_id"]
-        )
-
-    existing = (
-        session.query(UserOverride).filter(UserOverride.user_hash == user_hash).first()
-    )
-
-    if existing:
-        for key, value in user_dict.items():
-            setattr(existing, key, value)
-        return existing
-    return UserOverride(**user_dict)
-
-
-# "path" type annotation allows parameters containing slashes, which the user hash might
-@auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["PATCH"])
-def update_user(user_hash: str) -> Union[tuple[Response, int], tuple[str, int]]:
-    """Edits an existing user's info by adding or updating an entry for that user in UserOverride."""
-    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
-    try:
-        with SessionFactory.using_database(database_key) as session:
-            user_dict = convert_nested_dictionary_keys(
-                assert_type(request.json, dict), to_snake_case
-            )
-            user_dict["user_hash"] = user_hash
-            session.add(_create_user_override(session, user_dict))
-            session.commit()
-            updated_user = (
-                session.query(UserOverride)
-                .filter(UserOverride.user_hash == user_hash)
-                .first()
-            )
-            return (
-                jsonify(
-                    {
-                        "stateCode": updated_user.state_code,
-                        "emailAddress": updated_user.email_address,
-                        "externalId": updated_user.external_id,
-                        "role": updated_user.role,
-                        "district": updated_user.district,
-                        "firstName": updated_user.first_name,
-                        "lastName": updated_user.last_name,
-                        "userHash": updated_user.user_hash,
-                        "pseudonymizedId": updated_user.pseudonymized_id,
-                    }
-                ),
-                HTTPStatus.OK,
-            )
-    except (IntegrityError, ValueError) as error:
-        return (
-            f"{error}",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-
 # "path" type annotation allows parameters containing slashes, which the user hash might
 @auth_endpoint_blueprint.route("/users/<path:user_hash>/permissions", methods=["PUT"])
 def update_user_permissions(
@@ -558,10 +486,11 @@ def update_user_permissions(
             if feature_variants_json is not None:
                 user_dict["feature_variants"] = assert_type(feature_variants_json, dict)
 
-            if (email := _lookup_email_from_hash(session, user_hash)) is None:
+            if (attrs := _lookup_user_attrs_from_hash(session, user_hash)) is None:
                 raise ValueError(
                     f"User not found for email address hash {user_hash}, please file a bug"
                 )
+            (email, _) = attrs
 
             user_dict["email_address"] = email
             log_reason(
@@ -623,10 +552,11 @@ def delete_user_permissions(user_hash: str) -> tuple[str, int]:
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     try:
         with SessionFactory.using_database(database_key) as session:
-            if (email := _lookup_email_from_hash(session, user_hash)) is None:
+            if (attrs := _lookup_user_attrs_from_hash(session, user_hash)) is None:
                 raise ValueError(
                     f"User not found for email address hash {user_hash}, please file a bug"
                 )
+            (email, _) = attrs
 
             overrides = session.query(PermissionsOverride).filter(
                 PermissionsOverride.email_address == email

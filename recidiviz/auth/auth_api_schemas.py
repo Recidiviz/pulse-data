@@ -41,6 +41,7 @@ class UserSchema(CamelCaseSchema):
     last_name = fields.Str(allow_none=True)
     user_hash = fields.Str(allow_none=True)
     pseudonymized_id = fields.Str(allow_none=True)
+    blocked = fields.Bool(allow_none=True)
 
     @post_load
     # pylint: disable=unused-argument
@@ -78,13 +79,14 @@ class FullUserSchema(UserSchema, CamelCaseSchema):
         (lambda user: user.district if user.state_code == "US_MO" else "")
     )
     allowed_supervision_location_level = fields.Function(
-        lambda user: "level_1_supervision_location"
-        if user.state_code == "US_MO" and user.district is not None
-        else ""
+        lambda user: (
+            "level_1_supervision_location"
+            if user.state_code == "US_MO" and user.district is not None
+            else ""
+        )
     )
     routes = fields.Dict(keys=fields.Str(), values=fields.Bool())
     feature_variants = fields.Dict(keys=fields.Str(), values=fields.Raw())
-    blocked = fields.Bool()
 
 
 class StateCodeSchema(CamelOrSnakeCaseSchema):
