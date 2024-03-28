@@ -235,7 +235,12 @@ def get_api_blueprint(
                     "settings": [setting.to_json() for setting in agency_settings],
                     "jurisdictions": jurisdictions,
                     "is_subscribed_to_emails": is_subscribed_to_emails,
-                    "days_after_time_period_to_send_email": current_user_agency_association.days_after_time_period_to_send_email,
+                    "days_after_time_period_to_send_email": (
+                        current_user_agency_association.days_after_time_period_to_send_email
+                        if current_user_agency_association.days_after_time_period_to_send_email
+                        is not None
+                        else 15
+                    ),
                 }
             )
         except Exception as e:

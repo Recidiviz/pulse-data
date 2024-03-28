@@ -2915,7 +2915,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     agency=self.test_schema_objects.test_agency_A,
                     role=schema.UserAccountRole.AGENCY_ADMIN,
                     subscribed=True,
-                    days_after_time_period_to_send_email=12,
                 ),
             ]
         )
@@ -2948,7 +2947,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "days_after_time_period_to_send_email": 12,
+                    "days_after_time_period_to_send_email": 15,
                     "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
@@ -2978,7 +2977,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "days_after_time_period_to_send_email": 12,
+                    "days_after_time_period_to_send_email": 15,
                     "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
@@ -3008,7 +3007,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "days_after_time_period_to_send_email": 12,
+                    "days_after_time_period_to_send_email": 15,
                     "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": [],
@@ -3038,7 +3037,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "days_after_time_period_to_send_email": 12,
+                    "days_after_time_period_to_send_email": 15,
                     "is_subscribed_to_emails": True,
                     "jurisdictions": {
                         "included": [],
