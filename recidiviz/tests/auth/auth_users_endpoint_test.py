@@ -355,6 +355,104 @@ class AuthUsersEndpointTestCase(TestCase):
         self.assertEqual(error_message, json.loads(response.data)["message"])
 
     ########
+    # PATCH /user/...
+    ########
+
+    def test_update_user_in_roster(self) -> None:
+        user = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_CO",
+            external_id="123",
+            role="supervision_staff",
+            district="D1",
+            first_name="Test",
+            last_name="User",
+            pseudonymized_id="pseudo-123",
+        )
+        add_entity_to_database_session(self.database_key, [user])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            new_role = self.client.patch(
+                self.user,
+                headers=self.headers,
+                json={
+                    "stateCode": "US_CO",
+                    "emailAddress": "parameter@domain.org",
+                    "role": "leadership_role",
+                    "reason": "test",
+                },
+            )
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, new_role.status_code)
+            self.snapshot.assert_match(json.loads(response.data), name="test_update_user_in_roster")  # type: ignore[attr-defined]
+            self.assertReasonLog(
+                log.output, "updating user parameter@domain.org with reason: test"
+            )
+
+    def test_update_user_in_user_override(self) -> None:
+        user = generate_fake_user_overrides(
+            email="parameter@domain.org",
+            region_code="US_TN",
+            external_id="Original",
+            role="leadership_role",
+            first_name="Original",
+            last_name="Name",
+            pseudonymized_id="hashed-Original",
+        )
+        add_entity_to_database_session(self.database_key, [user])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            new_name_id = self.client.patch(
+                self.user,
+                headers=self.headers,
+                json={
+                    "stateCode": "US_TN",
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": "Updated ID",
+                    "firstName": "Updated",
+                    "reason": "test",
+                },
+            )
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, new_name_id.status_code)
+            self.snapshot.assert_match(json.loads(response.data), name="test_update_user_in_user_override")  # type: ignore[attr-defined]
+            self.assertReasonLog(
+                log.output, "updating user parameter@domain.org with reason: test"
+            )
+
+    def test_update_user_missing_state_code(self) -> None:
+        user = generate_fake_user_overrides(
+            email="parameter@domain.org",
+            region_code="US_TN",
+            external_id="Original",
+            role="leadership_role",
+            first_name="Original",
+            last_name="Name",
+        )
+        add_entity_to_database_session(self.database_key, [user])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            response = self.client.patch(
+                self.user,
+                headers=self.headers,
+                json={
+                    "externalId": "Updated ID",
+                    "emailAddress": "parameter@domain.org",
+                    "firstName": "Updated",
+                    "reason": "test",
+                },
+            )
+            # This succeeds because we can look up the state code based on the user_hash
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.snapshot.assert_match(json.loads(response.data), name="test_update_user_missing_state_code")  # type: ignore[attr-defined]
+            self.assertReasonLog(
+                log.output, "updating user parameter@domain.org with reason: test"
+            )
+
+    ########
     # POST /users
     ########
 
