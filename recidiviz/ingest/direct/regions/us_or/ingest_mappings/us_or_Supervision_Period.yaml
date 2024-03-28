@@ -12,7 +12,7 @@ input_columns:
   - COUNTY
   - LOCATION_NAME
   - FACILITY
-  - RISK_LEVEL
+  - COMMUNITY_SUPER_LVL
   - ADMISSION_REASON
   - RELEASE_REASON
   - RESPONSIBLE_DIVISION
@@ -250,7 +250,7 @@ output:
                   - DOCC # unknown (1 instance)
           supervision_level:
             $enum_mapping:
-              $raw_text: RISK_LEVEL
+              $raw_text: COMMUNITY_SUPER_LVL
               $mappings:
                 StateSupervisionLevel.MINIMUM:
                   - Low
