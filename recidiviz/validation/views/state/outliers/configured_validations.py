@@ -30,8 +30,11 @@ from recidiviz.validation.views.state.outliers.current_supervision_staff_missing
 from recidiviz.validation.views.state.outliers.current_supervision_staff_missing_email import (
     CURRENT_SUPERVISION_STAFF_MISSING_EMAIL_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.outliers.outliers_staff_count_percent_change import (
-    OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_VIEW_BUILDER,
+from recidiviz.validation.views.state.outliers.outliers_staff_count_percent_change_intermonth import (
+    OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTERMONTH_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.outliers.outliers_staff_count_percent_change_intramonth import (
+    OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTRAMONTH_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.outliers.unidentified_supervision_officer_supervisors import (
     UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
@@ -65,7 +68,15 @@ def get_all_outliers_validations(
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
-            view_builder=OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_VIEW_BUILDER,
+            view_builder=OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTRAMONTH_VIEW_BUILDER,
+            comparison_columns=["last_export_staff_count", "current_staff_count"],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+            hard_max_allowed_error=0.0,
+            soft_max_allowed_error=0.0,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTERMONTH_VIEW_BUILDER,
             comparison_columns=["last_export_staff_count", "current_staff_count"],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,

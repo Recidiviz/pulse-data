@@ -59,7 +59,7 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: 0.3
     override_reason: We're expecting .28 is standard variation.
-  - validation_name: outliers_staff_count_percent_change
+  - validation_name: outliers_staff_count_percent_change_intramonth
     hard_max_allowed_error_override: 0.03
     override_reason: We're expecting .026 is standard variation.
 num_allowed_rows_overrides:
