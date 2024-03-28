@@ -405,11 +405,16 @@ def get_admin_blueprint(
         metric_definition_key_subset = (
             assert_type(request_json.get("metric_definition_key_subset"), list) or []
         )
-        child_agency_id_subset = (
-            assert_type(request_json.get("child_agency_id_subset"), list) or []
-        )
+        child_agency_id_subset_raw = request_json.get("child_agency_id_subset")
+        if child_agency_id_subset_raw is not None:
+            child_agency_id_subset = assert_type(
+                request_json.get("metric_definition_key_subset"), list
+            )
+            child_agency_id_subset_as_string = ",".join(child_agency_id_subset)
+        else:
+            child_agency_id_subset_as_string = None
+
         metric_definition_key_subset_as_string = ",".join(metric_definition_key_subset)
-        child_agency_id_subset_as_string = ",".join(child_agency_id_subset)
         project_id = (
             GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
             if in_gcp_production() is True
@@ -421,34 +426,29 @@ def get_admin_blueprint(
         client = run_v2.JobsClient()
 
         # Add container overrides to pass in custom arguments to the job script
-        override_spec = {
-            "container_overrides": [
-                {
-                    "args": [
-                        "run",
-                        "python",
-                        "-m",
-                        "recidiviz.justice_counts.jobs.copy_superagency_metric_settings_to_child_agencies",
-                        "--super_agency_id",
-                        str(super_agency_id),
-                        "--agency_name",
-                        str(agency_name),
-                        "--metric_definition_key_subset",
-                        metric_definition_key_subset_as_string,
-                        "--child_agency_ids_subset",
-                        child_agency_id_subset_as_string,
-                        "--user_email",
-                        str(user_email),
-                    ]
-                }
-            ]
-        }
+        args = [
+            "run",
+            "python",
+            "-m",
+            "recidiviz.justice_counts.jobs.copy_superagency_metric_settings_to_child_agencies",
+            "--super_agency_id",
+            str(super_agency_id),
+            "--agency_name",
+            str(agency_name),
+            "--metric_definition_key_subset",
+            metric_definition_key_subset_as_string,
+            "--user_email",
+            str(user_email),
+        ]
+        if child_agency_id_subset_as_string is not None:
+            args.extend(["--child_agency_ids_subset", child_agency_id_subset_as_string])
+
         job_request = run_v2.RunJobRequest(
             name=StrictStringFormatter().format(
                 COPY_SUPERAGENCY_METRIC_SETTINGS_TO_CHILD_AGENCIES_JOB_NAME,
                 project_id=project_id,
             ),
-            overrides=override_spec,
+            overrides={"container_overrides": [{"args": args}]},
         )
 
         # Trigger cloud run job
