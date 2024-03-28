@@ -22,6 +22,7 @@ import datetime
 import json
 import logging
 import os
+import re
 import time
 from collections import defaultdict
 from concurrent import futures
@@ -911,11 +912,13 @@ class BigQueryClientImpl(BigQueryClient):
             dataset_to_update = bigquery.Dataset(dataset_ref)
             owner, description = self._get_owner_and_description(created_dataset)
             dataset_to_update.description = description
-            description_label = description.replace(" ", "-").lower()
-            if len(description_label) > 63:
-                description_label = description_label[:63]
+            if owner:
+                owner = self._ensure_valid_bigquery_label_value(owner)
+            else:
+                owner = DEFAULT_VANTA_DATASET_OWNER
+            description_label = self._ensure_valid_bigquery_label_value(description)
             dataset_to_update.labels = {
-                "vanta-owner": owner or DEFAULT_VANTA_DATASET_OWNER,
+                "vanta-owner": owner,
                 "vanta-description": description_label,
             }
             return self.client.update_dataset(
@@ -923,6 +926,20 @@ class BigQueryClientImpl(BigQueryClient):
             )
 
         return dataset
+
+    def _ensure_valid_bigquery_label_value(self, label_value: str) -> str:
+        """Ensures that labels meet BigQuery requirements.
+
+        The requirements for values are that they can contain only lowercase letters, numeric characters, underscores,
+        and dashes, and have a maximum length of 63 characters: https://cloud.google.com/bigquery/docs/labels-intro.
+        This method converts the label string to lowercase, replaces any disallowed characters with a dash, and
+        truncates the length to 63.
+        """
+
+        label_value = re.sub(r"[^\w_-]", "-", label_value.lower())
+        if len(label_value) > 63:
+            label_value = label_value[:63]
+        return label_value
 
     def _get_owner_and_description(
         self, dataset: bigquery.Dataset

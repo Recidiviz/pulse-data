@@ -178,6 +178,30 @@ class BigQueryClientImplTest(unittest.TestCase):
             args[0].labels,
         )
 
+    def test_create_dataset_if_necessary_sets_labels_replace_chars(self) -> None:
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+        self.mock_client.create_dataset.return_value.access_entries = [
+            bigquery.AccessEntry(
+                role="OWNER",
+                entity_type=bigquery.enums.EntityTypes.USER_BY_EMAIL,
+                entity_id="foo.Bar@recidiviz.org",
+            )
+        ]
+
+        with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+
+        call_args_list = self.mock_client.update_dataset.call_args_list
+        self.assertEqual(1, len(call_args_list))
+        [(args, _kwargs)] = call_args_list
+        self.assertEqual(
+            {
+                "vanta-owner": "foo-bar",
+                "vanta-description": "generated-from-fake_script-by-foo-bar-on-2020-01-01",
+            },
+            args[0].labels,
+        )
+
     def test_create_dataset_if_necessary_sets_labels_manual_non_recidiviz(self) -> None:
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
         self.mock_client.create_dataset.return_value.access_entries = [
