@@ -69,6 +69,7 @@ high_level_transfers AS (
     RECORD_KEY, 
     CUSTODY_NUMBER,
     ADMISSION_NUMBER,
+    CURRENT_STATUS, 
     RELEASE_DATE,
     RELEASE_REASON
   FROM {RCDVZ_PRDDTA_OP009P}
@@ -164,6 +165,7 @@ periods AS (
     transfers.CUSTODY_NUMBER,
     transfers.ADMISSION_NUMBER,
     transfers.TRANSFER_NUMBER,
+    releases.CURRENT_STATUS,
     custody.CUSTODY_TYPE, # incarceration_type
     MOVE_IN_DATE, # admission_date
     MOVE_OUT_DATE, # release_date
