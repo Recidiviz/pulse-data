@@ -241,6 +241,36 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/agencies/<super_agency_id>/children", methods=["GET"])
+    @auth_decorator
+    def get_child_agencies_for_superagency(super_agency_id: int) -> Response:
+        """
+        This endpoint returns information about the child agencies of a superagency.
+        If <super_agency_id> is not a superagency, list will be empty.
+
+        Returns:
+        {
+            child_agencies: List[Dict[<ID, Name, Systems>]]
+        }
+        """
+        try:
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=super_agency_id)
+
+            super_agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=super_agency_id
+            )
+            return jsonify(
+                {"child_agencies": _get_child_agency_json(agency=super_agency)}
+            )
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     ### Users ###
 
     @api_blueprint.route("/agencies/<agency_id>/users", methods=["POST"])
@@ -639,6 +669,7 @@ def get_api_blueprint(
             agency_metrics: List[Metrics],
             monthly_report: Report,
             annual_reports: Dict[<Starting Month>, Report]
+            child_agencies: List[Dict[<ID, Name, Systems>]]
         }
         """
         try:
@@ -754,26 +785,12 @@ def get_api_blueprint(
                 for metric in agency_metrics
             ]
 
-            child_agency_json = []
-            if agency.is_superagency:
-                child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
-                    session=current_session, agency_ids=[agency.id]
-                )
-                for child_agency in child_agencies:
-                    child_agency_json.append(
-                        {
-                            "id": child_agency.id,
-                            "name": child_agency.name,
-                            "sectors": child_agency.systems,
-                        }
-                    )
-
             return jsonify(
                 {
                     "agency_metrics": agency_metrics_json,
                     "monthly_report": latest_monthly_report_definition_json,
                     "annual_reports": latest_annual_reports_json,
-                    "child_agencies": child_agency_json,
+                    "child_agencies": _get_child_agency_json(agency=agency),
                 }
             )
         except Exception as e:
@@ -2174,3 +2191,18 @@ def _get_error(error: Exception) -> FlaskException:
         code="server_error",
         description="A server error occurred. See the logs for more information.",
     )
+
+
+def _get_child_agency_json(agency: schema.Agency) -> List[Dict[str, Any]]:
+    """If agency is a superagency, fetches child agencies and returns a
+    an array of (simple) JSON representations. If agency is not a superagency,
+    returns an empty array.
+    """
+
+    if not agency.is_superagency:
+        return []
+
+    child_agencies = AgencyInterface.get_child_agencies_for_agency(
+        session=current_session, agency=agency
+    )
+    return [child_agency.to_json_simple() for child_agency in child_agencies]
