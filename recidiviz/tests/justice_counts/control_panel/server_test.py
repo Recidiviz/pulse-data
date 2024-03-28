@@ -3332,6 +3332,33 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             grievances_errors = response_dict["metrics"][8]["metric_errors"]
             self.assertEqual(len(grievances_errors), 0)
 
+    def test_get_child_agencies_for_superagency(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        super_agency = self.test_schema_objects.test_prison_super_agency
+        child_agency = self.test_schema_objects.test_prison_affiliate_A
+        self.session.add_all(
+            [
+                user,
+                super_agency,
+                child_agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=user, agency=super_agency
+                ),
+            ]
+        )
+        self.session.commit()
+        self.session.refresh(super_agency)
+        child_agency.super_agency_id = super_agency.id
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
+            response = self.client.get(f"/api/agencies/{super_agency.id}/children")
+
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(len(response_json["child_agencies"]), 1)
+        self.assertEqual(response_json["child_agencies"][0]["name"], child_agency.name)
+
 
 def test_frozen_now_is_not_global_now() -> None:
     """Tests that the use of @freeze_time(NOW_TIME) is local to the wrapped tests."""
