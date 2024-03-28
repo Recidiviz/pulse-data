@@ -84,7 +84,12 @@ SELECT DISTINCT
         -- very rarely, there are two dates entered with the same update_datetime_external. sort them deterministically
         transition_release_eligibility_date
     ) AS transition_release_eligibility_date,
-    transition_release_movement_date AS actual_or_expected_release_date,
+    -- When there is more than one movement date associated with the same update_datetime_external, deterministically choose the earlier one.
+    -- As of 3/28/24 this only happens one time.
+    MIN(transition_release_movement_date) OVER (PARTITION BY PERSON_ID, EXTRACT(DATE FROM LEAST(elig.update_datetime_external, rel.update_datetime_external)) 
+        ORDER BY elig.update_datetime_external, rel.update_datetime_external, 
+        -- very rarely, there are two dates entered with the same update_datetime_external. sort them deterministically
+        transition_release_eligibility_date) AS actual_or_expected_release_date,
     EXTRACT (DATE FROM LEAST(elig.update_datetime_external, rel.update_datetime_external) ) AS update_datetime_external,
   PERSON_ID,
 FROM eligibility_dates elig
