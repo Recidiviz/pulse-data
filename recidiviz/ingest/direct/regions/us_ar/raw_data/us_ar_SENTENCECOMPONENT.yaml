@@ -208,6 +208,7 @@ columns:
   - name: OFFICIALVERSIONOFCRIME
     description: |-
       Official version of crime associated with sentence
+    is_pii: True
   - name: DATEFIRSTCREATED
     description: |-
       Date first created

@@ -438,6 +438,31 @@ def parse_custodial_authority(
     return StateCustodialAuthority.INTERNAL_UNKNOWN if raw_text else None
 
 
+def parse_incarceration_sentence_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationType]:
+    # Incarceration sentences usually just have 1 sentence type; however, since they can
+    # potentially have multiple, we prioritize them to pick the most relevant.
+    sentence_types = raw_text.split("-")
+    if "FS" in sentence_types:  # Federal Custody
+        return StateIncarcerationType.FEDERAL_PRISON
+    if "SP" in sentence_types:  # State Prison
+        return StateIncarcerationType.STATE_PRISON
+    if any(
+        sentence_type
+        in [
+            "CJ",  # County Jail
+            "JU",  # Judicial Transfer to CCC
+            "PT",  # Pre-Trial
+            "RP",  # Probation Plus (at CCC)
+            "SA",  # Supervision Sanction Program (SSP)
+        ]
+        for sentence_type in sentence_types
+    ):
+        return StateIncarcerationType.COUNTY_JAIL
+    return StateIncarcerationType.INTERNAL_UNKNOWN
+
+
 def parse_role_subtype(
     raw_text: str,
 ) -> Optional[StateStaffRoleSubtype]:
