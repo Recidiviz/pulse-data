@@ -56,7 +56,6 @@ WITH early_terminations_me AS (
     AND ch.Juvenile_Ind !='Y'
     -- Some POs have filed ETs when the cause was death
     AND NOT REGEXP_CONTAINS(UPPER(COALESCE(Comm_Override_Notes_Tx, '')), r'{_DEATH_REGEX_FILTER}')
-
 ),
 
 probation_sessions_me AS (
