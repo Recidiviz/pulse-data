@@ -31,6 +31,18 @@ from recidiviz.common.date import calendar_unit_date_diff
 from recidiviz.common.str_field_utils import safe_parse_days_from_duration_pieces
 
 
+def is_suspended_sentence(sentence_types: str) -> bool:
+    """Identifies suspended sentences; returns True if every sentence type is
+    'Suspended Sentence','Pre-Adjudicated', or null."""
+    suspended_type_list = [
+        "SI",  # Suspended Sentence
+        "PA",  # Pre-Adjudicated
+    ]
+    if all(s in suspended_type_list for s in sentence_types.split("-")):
+        return True
+    return False
+
+
 def parse_employment_category(
     disabled: str,
     unemployed: str,
