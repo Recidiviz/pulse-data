@@ -492,9 +492,10 @@ class CalculationDocumentationGenerator:
             views_str += (
                 self.bulleted_list(
                     [
-                        self._dependency_tree_formatter_for_gitbook(
-                            address, products_section=True
+                        self._big_query_address_formatter_for_gitbook(
+                            address=address, products_section=True
                         )
+                        + " <br/>"
                         for address in address_list
                     ],
                     escape_underscores=False,
@@ -835,10 +836,11 @@ class CalculationDocumentationGenerator:
 
         return anything_modified
 
-    def _dependency_tree_formatter_for_gitbook(
+    def _big_query_address_formatter_for_gitbook(
         self,
+        *,
         address: BigQueryAddress,
-        products_section: bool = False,
+        products_section: bool,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
         is_source_table = address.dataset_id in VIEW_SOURCE_TABLE_DATASETS
@@ -895,8 +897,7 @@ class CalculationDocumentationGenerator:
             table_name_str += (
                 f" ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
             )
-
-        return table_name_str + " <br/>"
+        return table_name_str
 
     def _get_view_tree_string(
         self,
@@ -908,47 +909,52 @@ class CalculationDocumentationGenerator:
         If it is too large a command to generate it will be output instead."""
 
         node = self.dag_walker.node_for_view(view)
+
+        def _custom_formatter(
+            address: BigQueryAddress, is_pruned_at_address: bool
+        ) -> str:
+            suffix = " <br/>"
+            if is_pruned_at_address:
+                suffix = " (...)" + suffix
+
+            return (
+                self._big_query_address_formatter_for_gitbook(
+                    address=address, products_section=False
+                )
+                + suffix
+            )
+
         if descendants:
+            tree_str = self.dag_walker.descendants_dfs_tree_str(
+                view,
+                custom_node_formatter=_custom_formatter,
+                datasets_to_skip=RAW_TABLE_DATASETS,
+            )
             num_tree_edges = node.descendants_tree_num_edges
-            sub_dag = node.descendants_sub_dag
         else:
+            tree_str = self.dag_walker.ancestors_dfs_tree_str(
+                view,
+                custom_node_formatter=_custom_formatter,
+                datasets_to_skip=RAW_TABLE_DATASETS,
+            )
             num_tree_edges = node.ancestors_tree_num_edges
-            sub_dag = node.ancestors_sub_dag
-
-        sub_dag_addresses = {v.address for v in sub_dag.views}
-
-        # Each LATEST raw data view has a corresponding RAW table parent that is
-        # skipped, which corresponds to one line in the docstring tree.
-        num_skipped_views = len(
-            {a for a in sub_dag_addresses if a.dataset_id in LATEST_VIEW_DATASETS}
-        )
-        num_tree_edges = num_tree_edges - num_skipped_views
-
-        if num_tree_edges == 0:
+        num_lines = len(tree_str.rstrip().split("\n"))
+        if num_lines == 1:
             return (
                 f"This view has no {'child' if descendants else 'parent'} dependencies."
             )
 
-        if num_tree_edges + 1 >= MAX_DEPENDENCY_TREE_LENGTH:
+        # TODO(#28567): This is now incorrect and overestimates how long the
+        #  descendants tree will be - use `num_lines > MAX_DEPENDENCY_TREE_LENGTH`
+        #  instead and delete code related to counting tree edges.
+        if num_tree_edges + 1 > MAX_DEPENDENCY_TREE_LENGTH:
             return StrictStringFormatter().format(
                 DEPENDENCY_TREE_SCRIPT_TEMPLATE,
                 dataset_id=view.address.dataset_id,
                 table_id=view.address.table_id,
                 descendants=descendants,
             )
-
-        if descendants:
-            return self.dag_walker.descendants_dfs_tree_str(
-                view,
-                custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
-                datasets_to_skip=RAW_TABLE_DATASETS,
-            )
-
-        return self.dag_walker.ancestors_dfs_tree_str(
-            view,
-            custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
-            datasets_to_skip=RAW_TABLE_DATASETS,
-        )
+        return tree_str
 
     @staticmethod
     def _create_script_text_for_dependencies(metric_name: str) -> str:
