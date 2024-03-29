@@ -190,7 +190,7 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     INGEST_DOCS_KEY: [
         RequiredModificationSets(
             if_modified_files=frozenset(
-                {f"recidiviz/ingest/direct/regions/{region_code}/"}
+                {f"recidiviz/ingest/direct/regions/{region_code}/raw_data/"}
             ),
             then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
         )
@@ -322,7 +322,8 @@ def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str], str]) -> str:
         "Failure:\n"
         f"\tModified file(s):\n{matched_prefixes_string}\n"
         f"\tWithout modifying file(s):\n{failed_prefixes_string}\n"
-        "If your change does not require documentation changes, prefix your commit with "
+        "If your change does not require documentation changes and you're sure documentation pre-commit hooks ran "
+        "properly and did not generate any docs updates based on your changes, prefix your commit with "
         f'"[skip validation {set_to_validate}]".'
     )
 

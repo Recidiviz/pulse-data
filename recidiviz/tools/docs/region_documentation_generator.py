@@ -115,7 +115,6 @@ def _create_ingest_catalog_summary() -> List[str]:
         ingest_catalog_summary.extend(
             [
                 f"- [{state_name}](ingest/{state}/{state}.md)\n",
-                f"  - [Schema Mappings](ingest/{state}/schema_mappings.md)\n",
                 f"  - [Raw Data Description](ingest/{state}/raw_data.md)\n",
             ]
         )

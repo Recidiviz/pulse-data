@@ -105,7 +105,7 @@ class CheckAssertionsTest(unittest.TestCase):
         ]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
-                frozenset(["recidiviz/ingest/direct/regions/us_nd/"]),
+                frozenset(["recidiviz/ingest/direct/regions/us_nd/raw_data/"]),
                 frozenset(["docs/ingest/us_nd/"]),
                 "ingest_docs",
             )
@@ -121,7 +121,7 @@ class CheckAssertionsTest(unittest.TestCase):
         ]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
-                frozenset(["recidiviz/ingest/direct/regions/us_mo/"]),
+                frozenset(["recidiviz/ingest/direct/regions/us_mo/raw_data/"]),
                 frozenset(["docs/ingest/us_mo/"]),
                 "ingest_docs",
             )
