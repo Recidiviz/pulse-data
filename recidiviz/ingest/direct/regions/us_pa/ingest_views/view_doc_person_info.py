@@ -14,7 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing person demographic and identifier information from the DOC."""
+"""Query containing person demographic and identifier information from the DOC.
+
+Demographic and identifying information about people comes in from two principle sources: `dbo_tblSearchInmateInfo` and
+`dbo_Perrec` from DOC and `dbo_Offender` from PBPP. All of those tables include a vast number of detailed and sensitive
+fields about people that we do not ingest or process. All of those tables also have other surrounding tables in their
+respective parts of the schema that contain even more such information that we do not ingest or process.
+
+While generally, aliases can include both "legal" and "non-legal" names of various types, for the PADOC data that we
+ingest, aliases include only "legal" names on `state_person` instances that have been copied out to
+`state_person_alias` instances. Aliases thus act as a list of all known legal names from all person-related
+PADOC tables.
+"""
 
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
     PRIMARY_STATE_IDS_FRAGMENT_V2,

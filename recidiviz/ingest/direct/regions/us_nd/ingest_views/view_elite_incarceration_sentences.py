@@ -14,7 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing incarceration sentence information from the ELITE system."""
+"""Query containing incarceration sentence information from the ELITE system.
+
+Incarceration sentences are created from data combined from `elite_offendersentences`, `elite_offendersentenceterms`,
+and `elite_offendersentenceaggs`. The first two contain different bits of information about a single sentence while
+the third is a "roll-up" file that contains information aggregated from multiple sentences related to a single DOCR
+"booking".
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,

@@ -59,6 +59,14 @@ output:
                     $args:
                       raw_charge_text: LEVEL
                 ncic_code:
+                  # This field sometimes includes invalid NCIC codes in raw data.
+                  # If the NCIC code attached to this charge is known, it appears
+                  # in the ncic.csv reference table, and this function returns its associated entry.
+
+                  # If the NCIC code attached to this charge does not exist in the reference table,
+                  # this function checks if the first two digits of the NCIC code followed by "99"
+                  # appear as a code in this table, which would be the generic category of the same
+                  # offense. This is to minimize the prevalence of NULL values in offense fields.
                   $custom:
                     $function: us_nd_custom_parsers.normalize_ncic_code
                     $args:

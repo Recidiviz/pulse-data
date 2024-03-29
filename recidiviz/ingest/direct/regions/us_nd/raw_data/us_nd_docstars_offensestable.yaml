@@ -18,6 +18,10 @@ columns:
   - name: CODE
     description: |-
       NCIC code of the charge that led to this case (and period of supervision).
+      This field sometimes incldues invalid NCIC codes. Codes that can't be found in the
+      `ncic.csv` reference table are converted to their generic form (first two digits + "99")
+      in ingest; if those also cannot be found in the table, then the code is not included 
+      in the entry.
   - name: Common_Statute_Number
     description: |-
       Common Statute statute number of the charge that led to this case (and period of supervision).

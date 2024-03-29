@@ -170,6 +170,14 @@ output:
                 days_str: min_cort_sent_days
                 start_date_str: sent_start_date
           charges:
+            # Charges come to us through the lens of sentence information. Because
+            # probation is administered in PA almost exclusively at the county level,
+            # we tend to have information on people who are almost entirely on parole
+            # or in prison, and our sentencing data is almost entirely related to sentences
+            # to incarceration which may later lead to release to parole.
+            # Consequently, our charge data is about charges which led to sentences to
+            # incarceration and parole. There is thus little to no data about charges
+            # which led to sentences to probation.
             - StateCharge:
                 external_id:
                   $conditional:

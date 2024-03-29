@@ -8,6 +8,20 @@ input_columns:
   - violation_types
 unused_columns: []
 output:
+  # Each set of violations and responses begets a single `state_supervision_violation`
+  # instance with one to many child `state_supervision_violation_type_entry`
+  # instances, each of the latter corresponding to a `dbo_SanctionTracking` row with
+  # `Type='V'`. Additionally, for each such `Type='V'` row with a unique `SanctionCode`
+  # value, a new `state_supervision_violated_condition_entry` child instance
+  # will be created. It is possible to have multiple such rows in a set with the same
+  # `SanctionCode` if there are multiple associated violations of the same condition.
+
+  # Each set begets a single `state_supervision_violation_response` instance with one
+  # to many child `state_supervision_violation_response_decision_entry`
+  # instances, each of the latter corresponding to a `dbo_SanctionTracking` row with `Type='S'`.
+
+  # These sets also include "decision" rows which have less rich information and which PADOC has informed us are not
+  # particularly useful, so are ignored.
   StatePerson:
     external_ids:
       - StatePersonExternalId:
