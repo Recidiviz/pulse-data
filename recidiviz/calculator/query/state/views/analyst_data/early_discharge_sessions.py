@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates a view for identifying early discharges from supervision sessions"""
+"""Creates a view for identifying early discharges from supervision or incarceration sessions"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -29,8 +29,12 @@ from recidiviz.utils.metadata import local_project_id_override
 # Limit (in days) for difference between discharge date and session end date
 # in order for the discharge to be considered a valid early discharge
 
-# States currently supported
-SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN", "US_ME", "US_MI", "US_IX")
+
+# Supported states for early discharges from supervision or incarceration
+SUPERVISION_SUPPORTED_STATES = "', '".join(
+    ["US_ID", "US_ND", "US_TN", "US_ME", "US_MI", "US_IX"]
+)
+INCARCERATION_SUPPORTED_STATES = "', '".join(["US_AZ"])
 
 EARLY_DISCHARGE_SESSIONS_VIEW_NAME = "early_discharge_sessions"
 
@@ -40,15 +44,15 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
     -- Join separate states datasets and restrict to successful early discharges
     WITH all_ed_sessions AS 
     (
-    SELECT * FROM `{project_id}.{analyst_dataset}.us_id_early_discharge_sessions_preprocessing`
-    UNION ALL
-    SELECT * FROM `{project_id}.{analyst_dataset}.us_nd_early_discharge_sessions_preprocessing`
-    UNION ALL
-    SELECT * FROM `{project_id}.{analyst_dataset}.us_me_early_discharge_sessions_preprocessing`
-    UNION ALL 
-    SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
-    UNION ALL 
-    SELECT * FROM `{project_id}.{analyst_dataset}.us_ix_early_discharge_sessions_preprocessing`
+        SELECT * FROM `{project_id}.{analyst_dataset}.us_id_early_discharge_sessions_preprocessing`
+        UNION ALL
+        SELECT * FROM `{project_id}.{analyst_dataset}.us_nd_early_discharge_sessions_preprocessing`
+        UNION ALL
+        SELECT * FROM `{project_id}.{analyst_dataset}.us_me_early_discharge_sessions_preprocessing`
+        UNION ALL 
+        SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
+        UNION ALL 
+        SELECT * FROM `{project_id}.{analyst_dataset}.us_ix_early_discharge_sessions_preprocessing`
     )
     SELECT
         sessions.person_id,
@@ -59,9 +63,14 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
     LEFT JOIN all_ed_sessions ed
         USING (state_code, person_id, session_id)
-    WHERE sessions.compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
-        AND sessions.outflow_to_level_1 = 'LIBERTY'
-        AND sessions.state_code IN ('{supported_states}')
+    WHERE 
+        ((sessions.state_code IN ('{supervision_supported_states}')
+            AND sessions.compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
+            AND sessions.outflow_to_level_1 = 'LIBERTY')
+        OR
+        ((sessions.state_code IN ('{incarceration_supported_states}') AND
+            sessions.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')))
+            AND sessions.end_date_exclusive IS NOT NULL)
 """
 
 EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -71,7 +80,8 @@ EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    supported_states="', '".join(SUPPORTED_STATES),
+    supervision_supported_states=SUPERVISION_SUPPORTED_STATES,
+    incarceration_supported_states=INCARCERATION_SUPPORTED_STATES,
     should_materialize=True,
 )
 

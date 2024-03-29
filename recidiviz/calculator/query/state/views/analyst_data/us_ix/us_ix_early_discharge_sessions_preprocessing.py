@@ -104,7 +104,7 @@ us_ix_ed_sessions AS (
 SELECT 
   *
 FROM us_ix_ed_sessions s
-WHERE discharge_to_session_end_days <= CAST({{discharge_session_diff_days}} AS INT64) 
+WHERE discharge_to_session_end_days <= CAST({{discharge_session_diff_days}} AS INT64)
 """
 
 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
