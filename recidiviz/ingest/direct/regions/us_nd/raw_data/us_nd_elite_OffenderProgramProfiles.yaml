@@ -161,7 +161,7 @@ columns:
       The date a person started a program or course.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: PARAMETER_1
     description: |-
       TODO(#18645): Fill in with answer from ND
@@ -188,7 +188,7 @@ columns:
       The date a person was referred to a program or course.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: REFERRAL_PRIORITY
     description: |-
       The priority of a person's referral into a given course or program. There seem to be
@@ -211,7 +211,7 @@ columns:
       Date the person was rejected from enrollment in this course or program, if applicable.
     field_type: datetime
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: REJECT_REASON_CODE
     description: |-
       The reason a person was rejected from participating in a course/program.
@@ -223,7 +223,8 @@ columns:
         description: Other
   - name: REVIEWED_BY
     description: |-
-      ID of staff member who reviewed the referral.
+      ID of staff member who reviewed the referral. 
+      TODO(#18645): Confirm with ND.
     is_pii: True
   - name: SEAL_FLAG
     description: |-
@@ -242,11 +243,11 @@ columns:
       TODO(#18645): Fill in with answer from ND
     known_values:
       - value: REJ
-        description: Rejected
+        description: # TODO(#18645): Fill in with answer from ND
       - value: PEN
-        description: Pending
+        description: # TODO(#18645): Fill in with answer from ND
       - value: APP
-        description: Approved
+        description: # TODO(#18645): Fill in with answer from ND
 always_historical_export: False
 table_relationships:
   - foreign_table: elite_ProgramServices
