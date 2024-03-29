@@ -40,36 +40,6 @@ variable "state_admin_role" {
   type = string
 }
 
-# TODO(#20930): Delete this variable once we've deleted all related CloudSQL TF config
-# PG v13 upgrade DB - Name of the CloudSQL instance where new dbs will be provisioned.
-variable "v2_cloudsql_instance_name" {
-  type = string
-}
-
-# TODO(#20930): Delete this variable once we've deleted all related CloudSQL TF config
-# PG v13 upgrade DB - Instance ID of the CloudSQL instance i.e. `recidiviz-staging:us-east1:dev-state-data`.
-variable "v2_cloudsql_instance_id" {
-  type = string
-}
-
-# TODO(#20930): Delete this variable once we've deleted all related CloudSQL TF config
-# PG v13 upgrade DB - Region of the CloudSQL instance, e.g. "us-east1".
-variable "v2_cloudsql_instance_region" {
-  type = string
-}
-
-# TODO(#20930): Delete this variable once we've deleted all related CloudSQL TF config
-# PG v13 upgrade DB - User name that should be used to log into the CloudSQL instance.
-variable "v2_cloudsql_instance_user_name" {
-  type = string
-}
-
-# TODO(#20930): Delete this variable once we've deleted all related CloudSQL TF config
-# PG v13 upgrade DB - Password for cloudsql_instance_user_name.
-variable "v2_cloudsql_instance_user_password" {
-  type = string
-}
-
 # Object containing info from this state's manifest.yaml
 variable "region_manifest" {
   type = object({
