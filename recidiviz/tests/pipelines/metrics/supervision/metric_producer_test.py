@@ -57,6 +57,7 @@ from recidiviz.pipelines.metrics.supervision.events import (
     SupervisionTerminationEvent,
 )
 from recidiviz.pipelines.metrics.supervision.metrics import (
+    SupervisionCaseComplianceMetric,
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
@@ -79,9 +80,7 @@ from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate impo
     UsIdSupervisionDelegate,
 )
 
-ALL_METRICS_INCLUSIONS_DICT = {
-    metric_type: True for metric_type in SupervisionMetricType
-}
+ALL_METRICS_INCLUSIONS = set(SupervisionMetricType)
 
 _PIPELINE_JOB_ID = "TEST_JOB_ID"
 
@@ -143,7 +142,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -206,7 +205,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -270,7 +269,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -336,7 +335,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -408,7 +407,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -481,7 +480,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -562,7 +561,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -649,7 +648,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -728,7 +727,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -792,7 +791,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -864,7 +863,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -954,7 +953,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1003,7 +1002,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1056,7 +1055,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1112,7 +1111,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1183,7 +1182,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1234,45 +1233,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2010,
-                month=3,
-                event_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                supervising_district_external_id="district5",
-                supervising_officer_staff_id=10000,
-            ),
-            termination_event,
-            SupervisionPopulationEvent(
-                state_code="US_MO",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_MO",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
-            ),
-        ]
-
-        inclusions_dict = {
-            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_TERMINATION)
-            for metric_type in SupervisionMetricType
-        }
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_TERMINATION}
 
         metrics = self.metric_producer.produce_metrics(
             person,
-            supervision_events,
-            inclusions_dict,
+            [termination_event],
+            metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1281,7 +1247,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         expected_count = expected_metrics_count(
-            supervision_events,
+            [termination_event],
             include_all_metrics=False,
             metric_to_include=SupervisionMetricType.SUPERVISION_TERMINATION,
         )
@@ -1315,18 +1281,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        termination_event = SupervisionTerminationEvent(
-            state_code="US_XX",
-            year=2010,
-            month=1,
-            event_date=date(2010, 1, 13),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            assessment_score=11,
-            assessment_type=StateAssessmentType.LSIR,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            assessment_score_change=-9,
-        )
-
         supervision_events: List[SupervisionEvent] = [
             ProjectedSupervisionCompletionEvent(
                 state_code="US_XX",
@@ -1337,35 +1291,15 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=True,
                 supervising_district_external_id="district5",
                 supervising_officer_staff_id=10000,
-            ),
-            termination_event,
-            SupervisionPopulationEvent(
-                state_code="US_MO",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_MO",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 2),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
-            ),
+            )
         ]
 
-        inclusions_dict = {
-            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_SUCCESS)
-            for metric_type in SupervisionMetricType
-        }
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_SUCCESS}
 
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            inclusions_dict,
+            metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1406,30 +1340,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        termination_event = SupervisionTerminationEvent(
-            state_code="US_XX",
-            year=2010,
-            month=1,
-            event_date=date(2010, 1, 13),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            assessment_score=11,
-            assessment_type=StateAssessmentType.LSIR,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            assessment_score_change=-9,
-        )
-
         supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2010,
-                month=3,
-                event_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                supervising_district_external_id="district5",
-                supervising_officer_staff_id=10000,
-            ),
-            termination_event,
             SupervisionPopulationEvent(
                 state_code="US_XX",
                 year=2010,
@@ -1440,15 +1351,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        inclusions_dict = {
-            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_POPULATION)
-            for metric_type in SupervisionMetricType
-        }
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_POPULATION}
 
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            inclusions_dict,
+            metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1466,6 +1374,73 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         assert all(
             isinstance(metric, SupervisionPopulationMetric) for metric in metrics
         )
+
+    @freeze_time("2010-12-01")
+    def test_produce_supervision_metrics_only_population_extra_events(self) -> None:
+        person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=StateGender.FEMALE,
+        )
+
+        race = StatePersonRace.new_with_defaults(
+            state_code="US_XX", race=StateRace.WHITE
+        )
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+        )
+
+        person.ethnicities = [ethnicity]
+
+        supervision_events: List[SupervisionEvent] = [
+            ProjectedSupervisionCompletionEvent(
+                state_code="US_XX",
+                year=2010,
+                month=3,
+                event_date=date(2010, 3, 31),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                successful_completion=True,
+                supervising_district_external_id="district5",
+                supervising_officer_staff_id=10000,
+            ),
+            SupervisionPopulationEvent(
+                state_code="US_MO",
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                projected_end_date=None,
+            ),
+            SupervisionPopulationEvent(
+                state_code="US_MO",
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                projected_end_date=None,
+            ),
+        ]
+
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_POPULATION}
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "No included metric classes for event of type.*ProjectedSupervisionCompletionEvent",
+        ):
+            self.metric_producer.produce_metrics(
+                person,
+                supervision_events,
+                metric_inclusions,
+                calculation_month_count=12,
+                pipeline_job_id=_PIPELINE_JOB_ID,
+                metrics_producer_delegates={
+                    StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
+                },
+            )
 
     def test_produce_supervision_metrics_compliance_metrics(self) -> None:
         """Tests the produce_supervision_metrics function when there are compliance metrics to be generated."""
@@ -1526,7 +1501,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1578,17 +1553,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             event,
         ]
 
-        inclusions_dict = {
-            metric_type: (
-                metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
-            )
-            for metric_type in SupervisionMetricType
-        }
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION}
 
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            inclusions_dict,
+            metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1647,17 +1617,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             event,
         ]
 
-        inclusions_dict = {
-            metric_type: (
-                metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
-            )
-            for metric_type in SupervisionMetricType
-        }
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION}
 
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            inclusions_dict,
+            metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1713,17 +1678,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        inclusions_dict = {
-            metric_type: (
-                metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
-            )
-            for metric_type in SupervisionMetricType
-        }
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION}
 
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            inclusions_dict,
+            metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1770,17 +1730,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        inclusions_dict = {
-            metric_type: (
-                metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
-            )
-            for metric_type in SupervisionMetricType
-        }
+        metric_inclusions = {SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION}
 
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            inclusions_dict,
+            metric_inclusions,
             calculation_month_count=12,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1842,7 +1797,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             supervision_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=_PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -1876,7 +1831,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertFalse(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_COMPLIANCE
+                event, SupervisionCaseComplianceMetric
             )
         )
 
@@ -1900,7 +1855,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_COMPLIANCE
+                event, SupervisionCaseComplianceMetric
             )
         )
 
@@ -1919,7 +1874,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertFalse(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
+                event, SupervisionOutOfStatePopulationMetric
             )
         )
 
@@ -1949,7 +1904,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
+                event, SupervisionOutOfStatePopulationMetric
             )
         )
 
@@ -1969,7 +1924,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertFalse(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_POPULATION
+                event, SupervisionPopulationMetric
             )
         )
 
@@ -1988,7 +1943,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_POPULATION
+                event, SupervisionPopulationMetric
             )
         )
 

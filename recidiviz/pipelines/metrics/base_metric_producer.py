@@ -17,11 +17,15 @@
 """Base class for a metric producer for a metric calculation pipeline."""
 
 import abc
-from typing import Dict, Generic, List, Type, TypeVar
+from typing import Dict, Generic, List, Set, Type, TypeVar
 
 import attr
 
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.pipelines.dataflow_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+    DATAFLOW_TABLES_TO_METRIC_TYPES,
+)
 from recidiviz.pipelines.metrics.utils.calculator_utils import (
     produce_standard_event_metrics,
 )
@@ -34,30 +38,62 @@ from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_deleg
     StateSpecificMetricsProducerDelegate,
 )
 
-IdentifierResultT = TypeVar("IdentifierResultT")
+IdentifierResultT = TypeVar("IdentifierResultT", bound=IdentifierResult)
+IdentifierResultsT = TypeVar("IdentifierResultsT")
 RecidivizMetricTypeT = TypeVar("RecidivizMetricTypeT", bound=RecidivizMetricType)
 RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)
 
 
 @attr.s
 class BaseMetricProducer(
-    abc.ABC, Generic[IdentifierResultT, RecidivizMetricTypeT, RecidivizMetricT]
+    abc.ABC,
+    Generic[
+        IdentifierResultT, IdentifierResultsT, RecidivizMetricTypeT, RecidivizMetricT
+    ],
 ):
     """Base class for a metric producer for a metric calculation pipeline."""
 
     metric_class: Type[RecidivizMetricT] = attr.ib()
-    event_to_metric_classes: Dict[
-        Type[IdentifierResult], List[Type[RecidivizMetricT]]
-    ] = attr.ib()
     metrics_producer_delegate_classes: Dict[
         Type[RecidivizMetricT], Type[StateSpecificMetricsProducerDelegate]
     ] = attr.ib()
 
+    @property
+    @abc.abstractmethod
+    def result_class_to_metric_classes_mapping(
+        self,
+    ) -> Dict[Type[IdentifierResultT], List[Type[RecidivizMetricT]]]:
+        """A mapping of the result class to the metric classes that are produced by that result."""
+
+    def result_class_to_included_metric_classes(
+        self,
+        included_metric_types: Set[RecidivizMetricTypeT],
+    ) -> Dict[Type[IdentifierResultT], List[Type[RecidivizMetricT]]]:
+        return {
+            result_class: [
+                metric_class
+                for metric_class in metric_classes
+                if metric_type_for_metric_class(metric_class) in included_metric_types
+            ]
+            for result_class, metric_classes in self.result_class_to_metric_classes_mapping.items()
+        }
+
+    def included_result_classes(
+        self, included_metric_types: Set[RecidivizMetricTypeT]
+    ) -> Set[Type[IdentifierResultT]]:
+        return {
+            result_class
+            for result_class, included_metric_classes in self.result_class_to_included_metric_classes(
+                included_metric_types
+            ).items()
+            if len(included_metric_classes)
+        }
+
     def produce_metrics(
         self,
         person: StatePerson,
-        identifier_results: IdentifierResultT,
-        metric_inclusions: Dict[RecidivizMetricTypeT, bool],
+        identifier_results: IdentifierResultsT,
+        metric_inclusions: Set[RecidivizMetricTypeT],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
@@ -87,9 +123,10 @@ class BaseMetricProducer(
         metrics = produce_standard_event_metrics(
             person=person,
             identifier_results=identifier_results,  # type: ignore
-            metric_inclusions=metric_inclusions,
             calculation_month_count=calculation_month_count,
-            event_to_metric_classes=self.event_to_metric_classes,  # type: ignore
+            event_to_metric_classes=self.result_class_to_included_metric_classes(
+                metric_inclusions
+            ),  # type: ignore
             pipeline_job_id=pipeline_job_id,
             metrics_producer_delegate=metrics_producer_delegate,
         )
@@ -105,3 +142,18 @@ class BaseMetricProducer(
             metrics_of_class.append(metric)
 
         return metrics_of_class
+
+
+# TODO(#28513): Delete this method once we can use the properties on the metrics.
+def metric_type_for_metric_class(
+    metric_class: Type[RecidivizMetric[RecidivizMetricTypeT]],
+) -> RecidivizMetricTypeT:
+    """Returns the RecidivizMetricType corresponding to the given RecidivizMetric class."""
+    metric_table = DATAFLOW_METRICS_TO_TABLES[metric_class]
+    metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[metric_table]
+    if not isinstance(metric_type, metric_class.metric_type_cls):
+        raise ValueError(
+            f"Found incorrect metric type [{metric_type}], expected value of type "
+            f"[{metric_class.metric_type_cls}]"
+        )
+    return metric_type

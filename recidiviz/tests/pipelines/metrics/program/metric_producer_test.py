@@ -43,7 +43,7 @@ from recidiviz.pipelines.metrics.program.events import (
 from recidiviz.pipelines.metrics.program.metrics import ProgramMetricType
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 
-ALL_METRICS_INCLUSIONS_DICT = {metric_type: True for metric_type in ProgramMetricType}
+ALL_METRICS_INCLUSIONS = set(ProgramMetricType)
 
 
 PIPELINE_JOB_ID = "TEST_JOB_ID"
@@ -86,7 +86,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             metrics_producer_delegates={},
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -132,7 +132,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             metrics_producer_delegates={},
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -177,7 +177,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             metrics_producer_delegates={},
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -229,7 +229,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             metrics_producer_delegates={},
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -247,9 +247,9 @@ def expected_metrics_count(program_events: List[ProgramEvent]) -> int:
     ] = defaultdict(int)
 
     for event in program_events:
-        metric_classes = (
-            metric_producer.ProgramMetricProducer().event_to_metric_classes[type(event)]
-        )
+        metric_classes = metric_producer.ProgramMetricProducer().result_class_to_metric_classes_mapping[
+            type(event)
+        ]
 
         for metric_class in metric_classes:
             output_count_by_metric_class[metric_class] += 1

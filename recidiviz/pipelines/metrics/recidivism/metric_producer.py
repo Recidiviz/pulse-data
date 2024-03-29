@@ -25,7 +25,7 @@ Attributes:
         recidivism over, from 1 to 10.
 """
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Type
 
 from dateutil.relativedelta import relativedelta
 
@@ -55,6 +55,7 @@ FOLLOW_UP_PERIODS = range(1, 11)
 
 class RecidivismMetricProducer(
     BaseMetricProducer[
+        ReleaseEvent,
         Dict[int, List[ReleaseEvent]],
         ReincarcerationRecidivismMetricType,
         ReincarcerationRecidivismMetric,
@@ -66,17 +67,25 @@ class RecidivismMetricProducer(
         # TODO(python/mypy#5374): Remove the ignore type when abstract class
         #  assignments are supported.
         self.metric_class = ReincarcerationRecidivismMetric  # type: ignore
-        self.event_to_metric_classes = {}
         self.metrics_producer_delegate_classes = {
             # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
             ReincarcerationRecidivismMetric: StateSpecificRecidivismMetricsProducerDelegate  # type: ignore[type-abstract]
+        }
+
+    @property
+    def result_class_to_metric_classes_mapping(
+        self,
+    ) -> Dict[Type[ReleaseEvent], List[Type[ReincarcerationRecidivismMetric]]]:
+        return {
+            NonRecidivismReleaseEvent: [ReincarcerationRecidivismRateMetric],
+            RecidivismReleaseEvent: [ReincarcerationRecidivismRateMetric],
         }
 
     def produce_metrics(
         self,
         person: StatePerson,
         identifier_results: Dict[int, List[ReleaseEvent]],
-        metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool],
+        metric_inclusions: Set[ReincarcerationRecidivismMetricType],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
@@ -99,8 +108,9 @@ class RecidivismMetricProducer(
             else None
         )
 
-        if metric_inclusions.get(
+        if (
             ReincarcerationRecidivismMetricType.REINCARCERATION_RATE
+            in metric_inclusions
         ):
             for events in identifier_results.values():
                 for event in events:

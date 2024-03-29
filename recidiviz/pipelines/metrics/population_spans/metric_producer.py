@@ -18,7 +18,7 @@
 
 This contains the core logic for calculating population span metrics on a person-by-person
 basis. It transforms Spans into PopulationSpanMetrics."""
-from typing import Dict, List, Optional, Sequence, Type
+from typing import Dict, List, Optional, Sequence, Set, Type
 
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
@@ -49,7 +49,9 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_pr
 
 
 class PopulationSpanMetricProducer(
-    BaseMetricProducer[Sequence[Span], PopulationSpanMetricType, PopulationSpanMetric]
+    BaseMetricProducer[
+        Span, Sequence[Span], PopulationSpanMetricType, PopulationSpanMetric
+    ]
 ):
     """Calculates PopulationSpanMetrics from Spans."""
 
@@ -65,11 +67,20 @@ class PopulationSpanMetricProducer(
             SupervisionPopulationSpanMetric: StateSpecificSupervisionMetricsProducerDelegate,
         }
 
+    @property
+    def result_class_to_metric_classes_mapping(
+        self,
+    ) -> Dict[Type[Span], List[Type[PopulationSpanMetric]]]:
+        return {
+            IncarcerationPopulationSpan: [IncarcerationPopulationSpanMetric],
+            SupervisionPopulationSpan: [SupervisionPopulationSpanMetric],
+        }
+
     def produce_metrics(
         self,
         person: StatePerson,
         identifier_results: Sequence[Span],
-        metric_inclusions: Dict[PopulationSpanMetricType, bool],
+        metric_inclusions: Set[PopulationSpanMetricType],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
@@ -101,8 +112,9 @@ class PopulationSpanMetricProducer(
         metrics = produce_standard_span_metrics(
             person=person,
             identifier_results=identifier_results,  # type: ignore
-            metric_inclusions=metric_inclusions,
-            event_to_metric_classes=self.event_to_metric_classes,  # type: ignore
+            event_to_metric_classes=self.result_class_to_included_metric_classes(
+                metric_inclusions
+            ),
             pipeline_job_id=pipeline_job_id,
             metric_classes_to_producer_delegates=metric_classes_to_producer_delegates,
         )

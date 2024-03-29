@@ -35,12 +35,17 @@ EVENT_TO_METRIC_CLASSES: Dict[
 
 
 class ViolationMetricProducer(
-    BaseMetricProducer[List[ViolationEvent], ViolationMetricType, ViolationMetric]
+    BaseMetricProducer[
+        ViolationEvent, List[ViolationEvent], ViolationMetricType, ViolationMetric
+    ]
 ):
     def __init__(self) -> None:
         # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
         self.metric_class = ViolationMetric  # type: ignore
-        self.event_to_metric_classes = {
-            ViolationWithResponseEvent: [ViolationWithResponseMetric]
-        }
         self.metrics_producer_delegate_classes = {}
+
+    @property
+    def result_class_to_metric_classes_mapping(
+        self,
+    ) -> Dict[Type[ViolationEvent], List[Type[ViolationMetric]]]:
+        return {ViolationWithResponseEvent: [ViolationWithResponseMetric]}

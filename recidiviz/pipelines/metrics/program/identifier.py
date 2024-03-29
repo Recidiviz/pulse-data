@@ -17,7 +17,7 @@
 """Identifies instances of interaction with a program."""
 import logging
 from datetime import date
-from typing import List
+from typing import List, Set, Type
 
 from dateutil.relativedelta import relativedelta
 
@@ -44,6 +44,7 @@ from recidiviz.pipelines.metrics.program.events import (
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
+from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.supervision_period_utils import (
     supervision_periods_overlapping_with_date,
 )
@@ -59,8 +60,16 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def identify(
-        self, _person: StatePerson, identifier_context: IdentifierContext
+        self,
+        _person: StatePerson,
+        identifier_context: IdentifierContext,
+        included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[ProgramEvent]:
+        if included_result_classes != {ProgramParticipationEvent}:
+            raise NotImplementedError(
+                "Filtering of events is not yet implemented for the program pipeline."
+            )
+
         return self._find_program_events(
             program_assignments=identifier_context[
                 NormalizedStateProgramAssignment.base_class_name()

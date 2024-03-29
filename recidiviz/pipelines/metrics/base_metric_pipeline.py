@@ -16,7 +16,6 @@
 # =============================================================================
 """Classes for running all metric calculation pipelines."""
 import abc
-import logging
 from typing import (
     Any,
     Dict,
@@ -176,6 +175,8 @@ class MetricPipeline(
             else None
         )
 
+        metric_types = self.parse_metric_types(self.pipeline_parameters.metric_types)
+
         required_reference_tables = (
             self.required_reference_tables().copy()
             + self.state_specific_required_reference_tables().get(
@@ -205,6 +206,9 @@ class MetricPipeline(
             state_code=self.pipeline_parameters.state_code,
             identifier=self.identifier(),
             state_specific_required_delegates=self.state_specific_required_delegates(),
+            included_result_classes=self.metric_producer().included_result_classes(
+                metric_types
+            ),
         )
 
         metrics = (
@@ -216,7 +220,7 @@ class MetricPipeline(
                 region=self.pipeline_parameters.region,
                 job_name=self.pipeline_parameters.job_name,
                 state_code=self.pipeline_parameters.state_code,
-                metric_types_str=self.pipeline_parameters.metric_types,
+                metric_types=metric_types,
                 calculation_month_count=self.pipeline_parameters.calculation_month_count,
                 metric_producer=self.metric_producer(),
             )
@@ -229,13 +233,25 @@ class MetricPipeline(
         for metric_subclass in self._metric_subclasses:
             table_id = DATAFLOW_METRICS_TO_TABLES[metric_subclass]
             metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[table_id]
-            _ = getattr(
-                metrics, metric_type.value
-            ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteToBigQuery(
-                output_table=table_id,
-                output_dataset=self.pipeline_parameters.output,
-                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-            )
+            if metric_type in metric_types:
+                _ = getattr(
+                    metrics, metric_type.value
+                ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteToBigQuery(
+                    output_table=table_id,
+                    output_dataset=self.pipeline_parameters.output,
+                    write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                )
+
+    @classmethod
+    def parse_metric_types(cls, metric_types_str: str) -> Set[RecidivizMetricType]:
+        metric_types = set(metric_types_str.split(" "))
+        metric_inclusions: Set[RecidivizMetricType] = set()
+
+        for metric_option in cls.metric_producer().metric_class.metric_type_cls:
+            if metric_option.value in metric_types or "ALL" in metric_types:
+                metric_inclusions.add(metric_option)
+
+        return metric_inclusions
 
     @classmethod
     def _metric_type_values(cls) -> List[str]:
@@ -266,7 +282,7 @@ class MetricPipeline(
     beam.typehints.Optional[str],
     beam.typehints.Optional[str],
     beam.typehints.Optional[str],
-    beam.typehints.Optional[str],
+    beam.typehints.Optional[Set[RecidivizMetricType]],
     beam.typehints.Optional[int],
     beam.typehints.Optional[BaseMetricProducer],
 )
@@ -288,7 +304,7 @@ class ProduceMetrics(beam.DoFn):
         region: str,
         job_name: str,
         state_code: str,
-        metric_types_str: str,
+        metric_types: Set[RecidivizMetricType],
         calculation_month_count: int,
         metric_producer: BaseMetricProducer,
     ) -> Generator[RecidivizMetric, None, None]:
@@ -317,20 +333,10 @@ class ProduceMetrics(beam.DoFn):
             )
         )
 
-        metric_types = set(metric_types_str.split(" "))
-        metric_inclusions: Dict[RecidivizMetricType, bool] = {}
-
-        for metric_option in metric_producer.metric_class.metric_type_cls:
-            if metric_option.value in metric_types or "ALL" in metric_types:
-                metric_inclusions[metric_option] = True
-                logging.info("Producing %s metrics", metric_option.value)
-            else:
-                metric_inclusions[metric_option] = False
-
         metrics = metric_producer.produce_metrics(
             person=person,
             identifier_results=results,
-            metric_inclusions=metric_inclusions,
+            metric_inclusions=metric_types,
             pipeline_job_id=pipeline_job_id,
             calculation_month_count=calculation_month_count,
             metrics_producer_delegates=metrics_producer_delegates,
@@ -343,6 +349,7 @@ class ProduceMetrics(beam.DoFn):
     str,
     BaseIdentifier,
     List[Type[StateSpecificDelegate]],
+    Set[Type[IdentifierResult]],
 )
 @with_output_types(
     beam.typehints.Tuple[
@@ -363,6 +370,7 @@ class ClassifyResults(beam.DoFn):
         state_code: str,
         identifier: BaseIdentifier,
         state_specific_required_delegates: List[Type[StateSpecificDelegate]],
+        included_result_classes: Set[Type[IdentifierResult]],
     ) -> Generator[
         Tuple[
             entities.StatePerson,
@@ -389,7 +397,11 @@ class ClassifyResults(beam.DoFn):
             **required_delegates,
         }
 
-        results = identifier.identify(person, all_kwargs)
+        results = identifier.identify(
+            person,
+            identifier_context=all_kwargs,
+            included_result_classes=included_result_classes,
+        )
 
         if results:
             yield person, results

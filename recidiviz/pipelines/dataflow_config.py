@@ -61,6 +61,7 @@ PIPELINE_CONFIG_YAML_PATH = os.path.join(
 )
 
 # Pipelines that are always run for all dates.
+# TODO(#28513): This should be an abstract property on the metric objects, instead of separately maintained lists
 ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
     ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
     PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
@@ -91,6 +92,7 @@ DATAFLOW_METRICS_COLD_STORAGE_DATASET: str = "dataflow_metrics_cold_storage"
 
 
 # A map from the metric class to the name of the table where the output is stored
+# TODO(#28513): This should be an abstract property on the metric objects, instead of separately maintained lists
 DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     # IncarcerationMetrics
     IncarcerationAdmissionMetric: "incarceration_admission_metrics",
@@ -115,6 +117,7 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
 }
 
 # A map from the BigQuery Dataflow metric table to the RecidivizMetricType stored in the table
+# TODO(#28513): This should be an abstract property on the metric objects, instead of separately maintained lists
 DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     # IncarcerationMetrics
     "incarceration_admission_metrics": IncarcerationMetricType.INCARCERATION_ADMISSION,

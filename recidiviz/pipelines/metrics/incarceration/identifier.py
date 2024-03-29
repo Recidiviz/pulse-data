@@ -17,7 +17,7 @@
 """Identifier class for events related to incarceration."""
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 from dateutil.relativedelta import relativedelta
 
@@ -77,6 +77,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
 from recidiviz.pipelines.utils.execution_utils import (
     extract_county_of_residence_from_rows,
 )
+from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -107,8 +108,20 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def identify(
-        self, _person: StatePerson, identifier_context: IdentifierContext
+        self,
+        _person: StatePerson,
+        identifier_context: IdentifierContext,
+        included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[IncarcerationEvent]:
+        if included_result_classes != {
+            IncarcerationStandardAdmissionEvent,
+            IncarcerationCommitmentFromSupervisionAdmissionEvent,
+            IncarcerationReleaseEvent,
+        }:
+            raise NotImplementedError(
+                "Filtering of events is not yet implemented for the incarceration pipeline."
+            )
+
         return self._find_incarceration_events(
             incarceration_delegate=identifier_context[
                 StateSpecificIncarcerationDelegate.__name__

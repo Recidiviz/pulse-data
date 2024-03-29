@@ -20,10 +20,13 @@ This contains the core logic for calculating supervision metrics on a person-by-
 basis. It transforms SupervisionEvents into SupervisionMetrics.
 """
 from operator import attrgetter
-from typing import Dict, List, Type
+from typing import Dict, List, Set, Type
 
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
+from recidiviz.pipelines.metrics.base_metric_producer import (
+    BaseMetricProducer,
+    metric_type_for_metric_class,
+)
 from recidiviz.pipelines.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
@@ -57,53 +60,50 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_pr
 
 
 class SupervisionMetricProducer(
-    BaseMetricProducer[List[SupervisionEvent], SupervisionMetricType, SupervisionMetric]
+    BaseMetricProducer[
+        SupervisionEvent,
+        List[SupervisionEvent],
+        SupervisionMetricType,
+        SupervisionMetric,
+    ]
 ):
     """Produces SupervisionMetrics from SupervisionEvents."""
 
     def __init__(self) -> None:
         # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
         self.metric_class = SupervisionMetric  # type: ignore
-        self.event_to_metric_classes = {}
-        self.event_to_metric_types = {
-            SupervisionPopulationEvent: [
-                SupervisionMetricType.SUPERVISION_COMPLIANCE,
-                SupervisionMetricType.SUPERVISION_POPULATION,
-                SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
-            ],
-            ProjectedSupervisionCompletionEvent: [
-                SupervisionMetricType.SUPERVISION_SUCCESS,
-            ],
-            SupervisionStartEvent: [SupervisionMetricType.SUPERVISION_START],
-            SupervisionTerminationEvent: [
-                SupervisionMetricType.SUPERVISION_TERMINATION
-            ],
-        }
-        self.metric_type_to_class: Dict[
-            SupervisionMetricType, Type[SupervisionMetric]
-        ] = {
-            SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
-            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
-            SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
-            SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
-            SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
-            SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
-        }
         self.metrics_producer_delegate_classes = {
             # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
             SupervisionMetric: StateSpecificSupervisionMetricsProducerDelegate  # type: ignore[type-abstract]
+        }
+
+    @property
+    def result_class_to_metric_classes_mapping(
+        self,
+    ) -> Dict[Type[SupervisionEvent], List[Type[SupervisionMetric]]]:
+        return {
+            SupervisionPopulationEvent: [
+                SupervisionCaseComplianceMetric,
+                SupervisionPopulationMetric,
+                SupervisionOutOfStatePopulationMetric,
+            ],
+            ProjectedSupervisionCompletionEvent: [
+                SupervisionSuccessMetric,
+            ],
+            SupervisionStartEvent: [SupervisionStartMetric],
+            SupervisionTerminationEvent: [SupervisionTerminationMetric],
         }
 
     def produce_metrics(
         self,
         person: StatePerson,
         identifier_results: List[SupervisionEvent],
-        metric_inclusions: Dict[SupervisionMetricType, bool],
+        metric_inclusions: Set[SupervisionMetricType],
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_month_count: int = -1,
     ) -> List[SupervisionMetric]:
-        """Transforms SupervisionEvents and a StatePerson into SuperviisonMetrics.
+        """Transforms SupervisionEvents and a StatePerson into SupervisionMetrics.
 
         Takes in a StatePerson and all of their SupervisionEvents and returns an array
         of SupervisionMetrics.
@@ -137,6 +137,9 @@ class SupervisionMetricProducer(
             if metrics_producer_delegate_class
             else None
         )
+        event_to_metric_classes = self.result_class_to_included_metric_classes(
+            metric_inclusions
+        )
 
         for event in identifier_results:
             event_date = event.event_date
@@ -161,23 +164,14 @@ class SupervisionMetricProducer(
             ):
                 continue
 
-            applicable_metric_types = self.event_to_metric_types.get(type(event))
-
-            if not applicable_metric_types:
+            metric_classes = event_to_metric_classes[type(event)]
+            if not metric_classes:
                 raise ValueError(
-                    f"No metric types mapped to event of type {type(event)}"
+                    f"No included metric classes for event of type {type(event)}"
                 )
 
-            for metric_type in applicable_metric_types:
-                if not metric_inclusions[metric_type]:
-                    continue
-
-                metric_class = self.metric_type_to_class.get(metric_type)
-
-                if not metric_class:
-                    raise ValueError(f"No metric class for metric type {metric_type}")
-
-                if self.include_event_in_metric(event, metric_type):
+            for metric_class in event_to_metric_classes[type(event)]:
+                if self.include_event_in_metric(event, metric_class):
                     metric = build_metric(
                         result=event,
                         metric_class=metric_class,
@@ -204,10 +198,11 @@ class SupervisionMetricProducer(
     def include_event_in_metric(
         self,
         event: SupervisionEvent,
-        metric_type: SupervisionMetricType,
+        metric_class: Type[SupervisionMetric],
     ) -> bool:
         """Returns whether the given event should contribute to metrics of the given metric_type."""
-        if metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
+        metric_type = metric_type_for_metric_class(metric_class)
+        if metric_type is SupervisionMetricType.SUPERVISION_COMPLIANCE:
             return (
                 isinstance(
                     event,
@@ -215,7 +210,7 @@ class SupervisionMetricProducer(
                 )
                 and event.case_compliance is not None
             )
-        if metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
+        if metric_type is SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
             return (
                 isinstance(
                     event,
@@ -223,7 +218,7 @@ class SupervisionMetricProducer(
                 )
                 and event.supervision_out_of_state
             )
-        if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
+        if metric_type is SupervisionMetricType.SUPERVISION_POPULATION:
             return (
                 isinstance(
                     event,
@@ -238,4 +233,4 @@ class SupervisionMetricProducer(
         ):
             return True
 
-        raise ValueError(f"Unhandled metric type {metric_type}")
+        raise ValueError(f"Unhandled metric type {metric_class.metric_type}")

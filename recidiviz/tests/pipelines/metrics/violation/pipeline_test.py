@@ -366,6 +366,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={ViolationWithResponseEvent},
             )
         )
 
@@ -393,6 +394,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={ViolationWithResponseEvent},
             )
         )
         assert_that(output, equal_to(correct_output))
@@ -435,6 +437,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={ViolationWithResponseEvent},
             )
         )
         assert_that(output, equal_to(correct_output))
@@ -510,7 +513,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ViolationMetricType.VIOLATION},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -539,7 +542,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ViolationMetricType.VIOLATION},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )

@@ -65,11 +65,7 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_m
     UsXxIncarcerationMetricsProducerDelegate,
 )
 
-ALL_METRICS_INCLUSIONS_DICT = {
-    IncarcerationMetricType.INCARCERATION_ADMISSION: True,
-    IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION: True,
-    IncarcerationMetricType.INCARCERATION_RELEASE: True,
-}
+ALL_METRICS_INCLUSIONS = set(IncarcerationMetricType)
 
 _COUNTY_OF_RESIDENCE = "county"
 
@@ -118,7 +114,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -185,7 +181,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -237,7 +233,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -285,7 +281,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -351,7 +347,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -396,7 +392,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -446,7 +442,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -501,7 +497,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=36,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -551,7 +547,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=37,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -608,7 +604,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -668,7 +664,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person,
             identifier_results=incarceration_events,
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates={
@@ -693,7 +689,9 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         ] = defaultdict(int)
 
         for event in incarceration_events:
-            metric_classes = self.metric_producer.event_to_metric_classes[type(event)]
+            metric_classes = (
+                self.metric_producer.result_class_to_metric_classes_mapping[type(event)]
+            )
 
             for metric_class in metric_classes:
                 output_count_by_metric_class[metric_class] += 1

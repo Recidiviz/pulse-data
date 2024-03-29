@@ -80,7 +80,7 @@ from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manage
     STATE_DELEGATES_FOR_TESTS,
 )
 
-ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ProgramMetricType}
+ALL_METRIC_INCLUSIONS = set(ProgramMetricType)
 
 
 class TestProgramPipeline(unittest.TestCase):
@@ -533,6 +533,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 self.state_code,
                 self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={ProgramParticipationEvent},
             )
         )
 
@@ -628,6 +629,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 state_code,
                 self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={ProgramParticipationEvent},
             )
         )
 
@@ -695,6 +697,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 self.state_code,
                 self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={ProgramParticipationEvent},
             )
         )
 
@@ -761,6 +764,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 self.state_code,
                 self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={ProgramParticipationEvent},
             )
         )
 
@@ -838,7 +842,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ProgramMetricType.PROGRAM_PARTICIPATION},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -880,7 +884,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ProgramMetricType.PROGRAM_PARTICIPATION},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -906,7 +910,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ProgramMetricType.PROGRAM_PARTICIPATION},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )

@@ -348,23 +348,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             expected_metric_types=ALL_METRIC_TYPES_SET,
         )
 
-    @freeze_time("2015-01-31")
-    def testIncarcerationPipelineFilterMetrics(self) -> None:
-        fake_person_id = 12345
-        data_dict = self.build_incarceration_pipeline_data_dict(
-            fake_person_id=fake_person_id
-        )
-
-        expected_metric_types = {IncarcerationMetricType.INCARCERATION_ADMISSION}
-        metric_types_filter = {IncarcerationMetricType.INCARCERATION_ADMISSION.value}
-
-        self.run_test_pipeline(
-            state_code=_STATE_CODE,
-            data_dict=data_dict,
-            expected_metric_types=expected_metric_types,
-            metric_types_filter=metric_types_filter,
-        )
-
     def testIncarcerationPipelineWithFilterSet(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(
@@ -642,6 +625,11 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 state_code=state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    IncarcerationStandardAdmissionEvent,
+                    IncarcerationCommitmentFromSupervisionAdmissionEvent,
+                    IncarcerationReleaseEvent,
+                },
             )
         )
 
@@ -676,6 +664,11 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 state_code=state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    IncarcerationStandardAdmissionEvent,
+                    IncarcerationCommitmentFromSupervisionAdmissionEvent,
+                    IncarcerationReleaseEvent,
+                },
             )
         )
 
@@ -774,7 +767,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {
+                    IncarcerationMetricType.INCARCERATION_ADMISSION,
+                    IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
+                    IncarcerationMetricType.INCARCERATION_RELEASE,
+                },
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -816,7 +813,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {
+                    IncarcerationMetricType.INCARCERATION_ADMISSION,
+                    IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
+                    IncarcerationMetricType.INCARCERATION_RELEASE,
+                },
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -842,7 +843,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {
+                    IncarcerationMetricType.INCARCERATION_ADMISSION,
+                    IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
+                    IncarcerationMetricType.INCARCERATION_RELEASE,
+                },
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )

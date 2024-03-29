@@ -70,10 +70,7 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_met
     UsXxSupervisionMetricsProducerDelegate,
 )
 
-ALL_METRICS_INCLUSIONS_DICT = {
-    PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN: True,
-    PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN: True,
-}
+ALL_METRICS_INCLUSIONS = set(PopulationSpanMetricType)
 
 PIPELINE_JOB_ID = "TEST_JOB_ID"
 CURRENT_DATE = date(2020, 1, 1)
@@ -135,7 +132,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=self.person,
             identifier_results=[incarceration_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -182,7 +179,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=self.person,
             identifier_results=[incarceration_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -258,7 +255,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person_with_no_birthday,
             identifier_results=[incarceration_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -299,7 +296,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=self.person,
             identifier_results=[incarceration_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -362,7 +359,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=self.person,
             identifier_results=[supervision_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -413,7 +410,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=self.person,
             identifier_results=[supervision_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -506,7 +503,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=person_with_no_birthday,
             identifier_results=[supervision_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -556,7 +553,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=self.person,
             identifier_results=[supervision_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )
@@ -636,7 +633,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person=self.person,
             identifier_results=[incarceration_span, supervision_span],
-            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            metric_inclusions=ALL_METRICS_INCLUSIONS,
             pipeline_job_id=PIPELINE_JOB_ID,
             metrics_producer_delegates=self.metrics_producer_delegates,
         )

@@ -196,7 +196,15 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         all_kwargs: Dict[
             str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
         ] = {**required_delegates, **entity_kwargs}
-        return self.identifier.identify(self.person, all_kwargs)
+        return self.identifier.identify(
+            self.person,
+            all_kwargs,
+            included_result_classes={
+                IncarcerationStandardAdmissionEvent,
+                IncarcerationCommitmentFromSupervisionAdmissionEvent,
+                IncarcerationReleaseEvent,
+            },
+        )
 
     def test_find_incarceration_events(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -459,6 +467,14 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         ]
 
         self.assertCountEqual(expected_events, incarceration_events)
+
+    def test_find_incarceration_events_wrong_result_classes(self) -> None:
+        with self.assertRaisesRegex(NotImplementedError, "Filtering of events"):
+            self.identifier.identify(
+                self.person,
+                identifier_context={},
+                included_result_classes={IncarcerationStandardAdmissionEvent},
+            )
 
 
 class TestAdmissionEventForPeriod(unittest.TestCase):
@@ -903,9 +919,11 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             )
         )
         supervision_period_index = default_normalized_sp_index_for_tests(
-            supervision_periods=[pre_commitment_supervision_period]
-            if pre_commitment_supervision_period
-            else []
+            supervision_periods=(
+                [pre_commitment_supervision_period]
+                if pre_commitment_supervision_period
+                else []
+            )
         )
 
         # pylint: disable=protected-access

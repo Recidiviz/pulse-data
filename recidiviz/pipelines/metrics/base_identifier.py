@@ -16,7 +16,7 @@
 # =============================================================================
 """Base class for identifying various instances of events for a metric calculation pipeline."""
 import abc
-from typing import Any, Dict, Generic, Type, TypeVar
+from typing import Any, Dict, Generic, Set, Type, TypeVar
 
 import attr
 
@@ -35,6 +35,9 @@ class BaseIdentifier(abc.ABC, Generic[IdentifierResultT]):
 
     @abc.abstractmethod
     def identify(
-        self, person: StatePerson, identifier_context: IdentifierContext
+        self,
+        person: StatePerson,
+        identifier_context: IdentifierContext,
+        included_result_classes: Set[Type[IdentifierResult]],
     ) -> IdentifierResultT:
         """Define the function to identify the events or spans needed by the pipeline."""

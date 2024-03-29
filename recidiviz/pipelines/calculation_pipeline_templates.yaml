@@ -269,16 +269,7 @@ metric_pipelines:
     metric_types: SUPERVISION_START
     region: us-east1
 
-  # Daily US_AR calculations
-  - pipeline: supervision_metrics
-    job_name: us-ar-supervision-metrics-36
-    state_code: US_AR
-    calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION
-    region: us-east1
-    staging_only: True
-
-  # Daily US_MO calculations
+  # Daily US_MO calculations -- Lantern v1
   - pipeline: supervision_metrics
     job_name: us-mo-supervision-metrics-36
     state_code: US_MO
@@ -286,7 +277,7 @@ metric_pipelines:
     metric_types: SUPERVISION_POPULATION
     region: us-west3
 
-  # Daily US_PA calculations
+  # Daily US_PA calculations -- Lantern v1
   - pipeline: supervision_metrics
     job_name: us-pa-supervision-metrics-36
     state_code: US_PA

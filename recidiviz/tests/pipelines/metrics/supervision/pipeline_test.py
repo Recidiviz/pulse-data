@@ -76,8 +76,11 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import (
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.supervision import identifier, pipeline
 from recidiviz.pipelines.metrics.supervision.events import (
+    ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
     SupervisionPopulationEvent,
+    SupervisionStartEvent,
+    SupervisionTerminationEvent,
 )
 from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionMetric,
@@ -136,9 +139,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionPipelineFakeWriteMetricsToBigQuery
         )
 
-        self.metric_inclusions_dict: Dict[str, bool] = {
-            metric_type.value: True for metric_type in SupervisionMetricType
-        }
+        self.all_metric_types = set(SupervisionMetricType)
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
             return_value=STATE_DELEGATES_FOR_TESTS,
@@ -1165,6 +1166,12 @@ class TestClassifyEvents(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    SupervisionPopulationEvent,
+                    ProjectedSupervisionCompletionEvent,
+                    SupervisionStartEvent,
+                    SupervisionTerminationEvent,
+                },
             )
         )
 
@@ -1179,9 +1186,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_person_id = 12345
 
-        self.metric_inclusions_dict: Dict[SupervisionMetricType, bool] = {
-            metric_type: True for metric_type in SupervisionMetricType
-        }
+        self.all_metric_types = set(SupervisionMetricType)
 
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.pipelines.utils.state_utils"
@@ -1276,7 +1281,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                self.all_metric_types,
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -1316,7 +1321,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                self.all_metric_types,
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -1342,7 +1347,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                self.all_metric_types,
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )

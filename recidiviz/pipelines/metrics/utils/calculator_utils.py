@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the various calculation pipelines."""
 import datetime
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Type, TypeVar
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -28,18 +28,13 @@ from recidiviz.common.date import (
     year_and_month_for_today,
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.pipelines.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-    DATAFLOW_TABLES_TO_METRIC_TYPES,
-)
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    RecidivizMetric,
-    RecidivizMetricTypeT,
-)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import Event, IdentifierResult, Span
 from recidiviz.pipelines.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
+
+RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)
 
 
 def person_characteristics(
@@ -212,20 +207,19 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
 
 def produce_standard_event_metrics(
     person: StatePerson,
-    identifier_results: List[Event],
-    metric_inclusions: Dict[RecidivizMetricTypeT, bool],
+    identifier_results: Sequence[Event],
     calculation_month_count: int,
-    event_to_metric_classes: Dict[
+    event_to_metric_classes: Mapping[
         Type[Event],
-        List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
+        Sequence[Type[RecidivizMetricT]],
     ],
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
-) -> List[RecidivizMetric]:
+) -> List[RecidivizMetricT]:
     """Produces metrics for pipelines with a standard mapping of event to metric
     type."""
-    metrics: List[RecidivizMetric] = []
+    metrics: List[RecidivizMetricT] = []
 
     calculation_month_upper_bound = get_calculation_month_upper_bound_date()
 
@@ -247,49 +241,49 @@ def produce_standard_event_metrics(
             continue
 
         metric_classes = event_to_metric_classes[type(event)]
+        if not metric_classes:
+            raise ValueError(
+                f"No included metric classes for event of type {type(event)}"
+            )
 
         for metric_class in metric_classes:
-            metric_type = metric_type_for_metric_class(metric_class)
+            metric = build_metric(
+                result=event,
+                metric_class=metric_class,
+                person=person,
+                person_age=age_at_date(person, event_date),
+                pipeline_job_id=pipeline_job_id,
+                additional_attributes={
+                    "year": event_date.year,
+                    "month": event_date.month,
+                    **(additional_attributes or {}),
+                },
+                metrics_producer_delegate=metrics_producer_delegate,
+            )
 
-            if metric_inclusions.get(metric_type):
-                metric = build_metric(
-                    result=event,
-                    metric_class=metric_class,
-                    person=person,
-                    person_age=age_at_date(person, event_date),
-                    pipeline_job_id=pipeline_job_id,
-                    additional_attributes={
-                        "year": event_date.year,
-                        "month": event_date.month,
-                        **(additional_attributes or {}),
-                    },
-                    metrics_producer_delegate=metrics_producer_delegate,
-                )
-
-                metrics.append(metric)
+            metrics.append(metric)
 
     return metrics
 
 
 def produce_standard_span_metrics(
     person: StatePerson,
-    identifier_results: List[Span],
-    metric_inclusions: Dict[RecidivizMetricTypeT, bool],
-    event_to_metric_classes: Dict[
+    identifier_results: Sequence[Span],
+    event_to_metric_classes: Mapping[
         Type[Span],
-        List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
+        Sequence[Type[RecidivizMetricT]],
     ],
     pipeline_job_id: str,
-    metric_classes_to_producer_delegates: Dict[
-        Type[RecidivizMetric[RecidivizMetricTypeT]],
+    metric_classes_to_producer_delegates: Mapping[
+        Type[RecidivizMetricT],
         Optional[StateSpecificMetricsProducerDelegate],
     ],
     additional_attributes: Optional[Dict[str, Any]] = None,
-) -> List[RecidivizMetric]:
+) -> List[RecidivizMetricT]:
     """Produces metrics for pipelines with a standard mapping of span to metric
     type. This first splits the span if a person has a birthdate by that date so that
     we can produce age-based spans within a larger span."""
-    metrics: List[RecidivizMetric] = []
+    metrics: List[RecidivizMetricT] = []
 
     for span in identifier_results:
         original_date_range = (
@@ -310,36 +304,37 @@ def produce_standard_span_metrics(
             age = age_at_date(person, new_span.start_date_inclusive)
 
             metric_classes = event_to_metric_classes[type(span)]
+            if not metric_classes:
+                raise ValueError(
+                    f"No included metric classes for span of type {type(span)}"
+                )
             for metric_class in metric_classes:
-                metric_type = metric_type_for_metric_class(metric_class)
+                metric = build_metric(
+                    result=new_span,
+                    metric_class=metric_class,
+                    person=person,
+                    person_age=age,
+                    pipeline_job_id=pipeline_job_id,
+                    metrics_producer_delegate=metric_classes_to_producer_delegates.get(
+                        metric_class
+                    ),
+                    additional_attributes=additional_attributes,
+                )
 
-                if metric_inclusions.get(metric_type):
-                    metric = build_metric(
-                        result=new_span,
-                        metric_class=metric_class,
-                        person=person,
-                        person_age=age,
-                        pipeline_job_id=pipeline_job_id,
-                        metrics_producer_delegate=metric_classes_to_producer_delegates.get(
-                            metric_class
-                        ),
-                        additional_attributes=additional_attributes,
-                    )
-
-                    metrics.append(metric)
+                metrics.append(metric)
 
     return metrics
 
 
 def build_metric(
     result: IdentifierResult,
-    metric_class: Type[RecidivizMetric],
+    metric_class: Type[RecidivizMetricT],
     person: StatePerson,
     person_age: Optional[int],
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
-) -> RecidivizMetric:
+) -> RecidivizMetricT:
     """Builds a RecidivizMetric of the defined metric_class using the provided
     information.
     """
@@ -372,17 +367,3 @@ def build_metric(
                 setattr(metric_cls_builder, attribute, value)
 
     return metric_cls_builder.build()
-
-
-def metric_type_for_metric_class(
-    metric_class: Type[RecidivizMetric[RecidivizMetricTypeT]],
-) -> RecidivizMetricTypeT:
-    """Returns the RecidivizMetricType corresponding to the given RecidivizMetric class."""
-    metric_table = DATAFLOW_METRICS_TO_TABLES[metric_class]
-    metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[metric_table]
-    if not isinstance(metric_type, metric_class.metric_type_cls):
-        raise ValueError(
-            f"Found incorrect metric type [{metric_type}], expected value of type "
-            f"[{metric_class.metric_type_cls}]"
-        )
-    return metric_type
