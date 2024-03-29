@@ -75,6 +75,9 @@ def get_users_query(session: Session) -> Query:
                 "external_id"
             ),
             func.coalesce(UserOverride.role, Roster.role).label("role"),
+            func.string_to_array(
+                func.coalesce(UserOverride.role, Roster.role), " "
+            ).label("roles"),
             func.coalesce(UserOverride.district, Roster.district).label("district"),
             func.coalesce(UserOverride.first_name, Roster.first_name).label(
                 "first_name"
