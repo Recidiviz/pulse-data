@@ -17,7 +17,7 @@
 """Tests for population_spans/identifier.py."""
 import unittest
 from datetime import date
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -49,7 +49,7 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
     SupervisionPopulationSpan,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.pipelines.utils.identifier_models import Span
+from recidiviz.pipelines.utils.identifier_models import IdentifierResult, Span
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -104,6 +104,7 @@ class TestFindPopulationSpans(unittest.TestCase):
         incarceration_delegate: Optional[StateSpecificIncarcerationDelegate] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
+        included_result_classes: Optional[Set[Type[IdentifierResult]]] = None,
     ) -> List[Span]:
         """Helper for testing the identify function on the identifier."""
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
@@ -124,7 +125,12 @@ class TestFindPopulationSpans(unittest.TestCase):
         all_kwargs: Dict[
             str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
         ] = {**required_delegates, **entity_kwargs}
-        return self.identifier.identify(self.person, all_kwargs)
+        return self.identifier.identify(
+            self.person,
+            all_kwargs,
+            included_result_classes=included_result_classes
+            or {IncarcerationPopulationSpan, SupervisionPopulationSpan},
+        )
 
     def test_find_incarceration_spans(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -380,6 +386,56 @@ class TestFindPopulationSpans(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
                 level_2_supervision_location_external_id="DISTRICT",
+            ),
+        ]
+
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_both_types_of_spans_filtered(self) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            sequence_num=0,
+            incarceration_period_id=_DEFAULT_IP_ID,
+            external_id="ip1",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2009, 1, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            external_id="sp1",
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2009, 11, 20),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2015, 2, 3),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
+            included_result_classes={IncarcerationPopulationSpan},
+        )
+
+        expected_spans = [
+            expected_incarceration_span(
+                incarceration_period,
             ),
         ]
 

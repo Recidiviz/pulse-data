@@ -463,6 +463,10 @@ class TestClassifyResults(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    IncarcerationPopulationSpan,
+                    SupervisionPopulationSpan,
+                },
             )
         )
 
@@ -489,6 +493,10 @@ class TestClassifyResults(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    IncarcerationPopulationSpan,
+                    SupervisionPopulationSpan,
+                },
             )
         )
 
@@ -593,7 +601,10 @@ class TestProduceMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {
+                    PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
+                    PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
+                },
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -620,7 +631,10 @@ class TestProduceMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {
+                    PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
+                    PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
+                },
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )

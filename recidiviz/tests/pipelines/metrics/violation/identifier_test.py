@@ -99,7 +99,11 @@ class TestFindViolationEvents(unittest.TestCase):
 
         all_kwargs: Dict[str, Any] = {**required_delegates, **entity_kwargs}
 
-        return self.identifier.identify(self.person, all_kwargs)
+        return self.identifier.identify(
+            self.person,
+            all_kwargs,
+            included_result_classes={ViolationWithResponseEvent},
+        )
 
     def test_find_violation_events(self) -> None:
         violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -162,6 +166,12 @@ class TestFindViolationEvents(unittest.TestCase):
         violation_events = self._run_find_violation_events([])
 
         self.assertEqual([], violation_events)
+
+    def test_find_violation_events_wrong_result_classes(self) -> None:
+        with self.assertRaisesRegex(NotImplementedError, "Filtering of events"):
+            self.identifier.identify(
+                self.person, identifier_context={}, included_result_classes=set()
+            )
 
 
 class TestFindViolationWithResponseEvents(unittest.TestCase):

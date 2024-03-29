@@ -49,7 +49,7 @@ from recidiviz.pipelines.metrics.violation.metrics import (
     ViolationMetricType,
 )
 
-ALL_METRICS_INCLUSIONS_DICT = {metric_type: True for metric_type in ViolationMetricType}
+ALL_METRICS_INCLUSIONS = set(ViolationMetricType)
 
 
 PIPELINE_JOB_ID = "TEST_JOB_ID"
@@ -101,7 +101,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             self.person,
             violation_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             metrics_producer_delegates={},
             calculation_month_count=-1,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -140,7 +140,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         metrics: List[ViolationMetric] = self.metric_producer.produce_metrics(
             self.person,
             violation_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             metrics_producer_delegates={},
             calculation_month_count=1,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -183,7 +183,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             self.person,
             violation_events,
-            ALL_METRICS_INCLUSIONS_DICT,
+            ALL_METRICS_INCLUSIONS,
             metrics_producer_delegates={},
             calculation_month_count=36,
             pipeline_job_id=PIPELINE_JOB_ID,

@@ -110,7 +110,11 @@ class TestFindProgramEvents(unittest.TestCase):
             **entity_kwargs,
         }
 
-        return self.identifier.identify(self.person, all_kwargs)
+        return self.identifier.identify(
+            self.person,
+            identifier_context=all_kwargs,
+            included_result_classes={ProgramParticipationEvent},
+        )
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:
@@ -188,6 +192,14 @@ class TestFindProgramEvents(unittest.TestCase):
         )
 
         self.assertEqual([], program_events)
+
+    def test_find_program_events_wrong_result_class(self) -> None:
+        with self.assertRaisesRegex(NotImplementedError, "Filtering of events"):
+            self.identifier.identify(
+                self.person,
+                identifier_context={},
+                included_result_classes=set(),
+            )
 
 
 class TestFindProgramParticipationEvents(unittest.TestCase):

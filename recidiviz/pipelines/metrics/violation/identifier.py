@@ -17,7 +17,7 @@
 """Identifies violations and their responses with appropriate decisions."""
 import datetime
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Type
 
 import attr
 
@@ -48,6 +48,7 @@ from recidiviz.pipelines.metrics.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
 )
+from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -65,8 +66,16 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         self.field_index = CoreEntityFieldIndex()
 
     def identify(
-        self, _person: StatePerson, identifier_context: IdentifierContext
+        self,
+        _person: StatePerson,
+        identifier_context: IdentifierContext,
+        included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[ViolationEvent]:
+        if included_result_classes != {ViolationWithResponseEvent}:
+            raise NotImplementedError(
+                "Filtering of events is not yet implemented for the violation pipeline."
+            )
+
         return self._find_violation_events(
             violation_delegate=identifier_context[
                 StateSpecificViolationDelegate.__name__

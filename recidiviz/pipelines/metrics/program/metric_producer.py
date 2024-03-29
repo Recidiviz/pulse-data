@@ -19,7 +19,7 @@
 This contains the core logic for calculating program metrics on a person-by-person basis.
 It transforms ProgramEvents into ProgramMetrics.
 """
-from typing import List
+from typing import Dict, List, Type
 
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.program.events import (
@@ -34,14 +34,21 @@ from recidiviz.pipelines.metrics.program.metrics import (
 
 
 class ProgramMetricProducer(
-    BaseMetricProducer[List[ProgramEvent], ProgramMetricType, ProgramMetric]
+    BaseMetricProducer[
+        ProgramEvent, List[ProgramEvent], ProgramMetricType, ProgramMetric
+    ]
 ):
     """Calculates ProgramMetrics from ProgramEvents."""
 
     def __init__(self) -> None:
         # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
         self.metric_class = ProgramMetric  # type: ignore
-        self.event_to_metric_classes = {
+        self.metrics_producer_delegate_classes = {}
+
+    @property
+    def result_class_to_metric_classes_mapping(
+        self,
+    ) -> Dict[Type[ProgramEvent], List[Type[ProgramMetric]]]:
+        return {
             ProgramParticipationEvent: [ProgramParticipationMetric],
         }
-        self.metrics_producer_delegate_classes = {}

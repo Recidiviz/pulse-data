@@ -578,6 +578,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    NonRecidivismReleaseEvent,
+                    RecidivismReleaseEvent,
+                },
             )
         )
 
@@ -653,6 +657,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    NonRecidivismReleaseEvent,
+                    RecidivismReleaseEvent,
+                },
             )
         )
 
@@ -700,6 +708,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 identifier=self.identifier,
                 state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
+                included_result_classes={
+                    NonRecidivismReleaseEvent,
+                    RecidivismReleaseEvent,
+                },
             )
         )
 
@@ -827,7 +839,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ReincarcerationRecidivismMetricType.REINCARCERATION_RATE},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -867,7 +879,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ReincarcerationRecidivismMetricType.REINCARCERATION_RATE},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
@@ -891,7 +903,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
                 self.pipeline_parameters.region,
                 self.pipeline_parameters.job_name,
                 self.pipeline_parameters.state_code,
-                self.pipeline_parameters.metric_types,
+                {ReincarcerationRecidivismMetricType.REINCARCERATION_RATE},
                 self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )

@@ -22,7 +22,6 @@ import attr
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     STATE_BASE_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.common import attr_validators
@@ -51,9 +50,6 @@ class MetricsPipelineParameters(PipelineParameters):
     )
 
     metric_types: str = attr.ib(default="ALL", validator=attr_validators.is_str)
-    static_reference_input: str = attr.ib(
-        default=STATIC_REFERENCE_TABLES_DATASET, validator=attr_validators.is_str
-    )
     calculation_month_count: int = attr.ib(
         default=-1, validator=attr_validators.is_int, converter=int
     )

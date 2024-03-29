@@ -25,7 +25,7 @@ into instances of recidivism or non-recidivism as appropriate.
 """
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
@@ -63,6 +63,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_per
 from recidiviz.pipelines.utils.execution_utils import (
     extract_county_of_residence_from_rows,
 )
+from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -76,10 +77,21 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         self.field_index = CoreEntityFieldIndex()
 
     def identify(
-        self, person: StatePerson, identifier_context: IdentifierContext
+        self,
+        person: StatePerson,
+        identifier_context: IdentifierContext,
+        included_result_classes: Set[Type[IdentifierResult]],
     ) -> Dict[int, List[ReleaseEvent]]:
         if not person.person_id:
             raise ValueError(f"Found StatePerson with unset person_id value: {person}.")
+
+        if included_result_classes != {
+            NonRecidivismReleaseEvent,
+            RecidivismReleaseEvent,
+        }:
+            raise NotImplementedError(
+                "Filtering of events is not yet implemented for the recidivism pipeline."
+            )
 
         return self._find_release_events(
             incarceration_delegate=identifier_context[

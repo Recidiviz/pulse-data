@@ -94,7 +94,14 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             **entity_kwargs,
         }
 
-        return self.identifier.identify(self.person, all_kwargs)
+        return self.identifier.identify(
+            self.person,
+            all_kwargs,
+            included_result_classes={
+                NonRecidivismReleaseEvent,
+                RecidivismReleaseEvent,
+            },
+        )
 
     def testFindReleaseEvents_ignoreTemporaryCustody(self) -> None:
         """Tests the find_release_events function where a person has
@@ -1025,6 +1032,14 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 release_facility=None,
             )
         ]
+
+    def test_find_release_events_wrong_result_classes(self) -> None:
+        with self.assertRaisesRegex(NotImplementedError, "Filtering of events"):
+            self.identifier.identify(
+                self.person,
+                identifier_context={},
+                included_result_classes={RecidivismReleaseEvent},
+            )
 
 
 _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION: List[

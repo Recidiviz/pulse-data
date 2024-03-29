@@ -21,7 +21,7 @@ import datetime
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -105,6 +105,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_per
     NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
+from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
     get_state_specific_case_compliance_manager,
@@ -174,6 +175,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
+        included_result_classes: Optional[Set[Type[IdentifierResult]]] = None,
         us_mo_sentence_statuses: Optional[List[Dict[str, Any]]] = None,
         state_code_override: Optional[str] = None,
     ) -> List[SupervisionEvent]:
@@ -210,7 +212,17 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             **entity_kwargs,
         }
 
-        return self.identifier.identify(self.person, all_kwargs)
+        return self.identifier.identify(
+            self.person,
+            all_kwargs,
+            included_result_classes=included_result_classes
+            or {
+                SupervisionStartEvent,
+                SupervisionPopulationEvent,
+                ProjectedSupervisionCompletionEvent,
+                SupervisionTerminationEvent,
+            },
+        )
 
     def _set_expected_sp_fields(
         self, supervision_periods: List[NormalizedStateSupervisionPeriod]
@@ -328,6 +340,98 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
+        )
+
+        self.assertCountEqual(expected_events, supervision_events)
+
+    def test_find_supervision_events_filtered(self) -> None:
+        termination_date = date(2018, 5, 19)
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                )
+            ],
+            sequence_num=0,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=termination_date,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="M",
+        )
+
+        effective_date = date(2017, 1, 1)
+        completion_date = date(2018, 5, 19)
+        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=111,
+            effective_date=effective_date,
+            external_id="ss1",
+            state_code="US_XX",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            projected_completion_date=completion_date,
+            completion_date=completion_date,
+        )
+
+        assessment = NormalizedStateAssessment.new_with_defaults(
+            state_code="US_XX",
+            external_id="a1",
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2018, 3, 1),
+            assessment_score_bucket="HIGH",
+            sequence_num=0,
+        )
+
+        supervision_sentences = [supervision_sentence]
+        supervision_periods = [supervision_period]
+        incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
+        assessments = [assessment]
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
+        supervision_contacts: List[StateSupervisionContact] = []
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        expected_events = [
+            create_projected_completion_event_from_period(
+                period=supervision_period,
+                event_date=last_day_of_month(completion_date),
+                supervision_type=supervision_type,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                successful_completion=True,
+            ),
+            create_termination_event_from_period(
+                supervision_period,
+                supervision_type=supervision_type,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                in_supervision_population_on_date=True,
+            ),
+            create_start_event_from_period(
+                supervision_period,
+                case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+            ),
+        ]
+
+        supervision_events = self._test_find_supervision_events(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            supervision_contacts,
+            included_result_classes={
+                SupervisionStartEvent,
+                ProjectedSupervisionCompletionEvent,
+                SupervisionTerminationEvent,
+            },
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2251,7 +2355,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            [
+            us_mo_sentence_statuses=[
                 {
                     "sentence_external_id": supervision_sentence.external_id,
                     "sentence_status_external_id": f"{supervision_sentence.external_id}-3",

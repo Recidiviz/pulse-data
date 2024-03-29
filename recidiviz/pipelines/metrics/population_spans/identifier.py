@@ -17,7 +17,7 @@
 """Identifier class for events related to incarceration."""
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Optional, Set, Tuple, cast
+from typing import Dict, List, Optional, Set, Tuple, Type, cast
 
 import attr
 
@@ -56,7 +56,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_per
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
-from recidiviz.pipelines.utils.identifier_models import Span
+from recidiviz.pipelines.utils.identifier_models import IdentifierResult, Span
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -76,29 +76,41 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         self.field_index = CoreEntityFieldIndex()
 
     def identify(
-        self, _person: StatePerson, identifier_context: IdentifierContext
+        self,
+        _person: StatePerson,
+        identifier_context: IdentifierContext,
+        included_result_classes: Set[Type[IdentifierResult]],
     ) -> List[Span]:
-        return self._find_incarceration_spans(
-            incarceration_delegate=identifier_context[
-                StateSpecificIncarcerationDelegate.__name__
-            ],
-            incarceration_periods=identifier_context[
-                NormalizedStateIncarcerationPeriod.base_class_name()
-            ],
-        ) + self._find_supervision_spans(
-            supervision_delegate=identifier_context[
-                StateSpecificSupervisionDelegate.__name__
-            ],
-            supervision_periods=identifier_context[
-                NormalizedStateSupervisionPeriod.base_class_name()
-            ],
-            incarceration_periods=identifier_context[
-                NormalizedStateIncarcerationPeriod.base_class_name()
-            ],
-            incarceration_delegate=identifier_context[
-                StateSpecificIncarcerationDelegate.__name__
-            ],
-        )
+        spans = []
+        if IncarcerationPopulationSpan in included_result_classes:
+            spans.extend(
+                self._find_incarceration_spans(
+                    incarceration_delegate=identifier_context[
+                        StateSpecificIncarcerationDelegate.__name__
+                    ],
+                    incarceration_periods=identifier_context[
+                        NormalizedStateIncarcerationPeriod.base_class_name()
+                    ],
+                )
+            )
+        if SupervisionPopulationSpan in included_result_classes:
+            spans.extend(
+                self._find_supervision_spans(
+                    supervision_delegate=identifier_context[
+                        StateSpecificSupervisionDelegate.__name__
+                    ],
+                    supervision_periods=identifier_context[
+                        NormalizedStateSupervisionPeriod.base_class_name()
+                    ],
+                    incarceration_periods=identifier_context[
+                        NormalizedStateIncarcerationPeriod.base_class_name()
+                    ],
+                    incarceration_delegate=identifier_context[
+                        StateSpecificIncarcerationDelegate.__name__
+                    ],
+                )
+            )
+        return spans
 
     def _find_incarceration_spans(
         self,
@@ -351,9 +363,11 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                         span,
                         start_date_inclusive=start_date,
                         end_date_exclusive=end_date,
-                        supervision_type=StateSupervisionPeriodSupervisionType.DUAL
-                        if overwrite_supervision_types_with_dual
-                        else span.supervision_type,
+                        supervision_type=(
+                            StateSupervisionPeriodSupervisionType.DUAL
+                            if overwrite_supervision_types_with_dual
+                            else span.supervision_type
+                        ),
                     )
                 )
 

@@ -317,9 +317,7 @@ class TestStayLengthBucket(unittest.TestCase):
             self.assertEqual(bucket, event.stay_length_bucket)
 
 
-_ALL_METRIC_INCLUSIONS_DICT = {
-    MetricType.REINCARCERATION_RATE: True,
-}
+_ALL_METRIC_INCLUSIONS = {MetricType.REINCARCERATION_RATE}
 
 
 _DEFAULT_METRICS_PRODUCER_CLASS: Dict[str, StateSpecificMetricsProducerDelegate] = {
@@ -387,7 +385,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -456,7 +454,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -531,7 +529,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -598,7 +596,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -670,7 +668,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -732,7 +730,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -788,7 +786,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -844,7 +842,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -906,7 +904,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -968,7 +966,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1036,7 +1034,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1095,7 +1093,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1153,7 +1151,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1213,7 +1211,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1267,7 +1265,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             _DEFAULT_METRICS_PRODUCER_CLASS,
         )
@@ -1323,7 +1321,7 @@ class TestProduceMetrics(unittest.TestCase):
         metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
-            _ALL_METRIC_INCLUSIONS_DICT,
+            _ALL_METRIC_INCLUSIONS,
             _PIPELINE_JOB_ID,
             metrics_producer_delegates={
                 StateSpecificRecidivismMetricsProducerDelegate.__name__: UsNdRecidivismMetricsProducerDelegate()
