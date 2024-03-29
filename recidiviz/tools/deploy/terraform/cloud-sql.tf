@@ -64,20 +64,6 @@ module "operations_database_v2" {
   has_readonly_user = true
 }
 
-# TODO(#20930): Actually delete the state CloudSQL instance once we're really sure we don't
-# need the legacy ingest data in there anymore.
-module "state_database_v2" {
-  source = "./modules/cloud-sql-instance"
-
-  project_id        = var.project_id
-  instance_key      = "state_v2"
-  base_secret_name  = "state_v2"
-  region            = "us-east1"
-  zone              = "us-east1-c"
-  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
-  has_readonly_user = true
-}
-
 module "pathways_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -167,7 +153,6 @@ locals {
       module.workflows_database.connection_name,
       # v2 modules
       module.operations_database_v2.connection_name,
-      module.state_database_v2.connection_name,
       # TODO(Recidiviz/justice-counts#1019): Remove this when the admin panel no longer needs to access the JC database
       var.project_id == "recidiviz-123" ? "justice-counts-production:us-central1:prod-justice-counts-data" : "justice-counts-staging:us-central1:dev-justice-counts-data"
     ]
