@@ -177,8 +177,8 @@ def generate_period_span_metric_view(
     INNER JOIN
         ${{assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} time_period
     ON
-        ses.start_date < time_period.end_date
-        AND time_period.start_date < {nonnull_current_date_clause("ses.end_date")}
+        ses.start_date < time_period.span_end_date
+        AND time_period.span_start_date < {nonnull_current_date_clause("ses.end_date")}
         AND ses.person_id = time_period.person_id
     GROUP BY
         1, 2, 3, 4, 5, 6
@@ -236,7 +236,7 @@ def generate_period_event_metric_view(
         AND events.event_date BETWEEN GREATEST(assignments.assignment_date, assignments.start_date)
           AND LEAST(
             {nonnull_end_date_clause("assignments.assignment_end_date")},
-            assignments.end_date
+            DATE_SUB(assignments.end_date, INTERVAL 1 DAY)
     )
 
     GROUP BY
