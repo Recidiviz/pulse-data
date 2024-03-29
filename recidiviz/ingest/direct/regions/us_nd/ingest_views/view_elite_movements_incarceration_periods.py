@@ -17,6 +17,36 @@
 """
 Query containing movement information, both external (into/out of/between facilities)
 and internal (unit/bed assignments within facilities).
+
+Incarceration periods are created by merging rows from `elite_externalmovements`
+that correspond to sequential movements into and out of a facility with rows from
+`elite_bedassignmenthistory` and `elite_livingunits` that correspond to sequential
+movements within facilities. Eventually, the goal is to map reasons for those internal
+movements using `elite_programservices`, `elite_courseactivities`, and `elite_offenderprogramprofiles`.
+Currently, all internal movements have a placeholder reason `INTERNAL_MOVEMENT` when
+one cannot be inferred from flanking external movements (i.e. transfers between facilities,
+admissions from liberty, or releases).
+
+Rows in `elite_externalmovements` can be used to model
+"edges" of continuous periods of incarceration, and multiple such rows can be used to
+model a continuous period of incarceration. An ingest view walks over rows for a single
+person in this table and stitches together "edges" to create continuous periods. We join
+two "edges" to make a continuous period if the movements are associated with the same
+`OFFENDER_BOOK_ID`, the `MOVEMENT_SEQ` values are sequential, and the `TO_AGY_LOC_ID`
+value of the `IN` edge matches the `FROM_AGY_LOC_ID` value of the `OUT` edge.
+
+We further break down those continuous periods into periods of specific bed assignments.
+The final ingest view result is indexed on each person and each period of assignment to a
+particular living unit and custody level. Since the facility does not change across a person's period
+of incarceration in that facility, regardless of their living unit assignment or custody level, their
+movements into, out of, and between facilities are preserved when we add these additional
+levels of detail.
+
+It's possible for this approach to produce multiple periods for a person that are
+missing release information. It's also possible for this logic to produce a period
+that only contains release information. Both of these situations are handled by IP
+pre-processing.
+
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (

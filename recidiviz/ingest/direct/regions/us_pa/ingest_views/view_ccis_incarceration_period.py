@@ -15,7 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query containing incarceration period information extracted from multiple PADOC files, where the period data
-originates from CCIS (Community Corrections Information System) tables."""
+originates from CCIS (Community Corrections Information System) tables.
+
+PADOC provides incarceration period information for two broad population subsets: those incarcerated in
+State Correctional Institutions (SCIs) and those incarcerated in Community Corrections Centers (CCCs). SCIs can be
+thought of as "state prisons" while CCCs can be thought of as more minimal security facilities that some incarcerated
+people can be transferred into near the end of their term to focus on reentry.
+
+The latter is determined from an ingest view joining together multiple tables prefixed with `dbo_vwCCI*` or
+`dbo_tblCCI*`. These tables come from a different underlying data source than most PADOC tables, but thankfully follow
+most of the same naming conventions. Similar to `dbo_Movrec` is `dbo_vwCCISAllMvmt`, whose rows can be thought of as
+singular movements, or "edges" which can be stitched together to create a continuous period. Specifically, we order rows
+by sequence number and then by movement type when there are multiple rows with the same sequence number, identify which
+edges are admissions and releases by examining status codes, and then stitch them together accordingly.
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,

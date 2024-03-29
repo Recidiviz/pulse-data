@@ -73,6 +73,8 @@ output:
                       StateRace.WHITE: CAUCASIAN
                     $ignore: [HIS]
     ethnicities:
+      # There are not separate ethnicity fields in DOCR files. Rather, it is included under race fields. Thus, we look for race
+      # fields with specific values that indicate a Hispanic ethnicity,
       - $conditional:
           - $if:
               $not_null: RACE_CODE

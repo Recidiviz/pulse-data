@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Ingest view for supervision staff caseload type information from the monthly P&P directory."""
+"""Ingest view for supervision staff caseload type information from the monthly P&P directory.
+
+A single supervision case type entry is created for each row in `docstars_offenders`, setting a case type of `GENERAL`
+where `SEXOFF` is '0' and a case type of `SEX_OFFENSE` where `SEXOFF` is '(1)'. Thus, each person who has been or is
+currently under supervision by DOCR has one of these case types specified."""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,

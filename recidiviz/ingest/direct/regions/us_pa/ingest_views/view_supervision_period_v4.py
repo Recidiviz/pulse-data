@@ -16,6 +16,11 @@
 # =============================================================================
 """Query containing supervision period information.
 
+Supervision periods are aggregated together from across the "Release" tables, namely `dbo_Release`, `dbo_ReleaseInfo`,
+`dbo_RelStatus`, `dbo_RelAgentHistory`, and `dbo_Hist_Release`. These tables collectively include information on
+"releases" from incarceration to parole, including changes in status and changes in supervising officer, for both
+currently and previously supervised people.
+
 This query deconstructs all the critical dates related to someone's supervision term into edges, then reconstructs a
 set of periods from those edges. The edges come from two sources:
 1) Parole count info: the parole count is largely a non-overlapping span of time when someone is on supervision and PA
@@ -25,6 +30,14 @@ set of periods from those edges. The edges come from two sources:
  count dates. If someone is assigned a new PO outside of a parole count info stint, we do not create a new period.
  Inversely, if someone starts a parole count stint and there is no PO update, we will create a supervision period with
  no associated agent.
+
+It is important to note that because probation is administered in PA almost exclusively at the county level, there are very, very few *sentences* to
+supervision. All sentences that lead to parole are actually sentences to incarceration that in turn can lead to parole
+in many circumstances. As such, the only supervision sentences we have for PADOC are "placeholder objects" that exist
+only to ensure a tree of entities is unbroken. These contain no information other than identifiers that allow, for
+example, the tracing of a supervision violation that cannot be tied to an incarceration sentence up to a parent sentence
+group. These placeholder objects can be created in any number of PBPP files that contain entities which cannot be tied to an
+incarceration sentence.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (

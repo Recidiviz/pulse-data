@@ -25,6 +25,9 @@ output:
           external_id: control_number
           id_type: $literal("US_PA_CONT")
     incarceration_incidents:
+      # Incarceration incident data covers only negative incidents, ie. "misconduct" events
+      # involving an incarcerated person and potentially others, such as other incarcerated
+      # people or staff.
       - StateIncarcerationIncident:
           external_id: misconduct_number
           incident_date: misconduct_date

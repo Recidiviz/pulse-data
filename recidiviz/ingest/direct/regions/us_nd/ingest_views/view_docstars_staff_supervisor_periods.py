@@ -14,7 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Ingest view for supervision staff employment location information from the Docstars system."""
+"""Ingest view for supervision staff employment location information from the Docstars system.
+
+When an officer becomes inactive, their last supervisor period has an
+end date, and there is no subsequent open period for that officer. The
+start and end dates of supervisor periods are hydrated from the
+`RecDate` field, which corresponds to the date the record was created in
+the Docstars system.
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,

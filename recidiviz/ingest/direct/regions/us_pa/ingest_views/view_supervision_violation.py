@@ -14,7 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing supervision violation information."""
+"""Query containing supervision violation information.
+
+Supervision violations and their responses both come from `dbo_SanctionTracking`, a table which models violations and
+their responses as a set of related entities. Each set contains one to many "violation" rows and one to many "sanction"
+rows.
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,

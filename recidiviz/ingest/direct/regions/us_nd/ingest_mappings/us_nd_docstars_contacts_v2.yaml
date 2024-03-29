@@ -36,6 +36,7 @@ output:
           external_id: SID
           id_type: $literal("US_ND_SID")
     supervision_contacts:
+      # NOTE: This is only capturing contacts logged by the supervising officer.
       - StateSupervisionContact:
           external_id: RecID
           contact_date: CONTACT_DATE
@@ -52,6 +53,11 @@ output:
                 StateSupervisionContactReason.GENERAL_CONTACT:
                   - "Supervision"
           contact_type:
+            # DIRECT contact_type codes are prioritized over COLLATERAL codes when parsing
+            # supervision contact types.
+            # There may be multiple contact codes that indicate the contact took place at multiple locations.
+            # We prioritize encoding that a contact was a home visit, then employment visits, and then
+            # supervising office visits.
             $enum_mapping:
               $raw_text: $variable(contact_code_full)
               $custom_parser: us_nd_custom_enum_parsers.supervision_contact_type_mapper

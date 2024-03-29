@@ -6,6 +6,9 @@ file_description: |-
   this one to capture the latest state of the field. These include metadata about a person's latest documented needs,
   latest assessment results, whether they are being revoked, whether they are absconding, supervision level, and more.
 
+  SORAC assessment scores are provided as a "roll-up" field representing the most recent SORAC assessment for a person
+  under supervision.
+
   Note: this table does not include historical record of this aforementioned data.
 data_classification: source
 primary_key_cols:

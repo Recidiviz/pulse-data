@@ -45,6 +45,9 @@ output:
           - W
     races:
       - StatePersonRace:
+          # Race information from DOC tables assigns a single race to a single person. Conversely, race information from PBPP
+          # tables assigns one to many races to a single person. Because we ingest both, we ingest one to many races for each
+          # person.
           race:
             $enum_mapping:
               $raw_text: OffRaceEthnicGroup

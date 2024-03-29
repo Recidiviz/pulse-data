@@ -14,7 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Ingest view for supervision staff role periods from the Docstars system."""
+"""Ingest view for supervision staff role periods from the Docstars system.
+
+The `docstars_officers` table that we receive is always a full
+historical export, and has a field called `STATUS` to mark whether or
+not officers are active or not. This view uses that field to close periods of an 
+officer having a given role. Since the only role currently included in the
+StateStaffRolePeriod entity in ND is `StateStaffRoleType.SUPERVISION_OFFICER`, 
+these periods are proxies for an officer's employment. There should be no instances of 
+officers having an open period while their `STATUS = 0.`
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
