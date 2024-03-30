@@ -688,19 +688,33 @@ def _send_reminder_email(
     """Sends reminder email to all users that belong to an except for CSG users"""
     send_grid_client = SendGridClientWrapper(key_type="justice_counts")
     try:
+        emails = (
+            {
+                subscribed_user_email,
+                "nichelle@recidiviz.org",
+                "lili@recidiviz.org",
+            }
+            if in_gcp_production()
+            else {subscribed_user_email}
+            # TODO(#28547) Temporarily send all emails to Lili and Nichelle so we can
+            # spot-check that the emails are being sent with the correct
+            # information.
+        )
         if dry_run is True:
-            logger.info("DRY_RUN: Would send email to %s", subscribed_user_email)
+            logger.info("DRY_RUN: Would send email to %s", ", ".join(emails))
             return
 
-        logger.info("Sending email to %s", subscribed_user_email)
-        send_grid_client.send_message(
-            to_email=subscribed_user_email,
-            from_email="no-reply@justice-counts.org",
-            from_email_name="Justice Counts",
-            subject=f"Reminder to Upload Metrics for {agency.name} in Publisher",
-            html_content=html,
-            disable_link_click=True,
-        )
+        for email in emails:
+
+            logger.info("Sending email to %s", email)
+            send_grid_client.send_message(
+                to_email=email,
+                from_email="no-reply@justice-counts.org",
+                from_email_name="Justice Counts",
+                subject=f"Reminder to Upload Metrics for {agency.name} in Publisher",
+                html_content=html,
+                disable_link_click=True,
+            )
     except Exception as e:
         logger.exception(
             "Failed to send reminder email to %s. %s",
