@@ -56,18 +56,6 @@ direct_ingest_status = Enum(
     enum_canonical_strings.direct_ingest_status_no_raw_data_reimport_in_progress,
     enum_canonical_strings.direct_ingest_status_raw_data_reimport_canceled,
     enum_canonical_strings.direct_ingest_status_raw_data_reimport_cancellation_in_progress,
-    # LEGACY PRE-IID STATUSES - MAINTAINED ONLY FOR BACKWARDS COMPATIBILITY BECAUSE
-    # THESE STILL EXIST IN HISTORICAL ROWS IN THE DB
-    enum_canonical_strings.direct_ingest_status_rerun_with_raw_data_import_started,
-    enum_canonical_strings.direct_ingest_status_standard_rerun_started,
-    enum_canonical_strings.direct_ingest_status_blocked_on_primary_raw_data_import,
-    enum_canonical_strings.direct_ingest_status_ingest_view_materialization_in_progress,
-    enum_canonical_strings.direct_ingest_status_extract_and_merge_in_progress,
-    enum_canonical_strings.direct_ingest_status_rerun_canceled,
-    enum_canonical_strings.direct_ingest_status_rerun_cancellation_in_progress,
-    enum_canonical_strings.direct_ingest_status_up_to_date,
-    enum_canonical_strings.direct_ingest_status_no_rerun_in_progress,
-    # END LEGACY PRE-IID STATUSES
     name="direct_ingest_status",
 )
 

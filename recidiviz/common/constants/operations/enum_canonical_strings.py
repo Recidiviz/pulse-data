@@ -21,33 +21,18 @@ direct_ingest_instance_primary = "PRIMARY"
 direct_ingest_instance_secondary = "SECONDARY"
 
 # DirectIngestStatus
-direct_ingest_status_rerun_with_raw_data_import_started = (
-    "RERUN_WITH_RAW_DATA_IMPORT_STARTED"
-)
 direct_ingest_status_raw_data_reimport_started = "RAW_DATA_REIMPORT_STARTED"
-direct_ingest_status_standard_rerun_started = "STANDARD_RERUN_STARTED"
 direct_ingest_status_initial_state = "INITIAL_STATE"
 direct_ingest_status_raw_data_import_in_progress = "RAW_DATA_IMPORT_IN_PROGRESS"
-direct_ingest_status_blocked_on_primary_raw_data_import = (
-    "BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT"
-)
-direct_ingest_status_ingest_view_materialization_in_progress = (
-    "INGEST_VIEW_MATERIALIZATION_IN_PROGRESS"
-)
-direct_ingest_status_extract_and_merge_in_progress = "EXTRACT_AND_MERGE_IN_PROGRESS"
 direct_ingest_status_ready_to_flash = "READY_TO_FLASH"
 direct_ingest_status_flash_in_progress = "FLASH_IN_PROGRESS"
 direct_ingest_status_flash_completed = "FLASH_COMPLETED"
-direct_ingest_status_rerun_canceled = "RERUN_CANCELED"
 direct_ingest_status_raw_data_reimport_canceled = "RAW_DATA_REIMPORT_CANCELED"
-direct_ingest_status_rerun_cancellation_in_progress = "RERUN_CANCELLATION_IN_PROGRESS"
 direct_ingest_status_raw_data_reimport_cancellation_in_progress = (
     "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS"
 )
-direct_ingest_status_up_to_date = "UP_TO_DATE"
 direct_ingest_status_raw_data_up_to_date = "RAW_DATA_UP_TO_DATE"
 direct_ingest_status_stale_raw_data = "STALE_RAW_DATA"
-direct_ingest_status_no_rerun_in_progress = "NO_RERUN_IN_PROGRESS"
 direct_ingest_status_no_raw_data_reimport_in_progress = (
     "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
 )
