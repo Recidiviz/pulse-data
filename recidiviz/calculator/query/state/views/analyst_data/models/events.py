@@ -45,9 +45,9 @@ def get_task_eligible_event_query_builder(
     date_condition_query_str = (
         f"""
         AND LEAST(
-                IFNULL(end_date, "9999-01-01"),
+                IFNULL(a.end_date, "9999-01-01"),
                 "9999-01-01"
-            ) > DATE_ADD(start_date, INTERVAL {days_overdue} DAY)
+            ) > DATE_ADD(a.start_date, INTERVAL {days_overdue} DAY)
     """
         if days_overdue > 0
         else ""
@@ -57,26 +57,44 @@ def get_task_eligible_event_query_builder(
         description=f"Opportunity eligibility starts{description_add_on}",
         sql_source=f"""
     SELECT
-        state_code,
-        person_id,
-        DATE_ADD(start_date, INTERVAL {days_overdue} DAY) AS overdue_date,
-        task_name,
-        completion_event_type AS task_type,
+        a.state_code,
+        a.person_id,
+        DATE_ADD(a.start_date, INTERVAL {days_overdue} DAY) AS overdue_date,
+        a.task_name,
+        b.completion_event_type AS task_type,
+        COALESCE(c.surfaced, FALSE) AS after_tool_action,
+        -- Flag if person was previously almost eligible before becoming fully eligible
+        COALESCE(
+            LAG(a.is_almost_eligible) OVER (PARTITION BY a.person_id, a.task_name ORDER BY a.start_date),
+            FALSE
+        ) AS after_almost_eligible,
     FROM
-        `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized`
+        `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` a
     INNER JOIN
-        `{{project_id}}.reference_views.task_to_completion_event`
+        `{{project_id}}.reference_views.task_to_completion_event` b
     USING
         (task_name)
+    -- Get information about impact funnel status.
+    -- We convert the eligibility start date to a timestamp having the last time (23:59:59) on that date,
+    -- to account for any usage events that may have occurred on the same date.
+    LEFT JOIN
+        `{{project_id}}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` c
+    ON
+        a.person_id = c.person_id
+        AND b.completion_event_type = c.task_type
+        AND DATETIME_SUB(DATETIME(DATE_ADD(a.start_date, INTERVAL 1 DAY)), INTERVAL 1 SECOND)
+            BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause("c.end_date")}
     WHERE
         -- remove any spans that start after the current millennium, e.g.
         -- eligibility following a life sentence
-        start_date < "3000-01-01"
-        AND is_eligible{date_condition_query_str}
+        a.start_date < "3000-01-01"
+        AND a.is_eligible{date_condition_query_str}
     """,
         attribute_cols=[
             "task_name",
             "task_type",
+            "after_tool_action",
+            "after_almost_eligible",
         ],
         event_date_col="overdue_date",
     )
@@ -843,32 +861,47 @@ SELECT
     e.person_id,
     e.completion_event_date,
     e.completion_event_type AS task_type,
-    -- Mark as is_eligible = True if person was eligible for at least one associated opportunity
-    LOGICAL_OR(COALESCE(t.is_eligible, FALSE)) 
-        OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type) AS is_eligible,
-    MAX(IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY), NULL)) 
-        OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type) AS days_eligible,
+    t.is_eligible,
+    IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY), NULL) AS days_eligible,
+    f.is_almost_eligible,
+    -- Flag if someone has experienced at least one tool action before task completion
+    COALESCE(f.surfaced, FALSE) AS after_tool_action,
 FROM
     `{{project_id}}.task_eligibility.all_completion_events_materialized` e
--- Join to all_tasks to get task_name and eligibility criteria
+-- Get information about continuous spans of eligibility
 LEFT JOIN
-    `{{project_id}}.reference_views.task_to_completion_event` r
-USING
-    (completion_event_type)
-LEFT JOIN
-    `{{project_id}}.analyst_data.all_task_eligibility_spans_materialized` t
+    `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` t
 ON
     e.person_id = t.person_id
-    AND r.task_name = t.task_name
+    AND e.completion_event_type = t.task_type
     AND e.completion_event_date BETWEEN t.start_date AND {nonnull_end_date_clause("t.end_date")}
+-- Get information about impact funnel status.
+-- We convert the completion event date to a timestamp having the last time (23:59:59) on that date,
+-- to account for any usage events that may have occurred on the same date.
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` f
+ON
+    e.person_id = f.person_id
+    AND e.completion_event_type = f.task_type
+    AND DATETIME_SUB(DATETIME(DATE_ADD(e.completion_event_date, INTERVAL 1 DAY)), INTERVAL 1 SECOND)
+        BETWEEN f.start_date AND {nonnull_end_date_clause("f.end_date")}
 -- If completion event falls exactly on the border between two sessions, take the eligibility
 -- attributes associated with the first span (i.e., the span that ended, rather than the span that started).
 -- Uses RANK so that if there are multiple completion events for the same task type on the same day,
 -- (e.g., multiple assessments), we don't drop these.
 QUALIFY
-    RANK() OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type ORDER BY t.start_date) = 1
+    RANK() OVER (
+        PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type
+        ORDER BY t.start_date, f.start_date
+    ) = 1
 """,
-        attribute_cols=["task_type", "is_eligible", "days_eligible"],
+        attribute_cols=[
+            "task_type",
+            "is_eligible",
+            "days_eligible",
+            "is_almost_eligible",
+            "after_tool_action",
+        ],
         event_date_col="completion_event_date",
     ),
     get_task_eligible_event_query_builder(

@@ -48,6 +48,9 @@ class SpanType(Enum):
     SUPERVISION_OFFICER_SESSION = "SUPERVISION_OFFICER_SESSION"
     TASK_CRITERIA_SPAN = "TASK_CRITERIA_SPAN"
     TASK_ELIGIBILITY_SESSION = "TASK_ELIGIBILITY_SESSION"
+    WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION = (
+        "WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION"
+    )
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
@@ -69,6 +72,7 @@ class SpanType(Enum):
             SpanType.SUPERVISION_OFFICER_SESSION,
             SpanType.TASK_CRITERIA_SPAN,
             SpanType.TASK_ELIGIBILITY_SESSION,
+            SpanType.WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION,
         ]:
             return MetricUnitOfObservationType.PERSON_ID
         if self in [SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION]:

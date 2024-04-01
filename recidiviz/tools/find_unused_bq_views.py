@@ -85,9 +85,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_max_stays i
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
-    WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.external_reference.state_resident_populations import (
     STATE_RESIDENT_POPULATIONS_VIEW_BUILDER,
 )
@@ -293,10 +290,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER.address: (
         "Used to send ad hoc reports to TN every quarter. These views will eventually be deprecated if"
         "#21518 is completed (Damini Sharma 1/25/24)"
-    ),
-    WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address: (
-        "Will be referenced by Looker dashboard"
-        " (see #26453) (Mayuka Sarukkai 2/14/24)"
     ),
     SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER.address: (
         "Will be referenced to support Outliers analytics work (see #27576) (Alexa Batino 2/14/24)"
