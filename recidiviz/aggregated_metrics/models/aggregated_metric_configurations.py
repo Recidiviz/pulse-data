@@ -2227,7 +2227,7 @@ WORKFLOWS_CLIENT_STATUS_UPDATE = EventCountMetric(
     description="Number of updates made on workflows app",
     event_selectors=[
         EventSelector(
-            event_type=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
+            event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
             event_conditions_dict={},
         ),
     ],

@@ -1042,12 +1042,49 @@ WHERE
         event_date_col="response_date",
     ),
     EventQueryBuilder(
-        event_type=EventType.WORKFLOWS_ACTION,
+        event_type=EventType.WORKFLOWS_PERSON_USAGE_EVENT,
+        description="Workflows usage event tracked at the client level",
+        sql_source=f"""
+SELECT
+    a.*,
+    -- Flag if this is the first tool action by checking if someone went from un-surfaced to surfaced at this datetime,
+    COALESCE(
+        b.surfaced AND NOT LAG(surfaced) OVER (
+            PARTITION BY b.person_id, b.task_type
+            ORDER BY b.start_date
+        )
+    , FALSE) AS is_first_tool_action,
+    DATE_DIFF(a.start_date, c.start_date, DAY) days_eligible,
+FROM
+    `{{project_id}}.analyst_data.workflows_person_events_materialized` a
+LEFT JOIN
+    `{{project_id}}.analyst_data.workflows_person_impact_funnel_status_sessions_materialized` b
+USING
+    (person_id, task_type, start_date)
+LEFT JOIN
+    `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized` c
+ON
+    a.person_id = c.person_id
+    AND a.task_type = c.task_type
+    AND c.is_eligible
+    -- Cast to a date to account for date comparison with timestamps
+    AND DATE(a.start_date) BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause("c.end_date")}
+""",
+        attribute_cols=[
+            "task_type",
+            "usage_event_type",
+            "is_first_tool_action",
+            "days_eligible",
+        ],
+        event_date_col="start_date",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.WORKFLOWS_USER_ACTION,
         description="Event where the officer took a specific Workflows action, e.g., FORM_COPIED",
         sql_source=f"""
 SELECT * 
 FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
-WHERE event = "{EventType.WORKFLOWS_ACTION.value}" """,
+WHERE event = "{EventType.WORKFLOWS_USER_ACTION.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
@@ -1057,12 +1094,12 @@ WHERE event = "{EventType.WORKFLOWS_ACTION.value}" """,
         event_date_col="event_ts",
     ),
     EventQueryBuilder(
-        event_type=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
+        event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
         description="Event where the officer updated a person's status on Workflows tool",
         sql_source=f"""
 SELECT * 
 FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
-WHERE event = "{EventType.WORKFLOWS_CLIENT_STATUS_UPDATE.value}" """,
+WHERE event = "{EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
@@ -1072,12 +1109,12 @@ WHERE event = "{EventType.WORKFLOWS_CLIENT_STATUS_UPDATE.value}" """,
         event_date_col="event_ts",
     ),
     EventQueryBuilder(
-        event_type=EventType.WORKFLOWS_PAGE,
+        event_type=EventType.WORKFLOWS_USER_PAGE,
         description="Event where the officer viewed a particular Workflows page, e.g., PROFILE_VIEWED",
         sql_source=f"""
 SELECT * 
 FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
-WHERE event = "{EventType.WORKFLOWS_PAGE.value}" """,
+WHERE event = "{EventType.WORKFLOWS_USER_PAGE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",

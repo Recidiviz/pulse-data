@@ -60,9 +60,10 @@ class EventType(Enum):
     VARIANT_ASSIGNMENT = "VARIANT_ASSIGNMENT"
     VIOLATION = "VIOLATION"
     VIOLATION_RESPONSE = "VIOLATION_RESPONSE"
-    WORKFLOWS_ACTION = "WORKFLOWS_ACTION"
-    WORKFLOWS_CLIENT_STATUS_UPDATE = "WORKFLOWS_CLIENT_STATUS_UPDATE"
-    WORKFLOWS_PAGE = "WORKFLOWS_PAGE"
+    WORKFLOWS_PERSON_USAGE_EVENT = "WORKFLOWS_PERSON_USAGE_EVENT"
+    WORKFLOWS_USER_ACTION = "WORKFLOWS_USER_ACTION"
+    WORKFLOWS_USER_CLIENT_STATUS_UPDATE = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
+    WORKFLOWS_USER_PAGE = "WORKFLOWS_USER_PAGE"
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
@@ -101,12 +102,13 @@ class EventType(Enum):
             EventType.VARIANT_ASSIGNMENT,
             EventType.VIOLATION,
             EventType.VIOLATION_RESPONSE,
+            EventType.WORKFLOWS_PERSON_USAGE_EVENT,
         ]:
             return MetricUnitOfObservationType.PERSON_ID
         if self in [
-            EventType.WORKFLOWS_ACTION,
-            EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
-            EventType.WORKFLOWS_PAGE,
+            EventType.WORKFLOWS_USER_ACTION,
+            EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
+            EventType.WORKFLOWS_USER_PAGE,
         ]:
             return MetricUnitOfObservationType.SUPERVISION_OFFICER
 

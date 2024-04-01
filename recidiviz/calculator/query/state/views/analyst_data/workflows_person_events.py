@@ -33,44 +33,44 @@ from recidiviz.utils.metadata import local_project_id_override
 # A dictionary that maps each usage status to a set of Event conditions
 USAGE_EVENTS_DICT: Dict[str, EventSelector] = {
     "MARKED_INELIGIBLE": EventSelector(
-        event_type=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
+        event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
         event_conditions_dict={
             "event_type": ["CLIENT_REFERRAL_STATUS_UPDATED"],
             "new_status": ["DENIED"],
         },
     ),
     "SURFACED": EventSelector(
-        event_type=EventType.WORKFLOWS_ACTION,
+        event_type=EventType.WORKFLOWS_USER_ACTION,
         event_conditions_dict={
             "event_type": ["CLIENT_SURFACED"],
         },
     ),
     "VIEWED": EventSelector(
-        event_type=EventType.WORKFLOWS_PAGE,
+        event_type=EventType.WORKFLOWS_USER_PAGE,
         event_conditions_dict={
             "event_type": ["OPPORTUNITY_PREVIEWED"],
         },
     ),
     "FORM_VIEWED": EventSelector(
-        event_type=EventType.WORKFLOWS_PAGE,
+        event_type=EventType.WORKFLOWS_USER_PAGE,
         event_conditions_dict={
             "event_type": ["FORM_VIEWED"],
         },
     ),
     "FORM_STARTED": EventSelector(
-        event_type=EventType.WORKFLOWS_ACTION,
+        event_type=EventType.WORKFLOWS_USER_ACTION,
         event_conditions_dict={
             "event_type": ["FORM_FIRST_EDITED", "FORM_EDITED"],
         },
     ),
     "FORM_DOWNLOADED": EventSelector(
-        event_type=EventType.WORKFLOWS_ACTION,
+        event_type=EventType.WORKFLOWS_USER_ACTION,
         event_conditions_dict={
             "event_type": ["FORM_DOWNLOADED", "FORM_COPIED"],
         },
     ),
     "FORM_SUBMITTED": EventSelector(
-        event_type=EventType.WORKFLOWS_ACTION,
+        event_type=EventType.WORKFLOWS_USER_ACTION,
         event_conditions_dict={
             "event_type": ["FORM_SUBMITTED"],
         },
