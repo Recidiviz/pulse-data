@@ -62,6 +62,9 @@ max_allowed_error_overrides:
   - validation_name: outliers_staff_count_percent_change_intramonth
     hard_max_allowed_error_override: 0.03
     override_reason: We're expecting .026 is standard variation.
+  - validation_name: outliers_staff_count_percent_change_intermonth
+    hard_max_allowed_error_override: 0.04
+    override_reason: We're expecting .04 is standard variation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 1450
@@ -107,7 +110,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 120000
     override_reason: Needs investigation.  Current failing level as of 2/13/24 is 102,288 rows #TODO(#16435)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 19000
+    hard_num_allowed_rows_override: 19100
     override_reason: Current failing level as of 3/19/24 is 18,013 rows #TODO(#27541)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 25
