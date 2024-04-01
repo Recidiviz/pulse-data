@@ -26,6 +26,7 @@ class DirectIngestErrorType(Enum):
     PARSE_ERROR = auto()
     PERSISTENCE_ERROR = auto()
     CLEANUP_ERROR = auto()
+    GATING_ERROR = auto()
 
 
 class DirectIngestError(Exception):
@@ -47,3 +48,9 @@ class DirectIngestInstanceError(Exception):
 
     def __init__(self, msg: str):
         super().__init__(msg)
+
+
+class DirectIngestGatingError(Exception):
+    """Raised when trying to access functionality that is behind gating and should not
+    be accessed
+    """

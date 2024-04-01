@@ -55,6 +55,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
+    DirectIngestGatingError,
 )
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
@@ -93,6 +94,12 @@ class TestDirectIngestControl(unittest.TestCase):
         self.storage_client_patcher.start()
         self.fs_patcher.start()
 
+        self.raw_data_dag_patcher = patch(
+            f"{CONTROL_PACKAGE_NAME}.is_raw_data_import_dag_enabled",
+            Mock(return_value=False),
+        )
+        self.mock_raw_data_dag = self.raw_data_dag_patcher.start()
+
         self.controller_factory_patcher: Any = patch(
             f"{CONTROL_PACKAGE_NAME}.IngestRawFileImportControllerFactory"
         )
@@ -106,6 +113,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
+        self.raw_data_dag_patcher.stop()
         self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
@@ -147,6 +155,34 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_controller.schedule_next_ingest_task.assert_called_with(
             current_task_id=task_id
         )
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
+    def test_schedule_raw_data_dag_enabled(
+        self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
+    ) -> None:
+        """Tests that the start operation chains together the correct calls."""
+
+        mock_controller = create_autospec(IngestRawFileImportController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        mock_region.return_value = fake_region(environment="production")
+        mock_environment.return_value = "production"
+        self.mock_raw_data_dag.return_value = True
+
+        request_args = {
+            "region": self.region_code,
+            "ingest_instance": DirectIngestInstance.PRIMARY.value,
+        }
+        task_id = "us_nd-primary-scheduler-b1f5a25c-07d2-408e-b9e9-2825be145263"
+        headers = {
+            **APP_ENGINE_HEADERS,
+            "X-AppEngine-TaskName": task_id,
+        }
+
+        with self.assertRaises(DirectIngestGatingError):
+            _ = self.client.get(
+                "/scheduler", query_string=request_args, headers=headers
+            )
 
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_schedule_build_controller_throws_input_error(
@@ -264,6 +300,44 @@ class TestDirectIngestControl(unittest.TestCase):
 
         # Even though the region isn't supported, we don't crash
         self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
+    def test_handle_file_start_ingest_raw_data_enabled(
+        self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock
+    ) -> None:
+        mock_environment.return_value = "production"
+        mock_controller = create_autospec(IngestRawFileImportController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        mock_region.return_value = fake_region(
+            region_code=self.region_code, environment="production"
+        )
+        self.mock_raw_data_dag.return_value = True
+
+        path = GcsfsFilePath.from_directory_and_file_name(
+            self.primary_bucket, "elite_offenders.csv"
+        )
+
+        request_args = {
+            "start_ingest": "True",
+        }
+        pubsub_message = {
+            "message": {
+                "attributes": {
+                    "bucketId": path.bucket_name,
+                    "objectId": path.blob_name,
+                },
+            }
+        }
+        headers = APP_ENGINE_HEADERS
+
+        with self.assertRaises(DirectIngestGatingError):
+            _ = self.client.post(
+                "/handle_direct_ingest_file",
+                query_string=request_args,
+                headers=headers,
+                json=pubsub_message,
+            )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
@@ -569,6 +643,79 @@ class TestDirectIngestControl(unittest.TestCase):
             ]
         )
 
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
+    def test_ensure_all_raw_file_paths_normalized_raw_data_dag_enabled(
+        self,
+        mock_get_region: mock.MagicMock,
+        mock_environment: mock.MagicMock,
+        mock_states_in_env: mock.MagicMock,
+    ) -> None:
+        mock_environment.return_value = "production"
+
+        fake_supported_regions = {
+            "us_xx": fake_region(region_code="us_xx", environment="staging"),
+            self.region_code: fake_region(
+                region_code=self.region_code, environment="production"
+            ),
+        }
+        mock_states_in_env.return_value = [StateCode.US_XX, self.state_code]
+
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
+        mock_controllers_by_region_code = {}
+
+        def mock_build_controller(
+            region_code: str,
+            ingest_instance: DirectIngestInstance,
+            allow_unlaunched: bool,
+        ) -> IngestRawFileImportController:
+            self.assertTrue(allow_unlaunched)
+
+            mock_controller = Mock(__class__=IngestRawFileImportController)
+            mock_controller.cloud_task_manager = mock_cloud_task_manager
+            mock_controller.ingest_instance = ingest_instance
+            mock_controller.region = fake_supported_regions[region_code.lower()]
+
+            mock_controllers_by_region_code[region_code] = mock_controller
+            return mock_controller
+
+        self.mock_controller_factory.build.side_effect = mock_build_controller
+
+        def fake_get_region(region_code: str) -> DirectIngestRegion:
+            return fake_supported_regions[region_code]
+
+        mock_get_region.side_effect = fake_get_region
+
+        def fake_is_enabled(
+            state_code: StateCode,
+            ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
+        ) -> bool:
+            return state_code.value == "us_xx"
+
+        self.mock_raw_data_dag.side_effect = fake_is_enabled
+
+        headers = APP_ENGINE_HEADERS
+        response = self.client.get(
+            "/ensure_all_raw_file_paths_normalized", query_string={}, headers=headers
+        )
+
+        self.assertEqual(200, response.status_code)
+        mock_cloud_task_manager.create_direct_ingest_handle_new_files_task.assert_has_calls(
+            [
+                call(
+                    fake_supported_regions[self.region_code],
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    can_start_ingest=True,
+                ),
+                call(
+                    fake_supported_regions[self.region_code],
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    can_start_ingest=True,
+                ),
+            ]
+        )
+
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
         "recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller.DirectIngestCloudTaskQueueManagerImpl"
@@ -651,6 +798,51 @@ class TestDirectIngestControl(unittest.TestCase):
             data=body_encoded,
         )
         self.assertEqual(409, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
+    def test_raw_data_import_raw_data_dag_enabled(
+        self,
+        mock_region: mock.MagicMock,
+        mock_environment: mock.MagicMock,
+    ) -> None:
+        region_code = "us_xx"
+
+        mock_environment.return_value = "staging"
+        mock_controller = create_autospec(IngestRawFileImportController)
+        self.mock_controller_factory.build.return_value = mock_controller
+        self.mock_raw_data_dag.return_value = True
+        mock_region.return_value = fake_region(
+            region_code=region_code, environment="staging"
+        )
+        bucket_name = build_ingest_bucket_name(
+            project_id="recidiviz-xxx",
+            region_code=self.region_code,
+            suffix="",
+        )
+
+        raw_data_path = to_normalized_unprocessed_raw_file_path(
+            f"{bucket_name}/raw_data_path.csv"
+        )
+        import_args = GcsfsRawDataBQImportArgs(
+            raw_data_file_path=GcsfsFilePath.from_absolute_path(raw_data_path)
+        )
+        request_args = {"region": region_code, "file_path": raw_data_path}
+        body = {
+            "cloud_task_args": import_args.to_serializable(),
+            "args_type": "GcsfsRawDataBQImportArgs",
+        }
+        body_encoded = json.dumps(body).encode()
+
+        headers = APP_ENGINE_HEADERS
+
+        with self.assertRaises(DirectIngestGatingError):
+            _ = self.client.post(
+                "/raw_data_import",
+                query_string=request_args,
+                headers=headers,
+                data=body_encoded,
+            )
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
@@ -757,6 +949,70 @@ class TestDirectIngestControl(unittest.TestCase):
             self.assertEqual(len(controllers), len(DirectIngestInstance))
             for mock_controller in controllers:
                 mock_controller.kick_scheduler.assert_called_once()
+
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
+    def test_kick_all_schedulers_raw_data_dag_enabled(
+        self,
+        mock_get_region: mock.MagicMock,
+        mock_environment: mock.MagicMock,
+        mock_states_in_env: mock.MagicMock,
+    ) -> None:
+        fake_supported_regions = {
+            "us_mo": fake_region(region_code="us_mo", environment="staging"),
+            self.region_code: fake_region(
+                region_code=self.region_code, environment="production"
+            ),
+        }
+        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
+
+        def fake_is_enabled(
+            state_code: StateCode,
+            ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
+        ) -> bool:
+            return state_code == StateCode.US_MO
+
+        self.mock_raw_data_dag.side_effect = fake_is_enabled
+
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
+        region_to_mock_controller = defaultdict(list)
+
+        def mock_build_controller(
+            region_code: str,
+            ingest_instance: DirectIngestInstance,
+            allow_unlaunched: bool,
+        ) -> IngestRawFileImportController:
+            self.assertFalse(allow_unlaunched)
+            if region_code is None:
+                raise ValueError("Expected nonnull region code")
+            mock_controller = Mock(__class__=IngestRawFileImportController)
+            mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
+            mock_controller.ingest_instance.return_value = ingest_instance
+            region_to_mock_controller[region_code.lower()].append(mock_controller)
+            return mock_controller
+
+        self.mock_controller_factory.build.side_effect = mock_build_controller
+
+        def fake_get_region(region_code: str) -> DirectIngestRegion:
+            return fake_supported_regions[region_code]
+
+        mock_get_region.side_effect = fake_get_region
+
+        mock_environment.return_value = "staging"
+
+        kick_all_schedulers()
+
+        mock_states_in_env.assert_called()
+        for region_code, controllers in region_to_mock_controller.items():
+            self.assertEqual(len(controllers), len(DirectIngestInstance))
+            for mock_controller in controllers:
+                if fake_is_enabled(
+                    StateCode[region_code.upper()], mock_controller.ingest_instance
+                ):
+                    mock_controller.kick_scheduler.assert_not_called()
+                else:
+                    mock_controller.kick_scheduler.assert_called_once()
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")

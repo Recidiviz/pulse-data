@@ -28,6 +28,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlready
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller_factory import (
     IngestRawFileImportControllerFactory,
@@ -39,6 +40,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManager,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -56,6 +58,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
+    DirectIngestGatingError,
 )
 from recidiviz.monitoring import context
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -153,17 +156,26 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
         return response, HTTPStatus.BAD_REQUEST
 
     bucket_path = GcsfsBucketPath(bucket_name=bucket)
+    ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(bucket_path)
+
     path = GcsfsPath.from_bucket_and_blob_name(
         bucket_name=bucket, blob_name=relative_file_path
     )
-    logging.info("Handling file %s", path.abs_path())
-
-    ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(bucket_path)
 
     with context.push_region_context(
         region_code,
         ingest_instance=ingest_instance.value,
     ):
+        if is_raw_data_import_dag_enabled(
+            StateCode(region_code.upper()), ingest_instance
+        ):
+            raise DirectIngestGatingError(
+                f"App Engine endpoint /handle_direct_ingest_file for region "
+                f"[{region_code}] and instance [{ingest_instance.value}] should not be "
+                f"called when raw data import DAG is enabled"
+            )
+
+        logging.info("Handling file %s", path.abs_path())
         try:
             controller = IngestRawFileImportControllerFactory.build(
                 region_code=region_code,
@@ -216,6 +228,16 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
         region_code,
         ingest_instance=ingest_instance.value,
     ):
+
+        if is_raw_data_import_dag_enabled(
+            StateCode(region_code.upper()), ingest_instance
+        ):
+            raise DirectIngestGatingError(
+                f"App Engine endpoint /handle_new_files for region [{region_code}] and "
+                f"instance [{ingest_instance.value}] should not be called when raw "
+                f"data import DAG is enabled"
+            )
+
         try:
             controller = IngestRawFileImportControllerFactory.build(
                 region_code=region_code,
@@ -253,8 +275,21 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
 
     supported_states = get_direct_ingest_states_existing_in_env()
     for state_code in supported_states:
-        logging.info("Ensuring paths normalized for region [%s]", state_code.value)
         for ingest_instance in DirectIngestInstance:
+            if is_raw_data_import_dag_enabled(state_code, ingest_instance):
+                logging.info(
+                    "Skipping normalization for region [%s] and instance [%s] as raw "
+                    "data import DAG is enabled",
+                    state_code.value,
+                    ingest_instance.value,
+                )
+                continue
+
+            logging.info(
+                "Ensuring paths normalized for region [%s] and instance [%s]",
+                state_code.value,
+                ingest_instance.value,
+            )
             with context.push_region_context(
                 state_code.value, ingest_instance=ingest_instance.value
             ):
@@ -305,6 +340,15 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
         region_code,
         ingest_instance=ingest_instance.value,
     ):
+        if is_raw_data_import_dag_enabled(
+            StateCode(region_code.upper()), ingest_instance
+        ):
+            raise DirectIngestGatingError(
+                f"App Engine endpoint /raw_data_import for region [{region_code}] and "
+                f"instance [{ingest_instance.value}] should not be called when raw data"
+                f" import DAG is enabled"
+            )
+
         json_data = request.get_data(as_text=True)
         data_import_args = _parse_cloud_task_args(json_data)
 
@@ -375,6 +419,16 @@ def scheduler() -> Tuple[str, HTTPStatus]:
         region_code,
         ingest_instance=ingest_instance.value,
     ):
+
+        if is_raw_data_import_dag_enabled(
+            StateCode(region_code.upper()), ingest_instance
+        ):
+            raise DirectIngestGatingError(
+                f"App Engine endpoint /scheduler for region [{region_code}] and "
+                f"instance [{ingest_instance.value}] should not be called when raw "
+                f"data import DAG is enabled"
+            )
+
         try:
             controller = IngestRawFileImportControllerFactory.build(
                 region_code=region_code,
@@ -410,6 +464,9 @@ def kick_all_schedulers() -> None:
         if not region.is_ingest_launched_in_env():
             continue
         for ingest_instance in DirectIngestInstance:
+            if is_raw_data_import_dag_enabled(state_code, ingest_instance):
+                continue
+
             with context.push_region_context(
                 state_code.value, ingest_instance=ingest_instance.value
             ):

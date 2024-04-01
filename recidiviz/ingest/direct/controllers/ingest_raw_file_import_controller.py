@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     build_scheduler_task_id,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -67,6 +68,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
+    DirectIngestGatingError,
 )
 from recidiviz.monitoring import trace
 from recidiviz.persistence.database.schema.operations.dao import (
@@ -87,6 +89,13 @@ class IngestRawFileImportController:
         region_module_override: Optional[ModuleType],
     ) -> None:
         """Initialize the controller."""
+        if is_raw_data_import_dag_enabled(state_code, ingest_instance):
+            raise DirectIngestGatingError(
+                f"Should not need to instantiate controller for region "
+                f"[{state_code.value}] and [{ingest_instance.value}] when raw data "
+                f"import DAG is active"
+            )
+
         self.state_code = state_code
         self.region_module_override = region_module_override
         self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
