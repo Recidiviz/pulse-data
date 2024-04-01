@@ -71,6 +71,9 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_termination_date_stable_counts
     hard_max_allowed_error_override: .27
     override_reason: We're expecting this is standard variation.
+  - validation_name: outliers_staff_count_percent_change_intermonth
+    hard_max_allowed_error_override: .04
+    override_reason: We're expecting this is standard variation.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 2000
