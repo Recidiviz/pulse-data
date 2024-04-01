@@ -50,6 +50,7 @@ from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataset,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -813,3 +814,21 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError as error:
             logging.exception(error)
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    # TODO(#28239): delete once raw data import dag is enabled in all states
+    @bp.route(
+        "/api/ingest_operations/is_raw_data_import_dag_enabled",
+        methods=["POST"],
+    )
+    def _is_raw_data_import_dag_enabled() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(request_json["instance"].upper())
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        return (
+            jsonify(is_raw_data_import_dag_enabled(state_code, ingest_instance)),
+            HTTPStatus.OK,
+        )

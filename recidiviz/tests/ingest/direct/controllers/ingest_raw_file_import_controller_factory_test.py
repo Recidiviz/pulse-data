@@ -43,7 +43,10 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import DirectIngestError
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestGatingError,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils.fake_region import fake_region
@@ -227,6 +230,25 @@ class TestIngestRawFileImportControllerFactory(unittest.TestCase):
         with self.assertRaisesRegex(
             DirectIngestError,
             r"^Unsupported direct ingest region \[US_XX\] in project \[recidiviz-456\]$",
+        ):
+            _ = IngestRawFileImportControllerFactory.build(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                allow_unlaunched=False,
+            )
+
+    @patch(
+        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.is_raw_data_import_dag_enabled",
+        Mock(return_value=True),
+    )
+    @patch(
+        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
+        Mock(return_value=[StateCode.US_XX]),
+    )
+    def test_build_for_raw_data_dag_enabld(self) -> None:
+        with self.assertRaisesRegex(
+            DirectIngestGatingError,
+            r"^IngestRawFileImportControllerFactory for region \[US_XX\] and instance \[PRIMARY\] should not need to be called once raw data import DAG is active$",
         ):
             _ = IngestRawFileImportControllerFactory.build(
                 region_code="us_xx",

@@ -47,7 +47,10 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
 )
 from recidiviz.ingest.direct.types.cloud_task_args import GcsfsRawDataBQImportArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import DirectIngestError
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestGatingError,
+)
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
@@ -356,6 +359,19 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         self.assertEqual(
             expected_count, len(controller.raw_file_import_manager.imported_paths)
         )
+
+    @patch(
+        "recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller.is_raw_data_import_dag_enabled",
+        Mock(return_value=True),
+    )
+    def test_raw_data_dag_enabled(self) -> None:
+        with self.assertRaises(DirectIngestGatingError):
+            _ = build_fake_ingest_raw_file_import_controller(
+                state_code=StateCode.US_XX,
+                ingest_instance=self.ingest_instance,
+                initial_statuses=self.rerun_just_started_statuses,
+                run_async=True,
+            )
 
     def test_state_runs_files_in_order(self) -> None:
         controller = self.run_async_file_order_test_for_controller_cls()

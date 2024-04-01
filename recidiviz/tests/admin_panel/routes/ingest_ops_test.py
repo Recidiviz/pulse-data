@@ -310,3 +310,35 @@ class IngestOpsEndpointTests(TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {"state_person": 2341234, "state_staff": 1923})
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.is_raw_data_import_dag_enabled",
+        Mock(return_value=True),
+    )
+    def test_raw_data_dag_enabled(self) -> None:
+        # Act
+        response = self.client.post(
+            "/api/ingest_operations/is_raw_data_import_dag_enabled",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            json={"stateCode": "US_XX", "instance": "PRIMARY"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, True)
+
+    @patch(
+        "recidiviz.admin_panel.routes.ingest_ops.is_raw_data_import_dag_enabled",
+        Mock(return_value=False),
+    )
+    def test_raw_data_dag_not_enabled(self) -> None:
+        # Act
+        response = self.client.post(
+            "/api/ingest_operations/is_raw_data_import_dag_enabled",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            json={"stateCode": "US_XX", "instance": "PRIMARY"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, False)

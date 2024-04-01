@@ -382,3 +382,18 @@ export const runIngestDAGForState = async (
     stateCode,
   });
 };
+
+// TODO(#28239) remove call once raw data DAG is enabled for all states
+// Determine if raw data import DAG is enabled
+export const isRawDataDAGIsEnabled = async (
+  stateCode: string,
+  instance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/is_raw_data_import_dag_enabled",
+    {
+      stateCode,
+      instance,
+    }
+  );
+};

@@ -24,6 +24,7 @@ from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller impor
     IngestRawFileImportController,
     check_is_region_launched_in_env,
 )
+from recidiviz.ingest.direct.gating import is_raw_data_import_dag_enabled
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
@@ -31,6 +32,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
+    DirectIngestGatingError,
 )
 from recidiviz.utils import metadata
 
@@ -57,6 +59,11 @@ class IngestRawFileImportControllerFactory:
                 msg=f"Unsupported direct ingest region [{region_code.upper()}] in "
                 f"project [{metadata.project_id()}]",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
+        if is_raw_data_import_dag_enabled(state_code, ingest_instance):
+            raise DirectIngestGatingError(
+                f"IngestRawFileImportControllerFactory for region [{state_code.value}] and instance [{ingest_instance.value}] should not need to be called once raw data import DAG is active"
             )
 
         region = direct_ingest_regions.get_direct_ingest_region(
