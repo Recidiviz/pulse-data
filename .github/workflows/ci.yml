@@ -307,7 +307,7 @@ jobs:
             --name=recidiviz-bq-emulator-1 \
             --cpus 1 \
             --cpuset-cpus 0 \
-            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.7 \
+            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.8 \
             /bin/bigquery-emulator \
             --port=9050 \
             --project=recidiviz-bq-emulator-project \
@@ -318,7 +318,7 @@ jobs:
             --name=recidiviz-bq-emulator-2 \
             --cpus 1 \
             --cpuset-cpus 1 \
-            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.7 \
+            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.8 \
             /bin/bigquery-emulator \
             --port=9051 \
             --project=recidiviz-bq-emulator-project \

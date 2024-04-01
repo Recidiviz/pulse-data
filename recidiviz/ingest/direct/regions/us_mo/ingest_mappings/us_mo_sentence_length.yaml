@@ -8,9 +8,9 @@ input_columns:
   - critical_date
   - BS_PD
   - CG_MD
-  - BT_SLY
-  - BT_SLM
-  - BT_SLD
+  - sentence_length_years
+  - sentence_length_months
+  - sentence_length_days
   - BT_SCT
   - BT_PC
 unused_columns: []
@@ -30,9 +30,9 @@ output:
                   $custom:
                     $function: us_mo_custom_parsers.max_length_days_from_ymd
                     $args:
-                      years: BT_SLY
-                      months: BT_SLM
-                      days: BT_SLD
+                      years: sentence_length_years
+                      months: sentence_length_months
+                      days: sentence_length_days
                 earned_time_days: BT_SCT
                 parole_eligibility_date_external:
                   $custom:

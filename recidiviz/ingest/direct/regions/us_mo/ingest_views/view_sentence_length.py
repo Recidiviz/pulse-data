@@ -26,22 +26,32 @@ entity.
 
 Raw data files include:
   - LBAKRDTA_TAK020 is the crosswalk between individual sentences and eligibility data
-  - LBAKRDTA_TAK022 has the base information for incarceration sentences
+  - LBAKRDTA_TAK022 has the base information for charges
   - LBAKRDTA_TAK023 has detailed information for incarceration sentences
+  - LBAKRDTA_TAK024 has detailed information for supervision sentences
+  - LBAKRDTA_TAK025 has relates sentences to their status code information
+  - LBAKRDTA_TAK026 has detailed information for sentence status codes
   - LBAKRDTA_TAK044 has information for parole eligibility
+
+The critical dates for StateSentenceLength arise from a few places:
+  - A create/update to charge level information (so could affect several sentences)
+        - It's important to note we build critical dates for charge level information, but
+          also inner join to sentences so that we do not accidentally create non-existent sentences.
+  - A create/update to sentence information, like projected dates
+  - A create/update to parole eligibility
+
+Supervision and incarceration sentences are simply stacked together via UNION ALL
+after getting common critical dates from their charges. We filter down to unique rows based on sentence_external_id
+and critical date, allowing us to get changes in sentence length data from each source.
 """
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
+    FROM_BU_BV_BW_WHERE_NOT_PRETRIAL,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-
-def table_ids(prefix: str) -> str:
-    return f"""
-    CONCAT({prefix}_DOC, '-', {prefix}_CYC, '-', {prefix}_SEO) AS sentence_id,
-    CONCAT({prefix}_DOC, '-', {prefix}_CYC) AS sentence_group_id
-    """
 
 
 def parsed_datetime_columns(prefix: str) -> str:
@@ -73,7 +83,7 @@ def parsed_datetime_columns(prefix: str) -> str:
 def fill_value(col: str) -> str:
     return f"""
     LAST_VALUE({col} IGNORE NULLS) 
-        OVER(PARTITION BY sentence_id ORDER BY critical_date, src ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+        OVER(PARTITION BY sentence_ext_id ORDER BY critical_date, src ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
     AS {col}
     """
 
@@ -97,150 +107,241 @@ def bad_dates() -> str:
     )
 
 
-# Creates a table with a unique key of sentence_id, sentence_group_id, critical_date
-# Columns BS_PD, CG_MD, BT_SLY, BT_SLM, BT_SLD, BT_SCT, BT_PC
-# And then grouped columns group_BS_PD, group_CG_MD, group_BT_SLY, group_BT_SLM, group_BT_SLD, group_BT_SCT, group_BT_PC
-# The unique key of sentence_id, critical_date is needed to union data from different tables together.
-# The sentence_group_id, critical_date pairing is needed to make data for StateSentenceGroup
-
-# TODO(#26620) Include supervision sentence data.
-VIEW_QUERY_TEMPLATE = f"""
-WITH _bs_cleaned AS (
+PROJECTED_COMPLETION_DATES = f"""
+SELECT DISTINCT
+    BS_DOC AS DOC,
+    BS_CYC AS CYC,
+    BS_SEO AS SEO,
+    {critical_date_column()},
+    BS_PD, -- projected completion_date
+    CAST(NULL AS STRING) AS CG_MD
+FROM (
     SELECT 
-        {table_ids('BS')},
+        BS_DOC,
+        BS_CYC,
+        BS_SEO,
         {parsed_datetime_columns('BS')},
         BS_PD
     FROM 
         {{LBAKRDTA_TAK022@ALL}}
     WHERE
         BS_PD NOT IN {bad_dates()}
-),
-_bs_to_union AS (
-    SELECT DISTINCT
-        'BS' AS src,
-        sentence_id,
-        sentence_group_id,
-        {critical_date_column()},
-        BS_PD,
-        CAST(NULL AS string) AS CG_MD, 
-        CAST(NULL AS string) AS BT_SLY, 
-        CAST(NULL AS string) AS BT_SLM, 
-        CAST(NULL AS string) AS BT_SLD, 
-        CAST(NULL AS string) AS BT_SCT, 
-        CAST(NULL AS string) AS BT_PC
+) AS _bs
+"""
+
+ELIGIBILITY_DATES = f"""
+-- We will use the critical dates from the CG file, and not the crosswalk file
+SELECT
+    CG.CG_DOC AS DOC,
+    CG.CG_CYC AS CYC,
+    BQ.BQ_SEO AS SEO,
+    {critical_date_column()},
+    CAST(NULL AS STRING) AS BS_PD,
+    CG.CG_MD  -- Eligibility Minimum Release Date
+FROM (
+    SELECT
+         CG_DOC,
+         CG_CYC,
+         CG_ESN,
+         CG_MD,
+        {parsed_datetime_columns('CG')}
     FROM
-        _bs_cleaned
-),
-_bt_cleaned AS (
+    {{LBAKRDTA_TAK044@ALL}}
+) AS CG
+JOIN (
+    SELECT
+        BQ_DOC,
+        BQ_CYC,
+        BQ_SEO,
+        BQ_ESN
+    FROM
+        {{LBAKRDTA_TAK020}}
+) AS BQ
+ON
+    BQ_DOC = CG_DOC AND
+    BQ_CYC = CG_CYC AND
+    BQ_ESN = CG_ESN
+WHERE
+    CG_MD NOT IN {bad_dates()}
+"""
+
+INCARCERATION_SENTENCES = f"""
+SELECT DISTINCT
+    'BT' AS src,
+    person_ext_id,
+    sentence_ext_id, 
+    {critical_date_column()},
+    BT_SLY AS sentence_length_years, 
+    BT_SLM AS sentence_length_months, 
+    BT_SLD AS sentence_length_days, 
+    BT_SCT, 
+    BT_PC
+FROM (
     SELECT 
-        {table_ids('BT')},
+        BT_DOC AS person_ext_id,
+        CONCAT(BT_DOC, '-', BT_CYC, '-', BT_SEO, '-', 'INCARCERATION') AS sentence_ext_id,
         {parsed_datetime_columns('BT')},
-        CASE WHEN BT_SLY = '9999' THEN NULL ELSE BT_SLY END AS BT_SLY, -- sentence length, years
-        CASE WHEN BT_SLM = '99'   THEN NULL ELSE BT_SLM END AS BT_SLM, -- sentence length, months
-        CASE WHEN BT_SLD = '99'   THEN NULL ELSE BT_SLD END AS BT_SLD, -- sentence length, days
+        CASE WHEN BT_SLY IN ('9999', '8888', '6666') THEN NULL ELSE BT_SLY END AS BT_SLY, -- sentence length, years
+        CASE WHEN BT_SLM IN ('99', '88', '66') THEN NULL ELSE BT_SLM END AS BT_SLM, -- sentence length, months
+        CASE WHEN BT_SLD IN ('99', '88', '66') THEN NULL ELSE BT_SLD END AS BT_SLD, -- sentence length, days
         BT_SCT, -- earned time
         CASE WHEN BT_PC NOT IN {bad_dates()} THEN BT_PC ELSE NULL END AS BT_PC
     FROM 
         {{LBAKRDTA_TAK023@ALL}}
-),
-_bt_to_union AS (
-    SELECT DISTINCT
-        'BT' AS src,
-        sentence_id, 
-        sentence_group_id,
-        {critical_date_column()},
-        CAST(NULL AS string) AS BS_PD,
-        CAST(NULL AS string) AS CG_MD, 
-        BT_SLY, 
-        BT_SLM, 
-        BT_SLD, 
-        BT_SCT, 
-        BT_PC
-    FROM
-        _bt_cleaned
-),
-_cg_date AS (
+) AS _bt
+"""
+
+_NOT_PRETRIAL_OR_BOND_SUPERVISION_SENTENCES = f"""
+SELECT DISTINCT
+    BU.BU_DOC, -- unique for each person
+    BU.BU_CYC, -- unique for each sentence group
+    BU.BU_SEO -- unique for each charge
+{FROM_BU_BV_BW_WHERE_NOT_PRETRIAL}
+"""
+
+SUPERVISION_SENTENCES = f"""
+SELECT DISTINCT
+    'BU' AS src,
+    person_ext_id,    
+    sentence_ext_id, 
+    {critical_date_column()},
+    BU_SBY AS sentence_length_years, 
+    BU_SBM AS sentence_length_months, 
+    BU_SBD AS sentence_length_days, 
+    CAST(NULL AS STRING) AS BT_SCT, 
+    CAST(NULL AS STRING) AS BT_PC
+FROM (
     SELECT 
-        CG_DOC, 
-        CG_CYC, 
-        CG_ESN, 
-        CG_MD,
-        {parsed_datetime_columns('CG')}
+        -- recall that a sentence is updated with BU_FSO, so the ID is just, DOC, CYC, and SEO
+        BU_ALL.BU_DOC AS person_ext_id,
+        CONCAT(BU_ALL.BU_DOC, '-', BU_ALL.BU_CYC, '-', BU_ALL.BU_SEO, '-', 'SUPERVISION') AS sentence_ext_id,
+        {parsed_datetime_columns('BU')},
+        CASE WHEN BU_ALL.BU_SBY IN ('9999', '8888', '6666') THEN NULL ELSE BU_SBY END AS BU_SBY, -- probation length, years
+        CASE WHEN BU_ALL.BU_SBM IN ('99', '88', '66') THEN NULL ELSE BU_SBM END AS BU_SBM, -- probation length, months
+        CASE WHEN BU_ALL.BU_SBD IN ('99', '88', '66') THEN NULL ELSE BU_SBD END AS BU_SBD -- probation length, days
     FROM 
-        {{LBAKRDTA_TAK044@ALL}}
-    WHERE 
-        CG_MD NOT IN {bad_dates()}
-),
-_cg_cleaned AS (
-    SELECT DISTINCT
-        CG_DOC, 
-        CG_CYC, 
-        CG_ESN, 
-        CG_MD,
-        {critical_date_column()}
-    FROM 
-        _cg_date
-),
-_bq_cleaned AS (
-    SELECT DISTINCT 
-        BQ_DOC, 
-        BQ_CYC, 
-        BQ_SEO, 
-        BQ_ESN,
-        {table_ids('BQ')}
-    FROM 
-        {{LBAKRDTA_TAK020@ALL}}
-),
-_cg_bq_to_union AS (
-    SELECT DISTINCT
-        'CQ' AS src,
-        sentence_id,
-        sentence_group_id,
-        critical_date, 
-        CAST(NULL AS string) AS BS_PD,
-        CG_MD, 
-        CAST(NULL AS string) AS BT_SLY, 
-        CAST(NULL AS string) AS BT_SLM, 
-        CAST(NULL AS string) AS BT_SLD, 
-        CAST(NULL AS string) AS BT_SCT, 
-        CAST(NULL AS string) AS BT_PC
-    FROM 
-        _bq_cleaned
+        {{LBAKRDTA_TAK024@ALL}} AS BU_ALL
     JOIN 
-        _cg_cleaned
-    ON 
-        BQ_DOC = CG_DOC AND 
-        BQ_CYC = CG_CYC AND 
-        BQ_ESN = CG_ESN
-),
-unioned_rows AS (
-    SELECT * FROM _bs_to_union
-    UNION ALL 
-    SELECT * FROM _cg_bq_to_union
-    UNION ALL 
-    SELECT * FROM _bt_to_union
-), 
-sentence_length_values AS (
-    SELECT
-        -- regex should have double slash in BigQuery
-        REGEXP_EXTRACT(sentence_id, '^(\\\\d+)-') AS person_ext_id,
-        sentence_id AS sentence_ext_id,
-        critical_date,
-        {fill_value('BS_PD')},
-        {fill_value('CG_MD')},
-        {fill_value('BT_SLY')},
-        {fill_value('BT_SLM')},
-        {fill_value('BT_SLD')},
-        {fill_value('BT_SCT')},
-        {fill_value('BT_PC')}
-    FROM 
-        unioned_rows
-    -- Filters down to only the last row per PK for each date
-    WHERE true -- needs a WHERE clause to be valid in the emulator query planner/analyzer
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY sentence_id, critical_date ORDER BY src DESC) = 1
-)
--- DirectIngestViewQueryBuilder didn't like the QUALIFY at the end.
-SELECT * FROM sentence_length_values
+        ({_NOT_PRETRIAL_OR_BOND_SUPERVISION_SENTENCES}) AS not_pretrial
+    USING (BU_DOC, BU_CYC, BU_SEO)
+) AS _bu
+"""
+
+VIEW_QUERY_TEMPLATE = f"""
+WITH 
+    projected_completion_dates AS ({PROJECTED_COMPLETION_DATES}),
+    eligibility_dates AS ({ELIGIBILITY_DATES}),
+    incarceration_only_ledger AS ({INCARCERATION_SENTENCES}),
+    supervision_only_ledger AS ({SUPERVISION_SENTENCES}),
+    -- Build charge level ledger with projected_completion_date and eligibility_date
+    charge_level_ledger AS (
+        SELECT * FROM projected_completion_dates
+        UNION ALL
+        SELECT * FROM eligibility_dates
+    ),
+    -- Build a ledger with critical dates from charges and sentences having incarceration data
+    incarceration_ledger AS (
+        SELECT
+            'CHARGE' AS src,
+            DOC AS person_ext_id,
+            sentence_ext_id,
+            critical_date,
+            BS_PD,  -- Charge level, projected completion date
+            CG_MD,  -- Charge level, eligibility minimum release date
+            CAST(NULL AS STRING) AS sentence_length_years, 
+            CAST(NULL AS STRING) AS sentence_length_months, 
+            CAST(NULL AS STRING) AS sentence_length_days, 
+            CAST(NULL AS STRING) AS BT_SCT, 
+            CAST(NULL AS STRING) AS BT_PC
+        FROM
+            charge_level_ledger 
+        JOIN (
+            SELECT sentence_ext_id
+              FROM incarceration_only_ledger
+        ) AS _inc_sentence_ids
+        ON
+            CONCAT(DOC, '-', CYC, '-', SEO, '-', 'INCARCERATION') = _inc_sentence_ids.sentence_ext_id
+        UNION ALL
+        SELECT
+            src,
+            person_ext_id,
+            sentence_ext_id, 
+            critical_date,
+            CAST(NULL AS STRING) AS BS_PD,  -- Charge level, projected completion date
+            CAST(NULL AS STRING) AS CG_MD,  -- Charge level, eligibility minimum release date
+            sentence_length_years, 
+            sentence_length_months, 
+            sentence_length_days, 
+            BT_SCT, 
+            BT_PC
+        FROM
+            incarceration_only_ledger
+    ),
+    -- Build a ledger with critical dates from charges and sentences having supervision data
+    supervision_ledger AS (
+        SELECT
+            'CHARGE' AS src,
+            DOC AS person_ext_id,
+            CONCAT(DOC, '-', CYC, '-', SEO, '-', 'SUPERVISION') AS sentence_ext_id,
+            critical_date,
+            BS_PD,  -- Charge level, projected completion date
+            CG_MD,  -- Charge level, eligibility minimum release date
+            CAST(NULL AS STRING) AS sentence_length_years, 
+            CAST(NULL AS STRING) AS sentence_length_months, 
+            CAST(NULL AS STRING) AS sentence_length_days, 
+            CAST(NULL AS STRING) AS BT_SCT, 
+            CAST(NULL AS STRING) AS BT_PC
+        FROM
+            charge_level_ledger 
+        JOIN (
+            SELECT sentence_ext_id
+              FROM supervision_only_ledger
+        ) AS _sup_sentence_ids
+        ON
+            CONCAT(DOC, '-', CYC, '-', SEO, '-', 'SUPERVISION') = _sup_sentence_ids.sentence_ext_id
+        UNION ALL
+        SELECT
+            src,
+            person_ext_id, 
+            sentence_ext_id, 
+            critical_date,
+            CAST(NULL AS STRING) AS BS_PD,  -- Charge level, projected completion date
+            CAST(NULL AS STRING) AS CG_MD,  -- Charge level, eligibility minimum release date
+            sentence_length_years, 
+            sentence_length_months, 
+            sentence_length_days, 
+            BT_SCT, 
+            BT_PC
+        FROM
+            supervision_only_ledger
+    ), unioned_rows AS (
+        SELECT * FROM incarceration_ledger
+        UNION ALL
+        SELECT * FROM supervision_ledger
+    ),
+    sentence_length_values AS (
+        SELECT
+            person_ext_id,
+            sentence_ext_id,
+            critical_date,
+            {fill_value('BS_PD')},
+            {fill_value('CG_MD')},
+            {fill_value('sentence_length_years')},
+            {fill_value('sentence_length_months')},
+            {fill_value('sentence_length_days')},
+            {fill_value('BT_SCT')},
+            {fill_value('BT_PC')}
+        FROM 
+            unioned_rows
+        WHERE 
+            -- needs a WHERE clause to be valid in the emulator query planner/analyzer   
+            true 
+        QUALIFY 
+            -- Filters down to only the last row per PK for each date
+            ROW_NUMBER() OVER (PARTITION BY sentence_ext_id, critical_date ORDER BY src DESC) = 1
+    )
+    -- DirectIngestViewQueryBuilder didn't like the QUALIFY at the end.
+    SELECT * FROM sentence_length_values
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
