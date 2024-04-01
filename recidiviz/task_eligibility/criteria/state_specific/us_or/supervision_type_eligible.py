@@ -38,8 +38,6 @@ _CRITERIA_NAME = "US_OR_SUPERVISION_TYPE_ELIGIBLE"
 
 _DESCRIPTION = """Excludes individuals under ineligible supervision types from eligibility for OR earned discharge"""
 
-# TODO(#27324): If we change how we ingest sup. types, we may need to revise this
-# criterion query.
 # TODO(#27325): Try to break this criterion up into multiple reusable criteria (rather than a
 # single, highly-specific-to-EDIS criterion).
 _QUERY_TEMPLATE = f"""
