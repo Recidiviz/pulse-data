@@ -86,6 +86,7 @@ output:
                   - "Japanese"
                   - "Thai"
                   - "Other Paciific Islander Not Listed"
+                  - "Jamaican"
                 StateEthnicity.EXTERNAL_UNKNOWN:
                   - "Unknown"
               $ignore:
