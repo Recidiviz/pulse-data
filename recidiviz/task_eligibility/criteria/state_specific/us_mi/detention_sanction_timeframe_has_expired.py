@@ -18,7 +18,10 @@
 for a resident has expired. Policy dictates that detention should not exceed 10 days for
 each violation or 20 days for all violations arising from a specific incident.
 """
-from recidiviz.calculator.query.bq_utils import revert_nonnull_start_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    revert_nonnull_start_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -61,6 +64,8 @@ WITH sanctions_and_locations AS (
         AND punishment_length_days IS NOT NULL
         AND date_effective IS NOT NULL
         AND state_code = 'US_MI'
+        --do not include zero day sanctions
+        AND date_effective != {nonnull_end_date_clause('projected_end_date')}
     
     UNION ALL 
     SELECT
