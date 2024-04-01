@@ -60,15 +60,9 @@ const filterToRefreshesDuringWindow = (
 const getLabelForStatus = (status: IngestStatus) => {
   switch (status) {
     case IngestStatus.FLASH_COMPLETED:
-      return "Rerun Flashed";
+      return "Raw Data Reimport Flashed";
     case IngestStatus.RAW_DATA_IMPORT_IN_PROGRESS:
       return "Raw Data Import";
-    case IngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS:
-      return "Ingest View Materialization";
-    case IngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS:
-      return "Entity Ingest";
-    case IngestStatus.UP_TO_DATE:
-      return "Ingest Up to Date";
     case IngestStatus.RAW_DATA_UP_TO_DATE:
       return "Raw Data Import Up to Date";
     default:
@@ -86,9 +80,6 @@ const getLabelForStatuses = (statuses: IngestInstanceStatusInfo[]): string => {
   const labels = [];
   if (statusNames.includes(IngestStatus.RAW_DATA_IMPORT_IN_PROGRESS)) {
     labels.push(getLabelForStatus(IngestStatus.RAW_DATA_IMPORT_IN_PROGRESS));
-  }
-  if (statusNames.includes(IngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS)) {
-    labels.push(getLabelForStatus(IngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS));
   }
   return labels.join(" & ");
 };
@@ -199,7 +190,8 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
                       statusIdx === ingestStatuses.length - 1;
                     // If this is not the first refresh, skip the first status.
                     return (!firstRefresh ||
-                      ingestStatus.status === IngestStatus.UP_TO_DATE) &&
+                      ingestStatus.status ===
+                        IngestStatus.RAW_DATA_UP_TO_DATE) &&
                       firstStatusForRefresh ? undefined : (
                       <Timeline.Item
                         label={formatDatetime(

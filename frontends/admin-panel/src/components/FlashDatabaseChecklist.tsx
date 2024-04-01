@@ -1146,7 +1146,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               );
             }}
           >
-            CLEAN UP SECONDARY + CANCEL RERUN
+            CLEAN UP SECONDARY + CANCEL RAW DATA REIMPORT
           </Button>
         </h3>
       </div>
@@ -1184,7 +1184,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               );
             }}
           >
-            CLEAN UP SECONDARY + CANCEL RERUN
+            CLEAN UP SECONDARY + CANCEL RAW DATA REIMPORT
           </Button>
         </h3>
       </div>
