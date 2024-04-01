@@ -53,7 +53,7 @@ WHERE event = "COMPARTMENT_LEVEL_2_START"
     # Check that generate_event_selector_query returns intended output for the officer level population query
     def test_generate_event_selector_query_attribute_lists_officer(self) -> None:
         my_events = EventSelector(
-            event_type=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
+            event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
             event_conditions_dict={
                 "violation_type": ["TECHNICAL"],
             },
@@ -62,7 +62,7 @@ WHERE event = "COMPARTMENT_LEVEL_2_START"
         expected_query_string = """
 SELECT *, end_date AS end_date_exclusive
 FROM `{project_id}.analyst_data.officer_events_materialized`
-WHERE event = "WORKFLOWS_CLIENT_STATUS_UPDATE"
+WHERE event = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
         AND JSON_EXTRACT_SCALAR(event_attributes, "$.violation_type") IN ("TECHNICAL")
 """
         self.assertEqual(query_string, expected_query_string)

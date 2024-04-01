@@ -75,7 +75,7 @@ class WorkflowsOfficerEventQueryConfig:
 WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_profile_viewed",
-        officer_event_name=EventType.WORKFLOWS_PAGE,
+        officer_event_name=EventType.WORKFLOWS_USER_PAGE,
         workflows_event_type="PROFILE_VIEWED",
         has_person_external_id=True,
         has_opportunity_type=False,
@@ -84,7 +84,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_opportunity_previewed",
-        officer_event_name=EventType.WORKFLOWS_PAGE,
+        officer_event_name=EventType.WORKFLOWS_USER_PAGE,
         workflows_event_type="OPPORTUNITY_PREVIEWED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -93,7 +93,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_viewed",
-        officer_event_name=EventType.WORKFLOWS_PAGE,
+        officer_event_name=EventType.WORKFLOWS_USER_PAGE,
         workflows_event_type="FORM_VIEWED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -102,7 +102,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_copied",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="FORM_COPIED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -111,7 +111,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_printed",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="FORM_PRINTED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -120,7 +120,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_first_edited",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="FORM_FIRST_EDITED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -129,7 +129,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_status_updated",
-        officer_event_name=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
+        officer_event_name=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
         workflows_event_type="CLIENT_REFERRAL_STATUS_UPDATED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -138,7 +138,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_submitted",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="FORM_SUBMITTED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -147,7 +147,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_surfaced",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="CLIENT_SURFACED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -156,7 +156,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="identifies",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="USER_IDENTIFIED",
         has_person_external_id=False,
         has_opportunity_type=False,
@@ -165,7 +165,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="frontend_caseload_search",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="SEARCH_BAR_USED",
         has_person_external_id=False,
         has_opportunity_type=False,
@@ -174,7 +174,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_edited",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="FORM_EDITED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -183,7 +183,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_downloaded",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="FORM_DOWNLOADED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -192,7 +192,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_milestones_congratulations_sent",
-        officer_event_name=EventType.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_USER_ACTION,
         workflows_event_type="MILESTONES_CONGRATULATIONS_SENT",
         has_person_external_id=True,
         has_opportunity_type=False,
