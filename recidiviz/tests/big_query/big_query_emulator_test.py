@@ -416,6 +416,13 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
             expected_result=[{"a": None}],
         )
 
+    def test_safe_parse_date_on_julian_date(self) -> None:
+        """Tests resolution of goccy/go-zetasqlite#196"""
+        self.run_query_test(
+            """SELECT SAFE.PARSE_DATE('%y%j', '85001') AS a;""",
+            expected_result=[{"a": date(1985, 1, 1)}],
+        )
+
     def test_array_to_json(self) -> None:
         # Tests resolution to https://github.com/goccy/bigquery-emulator/issues/24.
         query = "SELECT TO_JSON([1, 2, 3]) as a;"
