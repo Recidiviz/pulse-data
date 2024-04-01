@@ -36,6 +36,8 @@ output:
                   - Male
                 StateGender.FEMALE:
                   - Female
+                StateGender.INTERNAL_UNKNOWN:
+                  - Unknown
         - $else: $literal_enum(StateGender.INTERNAL_UNKNOWN)
     races:
       - StatePersonRace:
