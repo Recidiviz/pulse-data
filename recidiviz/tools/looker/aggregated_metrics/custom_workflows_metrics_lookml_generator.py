@@ -25,6 +25,7 @@ python -m recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_loo
 import argparse
 import os
 
+import recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configurations as workflows_metrics
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
@@ -52,20 +53,21 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     generate_period_event_metric_view,
     generate_period_span_metric_view,
 )
-from recidiviz.tools.looker.aggregated_metrics.custom_workflows_metrics_configurations import (
-    AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER,
-    DAYS_ELIGIBLE_AT_TASK_COMPLETION_LOOKER,
-    PERSON_DAYS_TASK_ELIGIBLE_LOOKER,
-    TASK_COMPLETIONS_LOOKER,
-    TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER,
-)
 
 WORKFLOWS_IMPACT_LOOKER_METRICS = [
-    AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER,
-    DAYS_ELIGIBLE_AT_TASK_COMPLETION_LOOKER,
-    PERSON_DAYS_TASK_ELIGIBLE_LOOKER,
-    TASK_COMPLETIONS_LOOKER,
-    TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER,
+    workflows_metrics.AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER,
+    *workflows_metrics.AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS,
+    workflows_metrics.AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER,
+    *workflows_metrics.AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER_FUNNEL_METRICS,
+    workflows_metrics.PERSON_DAYS_TASK_ELIGIBLE_LOOKER,
+    workflows_metrics.TASK_COMPLETIONS_LOOKER,
+    workflows_metrics.TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER,
+    workflows_metrics.TASK_COMPLETIONS_AFTER_TOOL_ACTION_LOOKER,
+    workflows_metrics.TASK_COMPLETIONS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER,
+    workflows_metrics.DAYS_ELIGIBLE_AT_TASK_COMPLETION_LOOKER,
+    workflows_metrics.TASK_ELIGIBILITY_STARTS_WHILE_ALMOST_ELIGIBLE_AFTER_TOOL_ACTION_LOOKER,
+    workflows_metrics.FIRST_TOOL_ACTIONS_LOOKER,
+    workflows_metrics.DAYS_ELIGIBLE_AT_FIRST_TOOL_ACTION_LOOKER,
 ]
 
 
