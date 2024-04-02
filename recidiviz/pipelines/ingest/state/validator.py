@@ -17,7 +17,7 @@
 """Utility classes for validating state entities and entity trees."""
 
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Type
+from typing import Dict, Iterable, List, Type
 
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
@@ -51,17 +51,14 @@ def state_allows_multiple_ids_same_type_for_state_staff(state_code: str) -> bool
     return False
 
 
-def validate_root_entity(
-    root_entity: RootEntityT, field_index: CoreEntityFieldIndex
-) -> List[Error]:
-    """The assumed input is a root entity with hydrated children entities attached to it.
-    This function checks if the root entity does not violate any entity tree specific
-    constraints. If the root entity constraints are not met, an exception should be thrown.
+def _external_id_checks(root_entity: RootEntityT) -> Iterable[Error]:
+    """This function yields error messages relating to the external IDs of a root entity. Namely,
+    - If there is not an external ID.
+    - If there are multiple IDs of the same type in a state that doesn't allow it.
     """
-    error_messages: List[Error] = []
 
     if len(root_entity.external_ids) == 0:
-        error_messages.append(
+        yield (
             f"Found [{type(root_entity).__name__}] with id [{root_entity.get_id()}] missing an "
             f"external_id: {root_entity}"
         )
@@ -75,55 +72,78 @@ def validate_root_entity(
             state_allows_multiple_ids_same_type_for_state_staff(root_entity.state_code)
         )
     else:
-        error_messages.append(
-            f"Unexpected root entity type: {type(root_entity).__name__}"
-        )
+        raise ValueError("Found RootEntity that is not StatePerson or StateStaff")
 
     if not allows_multiple_ids_same_type:
         external_id_types = set()
         for external_id in root_entity.external_ids:
             if external_id.id_type in external_id_types:
-                error_messages.append(
+                yield (
                     f"Duplicate external id types for [{type(root_entity).__name__}] with id "
                     f"[{root_entity.get_id()}]: {external_id.id_type}"
                 )
-
             external_id_types.add(external_id.id_type)
 
+
+def _unique_constraint_check(
+    root_entity: RootEntityT, field_index: CoreEntityFieldIndex
+) -> Iterable[Error]:
+    """Checks that all child entities match entity_tree_unique_constraints.
+    If not, this function yields an error message for each child entity and constraint
+    that fails. The message shows a pii-limited view of the first three entities that
+    fail the checks.
+    """
     child_entities = get_all_entities_from_tree(root_entity, field_index=field_index)
 
     entities_by_cls: Dict[Type[Entity], List[Entity]] = defaultdict(list)
     for child in child_entities:
         entities_by_cls[type(child)].append(child)
 
-    for entity_cls, entities_of_type in entities_by_cls.items():
+    for entity_cls, entity_objects in entities_by_cls.items():
         for constraint in entity_cls.entity_tree_unique_constraints():
-            seen_tuples: Dict[Tuple[Any, ...], List[Entity]] = defaultdict(list)
+            grouped_entities: Dict[str, List[Entity]] = defaultdict(list)
 
-            for entity in entities_of_type:
-                value_tup = tuple(getattr(entity, field) for field in constraint.fields)
-                seen_tuples[value_tup].append(entity)
+            for entity in entity_objects:
+                unique_fields = ", ".join(
+                    f"{field}={getattr(entity, field)}" for field in constraint.fields
+                )
+                grouped_entities[unique_fields].append(entity)
 
-            for value_tup, entities in seen_tuples.items():
-                if len(entities) == 1:
+            for unique_key in grouped_entities:
+                if (n_entities := len(grouped_entities[unique_key])) == 1:
                     continue
-                tuple_str = ", ".join(
-                    f"{field}={value_tup[i]}"
-                    for i, field in enumerate(constraint.fields)
-                )
-                error_msg = (
-                    f"Found [{len(entities)}] {entity_cls.get_entity_name()} entities "
-                    f"with ({tuple_str})"
-                )
+                error_msg = f"Found [{n_entities}] {entity_cls.get_entity_name()} entities with ({unique_key})"
 
-                entities_to_show = min(3, len(entities))
+                entities_to_show = min(3, n_entities)
                 entities_str = "\n  * ".join(
-                    e.limited_pii_repr() for e in entities[:entities_to_show]
+                    e.limited_pii_repr()
+                    for e in grouped_entities[unique_key][:entities_to_show]
                 )
                 error_msg += (
                     f". First {entities_to_show} entities found:\n  * {entities_str}"
                 )
-                error_messages.append(error_msg)
+                yield error_msg
+
+
+def validate_root_entity(
+    root_entity: RootEntityT, field_index: CoreEntityFieldIndex
+) -> List[Error]:
+    """The assumed input is a root entity with hydrated children entities attached to it.
+    This function checks if the root entity does not violate any entity tree specific
+    checks. This function returns a list of errors, where each error corresponds to
+    each check that is failed.
+    """
+    error_messages: List[Error] = []
+
+    # Yields errors if incorrect number of external IDs
+    error_messages.extend(_external_id_checks(root_entity))
+
+    # Yields errors if global_unique_constraints fail
+    error_messages.extend(_unique_constraint_check(root_entity, field_index))
+
+    # TODO(#27113) Check sequence_num on LedgerEntity objects
+    # TODO(#26870) Check merged StateSentence for sentence_type and imposed_date
+    # TODO(#28603) Check StateSentenceStatusSnapsot entities with REVOKED status are only on PROBATION or PAROLE sentences
 
     return error_messages
 
