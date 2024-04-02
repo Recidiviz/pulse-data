@@ -127,10 +127,15 @@ class StateSupervisionCaseComplianceManager:
             else None
         )
 
+        most_recent_employment_verification_date = (
+            self._most_recent_employment_verification(compliance_evaluation_date)
+        )
+
         next_recommended_assessment_date = None
         next_recommended_face_to_face_date = None
         next_recommended_home_visit_date = None
         next_recommended_treatment_collateral_contact_date = None
+        next_recommended_employment_verification_date = None
 
         if self._guidelines_applicable_for_case(compliance_evaluation_date):
             next_recommended_assessment_date = self._next_recommended_assessment_date(
@@ -148,6 +153,12 @@ class StateSupervisionCaseComplianceManager:
             next_recommended_treatment_collateral_contact_date = (
                 self._next_recommended_treatment_collateral_contact_date(
                     compliance_evaluation_date
+                )
+            )
+
+            next_recommended_employment_verification_date = (
+                self._next_recommended_employment_verification_date(
+                    compliance_evaluation_date, most_recent_employment_verification_date
                 )
             )
 
@@ -173,6 +184,8 @@ class StateSupervisionCaseComplianceManager:
             recommended_supervision_downgrade_level=self._get_recommended_supervision_downgrade_level(
                 compliance_evaluation_date
             ),
+            most_recent_employment_verification_date=most_recent_employment_verification_date,
+            next_recommended_employment_verification_date=next_recommended_employment_verification_date,
         )
 
     def _next_recommended_assessment_date(
@@ -314,6 +327,27 @@ class StateSupervisionCaseComplianceManager:
             and contact.location == StateSupervisionContactLocation.TREATMENT_PROVIDER
             # Contact must be marked as completed
             and contact.status == StateSupervisionContactStatus.COMPLETED
+            and contact.contact_date is not None
+            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+        ]
+
+    def _most_recent_employment_verification(
+        self, compliance_evaluation_date: date
+    ) -> Optional[date]:
+        """Gets the most recent face to face contact date. If there is not any, it returns None."""
+        return self._default_most_recent_contact_date(
+            compliance_evaluation_date,
+            self._get_applicable_employment_verifications_between_dates,
+        )
+
+    def _get_applicable_employment_verifications_between_dates(
+        self, lower_bound_inclusive: date, upper_bound_inclusive: date
+    ) -> List[StateSupervisionContact]:
+        """Returns all supervision contacts where verified_employment = True"""
+        return [
+            contact
+            for contact in self.supervision_contacts
+            if contact.verified_employment is True
             and contact.contact_date is not None
             and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
         ]
@@ -507,3 +541,11 @@ class StateSupervisionCaseComplianceManager:
     ) -> Optional[SupervisionLevelPolicy]:
         """Returns the SupervisionLevelPolicy associated with evaluation for the person
         under supervision on the specified date."""
+
+    @abc.abstractmethod
+    def _next_recommended_employment_verification_date(
+        self,
+        compliance_evaluation_date: date,
+        most_recent_employment_verification_date: Optional[date],
+    ) -> Optional[date]:
+        """Returns the next recommended reassessment date or None if no further reassessments are needed."""

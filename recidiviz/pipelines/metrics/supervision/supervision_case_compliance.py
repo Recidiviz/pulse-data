@@ -84,3 +84,12 @@ class SupervisionCaseCompliance(BuildableAttr):
     recommended_supervision_downgrade_level: Optional[StateSupervisionLevel] = attr.ib(
         default=None
     )
+
+    # The date that the last employment verification happened.  If no employment verifications have yet happened, this is None.
+    most_recent_employment_verification_date: Optional[date] = attr.ib(default=None)
+
+    # When the next recommended employment verification should happen according to compliance standards.
+    # Should be unset if we do not know the compliance standards for this person or no further contact is required.
+    next_recommended_employment_verification_date: Optional[date] = attr.ib(
+        default=None
+    )

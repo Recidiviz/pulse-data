@@ -65,6 +65,12 @@ from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_compliance im
 from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_compliance import (
+    UsIxSupervisionCaseCompliance,
+)
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
+    UsIxSupervisionDelegate,
+)
 from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE,
     UsNdSupervisionCaseCompliance,
@@ -2269,3 +2275,172 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         self.assertEqual(assessment_date, date(2010, 9, 2))
+
+    def test_us_ix_get_case_compliance_on_date(self) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        assessments = [
+            NormalizedStateAssessment.new_with_defaults(
+                state_code=StateCode.US_IX.value,
+                external_id="a1",
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_score=33,
+                assessment_level=StateAssessmentLevel.HIGH,
+                assessment_date=date(2018, 3, 10),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                sequence_num=0,
+            )
+        ]
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_IX.value,
+                external_id="c1",
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.DIRECT,
+                status=StateSupervisionContactStatus.COMPLETED,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_IX.value,
+                external_id="c2",
+                contact_date=date(2018, 4, 30),
+                contact_type=StateSupervisionContactType.DIRECT,
+                status=StateSupervisionContactStatus.COMPLETED,
+            ),
+        ]
+
+        compliance_evaluation_date = date(2018, 4, 30)
+
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
+            person=self.person,
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=assessments,
+            supervision_contacts=supervision_contacts,
+            violation_responses=[],
+            incarceration_period_index=self.empty_ip_index,
+            supervision_delegate=UsIxSupervisionDelegate([]),
+        )
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
+            compliance_evaluation_date
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
+                most_recent_assessment_date=date(2018, 3, 10),
+                next_recommended_assessment_date=date(2019, 3, 10),
+                face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 30),
+                next_recommended_face_to_face_date=date(2018, 6, 14),
+                home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                most_recent_employment_verification_date=None,
+                next_recommended_employment_verification_date=date(2018, 3, 5),
+            ),
+            compliance,
+        )
+
+    def test_us_ix_get_case_compliance_sex_offense_employment_verification(
+        self,
+    ) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            sequence_num=0,
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MODERATE",
+        )
+
+        case_type = StateSupervisionCaseType.SEX_OFFENSE
+
+        assessments = [
+            NormalizedStateAssessment.new_with_defaults(
+                state_code=StateCode.US_IX.value,
+                external_id="a1",
+                assessment_type=StateAssessmentType.LSIR,
+                assessment_score=33,
+                assessment_level=StateAssessmentLevel.HIGH,
+                assessment_date=date(2018, 3, 10),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                sequence_num=0,
+            )
+        ]
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_IX.value,
+                external_id="c1",
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.DIRECT,
+                status=StateSupervisionContactStatus.COMPLETED,
+                verified_employment=True,
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code=StateCode.US_IX.value,
+                external_id="c2",
+                contact_date=date(2018, 4, 30),
+                contact_type=StateSupervisionContactType.DIRECT,
+                status=StateSupervisionContactStatus.COMPLETED,
+            ),
+        ]
+
+        compliance_evaluation_date = date(2018, 4, 30)
+
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
+            person=self.person,
+            supervision_period=supervision_period,
+            case_type=case_type,
+            start_of_supervision=date(2018, 3, 5),
+            assessments=assessments,
+            supervision_contacts=supervision_contacts,
+            violation_responses=[],
+            incarceration_period_index=self.empty_ip_index,
+            supervision_delegate=UsIxSupervisionDelegate([]),
+        )
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
+            compliance_evaluation_date
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
+                most_recent_assessment_date=date(2018, 3, 10),
+                next_recommended_assessment_date=date(2019, 3, 10),
+                face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 30),
+                next_recommended_face_to_face_date=date(2018, 5, 30),
+                home_visit_count=0,
+                next_recommended_home_visit_date=date(2018, 4, 4),
+                next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                most_recent_employment_verification_date=date(2018, 3, 6),
+                next_recommended_employment_verification_date=date(2018, 5, 5),
+            ),
+            compliance,
+        )

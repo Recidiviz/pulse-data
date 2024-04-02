@@ -145,9 +145,22 @@ US_IX_SUPERVISION_TREATMENT_COLLATERAL_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
     StateSupervisionLevel.HIGH: (1, 30),
 }
 
+# There are only employment verification requirements for SEX_OFFENSE cases
+US_IX_SUPERVISION_EMPLOYMENT_VERIFICATION_FREQUENCY_REQUIREMENTS: Dict[
+    StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
+] = {
+    StateSupervisionCaseType.SEX_OFFENSE: {
+        StateSupervisionLevel.MINIMUM: (1, 60),
+        StateSupervisionLevel.MEDIUM: (1, 60),
+        StateSupervisionLevel.HIGH: (1, 30),
+    },
+}
+
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
 NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 30
 NEW_SUPERVISION_TREATMENT_CONTACT_DEADLINE_DAYS = 14
+# Employment verification is required upon initial sign up for both GENERAL and SEX_OFFENSE cases
+NEW_SUPERVISION_EMPLOYMENT_VERIFICATION_DAYS = 0
 
 # This is the date where Idaho switched its method of determining supervision
 # levels, going from 4 levels to 3.
@@ -512,4 +525,81 @@ class UsIxSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             self.start_of_supervision
             + timedelta(days=self._get_initial_assessment_number_of_days())
             > evaluation_date
+        )
+
+    def _next_recommended_employment_reverification(
+        self,
+        compliance_evaluation_date: date,
+    ) -> Optional[date]:
+        """Returns when the next employment verification should be for people who have
+        already had one employment verification. Returns None if compliance standards
+        are unknown or no subsequent employment verifications are required.
+        """
+
+        if (
+            self.case_type
+            not in US_IX_SUPERVISION_EMPLOYMENT_VERIFICATION_FREQUENCY_REQUIREMENTS
+        ):
+            # If the case_type is not in this map then there are not recurring
+            # employment verification requirements for this case type.
+            return None
+
+        frequency_by_supervision_level = (
+            US_IX_SUPERVISION_EMPLOYMENT_VERIFICATION_FREQUENCY_REQUIREMENTS[
+                self.case_type
+            ]
+        )
+
+        if self.supervision_period.supervision_level is None:
+            raise ValueError(
+                "Supervision level not provided and so cannot calculate next "
+                "recommended next recommended employment check."
+            )
+
+        if (
+            self.supervision_period.supervision_level
+            not in frequency_by_supervision_level
+        ):
+            # People on this supervision level and case type do not require recurring
+            # employment checks.
+            return None
+
+        (
+            required_contacts_per_period,
+            period_days,
+        ) = frequency_by_supervision_level[self.supervision_period.supervision_level]
+
+        return self._default_next_recommended_contact_date_given_requirements(
+            compliance_evaluation_date,
+            required_contacts_per_period,
+            period_days,
+            NEW_SUPERVISION_EMPLOYMENT_VERIFICATION_DAYS,
+            get_applicable_contacts_function=(
+                self._get_applicable_employment_verifications_between_dates
+            ),
+            use_business_days=False,
+        )
+
+    def _next_recommended_employment_verification_date(
+        self,
+        compliance_evaluation_date: date,
+        most_recent_employment_verification_date: Optional[date] = None,
+    ) -> Optional[date]:
+        """Returns when the next employment verification should be. Returns None if
+        compliance standards are unknown or no subsequent employment verification
+        are required.
+
+        For all people on supervision, employment verification is required as soon as
+        supervision starts if no verification has yet been made.
+        """
+
+        if not most_recent_employment_verification_date:
+            # No employment verification has been done, so the next recommended
+            # employment verification date is the beginning of the supervision term.
+            return self.start_of_supervision + timedelta(
+                days=NEW_SUPERVISION_EMPLOYMENT_VERIFICATION_DAYS
+            )
+
+        return self._next_recommended_employment_reverification(
+            compliance_evaluation_date
         )
