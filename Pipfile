@@ -43,6 +43,7 @@ rope = "*"
 "ruamel.yaml" = "*"
 tabula-py = "*"
 types-beautifulsoup4 = "*"
+types-cachetools = "*"
 types-dateparser = "*"
 types-freezegun = "*"
 types-html5lib = "*"
@@ -235,6 +236,7 @@ urllib3 = "==1.26.15"
 xlrd = "*"
 google-cloud-run = "*"
 snapshottest = "*"
+cachetools = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!

@@ -31,6 +31,7 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
     SchemaTableRegionFilteredQueryBuilder,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 
 
 class SchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
@@ -143,6 +144,7 @@ class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         OperationsBase.metadata.remove(self.fake_operations_table)
         OperationsBase.metadata.remove(self.fake_operations_table_complex_schema)
         OperationsBase.metadata.remove(self.fake_operations_association_table)
+        get_all_table_classes_in_schema.cache_clear()
 
 
 class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(

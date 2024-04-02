@@ -16,6 +16,7 @@
 # ============================================================================
 
 """Utilities for working with the database schemas."""
+import functools
 import inspect
 import sys
 from functools import lru_cache
@@ -115,9 +116,10 @@ def is_association_table(table_name: str) -> bool:
     return table_name.endswith("_association")
 
 
-def get_all_table_classes_in_schema(schema_type: SchemaType) -> Iterator[Table]:
+@functools.cache
+def get_all_table_classes_in_schema(schema_type: SchemaType) -> List[Table]:
     metadata_base = schema_type_to_schema_base(schema_type)
-    yield from metadata_base.metadata.sorted_tables
+    return metadata_base.metadata.sorted_tables
 
 
 def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:
