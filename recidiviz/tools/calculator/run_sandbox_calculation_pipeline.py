@@ -54,7 +54,7 @@ Examples:
         --type normalization \
         --project recidiviz-staging \
         --job_name my-nd-normalization-test \
-        --sandbox_output_dataset username_normalized_state \
+        --sandbox_output_dataset username_us_nd_normalized_state \
         --state_code US_ND
 
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
