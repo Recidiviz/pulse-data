@@ -19,6 +19,7 @@ from collections import defaultdict, deque
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
 
 import attr
+import cachetools
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import (
@@ -253,9 +254,11 @@ def convert_entity_trees_to_normalized_versions(
                 updated_entity=normalized_entity,
                 new_related_entities=forward_entities,
                 forward_relationship_field=field,
-                forward_relationship_field_type=BuildableAttrFieldType.LIST
-                if field_is_list
-                else BuildableAttrFieldType.FORWARD_REF,
+                forward_relationship_field_type=(
+                    BuildableAttrFieldType.LIST
+                    if field_is_list
+                    else BuildableAttrFieldType.FORWARD_REF
+                ),
             )
 
         for (
@@ -445,6 +448,9 @@ def column_names_on_bq_schema_for_normalized_state_entity(
     ]
 
 
+# type checking for functools.cache didn't like using a type as the key, but it works
+# for cachetools.
+@cachetools.cached(cache={})
 def bq_schema_for_normalized_state_entity(
     entity_cls: Type[NormalizedStateEntity],
 ) -> List[bigquery.SchemaField]:
