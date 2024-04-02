@@ -155,6 +155,8 @@ class RawDataConfigWriter:
             config += f'custom_line_terminator: "{custom_line_terminator_for_yaml}"\n'
         if raw_file_config.update_cadence != default_update_cadence:
             config += f"update_cadence: {raw_file_config.update_cadence.value}\n"
+        if raw_file_config.is_code_file:
+            config += "is_code_file: True\n"
 
         if raw_file_config.table_relationships:
             table_relationships_lines = ["table_relationships:"]

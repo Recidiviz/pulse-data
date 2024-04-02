@@ -14,3 +14,4 @@ columns:
       multiple lines. This text block will be interpreted
       literally and trailing/leading whitespace is removed.
 encoding: ISO-456-7
+is_code_file: True

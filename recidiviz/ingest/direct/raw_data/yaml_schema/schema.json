@@ -177,6 +177,10 @@
     "update_cadence": {
       "description": "The cadence at which we expect to receive this raw data file (e.g. WEEKLY, DAILY, IRREGULAR)",
       "type": "string"
+    },
+    "is_code_file": {
+      "description": "If true, means that this file is a code table (likely does not contain person-level data and may have few day-over-day updates).",
+      "type": "boolean"
     }
   },
   "required": [
