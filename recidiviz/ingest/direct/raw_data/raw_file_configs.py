@@ -76,15 +76,20 @@ class RawTableColumnFieldType(Enum):
 
 
 class RawDataFileUpdateCadence(Enum):
-    """Defines an expected ingest cadence for a raw file."""
+    """Defines an expected update cadence for a raw data file (i.e. how often we
+    expect a state to transfer a raw data file to our ingest infrastructure). We do not
+    necessarily expect for new data to flow through our system at this cadence (i.e.
+    some states might send files that only contain header rows if there are sending
+    incremental updates).
+    """
 
-    # There is no defined ingest cadence or the ingest cadence is expected to be irregular
+    # There is no defined update cadence or the update cadence is expected to be irregular
     IRREGULAR = "IRREGULAR"
 
-    # The file is expected to be ingested once a week
+    # The file is expected to be updated once a week
     WEEKLY = "WEEKLY"
 
-    # The file is expected to be ingested once per day
+    # The file is expected to be updated once per day
     DAILY = "DAILY"
 
 
@@ -333,6 +338,14 @@ class DirectIngestRawFileConfig:
     # designation may be arbitrary if there are multiple primary tables representing
     # person information, such as if there are multiple source data systems.
     is_primary_person_table: bool = attr.ib(default=False)
+
+    # TODO(#28561): add more nuance here to get at what we actually care about
+    # (reasoning about the kind of data in our raw data files)
+    # Boolean flag denoting if this file is a code table or not. If this file is a
+    # code table, we expect this file to be relatively static overtime (without many
+    # updates). If this file is not a code table, it likely contains person-level
+    # information that we expect to change more frequently
+    is_code_file: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self) -> None:
         self._validate_primary_keys()
@@ -587,6 +600,7 @@ class DirectIngestRawFileConfig:
         always_historical_export = file_config_dict.pop_optional(
             "always_historical_export", bool
         )
+        is_code_file = file_config_dict.pop_optional("is_code_file", bool) or False
         no_valid_primary_keys = file_config_dict.pop_optional(
             "no_valid_primary_keys", bool
         )
@@ -656,6 +670,7 @@ class DirectIngestRawFileConfig:
             ),
             table_relationships=table_relationships,
             is_primary_person_table=is_primary_person_table,
+            is_code_file=is_code_file,
         )
 
 

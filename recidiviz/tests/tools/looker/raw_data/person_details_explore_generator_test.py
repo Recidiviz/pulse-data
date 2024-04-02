@@ -91,6 +91,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             infer_columns_from_config=False,
             table_relationships=[],
             update_cadence=RawDataFileUpdateCadence.WEEKLY,
+            is_code_file=False,
         )
         # Raw file that is a primary person table
         self.primary_person_table_config = attr.evolve(

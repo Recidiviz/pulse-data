@@ -19,6 +19,7 @@
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
+from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -28,7 +29,10 @@ FROM {tagBasicData}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_xx", ingest_view_name="basic", view_query_template=VIEW_QUERY_TEMPLATE
+    region="us_xx",
+    ingest_view_name="basic",
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    region_module=fake_regions,
 )
 
 if __name__ == "__main__":

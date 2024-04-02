@@ -143,6 +143,7 @@ def _update_enum_known_values(
         infer_columns_from_config=original_config.infer_columns_from_config,
         table_relationships=original_config.table_relationships,
         update_cadence=original_config.update_cadence,
+        is_code_file=original_config.is_code_file,
     )
 
 

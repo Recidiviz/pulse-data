@@ -1098,6 +1098,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             simple_file_config.no_valid_primary_keys,
             default_config.default_no_valid_primary_keys,
         )
+        self.assertFalse(simple_file_config.is_code_file)
 
     def test_parsing_overrides_defaults(self) -> None:
         """Checks that all defaults are overridden for a file that does specify a
@@ -1121,6 +1122,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         )
         self.assertEqual("|", file_config.separator)
         self.assertEqual(RawDataFileUpdateCadence.DAILY, file_config.update_cadence)
+        self.assertTrue(file_config.is_code_file)
 
         # This file is always a historical export
         file_config = self.us_xx_region_config.raw_file_configs[

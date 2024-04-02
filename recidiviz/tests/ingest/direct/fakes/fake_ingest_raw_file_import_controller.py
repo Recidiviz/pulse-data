@@ -122,6 +122,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 infer_columns_from_config=False,
                 table_relationships=[],
                 update_cadence=RawDataFileUpdateCadence.WEEKLY,
+                is_code_file=False,
             ),
             "tagHeadersNoContents": DirectIngestRawFileConfig(
                 file_tag="tagHeadersNoContents",
@@ -148,6 +149,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 infer_columns_from_config=False,
                 table_relationships=[],
                 update_cadence=RawDataFileUpdateCadence.WEEKLY,
+                is_code_file=False,
             ),
             "tagBasicData": DirectIngestRawFileConfig(
                 file_tag="tagBasicData",
@@ -174,6 +176,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 infer_columns_from_config=False,
                 table_relationships=[],
                 update_cadence=RawDataFileUpdateCadence.WEEKLY,
+                is_code_file=False,
             ),
             "tagMoreBasicData": DirectIngestRawFileConfig(
                 file_tag="tagMoreBasicData",
@@ -200,6 +203,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 infer_columns_from_config=False,
                 table_relationships=[],
                 update_cadence=RawDataFileUpdateCadence.WEEKLY,
+                is_code_file=False,
             ),
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
                 file_tag="tagWeDoNotIngest",
@@ -219,6 +223,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 infer_columns_from_config=False,
                 table_relationships=[],
                 update_cadence=RawDataFileUpdateCadence.WEEKLY,
+                is_code_file=False,
             ),
         }
 

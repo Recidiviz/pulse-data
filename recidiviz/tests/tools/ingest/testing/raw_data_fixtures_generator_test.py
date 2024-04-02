@@ -108,6 +108,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             custom_line_terminator="\n",
             table_relationships=[],
             update_cadence=RawDataFileUpdateCadence.WEEKLY,
+            is_code_file=False,
         )
         region_raw_table_config = DirectIngestRegionRawFileConfig(
             region_code=self.region_code,
