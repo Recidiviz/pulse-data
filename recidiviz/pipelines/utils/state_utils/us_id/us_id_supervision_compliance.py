@@ -513,3 +513,21 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             + timedelta(days=self._get_initial_assessment_number_of_days())
             > evaluation_date
         )
+
+    def _next_recommended_employment_verification(
+        self,
+        _compliance_evaluation_date: date,
+    ) -> Optional[date]:
+        """US_ID currently has no requirements for employment verifications"""
+
+        return None
+
+    def _next_recommended_employment_verification_date(
+        self,
+        compliance_evaluation_date: Optional[date] = None,
+        most_recent_employment_verification_date: Optional[date] = None,
+    ) -> Optional[date]:
+
+        """US_ID currently has no requirements for employment verifications"""
+
+        return None

@@ -178,6 +178,18 @@ class SupervisionPopulationEvent(
             return None
         return self.case_compliance.recommended_supervision_downgrade_level
 
+    @property
+    def most_recent_employment_verification_date(self) -> Optional[date]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.most_recent_employment_verification_date
+
+    @property
+    def next_recommended_employment_verification_date(self) -> Optional[date]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.next_recommended_employment_verification_date
+
 
 @attr.s(frozen=True)
 class ProjectedSupervisionCompletionEvent(SupervisionEvent):

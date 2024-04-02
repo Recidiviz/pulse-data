@@ -91,6 +91,19 @@ SUPERVISION_TASK_CONFIGS = [
         """,
         task_details_joins="\n".join([ASSESSMENT_SCORE_JOIN]),
     ),
+    UsIxSupervisionTaskQueryConfig(
+        due_date_column="next_recommended_employment_verification_date",
+        task_details_struct="""STRUCT(
+              'employment' as type,
+              MAX(next_recommended_employment_verification_date) AS due_date,
+              STRUCT(
+                MAX(client.supervision_level) AS supervision_level,
+                MAX(most_recent_employment_verification_date) AS last_contacted,
+                MAX(case_type) AS case_type
+              ) AS details
+            )
+        """,
+    ),
 ]
 
 
@@ -147,7 +160,6 @@ def get_case_compliance_need_ctes() -> str:
 
 US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
     WITH all_supervision_tasks AS ({get_case_compliance_task_ctes()}),
-    all_supervision_needs AS ({get_case_compliance_need_ctes()}),
     combined_tasks AS (
         SELECT
             person_external_id,
@@ -157,27 +169,8 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
         FROM all_supervision_tasks
         WHERE task IS NOT NULL
         GROUP BY 1,2,3
-    ),
-    combined_needs AS (
-        SELECT
-            person_external_id,
-            state_code,
-            officer_id,
-            ARRAY_AGG(need IGNORE NULLS) AS needs,
-        FROM all_supervision_needs
-        WHERE need IS NOT NULL
-        GROUP BY 1,2,3
     )
-
-    SELECT
-        person_external_id,
-        state_code,
-        officer_id,
-        tasks,
-        needs,
-    FROM combined_tasks
-    FULL JOIN combined_needs
-    USING (person_external_id, state_code, officer_id)
+    select * from combined_tasks
     """
 
 US_IX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
