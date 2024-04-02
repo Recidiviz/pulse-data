@@ -34,15 +34,19 @@ REIDENTIFIED_DASHBOARD_USERS_QUERY_TEMPLATE = """
 SELECT
     IF(users.state_code = "US_ID", "US_IX", users.state_code) as state_code,
     users.user_hash AS user_id,
-    -- Not all users have entries in staff_record so fill in information from the roster for them
-    COALESCE(staff.id, users.external_id) AS user_external_id,
-    COALESCE(staff.district, users.district) AS district,
+    -- Not all users have entries in *_staff_record so fill in information from the roster for them
+    COALESCE(supervision_staff.id, incarceration_staff.id, users.external_id) AS user_external_id,
+    COALESCE(supervision_staff.district, incarceration_staff.district, users.district) AS district,
 FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` users
-LEFT JOIN `{project_id}.{workflows_views_dataset}.staff_record_materialized` staff
-    -- TODO(#27254) Get this data from somewhere that's not staff_record
+-- TODO(#27254) Get this data from somewhere that's not *_staff_record
+LEFT JOIN `{project_id}.{workflows_views_dataset}.supervision_staff_record_materialized` supervision_staff
     -- The roster only has US_ID and the staff record only has US_IX
-    ON (users.state_code = staff.state_code OR (users.state_code = "US_ID" AND staff.state_code = "US_IX"))
-    AND LOWER(users.email_address) = LOWER(staff.email)
+    ON (users.state_code = supervision_staff.state_code OR (users.state_code = "US_ID" AND supervision_staff.state_code = "US_IX"))
+    AND LOWER(users.email_address) = LOWER(supervision_staff.email)
+LEFT JOIN `{project_id}.{workflows_views_dataset}.incarceration_staff_record_materialized` incarceration_staff
+    -- The roster only has US_ID and the staff record only has US_IX
+    ON (users.state_code = incarceration_staff.state_code OR (users.state_code = "US_ID" AND incarceration_staff.state_code = "US_IX"))
+    AND LOWER(users.email_address) = LOWER(incarceration_staff.email)
 """
 
 REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

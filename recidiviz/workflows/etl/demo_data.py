@@ -29,9 +29,6 @@ from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETL
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
 )
-from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
-    WorkflowsStaffETLDelegate,
-)
 
 
 def load_demo_fixture(
@@ -66,7 +63,6 @@ def load_demo_fixture(
 
 
 def load_all_demo_data() -> None:
-    load_demo_fixture(WorkflowsStaffETLDelegate, "US_TN", "staff_record.json")
     load_demo_fixture(WorkflowsClientETLDelegate, "US_TN", "client_record.json")
     load_demo_fixture(
         WorkflowsOpportunityETLDelegate,

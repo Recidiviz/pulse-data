@@ -33,9 +33,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.location_record 
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
     RESIDENT_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.staff_record import (
-    STAFF_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.supervision_staff_record import (
     SUPERVISION_STAFF_RECORD_VIEW_BUILDER,
 )
@@ -108,11 +105,11 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_d
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_full_term_discharge_from_supervision_request_record import (
     US_MI_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_security_classification_committee_review_form_record import (
-    US_MI_COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_reclassification_to_general_population_request_record import (
     US_MI_COMPLETE_RECLASSIFICATION_TO_GENERAL_POPULATION_REQUEST_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_security_classification_committee_review_form_record import (
+    US_MI_COMPLETE_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_FORM_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_complete_transfer_to_telephone_reporting_request_record import (
     US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
@@ -165,8 +162,6 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     RESIDENT_RECORD_VIEW_BUILDER,
     INCARCERATION_STAFF_RECORD_VIEW_BUILDER,
     SUPERVISION_STAFF_RECORD_VIEW_BUILDER,
-    # TODO(#25057): Remove staff record view builder once we are using incarceration_staff and supervision_staff on FE prod
-    STAFF_RECORD_VIEW_BUILDER,
     LOCATION_RECORD_VIEW_BUILDER,
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
     US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
