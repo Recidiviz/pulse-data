@@ -908,8 +908,6 @@ class CalculationDocumentationGenerator:
 
         If it is too large a command to generate it will be output instead."""
 
-        node = self.dag_walker.node_for_view(view)
-
         def _custom_formatter(
             address: BigQueryAddress, is_pruned_at_address: bool
         ) -> str:
@@ -930,24 +928,19 @@ class CalculationDocumentationGenerator:
                 custom_node_formatter=_custom_formatter,
                 datasets_to_skip=RAW_TABLE_DATASETS,
             )
-            num_tree_edges = node.descendants_tree_num_edges
         else:
             tree_str = self.dag_walker.ancestors_dfs_tree_str(
                 view,
                 custom_node_formatter=_custom_formatter,
                 datasets_to_skip=RAW_TABLE_DATASETS,
             )
-            num_tree_edges = node.ancestors_tree_num_edges
         num_lines = len(tree_str.rstrip().split("\n"))
         if num_lines == 1:
             return (
                 f"This view has no {'child' if descendants else 'parent'} dependencies."
             )
 
-        # TODO(#28567): This is now incorrect and overestimates how long the
-        #  descendants tree will be - use `num_lines > MAX_DEPENDENCY_TREE_LENGTH`
-        #  instead and delete code related to counting tree edges.
-        if num_tree_edges + 1 > MAX_DEPENDENCY_TREE_LENGTH:
+        if num_lines > MAX_DEPENDENCY_TREE_LENGTH:
             return StrictStringFormatter().format(
                 DEPENDENCY_TREE_SCRIPT_TEMPLATE,
                 dataset_id=view.address.dataset_id,
