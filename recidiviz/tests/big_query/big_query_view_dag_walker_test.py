@@ -454,36 +454,6 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
         }
         self.assertEqual(expected_results, all_sub_dag_views)
 
-        ancestor_tree_edges = {
-            key: node.ancestors_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_address.items()
-        }
-
-        # Expected ancestor path counts given this diamond structure:
-        # - 6         # 12
-        # - - 5       # 5
-        # - - - 3     # 4
-        # - - - - 2   # 1
-        # - - - - - S # 0
-        # - - - - 1   # 1
-        # - - - - - S # 0
-        # - - 4       # 5
-        # - - - 3     # 4
-        # - - - - 2   # 1
-        # - - - - - S # 0
-        # - - - - 1   # 1
-        # - - - - - S # 0
-
-        expected_ancestor_tree_edges = {
-            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): 1,
-            BigQueryAddress(dataset_id="dataset_2", table_id="table_2"): 1,
-            BigQueryAddress(dataset_id="dataset_3", table_id="table_3"): 4,
-            BigQueryAddress(dataset_id="dataset_4", table_id="table_4"): 5,
-            BigQueryAddress(dataset_id="dataset_5", table_id="table_5"): 5,
-            BigQueryAddress(dataset_id="dataset_6", table_id="table_6"): 12,
-        }
-        self.assertEqual(expected_ancestor_tree_edges, ancestor_tree_edges)
-
     def test_populate_descendants_sub_dag(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
         all_views_dag_walker.populate_descendant_sub_dags()
@@ -538,21 +508,6 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
 
         self.assertEqual(expected_results, all_sub_dag_views)
 
-        descendants_tree_edges = {
-            key: node.descendants_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_address.items()
-        }
-
-        expected_descendant_tree_edges = {
-            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): 5,
-            BigQueryAddress(dataset_id="dataset_2", table_id="table_2"): 5,
-            BigQueryAddress(dataset_id="dataset_3", table_id="table_3"): 4,
-            BigQueryAddress(dataset_id="dataset_4", table_id="table_4"): 1,
-            BigQueryAddress(dataset_id="dataset_5", table_id="table_5"): 1,
-            BigQueryAddress(dataset_id="dataset_6", table_id="table_6"): 0,
-        }
-        self.assertEqual(expected_descendant_tree_edges, descendants_tree_edges)
-
     def test_populate_sub_dag_empty(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker([])
         all_views_dag_walker.populate_descendant_sub_dags()
@@ -577,16 +532,6 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
         }
         self.assertEqual(expected_results, all_sub_dag_views)
 
-        descendants_tree_edges = {
-            key: node.descendants_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_address.items()
-        }
-
-        expected_descendant_tree_edges = {
-            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): 0
-        }
-        self.assertEqual(expected_descendant_tree_edges, descendants_tree_edges)
-
     def test_populate_ancestor_sub_dag_one_view(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(
             self.diamond_shaped_dag_views_list[0:1]
@@ -605,17 +550,6 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             ]
         }
         self.assertEqual(expected_results, all_sub_dag_views)
-
-        ancestor_tree_edges = {
-            key: node.ancestors_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_address.items()
-        }
-
-        expected_ancestor_tree_edges = {
-            # One edge between this view and the source table it references.
-            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): 1,
-        }
-        self.assertEqual(expected_ancestor_tree_edges, ancestor_tree_edges)
 
     def test_get_sub_dag_root_node(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)

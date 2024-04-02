@@ -170,9 +170,7 @@ class BigQueryViewDagNode:
         self.is_leaf = is_leaf
 
         self._ancestors_sub_dag: Optional[BigQueryViewDagWalker] = None
-        self._ancestors_tree_num_edges: Optional[int] = None
         self._descendants_sub_dag: Optional[BigQueryViewDagWalker] = None
-        self._descendants_tree_num_edges: Optional[int] = None
 
     @property
     def parent_tables(self) -> Set[BigQueryAddress]:
@@ -215,74 +213,6 @@ class BigQueryViewDagNode:
                 "Must set descendants_sub_dag via set_descendants_sub_dag()."
             )
         return self._descendants_sub_dag
-
-    def set_ancestors_tree_num_edges(self, num_edges: int) -> None:
-        r"""Returns the number of edges in the tree with this node at the root and all
-          source tables in the ancestors_sub_dag as leaves. Consider the following
-          ancestors DAG for node F:
-               A
-              /\
-            B   C
-           / \ /
-          D   E
-           \ /
-            F
-
-        The expanded tree representation of that graph is this tree, which has 8 edges:
-         A  A       A
-          \  \     /
-           B  B   C
-           \   \ /
-            D   E
-             \ /
-              F
-
-        This result can be used to interpret the number of lines in a printed DFS
-        representation of the ancestors sub_dag.
-        """
-        self._ancestors_tree_num_edges = num_edges
-
-    @property
-    def ancestors_tree_num_edges(self) -> int:
-        if self._ancestors_tree_num_edges is None:
-            raise ValueError(
-                "Must set descendants_sub_dag via set_ancestors_tree_num_edges()."
-            )
-        return self._ancestors_tree_num_edges
-
-    def set_descendants_tree_num_edges(self, num_edges: int) -> None:
-        r"""Returns the number of edges in the tree with this node at the root and all
-          *leaf* descendant nodes in the ancestors_sub_dag as leaves. Consider the
-          following descendants DAG for node A:
-               A
-              /\
-            B   C
-           / \ /
-          D   E
-           \ /
-            F
-
-        The expanded tree representation of that graph is this tree, which has 8 edges:
-                   A
-                  /\
-                B   C
-               / \   \
-              D   E   E
-            /      \   \
-           F        F   F
-
-        This result can be used to interpret the number of lines in a printed DFS
-        representation of the ancestors sub_dag.
-        """
-        self._descendants_tree_num_edges = num_edges
-
-    @property
-    def descendants_tree_num_edges(self) -> int:
-        if self._descendants_tree_num_edges is None:
-            raise ValueError(
-                "Must set descendants_sub_dag via set_descendants_tree_num_edges()."
-            )
-        return self._descendants_tree_num_edges
 
 
 _ProcessNodeQueueT = Union["_AsyncProcessNodeQueue", "_SyncProcessNodeQueue"]
@@ -896,7 +826,8 @@ class BigQueryViewDagWalker:
             v: BigQueryView, parent_results: Dict[BigQueryView, None]
         ) -> None:
             """For a given view, calculates the ancestors sub-DAG by unioning together
-            the parent ancestor sub-DAGs."""
+            the parent ancestor sub-DAGs.
+            """
             this_view_dag = BigQueryViewDagWalker([v])
             parent_nodes = [
                 self.node_for_view(parent_view) for parent_view in parent_results
@@ -909,14 +840,6 @@ class BigQueryViewDagWalker:
             node = self.node_for_view(view=v)
             node.set_ancestors_sub_dag(ancestors_sub_dag)
 
-            # Include source tables in parent count in addition to parent views
-            ancestors_tree_num_edges = (
-                len(node.source_addresses)
-                + len(node.parent_node_addresses)
-                + sum(p.ancestors_tree_num_edges for p in parent_nodes)
-            )
-            node.set_ancestors_tree_num_edges(ancestors_tree_num_edges)
-
         self.process_dag(populate_node_ancestors_sub_dag, synchronous=True)
 
     def populate_descendant_sub_dags(self) -> None:
@@ -926,7 +849,8 @@ class BigQueryViewDagWalker:
             v: BigQueryView, child_results: Dict[BigQueryView, None]
         ) -> None:
             """For a given view, calculates the descendants sub-DAG by unioning together
-            the child descendant sub-DAGs."""
+            the child descendant sub-DAGs.
+            """
             this_view_dag = BigQueryViewDagWalker([v])
             child_nodes = [
                 self.node_for_view(child_view) for child_view in child_results
@@ -938,11 +862,6 @@ class BigQueryViewDagWalker:
 
             node = self.node_for_view(view=v)
             node.set_descendants_sub_dag(descendants_sub_dag)
-
-            descendants_tree_num_edges = len(child_results) + sum(
-                c.descendants_tree_num_edges for c in child_nodes
-            )
-            node.set_descendants_tree_num_edges(descendants_tree_num_edges)
 
         # Process the DAG in the leaves -> roots direction so we process children
         # first.
