@@ -394,7 +394,7 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
             violation = violation_response.supervision_violation
 
             for associated_response in violation.supervision_violation_responses:
-                if associated_response.supervision_violation != violation:
+                if associated_response.supervision_violation is not violation:
                     raise ValueError(
                         "Violation response normalization resulted in "
                         "an invalid entity tree, where a child "
