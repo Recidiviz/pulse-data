@@ -48,9 +48,6 @@ from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
 from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
     WorkflowsResidentETLDelegate,
 )
-from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
-    WorkflowsStaffETLDelegate,
-)
 from recidiviz.workflows.etl.workflows_supervision_staff_etl_delegate import (
     WorkflowsSupervisionStaffETLDelegate,
 )
@@ -64,8 +61,6 @@ WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]:
     return [
         WorkflowsOpportunityETLDelegate(state_code),
-        # TODO(#25057): Remove WorkflowsStaffETLDelegate once we are fully using incarceration and supervision staff collections
-        WorkflowsStaffETLDelegate(state_code),
         WorkflowsSupervisionStaffETLDelegate(state_code),
         WorkflowsIncarcerationStaffETLDelegate(state_code),
         WorkflowsClientETLDelegate(state_code),
