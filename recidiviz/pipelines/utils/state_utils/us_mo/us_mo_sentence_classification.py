@@ -21,7 +21,10 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.state.state_sentence import StateSentenceType
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
@@ -250,6 +253,72 @@ class UsMoSentenceStatus(BuildableAttr):
             == StateSupervisionSentenceSupervisionType.PAROLE
         ):
             return StateSentenceType.PAROLE
+        return None
+
+    # This is to identify the type of SentenceStatus at its own
+    # point in time in a ledger of StateSentenceStatusSnapshots
+    state_sentence_status: Optional[StateSentenceStatus] = attr.ib()
+
+    @state_sentence_status.default
+    def _state_sentence_status(
+        self,
+    ) -> Optional[StateSentenceStatus]:
+        """Returns the StateSentenceStatus based on the given sentence and status code."""
+        is_incarceration_sentence = "INCARCERACTION" in self.sentence_external_id
+        if self.status_code in {
+            "45O2000",  # Prob Rev - Technical
+            "45O2005",  # Prob Rev - New Felony Conv
+            "45O2015",  # Prob Rev - Felony Law Viol
+            "45O2010",  # Prob Rev - New Misd Conv
+            "45O2020",  # Prob Rev - Misd Law Viol
+        }:
+            # Revocation can only occur on PROBATION or PAROLE (supervision) sentences.
+            # https://revisor.mo.gov/main/OneSection.aspx?section=559.100&bid=29109&hl=
+            if is_incarceration_sentence:
+                raise ValueError("Revoked status code on INCARCERATION sentence.")
+            return StateSentenceStatus.REVOKED
+
+        if self.status_code in {
+            "35I3500",  # Bond Supv-Pb Suspended-Revisit
+            "65O2015",  # Court Probation Suspension
+            "65O3015",  # Court Parole Suspension
+            "95O3500",  # Bond Supv-Pb Susp-Completion
+            "95O3505",  # Bond Supv-Pb Susp-Bond Forfeit
+            "95O3600",  # Bond Supv-Pb Susp-Trm-Tech
+            "95O7145",  # DATA ERROR-Suspended
+        }:
+            return StateSentenceStatus.SUSPENDED
+
+        if self.status_code in {
+            "90O1020",  # Institutional Commutation Comp
+            "95O1025",  # Field Commutation
+            "99O1020",  # Institutional Commutation
+            "99O1025",  # Field Commutation
+        }:
+            return StateSentenceStatus.COMMUTED
+
+        if self.is_sentence_termimination_status:
+            return StateSentenceStatus.COMPLETED
+
+        if self.is_incarceration_out_status:
+            if is_incarceration_sentence:
+                return StateSentenceStatus.COMPLETED
+            return StateSentenceStatus.SERVING
+
+        if self.is_incarceration_in_status:
+            if is_incarceration_sentence:
+                return StateSentenceStatus.SERVING
+            return StateSentenceStatus.COMPLETED
+
+        if self.is_supervision_out_status:
+            if is_incarceration_sentence:
+                return StateSentenceStatus.SERVING
+            return StateSentenceStatus.COMPLETED
+
+        if self.is_supervision_in_status:
+            if is_incarceration_sentence:
+                return StateSentenceStatus.COMPLETED
+            return StateSentenceStatus.SERVING
         return None
 
 

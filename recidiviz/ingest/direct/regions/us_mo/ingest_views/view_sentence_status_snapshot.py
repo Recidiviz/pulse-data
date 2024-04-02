@@ -20,42 +20,63 @@ This includes:
   - Type of status (COMPLETED, SERVING, REVOKED, COMMUTED, etc.)
 
 Raw data files include:
-  - LBAKRDTA_TAK022 has the base information for incarceration sentences
   - LBAKRDTA_TAK025 to cross-reference sentences with sentence status snapshots
   - LBAKRDTA_TAK026 has the information for sentence status snapshots
 """
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
+    STATUS_CODE_FILTERS,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#26620) Include supervision status info, BU_FSO <-> BV_FSO. Incarceration has an implicit _FSO = 0
-VIEW_QUERY_TEMPLATE = """
-SELECT 
-    base_sentence.BS_DOC,                         -- unique for each person
-    base_sentence.BS_CYC,                         -- unique for each sentence group
-    base_sentence.BS_SEO,                         -- unique for each sentence
-    CAST(sent_status.BW_SSO AS INT64) AS BW_SSO,  -- status sequence num
-    base_sentence.BS_SCF,                         -- sentence is completed
-    sent_status.BW_SCD,                           -- status code
-    sent_status.BW_SY                             -- status code change date
-FROM 
-    {LBAKRDTA_TAK022} AS base_sentence
-JOIN 
-    {LBAKRDTA_TAK025} AS sent_crossref
-ON 
-    base_sentence.BS_DOC = sent_crossref.BV_DOC AND 
-    base_sentence.BS_CYC = sent_crossref.BV_CYC AND 
-    base_sentence.BS_SEO = sent_crossref.BV_SEO 
-JOIN 
-    {LBAKRDTA_TAK026} AS sent_status
-ON 
-    sent_crossref.BV_DOC = sent_status.BW_DOC AND 
-    sent_crossref.BV_CYC = sent_status.BW_CYC AND 
-    sent_crossref.BV_SSO = sent_status.BW_SSO
+# Gets statuses that are not pre-trial and not in the future
+FILTERED_STATUSES = f"""
+SELECT
+    BW_DOC AS DOC, -- person
+    BW_CYC AS CYC, -- sentence group
+    BW_SSO AS SSO, -- crosswalk number to link sentence to status
+    BW_SY,  -- status code change date
+    BW_SCD  -- status code
+FROM
+    {{LBAKRDTA_TAK026}}
 WHERE 
-    CAST(sent_status.BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
+    {STATUS_CODE_FILTERS}
+"""
+
+SENTENCE_SEQUENCE = """
+SELECT
+    BV_DOC AS DOC,
+    BV_CYC AS CYC,
+    BV_SSO AS SSO,
+    CASE 
+        WHEN BV_FSO = '0' THEN
+            CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'INCARCERATION')
+        ELSE
+            CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'SUPERVISION')
+    END AS sentence_external_id
+FROM
+    {LBAKRDTA_TAK025}
+"""
+
+VIEW_QUERY_TEMPLATE = f"""
+WITH 
+    filtered_sentence_statuses AS ({FILTERED_STATUSES}),
+    sentence_sequence AS ({SENTENCE_SEQUENCE})
+SELECT 
+    DOC AS person_external_id,
+    sentence_sequence.sentence_external_id,
+    CAST(sentence_sequence.SSO AS INT64) AS BW_SSO,  -- status sequence num
+    filtered_sentence_statuses.BW_SY,  -- status code change date
+    filtered_sentence_statuses.BW_SCD  -- status code
+FROM 
+    sentence_sequence
+JOIN 
+    filtered_sentence_statuses
+USING
+    (DOC, CYC, SSO)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
