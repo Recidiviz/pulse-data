@@ -112,9 +112,9 @@ def get_undelivered_message_info(batch_id: str, bigquery_view: str) -> None:
         individual_undelivered_message_dict["text_body"] = jii_reply_doc_dict["body"]
         undelivered_message_list.append(individual_undelivered_message_dict)
 
-    # Query BigQuery for JII Names
-    external_id_to_name = {}
-    bq_query = f"SELECT external_id, person_name FROM {bigquery_view} WHERE external_id IN {tuple(undelivered_external_ids)}"
+    # Query BigQuery for JII and PO Names
+    external_id_to_names_dict = {}
+    bq_query = f"SELECT external_id, person_name, po_name FROM {bigquery_view} WHERE external_id IN {tuple(undelivered_external_ids)}"
     query_job = BigQueryClientImpl().run_query_async(
         query_str=bq_query,
         use_query_cache=True,
@@ -122,12 +122,23 @@ def get_undelivered_message_info(batch_id: str, bigquery_view: str) -> None:
     for individual in query_job:
         external_id = str(individual["external_id"])
         person_name = str(individual["person_name"])
-        external_id_to_name[external_id] = person_name
+        po_name = str(individual["po_name"])
+        external_id_to_names_dict[external_id] = {
+            "person_name": person_name,
+            "po_name": po_name,
+        }
 
     for undelivered_message_dict in undelivered_message_list:
         external_id = undelivered_message_dict["external_id"]
-        person_name = external_id_to_name.get(external_id, "UNKNOWN")
-        print(f"Name: {person_name}")
+        names_dict = external_id_to_names_dict.get(external_id)
+        if names_dict is not None:
+            person_name = names_dict.get("person_name", "UNKNOWN")
+            po_name = names_dict.get("po_name", "UNKNOWN")
+        else:
+            person_name = "UNKNOWN"
+            po_name = "UNKNOWN"
+        print(f"JII Name: {person_name}")
+        print(f"PO Name: {po_name}")
         for key, value in undelivered_message_dict.items():
             print(f"{key}: {value}")
         print("-------------------------------------------------------------")
