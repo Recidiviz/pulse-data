@@ -3,30 +3,21 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - BS_DOC
-  - BS_CYC
-  - BS_SEO
+  - person_external_id
+  - sentence_external_id
   - BW_SSO
-  - BS_SCF
   - BW_SCD
   - BW_SY
 unused_columns: []
-variables:
-  - sentence_external_id:
-      $concat:
-        $values:
-          - BS_DOC
-          - BS_CYC
-          - BS_SEO
 output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id: BS_DOC
+          external_id: person_external_id
           id_type: $literal("US_MO_DOC")
     sentences:
       - StateSentence:
-          external_id: $variable(sentence_external_id)
+          external_id: sentence_external_id
           sentence_status_snapshots:
             - StateSentenceStatusSnapshot:
                 status_update_datetime: BW_SY # Status Code Change Date
@@ -35,7 +26,8 @@ output:
                   $enum_mapping:
                     $raw_text:
                       $concat:
+                        $separator: "@@"
                         $values:
                           - BW_SCD # Status Code
-                          - BS_SCF # Y if sentence is completed, N if not
+                          - sentence_external_id
                     $custom_parser: us_mo_custom_enum_parsers.get_recidiviz_sentence_status

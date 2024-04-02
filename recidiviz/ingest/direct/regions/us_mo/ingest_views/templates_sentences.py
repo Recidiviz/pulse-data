@@ -59,6 +59,31 @@ BOND_STATUSES = (
     "99O7120",  # DATA ERROR-Bond Forfeiture
 )
 
+# Filters out pretrial and future status codes from {{LBAKRDTA_TAK026}}
+STATUS_CODE_FILTERS = f"""
+-- sentences with only pre-trial investigation statuses get dropped
+NOT (
+  -- Investigation start code prefixes
+  BW_SCD LIKE '05I5%' OR
+  BW_SCD LIKE '10I5%' OR
+  BW_SCD LIKE '25I5%' OR
+  BW_SCD LIKE '30I5%' OR
+  BW_SCD LIKE '35I5%' OR
+  -- Investigation end code prefixes
+  BW_SCD LIKE '95O5%' OR
+  BW_SCD LIKE '99O5%'
+) 
+-- sentences with only pre-trial bond statuses get dropped
+AND (
+    BW_SCD NOT IN {BOND_STATUSES}
+)
+AND (
+    -- We get weekly data with expected statuses for the (future) week,
+    -- so this ensures we only get statuses that have happened
+    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
+)
+"""
+
 # Used to query supervision sentences that are not
 # pretrial bond or investigation (decided by status).
 # Available tables are aliased as BU, BV, and BW -
@@ -90,20 +115,5 @@ WHERE
         '88888888',
         '99999999'
     )
--- sentences with only pre-trial investigation statuses get dropped
-AND NOT (
-  -- Investigation start code prefixes
-  BW_SCD LIKE '05I5%' OR
-  BW_SCD LIKE '10I5%' OR
-  BW_SCD LIKE '25I5%' OR
-  BW_SCD LIKE '30I5%' OR
-  BW_SCD LIKE '35I5%' OR
-  -- Investigation end code prefixes
-  BW_SCD LIKE '95O5%' OR
-  BW_SCD LIKE '99O5%'
-) 
--- sentences with only pre-trial bond statuses get dropped
-AND (
-    BW_SCD NOT IN {BOND_STATUSES}
-)
+AND {STATUS_CODE_FILTERS}
 """

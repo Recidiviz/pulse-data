@@ -1224,6 +1224,7 @@ def parse_incarceration_incident_type(raw_text: str) -> StateIncarcerationIncide
     return StateIncarcerationIncidentType.INTERNAL_UNKNOWN
 
 
+# TODO(#28189): Expand status code knowledge/coverage for supervision type classification
 def get_recidiviz_sentence_status(raw_text: str) -> StateSentenceStatus:
     """This is a custom parser to get a StateSentenceStatus.
 
@@ -1232,52 +1233,19 @@ def get_recidiviz_sentence_status(raw_text: str) -> StateSentenceStatus:
     to further improve/specify statuses.
 
     Args:
-        raw_text: (str) BW_SCD and BS_SCF concatenated with "-" (ex: 45O2000-Y)
+        raw_text: (str) BW_SCD and sentence_external_id concatenated with "@@" (ex: 45O2000-XXX-XXX-XXX-INCARCERATION)
     Returns:
         StateSentenceStatus
     """
-
-    status_code, completed_str = raw_text.split("-")
-    # TODO(#26870) have an ingest validation check REVOKED statuses are for PAROLE sentences
-    if status_code in {
-        "45O2000",  # Prob Rev - Technical
-        "45O2005",  # Prob Rev - New Felony Conv
-        "45O2015",  # Prob Rev - Felony Law Viol
-        "45O2010",  # Prob Rev - New Misd Conv
-        "45O2020",  # Prob Rev - Misd Law Viol
-    }:
-        return StateSentenceStatus.REVOKED
-
-    if status_code in {
-        "35I3500",  # Bond Supv-Pb Suspended-Revisit
-        "65O2015",  # Court Probation Suspension
-        "65O3015",  # Court Parole Suspension
-        "95O3500",  # Bond Supv-Pb Susp-Completion
-        "95O3505",  # Bond Supv-Pb Susp-Bond Forfeit
-        "95O3600",  # Bond Supv-Pb Susp-Trm-Tech
-        "95O7145",  # DATA ERROR-Suspended
-    }:
-        return StateSentenceStatus.SUSPENDED
-
-    # These status indicate death
-    if status_code.startswith("99O9"):
-        return StateSentenceStatus.COMPLETED
-
-    if status_code in {
-        "90O1020",  # Institutional Commutation Comp
-        "95O1025",  # Field Commutation
-        "99O1020",  # Institutional Commutation
-        "99O1025",  # Field Commutation
-    }:
-        return StateSentenceStatus.COMMUTED
-
-    if completed_str == "Y":
-        return StateSentenceStatus.COMPLETED
-
-    if completed_str == "N":
-        return StateSentenceStatus.SERVING
-
-    return StateSentenceStatus.EXTERNAL_UNKNOWN
+    status_code, sentence_external_id = raw_text.split("@@")
+    status = UsMoSentenceStatus(
+        sentence_status_external_id="0-0-0",
+        sentence_external_id=sentence_external_id,
+        status_date=None,
+        status_code=status_code,
+        status_description="",
+    )
+    return status.state_sentence_status or StateSentenceStatus.EXTERNAL_UNKNOWN
 
 
 # TODO(#28189): Expand status code knowledge/coverage for supervision type classification
