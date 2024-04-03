@@ -543,6 +543,35 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
 
+    def test_sentences_have_type_and_imposed_date_invalid(self) -> None:
+        """Tests that sentences post root entity merge all have a sentence_type and imposed_date."""
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            person=self.state_person,
+        )
+        self.state_person.sentences.append(sentence)
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(len(errors), 2)
+        self.assertEqual(
+            errors[0],
+            (
+                "Found person StatePerson(person_id=1, "
+                "external_ids=[StatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) with sentence "
+                "having no imposed_date."
+            ),
+        )
+        self.assertEqual(
+            errors[1],
+            (
+                "Found person StatePerson(person_id=1, "
+                "external_ids=[StatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) with sentence "
+                "having no StateSentenceType."
+            ),
+        )
+
     def test_revoked_sentence_status_check_valid(self) -> None:
         probation_sentence = state_entities.StateSentence(
             state_code=self.state_code,

@@ -2327,7 +2327,6 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # The date this sentence was imposed, e.g. the date of actual sentencing,
     # but not necessarily the date the person started serving the sentence.
     # Optional only for parsing
-    # TODO(#26870) have an ingest validation check this is not None post entity merge
     imposed_date: datetime.date = attr.ib(
         default=None, validator=pre_norm_opt(attr_validators.is_date)
     )
@@ -2340,7 +2339,6 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # The type of sentence INCARCERATION, PROBATION, etc.
     # Only optional for parsing
-    # TODO(#26870) have an ingest validation check this is not None post entity merge
     sentence_type: StateSentenceType = attr.ib(
         default=None,
         validator=pre_norm_opt(attr.validators.instance_of(StateSentenceType)),
