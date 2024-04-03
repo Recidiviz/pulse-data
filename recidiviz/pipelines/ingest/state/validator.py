@@ -129,14 +129,20 @@ def _unique_constraint_check(
                 yield error_msg
 
 
-def _revoked_sentence_status_check(
+def _sentencing_entities_checks(
     state_person: state_entities.StatePerson,
 ) -> Iterable[Error]:
-    """Yields an error if this person has a StateSentenceStatusSnapshot with a SentenceStatus.REVOKED
-    stemming from a sentence that does not have a PAROLE or PROBATION sentence_type.
+    """Yields errors for entities related to the sentencing schema, namely:
+    - If a StateSentence does not have a sentence_type or imposed_date (from partially hydrated entities).
+    - If StateSentenceStatusSnapshot entities with a REVOKED SentenceStatus stem from a sentence that
+      do not have a PAROLE or PROBATION sentence_type.
     """
     for sentence in state_person.sentences:
-        if sentence.sentence_type in {
+        if not sentence.imposed_date:
+            yield f"Found person {state_person.limited_pii_repr()} with sentence having no imposed_date."
+        if not sentence.sentence_type:
+            yield f"Found person {state_person.limited_pii_repr()} with sentence having no StateSentenceType."
+        elif sentence.sentence_type in {
             StateSentenceType.PAROLE,
             StateSentenceType.PROBATION,
         }:
@@ -166,11 +172,10 @@ def validate_root_entity(
     error_messages.extend(_unique_constraint_check(root_entity, field_index))
 
     # TODO(#27113) Check sequence_num on LedgerEntity objects
-    # TODO(#26870) Check merged StateSentence for sentence_type and imposed_date
-
     if isinstance(root_entity, state_entities.StatePerson):
-        # Yields errors if REVOKED sentence_status objects are on incarceration sentences.
-        error_messages.extend(_revoked_sentence_status_check(root_entity))
+        # Yields errors if REVOKED sentence_status objects are on incarceration sentences,
+        # or if a sentence has no StateSentenceType or imposed_date
+        error_messages.extend(_sentencing_entities_checks(root_entity))
 
     return error_messages
 
