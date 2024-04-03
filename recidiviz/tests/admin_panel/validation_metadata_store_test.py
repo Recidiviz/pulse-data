@@ -18,8 +18,11 @@
 # TODO(protocolbuffers/protobuf#10372): Remove pylint no-name-in-module check
 # pylint: disable=no-name-in-module
 import datetime
+import json
 import unittest
+from typing import Iterable, List
 
+import mock
 from fakeredis import FakeRedis
 from google.protobuf.timestamp_pb2 import Timestamp  # pylint: disable=no-name-in-module
 from mock import MagicMock, patch
@@ -31,7 +34,10 @@ from recidiviz.admin_panel.models.validation_pb2 import (
     ValidationStatusRecords,
 )
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
+from recidiviz.validation.validation_models import ValidationCategory
 
 _TEST_PROJECT = "test-project"
 
@@ -47,16 +53,20 @@ class ValidationStatusStoreTest(unittest.TestCase):
         self.mock_redis_patcher = self.redis_patcher.start()
         self.mock_redis_patcher.return_value = FakeRedis()
 
+        self.bq_client_patcher = patch(
+            "recidiviz.admin_panel.validation_metadata_store.BigQueryClientImpl"
+        )
+        self.mock_bq_client = self.bq_client_patcher.start().return_value
+
     def tearDown(self) -> None:
         self.mock_redis_patcher.stop()
+        self.bq_client_patcher.stop()
 
-    def _check_queries_use_correct_project_id(
-        self, mock_bigquery_client: MagicMock
-    ) -> None:
-        if not mock_bigquery_client.run_query_async.mock_calls:
+    def _check_queries_use_correct_project_id(self) -> None:
+        if not self.mock_bq_client.run_query_async.mock_calls:
             raise ValueError("Did not find any calls to run_query_async")
 
-        for call in mock_bigquery_client.run_query_async.mock_calls:
+        for call in self.mock_bq_client.run_query_async.mock_calls:
             kwargs = call[2]
             query_str = kwargs["query_str"]
             for project_id in GCP_PROJECTS:
@@ -79,12 +89,8 @@ class ValidationStatusStoreTest(unittest.TestCase):
         with self.assertRaises(ServiceUnavailable):
             store.get_most_recent_validation_results()
 
-    @patch("recidiviz.admin_panel.validation_metadata_store.BigQueryClientImpl")
-    def test_most_recent_validation_results(
-        self, mock_bigquery_client_class: MagicMock
-    ) -> None:
-        mock_bigquery_client = mock_bigquery_client_class.return_value
-        mock_bigquery_client.run_query_async.return_value = [
+    def test_most_recent_validation_results(self) -> None:
+        self.mock_bq_client.run_query_async.return_value = [
             {
                 "run_id": "abc123",
                 "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
@@ -127,7 +133,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         store = ValidationStatusStore()
         store.hydrate_cache()
         results = store.get_most_recent_validation_results()
-        self._check_queries_use_correct_project_id(mock_bigquery_client)
+        self._check_queries_use_correct_project_id()
 
         timestamp = Timestamp()
         timestamp.FromDatetime(datetime.datetime(2000, 1, 1, 0, 0, 0))
@@ -208,12 +214,8 @@ class ValidationStatusStoreTest(unittest.TestCase):
             results,
         )
 
-    @patch("recidiviz.admin_panel.validation_metadata_store.BigQueryClientImpl")
-    def test_multiple_states_different_run_ids_succeeds(
-        self, mock_bigquery_client_class: MagicMock
-    ) -> None:
-        mock_bigquery_client = mock_bigquery_client_class.return_value
-        mock_bigquery_client.run_query_async.return_value = [
+    def test_multiple_states_different_run_ids_succeeds(self) -> None:
+        self.mock_bq_client.run_query_async.return_value = [
             {
                 "run_id": "abc123",
                 "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
@@ -244,7 +246,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         store = ValidationStatusStore()
         store.hydrate_cache()
         results = store.get_most_recent_validation_results()
-        self._check_queries_use_correct_project_id(mock_bigquery_client)
+        self._check_queries_use_correct_project_id()
 
         timestamp = Timestamp()
         timestamp.FromDatetime(datetime.datetime(2000, 1, 1, 0, 0, 0))
@@ -304,3 +306,83 @@ class ValidationStatusStoreTest(unittest.TestCase):
             ),
             results,
         )
+
+    @patch(
+        "recidiviz.admin_panel.validation_metadata_store.get_all_validations_by_name"
+    )
+    def test_errors_table(self, mock_get_validations: mock.MagicMock) -> None:
+        mock_get_validations.return_value = {
+            "my_validation": ExistenceDataValidationCheck(
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="validation_views",
+                    view_id="my_validation",
+                    description="my_validation description",
+                    view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                ),
+                validation_category=ValidationCategory.INVARIANT,
+            ),
+        }
+        expected_main_query = """
+SELECT * FROM `test-project.validation_views.my_validation`
+WHERE region_code = "US_XX"
+LIMIT 500
+"""
+        expected_count_query = """
+    SELECT COUNT(*) as count FROM `test-project.validation_views.my_validation`
+    WHERE region_code = "US_XX"
+    """
+
+        def mock_run_query_async(
+            # pylint: disable=unused-argument
+            query_str: str,
+            use_query_cache: bool,
+            query_parameters: List[str],
+        ) -> Iterable:
+            error_rows = [
+                {
+                    "person_id": 2910000000000000001,
+                    "val_str": "A",
+                    "val_bool": False,
+                },
+                {
+                    "person_id": 2910000000000000002,
+                    "val_str": "A",
+                    "val_bool": False,
+                },
+            ]
+            if query_str == expected_main_query:
+                return error_rows
+            if query_str == expected_count_query:
+                return [{"count": len(error_rows)}]
+            raise ValueError(f"Unexpected query: [{query_str}]")
+
+        self.mock_bq_client.run_query_async.side_effect = mock_run_query_async
+
+        store = ValidationStatusStore()
+        results = store.get_error_table_for_validation(
+            "my_validation",
+            "US_XX",
+        )
+        expected_results = json.dumps(
+            {
+                "metadata": {
+                    "query": expected_main_query,
+                    "limitedRowsShown": False,
+                    "totalRows": 2,
+                },
+                # All row values sent to frontend as strings
+                "rows": [
+                    {
+                        "person_id": "2910000000000000001",
+                        "val_str": "A",
+                        "val_bool": "False",
+                    },
+                    {
+                        "person_id": "2910000000000000002",
+                        "val_str": "A",
+                        "val_bool": "False",
+                    },
+                ],
+            }
+        )
+        self.assertEqual(expected_results, results)

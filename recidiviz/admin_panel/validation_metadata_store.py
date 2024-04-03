@@ -57,7 +57,7 @@ from recidiviz.validation.checks.sameness_check import (
     SamenessPerRowValidationResultDetails,
     SamenessPerViewValidationResultDetails,
 )
-from recidiviz.validation.configured_validations import get_all_validations
+from recidiviz.validation.configured_validations import get_all_validations_by_name
 from recidiviz.validation.validation_models import DataValidationJobResultDetails
 from recidiviz.validation.validation_result_storage import (
     VALIDATION_RESULTS_BIGQUERY_ADDRESS,
@@ -477,48 +477,59 @@ class ValidationStatusStore(AdminPanelStore):
 
     def get_error_table_for_validation(
         self, validation_name: str, state_code: str
-    ) -> Optional[str]:
+    ) -> str:
         """Returns rows in the error view of a given validation"""
-        validations = get_all_validations()
+        validations_by_name = get_all_validations_by_name()
+        if validation_name not in validations_by_name:
+            raise ValueError(
+                f"Did not find validation with name {validations_by_name} - cannot load "
+                f"error results."
+            )
+        validation = validations_by_name[validation_name]
         limit = 500
+        query_str = validation_error_table_query(
+            metadata.project_id(),
+            BigQueryAddress(
+                dataset_id=VIEWS_DATASET,
+                table_id=validation.error_view_builder.view_id,
+            ),
+            state_code,
+            limit,
+        )
+        count_query_str = validation_error_table_count_query(
+            metadata.project_id(),
+            BigQueryAddress(
+                dataset_id=VIEWS_DATASET,
+                table_id=validation.error_view_builder.view_id,
+            ),
+            state_code,
+        )
 
-        for validation in validations:
-            if validation.validation_name == validation_name:
-                query_str = validation_error_table_query(
-                    metadata.project_id(),
-                    BigQueryAddress(
-                        dataset_id=VIEWS_DATASET,
-                        table_id=validation.error_view_builder.view_id,
-                    ),
-                    state_code,
-                    limit,
-                )
-                count_query_str = validation_error_table_count_query(
-                    metadata.project_id(),
-                    BigQueryAddress(
-                        dataset_id=VIEWS_DATASET,
-                        table_id=validation.error_view_builder.view_id,
-                    ),
-                    state_code,
-                )
+        query_job = self.bq_client.run_query_async(
+            query_str=query_str, use_query_cache=True, query_parameters=[]
+        )
+        count_query_job = self.bq_client.run_query_async(
+            query_str=count_query_str, use_query_cache=True, query_parameters=[]
+        )
 
-                query_job = self.bq_client.run_query_async(
-                    query_str=query_str, use_query_cache=True, query_parameters=[]
-                )
-                count_query_job = self.bq_client.run_query_async(
-                    query_str=count_query_str, use_query_cache=True, query_parameters=[]
-                )
+        records = [
+            {
+                # Cast all errors table values to string for display. Any 64-bit integer
+                # values MUST be converted to strings because Javascript doesn't support
+                # 64-bit integers and will otherwise round these values.
+                k: str(v)
+                for k, v in row.items()
+            }
+            for row in query_job
+        ]
+        total_rows = list(count_query_job)[0]["count"]
+        data = {
+            "metadata": {
+                "query": query_str,
+                "limitedRowsShown": total_rows > limit,
+                "totalRows": total_rows,
+            },
+            "rows": records[0 : min(limit, total_rows)],
+        }
 
-                records = [dict(row) for row in query_job]
-                total_rows = list(count_query_job)[0]["count"]
-                data = {
-                    "metadata": {
-                        "query": query_str,
-                        "limitedRowsShown": total_rows > limit,
-                        "totalRows": total_rows,
-                    },
-                    "rows": records[0 : min(limit, total_rows)],
-                }
-
-                return json.dumps(data, default=str)
-        return None
+        return json.dumps(data, default=str)

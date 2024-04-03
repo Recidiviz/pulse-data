@@ -918,3 +918,7 @@ def get_all_validations() -> List[DataValidationCheck]:
     ]
 
     return all_data_validations
+
+
+def get_all_validations_by_name() -> Dict[str, DataValidationCheck]:
+    return {v.validation_name: v for v in get_all_validations()}
