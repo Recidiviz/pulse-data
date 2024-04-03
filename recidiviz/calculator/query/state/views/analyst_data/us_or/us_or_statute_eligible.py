@@ -60,6 +60,15 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
             supervision_type_raw_text,
         FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_sentence`
         WHERE state_code='US_OR'
+    ),
+    sentence_enhancements AS (
+        SELECT
+            state_code,
+            person_id,
+            sentence_id,
+            JSON_VALUE(sentence_metadata, '$.FLAG_137635')='Y' AS sentenced_under_137635,
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+        WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
     )
     SELECT DISTINCT
         state_code,
@@ -69,11 +78,15 @@ US_OR_STATUTE_ELIGIBLE_QUERY_TEMPLATE = f"""
         end_date,
         -- check that statute isn't universally ineligible
         ((statute NOT IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES, quoted=True)}))
+        -- exclude sentences imposed under ORS 137.635, which is a sentencing enhancement
+        AND (NOT sentenced_under_137635)
         -- check that if post-prison, statute isn't ineligible for post-prison cases
         AND NOT ((supervision_type_raw_text='O') AND (statute IN ({list_to_query_string(OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES_POST_PRISON, quoted=True)})))
         ) AS meets_criteria,
     FROM sentences
     LEFT JOIN sentence_supervision_types
+        USING (state_code, person_id, sentence_id)
+    LEFT JOIN sentence_enhancements
         USING (state_code, person_id, sentence_id)
 """
 
