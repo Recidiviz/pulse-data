@@ -62,9 +62,6 @@ OR_EARNED_DISCHARGE_INELIGIBLE_STATUTES = [
     "161610",
     "161725",
     "161735",
-    # TODO(#27789): Exclude sentences imposed under the 137.635 enhancement, which is
-    # actually a separate enhancement flag in the OR raw data and wouldn't show up as
-    # the statute under which someone was sentenced.
     "137635",
     "137690",
     "164061",
