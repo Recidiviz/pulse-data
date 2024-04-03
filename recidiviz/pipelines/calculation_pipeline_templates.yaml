@@ -60,6 +60,11 @@ normalization_pipelines:
     job_name: us-mi-normalization
     state_code: US_MI
     region: us-central1
+  - pipeline: comprehensive_normalization
+    job_name: us-az-normalization
+    state_code: US_AZ
+    region: us-west1
+    staging_only: True
 
 metric_pipelines:
   # Full US_AR calculations with no time limit
@@ -308,6 +313,14 @@ metric_pipelines:
     state_code: US_OZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west3
+    staging_only: True
+
+  # Full US_AZ population spans with no time limit
+  - pipeline: population_span_metrics
+    job_name: full-us-az-population-span-metrics
+    state_code: US_AZ
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-west1
     staging_only: True
 
 supplemental_dataset_pipelines:
