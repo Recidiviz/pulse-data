@@ -19,6 +19,10 @@
 from collections import defaultdict
 from typing import Dict, Iterable, List, Type
 
+from recidiviz.common.constants.state.state_sentence import (
+    StateSentenceStatus,
+    StateSentenceType,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -125,6 +129,26 @@ def _unique_constraint_check(
                 yield error_msg
 
 
+def _revoked_sentence_status_check(
+    state_person: state_entities.StatePerson,
+) -> Iterable[Error]:
+    """Yields an error if this person has a StateSentenceStatusSnapshot with a SentenceStatus.REVOKED
+    stemming from a sentence that does not have a PAROLE or PROBATION sentence_type.
+    """
+    for sentence in state_person.sentences:
+        if sentence.sentence_type in {
+            StateSentenceType.PAROLE,
+            StateSentenceType.PROBATION,
+        }:
+            continue
+        for status in sentence.sentence_status_snapshots:
+            if status.status == StateSentenceStatus.REVOKED:
+                yield (
+                    f"Found person {state_person.limited_pii_repr()} with REVOKED status on {sentence.sentence_type} sentence."
+                    " REVOKED statuses are only allowed on PROBATION and PAROLE type sentences."
+                )
+
+
 def validate_root_entity(
     root_entity: RootEntityT, field_index: CoreEntityFieldIndex
 ) -> List[Error]:
@@ -143,7 +167,10 @@ def validate_root_entity(
 
     # TODO(#27113) Check sequence_num on LedgerEntity objects
     # TODO(#26870) Check merged StateSentence for sentence_type and imposed_date
-    # TODO(#28603) Check StateSentenceStatusSnapsot entities with REVOKED status are only on PROBATION or PAROLE sentences
+
+    if isinstance(root_entity, state_entities.StatePerson):
+        # Yields errors if REVOKED sentence_status objects are on incarceration sentences.
+        error_messages.extend(_revoked_sentence_status_check(root_entity))
 
     return error_messages
 
