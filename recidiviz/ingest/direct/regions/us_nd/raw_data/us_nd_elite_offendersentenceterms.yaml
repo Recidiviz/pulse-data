@@ -18,10 +18,14 @@ columns:
     field_type: datetime
     description: |-
       When this sentence term started.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: END_DATE
     field_type: datetime
     description: |-
       When this sentence term finished or will finish.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: YEARS
     description: |-
       Years component of the maximum sentence length.
@@ -35,10 +39,14 @@ columns:
     field_type: datetime
     description: |-
       When this record was first created in the source system.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: MODIFY_DATETIME
     field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: SENTENCE_SEQ
     description: |-
       The ordered index of this sentence among the full set of sentences associated with this booking.
