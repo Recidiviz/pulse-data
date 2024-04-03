@@ -6,6 +6,7 @@ input_columns:
   - update_datetime_external
   - sequence_num
   - PERSON_ID
+  - DOC_ID
 unused_columns: []
 output:
   StatePerson:
@@ -21,3 +22,6 @@ output:
           task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
           task_subtype: $literal("Standard Transition Release")
           sequence_num: sequence_num
+          task_metadata:
+            $json_dict:
+              external_id: DOC_ID
