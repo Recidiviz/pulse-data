@@ -79,19 +79,20 @@ SELECT DISTINCT
   -- controlling offense. when this happens, update the eligibility date to be the date
   -- of release to reflect that the person must have been eligible when they were released.
     FIRST_VALUE(transition_release_eligibility_date) OVER (
-        PARTITION BY PERSON_ID, EXTRACT(DATE FROM LEAST(elig.update_datetime_external, rel.update_datetime_external)) 
+        PARTITION BY PERSON_ID, DOC_ID, EXTRACT(DATE FROM LEAST(elig.update_datetime_external, rel.update_datetime_external)) 
         ORDER BY elig.update_datetime_external, rel.update_datetime_external, 
         -- very rarely, there are two dates entered with the same update_datetime_external. sort them deterministically
         transition_release_eligibility_date
     ) AS transition_release_eligibility_date,
     -- When there is more than one movement date associated with the same update_datetime_external, deterministically choose the earlier one.
     -- As of 3/28/24 this only happens one time.
-    MIN(transition_release_movement_date) OVER (PARTITION BY PERSON_ID, EXTRACT(DATE FROM LEAST(elig.update_datetime_external, rel.update_datetime_external)) 
+    MIN(transition_release_movement_date) OVER (PARTITION BY PERSON_ID, DOC_ID, EXTRACT(DATE FROM LEAST(elig.update_datetime_external, rel.update_datetime_external)) 
         ORDER BY elig.update_datetime_external, rel.update_datetime_external, 
         -- very rarely, there are two dates entered with the same update_datetime_external. sort them deterministically
         transition_release_eligibility_date) AS actual_or_expected_release_date,
     EXTRACT (DATE FROM LEAST(elig.update_datetime_external, rel.update_datetime_external) ) AS update_datetime_external,
   PERSON_ID,
+  DOC_ID
 FROM eligibility_dates elig
 LEFT JOIN release_dates rel
 USING(DOC_ID)
@@ -102,8 +103,9 @@ SELECT DISTINCT
   actual_or_expected_release_date, 
   update_datetime_external, 
   PERSON_ID,
+  DOC_ID,
   ROW_NUMBER() OVER (
-    PARTITION BY PERSON_ID 
+    PARTITION BY PERSON_ID, DOC_ID
     ORDER BY update_datetime_external, transition_release_eligibility_date, 
     actual_or_expected_release_date) AS sequence_num
 FROM elig_and_due_dates
