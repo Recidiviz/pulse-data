@@ -308,7 +308,7 @@ def us_tn_classification_forms(
     ),
     -- This CTE keeps all disciplinaries that we may want to count
     disciplinaries AS (
-        SELECT
+        SELECT 
             person_id,
             state_code,
             incident_date AS event_date,
@@ -318,6 +318,7 @@ def us_tn_classification_forms(
                  ELSE incident_type_raw_text
                  END AS note_title,
             injury_level,
+            incident_class,
             CONCAT('Class ', 
                     incident_class,
                     ' Incident Code:',
@@ -354,6 +355,7 @@ def us_tn_classification_forms(
             DISTINCT
             person_id,
             event_date,
+            incident_class,
             MAX(event_date) OVER(PARTITION BY person_id) AS latest_disciplinary,
             note_body,
         FROM
@@ -400,9 +402,9 @@ def us_tn_classification_forms(
             SELECT *
             FROM guilty_disciplinaries
             WHERE event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 18 MONTH)
-            QUALIFY RANK() OVER(PARTITION BY person_id ORDER BY CASE WHEN note_body = 'A' THEN 1
-                                                                      WHEN note_body = 'B' THEN 2
-                                                                      WHEN note_body = 'C' THEN 3
+            QUALIFY RANK() OVER(PARTITION BY person_id ORDER BY CASE WHEN incident_class = 'A' THEN 1
+                                                                      WHEN incident_class = 'B' THEN 2
+                                                                      WHEN incident_class = 'C' THEN 3
                                                                       END ASC) = 1
             )
         GROUP BY 1
