@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_DSC_STAFF_REVIEW
+file_description: |-
+  Unknown at this time.
+data_classification: source
+primary_key_cols: [STAFF_REVIEW_ID]
+columns:
+  - name: STAFF_REVIEW_ID
+    description: |-
+      pk
+  - name: EVENT_ID
+    description: |-
+      from events module
+  - name: CASE_NUM
+    description: |-
+      determined by calculation in UI
+  - name: GENERAL_LOCATION_ID
+    description: |-
+      fk to lookups
+  - name: DOC_ID
+    description: |-
+      from events module
+    is_pii: True
+  - name: VIOLATION_DTM
+    description: |-
+      Date/Time of Violation
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: STAFF_AWARE_DTM
+    description: |-
+      Date/Time Staff was Aware of the Violation
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: REPORTING_PERSON_FLAG
+    description: |-
+      Y/N
+  - name: REPORTING_PERSON_ID
+    description: |-
+      fk to person
+    is_pii: True
+  - name: STATE_VIOLATION_ID
+    description: |-
+      fk to rule_violation - state violation code
+  - name: VIOLATION_STATEMENT
+    description: |-
+      Statement of Violation
+    is_pii: True
+  - name: NOTIFIED_PERSON_FLAG
+    description: |-
+      Y/N
+  - name: NOTIFIED_PERSON_ID
+    description: |-
+      fk to person
+    is_pii: True
+  - name: NOTIFIED_DTM
+    description: |-
+      Date/Time Inmate was Notified
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: STAFF_SIGNATURE_ID
+    description: |-
+      fk to e_signatures
+  - name: STAFF_SIGNATURE_DTM
+    description: |-
+      Staff Signature Date/time
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: DISCIPLINE_STATUS_ID
+    description: |-
+      fk to lookups - category=DISCIPLINE_STATUS
+  - name: HISTORY_COUNT
+    description: |-
+      Count of records in staff_rev_hist per staff_review_id
+  - name: DECISION_ID
+    description: |-
+      fk to lookuups
+  - name: DECISION_DTM
+    description: |-
+      date/time of decision
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: UPDT_USERID
+    description: |-
+      userid that performed update
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Date of last update
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: ACTIVE_FLAG
+    description: |-
+      Is record logically deleted
+  - name: CHANGE_ID
+    description: |-
+      No description available in AZ data dictionary as of 2024-04-02
+  - name: SANCTIONS_APPROVED_DTM
+    description: |-
+      Date/time when sanctions were approved.  For a Minor violation, when the Disciplinary Hearing Coordinator submits the sanctions.  For a Major violation, when the Deputy Warden approves Major sanctions
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: PARTIAL_CASE_NUM
+    description: |-
+      This will hold the unit of the case number -- used for inserts
