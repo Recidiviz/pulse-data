@@ -77,7 +77,13 @@ metric_pipelines:
   - pipeline: population_span_metrics
     job_name: full-us-ar-population-span-metrics
     state_code: US_AR
-    metric_types: SUPERVISION_POPULATION_SPAN
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-east1
+    staging_only: True
+  - pipeline: incarceration_metrics
+    job_name: full-us-ar-incarceration-metrics
+    state_code: US_AR
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
     staging_only: True
 
