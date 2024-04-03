@@ -381,8 +381,8 @@ def get_admin_blueprint(
                     current_session.delete(assoc)
 
             # Re-fetching so that agency and users are associated in this session.
-            agency = AgencyInterface.get_agency_by_name(
-                session=current_session, name=name, with_users=True
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=agency.id, with_users=True
             )
 
         current_session.commit()
