@@ -75,6 +75,8 @@ VISIT_THIS_WEEK = "visit_this_week"
 LAST_LOGIN = "last_login"
 LOGIN_THIS_WEEK = "login_this_week"
 LAST_UPDATE = "last_update"
+INITIAL_METRIC_CONFIG_DATE = "initial_metric_config_date"
+INITIAL_DATA_ENTRY_DATE = "initial_data_entry_date"
 NUM_RECORDS_WITH_DATA = "num_records_with_data"
 NUM_TOTAL_POSSIBLE_METRICS = "num_total_possible_metrics"
 NUM_METRICS_WITH_DATA = "num_metrics_with_data"
@@ -122,7 +124,9 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def summarize(
-    datapoints: List[schema.Datapoint], today: datetime.datetime
+    datapoints: List[schema.Datapoint],
+    today: datetime.datetime,
+    datapoint_id_to_first_update: Dict[int, datetime.datetime],
 ) -> Dict[str, Any]:
     """Given a list of Datapoints belonging to a particular agency, return a dictionary
     containing summary statistics.
@@ -144,13 +148,60 @@ def summarize(
     # enabled or disabled
     last_metric_config_update = datetime.datetime(1970, 1, 1)
     metric_configured_this_week = False
+
+    # We default both initial_metric_config_date and initial_data_entry_date to tomorrow
+    # That way when we take the minimum of datapoint_last_update and initial_metric_config_date
+    # and the minimum of datapoint_last_update and initial_data_entry_date later on,
+    # we can account for when datapoint_last_update = datetime.datetime.today()
+    # initial_metric_config_date is the date when configuration first occurs for any metric for a given agency
+    tomorrow = datetime.datetime.today() + datetime.timedelta(days=1)
+    initial_metric_config_date = tomorrow
+    # initial_data_entry_date is the date when the agency first entered data for any metric
+    initial_data_entry_date = tomorrow
+
     for datapoint in datapoints:
         if datapoint["is_report_datapoint"] is True and datapoint["value"] is None:
             # Ignore report datapoints with no values
             continue
         datapoint_last_update = datapoint["last_updated"]
+        datapoint_first_update = datapoint_id_to_first_update.get(datapoint.id)
 
         # Part 1: Things that involve a timestamp
+        if datapoint["is_report_datapoint"] is True:
+            # initial_data_entry_date involves a timestamp and report datapoints
+            if datapoint_first_update is not None:
+                initial_data_entry_date = min(
+                    datapoint_first_update, initial_data_entry_date
+                )
+            elif datapoint["created_at"] is not None:
+                initial_data_entry_date = min(
+                    initial_data_entry_date, datapoint["created_at"]
+                )
+            elif datapoint_last_update is not None:
+                initial_data_entry_date = min(
+                    initial_data_entry_date, datapoint_last_update
+                )
+        elif (
+            # The following filters to agency datapoints that contain information about whether
+            # the top-level metric is turned on or off
+            not datapoint["dimension_identifier_to_member"]
+            and not datapoint["context_key"]
+            and not datapoint["includes_excludes_key"]
+            and datapoint["enabled"] is not None
+        ):
+            # initial_metric_config_date involves a timestamp and agency datapoints
+            if datapoint_first_update is not None:
+                initial_metric_config_date = min(
+                    initial_metric_config_date, datapoint_first_update
+                )
+            elif datapoint["created_at"] is not None:
+                initial_metric_config_date = min(
+                    initial_metric_config_date, datapoint["created_at"]
+                )
+            elif datapoint_last_update is not None:
+                initial_metric_config_date = min(
+                    initial_metric_config_date, datapoint_last_update
+                )
         if datapoint_last_update is not None:
             # last_update involves a timestamp and report and agency datapoints
             last_update = max(last_update, datapoint_last_update)
@@ -216,6 +267,12 @@ def summarize(
         NUM_METRICS_AVAILABLE: len(metrics_available),
         NUM_METRICS_UNAVAILABLE: len(metrics_unavailable),
         DATA_SHARED_THIS_WEEK: data_shared_this_week,
+        INITIAL_METRIC_CONFIG_DATE: initial_metric_config_date.date()
+        if initial_metric_config_date != tomorrow
+        else "",
+        INITIAL_DATA_ENTRY_DATE: initial_data_entry_date.date()
+        if initial_data_entry_date != tomorrow
+        else "",
     }
 
 
@@ -228,6 +285,7 @@ def get_all_data(
     List[Any],
     List[Any],
     List[Any],
+    Dict[int, datetime.datetime],
 ]:
     """Retrieve agency, user, agency_user_account_association, and datapoint data from both
     Auth0 as well as our database.
@@ -249,6 +307,11 @@ def get_all_data(
     users = session.execute("select * from user_account").all()
     datapoints = session.execute("select * from datapoint").all()
     spreadsheets = session.execute("select * from spreadsheet").all()
+    datapoint_id_to_first_update = dict(
+        session.execute(
+            "select datapoint_history.datapoint_id, min(datapoint_history.timestamp) from datapoint_history where datapoint_history.old_value is null group by datapoint_history.datapoint_id"
+        ).all()
+    )
 
     agencies_to_exclude = AGENCIES_TO_EXCLUDE.keys()
     agencies = [
@@ -261,6 +324,7 @@ def get_all_data(
         users,
         datapoints,
         spreadsheets,
+        datapoint_id_to_first_update,
     )
 
 
@@ -402,6 +466,8 @@ def create_new_agency_columns(
         )
         agency[CREATED_AT] = agency_created_at_str or first_user_created_at or ""
         agency[LAST_UPDATE] = ""
+        agency[INITIAL_METRIC_CONFIG_DATE] = ""
+        agency[INITIAL_DATA_ENTRY_DATE] = ""
         agency[NUM_RECORDS_WITH_DATA] = 0
         agency[NUM_TOTAL_POSSIBLE_METRICS] = num_total_possible_metrics
         agency[NUM_METRICS_WITH_DATA] = 0
@@ -472,6 +538,7 @@ def generate_agency_summary_csv(
         users,
         datapoints,
         spreadsheets,
+        datapoint_id_to_first_update,
     ) = get_all_data(session=session)
     logger.info("Number of agencies: %s", len(agencies))
 
@@ -540,7 +607,11 @@ def generate_agency_summary_csv(
         if agency_id not in agency_id_to_agency:
             continue
 
-        data = summarize(datapoints=datapoints, today=today)
+        data = summarize(
+            datapoints=datapoints,
+            today=today,
+            datapoint_id_to_first_update=datapoint_id_to_first_update,
+        )
         agency_id_to_agency[agency_id] = dict(agency_id_to_agency[agency_id], **data)
 
     agencies = list(agency_id_to_agency.values())
@@ -557,6 +628,8 @@ def generate_agency_summary_csv(
         LAST_LOGIN,
         LOGIN_THIS_WEEK,
         LAST_UPDATE,
+        INITIAL_METRIC_CONFIG_DATE,
+        INITIAL_DATA_ENTRY_DATE,
         NUM_RECORDS_WITH_DATA,
         NUM_TOTAL_POSSIBLE_METRICS,
         NUM_METRICS_WITH_DATA,
