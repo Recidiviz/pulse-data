@@ -33,8 +33,8 @@ from recidiviz.pipelines.utils import assessment_utils
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
-    UsIdSupervisionDelegate,
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
+    UsIxSupervisionDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
@@ -162,8 +162,8 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         self.assertIsNone(most_recent_assessment)
 
-    def test_find_most_recent_applicable_assessment_US_ID(self):
-        state_code = "US_ID"
+    def test_find_most_recent_applicable_assessment_US_IX(self):
+        state_code = "US_IX"
 
         lsir_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=state_code,
@@ -192,7 +192,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 assessments,
                 StateAssessmentClass.RISK,
-                UsIdSupervisionDelegate([]),
+                UsIxSupervisionDelegate([]),
             )
         )
 

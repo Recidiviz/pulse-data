@@ -44,8 +44,8 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
-    UsIdSupervisionDelegate,
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
+    UsIxSupervisionDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
@@ -204,13 +204,13 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         self.assertEqual("1", level_1_supervision_location)
         self.assertEqual("DISTRICT", level_2_supervision_location)
 
-    def test_get_supervising_officer_and_location_info_from_supervision_period_us_id(
+    def test_get_supervising_officer_and_location_info_from_supervision_period_us_ix(
         self,
     ) -> None:
         supervision_period = attr.evolve(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            state_code="US_ID",
-            supervision_site="DISTRICT OFFICE 6, POCATELLO|UNKNOWN",
+            state_code="US_IX",
+            supervision_site="DISTRICT OFFICE 6, POCATELLO",
         )
 
         (
@@ -218,18 +218,18 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
             level_2_supervision_location,
         ) = supervising_location_info(
             supervision_period,
-            UsIdSupervisionDelegate(
+            UsIxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
             ),
         )
 
-        self.assertEqual("UNKNOWN", level_1_supervision_location)
-        self.assertEqual("DISTRICT OFFICE 6, POCATELLO", level_2_supervision_location)
+        self.assertEqual("DISTRICT OFFICE 6, POCATELLO", level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
 
         supervision_period = attr.evolve(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            state_code="US_ID",
-            supervision_site="PAROLE COMMISSION OFFICE|DEPORTED",
+            state_code="US_IX",
+            supervision_site="PAROLE COMMISSION",
         )
 
         (
@@ -237,18 +237,18 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
             level_2_supervision_location,
         ) = supervising_location_info(
             supervision_period,
-            UsIdSupervisionDelegate(
+            UsIxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
             ),
         )
 
-        self.assertEqual("DEPORTED", level_1_supervision_location)
-        self.assertEqual("PAROLE COMMISSION OFFICE", level_2_supervision_location)
+        self.assertEqual("PAROLE COMMISSION", level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
 
         supervision_period = attr.evolve(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            state_code="US_ID",
-            supervision_site="DISTRICT OFFICE 4, BOISE|",
+            state_code="US_IX",
+            supervision_site="DISTRICT OFFICE 4, BOISE",
         )
 
         (
@@ -256,17 +256,17 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
             level_2_supervision_location,
         ) = supervising_location_info(
             supervision_period,
-            UsIdSupervisionDelegate(
+            UsIxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
             ),
         )
 
-        self.assertEqual(None, level_1_supervision_location)
-        self.assertEqual("DISTRICT OFFICE 4, BOISE", level_2_supervision_location)
+        self.assertEqual("DISTRICT OFFICE 4, BOISE", level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
 
         supervision_period = attr.evolve(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            state_code="US_ID",
+            state_code="US_IX",
             supervision_site=None,
         )
 
@@ -275,7 +275,7 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
             level_2_supervision_location,
         ) = supervising_location_info(
             supervision_period,
-            UsIdSupervisionDelegate(
+            UsIxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
             ),
         )

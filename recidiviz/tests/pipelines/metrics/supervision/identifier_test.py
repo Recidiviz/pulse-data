@@ -122,8 +122,8 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_del
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
-    UsIdSupervisionDelegate,
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
+    UsIxSupervisionDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
@@ -2087,7 +2087,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_events_us_id(self) -> None:
+    def test_find_supervision_events_us_ix(self) -> None:
         """Tests the find_supervision_events function where the supervision type should be taken from the
         supervision_type off of the supervision_period."""
 
@@ -2099,11 +2099,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             external_id="sp1",
             case_type_entries=[
                 NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
-                    state_code="US_ID", case_type=StateSupervisionCaseType.GENERAL
+                    state_code="US_IX", case_type=StateSupervisionCaseType.GENERAL
                 )
             ],
-            state_code="US_ID",
-            supervision_site="DISTRICT_1|OFFICE_2",
+            state_code="US_IX",
+            supervision_site="DISTRICT_1",
             custodial_authority_raw_text="US_ID_DOC",
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             start_date=date(2018, 3, 5),
@@ -2115,7 +2115,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
+            state_code="US_IX",
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
             external_id="ss1",
@@ -2123,7 +2123,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
-            state_code="US_XX",
+            state_code="US_IX",
             incarceration_sentence_id=123,
             external_id="is1",
             effective_date=date(2017, 1, 1),
@@ -2131,7 +2131,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code="US_ID",
+            state_code="US_IX",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -2154,15 +2154,15 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                UsIdSupervisionDelegate([]),
+                UsIxSupervisionDelegate([]),
                 supervising_district_external_id="DISTRICT_1",
             ),
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervising_district_external_id="DISTRICT_1",
-                level_1_supervision_location_external_id="OFFICE_2",
-                level_2_supervision_location_external_id="DISTRICT_1",
+                level_1_supervision_location_external_id="DISTRICT_1",
+                level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
             ),
         ]
@@ -2175,8 +2175,8 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                level_1_supervision_location_external_id="OFFICE_2",
-                level_2_supervision_location_external_id="DISTRICT_1",
+                level_1_supervision_location_external_id="DISTRICT_1",
+                level_2_supervision_location_external_id=None,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2194,7 +2194,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            state_code_override="US_ID",
+            state_code_override="US_IX",
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2391,7 +2391,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             if isinstance(event, SupervisionPopulationEvent):
                 self.fail("No supervision population event should be generated.")
 
-    def test_find_supervision_events_infer_supervision_type_dual_us_id(
+    def test_find_supervision_events_infer_supervision_type_dual_us_ix(
         self,
     ) -> None:
         """Tests the find_supervision_events function where the supervision type is taken from a `DUAL`
@@ -2404,8 +2404,8 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_period_id=111,
             external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-            state_code="US_ID",
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code="US_IX",
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -2414,7 +2414,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code="US_ID",
+            state_code="US_IX",
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -2435,7 +2435,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                UsIdSupervisionDelegate([]),
+                UsIxSupervisionDelegate([]),
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -2470,7 +2470,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            state_code_override="US_ID",
+            state_code_override="US_IX",
         )
 
         self.assertCountEqual(expected_events, supervision_events)

@@ -55,17 +55,11 @@ from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import 
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_compliance import (
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_compliance import (
     NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
     SEX_OFFENSE_LSIR_MINIMUM_SCORE,
     SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE,
     SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION,
-    UsIdSupervisionCaseCompliance,
-)
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
-    UsIdSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_compliance import (
     UsIxSupervisionCaseCompliance,
 )
 from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
@@ -132,8 +126,8 @@ class TestCaseCompliance(unittest.TestCase):
         self.assertIsNone(compliance.next_recommended_assessment_date)
         self.assertIsNone(compliance.next_recommended_face_to_face_date)
 
-    @patch.object(UsIdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
-    def test_us_id_guidelines_not_applicable_provided(
+    @patch.object(UsIxSupervisionCaseCompliance, "_guidelines_applicable_for_case")
+    def test_us_ix_guidelines_not_applicable_provided(
         self, guidelines_fn: MagicMock
     ) -> None:
         guidelines_fn.return_value = False
@@ -142,7 +136,7 @@ class TestCaseCompliance(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ND.value,
+            state_code=StateCode.US_IX.value,
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -155,7 +149,7 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
         compliance_evaluation_date = date(2018, 4, 30)
 
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -164,9 +158,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
 
@@ -408,13 +402,13 @@ class TestCaseCompliance(unittest.TestCase):
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date(self) -> None:
+    def test_us_ix_get_case_compliance_on_date(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -428,7 +422,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
@@ -441,14 +435,14 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -457,7 +451,7 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         compliance_evaluation_date = date(2018, 4, 30)
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -466,9 +460,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
 
@@ -484,19 +478,20 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_with_direct_contact_on_date(
+    def test_us_ix_get_case_compliance_on_date_with_direct_contact_on_date(
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -510,7 +505,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
@@ -523,7 +518,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -531,7 +526,7 @@ class TestCaseCompliance(unittest.TestCase):
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -542,7 +537,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         compliance_evaluation_date = date(2018, 4, 6)
 
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -551,9 +546,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
 
@@ -569,17 +564,18 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_no_assessment_no_contacts(self) -> None:
+    def test_us_ix_get_case_compliance_on_date_no_assessment_no_contacts(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -594,7 +590,7 @@ class TestCaseCompliance(unittest.TestCase):
         start_of_supervision = date(2018, 1, 5)
         compliance_evaluation_date = date(2018, 4, 30)
 
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -603,9 +599,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
         self.assertEqual(
@@ -618,17 +614,18 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 2, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 1, 19),
+                next_recommended_employment_verification_date=date(2018, 1, 5),
             ),
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_not_applicable_case(self) -> None:
+    def test_us_ix_get_case_compliance_on_date_not_applicable_case(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -639,7 +636,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
@@ -652,7 +649,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 31),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -665,7 +662,7 @@ class TestCaseCompliance(unittest.TestCase):
         start_of_supervision = date(2018, 1, 5)
         compliance_evaluation_date = date(2018, 3, 31)
 
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -674,9 +671,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
 
@@ -694,13 +691,13 @@ class TestCaseCompliance(unittest.TestCase):
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_no_home_visits_no_contacts(self) -> None:
+    def test_us_ix_get_case_compliance_on_date_no_home_visits_no_contacts(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -713,7 +710,7 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         compliance_evaluation_date = date(2018, 4, 30)
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -722,9 +719,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
 
@@ -741,19 +738,20 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_no_home_visits_some_contacts(
+    def test_us_ix_get_case_compliance_on_date_no_home_visits_some_contacts(
         self,
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -767,7 +765,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -775,7 +773,7 @@ class TestCaseCompliance(unittest.TestCase):
                 location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -785,7 +783,7 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         compliance_evaluation_date = date(2018, 4, 30)
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -794,9 +792,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
 
@@ -813,17 +811,18 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_some_home_visits(self) -> None:
+    def test_us_ix_get_case_compliance_on_date_some_home_visits(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -837,7 +836,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -845,7 +844,7 @@ class TestCaseCompliance(unittest.TestCase):
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -855,7 +854,7 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         compliance_evaluation_date = date(2018, 4, 30)
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -864,9 +863,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
         self.assertEqual(
@@ -882,17 +881,18 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_home_visit_date=date(2019, 4, 30),
                 home_visit_count=1,
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_one_home_visits_other_ftf(self) -> None:
+    def test_us_ix_get_case_compliance_on_date_one_home_visits_other_ftf(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -906,7 +906,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -914,7 +914,7 @@ class TestCaseCompliance(unittest.TestCase):
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -924,7 +924,7 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         compliance_evaluation_date = date(2018, 4, 30)
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
@@ -933,9 +933,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance = us_id_supervision_compliance.get_case_compliance_on_date(
+        compliance = us_ix_supervision_compliance.get_case_compliance_on_date(
             compliance_evaluation_date
         )
 
@@ -952,19 +952,20 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2019, 3, 6),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance,
         )
 
-    def test_us_id_get_case_compliance_on_date_multiple_visits_multiple_periods_home_visits(
+    def test_us_ix_get_case_compliance_on_date_multiple_visits_multiple_periods_home_visits(
         self,
     ) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -978,8 +979,8 @@ class TestCaseCompliance(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -993,7 +994,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts_1 = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1001,7 +1002,7 @@ class TestCaseCompliance(unittest.TestCase):
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1012,7 +1013,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts_2 = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c3",
                 contact_date=date(2019, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1020,7 +1021,7 @@ class TestCaseCompliance(unittest.TestCase):
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c4",
                 contact_date=date(2019, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1032,7 +1033,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date_1 = date(2018, 4, 30)
         compliance_evaluation_date_2 = date(2019, 4, 30)
 
-        us_id_supervision_compliance_1 = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance_1 = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period_1,
             case_type=case_type,
@@ -1041,13 +1042,13 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts_1,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
+        compliance_1 = us_ix_supervision_compliance_1.get_case_compliance_on_date(
             compliance_evaluation_date_1
         )
 
-        us_id_supervision_compliance_2 = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance_2 = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period_2,
             case_type=case_type,
@@ -1056,9 +1057,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts_2,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
+        compliance_2 = us_ix_supervision_compliance_2.get_case_compliance_on_date(
             compliance_evaluation_date_2
         )
 
@@ -1075,10 +1076,10 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=1,
                 next_recommended_home_visit_date=date(2019, 4, 30),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance_1,
         )
-
         self.assertEqual(
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date_2,
@@ -1092,11 +1093,12 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_home_visit_date=date(2020, 4, 29),
                 home_visit_count=1,
                 next_recommended_treatment_collateral_contact_date=date(2019, 3, 19),
+                next_recommended_employment_verification_date=date(2019, 3, 5),
             ),
             compliance_2,
         )
 
-    def test_us_id_get_case_compliance_on_date_home_visit_in_diff_period(self) -> None:
+    def test_us_ix_get_case_compliance_on_date_home_visit_in_diff_period(self) -> None:
         """Tests when there are two periods and a home visit assigned to each period,
         but each home visit date is outside the bounds of each supervision periods dates
         causing the most_recent_home_visit to be None"""
@@ -1104,8 +1106,8 @@ class TestCaseCompliance(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1119,8 +1121,8 @@ class TestCaseCompliance(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1134,7 +1136,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts_1 = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c1",
                 contact_date=date(2019, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1142,7 +1144,7 @@ class TestCaseCompliance(unittest.TestCase):
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c2",
                 contact_date=date(2019, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1153,7 +1155,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         supervision_contacts_2 = [
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c3",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1161,7 +1163,7 @@ class TestCaseCompliance(unittest.TestCase):
                 location=StateSupervisionContactLocation.RESIDENCE,
             ),
             StateSupervisionContact.new_with_defaults(
-                state_code=StateCode.US_ID.value,
+                state_code=StateCode.US_IX.value,
                 external_id="c4",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -1173,7 +1175,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date_1 = date(2018, 4, 30)
         compliance_evaluation_date_2 = date(2019, 4, 30)
 
-        us_id_supervision_compliance_1 = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance_1 = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period_1,
             case_type=case_type,
@@ -1182,13 +1184,13 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts_1,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance_1 = us_id_supervision_compliance_1.get_case_compliance_on_date(
+        compliance_1 = us_ix_supervision_compliance_1.get_case_compliance_on_date(
             compliance_evaluation_date_1
         )
 
-        us_id_supervision_compliance_2 = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance_2 = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period_2,
             case_type=case_type,
@@ -1197,9 +1199,9 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_contacts=supervision_contacts_2,
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
-        compliance_2 = us_id_supervision_compliance_2.get_case_compliance_on_date(
+        compliance_2 = us_ix_supervision_compliance_2.get_case_compliance_on_date(
             compliance_evaluation_date_2
         )
         self.assertEqual(
@@ -1215,6 +1217,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2018, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2018, 3, 19),
+                next_recommended_employment_verification_date=date(2018, 3, 5),
             ),
             compliance_1,
         )
@@ -1231,6 +1234,7 @@ class TestCaseCompliance(unittest.TestCase):
                 home_visit_count=0,
                 next_recommended_home_visit_date=date(2019, 4, 4),
                 next_recommended_treatment_collateral_contact_date=date(2019, 3, 19),
+                next_recommended_employment_verification_date=date(2019, 3, 5),
             ),
             compliance_2,
         )
@@ -1243,13 +1247,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
         self.empty_ip_index = default_normalized_ip_index_for_tests()
 
-    def test_us_id_next_recommended_assessment_date(self) -> None:
+    def test_us_ix_next_recommended_assessment_date(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1258,7 +1262,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1268,7 +1272,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
         )
 
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1277,16 +1281,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2019, 3, 10))
 
-    def test_us_id_next_recommended_assessment_date_no_assessment_new_period(
+    def test_us_ix_next_recommended_assessment_date_no_assessment_new_period(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1294,15 +1298,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         start_of_supervision = start_date
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1311,16 +1315,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(None)
+            us_ix_supervision_compliance._next_recommended_assessment_date(None)
         )
 
         self.assertEqual(assessment_date, date(2018, 4, 19))
 
-    def test_us_id_next_recommended_assessment_date_no_assessment_old_period(
+    def test_us_ix_next_recommended_assessment_date_no_assessment_old_period(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1328,8 +1332,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1340,7 +1344,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1349,16 +1353,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(None)
+            us_ix_supervision_compliance._next_recommended_assessment_date(None)
         )
 
         self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_id_next_recommended_assessment_date_assessment_before_starting_parole(
+    def test_us_ix_next_recommended_assessment_date_assessment_before_starting_parole(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1366,15 +1370,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1389,7 +1393,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1398,16 +1402,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_next_recommended_assessment_date_assessment_before_starting_dual(
+    def test_us_ix_next_recommended_assessment_date_assessment_before_starting_dual(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1415,15 +1419,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1438,7 +1442,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1447,15 +1451,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
         self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_next_recommended_assessment_date_assessment_before_starting_probation(
+    def test_us_ix_next_recommended_assessment_date_assessment_before_starting_probation(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1463,15 +1467,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1486,7 +1490,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1495,16 +1499,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_next_recommended_assessment_date_old_assessment_minimum_level_deprecated(
+    def test_us_ix_next_recommended_assessment_date_old_assessment_minimum_level_deprecated(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1512,8 +1516,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1522,7 +1526,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1537,7 +1541,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1546,16 +1550,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertIsNone(assessment_date)
 
-    def test_us_id_next_recommended_assessment_date_old_assessment_minimum_level(
+    def test_us_ix_next_recommended_assessment_date_old_assessment_minimum_level(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1563,8 +1567,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1573,7 +1577,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1588,7 +1592,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1597,16 +1601,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertIsNone(assessment_date)
 
-    def test_us_id_next_recommended_assessment_date_old_assessment_not_minimum_level(
+    def test_us_ix_next_recommended_assessment_date_old_assessment_not_minimum_level(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1614,8 +1618,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1623,7 +1627,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1638,7 +1642,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
@@ -1647,23 +1651,23 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2018, 1, 3))
 
-    def test_us_id_next_recommended_assessment_date_sex_offense(self) -> None:
+    def test_us_ix_next_recommended_assessment_date_sex_offense(self) -> None:
         start_date = date(2018, 3, 5)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1672,7 +1676,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1683,7 +1687,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         start_of_supervision = start_date
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1692,16 +1696,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2019, 3, 10))
 
-    def test_us_id_next_recommended_assessment_date_no_assessment_new_period_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_no_assessment_new_period_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1709,15 +1713,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         start_of_supervision = start_date
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1726,16 +1730,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(None)
+            us_ix_supervision_compliance._next_recommended_assessment_date(None)
         )
 
         self.assertEqual(assessment_date, date(2018, 4, 19))
 
-    def test_us_id_next_recommended_assessment_date_no_assessment_old_period_probation_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_no_assessment_old_period_probation_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1743,8 +1747,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1755,7 +1759,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1764,16 +1768,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(None)
+            us_ix_supervision_compliance._next_recommended_assessment_date(None)
         )
 
         self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_id_next_recommended_assessment_date_no_assessment_old_period_parole_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_no_assessment_old_period_parole_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1781,8 +1785,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -1793,7 +1797,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1802,16 +1806,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(None)
+            us_ix_supervision_compliance._next_recommended_assessment_date(None)
         )
 
         self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_id_next_recommended_assessment_date_assessment_before_starting_parole_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_assessment_before_starting_parole_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1819,15 +1823,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1842,7 +1846,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1851,16 +1855,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2018, 10, 3))
 
-    def test_us_id_next_recommended_assessment_date_assessment_before_starting_dual_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_assessment_before_starting_dual_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1868,15 +1872,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1891,7 +1895,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1900,16 +1904,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2018, 10, 3))
 
-    def test_us_id_next_recommended_assessment_date_assessment_before_starting_probation_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_assessment_before_starting_probation_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1917,15 +1921,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=date(2018, 3, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
@@ -1940,7 +1944,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1949,16 +1953,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_next_recommended_assessment_date_old_assessment_greater_than_minimum_lsir_score_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_old_assessment_greater_than_minimum_lsir_score_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1966,8 +1970,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1975,7 +1979,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] + 1,
@@ -1990,7 +1994,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -1999,16 +2003,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertEqual(assessment_date, date(2018, 1, 3))
 
-    def test_us_id_next_recommended_assessment_date_old_assessment_less_than_minimum_lsir_score_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_old_assessment_less_than_minimum_lsir_score_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -2016,8 +2020,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -2025,7 +2029,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_ID.value,
+            state_code=StateCode.US_IX.value,
             external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] - 1,
@@ -2040,7 +2044,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -2049,16 +2053,16 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
+            us_ix_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
         self.assertIsNone(assessment_date)
 
-    def test_us_id_next_recommended_assessment_date_no_old_assessment_sex_offense(
+    def test_us_ix_next_recommended_assessment_date_no_old_assessment_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -2066,8 +2070,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             sequence_num=0,
             supervision_period_id=111,
             external_id="sp1",
-            state_code=StateCode.US_ID.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            state_code=StateCode.US_IX.value,
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -2079,7 +2083,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+        us_ix_supervision_compliance = UsIxSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
@@ -2088,11 +2092,11 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIdSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate([]),
         )
 
         assessment_date = (
-            us_id_supervision_compliance._next_recommended_assessment_date(None)
+            us_ix_supervision_compliance._next_recommended_assessment_date(None)
         )
 
         self.assertEqual(assessment_date, date(2018, 3, 5))
@@ -2106,7 +2110,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            custodial_authority_raw_text="US_ID_DOC",
+            custodial_authority_raw_text="US_IX_DOC",
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,

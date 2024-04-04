@@ -97,11 +97,11 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_del
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_incarceration_delegate import (
-    UsIdIncarcerationDelegate,
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_incarceration_delegate import (
+    UsIxIncarcerationDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
-    UsIdSupervisionDelegate,
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
+    UsIxSupervisionDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_incarceration_delegate import (
     UsMoIncarcerationDelegate,
@@ -1773,13 +1773,13 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_event,
         )
 
-    def test_release_event_for_period_us_id(self) -> None:
+    def test_release_event_for_period_us_ix(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             sequence_num=0,
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_ID",
+            state_code="US_IX",
             facility="PRISON3",
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1797,8 +1797,8 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             start_date=incarceration_period.release_date,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
-        incarceration_delegate = UsIdIncarcerationDelegate()
-        supervision_delegate = UsIdSupervisionDelegate([])
+        incarceration_delegate = UsIxIncarcerationDelegate()
+        supervision_delegate = UsIxSupervisionDelegate([])
 
         incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period]

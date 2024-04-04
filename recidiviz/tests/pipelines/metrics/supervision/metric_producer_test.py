@@ -76,8 +76,8 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_del
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
     UsXxSupervisionMetricsProducerDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
-    UsIdSupervisionDelegate,
+from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
+    UsIxSupervisionDelegate,
 )
 
 ALL_METRICS_INCLUSIONS = set(SupervisionMetricType)
@@ -1514,37 +1514,37 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2010-12-01")
-    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state(
+    def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
     ) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="US_ID",
+            state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ID", race=StateRace.WHITE
+            state_code="US_IX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         event = SupervisionPopulationEvent(
-            state_code="US_ID",
+            state_code="US_IX",
             year=2010,
             month=1,
             event_date=date(2010, 1, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id="INTERSTATE PROBATION - 123",
             projected_end_date=None,
-            supervision_out_of_state=UsIdSupervisionDelegate(
+            supervision_out_of_state=UsIxSupervisionDelegate(
                 []
             ).is_supervision_location_out_of_state("INTERSTATE PROBATION - 123"),
         )
