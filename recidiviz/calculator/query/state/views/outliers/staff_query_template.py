@@ -33,15 +33,15 @@ def staff_query_template(role: str) -> str:
 
     if role == "SUPERVISION_OFFICER":
         source_tbl = f"""
-        -- A supervision officer in the Outliers product is anyone that has open person assignment periods
-        -- and metrics calculated, in which case we can assume they have an active caseload. 
+        -- A supervision officer in the Outliers product is anyone that has open session 
+        -- in supervision_officer_sessions, in which they are someone's supervising officer 
         SELECT DISTINCT
             state_code,
-            officer_id AS external_id
-        FROM `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized`
+            supervising_officer_external_id AS external_id
+        FROM `{{project_id}}.sessions.supervision_officer_sessions_materialized`
         WHERE
-            -- Only include officers who have open person assignment periods
-            {today_between_start_date_and_nullable_end_date_clause("assignment_date", "end_date")}
+            -- Only include officers who have open officer sessions
+            {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
     """
     elif role == "SUPERVISION_OFFICER_SUPERVISOR":
         source_tbl = f"""
