@@ -502,7 +502,6 @@ def get_api_blueprint(
 
             else:
                 agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
-                role = None
 
             agencies = AgencyInterface.get_agencies_by_id(
                 session=current_session, agency_ids=agency_ids
@@ -528,7 +527,6 @@ def get_api_blueprint(
                         assoc.invitation_status = (
                             schema.UserAccountInvitationStatus.ACCEPTED
                         )
-                        assoc.role = role
 
             agency_jsons = [a.to_json() for a in agencies]
 
