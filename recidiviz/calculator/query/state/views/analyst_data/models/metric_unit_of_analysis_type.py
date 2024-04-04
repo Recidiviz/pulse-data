@@ -268,7 +268,8 @@ FROM
     *, 
     supervisor_staff_id AS unit_supervisor,
 FROM
-    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`
+    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`,
+    UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,

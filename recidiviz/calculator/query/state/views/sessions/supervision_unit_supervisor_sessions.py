@@ -46,7 +46,7 @@ unit_supervisor_attributes AS (
     SELECT
         a.state_code,
         a.officer_id,
-        a.supervisor_staff_id AS unit_supervisor,
+        supervisor_staff_id AS unit_supervisor,
         INITCAP(TRIM(CONCAT(COALESCE(
             JSON_EXTRACT_SCALAR(b.full_name, '$.given_names'), ''), 
             ' ', 
@@ -55,12 +55,13 @@ unit_supervisor_attributes AS (
         a.start_date,
         a.end_date_exclusive,
     FROM
-        `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` a
+        `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` a,
+    UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
     INNER JOIN
         `{{project_id}}.normalized_state.state_staff` b
     ON
         a.state_code = b.state_code
-        AND a.supervisor_staff_id = b.staff_id
+        AND supervisor_staff_id = b.staff_id
 )
 ,
 overlapping_spans AS (

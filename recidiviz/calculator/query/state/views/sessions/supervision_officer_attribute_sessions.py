@@ -50,14 +50,17 @@ _SUPERVISION_OFFICER_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
     "supervision_district_id_inferred": [],
     "supervision_district_name_inferred": [],
     "supervision_office_id_inferred": [],
-    "supervisor_staff_external_id": [],
-    "supervisor_staff_id": [],
 }
 
 _SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
     "role_subtype": ["COALESCE(role_subtype_priority, 99)"],
     "role_type": [],
     "specialized_caseload_type": [],
+    "supervisor_staff_external_id": [
+        "supervisor_staff_external_id",
+        "supervisor_staff_id",
+    ],
+    "supervisor_staff_id": ["supervisor_staff_external_id", "supervisor_staff_id"],
 }
 
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
