@@ -141,7 +141,7 @@ def _query_template_and_format_args(
             a.*, 
             IFNULL(b.supervision_district_id, b.supervision_district_id_inferred) AS district, 
             IFNULL(b.supervision_office_id, b.supervision_office_id_inferred) AS office,
-            b.supervisor_staff_id AS unit_supervisor,
+            supervisor_staff_id AS unit_supervisor,
         FROM
             `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` a
         INNER JOIN
@@ -149,7 +149,9 @@ def _query_template_and_format_args(
         ON
             a.state_code = b.state_code
             AND a.officer_id = b.officer_id
-            AND a.end_date BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
+            AND a.end_date BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")},
+        
+        UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
     )
     GROUP BY
         {unit_of_analysis.get_primary_key_columns_query_string()},

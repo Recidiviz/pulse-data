@@ -68,7 +68,7 @@ def staff_query_template(role: str) -> str:
         {get_pseudonymized_id_query_str("attrs.state_code || attrs.officer_id")} AS pseudonymized_id,
         staff.email,
         COALESCE(attrs.supervision_district_name,attrs.supervision_district_name_inferred) AS supervision_district,
-        attrs.supervisor_staff_external_id AS supervisor_external_id,
+        attrs.supervisor_staff_external_id_primary AS supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
     FROM ({source_tbl}) supervision_staff
     INNER JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
