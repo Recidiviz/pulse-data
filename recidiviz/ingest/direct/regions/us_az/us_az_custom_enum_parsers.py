@@ -22,8 +22,13 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_az_custom_enum_parsers.<function name>
 """
+import re
 from typing import Optional
 
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentType,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
     StateIncarcerationPeriodHousingUnitCategory,
@@ -209,3 +214,70 @@ def parse_custody_level(
             return StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT
         return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
     return None
+
+
+def parse_incident_type(raw_text: str) -> Optional[StateIncarcerationIncidentType]:
+    """Parse incarceration incident types based on description of rule violation."""
+    if raw_text:
+        if raw_text in (
+            "POSSESSION OF DRUGS OR NARCOTICS"
+            "POSSESSION OR MANUFACTURE OF INTOXICATING SUBSTANCE"
+            "PROMOTING PRISON CONTRABAND"
+            "POSSESSION OF DRUG PARAPHERNALIA"
+            "POSSESSION OF A WEAPON"
+            "POSSESSION OF COMMUNICATION DEVICE"
+            "POSSESSION OF MINOR OR NUISANCE CONTRABAND"
+        ):
+            return StateIncarcerationIncidentType.CONTRABAND
+        if raw_text == "DISORDERLY CONDUCT":
+            return StateIncarcerationIncidentType.DISORDERLY_CONDUCT
+        if raw_text == "ESCAPE":
+            return StateIncarcerationIncidentType.ESCAPE
+        if raw_text in (
+            "RESISTING OR DISOBEYING A VERBAL OR WRITTEN ORDER"
+            "DISRUPTING AN INSTITUTION COUNT AND/OR BEING OUT OF PLACE"
+            "VIOLATION OF ANY PUBLISHED DEPARTMENT OR INSTITUTION RULE"
+            "VIOLATION OF VISITATION RULES"
+            "OBSTRUCTING STAFF"
+            '"TATTOOING, BRANDS, SCARIFICATIONS AND PIERCING"'
+            "DISRESPECT TO STAFF"
+            "FALSE REPORTING"
+            "FAILURE TO MAINTAIN SANITATION REQUIREMENTS"
+            "FAILURE TO MAINTAIN GROOMING REQUIREMENTS"
+            "SMOKING OR USE OF TOBACCO IN AN UNAUTHORIZED AREA"
+        ):
+            return StateIncarcerationIncidentType.MINOR_OFFENSE
+        if raw_text in (
+            "FIGHTING"
+            "ASSAULT ON INMATE"
+            "ASSAULT ON STAFF THAT DID NOT INVOLVE SERIOUS INJURY"
+            "AGGRAVATED ASSAULT (INMATE ON INMATE)"
+            "ASSAULT ON STAFF (THAT INVOLVED SERIOUS INJURY)"
+            "MANSLAUGHTER"
+        ):
+            return StateIncarcerationIncidentType.VIOLENCE
+        return StateIncarcerationIncidentType.REPORT
+    return StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO
+
+
+def parse_penalty_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationIncidentOutcomeType]:
+    penalty_type, penalty_type_free_text = str.split(raw_text, sep="@@")
+    if penalty_type:
+        if penalty_type in ("LOSS OF PRIVILEGE", "LOSS OF VISITS", "NON-CONTACT"):
+            return StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS
+        if penalty_type == "EXTRA DUTY":
+            return StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR
+        if penalty_type == "RESTITUTION":
+            return StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY
+        if penalty_type == "EARNED RELEASE CREDITS":
+            return StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS
+        return StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN
+    # When the only outcome is a verbal reprimand, there is often no penalty type listed,
+    # and only a note in the free text field.
+    if re.search("REPRIMAND", str.upper(penalty_type_free_text)):
+        return StateIncarcerationIncidentOutcomeType.WARNING
+    # If there is no penalty listed and no verbal reprimand documented in the free text
+    # field, assume the report was filed and dismissed without any other outcome.
+    return StateIncarcerationIncidentOutcomeType.DISMISSED
