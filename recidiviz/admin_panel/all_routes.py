@@ -25,9 +25,6 @@ from flask import Blueprint, Response, send_from_directory
 from recidiviz.admin_panel.routes.data_freshness import add_data_freshness_routes
 from recidiviz.admin_panel.routes.dataset_metadata import add_dataset_metadata_routes
 from recidiviz.admin_panel.routes.ingest_ops import add_ingest_ops_routes
-from recidiviz.admin_panel.routes.justice_counts_tools import (
-    add_justice_counts_tools_routes,
-)
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 from recidiviz.admin_panel.routes.on_call import add_on_call_routes
 from recidiviz.admin_panel.routes.validation import add_validation_routes
@@ -49,7 +46,6 @@ _STATIC_FOLDER = os.path.abspath(
 admin_panel_blueprint = Blueprint("admin_panel", __name__, static_folder=_STATIC_FOLDER)
 add_line_staff_tools_routes(admin_panel_blueprint)
 add_ingest_ops_routes(admin_panel_blueprint)
-add_justice_counts_tools_routes(admin_panel_blueprint)
 add_validation_routes(admin_panel_blueprint)
 add_dataset_metadata_routes(admin_panel_blueprint)
 add_data_freshness_routes(admin_panel_blueprint)

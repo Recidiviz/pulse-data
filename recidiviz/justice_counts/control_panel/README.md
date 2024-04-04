@@ -268,22 +268,21 @@ Deploying to playtesting is available for both the backend `pulse-data` reposito
 
 ## Creating Users and Agencies
 
-1. Visit the Admin Panel at [go/admin](https://recidiviz-staging.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (staging) or [go/admin-prod](https://recidiviz-123.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (production)
-2. Navigate to the Justice Counts tab
-3. To create a new Agency, navigate to the Agency Provisioning page and scroll to "Add Agency"
-   1. Enter the Agency Name, System(s), State, and (optional) County (You may be able to infer the agency's system / state / county from its name + a Google search; if not, ask CSG)
-   2. Click Submit
-   3. The Agency should now appear in the Agency Provisioning table (this table is searchable)
-4. To create a new User, navigate to the User Provisioning page and scroll to "Add User"
+1. Visit the Admin Panel at [go/admin](https://publisher-staging.justice-counts.org/admin-panel) (staging) or [go/admin-prod](https://publisher.justice-counts.org/admin-panel) (production)
+2. To create a new Agency, navigate to the Agency Provisioning tab and the click "Create Agency" in the upper right-hand corner
+   1. Enter the Agency Name, Sector(s), State, and (optional) County (You may be able to infer the agency's sector / state / county from its name + a Google search; if not, ask CSG)
+   2. Click Save
+   3. The Agency should now appear on the Agency Provisioning page (this page is searchable)
+3. To create a new User, navigate to the User Provisioning tab and scroll to "Create User"
    1. Enter the User's Name and Email (You may be able to infer the user's name from their email; if not, ask CSG)
-   2. Click Submit
-   3. The User should now appear in the User Provisioning table (this table is searchable)
-5. You can add/remove a user to an agency either from the User Provisioning table ("Agencies" column) or the Agency Provisioning table ("Team Members" column).
-6. To update a user's role for a given agency, navigate to the Agency Provisioning page
-   1. Find the given agency in the Agency Provisioning table
-   2. Click the "Team Member Roles" link
-   3. Find the given user in the Agency Team Members table
-   4. Within the user's row, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)
+   2. Click Save
+   3. The User should now appear in the User Provisioning page (this page is searchable)
+4. You can add/remove a user to an agency either from the User Provisioning page (by clicking the user and then clicking the "Add Agencies" button) or the Agency Provisioning page (by clicking the agency, selecting the "Team Members & Roles" tab, and then clicking the "Add Users" button).
+5. To update a user's role for a given agency, navigate to the Agency Provisioning tab
+   1. Find the given agency in the Agency Provisioning page
+   2. Click the "Team Members & Roles" tab
+   3. Find the given user in the Agency Team Members page
+   4. Within the user's box, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)
 
 ## Using Jupyter Notebooks
 
