@@ -33,9 +33,6 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
-    US_ID_CASE_UPDATE_INFO_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
@@ -1156,13 +1153,13 @@ class TestExtractDataForPipeline(unittest.TestCase):
         fields_of_test_reference = [
             {
                 "person_id": person_id,
-                "state_code": "US_ID",
+                "state_code": "US_XX",
                 "agnt_note_title": "some_title",
             }
         ]
 
         data_dict = {
-            US_ID_CASE_UPDATE_INFO_VIEW_NAME: fields_of_test_reference,
+            PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: fields_of_test_reference,
         }
 
         with patch(
@@ -1174,13 +1171,15 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
-                state_code="US_ID",
+                state_code="US_XX",
                 project_id=project,
                 entities_dataset=dataset,
                 normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=None,
-                required_reference_tables=[US_ID_CASE_UPDATE_INFO_VIEW_NAME],
+                required_reference_tables=[
+                    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
+                ],
                 required_state_based_reference_tables=None,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=None,
@@ -1193,7 +1192,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                         (
                             12345,
                             {
-                                US_ID_CASE_UPDATE_INFO_VIEW_NAME: fields_of_test_reference,
+                                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: fields_of_test_reference,
                             },
                         )
                     ]
