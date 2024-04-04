@@ -39,7 +39,7 @@ US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_QUERY_TEMPLATE = f"""
             NULL AS served_half_of_sentence,
             NULL AS statute,
             NULL AS no_convictions_since_sentence_start_date,
-        FROM `{{project_id}}.{{analyst_dataset}}.us_or_sentenced_after_august_2013`
+        FROM `{{project_id}}.{{analyst_dataset}}.us_or_sentence_imposition_date_eligible`
         UNION ALL
         SELECT * EXCEPT(meets_criteria),
             NULL AS sentence_date,
