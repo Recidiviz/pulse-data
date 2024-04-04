@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_incidents`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - PERSON_ID
+  - STAFF_REVIEW_ID
+  - incident_type
+  - incident_date
+  - facility
+  - location_within_facility
+  - VIOLATION_STATEMENT
+  - report_date
+  - PENALTY_ID
+  - penalty_type
+  - PENALTY_IMPOSED_DTM
+  - PENALTY_END_DTM
+  - number_of_penalty_days
+  - FIRST_HEARING_DTM
+  - penalty_free_text_description
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id: STAFF_REVIEW_ID
+          incident_date: incident_date
+          incident_type:
+            $enum_mapping:
+              $raw_text: incident_type
+              $custom_parser: us_az_custom_enum_parsers.parse_incident_type
+          facility: facility
+          location_within_facility: location_within_facility
+          incident_details: VIOLATION_STATEMENT
+          incarceration_incident_outcomes:
+            # Sometimes there is no penalty, so wrap this in a conditional.
+            - $conditional:
+                - $if:
+                    $not_null: PENALTY_ID
+                  $then:
+                    StateIncarcerationIncidentOutcome:
+                      external_id: PENALTY_ID
+                      outcome_type:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $values:
+                                - penalty_type
+                                - penalty_free_text_description
+                              $separator: "@@"
+                          $custom_parser: us_az_custom_enum_parsers.parse_penalty_type
+                      date_effective: PENALTY_IMPOSED_DTM
+                      projected_end_date: PENALTY_END_DTM
+                      # There are occasionally multiple hearings for the same incident; we store the
+                      # earliest one to be able to gauge compliance with any statutory requirements for
+                      # promptness.
+                      hearing_date: FIRST_HEARING_DTM
+                      report_date: report_date
+                      outcome_description: penalty_free_text_description
+                      punishment_length_days: number_of_penalty_days
