@@ -26,8 +26,8 @@ python -m recidiviz.tools.justice_counts.backfill_users_from_auth0 \
 import argparse
 import logging
 
-from recidiviz.admin_panel.routes.justice_counts_tools import _get_auth0_client
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.control_panel.routes.admin import _get_auth0_client
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory

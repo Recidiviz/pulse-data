@@ -109,7 +109,6 @@ export {
   triggerTaskScheduler,
   updateIngestQueuesState,
 } from "./IngestOperations";
-export { createAgency, getAgencies, getUsers } from "./JusticeCountsTools";
 export {
   blockUser,
   createNewUser,

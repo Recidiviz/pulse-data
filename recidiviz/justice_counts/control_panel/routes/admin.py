@@ -45,6 +45,22 @@ from recidiviz.utils.environment import (
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 
+_auth0_client = None
+
+
+def _get_auth0_client() -> Auth0Client:
+    """Returns a Justice Counts Auth0 client, lazily generating one if we have not
+    already.
+    """
+    global _auth0_client
+    if not _auth0_client:
+        _auth0_client = Auth0Client(  # nosec
+            domain_secret_name="justice_counts_auth0_api_domain",
+            client_id_secret_name="justice_counts_auth0_api_client_id",
+            client_secret_secret_name="justice_counts_auth0_api_client_secret",
+        )
+    return _auth0_client
+
 
 def get_admin_blueprint(
     auth_decorator: Callable,

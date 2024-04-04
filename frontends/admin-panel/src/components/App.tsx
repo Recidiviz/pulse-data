@@ -33,7 +33,6 @@ import Nelly from "../favicon-nelly.png";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
-import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as OnCall from "../navigation/OnCall";
 import DataFreshnessView from "./DataFreshnessView";
@@ -43,10 +42,6 @@ import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestStatusView from "./IngestStatus";
 import InsightsConfigurationsView from "./Insights/InsightsConfigurationsView";
-import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
-import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
-import SuperAgencyProvisioningView from "./JusticeCountsTools/SuperAgencyProvisioningView";
-import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import OnCallLogsReview from "./OnCall/LogsReview";
 import POEmailsView from "./POEmailsView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
@@ -149,17 +144,6 @@ const items: MenuProps["items"] = [
     getItem(
       "Insights Configuration",
       LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE
-    ),
-  ]),
-  getItem("Justice Counts", "justice_counts_group", null, [
-    getItem(
-      "Agency Provisioning",
-      JusticeCountsTools.AGENCY_PROVISIONING_ROUTE
-    ),
-    getItem("User Provisioning", JusticeCountsTools.USER_PROVISIONING_ROUTE),
-    getItem(
-      "Super Agency Provisioning",
-      JusticeCountsTools.SUPER_AGENCY_DETAILS_ROUTE
     ),
   ]),
   getItem("On-Call", OnCall.ON_CALL_BASE_ROUTE),
@@ -293,22 +277,6 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.DEMO_APP_MANAGEMENT_ROUTE}
             component={DemoAppManagementView}
-          />
-          <Route
-            path={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}
-            component={AgencyProvisioningView}
-          />
-          <Route
-            path={JusticeCountsTools.AGENCY_DETAILS_ROUTE}
-            component={AgencyDetailsView}
-          />
-          <Route
-            path={JusticeCountsTools.SUPER_AGENCY_DETAILS_ROUTE}
-            component={SuperAgencyProvisioningView}
-          />
-          <Route
-            path={JusticeCountsTools.USER_PROVISIONING_ROUTE}
-            component={UserProvisioningView}
           />
           <Route
             path={OnCall.ON_CALL_BASE_ROUTE}

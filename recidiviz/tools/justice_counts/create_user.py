@@ -27,7 +27,7 @@ python -m recidiviz.tools.justice_counts.create_user \
 import argparse
 import logging
 
-from recidiviz.admin_panel.routes.justice_counts_tools import _get_auth0_client
+from recidiviz.justice_counts.control_panel.routes.admin import _get_auth0_client
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
