@@ -172,10 +172,7 @@ def validate_root_entity(
     error_messages.extend(_unique_constraint_check(root_entity, field_index))
 
     # TODO(#27113) Check sequence_num on LedgerEntity objects
-    if isinstance(root_entity, state_entities.StatePerson):
-        # Yields errors if REVOKED sentence_status objects are on incarceration sentences,
-        # or if a sentence has no StateSentenceType or imposed_date
-        error_messages.extend(_sentencing_entities_checks(root_entity))
+    # TODO(#28695) Fix upstream parsing of status codes in US_MO
 
     return error_messages
 

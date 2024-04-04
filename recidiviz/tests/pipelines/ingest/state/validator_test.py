@@ -525,6 +525,8 @@ class TestUniqueConstraintValid(unittest.TestCase):
             self.assertListEqual(constraint_names, schema_constraint_names)
 
 
+# TODO(#28695) Fix upstream parsing of status codes in US_MO
+@unittest.skip("This only tests a check in MO. Un-skip when upstream parsing is fixed")
 class TestSentencingRootEntityChecks(unittest.TestCase):
     """Test that root entity checks specific to the sentencing schema are valid."""
 
