@@ -272,6 +272,9 @@ class Configuration(OutliersBase):
     #     - frontends/admin-panel/src/InsightsStore/models/InsightsConfiguration.ts
     #     - frontends/admin-panel/src/components/Insights/AddConfigForm.tsx
     absconders_label = Column(String, nullable=False, server_default="absconders")
+    at_or_above_rate_label = Column(
+        String, nullable=False, server_default="At or above statewide rate"
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         return {

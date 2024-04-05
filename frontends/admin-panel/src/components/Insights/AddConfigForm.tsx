@@ -273,6 +273,18 @@ const AddConfigForm = ({
         >
           <Input />
         </Form.Item>
+        <Form.Item
+          name="atOrAboveRateLabel"
+          label="At or Above Rate Label"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string that describes a metric that is at or above the statewide rate`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
       </Form>
     </DraggableModal>
   );

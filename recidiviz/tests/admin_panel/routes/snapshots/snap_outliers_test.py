@@ -16,6 +16,7 @@ snapshots[
 ] = [
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -36,6 +37,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -56,6 +58,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -76,6 +79,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -96,6 +100,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -121,6 +126,7 @@ snapshots[
 ] = [
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -141,6 +147,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -161,6 +168,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -181,6 +189,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -201,6 +210,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -226,6 +236,7 @@ snapshots[
 ] = [
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -246,6 +257,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -266,6 +278,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -286,6 +299,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -306,6 +320,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -331,6 +346,7 @@ snapshots[
 ] = [
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": None,
@@ -351,6 +367,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -371,6 +388,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -391,6 +409,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -411,6 +430,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -431,6 +451,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -456,6 +477,7 @@ snapshots[
 ] = [
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
@@ -476,6 +498,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because x",
         "featureVariant": None,
@@ -496,6 +519,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because a",
         "featureVariant": "fv2",
@@ -516,6 +540,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because z",
         "featureVariant": "fv1",
@@ -536,6 +561,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because y",
         "featureVariant": None,
@@ -556,6 +582,7 @@ snapshots[
     },
     {
         "abscondersLabel": "absconders",
+        "atOrAboveRateLabel": "At or above statewide rate",
         "atOrBelowRateLabel": "At or below statewide rate",
         "exclusionReasonDescription": "excluded because b",
         "featureVariant": "fv2",
