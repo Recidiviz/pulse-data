@@ -1011,7 +1011,7 @@ class ImportTableAsKVTuples(beam.PTransform):
         table_contents_as_kv = (
             table_contents
             | f"Convert {self.dataset_id}.{self.table_id} table to KV tuples"
-            >> beam.ParDo(ConvertDictToKVTuple(), self.table_key)
+            >> beam.ParDo(ConvertDictToKVTuple(self.table_key))
         )
 
         return table_contents_as_kv
