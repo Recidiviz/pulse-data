@@ -46,3 +46,4 @@ columns:
         description: Temporary
   - name: visitor_flag
 always_historical_export: False
+update_cadence: IRREGULAR

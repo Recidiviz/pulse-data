@@ -30,3 +30,4 @@ columns:
     description: ID for the event type
   - name: ClassCode
     description: Code corresponding to the class type
+is_code_file: True

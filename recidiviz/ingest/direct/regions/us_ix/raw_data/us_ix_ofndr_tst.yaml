@@ -40,3 +40,4 @@ ignore_quotes: True
 encoding: ISO-8859-1
 separator: "|"
 custom_line_terminator: "\n"
+update_cadence: IRREGULAR

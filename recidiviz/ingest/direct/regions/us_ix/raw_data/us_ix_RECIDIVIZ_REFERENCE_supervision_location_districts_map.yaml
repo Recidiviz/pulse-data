@@ -13,3 +13,4 @@ columns:
     description: supervision district full name
   - name: level_2_supervision_location_name
     description: supervision district short name
+is_code_file: True

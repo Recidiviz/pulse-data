@@ -26,3 +26,4 @@ columns:
         description: Referred for Further Investigation
       - value: 4
         description: Referred for Hearing
+is_code_file: True

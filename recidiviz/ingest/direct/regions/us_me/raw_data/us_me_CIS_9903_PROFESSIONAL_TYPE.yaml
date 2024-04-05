@@ -28,3 +28,4 @@ columns:
         description: Judge
       - value: 36
         description: Justice
+is_code_file: True

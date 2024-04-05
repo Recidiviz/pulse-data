@@ -36,3 +36,4 @@ columns:
     is_pii: True
   - name: Sent_Calc_Sys_Cd
     description: The primary key of the table and the code value used in sentencing tables that have column names starting with CIS_4009.
+is_code_file: True

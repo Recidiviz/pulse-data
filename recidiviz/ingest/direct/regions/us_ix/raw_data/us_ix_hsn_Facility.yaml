@@ -74,3 +74,4 @@ columns:
       Dummy variable indicating if the facility allows for Safekeepers. Always takes a 
       value of 0, so either missing actual data or implies that no facilities in Idaho 
       allow death row.
+is_code_file: True

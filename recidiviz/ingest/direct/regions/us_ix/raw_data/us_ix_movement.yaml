@@ -64,3 +64,4 @@ columns:
     description: |-
       County code
   - name: perm_fac_cd
+update_cadence: IRREGULAR

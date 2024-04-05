@@ -30,3 +30,4 @@ columns:
     field_type: datetime
   - name: IsCustom
     description: Flag for whether record is custom
+is_code_file: True

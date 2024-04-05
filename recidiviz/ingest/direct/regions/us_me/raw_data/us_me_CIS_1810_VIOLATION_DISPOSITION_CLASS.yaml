@@ -19,3 +19,4 @@ columns:
   - name: Modified_On_Date
   - name: Violation_Disposition_Class_Cd
     description: Primary key. Code of this violation disposition class.
+is_code_file: True

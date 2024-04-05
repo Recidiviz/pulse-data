@@ -25,3 +25,4 @@ columns:
   - name: Name_Tx
     description: A plain text description of the cell.
   - name: Wet_Ind
+is_code_file: True

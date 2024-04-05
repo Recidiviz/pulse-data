@@ -33,3 +33,5 @@ columns:
   - name: ASSESSMENT_SECTION_QUESTION_NAME
     description: |-
       Assessment question name
+update_cadence: IRREGULAR
+is_code_file: True

@@ -56,3 +56,4 @@ columns:
     description: |-
       When the file was last modified.
     field_type: datetime
+is_code_file: True

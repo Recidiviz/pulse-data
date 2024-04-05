@@ -34,3 +34,4 @@ columns:
   - name: Goal_Type_Cd
     description: |-
       The code for the goal type.
+is_code_file: True

@@ -116,3 +116,4 @@ columns:
     description: The ID of the supervision region.
   - name: level_3_supervision_location_name
     description: The human-readable name of the supervision region.
+is_code_file: True

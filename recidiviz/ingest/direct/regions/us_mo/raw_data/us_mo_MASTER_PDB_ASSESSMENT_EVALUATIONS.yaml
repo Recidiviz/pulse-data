@@ -47,3 +47,4 @@ columns:
   - name: DELETE_IND
     description: |-
       Row Deletion Indicator
+is_code_file: True

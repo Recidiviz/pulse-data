@@ -31,3 +31,4 @@ columns:
   - name: CREATED_ON_DATE
   - name: MODIFIED_BY_TX
   - name: MODIFIED_ON_DATE
+is_code_file: True

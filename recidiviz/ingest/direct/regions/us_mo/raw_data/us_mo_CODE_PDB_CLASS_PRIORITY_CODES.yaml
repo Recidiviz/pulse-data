@@ -47,3 +47,4 @@ columns:
   - name: UPDATE_TS
     description: |-
       XXX
+is_code_file: True

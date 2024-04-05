@@ -31,3 +31,4 @@ columns:
       Timestamp for record modification.
     field_type: datetime
   - name: IsCustom
+is_code_file: True

@@ -29,3 +29,4 @@ columns:
     is_pii: True
   - name: MODIFIED_ON_DATE
   - name: PBS_FACILITY_IND
+is_code_file: True

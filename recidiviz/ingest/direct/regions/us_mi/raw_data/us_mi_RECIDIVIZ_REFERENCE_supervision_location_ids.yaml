@@ -19,3 +19,5 @@ columns:
     description: Region name
   - name: REGION_ID
     description: Region id
+update_cadence: IRREGULAR
+is_code_file: True

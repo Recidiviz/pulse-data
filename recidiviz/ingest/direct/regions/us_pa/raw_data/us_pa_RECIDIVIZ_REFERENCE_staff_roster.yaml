@@ -78,7 +78,7 @@ file_description: |-
   Step 7. Download the final roster - with supervisor Employee IDs, caseload types, 
   and properly named columns - and upload it as raw data.
 data_classification: source
-update_cadence: IRREGULAR
+update_cadence: MONTHLY
 primary_key_cols:
   - EmployeeID
 columns:

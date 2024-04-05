@@ -43,3 +43,5 @@ columns:
   - name: UPDATE_TS
     description: |-
       XXX
+update_cadence: IRREGULAR
+is_code_file: True

@@ -66,3 +66,4 @@ columns:
   - name: IsCustom
     description: |-
       TODO(#23206): Fill in column description
+is_code_file: True

@@ -31,3 +31,4 @@ columns:
     description: Is custom boolean
   - name: SystemRow
     description: System row
+is_code_file: True

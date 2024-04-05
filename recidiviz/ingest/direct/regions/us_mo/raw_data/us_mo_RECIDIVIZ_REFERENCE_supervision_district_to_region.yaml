@@ -13,3 +13,4 @@ columns:
   - name: level_2_supervision_location_external_id
     description: |-
       Region Name
+is_code_file: True

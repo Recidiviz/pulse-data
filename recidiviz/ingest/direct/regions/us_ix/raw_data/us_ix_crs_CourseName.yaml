@@ -37,3 +37,4 @@ columns:
     description: Minimum duration of course (in months)
   - name: MaxCourseDurationMonth
     description: Maximum duration of course (in months)
+is_code_file: True

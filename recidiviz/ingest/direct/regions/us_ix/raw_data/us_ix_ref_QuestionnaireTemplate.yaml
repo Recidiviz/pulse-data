@@ -45,3 +45,4 @@ columns:
     is_pii: True
   - name: IsCustom
     description: description for whether template record is custom
+is_code_file: True

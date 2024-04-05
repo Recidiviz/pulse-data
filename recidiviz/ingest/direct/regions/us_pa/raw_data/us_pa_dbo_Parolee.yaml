@@ -109,3 +109,4 @@ columns:
   - name: Grade
   - name: GradeDate
   - name: Act97
+update_cadence: DAILY

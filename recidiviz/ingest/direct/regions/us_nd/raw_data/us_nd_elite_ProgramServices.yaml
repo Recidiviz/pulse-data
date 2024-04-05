@@ -151,3 +151,5 @@ columns:
     description: |-
       Y/N flag denoting whether the program has started.
 always_historical_export: False
+update_cadence: IRREGULAR
+is_code_file: True

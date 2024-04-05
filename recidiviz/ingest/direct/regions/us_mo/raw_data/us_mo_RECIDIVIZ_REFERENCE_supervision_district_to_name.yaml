@@ -13,3 +13,4 @@ columns:
   - name: level_1_supervision_location_name
     description: |-
       Supervision District Name
+is_code_file: True

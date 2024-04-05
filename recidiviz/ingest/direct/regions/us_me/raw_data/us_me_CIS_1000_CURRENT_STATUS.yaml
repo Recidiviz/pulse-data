@@ -24,3 +24,4 @@ columns:
     is_pii: True
   - name: Current_Status_Cd
     description: Primary key field and status code used in CIS_125_CURRENT_STATUS_HIST table
+is_code_file: True

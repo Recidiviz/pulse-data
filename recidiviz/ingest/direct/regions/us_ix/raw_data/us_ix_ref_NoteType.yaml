@@ -40,3 +40,4 @@ columns:
   - name: IsCustom
     description: |-
       Flag to indicate whether or not this record was created specifically for IDOC use.
+is_code_file: True

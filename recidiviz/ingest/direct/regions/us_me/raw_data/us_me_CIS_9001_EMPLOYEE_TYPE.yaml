@@ -21,3 +21,4 @@ columns:
     is_pii: True
   - name: Employee_Type_Cd
     description: The primary key for the table.
+is_code_file: True

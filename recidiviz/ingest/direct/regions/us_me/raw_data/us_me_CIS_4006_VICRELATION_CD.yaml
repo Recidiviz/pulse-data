@@ -25,3 +25,4 @@ columns:
   - name: CREATED_BY_TX
     is_pii: True
   - name: CREATED_ON_DATE
+is_code_file: True

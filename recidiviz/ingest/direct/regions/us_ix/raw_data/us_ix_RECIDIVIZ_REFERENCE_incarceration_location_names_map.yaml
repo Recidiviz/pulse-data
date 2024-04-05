@@ -13,3 +13,4 @@ columns:
     description: level 2 incarceration location code
   - name: level_2_incarceration_location_name
     description: level 2 incarceration location name
+is_code_file: True

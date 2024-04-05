@@ -73,3 +73,4 @@ columns:
         description: CCS
       - value: 25
         description: Other
+is_code_file: True

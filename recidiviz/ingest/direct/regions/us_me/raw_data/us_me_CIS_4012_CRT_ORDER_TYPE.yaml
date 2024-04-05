@@ -32,3 +32,4 @@ columns:
         description: "Pre Disposition"
       - value: "3"
         description: "Re Disposition"
+is_code_file: True

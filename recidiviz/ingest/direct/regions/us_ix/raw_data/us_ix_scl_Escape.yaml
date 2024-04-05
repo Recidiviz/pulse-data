@@ -110,3 +110,4 @@ columns:
   - name: UpdateDate
     description: |-
       TODO(#15329): Fill in column description
+is_code_file: True

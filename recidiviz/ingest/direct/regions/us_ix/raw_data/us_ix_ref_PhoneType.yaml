@@ -36,3 +36,4 @@ columns:
     field_type: datetime
   - name: IsCustom
   - name: Format
+is_code_file: True

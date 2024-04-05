@@ -38,3 +38,5 @@ columns:
     description: This is the housing unit for incarceration periods. This can be used to identify when someone is located at Southern Maine Women's ReEntry Center, which will appear in this column as SMWRC.
   - name: CURRENT_CLIENT_STATUS
     description: This is the person's status on the release date. For example, if this person was "released" to a DOC facility from a supervision location, the status would show "Incarcerated". For a full list of statuses, see CIS_1000_CURRENT_STATUS.
+update_cadence: IRREGULAR
+is_code_file: True

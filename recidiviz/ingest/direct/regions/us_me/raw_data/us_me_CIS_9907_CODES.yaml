@@ -25,3 +25,4 @@ columns:
     is_pii: True
   - name: System_Ref_Tx
     is_pii: True
+is_code_file: True

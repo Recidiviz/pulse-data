@@ -48,3 +48,4 @@ columns:
   - name: IsCustom
   - name: RequiredHearingPanel
     description: TODO(#23206)
+is_code_file: True

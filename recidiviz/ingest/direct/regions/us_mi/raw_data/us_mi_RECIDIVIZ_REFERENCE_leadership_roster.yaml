@@ -31,3 +31,4 @@ columns:
 separator: ","
 custom_line_terminator: "\n"
 always_historical_export: False
+update_cadence: IRREGULAR

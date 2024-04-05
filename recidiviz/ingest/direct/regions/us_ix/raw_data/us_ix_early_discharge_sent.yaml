@@ -35,3 +35,4 @@ columns:
     description: |-
       Free text comments about the decision.
 always_historical_export: True
+update_cadence: IRREGULAR

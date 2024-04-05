@@ -24,3 +24,4 @@ columns:
   - name: Mvmt_Direction_Cd
     description: |-
       Primary key field and movement direction code used in CIS_309_MOVEMENT table
+is_code_file: True

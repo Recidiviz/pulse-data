@@ -364,3 +364,4 @@ columns:
   - name: Web_Include_Ind
   - name: Condition_Type_Cd
     description: The primary key for this table.
+is_code_file: True

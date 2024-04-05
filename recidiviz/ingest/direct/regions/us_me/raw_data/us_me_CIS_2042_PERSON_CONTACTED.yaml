@@ -104,3 +104,4 @@ columns:
         description: "Anonymous"
       - value: "37"
         description: "School"
+is_code_file: True

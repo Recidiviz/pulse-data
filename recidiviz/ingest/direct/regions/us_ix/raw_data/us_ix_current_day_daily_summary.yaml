@@ -189,3 +189,4 @@ encoding: ISO-8859-1
 separator: "|"
 custom_line_terminator: "\n"
 ignore_quotes: False
+update_cadence: IRREGULAR

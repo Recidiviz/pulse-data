@@ -22,3 +22,4 @@ columns:
     description: Whether this offense is still actively in use within DOCR. "N" or "Y"
   - name: EXPIRY_DATE
     description: If this offense is inactive, then this represents the date the offense became inactive
+is_code_file: True

@@ -19,3 +19,4 @@ columns:
   - name: vld_flg
     description: |-
       Whether or not this code is currently used
+is_code_file: True

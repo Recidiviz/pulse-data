@@ -70,3 +70,4 @@ columns:
         description: "ICOTS Transfer Application"
       - value: "21"
         description: "Program Non-Compliance"
+is_code_file: True

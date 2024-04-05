@@ -33,3 +33,4 @@ columns:
     description: System row
   - name: Abbreviation
     description: Abbreviation
+is_code_file: True

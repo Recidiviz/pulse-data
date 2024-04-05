@@ -48,3 +48,5 @@ columns:
   - name: Active_Date
     description: Date of supervision.
     field_type: datetime
+update_cadence: IRREGULAR
+is_code_file: True
