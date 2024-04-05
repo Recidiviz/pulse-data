@@ -36,10 +36,10 @@ _CRITERIA_NAME = "US_MI_PAST_SECURITY_CLASSIFICATION_COMMITTEE_REVIEW_DATE"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is eligible
 for a security classification review. A resident is eligible for: 
     1. An SCC review in the first week they are in solitary confinement 
-    2. AN SCC review every 30 days afterwards 
-This view keeps a tally of how many SCC reviews a resident should have, and subtracts instances where we 
-see an SCC review take place. SCC reviews are summed over the solitary confinement session, so the tally
-will restart for each new session. """
+    2. AN SCC review every 30 days afterwards
+
+Residents can be eligible based on the number of expected reviews being greater than the number of observed, OR 
+because the last SCC review date was more than 30 days ago."""
 
 _CRITERIA_QUERY_1 = """
     SELECT

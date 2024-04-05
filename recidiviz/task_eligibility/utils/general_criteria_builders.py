@@ -121,8 +121,8 @@ def get_minimum_time_served_criteria_query(
     time_served_interval: str = "YEAR",
     compartment_level_1_types: Optional[List[str]] = None,
     compartment_level_2_types: Optional[List[str]] = None,
-    supervision_level_types: Optional[List[str]] = None,
     housing_unit_types: Optional[List[str]] = None,
+    supervision_level_types: Optional[List[str]] = None,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state agnostic criteria view builder indicating spans of time when a person has served
     |minimum_time_served| years or more. The compartment level filters can be used to restrict the type of session
@@ -142,6 +142,11 @@ def get_minimum_time_served_criteria_query(
         sessions_table = "compartment_sessions_materialized"
         sessions_conditions.append(
             f"compartment_level_2 IN ('{', '.join(compartment_level_2_types)}')"
+        )
+    if housing_unit_types:
+        sessions_table = "housing_unit_type_sessions_materialized"
+        sessions_conditions.append(
+            f"housing_unit_type IN ('{', '.join(housing_unit_types)}')"
         )
 
     if supervision_level_types:
