@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for beam calculations."""
 # pylint: disable=abstract-method,redefined-builtin
-from typing import Any, Dict, Iterable, Optional, TypeVar
+from typing import Any, Dict, Generator, Iterable, Optional, Tuple, TypeVar
 
 import apache_beam as beam
 from apache_beam.io.gcp.internal.clients import bigquery
@@ -24,26 +24,28 @@ from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
 
-@with_input_types(beam.typehints.Dict[str, Any], str)
+@with_input_types(beam.typehints.Dict[str, Any])
 @with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
 class ConvertDictToKVTuple(beam.DoFn):
-    """Converts a dictionary into a key value tuple by extracting a value from the dictionary and setting it as the
-    key."""
+    """Converts a dictionary into a key value tuple by extracting a value from the
+    dictionary and setting it as the key.
+    """
+
+    def __init__(self, key_name: str) -> None:
+        super().__init__()
+        self.key_name = key_name
 
     # pylint: disable=arguments-differ
-    def process(self, element, key):
-        if key not in element:
+    def process(
+        self, element: Dict[str, Any]
+    ) -> Generator[Tuple[Any, Dict[str, Any]], None, None]:
+        if self.key_name not in element:
             raise ValueError(
-                f"Dictionary element [{element}] does not contain expected key {key}."
+                f"Dictionary element [{element}] does not contain expected key "
+                f"[{self.key_name}]."
             )
 
-        key_value = element.get(key)
-
-        if key_value:
-            yield key_value, element
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
+        yield element[self.key_name], element
 
 
 TypeToLift = TypeVar("TypeToLift")

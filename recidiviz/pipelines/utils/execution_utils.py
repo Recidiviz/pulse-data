@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for executing calculation pipelines."""
-import argparse
 import logging
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
@@ -108,38 +107,6 @@ def get_job_id(project_id: str, region: str, job_name: str) -> str:
         raise LookupError(e) from e
 
     return pipeline_job_id
-
-
-def get_dataflow_job_with_id(
-    project: str, job_id: str, location: str
-) -> Dict[str, str]:
-    """Returns information about the Dataflow job with the given `job_id`."""
-    service_name = "dataflow"
-    dataflow_api_version = "v1b3"
-    credentials = GoogleCredentials.get_application_default()
-
-    dataflow = build(
-        serviceName=service_name, version=dataflow_api_version, credentials=credentials
-    )
-
-    return (
-        dataflow.projects()
-        .locations()
-        .jobs()
-        .get(projectId=project, jobId=job_id, location=location)
-        .execute()
-    )
-
-
-def calculation_month_count_arg(value: str) -> int:
-    """Enforces the acceptable values for the calculation_month_count parameter in the pipelines."""
-    int_value = int(value)
-
-    if int_value < -1:
-        raise argparse.ArgumentTypeError("Minimum calculation_month_count is -1")
-    if int_value == 0:
-        raise argparse.ArgumentTypeError("calculation_month_count cannot be 0")
-    return int_value
 
 
 def kwargs_for_entity_lists(

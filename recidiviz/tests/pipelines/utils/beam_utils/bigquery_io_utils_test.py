@@ -39,7 +39,7 @@ class TestBeamUtils(unittest.TestCase):
             test_pipeline
             | beam.Create(test_input)
             | "Test ConvertDictToKVTuple"
-            >> beam.ParDo(bigquery_io_utils.ConvertDictToKVTuple(), "key_field")
+            >> beam.ParDo(bigquery_io_utils.ConvertDictToKVTuple("key_field"))
         )
 
         correct_output = [
@@ -65,7 +65,7 @@ class TestBeamUtils(unittest.TestCase):
                 | beam.Create(test_input)
                 | "Test ConvertDictToKVTuple"
                 >> beam.ParDo(
-                    bigquery_io_utils.ConvertDictToKVTuple(), "not_the_key_field"
+                    bigquery_io_utils.ConvertDictToKVTuple("not_the_key_field"),
                 )
             )
 
