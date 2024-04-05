@@ -95,6 +95,20 @@ class RawDataFileUpdateCadence(Enum):
     # The file is expected to be updated once per day
     DAILY = "DAILY"
 
+    @staticmethod
+    def interval_from_cadence(cadence: "RawDataFileUpdateCadence") -> int:
+        match cadence:
+            case RawDataFileUpdateCadence.DAILY:
+                return 1
+            case RawDataFileUpdateCadence.WEEKLY:
+                return 7
+            case RawDataFileUpdateCadence.MONTHLY:
+                return 31  # ¯\_(ツ)_/¯
+            case _:
+                raise ValueError(
+                    f"Don't know how to get max days allowed stale for {cadence}"
+                )
+
 
 @attr.s
 class ColumnEnumValueInfo:
@@ -535,6 +549,9 @@ class DirectIngestRawFileConfig:
             and not self.is_code_file
         )
 
+    def get_update_interval(self) -> int:
+        return RawDataFileUpdateCadence.interval_from_cadence(self.update_cadence)
+
     def max_days_before_stale(self) -> int:
         """Returns the maximum number of days we will go between recieving exports of
         this file before calling it "stale".
@@ -542,17 +559,7 @@ class DirectIngestRawFileConfig:
         In general, we want to allow some leniency between recieving files for the data
         to actually enter our system (~ 1 day)
         """
-        match self.update_cadence:
-            case RawDataFileUpdateCadence.DAILY:
-                return 2
-            case RawDataFileUpdateCadence.WEEKLY:
-                return 8
-            case RawDataFileUpdateCadence.MONTHLY:
-                return 32
-            case _:
-                raise ValueError(
-                    f"Don't know how to get max days allowed stale for {self.update_cadence}"
-                )
+        return self.get_update_interval() + 1
 
     @classmethod
     def from_yaml_dict(
