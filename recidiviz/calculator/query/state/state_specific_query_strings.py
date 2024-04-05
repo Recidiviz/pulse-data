@@ -58,11 +58,7 @@ PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS: str = (
 )
 
 WORKFLOWS_LEVEL_1_INCARCERATION_LOCATION_QUERY_STRING = list_to_query_string(
-    [
-        "US_IX",
-        "US_ME",
-        "US_MO",
-    ],
+    ["US_IX", "US_ME", "US_MO", "US_MI"],
     quoted=True,
 )
 

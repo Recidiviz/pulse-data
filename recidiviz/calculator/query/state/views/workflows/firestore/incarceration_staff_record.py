@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.us_me.staff_template import (
     build_us_me_staff_template,
 )
+from recidiviz.calculator.query.state.views.workflows.us_mi.incarceration_staff_template import (
+    US_MI_INCARCERATION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_mo.incarceration_staff_template import (
     US_MO_INCARCERATION_STAFF_TEMPLATE,
 )
@@ -44,10 +47,13 @@ INCARCERATION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
           me_staff AS ({build_us_me_staff_template("resident_record_materialized")})
         , mo_staff AS ({US_MO_INCARCERATION_STAFF_TEMPLATE})
+        , mi_staff AS ({US_MI_INCARCERATION_STAFF_TEMPLATE})
         , tn_staff AS ({US_TN_INCARCERATION_STAFF_TEMPLATE})
     SELECT {{columns}} FROM me_staff    
     UNION ALL
     SELECT {{columns}} FROM mo_staff
+    UNION ALL
+    SELECT {{columns}} FROM mi_staff
     UNION ALL
     SELECT {{columns}} FROM tn_staff
 """
