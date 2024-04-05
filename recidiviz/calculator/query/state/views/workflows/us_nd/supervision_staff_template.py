@@ -73,12 +73,12 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             AND ids.id NOT IN (SELECT id from leadership_staff_with_caseload)
     )
     SELECT 
-        {columns}
+        {columns_minus_supervisor_id}
     FROM caseload_staff
     
     UNION ALL
     
     SELECT 
-        {columns}
+        {columns_minus_supervisor_id}
     FROM leadership_staff_with_caseload
 """

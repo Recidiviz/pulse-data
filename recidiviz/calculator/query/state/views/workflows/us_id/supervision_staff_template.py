@@ -50,6 +50,6 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
             AND ids.id = districts.supervising_officer_external_id
     )
     SELECT 
-        {columns}
+        {columns_minus_supervisor_id}
     FROM caseload_staff
 """

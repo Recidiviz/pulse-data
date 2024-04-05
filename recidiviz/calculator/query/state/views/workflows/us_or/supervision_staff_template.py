@@ -46,6 +46,6 @@ US_OR_SUPERVISION_STAFF_TEMPLATE = """
             AND id_type = "US_OR_CASELOAD"
     )
     
-    SELECT {columns}
+    SELECT {columns_minus_supervisor_id}
     FROM caseload_staff
 """

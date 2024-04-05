@@ -50,6 +50,6 @@ US_PA_SUPERVISION_STAFF_TEMPLATE = """
     )
     
     SELECT 
-        {columns}
+        {columns_minus_supervisor_id}
     FROM caseload_staff
 """
