@@ -17,6 +17,8 @@
 """View logic to prepare US_ME supervision staff data for Workflows"""
 
 # TODO(#25057): Delete US_ME_STAFF_TEMPLATE when Workflows frontend is fully using the separated records.
+from typing import Optional
+
 US_ME_STAFF_TEMPLATE = """
     WITH 
     caseload_staff_ids AS (
@@ -64,7 +66,10 @@ US_ME_STAFF_TEMPLATE = """
 """
 
 
-def build_us_me_staff_template(caseload_source_table: str) -> str:
+def build_us_me_staff_template(
+    caseload_source_table: str,
+    columns_minus_supervisor_id: Optional[str] = "{columns}",
+) -> str:
     """Builds the US_ME incarceration and supervision staff templates."""
     return f"""
     WITH 
@@ -90,6 +95,6 @@ def build_us_me_staff_template(caseload_source_table: str) -> str:
             ON state_table.Employee_Id = ids.id
     )
     SELECT 
-        {{columns}}
+        {columns_minus_supervisor_id}
     FROM caseload_staff
 """

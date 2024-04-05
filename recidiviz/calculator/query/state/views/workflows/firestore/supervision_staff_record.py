@@ -18,6 +18,10 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    today_between_start_date_and_nullable_end_date_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.us_ca.supervision_staff_template import (
     US_CA_SUPERVISION_STAFF_TEMPLATE,
@@ -62,35 +66,73 @@ SUPERVISION_STAFF_RECORD_DESCRIPTION = """
     Supervision staff records to be exported to Firestore to power Workflows.
     """
 
+columns_minus_supervisor_id = [
+    "id",
+    "state_code",
+    "district",
+    "email",
+    "given_names",
+    "surname",
+    "role_subtype",
+]
+
+columns_minus_supervisor_id_str = list_to_query_string(columns_minus_supervisor_id)
+
+columns_with_supervisor_id = columns_minus_supervisor_id + [
+    "supervisor_external_id",
+]
+
+
 SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
         tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE}) 
         , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})
         , id_staff AS ({US_ID_SUPERVISION_STAFF_TEMPLATE})
         , ix_staff AS ({US_IX_SUPERVISION_STAFF_TEMPLATE})
-        , me_staff AS ({build_us_me_staff_template("client_record_materialized")})
+        , me_staff AS ({build_us_me_staff_template("client_record_materialized", columns_minus_supervisor_id_str)})
         , mi_staff AS ({US_MI_SUPERVISION_STAFF_TEMPLATE})
         , ca_staff AS ({US_CA_SUPERVISION_STAFF_TEMPLATE})
         , or_staff AS ({US_OR_SUPERVISION_STAFF_TEMPLATE})
         , pa_staff AS ({US_PA_SUPERVISION_STAFF_TEMPLATE})
+        , full_query AS (
+            SELECT {{columns_minus_supervisor_id}} FROM tn_staff
+            UNION ALL 
+            SELECT {{columns_minus_supervisor_id}} FROM nd_staff
+            UNION ALL
+            SELECT {{columns_minus_supervisor_id}} FROM id_staff
+            UNION ALL
+            SELECT {{columns_minus_supervisor_id}} FROM ix_staff
+            UNION ALL
+            SELECT {{columns_minus_supervisor_id}} FROM me_staff
+            UNION ALL
+            SELECT {{columns_minus_supervisor_id}} FROM mi_staff
+            UNION ALL
+            SELECT {{columns_minus_supervisor_id}} FROM ca_staff
+            UNION ALL
+            SELECT {{columns_minus_supervisor_id}} FROM or_staff
+            UNION ALL
+            SELECT {{columns_minus_supervisor_id}} FROM pa_staff
+        )
+        , final_query AS (
+            -- Adds `supervisor_external_id` column to supervision staff records
+            SELECT
+                full_query.id,
+                full_query.state_code,
+                full_query.district,
+                full_query.email,
+                full_query.given_names,
+                full_query.surname,
+                full_query.role_subtype,
+                attrs.supervisor_staff_external_id as supervisor_external_id
+            FROM full_query
+            LEFT JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
+                ON full_query.id = attrs.officer_id
+                AND full_query.state_code = attrs.state_code
+                AND {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date_exclusive")}
+        )
+    SELECT {{columns}}
+    FROM final_query
 
-    SELECT {{columns}} FROM tn_staff
-    UNION ALL 
-    SELECT {{columns}} FROM nd_staff
-    UNION ALL
-    SELECT {{columns}} FROM id_staff
-    UNION ALL
-    SELECT {{columns}} FROM ix_staff
-    UNION ALL
-    SELECT {{columns}} FROM me_staff
-    UNION ALL
-    SELECT {{columns}} FROM mi_staff
-    UNION ALL
-    SELECT {{columns}} FROM ca_staff
-    UNION ALL
-    SELECT {{columns}} FROM or_staff
-    UNION ALL
-    SELECT {{columns}} FROM pa_staff
 """
 
 SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -98,15 +140,8 @@ SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SUPERVISION_STAFF_RECORD_VIEW_NAME,
     view_query_template=SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE,
     description=SUPERVISION_STAFF_RECORD_DESCRIPTION,
-    columns=[
-        "id",
-        "state_code",
-        "district",
-        "email",
-        "given_names",
-        "surname",
-        "role_subtype",
-    ],
+    columns=columns_with_supervisor_id,
+    columns_minus_supervisor_id=columns_minus_supervisor_id_str,
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
