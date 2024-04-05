@@ -35,18 +35,21 @@ columns:
       When the sentence imposition began.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: PAROLE_TO
     field_type: datetime
     description: |-
       When the sentence expires.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: TERM_DATE
     field_type: datetime
     description: |-
       When the period of supervision was terminated.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: TA_TYPE
     description: |-
       Why the period of supervision was terminated.
@@ -149,6 +152,7 @@ columns:
       When the revocation occurred, if applicable.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: NEW_OFF
     description: |-
       Code of the new offense that was committed which led to a revocation, if applicable.
@@ -201,12 +205,14 @@ columns:
       When this record became inactive, if applicable. This field is no longer in use.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: RECORDCRDATE
     field_type: datetime
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: RevoDispo
     description: |-
       Type of revocation which occurred, if applicable.
@@ -216,6 +222,7 @@ columns:
       When this record was first created in the source system.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: CHANGE_DATE_REASON
     description: |-
       Why this record was changed, if modified.
