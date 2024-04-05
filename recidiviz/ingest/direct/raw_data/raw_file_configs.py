@@ -525,6 +525,35 @@ class DirectIngestRawFileConfig:
 
         return self.no_valid_primary_keys
 
+    def has_regularly_updated_data(self) -> bool:
+        """Returns whether or not we think the data in this file is regularly updated;
+        that is, the file itself is transfered regularly (not IRREGULAR) and it is not
+        a code file (typically few changes day over day).
+        """
+        return (
+            self.update_cadence != RawDataFileUpdateCadence.IRREGULAR
+            and not self.is_code_file
+        )
+
+    def max_days_before_stale(self) -> int:
+        """Returns the maximum number of days we will go between recieving exports of
+        this file before calling it "stale".
+
+        In general, we want to allow some leniency between recieving files for the data
+        to actually enter our system (~ 1 day)
+        """
+        match self.update_cadence:
+            case RawDataFileUpdateCadence.DAILY:
+                return 2
+            case RawDataFileUpdateCadence.WEEKLY:
+                return 8
+            case RawDataFileUpdateCadence.MONTHLY:
+                return 32
+            case _:
+                raise ValueError(
+                    f"Don't know how to get max days allowed stale for {self.update_cadence}"
+                )
+
     @classmethod
     def from_yaml_dict(
         cls,
@@ -947,3 +976,13 @@ class DirectIngestRegionRawFileConfig:
     @raw_file_tags.default
     def _raw_file_tags(self) -> Set[str]:
         return set(self.raw_file_configs.keys())
+
+    def get_configs_with_regularly_updated_data(
+        self,
+    ) -> List[DirectIngestRawFileConfig]:
+        """List of configs in this region that have regularly updated data"""
+        return [
+            config
+            for config in self.raw_file_configs.values()
+            if config.has_regularly_updated_data()
+        ]

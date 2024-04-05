@@ -91,16 +91,6 @@ class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
 
-    @property
-    def is_code_table(self) -> bool:
-        """Whether or not this file is a code table.
-
-        This means the file does not contain person level data associated with a particular date, but instead
-        provides region-specific mappings (e.g. facility names, offense categorizations).
-        """
-        # TODO(#5935): Fuller support that isn't just based on table prefix.
-        return self.file_tag.startswith("RECIDIVIZ_REFERENCE")
-
 
 @attr.s(eq=False)
 class DirectIngestInstanceStatus(Entity, BuildableAttr, DefaultableAttr):

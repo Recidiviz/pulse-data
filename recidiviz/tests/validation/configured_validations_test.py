@@ -75,6 +75,7 @@ class TestConfiguredValidations(unittest.TestCase):
                 f"Found validation view that is not materialized: {builder.address}",
             )
 
+    # TODO(#28613): migrate away from this test requiring top-level, expensive vars
     def test_all_validation_builders_configured_in_a_validation(self) -> None:
         found_builders = set(
             BigQueryViewCollector.collect_view_builders_in_module(

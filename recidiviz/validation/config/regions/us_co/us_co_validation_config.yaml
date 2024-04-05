@@ -5,6 +5,11 @@ exclusions:
   - validation_name: dataflow_metrics_supervising_officer_staff_id_all_null
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: There is no supervision data in CO so all supervising officer external id should be null.
+  - validation_name: us_co_stale_raw_data_tables
+    exclusion_type: BROKEN
+    exclusion_reason:
+      We are not presently receiving new transfers from US_CO, so we want to silence all
+      validations until there is a path forward #TODO(#23733)
 max_allowed_error_overrides:
   - validation_name: state_incarceration_period_by_admission_date_stable_counts
     hard_max_allowed_error_override: 1.00
