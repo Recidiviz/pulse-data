@@ -171,6 +171,14 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
         GROUP BY 1, 2
     )
     ,
+    form_birthdate AS (
+        SELECT
+            person_id,
+            birthdate,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_person`
+        WHERE state_code='US_OR'
+    )
+    ,
     -- Replace Record Key (linking ID in tables) with OR ID (used in OMS)
     base_query_with_or_id AS (
         SELECT
@@ -193,6 +201,7 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
         TO_JSON(eligible_sentences_by_person.eligible_sentences) AS metadata_eligible_sentences,
         TO_JSON(IFNULL(ineligible_sentences_by_person.ineligible_sentences, [])) AS metadata_ineligible_sentences,
         current_supervision_type.supervision_type AS metadata_supervision_type,
+        form_birthdate.birthdate AS form_information_birthdate,
     FROM base_query_with_or_id base
     LEFT JOIN programming
     USING (external_id)
@@ -202,6 +211,8 @@ US_OR_EARNED_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
     USING (person_id)
     LEFT JOIN current_supervision_type
     USING (state_code, person_id)
+    LEFT JOIN form_birthdate
+    USING (person_id)
     WHERE base.is_eligible
 """
 
