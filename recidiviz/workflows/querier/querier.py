@@ -136,12 +136,16 @@ class WorkflowsQuerier:
                     display_name=config.display_name,
                     methodology_url=config.methodology_url,
                     initial_header=config.initial_header,
+                    denial_reasons=config.denial_reasons,
+                    eligible_criteria_copy=config.eligible_criteria_copy,
+                    ineligible_criteria_copy=config.ineligible_criteria_copy,
                     dynamic_eligibility_text=config.dynamic_eligibility_text,
                     call_to_action=config.call_to_action,
                     snooze=config.snooze,
                     feature_variant=config.feature_variant,
                     is_alert=config.is_alert,
                     denial_text=config.denial_text,
+                    sidebar_components=config.sidebar_components,
                 )
                 for config in configs
             ]

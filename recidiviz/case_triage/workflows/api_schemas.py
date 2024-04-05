@@ -183,6 +183,8 @@ class WorkflowsConfigurationsResponseSchema(CamelCaseSchema):
         methodology_url = fields.Str()
         snooze = fields.Nested(SnoozeConfigSchema(), required=False)
         denial_reasons = fields.Dict(fields.Str(), fields.Str())
+        denial_text = fields.Str(required=False)
+        initial_header = fields.Str()
         eligible_criteria_copy = fields.Dict(
             fields.Str(), fields.Nested(CriteriaCopySchema())
         )

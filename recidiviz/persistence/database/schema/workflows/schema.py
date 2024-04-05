@@ -26,7 +26,7 @@ from sqlalchemy import (
     Integer,
     String,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -98,6 +98,13 @@ class OpportunityConfiguration(WorkflowsBase):
     # Header shown while in the null search state
     initial_header = Column(String, nullable=False)
 
+    # Map from code to description for denial reasons
+    denial_reasons = Column(JSONB, nullable=False, server_default="{}")
+
+    # Templatized copy to show for eligibility criteria
+    eligible_criteria_copy = Column(JSONB, nullable=False, server_default="{}")
+    ineligible_criteria_copy = Column(JSONB, nullable=False, server_default="{}")
+
     # Text shown when results are found
     dynamic_eligibility_text = Column(String, nullable=False)
 
@@ -109,6 +116,9 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Configuration blob for the snooze feature
     snooze = Column(JSONB, nullable=True)
+
+    # Sidebar components to display
+    sidebar_components = Column(ARRAY(String), nullable=False, server_default="{}")
 
     __tableargs__ = (
         ForeignKeyConstraint(
