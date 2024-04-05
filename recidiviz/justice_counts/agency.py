@@ -103,8 +103,12 @@ class AgencyInterface:
         session: Session,
         agency_id: int,
         with_users: bool = False,
+        with_settings: bool = False,
     ) -> schema.Agency:
         q = session.query(schema.Agency).filter(schema.Agency.id == agency_id)
+
+        if with_settings is True:
+            q = q.options(joinedload(schema.Agency.agency_settings))
 
         if with_users is True:
             q = q.options(
