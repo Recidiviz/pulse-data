@@ -29,6 +29,7 @@ const baseUser: Omit<StateUserPermissionsResponse, "routes"> = {
   firstName: "test",
   lastName: "test",
   role: "test",
+  roles: ["test"],
   stateCode: "test",
   userHash: "test",
 };

@@ -85,6 +85,7 @@ export interface StateUserPermissionsResponse {
   lastName: string;
   externalId: string;
   role: string;
+  roles: string[];
   district: string;
   featureVariants: Partial<FeatureVariants> | null;
   userHash: string;

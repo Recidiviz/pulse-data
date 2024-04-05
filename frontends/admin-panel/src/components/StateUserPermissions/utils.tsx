@@ -175,9 +175,15 @@ const getColumnSearchProps = (dataIndex: string) => ({
 type ColumnData = { text: string; value: string | boolean };
 export const filterData =
   (colData: StateUserPermissionsResponse[]) =>
-  (formatter: (item: StateUserPermissionsResponse) => string): ColumnData[] =>
+  (
+    formatter: (item: StateUserPermissionsResponse) => string | string[]
+  ): ColumnData[] =>
     colData
-      .map((item) => formatter(item))
+      .map((item) => {
+        const formattedItem = formatter(item);
+        return Array.isArray(formattedItem) ? formattedItem : [formattedItem];
+      })
+      .reduce((acc, val) => acc.concat(val), [])
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort()
       .map((item) => ({
@@ -259,26 +265,23 @@ export const getPermissionsTableColumns = (
       },
     },
     {
-      title: "Role",
-      dataIndex: "role",
-      key: "role",
+      title: "Roles",
+      dataIndex: "roles",
+      key: "roles",
       width: 150,
-      filters: [...filterData(data)((d) => d.role)],
+      filters: [...filterData(data)((d) => d.roles)],
       onFilter: (
         value: string | number | boolean,
         record: StateUserPermissionsResponse
       ) => {
-        return (
-          record.role?.indexOf(value as keyof StateUserPermissionsResponse) ===
-          0
+        return record.roles?.includes(
+          value as keyof StateUserPermissionsResponse
         );
       },
-      sorter: (
-        a: StateUserPermissionsResponse,
-        b: StateUserPermissionsResponse
-      ) => a.role?.localeCompare(b.role),
-      render: (text, record) => {
-        return formatText(text, record);
+      render: (text: string[], record: StateUserPermissionsResponse) => {
+        return {
+          children: text.map((role) => formatText(`${role}\n`, record)),
+        };
       },
     },
     {

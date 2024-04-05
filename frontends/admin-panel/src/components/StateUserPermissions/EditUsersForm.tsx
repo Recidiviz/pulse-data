@@ -146,7 +146,9 @@ export const EditUserForm = ({
               return { value: r, label: r };
             })}
             disabled={roles.length === 0 || stateCodes.length > 1}
-            placeholder={singleUserEdit ? selectedUsers[0].role : undefined}
+            placeholder={
+              singleUserEdit ? selectedUsers[0].roles.join(", ") : undefined
+            }
           />
         </Form.Item>
         <Form.Item name="externalId" label="External ID" labelCol={{ span: 5 }}>
