@@ -40,7 +40,7 @@ ranked_term_dates AS (
     TERM_DATE,
     ROW_NUMBER() OVER (
       PARTITION BY SID
-      ORDER BY IFNULL(PARSE_DATETIME('%m/%d/%Y %H:%M:%S %p', TERM_DATE), @{UPDATE_DATETIME_PARAM_NAME}) DESC
+      ORDER BY IFNULL(CAST(TERM_DATE AS DATETIME), @{UPDATE_DATETIME_PARAM_NAME}) DESC
     ) AS rn
   FROM {{docstars_offendercasestable}}
 ),
