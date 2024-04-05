@@ -15,23 +15,41 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """"Configured validations related to raw data tables."""
-from typing import List
+from typing import Dict, List
 
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
+from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck
+from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
+)
+from recidiviz.validation.views.state.raw_data.stable_historical_counts import (
+    ALL_STALBLE_HISTORICAL_COUNTS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.raw_data.stale_critical_table_validation import (
     ALL_STALE_CRITICAL_RAW_DATA_VIEW_BUILDERS,
 )
 
 
-def get_all_raw_data_validations() -> List[DataValidationCheck]:
+def get_all_raw_data_validations(
+    region_configs: Dict[str, ValidationRegionConfig]
+) -> List[DataValidationCheck]:
     return [
-        ExistenceDataValidationCheck(
-            view_builder=builder,
-            validation_category=ValidationCategory.FRESHNESS,
-        )
-        for builder in ALL_STALE_CRITICAL_RAW_DATA_VIEW_BUILDERS
+        *[
+            ExistenceDataValidationCheck(
+                view_builder=builder,
+                validation_category=ValidationCategory.FRESHNESS,
+            )
+            for builder in ALL_STALE_CRITICAL_RAW_DATA_VIEW_BUILDERS
+        ],
+        *[
+            SamenessDataValidationCheck(
+                view_builder=builder,
+                comparison_columns=["row_count", "prev_row_count"],
+                region_configs=region_configs,
+                validation_category=ValidationCategory.CONSISTENCY,
+            )
+            for builder in ALL_STALBLE_HISTORICAL_COUNTS_VIEW_BUILDER
+        ],
     ]
