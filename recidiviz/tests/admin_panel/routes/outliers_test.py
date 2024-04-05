@@ -183,6 +183,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
                 "atOrBelowRateLabel": "At or below statewide rate",
                 "exclusionReasonDescription": None,
                 "abscondersLabel": "absconders",
+                "atOrAboveRateLabel": "At or above statewide rate",
             },
         )
 
@@ -215,6 +216,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
                 "atOrBelowRateLabel": "At or below statewide rate",
                 "exclusionReasonDescription": None,
                 "abscondersLabel": "absconders",
+                "atOrAboveRateLabel": "At or above statewide rate",
             },
         )
         self.assertEqual(HTTPStatus.BAD_REQUEST, result.status_code)
@@ -247,6 +249,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
                 "atOrBelowRateLabel": "At or below statewide rate",
                 "exclusionReasonDescription": None,
                 "abscondersLabel": "absconders",
+                "atOrAboveRateLabel": "At or above statewide rate",
             },
         )
 
@@ -349,6 +352,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
                             "exclusionReasonDescription": "excluded because x",
                             "updatedBy": "test-user@recidiviz.org",
                             "abscondersLabel": "absconders",
+                            "atOrAboveRateLabel": "At or above statewide rate",
                         }
                     ),
                 ],

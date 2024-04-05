@@ -35,6 +35,7 @@ export const insightsConfigurationSchema = z.object({
   updatedBy: z.string(),
   worseThanRateLabel: z.string(),
   abscondersLabel: z.string(),
+  atOrAboveRateLabel: z.string(),
 });
 
 export type InsightsConfiguration = z.infer<typeof insightsConfigurationSchema>;

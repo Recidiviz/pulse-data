@@ -43,6 +43,7 @@ class ConfigurationSchema(CamelCaseSchema):
     slightly_worse_than_rate_label = fields.Str(required=True)
     at_or_below_rate_label = fields.Str(required=True)
     absconders_label = fields.Str(required=True)
+    at_or_above_rate_label = fields.Str(required=True)
 
 
 class FullConfigurationSchema(ConfigurationSchema):
