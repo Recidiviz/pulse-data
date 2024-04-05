@@ -123,7 +123,8 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
                 full_query.given_names,
                 full_query.surname,
                 full_query.role_subtype,
-                attrs.supervisor_staff_external_id as supervisor_external_id
+                -- TODO(Recidiviz/recidiviz-dashboards#5246): consider using _array instead and making this plural
+                attrs.supervisor_staff_external_id_primary as supervisor_external_id
             FROM full_query
             LEFT JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
                 ON full_query.id = attrs.officer_id
