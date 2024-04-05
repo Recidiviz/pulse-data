@@ -59,3 +59,4 @@ columns:
         description: OYAS
       - value: 9
         description: STABLE
+is_code_file: True

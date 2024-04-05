@@ -30,3 +30,4 @@ columns:
   - name: end_date
     description: role and location end date
     field_type: datetime
+update_cadence: IRREGULAR

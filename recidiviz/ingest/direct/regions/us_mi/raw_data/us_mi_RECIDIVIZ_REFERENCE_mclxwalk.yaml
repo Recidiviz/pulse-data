@@ -61,3 +61,5 @@ columns:
   - name: StatRpt_mcl
   - name: title1
   - name: title2
+update_cadence: IRREGULAR
+is_code_file: True

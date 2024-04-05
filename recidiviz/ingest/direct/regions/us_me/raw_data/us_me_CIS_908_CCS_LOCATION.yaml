@@ -79,3 +79,4 @@ columns:
   - name: System_Ref_Tx
   - name: Use_Client_Level_Limits_Ind
   - name: Year_Founded_Num
+is_code_file: True

@@ -73,3 +73,4 @@ columns:
   - name: ConditionCategoryId
     description: |-
       Condition category id
+is_code_file: True

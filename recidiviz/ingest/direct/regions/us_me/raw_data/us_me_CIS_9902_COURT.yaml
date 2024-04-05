@@ -68,3 +68,4 @@ columns:
     is_pii: True
   - name: Court_Cd
     description: The primary key for the table.
+is_code_file: True

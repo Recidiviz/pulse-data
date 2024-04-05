@@ -28,3 +28,4 @@ columns:
     description: TODO(#15329)
   - name: IsCustom
     description: TODO(#15329)
+is_code_file: True

@@ -11,3 +11,4 @@ columns:
     description: The numeric external district IDs in ND.
   - name: supervising_district_name
     description: The associated district names, mapped from a given district external ID.
+is_code_file: True

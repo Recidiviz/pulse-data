@@ -35,3 +35,4 @@ columns:
   - name: Unit_Id
     description: |-
       This is the primary key of the table.
+is_code_file: True

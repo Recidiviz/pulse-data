@@ -58,3 +58,4 @@ columns:
         description: Graduated Sanction By Officer
       - value: 11
         description: Absconded - Facility Notified
+is_code_file: True

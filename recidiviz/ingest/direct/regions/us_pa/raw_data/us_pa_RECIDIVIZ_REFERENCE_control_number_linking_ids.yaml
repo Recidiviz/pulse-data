@@ -22,3 +22,4 @@ columns:
     description: |-
       Global, Recidiviz-generated ID that allows us to link control numbers to the same
       person.
+is_code_file: True

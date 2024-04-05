@@ -26,3 +26,4 @@ columns:
     is_pii: True
   - name: Override_Type_Cd
     description: The primary key for the table and the override type code referenced in other raw tables.
+is_code_file: True

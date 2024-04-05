@@ -39,3 +39,4 @@ columns:
   - name: MODIFIED_BY_TX
     is_pii: True
   - name: MODIFIED_ON_DATE
+is_code_file: True

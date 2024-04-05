@@ -32,3 +32,4 @@ columns:
   - name: Domain_Goal_Cd
     description: |-
       Code that maps the goal domains.
+is_code_file: True

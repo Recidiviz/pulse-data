@@ -26,3 +26,4 @@ columns:
     description: A plain text description of the pod.
   - name: Pod_Id
     description: The primary key of the table and the Pod ID that is referenced in other tables.
+is_code_file: True

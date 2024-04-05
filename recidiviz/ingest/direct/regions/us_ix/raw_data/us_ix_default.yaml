@@ -4,4 +4,4 @@ default_line_terminator: "‡\n"
 default_ignore_quotes: True
 default_always_historical_export: False
 default_no_valid_primary_keys: False
-default_update_cadence: IRREGULAR
+default_update_cadence: DAILY

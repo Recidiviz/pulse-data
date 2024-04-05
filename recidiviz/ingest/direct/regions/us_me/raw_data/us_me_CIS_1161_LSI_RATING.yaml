@@ -123,3 +123,4 @@ columns:
   - name: Lsi_Rating_Upper_Val
     description: |-
       The upper-end of the numeric range for the LSI rating.
+is_code_file: True

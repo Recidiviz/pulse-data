@@ -23,3 +23,5 @@ columns:
     description: Boolean flag for whether this statute code would indicate that someone should be excluded from Probation Early Discharge
   - name: is_owi_ouil
     description: Boolean flag for whether this statute code indicates operating while intoxicated or operating under the influence of liquor
+update_cadence: IRREGULAR
+is_code_file: True

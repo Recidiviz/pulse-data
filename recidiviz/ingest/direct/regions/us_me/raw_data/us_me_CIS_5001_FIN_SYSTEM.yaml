@@ -38,3 +38,4 @@ columns:
     description: |-
       System reference code.
     is_pii: True
+is_code_file: True

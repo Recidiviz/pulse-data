@@ -42,3 +42,5 @@ columns:
   - name: ASSESSMENT_SECTION_RESPONSE_SCORE
     description: |-
       Assessment question response score
+update_cadence: IRREGULAR
+is_code_file: True

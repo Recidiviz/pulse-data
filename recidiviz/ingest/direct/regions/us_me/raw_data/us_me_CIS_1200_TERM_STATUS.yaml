@@ -26,3 +26,4 @@ columns:
     is_pii: True
   - name: Term_Status_Cd
     description: The primary key for the table and the code used in the CIS_319_TERM table.
+is_code_file: True

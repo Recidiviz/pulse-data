@@ -28,3 +28,4 @@ columns:
     is_pii: True
   - name: Client_Cd
     description: The primary key for this table and the code that is used in other raw tables.
+is_code_file: True

@@ -23,3 +23,4 @@ columns:
     description: |-
       Whether or not this was a parole board decision
 separator: ","
+is_code_file: True

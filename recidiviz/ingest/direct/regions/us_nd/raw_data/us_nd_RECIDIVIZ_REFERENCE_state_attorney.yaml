@@ -46,3 +46,4 @@ columns:
   - name: email_3
     is_pii: True
     description: Third email address listed (often null)
+is_code_file: True

@@ -48,3 +48,4 @@ columns:
     is_pii: True
   - name: Lsi_Type_Cd
     description: The primary key of the code table and the LSI type code referenced in other raw tables.
+is_code_file: True

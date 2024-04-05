@@ -50,3 +50,4 @@ columns:
     description: |-
       The organization code associated with a supervision unit (the smallest level of 
       supervision location grouping we currently know about in PA).
+is_code_file: True

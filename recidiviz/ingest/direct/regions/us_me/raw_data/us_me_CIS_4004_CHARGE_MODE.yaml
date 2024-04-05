@@ -35,3 +35,4 @@ columns:
         description: "Complaint"
       - value: "4"
         description: "Petition"
+is_code_file: True

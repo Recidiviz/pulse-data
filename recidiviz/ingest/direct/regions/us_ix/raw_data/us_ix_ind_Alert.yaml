@@ -64,3 +64,4 @@ table_relationships:
     join_logic:
       - ind_Alert.AlertVisibilityTypeId = ind_AlertVisibilityType.AlertVisibilityTypeId
     cardinality: MANY_TO_ONE
+is_code_file: True

@@ -62,3 +62,4 @@ columns:
   - name: EmailAddress
     description: |-
       TODO(#15329): Fill in column description
+is_code_file: True

@@ -23,3 +23,4 @@ columns:
     description: Contact location that this contact mode id should be mapped to
   - name: contact_status
     description: Contact status that this contact mode id should be mapped to
+is_code_file: True

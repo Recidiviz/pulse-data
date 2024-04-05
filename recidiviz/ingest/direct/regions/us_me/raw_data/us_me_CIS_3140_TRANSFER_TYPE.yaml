@@ -25,3 +25,4 @@ columns:
   - name: Transfer_Type_Cd
     description: |-
       Primary key field and transfer type code used in CIS_314_TRANSFER table
+is_code_file: True

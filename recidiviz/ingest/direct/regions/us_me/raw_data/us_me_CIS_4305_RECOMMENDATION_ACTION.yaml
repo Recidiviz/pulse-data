@@ -40,3 +40,4 @@ columns:
         description: Not appropriate for outpatient recommend therapeutic community
       - value: 8
         description: Appropriate for individual sub abuse treatment
+is_code_file: True

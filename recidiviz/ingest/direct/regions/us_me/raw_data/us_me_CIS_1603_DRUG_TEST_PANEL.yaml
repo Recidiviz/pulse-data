@@ -36,3 +36,4 @@ columns:
     is_pii: True
   - name: MODIFIED_ON_DATE
   - name: LOGICAL_DELETE_IND
+is_code_file: True

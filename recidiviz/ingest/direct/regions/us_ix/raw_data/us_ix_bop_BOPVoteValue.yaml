@@ -27,3 +27,4 @@ columns:
     is_pii: True
   - name: SystemRow
   - name: IsCustom
+is_code_file: True

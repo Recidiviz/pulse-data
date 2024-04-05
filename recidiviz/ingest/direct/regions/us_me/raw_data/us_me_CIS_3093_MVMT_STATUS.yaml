@@ -24,3 +24,4 @@ columns:
   - name: Mvmt_Status_Cd
     description: |-
       Primary key field and movement status code used in CIS_309_MOVEMENT table
+is_code_file: True

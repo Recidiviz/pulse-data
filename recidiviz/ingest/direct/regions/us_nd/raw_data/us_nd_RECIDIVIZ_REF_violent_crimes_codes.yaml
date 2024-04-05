@@ -12,3 +12,4 @@ columns:
     description: The NCIC code that identifies a conceptual, unique offense categorized as violent.
   - name: CrimCodeTxt
     description: The same code, presumably as a string instead of an integer.
+is_code_file: True

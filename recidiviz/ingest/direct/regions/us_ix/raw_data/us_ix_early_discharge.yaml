@@ -132,3 +132,4 @@ columns:
     field_type: datetime
     description: |-
       Date after which the person has had no positive substance tests
+update_cadence: IRREGULAR

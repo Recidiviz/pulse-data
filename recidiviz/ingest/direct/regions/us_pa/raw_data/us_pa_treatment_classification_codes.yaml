@@ -12,3 +12,5 @@ columns:
     description: A numeric code mapped to a treatment class
   - name: classification_description
     description: Description of the treatement classification
+update_cadence: IRREGULAR
+is_code_file: True

@@ -27,3 +27,4 @@ columns:
   - name: Movement_Type_Cd
     description: |-
       Primary key field and movement type code used in CIS_309_MOVEMENT table
+is_code_file: True

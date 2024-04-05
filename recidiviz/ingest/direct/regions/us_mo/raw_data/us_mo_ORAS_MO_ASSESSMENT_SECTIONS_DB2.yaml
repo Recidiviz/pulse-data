@@ -26,3 +26,5 @@ columns:
   - name: ASSESSMENT_SECTION_RISK_LEVEL
     description: |-
       Section risk level
+update_cadence: IRREGULAR
+is_code_file: True

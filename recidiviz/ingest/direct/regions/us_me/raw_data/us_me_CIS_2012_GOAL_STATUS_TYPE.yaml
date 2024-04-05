@@ -32,3 +32,4 @@ columns:
   - name: Goal_Status_Cd
     description: |-
       The code which maps to a status.
+is_code_file: True

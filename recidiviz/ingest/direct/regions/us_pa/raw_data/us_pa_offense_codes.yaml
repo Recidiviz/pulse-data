@@ -75,3 +75,5 @@ columns:
   - name: H2
   - name: GradeSource
     description: The PADOC-internal source of this offense code
+update_cadence: IRREGULAR
+is_code_file: True

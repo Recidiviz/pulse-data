@@ -86,7 +86,10 @@ class RawDataFileUpdateCadence(Enum):
     # There is no defined update cadence or the update cadence is expected to be irregular
     IRREGULAR = "IRREGULAR"
 
-    # The file is expected to be updated once a week
+    # The file is expected to be updated once per month
+    MONTHLY = "MONTHLY"
+
+    # The file is expected to be updated once per week
     WEEKLY = "WEEKLY"
 
     # The file is expected to be updated once per day

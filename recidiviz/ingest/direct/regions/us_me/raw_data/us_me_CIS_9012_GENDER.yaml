@@ -28,3 +28,4 @@ columns:
         description: Female
       - value: 3
         description: Unknown
+is_code_file: True

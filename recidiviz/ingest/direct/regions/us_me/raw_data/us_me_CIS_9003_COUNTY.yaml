@@ -22,3 +22,4 @@ columns:
   - name: County_Cd
     description: The primary key for this table and the county code referenced in other raw tables.
   - name: Rel_Dir_Region_Cd
+is_code_file: True

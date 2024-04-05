@@ -30,3 +30,4 @@ columns:
     description: Date record updated
     field_type: datetime
   - name: IsCustom
+is_code_file: True

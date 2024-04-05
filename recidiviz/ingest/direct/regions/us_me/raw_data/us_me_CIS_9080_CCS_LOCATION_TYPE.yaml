@@ -24,3 +24,4 @@ columns:
   - name: Ccs_Location_Type_Cd
     description: |-
       Primary key field and location type code used in CIS_908_CCS_LOCATION table
+is_code_file: True

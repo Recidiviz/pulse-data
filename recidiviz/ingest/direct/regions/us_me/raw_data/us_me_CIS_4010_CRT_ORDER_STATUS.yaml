@@ -40,3 +40,4 @@ columns:
         description: Drug Court - The case has been referred to a special drug court
       - value: "11"
         description: Court Sanction - The client does not have a term to serve but has restitution fines due
+is_code_file: True

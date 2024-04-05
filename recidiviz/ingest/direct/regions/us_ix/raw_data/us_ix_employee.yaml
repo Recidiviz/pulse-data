@@ -35,3 +35,4 @@ encoding: ISO-8859-1
 separator: "|"
 custom_line_terminator: "\n"
 always_historical_export: True
+update_cadence: IRREGULAR

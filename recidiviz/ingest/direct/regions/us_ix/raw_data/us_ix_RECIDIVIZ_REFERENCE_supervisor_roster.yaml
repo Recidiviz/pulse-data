@@ -42,3 +42,4 @@ columns:
     is_pii: True
   - name: ACTIVE
     description: Y/N for whether the employee is still an active employee (currently manually filled in but with ask Idaho to fill in)
+update_cadence: MONTHLY

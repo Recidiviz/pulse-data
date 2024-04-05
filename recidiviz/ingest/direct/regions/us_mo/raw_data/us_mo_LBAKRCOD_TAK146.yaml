@@ -76,3 +76,5 @@ columns:
     is_pii: True
     description: |-
       User Identification
+update_cadence: IRREGULAR
+is_code_file: True
