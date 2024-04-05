@@ -13,34 +13,31 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# ============================================================================
-"""Defines a criteria span view that shows spans of time during which someone is past
-their date for a written scc review from a warden. Residents are entitled to an in person review every 30 days.
+# =============================================================================
+"""Defines a criteria span view that shows spans of time during which someone has
+been in administrative solitary confinement at least 1 year.
 """
-from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    get_minimum_time_served_criteria_query,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_PAST_WARDEN_WRITTEN_REVIEW_FOR_SCC_DATE"
+_CRITERIA_NAME = "IN_ADMINISTRATIVE_SOLITARY_CONFINEMENT_AT_LEAST_1_YEAR"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is past
-their date for a written scc review from a warden. Residents are entitled to an in person review every 30 days. 
-"""
+_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
+been in administrative solitary confinement at least 1 year. """
 
-_REASON_QUERY = "TO_JSON(STRUCT('9999-99-99' as scc_eligible_date, 1 as number_of_expected_reviews))"
-
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
-        state_code=StateCode.US_MI,
+        minimum_time_served=1,
+        time_served_interval="YEAR",
+        housing_unit_types=["ADMINISTRATIVE_SOLITARY_CONFINEMENT"],
     )
 )
 

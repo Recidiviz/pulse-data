@@ -15,33 +15,78 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Defines a criteria span view that shows spans of time during which someone is past
-their date for an in person scc review from a warden. Residents are entitled an in person review every 6 months.
+their date for an in person scc review from a warden. Residents are entitled to an in person review every 6 months.
 """
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_criteria_state_specific_dataset,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    combining_several_criteria_into_one,
+    extract_object_from_json,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_MI_PAST_WARDEN_IN_PERSON_REVIEW_FOR_SCC_DATE"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is past
-their date for an in person scc review from a warden. Residents are entitled an in person review every 6 months. 
+_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is eligible
+for a warden in person security classification review. A resident is eligible for an in person review from the warden
+every six months. 
+
+Residents can be eligible based on the number of expected reviews being greater than the number of observed, OR 
+because the last warden in person SCC review date was more than 6 months ago."""
+
+_CRITERIA_QUERY_1 = """
+    SELECT
+        * EXCEPT (reason),
+        NULL AS administrative_solitary_start_date,
+        NULL AS latest_warden_in_person_scc_review_date,
+        NULL AS number_of_expected_reviews,
+        NULL AS number_of_reviews
+    FROM `{project_id}.{task_eligibility_criteria_us_mi}.six_months_past_last_warden_in_person_security_classification_committee_review_date_materialized`
+    """
+
+_CRITERIA_QUERY_2 = f"""
+    SELECT
+        * EXCEPT (reason),
+        {extract_object_from_json(object_column = 'administrative_solitary_start_date', 
+                                  object_type = 'DATE')} AS administrative_solitary_start_date,
+        {extract_object_from_json(object_column = 'latest_warden_in_person_scc_review_date', 
+                                  object_type = 'DATE')} AS latest_warden_in_person_scc_review_date,           
+        {extract_object_from_json(object_column = 'number_of_expected_reviews', 
+                                  object_type = 'INT64')} AS number_of_expected_reviews,
+        {extract_object_from_json(object_column = 'number_of_reviews', 
+                                  object_type = 'INT64')} AS number_of_reviews,             
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_mi}}.expected_number_of_warden_in_person_security_classification_committee_reviews_greater_than_observed_materialized`
 """
 
-_REASON_QUERY = "TO_JSON(STRUCT('9999-99-99' as scc_eligible_date, 1 as number_of_expected_reviews))"
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
-        state_code=StateCode.US_MI,
-    )
+_JSON_CONTENT = """MIN(administrative_solitary_start_date) AS administrative_solitary_start_date,
+                    MAX(latest_warden_in_person_scc_review_date) AS latest_warden_in_person_scc_review_date,
+                    MAX(number_of_expected_reviews) AS number_of_expected_reviews,
+                    MAX(number_of_reviews) AS number_of_reviews"""
+
+_QUERY_TEMPLATE = f"""
+{combining_several_criteria_into_one(
+        select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
+                                             _CRITERIA_QUERY_2],
+        meets_criteria="LOGICAL_OR(meets_criteria)",
+        json_content=_JSON_CONTENT,
+    )}
+"""
+
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
+    criteria_name=_CRITERIA_NAME,
+    description=_DESCRIPTION,
+    criteria_spans_query_template=_QUERY_TEMPLATE,
+    state_code=StateCode.US_MI,
+    task_eligibility_criteria_us_mi=task_eligibility_criteria_state_specific_dataset(
+        StateCode.US_MI
+    ),
 )
 
 if __name__ == "__main__":

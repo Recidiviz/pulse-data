@@ -25,11 +25,10 @@ from recidiviz.task_eligibility.completion_events.general import (
     transfer_out_of_administrative_solitary_confinement,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    housing_unit_type_is_administrative_solitary_confinement,
+    in_administrative_solitary_confinement_at_least_1_year,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     past_add_in_person_review_for_scc_date,
-    past_add_written_review_for_scc_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -46,9 +45,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        past_add_written_review_for_scc_date.VIEW_BUILDER,
         past_add_in_person_review_for_scc_date.VIEW_BUILDER,
-        housing_unit_type_is_administrative_solitary_confinement.VIEW_BUILDER,
+        in_administrative_solitary_confinement_at_least_1_year.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_out_of_administrative_solitary_confinement.VIEW_BUILDER,
 )
