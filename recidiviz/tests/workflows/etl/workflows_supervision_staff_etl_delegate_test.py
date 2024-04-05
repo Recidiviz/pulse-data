@@ -77,6 +77,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                     "givenNames": "Joey",
                     "surname": "Joe-Joe Jr. III",
                     "roleSubtype": "SUPERVISION_OFFICER",
+                    "supervisorExternalId": "SUPER123",
                 },
             )
 
@@ -94,6 +95,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                     "givenNames": "Sally S.",
                     "surname": "Slithers",
                     "roleSubtype": "SUPERVISION_OFFICER_SUPERVISOR",
+                    "supervisorExternalId": None,
                 },
             )
 
@@ -111,6 +113,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                     "givenNames": "Foghorn",
                     "surname": "Leghorn",
                     "roleSubtype": None,
+                    "supervisorExternalId": "13857943",
                 },
             )
 
@@ -128,6 +131,7 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                     "givenNames": "",
                     "surname": "",
                     "roleSubtype": None,
+                    "supervisorExternalId": None,
                 },
             )
 
