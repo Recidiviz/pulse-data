@@ -100,7 +100,7 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
     search_by_location_states=list_to_query_string(
-        ["US_MO", "US_TN", "US_IX"], quoted=True
+        ["US_MO", "US_TN", "US_IX", "US_MI"], quoted=True
     ),
     us_tn_excluded_facility_ids=list_to_query_string(
         ["CJ", "WH", "GENERAL", "INACTIVE", "NOT_APPLICABLE"], quoted=True
@@ -110,7 +110,7 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     level_2_state_codes=WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING,
     workflows_incarceration_states=list_to_query_string(
-        ["US_ME", "US_MO", "US_TN", "US_IX"], quoted=True
+        ["US_ME", "US_MO", "US_TN", "US_IX", "US_MI"], quoted=True
     ),
 )
 
