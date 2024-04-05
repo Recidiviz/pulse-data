@@ -54,7 +54,18 @@ def load_model_fixture(
         reader = csv.DictReader(fixture_file)
         for row in reader:
             for k, v in row.items():
-                if k in {"snooze", "is_alert"} and v != "":
+                if (
+                    k
+                    in {
+                        "snooze",
+                        "is_alert",
+                        "eligible_criteria_copy",
+                        "ineligible_criteria_copy",
+                        "sidebar_components",
+                        "denial_reasons",
+                    }
+                    and v != ""
+                ):
                     row[k] = json.loads(v)
                 if v == "":
                     row[k] = None

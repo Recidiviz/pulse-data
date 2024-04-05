@@ -63,10 +63,14 @@ class OpportunityConfig:
     display_name: str = attr.ib()
     methodology_url: str = attr.ib()
     initial_header: str = attr.ib()
+    denial_reasons: str = attr.ib()
+    eligible_criteria_copy: str = attr.ib()
+    ineligible_criteria_copy: str = attr.ib()
     dynamic_eligibility_text: str = attr.ib()
     call_to_action: str = attr.ib()
     snooze: str = attr.ib()
     is_alert: bool = attr.ib()
+    sidebar_components: str = attr.ib()
     denial_text: Optional[str] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
@@ -82,11 +86,15 @@ class OpportunityConfig:
             display_name=full_config.display_name,
             methodology_url=full_config.methodology_url,
             initial_header=full_config.initial_header,
+            denial_reasons=full_config.denial_reasons,
+            eligible_criteria_copy=full_config.eligible_criteria_copy,
+            ineligible_criteria_copy=full_config.ineligible_criteria_copy,
             dynamic_eligibility_text=full_config.dynamic_eligibility_text,
             call_to_action=full_config.call_to_action,
             snooze=full_config.snooze,
             is_alert=full_config.is_alert,
             denial_text=full_config.denial_text,
+            sidebar_components=full_config.sidebar_components,
         )
 
 
@@ -123,9 +131,13 @@ class OpportunityConfigResponse(OpportunityInfo, OpportunityConfig):
             display_name=config.display_name,
             methodology_url=config.methodology_url,
             initial_header=config.initial_header,
+            denial_reasons=config.denial_reasons,
+            eligible_criteria_copy=config.eligible_criteria_copy,
+            ineligible_criteria_copy=config.ineligible_criteria_copy,
             dynamic_eligibility_text=config.dynamic_eligibility_text,
             call_to_action=config.call_to_action,
             snooze=config.snooze,
             is_alert=config.is_alert,
             denial_text=config.denial_text,
+            sidebar_components=config.sidebar_components,
         )
