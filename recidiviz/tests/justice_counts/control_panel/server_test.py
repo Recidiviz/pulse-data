@@ -933,105 +933,101 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             histories=histories,
         )
         self.session.commit()
-
+        report_published_id = report_published.id
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
 
-            # Test v1 and v2 versions of this endpoint
-            # TODO(#22143): Deprecate v1
-            response_v1 = self.client.get(f"/api/agencies/{agency.id}/published_data")
-            response_v2 = self.client.get(
-                "/api/v2/agencies/agency%20prison/published_data"
+            response = self.client.get(
+                f"/api/agencies/{agency.id}/agency%20prison/published_data"
             )
 
-        for response in [response_v1, response_v2]:
-            self.assertEqual(response.status_code, 200)
-            result = assert_type(response.json, dict)
-            agency = result["agency"]
-            metrics = result["metrics"]
+        self.assertEqual(response.status_code, 200)
+        result = assert_type(response.json, dict)
+        agency = result["agency"]
+        metrics = result["metrics"]
 
-            self.assertEqual(agency["name"], "Agency Prison")
-            self.assertEqual(agency["systems"], ["PRISONS"])
+        self.assertEqual(agency["name"], "Agency Prison")
+        self.assertEqual(agency["systems"], ["PRISONS"])
 
-            self.shared_test_agency_metrics(metrics=metrics)
+        self.shared_test_agency_metrics(metrics=metrics)
 
-            self.assertEqual(metrics[0]["datapoints"], None)
-            self.assertEqual(metrics[1]["datapoints"], None)
-            self.assertEqual(metrics[2]["datapoints"], None)
-            for datapoint in metrics[3]["datapoints"]:
-                self.check_agency_metric_datapoint(
-                    datapoint=datapoint, value=1000.0, report_id=report_published.id
-                )
+        self.assertEqual(metrics[0]["datapoints"], None)
+        self.assertEqual(metrics[1]["datapoints"], None)
+        self.assertEqual(metrics[2]["datapoints"], None)
+        for datapoint in metrics[3]["datapoints"]:
+            self.check_agency_metric_datapoint(
+                datapoint=datapoint, value=1000.0, report_id=report_published_id
+            )
 
-            self.assertEqual(metrics[4]["datapoints"], None)
-            self.assertEqual(metrics[5]["datapoints"], None)
-            self.assertEqual(metrics[6]["datapoints"], None)
-            self.assertEqual(metrics[7]["datapoints"], None)
-            self.assertEqual(metrics[8]["datapoints"], None)
+        self.assertEqual(metrics[4]["datapoints"], None)
+        self.assertEqual(metrics[5]["datapoints"], None)
+        self.assertEqual(metrics[6]["datapoints"], None)
+        self.assertEqual(metrics[7]["datapoints"], None)
+        self.assertEqual(metrics[8]["datapoints"], None)
 
-            self.assertEqual(metrics[3]["key"], prisons.admissions.key)
-            self.assertEqual(metrics[3]["enabled"], None)
-            self.assertEqual(
-                metrics[3]["disaggregations"][0]["key"],
-                OffenseType.dimension_identifier(),
-            )
-            self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], False)
-            self.check_agency_metric_datapoint(
-                datapoint=metrics[3]["disaggregations"][0]["dimensions"][0][
-                    "datapoints"
-                ][0],
-                value=3.0,
-                report_id=report_published.id,
-                dimension_display_name="Person Offenses",
-                disaggregation_display_name="Offense Type",
-            )
-            self.check_agency_metric_datapoint(
-                datapoint=metrics[3]["disaggregations"][0]["dimensions"][1][
-                    "datapoints"
-                ][0],
-                value=4.0,
-                report_id=report_published.id,
-                dimension_display_name="Property Offenses",
-                disaggregation_display_name="Offense Type",
-            )
-            self.check_agency_metric_datapoint(
-                datapoint=metrics[3]["disaggregations"][0]["dimensions"][2][
-                    "datapoints"
-                ][0],
-                value=1.0,
-                report_id=report_published.id,
-                dimension_display_name="Drug Offenses",
-                disaggregation_display_name="Offense Type",
-            )
-            self.check_agency_metric_datapoint(
-                datapoint=metrics[3]["disaggregations"][0]["dimensions"][3][
-                    "datapoints"
-                ][0],
-                value=5.0,
-                report_id=report_published.id,
-                dimension_display_name="Public Order Offenses",
-                disaggregation_display_name="Offense Type",
-            )
-            self.check_agency_metric_datapoint(
-                datapoint=metrics[3]["disaggregations"][0]["dimensions"][4][
-                    "datapoints"
-                ][0],
-                value=2.0,
-                report_id=report_published.id,
-                dimension_display_name="Other Offenses",
-                disaggregation_display_name="Offense Type",
-            )
-            self.check_agency_metric_datapoint(
-                datapoint=metrics[3]["disaggregations"][0]["dimensions"][5][
-                    "datapoints"
-                ][0],
-                value=6.0,
-                report_id=report_published.id,
-                dimension_display_name="Unknown Offenses",
-                disaggregation_display_name="Offense Type",
-            )
+        self.assertEqual(metrics[3]["key"], prisons.admissions.key)
+        self.assertEqual(metrics[3]["enabled"], None)
+        self.assertEqual(
+            metrics[3]["disaggregations"][0]["key"],
+            OffenseType.dimension_identifier(),
+        )
+        self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], False)
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][0]["datapoints"][
+                0
+            ],
+            value=3.0,
+            report_id=report_published.id,
+            dimension_display_name="Person Offenses",
+            disaggregation_display_name="Offense Type",
+        )
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][1]["datapoints"][
+                0
+            ],
+            value=4.0,
+            report_id=report_published.id,
+            dimension_display_name="Property Offenses",
+            disaggregation_display_name="Offense Type",
+        )
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][2]["datapoints"][
+                0
+            ],
+            value=1.0,
+            report_id=report_published.id,
+            dimension_display_name="Drug Offenses",
+            disaggregation_display_name="Offense Type",
+        )
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][3]["datapoints"][
+                0
+            ],
+            value=5.0,
+            report_id=report_published.id,
+            dimension_display_name="Public Order Offenses",
+            disaggregation_display_name="Offense Type",
+        )
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][4]["datapoints"][
+                0
+            ],
+            value=2.0,
+            report_id=report_published.id,
+            dimension_display_name="Other Offenses",
+            disaggregation_display_name="Offense Type",
+        )
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][5]["datapoints"][
+                0
+            ],
+            value=6.0,
+            report_id=report_published.id,
+            dimension_display_name="Unknown Offenses",
+            disaggregation_display_name="Offense Type",
+        )
 
     def test_get_all_agencies_metadata(self) -> None:
         user_A = self.test_schema_objects.test_user_A

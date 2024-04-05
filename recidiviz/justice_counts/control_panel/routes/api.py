@@ -20,7 +20,6 @@ import logging
 import os
 import re
 import tempfile
-import urllib.parse
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Set
@@ -1901,98 +1900,14 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/agencies/<agency_id>/published_data", methods=["GET"])
-    def get_agency_published_data(agency_id: int) -> Response:
-        try:
-            agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=agency_id
-            )
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=current_session,
-                agency_id=agency_id,
-                # we are only fetching reports here to get the list of report
-                # ids in an agency, so no need to fetch datapoints here
-                include_datapoints=False,
-                published_only=True,
-            )
-            report_id_to_status = {report.id: report.status for report in reports}
-            report_id_to_frequency = {
-                report.id: ReportInterface.get_reporting_frequency(report)
-                for report in reports
-            }
-            # fetch non-context datapoints
-            datapoints = DatapointInterface.get_datapoints_by_report_ids(
-                session=current_session,
-                report_ids=list(report_id_to_status.keys()),
-                include_contexts=False,
-            )
-            # Serialize datapoints into json format.
-            # group aggregate datapoints by metric.
-            metric_key_to_aggregate_datapoints_json: DefaultDict[
-                str, List[DatapointJson]
-            ] = defaultdict(list)
-            # group breakdown datapoints by metric, disaggregation, and dimension.
-            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: (
-                DefaultDict[
-                    str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
-                ]
-            ) = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-            for datapoint in datapoints:
-                datapoint_json = DatapointInterface.to_json_response(
-                    datapoint=datapoint,
-                    is_published=True,
-                    frequency=report_id_to_frequency[datapoint.report_id],
-                )
-                (
-                    dimension_id,
-                    dimension_member,
-                ) = get_dimension_id_and_member(datapoint=datapoint)
-                if dimension_id is not None and dimension_member is not None:
-                    metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
-                        datapoint.metric_definition_key
-                    ][dimension_id][dimension_member].append(datapoint_json)
-                else:
-                    metric_key_to_aggregate_datapoints_json[
-                        datapoint.metric_definition_key
-                    ].append(datapoint_json)
-
-            metrics = MetricSettingInterface.get_agency_metric_interfaces(
-                session=current_session, agency=agency
-            )
-            metrics_json = [
-                metric.to_json(
-                    entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
-                    aggregate_datapoints_json=metric_key_to_aggregate_datapoints_json.get(
-                        metric.key
-                    ),
-                    dimension_id_to_dimension_member_to_datapoints_json=metric_key_to_dimension_id_to_dimension_member_to_datapoints_json.get(
-                        metric.key
-                    ),
-                )
-                for metric in metrics
-            ]
-
-            return jsonify(
-                {
-                    "agency": agency.to_public_json(),
-                    "metrics": metrics_json,
-                }
-            )
-
-        except Exception as e:
-            raise _get_error(error=e) from e
-
-    @api_blueprint.route("/v2/agencies/<agency_slug>/published_data", methods=["GET"])
-    def get_agency_published_data_v2(agency_slug: str) -> Response:
-        # TODO(#22143): Deprecate get_agency_published_data (above) and replace with this
-        # This endpoint should behave the same as the one above, except:
-        # - It takes as input an agency slug, rather than id
-        # - It has some performance improvements
+    @api_blueprint.route(
+        "/agencies/<agency_id>/<agency_slug>/published_data", methods=["GET"]
+    )
+    def get_agency_published_data(agency_id: int, agency_slug: str) -> Response:
         try:
             # Agency slug will be encoded (e.g "Washington%20Department%20of%20Corrections")
-            agency_name = urllib.parse.unquote(agency_slug)
-            agency = AgencyInterface.get_agency_by_name(
-                session=current_session, name=agency_name, with_settings=True
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=agency_id, with_settings=True
             )
             if not agency:
                 raise JusticeCountsServerError(
