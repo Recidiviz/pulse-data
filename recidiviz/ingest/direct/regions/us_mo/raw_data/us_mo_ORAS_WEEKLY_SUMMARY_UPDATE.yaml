@@ -60,4 +60,7 @@ columns:
   - name: CREATED_DATE
     description: |-
       Date that entry was created in system
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_DATETIME('%y-%m-%d', {col_name})"
 always_historical_export: True
