@@ -187,11 +187,63 @@ DATES_WITH_AVAILABLE_DATA = [
     date(2023, 4, 12),
     date(2023, 4, 19),
     date(2023, 4, 26),
+    date(2023, 5, 3),
+    date(2023, 5, 10),
+    date(2023, 5, 24),
+    date(2023, 6, 7),
+    date(2023, 6, 16),
+    date(2023, 6, 21),
+    date(2023, 7, 5),
+    date(2023, 7, 12),
+    date(2023, 7, 19),
+    date(2023, 7, 27),
+    date(2023, 8, 4),
+    date(2023, 8, 9),
+    date(2023, 8, 17),
+    date(2023, 8, 23),
+    date(2023, 8, 31),
+    date(2023, 9, 6),
+    date(2023, 9, 13),
+    date(2023, 9, 20),
+    date(2023, 9, 27),
+    date(2023, 10, 4),
+    date(2023, 10, 11),
+    date(2023, 10, 18),
+    date(2023, 10, 25),
+    date(2023, 10, 26),
+    date(2023, 11, 2),
+    date(2023, 11, 8),
+    date(2023, 11, 15),
+    date(2023, 11, 22),
+    date(2023, 11, 30),
+    date(2023, 12, 11),
+    date(2023, 12, 13),
+    date(2023, 12, 15),
+    date(2023, 12, 20),
+    date(2024, 1, 10),
+    date(2024, 1, 19),
+    date(2024, 1, 24),
+    date(2024, 1, 31),
+    date(2024, 2, 7),
+    date(2024, 2, 14),
+    date(2024, 2, 28),
+    date(2024, 3, 4),
+    date(2024, 3, 7),
+    date(2024, 3, 11),
+    date(2024, 3, 13),
+    date(2024, 3, 18),
+    date(2024, 3, 20),
+    date(2024, 3, 25),
+    date(2024, 4, 3),
 ]
 
 
 def query_template(date_of_data: date) -> str:
-    return f"SELECT Offender_Number AS person_external_id, DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, Location AS facility FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.orc_report_{date_of_data.strftime('%Y%m%d')}` WHERE Unique = 'Yes'\n"
+
+    if date_of_data < date(2023, 7, 5):
+        return f"SELECT Offender_Number AS person_external_id,DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, Location AS facility, Confinement_Level, Management_Level, True_Sec_Level, Actual_Sec_Level, STG, NULL AS MH_Treatment FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.orc_report_{date_of_data.strftime('%Y%m%d')}` WHERE Unique = 'Yes'\n"
+
+    return f"SELECT Offender_Number AS person_external_id,DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, Location AS facility, Confinement_Level, Management_Level, True_Sec_Level, Actual_Sec_Level, STG, MH_Treatment FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.orc_report_{date_of_data.strftime('%Y%m%d')}` WHERE Unique = 'Yes'\n"
 
 
 _SUBQUERY_TEMPLATE = "UNION ALL\n".join(
