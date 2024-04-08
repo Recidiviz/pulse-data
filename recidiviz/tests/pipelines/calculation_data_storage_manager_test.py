@@ -40,6 +40,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 )
 from recidiviz.pipelines import calculation_data_storage_manager, dataflow_config
 from recidiviz.pipelines.calculation_data_storage_manager import (
+    build_address_overrides_for_update,
     calculation_data_storage_manager_blueprint,
     execute_update_normalized_state_dataset,
 )
@@ -48,9 +49,6 @@ from recidiviz.pipelines.dataflow_orchestration_utils import (
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,
-)
-from recidiviz.tools.calculator.update_sandbox_normalized_state_dataset import (
-    build_address_overrides_for_update,
 )
 from recidiviz.utils.environment import GCPEnvironment
 

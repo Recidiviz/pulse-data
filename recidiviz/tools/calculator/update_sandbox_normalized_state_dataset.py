@@ -40,18 +40,23 @@ state, providing the sandbox normalized state dataset that this script produced.
 Ex.
 python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
     --project_id recidiviz-staging \
-    --state_code US_MO \
-    --sandbox_dataset_prefix colin_foo
-    --ingest_instance secondary (optional)
+    --state_code US_XX \
+    --input_state_dataset us_xx_state_primary \
+    --input_normalized_state_dataset my_prefix_us_xx_normalized_state \
+    --output_sandbox_prefix my_prefix
 """
 
 import argparse
 import logging
 
-from recidiviz.common.constants import states
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATE_BASE_DATASET,
+    normalized_state_dataset_for_state_code,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.calculation_data_storage_manager import (
-    build_address_overrides_for_update,
     update_normalized_state_dataset,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -73,25 +78,36 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--state_code",
         dest="state_code",
-        choices=list(states.StateCode),
-        help="State code to use when filtering dataset to create metrics export",
-        required=False,
+        type=StateCode,
+        choices=list(StateCode),
+        help="State code to load into the sandbox normalized_state dataset",
     )
 
     parser.add_argument(
-        "--sandbox_dataset_prefix",
-        dest="sandbox_dataset_prefix",
-        help="A prefix to append to all names of the datasets where these views will be loaded.",
+        "--input_state_dataset",
+        dest="input_state_dataset",
+        help=(
+            "The non-normalized state dataset that this script should read from "
+            "(for entities that are not produced by the normalization pipelines)."
+        ),
         type=str,
         required=True,
     )
 
     parser.add_argument(
-        "--ingest_instance",
-        dest="ingest_instance",
-        choices=list(DirectIngestInstance),
-        help="The instance of the direct ingest pipeline the data being updated came from. Defaults to PRIMARY.",
-        default=DirectIngestInstance.PRIMARY,
+        "--input_normalized_state_dataset",
+        dest="input_normalized_state_dataset",
+        help="The normalized state dataset that this script should read from.",
+        type=str,
+        required=True,
+    )
+
+    parser.add_argument(
+        "--output_sandbox_prefix",
+        dest="output_sandbox_prefix",
+        help="The sandbox prefix for the output of this script.",
+        type=str,
+        required=True,
     )
 
     return parser
@@ -102,11 +118,22 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
 
     with local_project_id_override(args.project_id):
-        state_codes = frozenset({args.state_code})
+        state_code = args.state_code
+        builder = BigQueryAddressOverrides.Builder(
+            sandbox_prefix=args.output_sandbox_prefix,
+        )
+        builder.register_custom_dataset_override(
+            normalized_state_dataset_for_state_code(state_code),
+            args.input_normalized_state_dataset,
+            force_allow_custom=True,
+        )
+        builder.register_custom_dataset_override(
+            STATE_BASE_DATASET, args.input_state_dataset, force_allow_custom=True
+        )
+        builder.register_sandbox_override_for_entire_dataset(NORMALIZED_STATE_DATASET)
+        address_overrides = builder.build()
+
         update_normalized_state_dataset(
-            state_codes_filter=state_codes if args.state_code else None,
-            address_overrides=build_address_overrides_for_update(
-                dataset_override_prefix=args.sandbox_dataset_prefix,
-                states_to_override=state_codes,
-            ),
+            state_codes_filter=frozenset({state_code}),
+            address_overrides=address_overrides,
         )

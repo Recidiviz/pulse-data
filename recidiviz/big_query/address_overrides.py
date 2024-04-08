@@ -215,13 +215,21 @@ class BigQueryAddressOverrides:
             return self
 
         def register_custom_dataset_override(
-            self, original_dataset_id: str, new_dataset_id: str
+            self,
+            original_dataset_id: str,
+            new_dataset_id: str,
+            force_allow_custom: bool = False,
         ) -> "BigQueryAddressOverrides.Builder":
             """Registers an address overrides for all views/tables in
             |original_dataset_id|. If any of the views / tables in this dataset are
             referenced by any views being deployed, the provided |new_dataset_id| will
             be used instead. This is used when the |new_dataset_id| value is different
             than the standard '<sandbox_prefix>_<dataset_id>' value.
+
+            If |force_allow_custom| is True, the custom override is allowed even if
+            |new_dataset_id| is the same as the standard override for this builder.
+            Otherwise, if |new_dataset_id| is the same as the standard override, this
+            function throws.
             """
             if original_dataset_id in self._full_dataset_overrides:
                 raise ValueError(
@@ -229,8 +237,12 @@ class BigQueryAddressOverrides:
                     f"[{self._full_dataset_overrides[original_dataset_id]}]"
                 )
             self._verify_no_conflicting_address_overrides(original_dataset_id)
-            if new_dataset_id == BigQueryAddressOverrides.format_sandbox_dataset(
-                self.sandbox_prefix, original_dataset_id
+            if (
+                new_dataset_id
+                == BigQueryAddressOverrides.format_sandbox_dataset(
+                    self.sandbox_prefix, original_dataset_id
+                )
+                and not force_allow_custom
             ):
                 raise ValueError(
                     f"The new_dataset_id [{new_dataset_id}] matches the standard sandbox "
