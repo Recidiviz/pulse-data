@@ -33,7 +33,7 @@ num_allowed_rows_overrides:
       Inital investigations into this show entity deletion as the main culprit. Error improved after refresh. This error should also be helped by continual work in MO
       for raw data tables and rework in TODO(#15905). When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 45000
+    hard_num_allowed_rows_override: 47500
     override_reason:
       Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
       we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
@@ -41,6 +41,7 @@ num_allowed_rows_overrides:
       increases again. Current error was at 1121 rows as of 03/01/2022. Error began steadily increasing again and is now
       at 1699 as of 07/01/2022. 2041 as of 9/27/2022. 2514 as of 1/11/23. Error improved after refresh and is now 201. Error is currently 30467 as of 10/19/23, 35166 as of 11/29/23. TODO(#24843) - We should do a refresh of the view.
       When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
+      Bumped again (from 45000 to 47500) on 4/8/23, at which point the error had increased to 45830.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 3000
     override_reason: TODO(#15905). Error is 2500 as of 1/5/2022. Error now at 899 as of 1/25/23. Refresh reduced error. When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
