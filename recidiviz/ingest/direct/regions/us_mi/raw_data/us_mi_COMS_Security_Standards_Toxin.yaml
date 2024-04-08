@@ -7,7 +7,6 @@ data_classification: source
 separator: †
 custom_line_terminator: ‡
 encoding: WINDOWS-1252
-always_historical_export: False
 primary_key_cols:
   - Security_Standards_Toxin_Id
 columns:
