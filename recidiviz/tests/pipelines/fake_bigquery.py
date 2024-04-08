@@ -53,7 +53,6 @@ from recidiviz.persistence.database.schema_utils import (
     is_association_table,
 )
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    normalized_entity_class_exists_for_base_class_with_name,
     normalized_entity_class_with_base_class_name,
 )
 from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
@@ -71,16 +70,20 @@ from recidiviz.tests.pipelines.calculator_test_utils import NormalizedDatabaseDi
 DatasetStr = str
 QueryStr = str
 DataTablesDict = Dict[str, Iterable[NormalizedDatabaseDict]]
-DataDictQueryFn = Callable[
-    [DatasetStr, QueryStr, DataTablesDict, str, Optional[DatasetStr]],
-    Iterable[NormalizedDatabaseDict],
-]
 
 # Regex matching queries used by calc pipelines to hydrate database entities.
 # Example query:
 # SELECT * FROM `recidiviz-staging.state.state_person` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
 ENTITY_TABLE_QUERY_REGEX = re.compile(
-    r"SELECT ([A-Za-z_\ \,\*]+) FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` "
+    r"SELECT ([A-Za-z_\ \,\*]+) FROM `[a-z\d\-]+\.([a-z_]*state[a-z_]*)\.([a-z_]+)` "
+    r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
+)
+
+# Regex matching queries used by calc pipelines to hydrate reference data.
+# Example query:
+# SELECT * FROM `recidiviz-staging.reference_views.persons_to_recent_county_of_residence` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
+REFERENCE_VIEWS_QUERY_REGEX = re.compile(
+    r"SELECT ([A-Za-z_\ \,\*]+) FROM `[a-z\d\-]+\.([a-z_]*reference[a-z_]*)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
 )
 
@@ -270,36 +273,30 @@ class FakeReadAllFromBigQueryWithEmulator(apache_beam.PTransform):
         )
 
 
+# TODO(#25244): Update all pipeline tests to just load data into a BQ emulator and mock
+#  the pipelines to read from the emulator instead of real BQ.
 class FakeReadFromBigQueryFactory:
     """Factory class that vends fake constructors that can be used to mock the ReadFromBigQuery object."""
 
-    def __init__(self, data_dict_query_fn: Optional[DataDictQueryFn] = None):
-        self._data_dict_query_fn: DataDictQueryFn = (
-            data_dict_query_fn
-            if data_dict_query_fn
-            else self._extractor_utils_data_dict_query_fn
-        )
-
     def create_fake_bq_source_constructor(
         self,
-        expected_dataset: str,
+        *,
+        expected_entities_dataset: str,
         data_dict: DataTablesDict,
+        expected_reference_views_dataset: str = "reference_views",
         unifying_id_field: str = "person_id",
-        expected_normalized_dataset: Optional[str] = None,
     ) -> Callable[[QueryStr], FakeReadFromBigQuery]:
         """Returns a constructors function that can mock the ReadFromBigQuery class and will return a
         FakeReadFromBigQuery instead.
         """
 
-        data_dict_query_fn = self._data_dict_query_fn
-
         def _fake_bq_source_constructor(query: QueryStr) -> FakeReadFromBigQuery:
-            table_values = data_dict_query_fn(
-                expected_dataset,
-                query,
-                data_dict,
-                unifying_id_field,
-                expected_normalized_dataset,
+            table_values = self._extractor_utils_data_dict_query_fn(
+                expected_entities_dataset=expected_entities_dataset,
+                expected_reference_views_dataset=expected_reference_views_dataset,
+                query=query,
+                data_dict=data_dict,
+                unifying_id_field=unifying_id_field,
             )
             return FakeReadFromBigQuery(table_values=table_values)
 
@@ -307,33 +304,38 @@ class FakeReadFromBigQueryFactory:
 
     @staticmethod
     def _extractor_utils_data_dict_query_fn(
-        expected_dataset: str,
+        *,
+        expected_entities_dataset: str,
+        expected_reference_views_dataset: str,
         query: QueryStr,
         data_dict: DataTablesDict,
         unifying_id_field: str,
-        expected_normalized_dataset: Optional[str],
     ) -> Iterable[NormalizedDatabaseDict]:
         """Default implementation of the fake query function, which parses, validates,
         and replicates the behavior of the provided query string, returning data out
         of the data_dict object."""
-        expected_normalized_dataset = expected_normalized_dataset or None
-
         if re.match(ASSOCIATION_VALUES_QUERY_REGEX, query):
             return FakeReadFromBigQueryFactory._do_fake_association_values_query(
                 data_dict,
                 query,
-                expected_dataset,
+                expected_entities_dataset,
                 unifying_id_field,
-                expected_normalized_dataset,
             )
 
         if re.match(ENTITY_TABLE_QUERY_REGEX, query):
             return FakeReadFromBigQueryFactory._do_fake_entity_table_query(
                 data_dict,
                 query,
-                expected_dataset,
+                expected_entities_dataset,
                 unifying_id_field,
-                expected_normalized_dataset,
+            )
+
+        if re.match(REFERENCE_VIEWS_QUERY_REGEX, query):
+            return FakeReadFromBigQueryFactory._do_fake_entity_table_query(
+                data_dict,
+                query,
+                expected_reference_views_dataset,
+                unifying_id_field,
             )
 
         raise ValueError(f"Query string does not match known query format: {query}")
@@ -342,45 +344,27 @@ class FakeReadFromBigQueryFactory:
     def _do_fake_entity_table_query(
         data_dict: DataTablesDict,
         query: str,
-        expected_dataset: str,
+        expected_entities_dataset: str,
         expected_unifying_id_field: str,
-        expected_normalized_dataset: Optional[str] = None,
     ) -> Iterable[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided entity table
         query string, returning data out of the data_dict object.
         """
-        match = re.match(ENTITY_TABLE_QUERY_REGEX, query)
-
-        if not match:
+        if match := re.match(ENTITY_TABLE_QUERY_REGEX, query):
+            dataset = match.group(2)
+        elif match := re.match(REFERENCE_VIEWS_QUERY_REGEX, query):
+            dataset = match.group(2)
+        else:
             raise ValueError(f"Query does not match regex: {query}")
-
-        dataset = match.group(2)
 
         table_name = match.group(3)
         if table_name not in data_dict:
             raise ValueError(f"Table {table_name} not in data dict")
 
-        try:
-            db_entity = get_database_entity_by_table_name(schema, table_name)
-        except ValueError:
-            db_entity = None
-
-        if (
-            db_entity
-            and expected_normalized_dataset
-            and normalized_entity_class_exists_for_base_class_with_name(
-                db_entity.__name__
-            )
-        ):
-            if dataset != expected_normalized_dataset:
-                raise ValueError(
-                    f"Found dataset [{dataset}] does not match expected "
-                    f"dataset [{expected_normalized_dataset}]"
-                )
-        elif dataset != expected_dataset:
+        if dataset != expected_entities_dataset:
             raise ValueError(
                 f"Found dataset [{dataset}] does not match expected "
-                f"dataset [{expected_dataset}]"
+                f"dataset [{expected_entities_dataset}]"
             )
 
         all_table_rows = data_dict[table_name]
@@ -452,11 +436,8 @@ class FakeReadFromBigQueryFactory:
     def _do_fake_association_values_query(
         data_dict: DataTablesDict,
         query: str,
-        expected_dataset: str,
+        expected_entities_dataset: str,
         expected_unifying_id_field: str,
-        # TODO(#11734): Implement support for association queries from normalized
-        #  datasets
-        _expected_normalized_dataset: Optional[str] = None,
     ) -> Iterable[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided association
         value query string, returning data out of the data_dict object.
@@ -502,9 +483,9 @@ class FakeReadFromBigQueryFactory:
             )
 
         dataset = one({dataset_1, dataset_2})
-        if dataset != expected_dataset:
+        if dataset != expected_entities_dataset:
             raise ValueError(
-                f"Found dataset {dataset} does not match expected dataset {expected_dataset}"
+                f"Found dataset {dataset} does not match expected dataset {expected_entities_dataset}"
             )
 
         if association_table_name not in data_dict:
@@ -577,6 +558,8 @@ class FakeReadFromBigQueryFactory:
         )
 
 
+# TODO(#25244): Mock the pipelines to write back to the emulator instead of real BQ and
+#  then just verify that the correct data got written to BQ at the end of the test.
 class FakeWriteToBigQuery(apache_beam.PTransform):
     """Fake PTransform that no-ops instead of writing to BQ."""
 

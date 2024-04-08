@@ -41,13 +41,6 @@
       "isOptional": true
     },
     {
-      "name": "state_data_input",
-      "label": "BigQuery dataset to query for state entities",
-      "helpText": "If specified, the pipeline will query this dataset instead of the default.",
-      "regexes": ["[0-9a-z_]+"],
-      "isOptional": true
-    },
-    {
       "name": "normalized_input",
       "label": "BigQuery dataset to query for normalized versions of entities",
       "helpText": "If specified, the pipeline will query this BigQuery dataset for normalized versions of entities.",

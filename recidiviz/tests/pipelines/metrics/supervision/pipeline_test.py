@@ -26,7 +26,10 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 from more_itertools import one
 
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_DATASET,
+    NORMALIZED_STATE_DATASET,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -118,7 +121,6 @@ from recidiviz.tests.pipelines.metrics.supervision.identifier_test import (
     create_termination_event_from_period,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
-    FAKE_PIPELINE_TESTS_INPUT_DATASET,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
@@ -515,13 +517,12 @@ class TestSupervisionPipeline(unittest.TestCase):
     ) -> None:
         """Runs a test version of the supervision pipeline."""
         project = "recidiviz-staging"
-        normalized_dataset = f"{state_code.lower()}_normalized_state"
 
-        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
-            # TODO(#25244) Replace with actual input once supported.
-            FAKE_PIPELINE_TESTS_INPUT_DATASET,
-            data_dict,
-            expected_normalized_dataset=normalized_dataset,
+        read_from_bq_constructor = (
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                expected_entities_dataset=NORMALIZED_STATE_DATASET,
+                data_dict=data_dict,
+            )
         )
         write_to_bq_constructor = (
             self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
@@ -1216,7 +1217,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             project="recidiviz-456",
             state_code="US_XX",
             pipeline="supervision_metrics",
-            state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
             output="dataset_id",

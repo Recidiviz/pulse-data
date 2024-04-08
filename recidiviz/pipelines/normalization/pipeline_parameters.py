@@ -36,14 +36,6 @@ class NormalizationPipelineParameters(PipelineParameters):
         default=STATE_BASE_DATASET, validator=attr_validators.is_str
     )
 
-    normalized_input: str = attr.ib(validator=attr_validators.is_str)
-
-    @normalized_input.default
-    def _normalized_input_default(self) -> str:
-        return normalized_state_dataset_for_state_code(
-            state_code=StateCode(self.state_code)
-        )
-
     person_filter_ids: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -60,5 +52,4 @@ class NormalizationPipelineParameters(PipelineParameters):
         return [
             *super().get_sandboxable_dataset_param_names(),
             "state_data_input",
-            "normalized_input",
         ]

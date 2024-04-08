@@ -113,23 +113,6 @@ def normalized_entity_class_with_base_class_name(
     )
 
 
-def normalized_entity_class_exists_for_base_class_with_name(
-    base_class_name: str,
-) -> bool:
-    """Returns whether there is a Normalized version of the state entity class that has
-    the |base_class_name| name.
-
-    Example behavior:
-        "StateIncarcerationPeriod" -> True (since NormalizedStateIncarcerationPeriod)
-        "StateCharge" -> False (since there is no NormalizedStateCharge)
-    """
-    try:
-        _ = normalized_entity_class_with_base_class_name(base_class_name)
-        return True
-    except ValueError:
-        return False
-
-
 def state_base_entity_class_for_entity_class(
     entity_class: Union[Type[Entity], Type[NormalizedStateEntity]]
 ) -> Type[Entity]:

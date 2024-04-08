@@ -21,6 +21,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Type
 
 import mock
 
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -52,7 +53,6 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
-    FAKE_PIPELINE_TESTS_INPUT_DATASET,
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
 )
@@ -96,10 +96,11 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         """Runs a test version of the normalization pipeline."""
         project = "recidiviz-staging"
 
-        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
-            # TODO(#25244) Replace with actual input once supported.
-            FAKE_PIPELINE_TESTS_INPUT_DATASET,
-            data_dict,
+        read_from_bq_constructor = (
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                expected_entities_dataset=STATE_BASE_DATASET,
+                data_dict=data_dict,
+            )
         )
         write_to_bq_constructor = self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
             f"{state_code.lower()}_normalized_state",
