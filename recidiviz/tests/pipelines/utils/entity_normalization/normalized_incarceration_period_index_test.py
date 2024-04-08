@@ -50,7 +50,7 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
     """Tests the index_incarceration_periods_by_admission_date function."""
 
-    def test_index_incarceration_periods_by_admission_date(self):
+    def test_index_incarceration_periods_by_admission_date(self) -> None:
         """Tests the index_incarceration_periods_by_admission_date function."""
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -73,7 +73,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             {incarceration_period.admission_date: [incarceration_period]},
         )
 
-    def test_index_incarceration_periods_by_admission_date_multiple(self):
+    def test_index_incarceration_periods_by_admission_date_multiple(self) -> None:
         """Tests the index_incarceration_periods_by_admission_date function
         when there are multiple incarceration periods."""
 
@@ -112,7 +112,9 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             },
         )
 
-    def test_index_incarceration_periods_by_admission_date_multiple_in_day(self):
+    def test_index_incarceration_periods_by_admission_date_multiple_in_day(
+        self,
+    ) -> None:
         """Tests the index_incarceration_periods_by_admission_date function when there are multiple incarceration
         periods with the same admission dates."""
 
@@ -152,7 +154,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             incarceration_period_index.incarceration_periods_by_admission_date,
         )
 
-    def test_index_incarceration_periods_by_admission_date_none(self):
+    def test_index_incarceration_periods_by_admission_date_none(self) -> None:
         """Tests the index_incarceration_periods_by_admission_date function
         when there are no incarceration periods."""
         incarceration_period_index = default_normalized_ip_index_for_tests()
@@ -165,7 +167,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
 class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
     """Tests the months_excluded_from_supervision_population function."""
 
-    def test_months_excluded_from_supervision_population_incarcerated(self):
+    def test_months_excluded_from_supervision_population_incarcerated(self) -> None:
         """Tests the months_excluded_from_supervision_population function."""
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -188,7 +190,9 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             {(2018, 7), (2018, 8), (2018, 9), (2018, 10), (2018, 11)},
         )
 
-    def test_months_excluded_from_supervision_population_incarcerated_on_first(self):
+    def test_months_excluded_from_supervision_population_incarcerated_on_first(
+        self,
+    ) -> None:
         """Tests the months_excluded_from_supervision_population function where the person
         was incarcerated on the first of the month."""
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -212,7 +216,9 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             {(2018, 8), (2018, 9), (2018, 10), (2018, 11)},
         )
 
-    def test_months_excluded_from_supervision_population_released_last_day(self):
+    def test_months_excluded_from_supervision_population_released_last_day(
+        self,
+    ) -> None:
         """Tests the months_excluded_from_supervision_population function where the person
         was released on the last day of a month."""
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -239,7 +245,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             },
         )
 
-    def test_months_excluded_from_supervision_population_no_full_months(self):
+    def test_months_excluded_from_supervision_population_no_full_months(self) -> None:
         """Tests the months_excluded_from_supervision_population function where the person
         was not incarcerated for a full month."""
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -263,7 +269,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             set(),
         )
 
-    def test_months_excluded_from_supervision_population_leap_year(self):
+    def test_months_excluded_from_supervision_population_leap_year(self) -> None:
         """Tests the months_excluded_from_supervision_population function where the person
         was incarcerated until the 28th of February during a leap year, so they
         were not incarcerated for a full month."""
@@ -288,7 +294,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             set(),
         )
 
-    def test_identify_months_fully_incarcerated_two_consecutive_periods(self):
+    def test_identify_months_fully_incarcerated_two_consecutive_periods(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             sequence_num=0,
@@ -333,7 +339,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
 
     def test_identify_months_fully_incarcerated_two_consecutive_periods_do_not_cover(
         self,
-    ):
+    ) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             sequence_num=0,
@@ -380,13 +386,13 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
 class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCase):
     """Tests the month_to_overlapping_ips_not_under_supervision_authority initialization function."""
 
-    def test_no_periods(self):
+    def test_no_periods(self) -> None:
         index = default_normalized_ip_index_for_tests()
         self.assertEqual(
             index.month_to_overlapping_ips_not_under_supervision_authority, {}
         )
 
-    def test_one_period_start_end_middle_of_months(self):
+    def test_one_period_start_end_middle_of_months(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             sequence_num=0,
             incarceration_period_id=444,
@@ -415,7 +421,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             index.month_to_overlapping_ips_not_under_supervision_authority, expected
         )
 
-    def test_one_period_start_end_exactly_on_month(self):
+    def test_one_period_start_end_exactly_on_month(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             sequence_num=0,
             incarceration_period_id=444,
@@ -441,7 +447,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
         )
 
     @freeze_time("2008-04-01")
-    def test_period_no_termination(self):
+    def test_period_no_termination(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             sequence_num=0,
             incarceration_period_id=444,
@@ -469,7 +475,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             index.month_to_overlapping_ips_not_under_supervision_authority, expected
         )
 
-    def test_multiple_periods(self):
+    def test_multiple_periods(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
             sequence_num=0,
@@ -514,7 +520,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             index.month_to_overlapping_ips_not_under_supervision_authority, expected
         )
 
-    def test_period_starts_ends_same_month(self):
+    def test_period_starts_ends_same_month(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             sequence_num=0,
             incarceration_period_id=444,
@@ -540,7 +546,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             index.month_to_overlapping_ips_not_under_supervision_authority, expected
         )
 
-    def test_multiple_periods_one_under_supervision_authority(self):
+    def test_multiple_periods_one_under_supervision_authority(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
             sequence_num=0,
@@ -705,7 +711,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
         range_start_num_days_from_periods_start: int,
         range_end_num_days_from_periods_end: int,
         is_excluded_from_supervision_population: bool,
-    ):
+    ) -> None:
         """Runs a test for the is_excluded_from_supervision_population function with the given parameters."""
         period_range_start = incarceration_periods[0].admission_date
         if not period_range_start:
@@ -735,7 +741,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
                 index.is_excluded_from_supervision_population_for_range(time_range)
             )
 
-    def test_no_periods(self):
+    def test_no_periods(self) -> None:
         index = default_normalized_ip_index_for_tests()
         self.assertFalse(
             index.is_excluded_from_supervision_population_for_range(
@@ -774,7 +780,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
         )
 
     @freeze_time("2008-07-18")
-    def test_one_period_ranges_do_not_overlap(self):
+    def test_one_period_ranges_do_not_overlap(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=360,
@@ -818,7 +824,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
         )
 
     @freeze_time("2008-07-18")
-    def test_one_period_ranges_overlap_partially(self):
+    def test_one_period_ranges_overlap_partially(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=-2,
@@ -861,7 +867,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             is_excluded_from_supervision_population=False,
         )
 
-    def test_one_period_ranges_overlap_partially_off_by_one_day(self):
+    def test_one_period_ranges_overlap_partially_off_by_one_day(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=-1,
@@ -904,7 +910,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             is_excluded_from_supervision_population=False,
         )
 
-    def test_one_period_range_overlaps_with_extra(self):
+    def test_one_period_range_overlaps_with_extra(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=5,
@@ -926,7 +932,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             is_excluded_from_supervision_population=True,
         )
 
-    def test_ranges_overlap_exactly(self):
+    def test_ranges_overlap_exactly(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=0,
@@ -985,7 +991,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             is_excluded_from_supervision_population=True,
         )
 
-    def test_two_consecutive_periods_ranges_do_not_overlap(self):
+    def test_two_consecutive_periods_ranges_do_not_overlap(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=360,
@@ -1021,7 +1027,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             is_excluded_from_supervision_population=False,
         )
 
-    def test_two_consecutive_periods_ranges_overlap_partially(self):
+    def test_two_consecutive_periods_ranges_overlap_partially(self) -> None:
         self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=-2,
@@ -1073,7 +1079,7 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
 
     def test_incarceration_periods_that_exclude_person_from_supervision_population(
         self,
-    ):
+    ) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=444,
             sequence_num=0,
@@ -1112,7 +1118,7 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
 
     def test_incarceration_periods_that_exclude_person_from_supervision_population_all_authorities(
         self,
-    ):
+    ) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             sequence_num=0,
             incarceration_period_id=444,
@@ -1151,7 +1157,7 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
 class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
     """Tests the original_admission_reasons_by_period_id function."""
 
-    def test_original_admission_reasons_by_period_id(self):
+    def test_original_admission_reasons_by_period_id(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
@@ -1196,7 +1202,9 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
         self.assertEqual(expected_output, original_admission_reasons_by_period_id)
 
-    def test_original_admission_reasons_by_period_id_multiple_official_admissions(self):
+    def test_original_admission_reasons_by_period_id_multiple_official_admissions(
+        self,
+    ) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
@@ -1278,7 +1286,9 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
         self.assertEqual(expected_output, original_admission_reasons_by_period_id)
 
-    def test_original_admission_reasons_by_period_id_multiple_transfer_periods(self):
+    def test_original_admission_reasons_by_period_id_multiple_transfer_periods(
+        self,
+    ) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
@@ -1355,7 +1365,9 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
         self.assertEqual(expected_output, original_admission_reasons_by_period_id)
 
-    def test_original_admission_reasons_by_period_id_no_official_admission(self):
+    def test_original_admission_reasons_by_period_id_no_official_admission(
+        self,
+    ) -> None:
         # The first incarceration period always counts as the official start of incarceration
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
@@ -1402,7 +1414,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
     def test_original_admission_reasons_by_period_id_not_official_admission_after_official_release(
         self,
-    ):
+    ) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
@@ -1452,7 +1464,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
     def test_original_admission_reasons_by_period_id_not_official_admission_after_not_official_release(
         self,
-    ):
+    ) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,

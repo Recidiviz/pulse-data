@@ -86,7 +86,7 @@ class TestSchemaNoReservedKeywords(TestCase):
     any reserved keywords for Postgres or BigQuery.
     """
 
-    def testNoReservedKeywords(self):
+    def testNoReservedKeywords(self) -> None:
         for table in get_all_table_classes():
             self.assertNotIn(table.name.lower(), RESERVED_WORDS)
 

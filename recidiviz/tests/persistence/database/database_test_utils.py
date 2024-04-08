@@ -40,7 +40,7 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 
 
 def generate_test_supervision_violation_response_decision_entry(
-    person_id,
+    person_id: int,
 ) -> state_schema.StateSupervisionViolationResponseDecisionEntry:
     return state_schema.StateSupervisionViolationResponseDecisionEntry(
         supervision_violation_response_decision_entry_id=123,
@@ -52,7 +52,7 @@ def generate_test_supervision_violation_response_decision_entry(
 
 
 def generate_test_supervision_violation_response(
-    person_id,
+    person_id: int,
     decisions: Optional[
         List[state_schema.StateSupervisionViolationResponseDecisionEntry]
     ] = None,
@@ -78,7 +78,7 @@ def generate_test_supervision_violation_response(
     return instance
 
 
-def generate_test_assessment(person_id) -> state_schema.StateAssessment:
+def generate_test_assessment(person_id: int) -> state_schema.StateAssessment:
     instance = state_schema.StateAssessment(
         assessment_id=345,
         external_id="external_id",
@@ -91,7 +91,7 @@ def generate_test_assessment(person_id) -> state_schema.StateAssessment:
 
 
 def generate_test_supervision_case_type(
-    person_id,
+    person_id: int,
 ) -> state_schema.StateSupervisionCaseTypeEntry:
     instance = state_schema.StateSupervisionCaseTypeEntry(
         person_id=person_id,
@@ -105,7 +105,7 @@ def generate_test_supervision_case_type(
 
 
 def generate_test_supervision_contact(
-    person_id,
+    person_id: int,
 ) -> state_schema.StateSupervisionContact:
     instance = state_schema.StateSupervisionContact(
         person_id=person_id,
@@ -119,7 +119,7 @@ def generate_test_supervision_contact(
 
 
 def generate_test_supervision_violation(
-    person_id, supervision_violation_responses
+    person_id: int, supervision_violation_responses
 ) -> state_schema.StateSupervisionViolation:
     """Generates a test StateSupervisionViolation."""
     supervision_violation_id = 321
@@ -156,7 +156,7 @@ def generate_test_supervision_violation(
 
 
 def generate_test_supervision_period(
-    person_id, case_types
+    person_id: int, case_types
 ) -> state_schema.StateSupervisionPeriod:
     instance = state_schema.StateSupervisionPeriod(
         supervision_period_id=4444,
@@ -170,7 +170,7 @@ def generate_test_supervision_period(
 
 
 def generate_test_incarceration_incident_outcome(
-    person_id,
+    person_id: int,
 ) -> state_schema.StateIncarcerationIncidentOutcome:
     instance = state_schema.StateIncarcerationIncidentOutcome(
         incarceration_incident_outcome_id=3211,
@@ -183,7 +183,7 @@ def generate_test_incarceration_incident_outcome(
 
 
 def generate_test_incarceration_incident(
-    person_id, incarceration_incident_outcomes
+    person_id: int, incarceration_incident_outcomes
 ) -> state_schema.StateIncarcerationIncident:
     instance = state_schema.StateIncarcerationIncident(
         incarceration_incident_id=321,
@@ -197,7 +197,7 @@ def generate_test_incarceration_incident(
 
 
 def generate_test_incarceration_period(
-    person_id,
+    person_id: int,
 ) -> state_schema.StateIncarcerationPeriod:
     instance = state_schema.StateIncarcerationPeriod(
         incarceration_period_id=5555,
@@ -225,7 +225,7 @@ def generate_test_charge(
 
 
 def generate_test_supervision_sentence(
-    person_id, charges, early_discharges=None
+    person_id: int, charges, early_discharges=None
 ) -> state_schema.StateSupervisionSentence:
     instance = state_schema.StateSupervisionSentence(
         supervision_sentence_id=1111,
@@ -241,7 +241,7 @@ def generate_test_supervision_sentence(
 
 
 def generate_test_incarceration_sentence(
-    person_id, charges=None, early_discharges=None
+    person_id: int, charges=None, early_discharges=None
 ) -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
@@ -257,7 +257,7 @@ def generate_test_incarceration_sentence(
     return instance
 
 
-def generate_test_early_discharge(person_id) -> state_schema.StateEarlyDischarge:
+def generate_test_early_discharge(person_id: int) -> state_schema.StateEarlyDischarge:
     instance = state_schema.StateEarlyDischarge(
         early_discharge_id=1,
         external_id="external_id",
@@ -268,7 +268,9 @@ def generate_test_early_discharge(person_id) -> state_schema.StateEarlyDischarge
     return instance
 
 
-def generate_test_program_assignment(person_id) -> state_schema.StateProgramAssignment:
+def generate_test_program_assignment(
+    person_id: int,
+) -> state_schema.StateProgramAssignment:
     instance = state_schema.StateProgramAssignment(
         program_assignment_id=1,
         external_id="external_id",

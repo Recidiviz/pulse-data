@@ -676,7 +676,7 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         if (
             self.conducting_staff_external_id is None
             and self.conducting_staff_external_id_type is not None
@@ -1174,7 +1174,7 @@ class StateSupervisionPeriod(
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.termination_date
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         if (
             self.supervising_officer_staff_external_id is None
             and self.supervising_officer_staff_external_id_type is not None
@@ -1583,7 +1583,7 @@ class StateSupervisionViolationResponse(
             )
         ]
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         if (
             self.deciding_staff_external_id is None
             and self.deciding_staff_external_id_type is not None
@@ -1662,7 +1662,7 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
             )
         ]
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         if (
             self.referring_staff_external_id is None
             and self.referring_staff_external_id_type is not None
@@ -1838,7 +1838,7 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
             )
         ]
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         if (
             self.contacting_staff_external_id is None
             and self.contacting_staff_external_id_type is not None
@@ -2046,7 +2046,7 @@ class StateTaskDeadline(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entit
         """StateTaskDeadline ledger updates happen on update_datetime."""
         return self.update_datetime
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """StateTaskDeadlines have an eligible date before a due date."""
         self.assert_datetime_less_than(self.eligible_date, self.due_date)
 
@@ -2681,7 +2681,7 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
         return self.length_update_datetime
 
     # TODO(#27577) Better understand projected dates and enforce them properly.
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """Ensures that parole eligibility is before potential completions and
         that projected completion dates are in the right order."""
         self.assert_datetime_less_than(
@@ -2741,7 +2741,7 @@ class StateSentenceGroup(
     person: Optional["StatePerson"] = attr.ib(default=None)
 
     # TODO(#27577) Better understand projected dates and enforce them properly.
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """Ensures that parole eligibility is before potential completions and
         that projected completion dates are in the right order."""
         self.assert_datetime_less_than(

@@ -32,7 +32,7 @@ class CoreEntity:
     our database schema, whether or not they are actual SQLAlchemy objects."""
 
     # Consider CoreEntity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is CoreEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
@@ -58,7 +58,7 @@ class CoreEntity:
             id_name = id_name.replace("state_", "")
         return id_name
 
-    def get_id(self):
+    def get_id(self) -> int:
         return getattr(self, self.get_class_id_name())
 
     @classmethod
@@ -72,10 +72,10 @@ class CoreEntity:
     def get_entity_name(cls) -> str:
         return to_snake_case(cls.__name__)
 
-    def clear_id(self):
+    def clear_id(self) -> None:
         setattr(self, self.get_class_id_name(), None)
 
-    def set_id(self, entity_id: int):
+    def set_id(self, entity_id: int) -> None:
         return setattr(self, self.get_class_id_name(), entity_id)
 
     def get_external_id(self) -> Optional[str]:
@@ -92,7 +92,7 @@ class CoreEntity:
             return field
         return [field]
 
-    def get_field(self, field_name: str):
+    def get_field(self, field_name: str) -> Any:
         if not hasattr(self, field_name):
             raise ValueError(
                 f"Expected entity {type(self)} to have field {field_name}, "
@@ -100,7 +100,7 @@ class CoreEntity:
             )
         return getattr(self, field_name)
 
-    def set_field(self, field_name: str, value: Any):
+    def set_field(self, field_name: str, value: Any) -> None:
         if not hasattr(self, field_name):
             raise ValueError(
                 f"Expected entity {type(self)} to have field {field_name}, "
@@ -108,7 +108,7 @@ class CoreEntity:
             )
         return setattr(self, field_name, value)
 
-    def clear_field(self, field_name: str):
+    def clear_field(self, field_name: str) -> None:
         """Clears the provided |field_name| off of the CoreEntity."""
         field = self.get_field(field_name)
         if isinstance(field, list):
@@ -116,7 +116,7 @@ class CoreEntity:
         else:
             self.set_field(field_name, None)
 
-    def set_field_from_list(self, field_name: str, value: List):
+    def set_field_from_list(self, field_name: str, value: List) -> None:
         """Given the provided |value|, sets the value onto the provided |entity|
         based on the given |field_name|.
         """

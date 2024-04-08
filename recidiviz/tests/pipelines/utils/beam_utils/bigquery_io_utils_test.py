@@ -27,7 +27,7 @@ from recidiviz.pipelines.utils.beam_utils import bigquery_io_utils
 class TestBeamUtils(unittest.TestCase):
     """Tests for the beam_utils functions."""
 
-    def testConvertDictToKVTuple(self):
+    def testConvertDictToKVTuple(self) -> None:
         test_input = [
             {"key_field": "a", "other_field": "x"},
             {"key_field": "b", "other_field": "y"},
@@ -51,7 +51,7 @@ class TestBeamUtils(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testConvertDictToKVTuple_InvalidKey(self):
+    def testConvertDictToKVTuple_InvalidKey(self) -> None:
         test_input = [
             {"key_field": "a", "other_field": "x"},
             {"key_field": "b", "other_field": "y"},

@@ -52,7 +52,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
 class TestStateEntities(TestCase):
     """Tests for state/entities.py"""
 
-    def test_classes_have_eq_equal_false(self):
+    def test_classes_have_eq_equal_false(self) -> None:
         for entity_class in get_all_entity_classes_in_module(entities):
             self.assertEqual(
                 entity_class.__eq__,
@@ -63,11 +63,11 @@ class TestStateEntities(TestCase):
                 f"declaration?",
             )
 
-    def test_all_entity_class_names_prefixed_with_state(self):
+    def test_all_entity_class_names_prefixed_with_state(self) -> None:
         for cls in get_all_entity_classes_in_module(entities):
             self.assertTrue(cls.__name__.startswith("State"))
 
-    def test_all_entity_classes_have_expected_primary_id(self):
+    def test_all_entity_classes_have_expected_primary_id(self) -> None:
         for cls in get_all_entity_classes_in_module(entities):
             key_name = primary_key_name_from_cls(cls)
             self.assertTrue(
@@ -83,7 +83,7 @@ class TestStateEntities(TestCase):
                 f"key [{key_name}] of class [{cls}].",
             )
 
-    def test_all_classes_have_a_non_optional_state_code(self):
+    def test_all_classes_have_a_non_optional_state_code(self) -> None:
         for cls in get_all_entity_classes_in_module(entities):
             self.assertTrue(
                 "state_code" in attr.fields_dict(cls),
@@ -97,7 +97,7 @@ class TestStateEntities(TestCase):
                 f"|state_code| field of class [{cls}].",
             )
 
-    def test_all_enum_entity_class_structure(self):
+    def test_all_enum_entity_class_structure(self) -> None:
         for cls in get_all_entity_classes_in_module(entities):
             if not issubclass(cls, EnumEntity):
                 continue
@@ -126,7 +126,7 @@ class TestStateEntities(TestCase):
                 f"nonnull.",
             )
 
-    def test_all_classes_have_person_or_staff_reference(self):
+    def test_all_classes_have_person_or_staff_reference(self) -> None:
         classes_without_a_person_or_staff_ref = [
             entities.StatePerson,
             entities.StateStaff,
@@ -165,19 +165,19 @@ class TestStateEntities(TestCase):
                     f"field of class [{cls}].",
                 )
 
-    def test_person_equality_no_backedges(self):
+    def test_person_equality_no_backedges(self) -> None:
         person1 = generate_full_graph_state_person(set_back_edges=False)
         person2 = generate_full_graph_state_person(set_back_edges=False)
 
         self.assertEqual(person1, person2)
 
-    def test_person_equality_with_backedges(self):
+    def test_person_equality_with_backedges(self) -> None:
         person1 = generate_full_graph_state_person(set_back_edges=True)
         person2 = generate_full_graph_state_person(set_back_edges=True)
 
         self.assertEqual(person1, person2)
 
-    def test_person_equality_ignore_list_ordering(self):
+    def test_person_equality_ignore_list_ordering(self) -> None:
         person1 = generate_full_graph_state_person(set_back_edges=True)
         person2 = generate_full_graph_state_person(set_back_edges=True)
 
@@ -194,7 +194,7 @@ class TestStateEntities(TestCase):
 
         self.assertNotEqual(person1, person2)
 
-    def test_person_equality_list(self):
+    def test_person_equality_list(self) -> None:
         """Test that we can compare a list of person Entity objects"""
         person1a = generate_full_graph_state_person(set_back_edges=True)
         person1b = generate_full_graph_state_person(set_back_edges=True)
@@ -417,7 +417,7 @@ class TestStateLedgerEntities(TestCase):
     external_id = "EXTERNAL-ID"
     state_code = "US_XX"
 
-    def test_all_ledgers_have_is_not_future_test(self):
+    def test_all_ledgers_have_is_not_future_test(self) -> None:
         """Tests that all ledger entities have a test checking their ledger datetimes are not in the future."""
         test_prefix = "test_ledger_datetime_is_not_future_"
         tests = {func for func in dir(self) if func.startswith(test_prefix)}
@@ -434,7 +434,7 @@ class TestStateLedgerEntities(TestCase):
                 ),
             )
 
-    def test_all_ledgers_have_partition_key_test(self):
+    def test_all_ledgers_have_partition_key_test(self) -> None:
         """Tests that all ledger entities have a test that checks that they have a well-defined partition key."""
         test_prefix = "test_ledger_partition_key_"
         tests = {func for func in dir(self) if func.startswith(test_prefix)}

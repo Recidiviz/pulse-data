@@ -25,7 +25,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
     """Tests the functionality of the validate_deprecated_entity_field_for_states
     function."""
 
-    def test_validate_deprecated_entity_field_for_states(self):
+    def test_validate_deprecated_entity_field_for_states(self) -> None:
         """Tests that the validate_deprecated_entity_field_for_states function will
         raise an error if an entity is instantiated with a deprecated field for the
         given state."""
@@ -49,7 +49,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
                 e,
             )
 
-    def test_validate_deprecated_entity_field_for_states_relationship(self):
+    def test_validate_deprecated_entity_field_for_states_relationship(self) -> None:
         """Tests that the validate_deprecated_entity_field_for_states function will
         raise an error if an entity is instantiated with a deprecated field for the
         given state."""
@@ -78,7 +78,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
                 e,
             )
 
-    def test_validate_deprecated_entity_field_for_states_not_deprecated(self):
+    def test_validate_deprecated_entity_field_for_states_not_deprecated(self) -> None:
         """Tests that the validate_deprecated_entity_field_for_states function will
         not raise an error if an entity is instantiated with a field that is not
         deprecated for the given state."""
@@ -96,7 +96,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
             deprecated_state_codes=["US_XX", "US_YY"],
         )
 
-    def test_validate_deprecated_entity_field_for_states_deprecated_unset(self):
+    def test_validate_deprecated_entity_field_for_states_deprecated_unset(self) -> None:
         """Tests that the validate_deprecated_entity_field_for_states function will
         not raise an error if a field is deprecated for the given state, but the
         field is empty on the entity."""
@@ -118,7 +118,7 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
     """Tests the functionality of the validate_deprecated_entity_for_states
     function."""
 
-    def test_validate_deprecated_entity_field_for_states(self):
+    def test_validate_deprecated_entity_field_for_states(self) -> None:
         """Tests that the validate_deprecated_entity_for_states function will
         raise an error if a deprecated entity is instantiated for the given state."""
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -138,7 +138,7 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
                 e,
             )
 
-    def test_validate_deprecated_entity_for_states_not_deprecated(self):
+    def test_validate_deprecated_entity_for_states_not_deprecated(self) -> None:
         """Tests that the validate_deprecated_entity_for_states function will
         not raise an error if an entity is instantiated that is not deprecated for
         the given state."""

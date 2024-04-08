@@ -1098,7 +1098,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateSentenceServingPeriod(self):
+    def test_deserialize_StateSentenceServingPeriod(self) -> None:
         result = (
             deserialize_entity_factories.StateSentenceServingPeriodFactory.deserialize(
                 sentence_serving_period_id=1,
@@ -1117,7 +1117,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateChargeV2(self):
+    def test_deserialize_StateChargeV2(self) -> None:
         # TODO(#26240): Replace StateChargeFactory with this one
         result = deserialize_entity_factories.StateChargeV2Factory.deserialize(
             charge_v2_id=1,
@@ -1141,7 +1141,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateSentenceStatusSnapshot(self):
+    def test_deserialize_StateSentenceStatusSnapshot(self) -> None:
         result = (
             deserialize_entity_factories.StateSentenceStatusSnapshotFactory.deserialize(
                 state_code="US_XX",
@@ -1158,7 +1158,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateSentenceLength(self):
+    def test_deserialize_StateSentenceLength(self) -> None:
         result = deserialize_entity_factories.StateSentenceLengthFactory.deserialize(
             state_code="US_XX",
             length_update_datetime="2023-01-01",
@@ -1171,7 +1171,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateSentenceGroup(self):
+    def test_deserialize_StateSentenceGroup(self) -> None:
         result = deserialize_entity_factories.StateSentenceGroupFactory.deserialize(
             external_id="SENTENCE-GROUP-LEDGER-ID",
             state_code="US_XX",

@@ -76,7 +76,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
         for case_type in StateSupervisionCaseType:
             self.assertIn(case_type, CASE_TYPE_SEVERITY_ORDER)
 
-    def test_identify_most_severe_case_type(self):
+    def test_identify_most_severe_case_type(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",
@@ -95,7 +95,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
 
         self.assertEqual(most_severe_case_type, StateSupervisionCaseType.SEX_OFFENSE)
 
-    def test_identify_most_severe_case_type_test_all_types(self):
+    def test_identify_most_severe_case_type_test_all_types(self) -> None:
         for case_type in StateSupervisionCaseType:
             supervision_period = StateSupervisionPeriod.new_with_defaults(
                 state_code="US_XX",
@@ -111,7 +111,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
 
             self.assertEqual(most_severe_case_type, case_type)
 
-    def test_identify_most_severe_case_type_no_type_entries(self):
+    def test_identify_most_severe_case_type_no_type_entries(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             external_id="sp1",

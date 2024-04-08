@@ -255,7 +255,7 @@ class DefaultableAttr:
     """Mixin to add method to attr class that creates default object"""
 
     # DefaultableAttr can only be mixed in with an attr class
-    def __new__(cls: Any, *_args: Any, **_kwargs: Any) -> Any:
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if not attr.has(cls):
             raise TypeError("Parent class must be an attr class")
         return super().__new__(cls)
@@ -298,7 +298,7 @@ class BuildableAttr:
     """Mixin used to make attr object buildable"""
 
     # BuildableAttr can only be mixed in with an attr class
-    def __new__(cls: Any, *_args: Any, **_kwargs: Any) -> Any:
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if not attr.has(cls):
             raise TypeError("Parent class must be an attr class")
         return super().__new__(cls)

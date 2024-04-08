@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state/schema_entity_converter.py."""
-from typing import List
+from typing import List, Type
 from unittest import TestCase
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -33,7 +33,9 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
 class TestStateSchemaEntityConverter(TestCase):
     """Tests for state/schema_entity_converter.py."""
 
-    def _get_schema_class_for_objects(self, schema_objects: List[DatabaseEntity]):
+    def _get_schema_class_for_objects(
+        self, schema_objects: List[DatabaseEntity]
+    ) -> Type:
         schema_classes = list({obj.__class__ for obj in schema_objects})
 
         self.assertTrue(len(schema_classes), 1)
@@ -45,7 +47,7 @@ class TestStateSchemaEntityConverter(TestCase):
         expected_entities: List[Entity],
         populate_back_edges: bool,
         debug: bool = False,
-    ):
+    ) -> None:
         """
         Runs a test that takes in entities,
         converts them to schema objects and back, optionally writing to the DB,
@@ -82,28 +84,28 @@ class TestStateSchemaEntityConverter(TestCase):
 
         self.assertCountEqual(result, expected_entities)
 
-    def test_convertPerson_withBackEdges_populateBackEdges(self):
+    def test_convertPerson_withBackEdges_populateBackEdges(self) -> None:
         input_person = generate_full_graph_state_person(set_back_edges=True)
         expected_person = generate_full_graph_state_person(set_back_edges=True)
         self._run_convert_test(
             [input_person], [expected_person], populate_back_edges=True
         )
 
-    def test_convertPerson_withBackEdges_dontPopulateBackEdges(self):
+    def test_convertPerson_withBackEdges_dontPopulateBackEdges(self) -> None:
         input_person = generate_full_graph_state_person(set_back_edges=True)
         expected_person = generate_full_graph_state_person(set_back_edges=False)
         self._run_convert_test(
             [input_person], [expected_person], populate_back_edges=False
         )
 
-    def test_convertPerson_noBackEdges_populateBackEdges(self):
+    def test_convertPerson_noBackEdges_populateBackEdges(self) -> None:
         input_person = generate_full_graph_state_person(set_back_edges=False)
         expected_person = generate_full_graph_state_person(set_back_edges=True)
         self._run_convert_test(
             [input_person], [expected_person], populate_back_edges=True, debug=True
         )
 
-    def test_convertPerson_noBackEdges_dontPopulateBackEdges(self):
+    def test_convertPerson_noBackEdges_dontPopulateBackEdges(self) -> None:
         input_person = generate_full_graph_state_person(set_back_edges=False)
         expected_person = generate_full_graph_state_person(set_back_edges=False)
         self._run_convert_test(

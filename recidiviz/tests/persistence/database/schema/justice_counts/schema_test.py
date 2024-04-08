@@ -57,7 +57,7 @@ class TestSchema(TestCase):
             cls.temp_db_dir
         )
 
-    def testSchema_insertRows_returnedInQuery(self):
+    def testSchema_insertRows_returnedInQuery(self) -> None:
         # Create an object of each type with proper relationships
         with SessionFactory.using_database(self.database_key) as act_session:
             source = schema.Source(name="Test Source")
@@ -124,7 +124,7 @@ class TestSchema(TestCase):
                 project,
             )
 
-    def testSchema_agency_location_info(self):
+    def testSchema_agency_location_info(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as assert_session:
@@ -150,7 +150,7 @@ class TestSchema(TestCase):
                 )
                 assert_session.add(agency)
 
-    def test_system_sorting(self):
+    def test_system_sorting(self) -> None:
         unordered_systems = [schema.System.SUPERVISION, schema.System.PRISONS]
         ordered_systems = [schema.System.PRISONS, schema.System.SUPERVISION]
         self.assertEqual(schema.System.sort(unordered_systems), ordered_systems)

@@ -66,7 +66,7 @@ class SimpsonsFamily:
     set.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.root = entities.Root.new_with_defaults(
             root_id=314, type=RootType.SIMPSONS, parents=[]
         )
@@ -115,7 +115,7 @@ class TestBaseSchemaEntityConverter(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def test_add_behavior(self):
+    def test_add_behavior(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -162,7 +162,7 @@ class TestBaseSchemaEntityConverter(TestCase):
             self.assertEqual(len(children), 1)
             self.assertEqual(len(children[0].parents), 1)
 
-    def test_add_behavior_2(self):
+    def test_add_behavior_2(self) -> None:
         parent = entities.Parent.new_with_defaults(
             full_name="Krusty the Clown",
         )
@@ -193,7 +193,7 @@ class TestBaseSchemaEntityConverter(TestCase):
             parents = session.query(schema.Parent).all()
             self.assertEqual(len(parents), 1)
 
-    def test_convert_single_node(self):
+    def test_convert_single_node(self) -> None:
         parent = entities.Parent.new_with_defaults(
             parent_id=1234, full_name="Krusty the Clown", children=[]
         )
@@ -216,7 +216,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
             self.assertEqual(parent, converted_parent)
 
-    def test_convert_single_node_no_primary_key(self):
+    def test_convert_single_node_no_primary_key(self) -> None:
         parent = entities.Parent.new_with_defaults(
             full_name="Krusty the Clown", children=[]
         )
@@ -286,7 +286,7 @@ class TestBaseSchemaEntityConverter(TestCase):
                 for converted_child in converted_parent.children:
                     self._check_parents(converted_child, parent_entities)
 
-    def test_convert_many_to_many_full_graph(self):
+    def test_convert_many_to_many_full_graph(self) -> None:
         """
         Tests conversion on a many-to-many schema where all edges are
         explicitly represented on entities.
@@ -302,7 +302,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
-    def test_convert_many_to_many_partial_graph_1(self):
+    def test_convert_many_to_many_partial_graph_1(self) -> None:
         """
         Tests conversion on a many-to-many schema where all edges can be
         inferred but are not explicitly set.
@@ -315,7 +315,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
-    def test_convert_many_to_many_partial_graph_2(self):
+    def test_convert_many_to_many_partial_graph_2(self) -> None:
         """
         Tests conversion on a many-to-many schema where all edges can be
         inferred but are not explicitly set.
@@ -330,7 +330,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
-    def test_convert_many_to_many_partial_graph_3(self):
+    def test_convert_many_to_many_partial_graph_3(self) -> None:
         """
         Tests conversion on a many-to-many schema where all edges can be
         inferred but are not explicitly set.
@@ -346,7 +346,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
-    def test_convert_many_to_many_partial_graph_4(self):
+    def test_convert_many_to_many_partial_graph_4(self) -> None:
         """
         Tests conversion on a mnay-to-many schema where the parent->children relationship
         is a diamond.
@@ -359,7 +359,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self._run_nuclear_family_test([family.homer, family.marge], [family.bart])
 
-    def test_simple_tree(self):
+    def test_simple_tree(self) -> None:
         """
         Tests converting a simple graph with one root node and one child
         """
@@ -385,7 +385,7 @@ class TestBaseSchemaEntityConverter(TestCase):
             self.assertEqual(converted_root.parents[0], family.homer)
             self.assertEqual(converted_root.parents[0].children, [])
 
-    def test_convert_rooted_graph(self):
+    def test_convert_rooted_graph(self) -> None:
         """
         Tests converting a graph that has a single root node that is connected
         either directly or indirectly to all entities.
@@ -420,7 +420,7 @@ class TestBaseSchemaEntityConverter(TestCase):
                 for converted_child in converted_parent.children:
                     self._check_parents(converted_child, family.parent_entities)
 
-    def test_many_to_one_no_backref(self):
+    def test_many_to_one_no_backref(self) -> None:
         family = SimpsonsFamily()
         self.assertEqual(len(family.homer.children), 0)
         family.root.parents = [family.homer]

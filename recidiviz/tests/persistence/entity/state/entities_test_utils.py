@@ -128,7 +128,7 @@ def clear_db_ids(
     db_entities: Sequence[CoreEntity],
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
-):
+) -> None:
     """Clears primary key fields off of all entities in all of the provided
     |db_entities| graphs.
     """
@@ -145,7 +145,7 @@ def assert_no_unexpected_entities_in_db(
     session: Session,
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
-):
+) -> None:
     """Counts all of the entities present in the |expected_entities| graph by
     type and ensures that the same number of entities exists in the DB for each
     type.

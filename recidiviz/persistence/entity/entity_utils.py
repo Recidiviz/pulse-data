@@ -176,7 +176,9 @@ class SchemaEdgeDirectionChecker:
             >= self._class_hierarchy_map[to_class_name]
         )
 
-    def is_higher_ranked(self, cls_1: Type[CoreEntity], cls_2: Type[CoreEntity]):
+    def is_higher_ranked(
+        self, cls_1: Type[CoreEntity], cls_2: Type[CoreEntity]
+    ) -> bool:
         """Returns True if the provided |cls_1| has a higher rank than the
         provided |cls_2|.
         """
@@ -188,7 +190,7 @@ class SchemaEdgeDirectionChecker:
             < self._class_hierarchy_map[type_2_name]
         )
 
-    def assert_sorted(self, entity_types: Sequence[Type[CoreEntity]]):
+    def assert_sorted(self, entity_types: Sequence[Type[CoreEntity]]) -> None:
         """Throws if the input |entity_types| list is not in descending order
         based on class hierarchy.
         """
@@ -584,7 +586,9 @@ def _sort_based_on_flat_fields(
             _sort_based_on_flat_fields(field, field_index)
 
 
-def get_flat_fields_json_str(entity: CoreEntity, field_index: CoreEntityFieldIndex):
+def get_flat_fields_json_str(
+    entity: CoreEntity, field_index: CoreEntityFieldIndex
+) -> str:
     flat_fields_dict: Dict[str, str] = {}
     for field_name in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FLAT_FIELD
@@ -597,7 +601,7 @@ def _print_indented(s: str, indent: int, file: Optional[TextIOWrapper] = None) -
     print(f'{" " * indent}{s}', file=file)
 
 
-def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]):
+def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]) -> str:
     python_obj_id = id(entity)
 
     if python_obj_id not in id_mapping:
@@ -638,7 +642,7 @@ def print_entity_trees(
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     file: Optional[TextIOWrapper] = None,
-):
+) -> None:
     """Recursively prints out all objects in the trees below the given list of
     entities. Each time we encounter a new object, we assign a new fake id (an
     auto-incrementing count) and print that with the object.
@@ -676,7 +680,7 @@ def print_entity_tree(
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     file: Optional[TextIOWrapper] = None,
-):
+) -> None:
     """Recursively prints out all objects in the tree below the given entity. Each time we encounter a new object, we
     assign a new fake id (an auto-incrementing count) and print that with the object.
 
@@ -764,8 +768,10 @@ def print_entity_tree(
 
 
 def get_all_db_objs_from_trees(
-    db_objs: Sequence[DatabaseEntity], field_index: CoreEntityFieldIndex, result=None
-):
+    db_objs: Sequence[DatabaseEntity],
+    field_index: CoreEntityFieldIndex,
+    result: Optional[Set[DatabaseEntity]] = None,
+) -> Set[DatabaseEntity]:
     if result is None:
         result = set()
     for root_obj in db_objs:
@@ -775,7 +781,9 @@ def get_all_db_objs_from_trees(
 
 
 def get_all_db_objs_from_tree(
-    db_obj: DatabaseEntity, field_index: CoreEntityFieldIndex, result=None
+    db_obj: DatabaseEntity,
+    field_index: CoreEntityFieldIndex,
+    result: Optional[Set[DatabaseEntity]] = None,
 ) -> Set[DatabaseEntity]:
     if result is None:
         result = set()
