@@ -180,8 +180,8 @@ final_movements AS (
     ON lb.location_type_id = rb.reference_code_id
     LEFT JOIN {ADH_REFERENCE_CODE} rc2
     ON lb.county_id = rc2.reference_code_id
-    -- Omitting certain movement reason ids that are not considered incarceration admissions
-    WHERE m.movement_reason_id NOT IN ('16', '158', '2', '131', '18', '106', '105')
+    -- Omitting the 2 (Intake) and 131 (Sentenced to Prison) because it's rarely used nowadays and when it is, it's duplicate with the New Commitment movements
+    WHERE m.movement_reason_id NOT IN ('2', '131')
 ),"""
 
 # In MI, individuals are designated into different types of segregation based on a committee's decision.

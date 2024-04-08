@@ -26,11 +26,6 @@ Example Usage:
         --project-id recidiviz-staging \
         --state-code US_ND \
         --ingest-view-name elite_alias
-
-python -m recidiviz.tools.ingest.development.run_mappings_against_ingest_view_results \
---project-id recidiviz-staging \
---state-code US_MI \
---ingest-view-name incarceration_periods_v3
 """
 
 import argparse
