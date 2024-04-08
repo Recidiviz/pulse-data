@@ -58,7 +58,6 @@ output:
                 - IncarcerationPeriodSequenceNumber
           admission_date: StartDateTime
           release_date:
-            # TODO(#13028) Delete hard-coded logic once inactive facilities raw data issues referenced in #12001 are addressed
             $conditional:
               - $if: $variable(is_kcsc_ncsc_mcrc_mtrc_bmsp_open_period)
                 $then: $literal("1997-12-31")

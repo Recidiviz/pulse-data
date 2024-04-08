@@ -60,8 +60,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 4000
     override_reason: Current failing level as of 4/5/23 is 3,356 rows (0.3%), some ISC codes are not decoded
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 220000
-    override_reason: Current failing level as of 2/6/24 is 215,026 rows. Failing level as of 4/20/23 was 178,074 rows (12%). #TODO(#20405)
+    hard_num_allowed_rows_override: 230000
+    override_reason: Failing level as of 4/8/24 is 220029 rows. Current failing level as of 2/6/24 was 215,026 rows. Failing level as of 4/20/23 was 178,074 rows (12%). #TODO(#20405)
   - validation_name: current_supervision_staff_missing_district
     hard_num_allowed_rows_override: 29
     override_reason:

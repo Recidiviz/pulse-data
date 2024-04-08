@@ -74,10 +74,7 @@ sanitized_internal_metrics AS (
    WHERE included_in_state_population
    -- For MI, exclude incarceration periods that are TEMPORARY_CUSTODY incarceration periods inferred during normalization
    -- (which have custodial authority set to 'INTERNAL_UNKNOWN' as opposed to 'STATE_PRISON' like all other ingested incarceration periods)
-   -- For TN, exclude incarceration periods that are TEMPORARY_CUSTODY incarceration periods inferred during normalization
-   -- (which have custody_level set to 'INTERNAL_UNKNOWN' as opposed to 'CLOSE', 'MAXIMUM', 'MEDIUM' or 'MINIMUM'  for all other ingested incarceration periods)
-   AND (state_code NOT IN ('US_MI', 'US_TN') OR (state_code = 'US_MI' AND custodial_authority = 'STATE_PRISON') OR (state_code = 'US_TN' AND custody_level <> 'INTERNAL_UNKNOWN'))
-)
+   AND (state_code <> 'US_MI' OR custodial_authority = 'STATE_PRISON')
 SELECT
   region_code,
   date_of_stay,
