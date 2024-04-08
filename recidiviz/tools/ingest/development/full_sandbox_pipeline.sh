@@ -201,7 +201,8 @@ STATE_CODE_LOWERCASE=${STATE_CODE,,}                 # convert to lowercase
 STATE_CODE_FOR_JOB_NAME=${STATE_CODE_LOWERCASE//_/-} # replace underscores with dashes
 
 SANDBOX_STATE_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_state_primary"
-SANDBOX_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state"
+SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state"
+SANDBOX_NORMALIZED_DATASET="${SANDBOX_PREFIX}_normalized_state"
 SANDBOX_METRICS_DATASET="${SANDBOX_PREFIX}_dataflow_metrics"
 
 # Create datasets
@@ -241,11 +242,19 @@ confirm_cmd python -m recidiviz.tools.calculator.run_sandbox_calculation_pipelin
 	--type normalization \
 	--project "${PROJECT_ID}" \
 	--job_name "${SANDBOX_PREFIX}-${STATE_CODE_FOR_JOB_NAME}-normalization-test" \
-	--sandbox_output_dataset "${SANDBOX_NORMALIZED_DATASET}" \
+	--sandbox_output_dataset "${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET}" \
 	--state_code "${STATE_CODE}" \
 	--state_data_input "${SANDBOX_STATE_DATASET}"
 
 echo "If applicable, you should confirm that the normalization pipeline is complete before proceeding."
+
+echo "Ready to load data from ${SANDBOX_STATE_DATASET} and ${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET} into the unified ${SANDBOX_NORMALIZED_DATASET} dataset."
+confirm_cmd python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
+  --project_id "${PROJECT_ID}" \
+  --state_code "${STATE_CODE}" \
+  --input_state_dataset "${SANDBOX_STATE_DATASET}" \
+  --input_normalized_state_dataset "${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET}" \
+  --output_sandbox_prefix "${SANDBOX_PREFIX}"
 
 # Metric pipelines
 for pipeline in "${!PIPELINES[@]}"; do

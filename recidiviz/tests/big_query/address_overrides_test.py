@@ -251,6 +251,11 @@ class BigQueryAddressOverridesTest(unittest.TestCase):
                 _DATASET_1, f"my_prefix_{_DATASET_1}"
             )
 
+        # Allowed if force=True
+        builder.register_custom_dataset_override(
+            _DATASET_1, f"my_prefix_{_DATASET_1}", force_allow_custom=True
+        )
+
     def test_custom_override_and_full_dataset_override_conflict(self) -> None:
         builder = BigQueryAddressOverrides.Builder(
             sandbox_prefix="my_prefix"
