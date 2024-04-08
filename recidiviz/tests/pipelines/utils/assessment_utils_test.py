@@ -54,7 +54,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         ) -> Optional[List[StateAssessmentType]]:
             return [StateAssessmentType.LSIR]
 
-    def test_find_most_recent_applicable_assessment_LSIR(self):
+    def test_find_most_recent_applicable_assessment_LSIR(self) -> None:
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             external_id="a1",
@@ -88,7 +88,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         self.assertEqual(most_recent_assessment, assessment_1)
 
-    def test_find_most_recent_applicable_assessment_LSIR_no_matches(self):
+    def test_find_most_recent_applicable_assessment_LSIR_no_matches(self) -> None:
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             external_id="a1",
@@ -118,7 +118,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
     def test_find_most_recent_applicable_assessment_no_assessment_types_for_pipeline(
         self,
-    ):
+    ) -> None:
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             external_id="a1",
@@ -140,7 +140,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         self.assertIsNone(most_recent_assessment, assessment)
 
-    def test_find_most_recent_applicable_assessment_no_assessment_score(self):
+    def test_find_most_recent_applicable_assessment_no_assessment_score(self) -> None:
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             external_id="a1",
@@ -162,7 +162,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         self.assertIsNone(most_recent_assessment)
 
-    def test_find_most_recent_applicable_assessment_US_IX(self):
+    def test_find_most_recent_applicable_assessment_US_IX(self) -> None:
         state_code = "US_IX"
 
         lsir_assessment = NormalizedStateAssessment.new_with_defaults(
@@ -198,7 +198,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         self.assertEqual(most_recent_assessment, lsir_assessment)
 
-    def test_find_most_recent_applicable_assessment_US_ND(self):
+    def test_find_most_recent_applicable_assessment_US_ND(self) -> None:
         state_code = "US_ND"
 
         lsir_assessment = NormalizedStateAssessment.new_with_defaults(
@@ -234,7 +234,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         self.assertEqual(most_recent_assessment, lsir_assessment)
 
-    def test_find_most_recent_applicable_assessment_US_MO(self):
+    def test_find_most_recent_applicable_assessment_US_MO(self) -> None:
         state_code = "US_MO"
 
         lsir_assessment = NormalizedStateAssessment.new_with_defaults(

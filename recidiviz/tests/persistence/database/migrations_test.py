@@ -18,7 +18,7 @@
 """Basic tests that migrations are working properly."""
 
 from collections import defaultdict
-from typing import Dict, Set
+from typing import Any, Dict, Set
 from unittest.case import TestCase
 
 import pytest
@@ -352,7 +352,7 @@ class MigrationsTestBase(TestCase):
         be incorporated by existing migrations. It only reliably handles table schema.
         """
 
-        def verify_is_empty(_, __, directives) -> None:
+        def verify_is_empty(_: Any, __: Any, directives: Any) -> None:
             script = directives[0]
 
             migration_is_empty = script.upgrade_ops.is_empty()

@@ -74,7 +74,7 @@ class TestBaseEntities(unittest.TestCase):
 class TestEntityGraphEq(unittest.TestCase):
     """Tests the deep equality checks of two entities."""
 
-    def test_entity_graph_eq_state_person_simple_case(self):
+    def test_entity_graph_eq_state_person_simple_case(self) -> None:
         person_1 = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=1,

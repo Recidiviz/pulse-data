@@ -16,8 +16,11 @@
 # =============================================================================
 """Tests for schema_utils.py."""
 import unittest
-from typing import List
+from typing import Iterator, List, Type
 
+from sqlalchemy import Table
+
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
@@ -39,11 +42,13 @@ def _prefix_module_name(module_name: str, class_name_list: List[str]) -> List[st
     return [f"{module_name}.{class_name}" for class_name in class_name_list]
 
 
-def _database_entities_to_qualified_names(database_entities) -> List[str]:
+def _database_entities_to_qualified_names(
+    database_entities: List[Type[DatabaseEntity]],
+) -> List[str]:
     return [f"{cls.__module__}.{cls.__name__}" for cls in list(database_entities)]
 
 
-def _table_classes_to_qualified_names(table_classes) -> List[str]:
+def _table_classes_to_qualified_names(table_classes: Iterator[Table]) -> List[str]:
     return [f"{table.name}" for table in list(table_classes)]
 
 

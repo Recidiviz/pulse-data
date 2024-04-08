@@ -21,6 +21,7 @@ from collections import defaultdict
 from typing import (
     Any,
     Dict,
+    Generator,
     Iterable,
     List,
     NamedTuple,
@@ -36,6 +37,7 @@ from apache_beam import PCollection, Pipeline
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -739,8 +741,9 @@ class _PackageAssociationIDValues(beam.DoFn):
     # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
     # pylint: disable=W0223
 
+    # pylint: disable=arguments-differ
     def process(
-        self, element: Dict[Any, Any], *_args, **kwargs
+        self, element: Dict[Any, Any], **kwargs: str
     ) -> Iterable[Tuple[UnifyingId, EntityAssociation]]:
         root_entity_id_field = kwargs.get(ROOT_ENTITY_ID_FIELD_KEY)
         related_entity_id_field = kwargs.get(RELATED_ENTITY_ID_FIELD_KEY)
@@ -751,9 +754,6 @@ class _PackageAssociationIDValues(beam.DoFn):
 
         if unifying_id and root_entity_id and related_entity_id:
             yield unifying_id, (root_entity_id, related_entity_id)
-
-    def to_runner_api_parameter(self, unused_context):
-        pass
 
 
 class _ExtractValuesFromEntityBase(beam.PTransform):
@@ -799,7 +799,7 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
 
     def _get_entities_table_sql_query(
         self, columns_to_include: Optional[List[str]] = None
-    ):
+    ) -> str:
         if not self._entity_has_unifying_id_field():
             raise ValueError(
                 f"Shouldn't be querying table for entity {self._base_entity_class} that doesn't have field "
@@ -826,7 +826,7 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
         return entity_query
 
     @abc.abstractmethod
-    def expand(self, input_or_inputs):
+    def expand(self, input_or_inputs: PBegin) -> PCollection[Tuple[UnifyingId, Any]]:
         pass
 
 
@@ -843,7 +843,7 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         unifying_id_field: str,
         unifying_id_field_filter_set: Optional[Set[int]],
         state_code: str,
-    ):
+    ) -> None:
         super().__init__(
             project_id,
             entities_dataset,
@@ -853,7 +853,9 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
             state_code,
         )
 
-    def _get_entities_raw_pcollection(self, input_or_inputs: PBegin):
+    def _get_entities_raw_pcollection(
+        self, input_or_inputs: PBegin
+    ) -> PCollection[Dict[str, Any]]:
         if not self._entity_has_unifying_id_field():
             empty_output = (
                 input_or_inputs
@@ -873,7 +875,7 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
 
         return entities_raw
 
-    def expand(self, input_or_inputs: PBegin):
+    def expand(self, input_or_inputs: PBegin) -> PCollection[Tuple[UnifyingId, Entity]]:
         entities_raw = self._get_entities_raw_pcollection(input_or_inputs)
 
         hydrate_kwargs: Dict[str, Any] = {
@@ -912,7 +914,7 @@ class ImportTable(beam.PTransform):
         self.unifying_id_filter_set = unifying_id_filter_set
 
     # pylint: disable=arguments-renamed
-    def expand(self, pipeline: Pipeline):
+    def expand(self, pipeline: Pipeline) -> PCollection[Dict[str, Any]]:
         # Bring in the table from BigQuery
         table_query = select_query(
             project_id=self.project_id,
@@ -948,7 +950,7 @@ class ImportTableAsKVTuples(beam.PTransform):
         state_code_filter: str,
         unifying_id_field: Optional[str] = None,
         unifying_id_filter_set: Optional[Set[int]] = None,
-    ):
+    ) -> None:
         super().__init__()
         self.project_id = project_id
         self.dataset_id = dataset_id
@@ -959,7 +961,7 @@ class ImportTableAsKVTuples(beam.PTransform):
         self.unifying_id_filter_set = unifying_id_filter_set
 
     # pylint: disable=arguments-renamed
-    def expand(self, pipeline: Pipeline):
+    def expand(self, pipeline: Pipeline) -> PCollection[Tuple[Any, Dict[str, Any]]]:
         # Read in the table from BigQuery
         table_contents = (
             pipeline
@@ -1144,7 +1146,14 @@ class _ShallowHydrateEntity(beam.DoFn):
     # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
     # pylint: disable=W0223
 
-    def process(self, element: TableRow, *_args, **kwargs):
+    # pylint: disable=arguments-differ
+    def process(
+        self,
+        element: TableRow,
+        *,
+        entity_class: Type[Entity],
+        unifying_id_field: str,
+    ) -> Generator[Tuple[int, Entity], None, None]:
         """Builds an entity from key-value pairs.
 
         Args:
@@ -1161,9 +1170,11 @@ class _ShallowHydrateEntity(beam.DoFn):
             A tuple in the form of (int, Entity).
         """
         # Build the entity from the values in the element
-        entity_class = kwargs["entity_class"]
-        unifying_id_field = kwargs["unifying_id_field"]
-
+        if not issubclass(entity_class, BuildableAttr):
+            raise ValueError(
+                f"Expected entity class [{entity_class}] to be a subclass of "
+                f"BuildableAttr."
+            )
         hydrated_entity = entity_class.build_from_dictionary(element)
         if not isinstance(hydrated_entity, Entity):
             raise ValueError(f"Found unexpected entity type [{type(hydrated_entity)}]")

@@ -38,7 +38,7 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
     """Tests the supervision_start_dates_by_period_id variable setter on the SupervisionPeriodIndex class."""
 
-    def test_supervision_start_dates_by_period_id(self):
+    def test_supervision_start_dates_by_period_id(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             sequence_num=0,
@@ -75,7 +75,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_index.supervision_start_dates_by_period_id,
         )
 
-    def test_supervision_start_dates_by_period_id_multiple_official_admissions(self):
+    def test_supervision_start_dates_by_period_id_multiple_official_admissions(
+        self,
+    ) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             sequence_num=0,
@@ -143,7 +145,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_index.supervision_start_dates_by_period_id,
         )
 
-    def test_supervision_start_dates_by_period_id_multiple_absconsion_periods(self):
+    def test_supervision_start_dates_by_period_id_multiple_absconsion_periods(
+        self,
+    ) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -211,7 +215,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_index.supervision_start_dates_by_period_id,
         )
 
-    def test_supervision_start_dates_by_period_id_no_official_admission(self):
+    def test_supervision_start_dates_by_period_id_no_official_admission(self) -> None:
         # The first supervision period always counts as the official start of supervision
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
@@ -251,7 +255,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_official_transfer_admission_investigation(
         self,
-    ):
+    ) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -312,7 +316,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_official_transfer_admission_informal_probation(
         self,
-    ):
+    ) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -371,7 +375,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_index.supervision_start_dates_by_period_id,
         )
 
-    def test_supervision_start_dates_by_period_id_official_transfer_types(self):
+    def test_supervision_start_dates_by_period_id_official_transfer_types(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -432,7 +436,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_not_official_transfer_admissions(
         self,
-    ):
+    ) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -495,7 +499,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
     """Tests the supervision_periods_by_termination_month variable setter on the SupervisionPeriodIndex class."""
 
-    def test_supervision_periods_by_termination_month(self):
+    def test_supervision_periods_by_termination_month(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -529,7 +533,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_index.supervision_periods_by_termination_month,
         )
 
-    def test_supervision_periods_by_termination_month_multiple_months(self):
+    def test_supervision_periods_by_termination_month_multiple_months(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -565,7 +569,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_index.supervision_periods_by_termination_month,
         )
 
-    def test_supervision_periods_by_termination_month_multiple_years(self):
+    def test_supervision_periods_by_termination_month_multiple_years(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -606,7 +610,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
     """Tests get_most_recent_previous_supervision_period."""
 
-    def test_get_most_recent_previous_supervision_period_valid(self):
+    def test_get_most_recent_previous_supervision_period_valid(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -639,7 +643,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-    def test_get_most_recent_previous_supervision_period_first_in_list(self):
+    def test_get_most_recent_previous_supervision_period_first_in_list(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
@@ -671,7 +675,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
             )
         )
 
-    def test_get_most_recent_previous_supervision_period_single_period_in_list(self):
+    def test_get_most_recent_previous_supervision_period_single_period_in_list(
+        self,
+    ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             sequence_num=0,
             state_code="US_XX",
@@ -696,6 +702,6 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
     def test_transfer_from_supervision_type_is_official_admission_all_supervision_types(
         self,
-    ):
+    ) -> None:
         for supervision_type in StateSupervisionPeriodSupervisionType:
             _transfer_from_supervision_type_is_official_admission(supervision_type)

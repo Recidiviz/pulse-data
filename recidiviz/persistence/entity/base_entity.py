@@ -16,7 +16,7 @@
 # ============================================================================
 """Base class for all entity types"""
 import abc
-from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
 from more_itertools import one
@@ -39,12 +39,12 @@ class Entity(CoreEntity):
     """Base class for all entity types."""
 
     # Consider Entity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is Entity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return entity_graph_eq(self, other)
 
     @classmethod
@@ -72,7 +72,7 @@ class ExternalIdEntity(Entity):
     id_type: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     # Consider ExternalIdEntity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is ExternalIdEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
@@ -90,7 +90,7 @@ class HasExternalIdEntity(Entity):
     external_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     # Consider HasExternalIdEntity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is HasExternalIdEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
@@ -112,7 +112,7 @@ class HasMultipleExternalIdsEntity(Generic[ExternalIdEntityT], Entity):
         return external_id in {e.external_id for e in self.get_external_ids()}
 
     # Consider HasMultipleExternalIdsEntity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is HasMultipleExternalIdsEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
@@ -128,7 +128,7 @@ class EnumEntity(Entity):
     RAW_TEXT_FIELD_SUFFIX = "_raw_text"
 
     # Consider EnumEntity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is EnumEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
@@ -274,7 +274,7 @@ def _entity_graph_list_eq(
     entity_list_2: List["Entity"],
     should_ignore_field_cb: Callable[[Type, str], bool],
     matching_objects_map: Dict[int, int],
-):
+) -> bool:
     """Recursive helper for checking deep equality of two list fields in an
     entity graph. Ignores differences in list order.
 
@@ -322,7 +322,7 @@ def _entity_graph_list_eq(
 def _remove_entity_from_list_with_id(
     e1: "Entity",
     entity_list: List["Entity"],
-):
+) -> None:
     matches = [i for i, e2 in enumerate(entity_list) if id(e1) == id(e2)]
     if matches:
         entity_list.pop(matches[0])

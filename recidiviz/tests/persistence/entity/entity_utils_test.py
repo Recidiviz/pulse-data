@@ -1175,7 +1175,7 @@ class TestEntityUtils(TestCase):
 class TestBidirectionalUpdates(TestCase):
     """Tests the deep_entity_update function."""
 
-    def test_build_new_entity_with_bidirectionally_updated_attributes(self):
+    def test_build_new_entity_with_bidirectionally_updated_attributes(self) -> None:
         sp = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=123,
             external_id="123",
@@ -1215,7 +1215,7 @@ class TestBidirectionalUpdates(TestCase):
 
     def test_build_new_entity_with_bidirectionally_updated_attributes_flat_fields_only(
         self,
-    ):
+    ) -> None:
         sp = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=123,
             external_id="123",
@@ -1238,7 +1238,7 @@ class TestBidirectionalUpdates(TestCase):
 
     def test_build_new_entity_with_bidirectionally_updated_attributes_flat_and_refs(
         self,
-    ):
+    ) -> None:
         """Tests when there are related entities on the entity, but the only attribute
         being updated is a flat field."""
         sp = StateSupervisionPeriod.new_with_defaults(
@@ -1291,7 +1291,9 @@ class TestBidirectionalUpdates(TestCase):
 
         self.assertEqual(expected_sp, updated_entity)
 
-    def test_build_new_entity_with_bidirectionally_updated_attributes_add_to_list(self):
+    def test_build_new_entity_with_bidirectionally_updated_attributes_add_to_list(
+        self,
+    ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
             external_id="123",
@@ -1350,7 +1352,7 @@ class TestBidirectionalUpdates(TestCase):
 
     def test_build_new_entity_with_bidirectionally_updated_attributes_replace_in_list(
         self,
-    ):
+    ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
             external_id="123",

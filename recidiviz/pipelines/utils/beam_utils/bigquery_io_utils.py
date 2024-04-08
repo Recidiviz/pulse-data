@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for beam calculations."""
 # pylint: disable=abstract-method,redefined-builtin
-from typing import Any, Dict, Generator, Iterable, Optional, Tuple, TypeVar
+from typing import Any, Dict, Generator, Optional, Tuple
 
 import apache_beam as beam
 from apache_beam.io.gcp.internal.clients import bigquery
@@ -48,28 +48,6 @@ class ConvertDictToKVTuple(beam.DoFn):
         yield element[self.key_name], element
 
 
-TypeToLift = TypeVar("TypeToLift")
-
-
-@with_input_types(TypeToLift)
-@with_output_types(TypeToLift)
-class LiftToPCollectionElement(beam.DoFn):
-    """Takes in the input and yields as an element in a PCollection. Does not manipulate
-    the input in any way.
-
-    Note: This is used when reading from BigQuery to avoid errors that we have
-    encountered when passing output from BigQuery as a SideInput without yet
-    processing it as an element in a PCollection.
-    """
-
-    # pylint: disable=arguments-differ
-    def process(self, element: TypeToLift) -> Iterable[TypeToLift]:
-        yield element
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
 class ReadFromBigQuery(beam.PTransform):
     """Reads query results from BigQuery."""
 
@@ -77,16 +55,11 @@ class ReadFromBigQuery(beam.PTransform):
         super().__init__()
         self._query = query
 
-    def expand(self, input_or_inputs: PBegin):
-        return (
-            input_or_inputs
-            | "Read from BigQuery"
-            >> beam.io.Read(
-                beam.io.ReadFromBigQuery(
-                    query=self._query, use_standard_sql=True, validate=True
-                )
+    def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
+        return input_or_inputs | "Read from BigQuery" >> beam.io.Read(
+            beam.io.ReadFromBigQuery(
+                query=self._query, use_standard_sql=True, validate=True
             )
-            | "Process table rows as elements" >> beam.ParDo(LiftToPCollectionElement())
         )
 
 

@@ -21,6 +21,12 @@ from unittest import TestCase
 from parameterized import parameterized
 from sqlalchemy.inspection import inspect
 
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
@@ -39,7 +45,11 @@ class TestSchema(TestCase):
     ]
 
     @parameterized.expand(VIEW_BUILDERS)
-    def test_column_order_matches_view(self, _, view):
+    def test_column_order_matches_view(
+        self,
+        _view_id: str,
+        view: WithMetadataQueryBigQueryViewBuilder[SelectedColumnsBigQueryViewBuilder],
+    ) -> None:
         table = get_database_entity_by_table_name(pathways_schema, view.view_id)
         table_columns = [column.name for column in inspect(table).c]
         self.assertEqual(table_columns, view.delegate.columns)

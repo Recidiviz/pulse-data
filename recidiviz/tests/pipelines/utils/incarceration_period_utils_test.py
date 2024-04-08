@@ -33,7 +33,7 @@ from recidiviz.pipelines.utils.incarceration_period_utils import (
 class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
     """Tests the ip_is_nested_in_previous_period function."""
 
-    def test_ip_is_nested_in_previous_period(self):
+    def test_ip_is_nested_in_previous_period(self) -> None:
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -56,7 +56,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertTrue(ip_is_nested_in_previous_period(ip, previous_ip))
 
-    def test_ip_is_nested_in_previous_period_not_nested(self):
+    def test_ip_is_nested_in_previous_period_not_nested(self) -> None:
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -79,7 +79,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertFalse(ip_is_nested_in_previous_period(ip, previous_ip))
 
-    def test_ip_is_nested_in_previous_period_share_release(self):
+    def test_ip_is_nested_in_previous_period_share_release(self) -> None:
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -102,7 +102,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertTrue(ip_is_nested_in_previous_period(ip, previous_ip))
 
-    def test_ip_is_nested_in_previous_period_zero_day_period(self):
+    def test_ip_is_nested_in_previous_period_zero_day_period(self) -> None:
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -125,7 +125,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertTrue(ip_is_nested_in_previous_period(ip, previous_ip))
 
-    def test_ip_is_nested_in_previous_period_two_zero_day_periods(self):
+    def test_ip_is_nested_in_previous_period_two_zero_day_periods(self) -> None:
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -148,7 +148,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertFalse(ip_is_nested_in_previous_period(ip, previous_ip))
 
-    def test_ip_is_nested_in_previous_period_zero_day_period_on_release(self):
+    def test_ip_is_nested_in_previous_period_zero_day_period_on_release(self) -> None:
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -171,7 +171,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 
         self.assertFalse(ip_is_nested_in_previous_period(ip, previous_ip))
 
-    def test_ip_is_nested_in_previous_period_bad_sort(self):
+    def test_ip_is_nested_in_previous_period_bad_sort(self) -> None:
         # This period should not have been sorted before ip
         previous_ip = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
@@ -200,7 +200,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
 class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
     """Tests the period_edges_are_valid_transfer function."""
 
-    def test_period_edges_are_valid_transfer(self):
+    def test_period_edges_are_valid_transfer(self) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -223,7 +223,7 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
 
         self.assertTrue(period_edges_are_valid_transfer(ip_1, ip_2))
 
-    def test_period_edges_are_valid_transfer_too_far(self):
+    def test_period_edges_are_valid_transfer_too_far(self) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -246,7 +246,7 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
 
         self.assertFalse(period_edges_are_valid_transfer(ip_1, ip_2))
 
-    def test_period_edges_are_valid_transfer_not_transfers(self):
+    def test_period_edges_are_valid_transfer_not_transfers(self) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,

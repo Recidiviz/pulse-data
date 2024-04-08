@@ -26,7 +26,7 @@ from recidiviz.persistence.entity.operations import entities
 class TestOperationsEntities(TestCase):
     """Tests for state/entities.py"""
 
-    def test_classes_have_eq_equal_false(self):
+    def test_classes_have_eq_equal_false(self) -> None:
         for entity_class in get_all_entity_classes_in_module(entities):
             self.assertEqual(
                 entity_class.__eq__,

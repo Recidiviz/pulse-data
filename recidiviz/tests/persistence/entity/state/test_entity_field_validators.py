@@ -88,7 +88,7 @@ class NormalizedCompoundExample(CompoundExample, NormalizedStateEntity):
 class TestPreNormOptionalValidator(unittest.TestCase):
     """Tests that the pre_norm_opt validator works as expected."""
 
-    def test_pre_norm_is_actually_optional(self):
+    def test_pre_norm_is_actually_optional(self) -> None:
         _ = Example(
             an_int=None,
             a_str=None,
@@ -168,7 +168,7 @@ class TestPreNormOptionalValidator(unittest.TestCase):
             always_optional_date=None,
         )
 
-    def test_normalized_is_not_optional(self):
+    def test_normalized_is_not_optional(self) -> None:
         _ = NormalizedExample(
             an_int=2,
             a_str="string",

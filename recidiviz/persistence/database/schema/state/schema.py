@@ -927,7 +927,7 @@ class _ReferencesStatePersonSharedColumns:
     individual StatePerson"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_ReferencesStatePersonSharedColumns":
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is _ReferencesStatePersonSharedColumns:
             raise NotImplementedError(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
@@ -3343,7 +3343,7 @@ class _ReferencesStateStaffSharedColumns:
     individual StateStaff"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_ReferencesStateStaffSharedColumns":
+    def __new__(cls: Any, *_: Any, **__: Any) -> Any:
         if cls is _ReferencesStateStaffSharedColumns:
             raise NotImplementedError(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore

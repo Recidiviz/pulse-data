@@ -858,7 +858,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 class TestGetViolationAndResponseHistory(unittest.TestCase):
     """Tests the get_violation_and_response_history function."""
 
-    def test_get_violation_and_response_history(self):
+    def test_get_violation_and_response_history(self) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             external_id="sv1",
@@ -922,7 +922,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_outside_lookback(self):
+    def test_get_violation_and_response_history_outside_lookback(self) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             external_id="sv1",
@@ -1003,7 +1003,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_with_us_mo_subtype(self):
+    def test_get_violation_and_response_history_with_us_mo_subtype(self) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             external_id="sv1",
@@ -1072,7 +1072,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_with_us_pa_subtype_high_technical(self):
+    def test_get_violation_and_response_history_with_us_pa_subtype_high_technical(
+        self,
+    ) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             external_id="sv1",
@@ -1134,7 +1136,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_with_us_pa_subtype_substance_use(self):
+    def test_get_violation_and_response_history_with_us_pa_subtype_substance_use(
+        self,
+    ) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             external_id="sv1",
@@ -1193,7 +1197,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
     def test_get_violation_and_response_history_with_us_pa_subtype_electronic_monitoring(
         self,
-    ):
+    ) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             external_id="sv1",
@@ -1250,7 +1254,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_with_us_pa_subtype_multiple_types(self):
+    def test_get_violation_and_response_history_with_us_pa_subtype_multiple_types(
+        self,
+    ) -> None:
         supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=12345,
             external_id="sv1",
@@ -1367,7 +1373,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_no_violations(self):
+    def test_get_violation_and_response_history_no_violations(self) -> None:
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             sequence_num=0,
             state_code="US_XX",
@@ -1393,7 +1399,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 incarceration_period=None,
             )
 
-    def test_get_violation_and_response_history_no_responses(self):
+    def test_get_violation_and_response_history_no_responses(self) -> None:
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
@@ -1416,7 +1422,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_citation_date(self):
+    def test_get_violation_and_response_history_citation_date(self) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
             external_id="sv1",
@@ -1475,7 +1481,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         self.assertEqual(expected_output, violation_history)
 
-    def test_get_violation_and_response_history_us_mo_handle_law_technicals(self):
+    def test_get_violation_and_response_history_us_mo_handle_law_technicals(
+        self,
+    ) -> None:
         """Tests that a US_MO violation report with a TECHNICAL type and a LAW condition is not treated like a
         citation with a LAW condition."""
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(

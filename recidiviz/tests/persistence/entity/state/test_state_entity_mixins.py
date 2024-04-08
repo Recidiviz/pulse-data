@@ -27,17 +27,17 @@ from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityM
 class TestLedgerEntity(unittest.TestCase):
     """Tests the setup and validation of LedgerEntity"""
 
-    def test_ledger_entity_validation(self):
+    def test_ledger_entity_validation(self) -> None:
         @attr.s(eq=False, kw_only=True)
         class ExampleLedger(LedgerEntityMixin):
-            start = attr.ib()
-            end = attr.ib()
+            start: datetime.datetime = attr.ib()
+            end: datetime.datetime = attr.ib()
 
             @property
             def ledger_datetime_field(self) -> DateOrDateTime:
                 return self.start
 
-            def __attrs_post_init__(self):
+            def __attrs_post_init__(self) -> None:
                 self.assert_datetime_less_than(self.start, self.end)
 
         _ = ExampleLedger(
@@ -56,18 +56,18 @@ class TestLedgerEntity(unittest.TestCase):
                 end=datetime.datetime(2001, 1, 1),
             )
 
-    def test_ledger_entity_validation_multiple_after_dates(self):
+    def test_ledger_entity_validation_multiple_after_dates(self) -> None:
         @attr.s(eq=False, kw_only=True)
         class ExampleLedger(LedgerEntityMixin):
-            START = attr.ib()
-            END_1 = attr.ib()
-            END_2 = attr.ib()
+            START: datetime.datetime = attr.ib()
+            END_1: datetime.datetime = attr.ib()
+            END_2: datetime.datetime = attr.ib()
 
             @property
             def ledger_datetime_field(self) -> DateOrDateTime:
                 return self.START
 
-            def __attrs_post_init__(self):
+            def __attrs_post_init__(self) -> None:
                 """A ledger entity may have one or more datetime fields that are strictly after the 'start' datetime field.
                 Return them here."""
                 self.assert_datetime_less_than(self.START, self.END_1)

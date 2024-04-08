@@ -167,10 +167,10 @@ class TestStateSchemaEnums(TestSchemaEnums):
 class TestStateSchemaTableConsistency(unittest.TestCase):
     """Test class for validating state schema tables are defined correctly"""
 
-    def testAllTableNamesPrefixedWithState(self):
+    def testAllTableNamesPrefixedWithState(self) -> None:
         for cls in get_all_table_classes_in_schema(SchemaType.STATE):
             self.assertTrue(cls.name.startswith("state_"))
 
-    def testAllDatabaseEntityNamesPrefixedWithState(self):
+    def testAllDatabaseEntityNamesPrefixedWithState(self) -> None:
         for cls in get_all_database_entities_in_module(schema):
             self.assertTrue(cls.__name__.startswith("State"))
