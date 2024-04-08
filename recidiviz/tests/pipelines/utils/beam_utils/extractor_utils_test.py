@@ -178,7 +178,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -187,7 +187,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code=schema_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -342,7 +341,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -351,7 +350,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -476,7 +474,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -485,7 +483,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code="US_XX",
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePersonRace,
@@ -604,7 +601,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -613,7 +610,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -743,7 +739,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -752,7 +748,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -929,7 +924,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -938,7 +933,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code=schema_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -1104,7 +1098,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -1113,7 +1107,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -1165,7 +1158,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -1174,7 +1167,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 state_code="US_XX",
                 project_id=project,
                 entities_dataset=dataset,
-                normalized_entities_dataset=dataset,
                 reference_dataset=dataset,
                 required_entity_classes=None,
                 required_reference_tables=[
@@ -1311,7 +1303,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict, expected_normalized_dataset=normalized_dataset
+                expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -1319,8 +1311,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=schema_person.state_code,
                 project_id=project,
-                entities_dataset=dataset,
-                normalized_entities_dataset=normalized_dataset,
+                entities_dataset=normalized_dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -1449,7 +1440,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict, expected_normalized_dataset=normalized_dataset
+                expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -1457,8 +1448,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
             output = test_pipeline | extractor_utils.ExtractDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
-                entities_dataset=dataset,
-                normalized_entities_dataset=normalized_dataset,
+                entities_dataset=normalized_dataset,
                 reference_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
@@ -1633,13 +1623,12 @@ class TestExtractAssociationValues(unittest.TestCase):
         }
 
         project = "project"
-        dataset = "state"
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -1649,8 +1638,7 @@ class TestExtractAssociationValues(unittest.TestCase):
                 | "Extract association table entities"
                 >> extractor_utils._ExtractAssociationValues(
                     project_id=project,
-                    entities_dataset=dataset,
-                    normalized_entities_dataset=normalized_dataset,
+                    entities_dataset=normalized_dataset,
                     root_entity_class=entities.StateIncarcerationSentence,
                     related_entity_class=entities.StateCharge,
                     related_id_field=entities.StateCharge.get_class_id_name(),
@@ -1706,13 +1694,12 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
         )
 
         project = "project"
-        dataset = "state"
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -1722,8 +1709,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 | "Extract StatePerson Entity"
                 >> extractor_utils._ExtractAllEntitiesOfType(
                     project_id=project,
-                    entities_dataset=dataset,
-                    normalized_entities_dataset=normalized_dataset,
+                    entities_dataset=normalized_dataset,
                     entity_class=entity_class,
                     unifying_id_field=entity_class.get_class_id_name(),
                     unifying_id_field_filter_set=None,
@@ -1768,7 +1754,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
         with patch(
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
+                expected_entities_dataset=dataset, data_dict=data_dict
             ),
         ):
             test_pipeline = TestPipeline()
@@ -1778,8 +1764,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                 | "Extract StatePerson Entity"
                 >> extractor_utils._ExtractAllEntitiesOfType(
                     project_id=project,
-                    entities_dataset=dataset,
-                    normalized_entities_dataset=normalized_dataset,
+                    entities_dataset=normalized_dataset,
                     entity_class=entity_class,
                     unifying_id_field="XX",
                     unifying_id_field_filter_set=None,

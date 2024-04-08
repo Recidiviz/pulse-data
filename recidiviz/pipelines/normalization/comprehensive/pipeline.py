@@ -313,7 +313,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                     state_code=state_code,
                     project_id=self.pipeline_parameters.project,
                     entities_dataset=self.pipeline_parameters.state_data_input,
-                    normalized_entities_dataset=self.pipeline_parameters.normalized_input,
                     reference_dataset=self.pipeline_parameters.reference_view_input,
                     required_entity_classes=self.required_entities().get(
                         root_entity_type

@@ -51,9 +51,6 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteToBigQuery,
 )
 
-# TODO(#25244) Remove once dataset configs can be used in various pipeline tests
-FAKE_PIPELINE_TESTS_INPUT_DATASET = "dataset"
-
 
 def pipeline_constructor(project_id: str) -> Callable[[PipelineOptions], Pipeline]:
     def _inner_pipeline_constructor(options: PipelineOptions) -> Pipeline:
@@ -221,11 +218,6 @@ def default_arg_list_for_pipeline(
     pipeline_args: List[str] = [
         "--project",
         project_id,
-        # TODO(#25244) Update this to use the original dataset_configs rather than overridden values
-        "--state_data_input",
-        FAKE_PIPELINE_TESTS_INPUT_DATASET,
-        "--reference_view_input",
-        FAKE_PIPELINE_TESTS_INPUT_DATASET,
         "--state_code",
         state_code,
         "--ingest_instance",

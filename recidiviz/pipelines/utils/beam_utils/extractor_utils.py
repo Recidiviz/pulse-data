@@ -90,7 +90,6 @@ class ExtractDataForPipeline(beam.PTransform):
         state_code: str,
         project_id: str,
         entities_dataset: str,
-        normalized_entities_dataset: str,
         reference_dataset: str,
         required_entity_classes: Optional[
             List[Union[Type[Entity], Type[NormalizedStateEntity]]]
@@ -105,10 +104,8 @@ class ExtractDataForPipeline(beam.PTransform):
         Arguments:
             state_code: The state code to filter all results by
             project_id: The project_id of the BigQuery project to query from.
-            entities_dataset: The name of the dataset_id to read from BigQuery.
-            normalized_entities_dataset: The name of the dataset_id to read from
-                BigQuery for any entities in required_entity_classes that are
-                of type NormalizedStateEntity.
+            entities_dataset: The name of the BigQuery dataset_id to read the required
+                entities from.
             required_entity_classes: The list of required entity classes for the
                 pipeline. Must not contain any duplicates of any entities.
             unifying_class: The Entity type whose id should be used to connect the
@@ -128,7 +125,6 @@ class ExtractDataForPipeline(beam.PTransform):
         if not entities_dataset:
             raise ValueError("No valid data source passed to the pipeline.")
         self._entities_dataset = entities_dataset
-        self._normalized_entities_dataset = normalized_entities_dataset
 
         if not reference_dataset:
             raise ValueError("No valid data reference source passed to the pipeline.")
@@ -331,7 +327,6 @@ class ExtractDataForPipeline(beam.PTransform):
                 >> _ExtractAssociationValues(
                     project_id=self._project_id,
                     entities_dataset=self._entities_dataset,
-                    normalized_entities_dataset=self._normalized_entities_dataset,
                     root_entity_class=root_entity_class_being_hydrated,
                     related_entity_class=related_entity_class_being_hydrated,
                     unifying_id_field=self._unifying_id_field,
@@ -358,7 +353,6 @@ class ExtractDataForPipeline(beam.PTransform):
             >> _ExtractAllEntitiesOfType(
                 project_id=self._project_id,
                 entities_dataset=self._entities_dataset,
-                normalized_entities_dataset=self._normalized_entities_dataset,
                 entity_class=entity_class,
                 unifying_id_field=self._unifying_id_field,
                 unifying_id_field_filter_set=self._unifying_id_field_filter_set,
@@ -791,7 +785,6 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
         self,
         project_id: str,
         entities_dataset: str,
-        normalized_entities_dataset: str,
         entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         unifying_id_field: str,
         unifying_id_field_filter_set: Optional[Set[int]],
@@ -802,15 +795,14 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
 
         self._unifying_id_field = unifying_id_field
         self._unifying_id_field_filter_set = unifying_id_field_filter_set
+        self._dataset = entities_dataset
 
         if issubclass(entity_class, NormalizedStateEntity):
             self._base_entity_class = state_base_entity_class_for_entity_class(
                 entity_class
             )
-            self._dataset = normalized_entities_dataset
         elif issubclass(entity_class, Entity):
             self._base_entity_class = entity_class
-            self._dataset = entities_dataset
         else:
             raise ValueError(f"Unexpected entity_class [{entity_class}]")
 
@@ -869,7 +861,6 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         self,
         project_id: str,
         entities_dataset: str,
-        normalized_entities_dataset: str,
         entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         unifying_id_field: str,
         unifying_id_field_filter_set: Optional[Set[int]],
@@ -878,7 +869,6 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         super().__init__(
             project_id,
             entities_dataset,
-            normalized_entities_dataset,
             entity_class,
             unifying_id_field,
             unifying_id_field_filter_set,
@@ -1024,7 +1014,6 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         self,
         project_id: str,
         entities_dataset: str,
-        normalized_entities_dataset: str,
         root_entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         related_entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         related_id_field: str,
@@ -1067,7 +1056,6 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         super().__init__(
             project_id,
             entities_dataset,
-            normalized_entities_dataset,
             self._entity_class_for_query,
             unifying_id_field,
             unifying_id_field_filter_set,

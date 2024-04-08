@@ -42,13 +42,6 @@
       "isOptional": true
     },
     {
-      "name": "normalized_input",
-      "label": "BigQuery dataset to query for normalized state entities",
-      "helpText": "If specified, the pipeline will query this dataset instead of the default.",
-      "regexes": ["[0-9a-z_]+"],
-      "isOptional": true
-    },
-    {
       "name": "person_filter_ids",
       "label": "A list of person ids to filter for",
       "helpText": "An optional list of DB person_id values. When present, the pipeline will only calculate metrics for these people and will not output to BQ.",

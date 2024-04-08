@@ -18,6 +18,7 @@
 import unittest
 from typing import Any, Dict, Iterable, Optional, Set
 
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
     US_IX_CASE_UPDATE_INFO_VIEW_NAME,
 )
@@ -31,10 +32,7 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteExactOutputToBigQuery,
     FakeWriteToBigQueryFactory,
 )
-from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
-    FAKE_PIPELINE_TESTS_INPUT_DATASET,
-    run_test_pipeline,
-)
+from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import run_test_pipeline
 
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
@@ -122,10 +120,11 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         """Runs a test version of the pipeline."""
         project = "recidiviz-staging"
 
-        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
-            # TODO(#25244) Replace with actual input once supported.
-            FAKE_PIPELINE_TESTS_INPUT_DATASET,
-            data_dict,
+        read_from_bq_constructor = (
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                expected_entities_dataset=NORMALIZED_STATE_DATASET,
+                data_dict=data_dict,
+            )
         )
 
         write_to_bq_constructor = (

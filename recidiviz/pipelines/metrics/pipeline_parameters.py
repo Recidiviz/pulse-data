@@ -21,11 +21,9 @@ import attr
 
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
-    STATE_BASE_DATASET,
-    normalized_state_dataset_for_state_code,
+    NORMALIZED_STATE_DATASET,
 )
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 
@@ -33,17 +31,12 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 class MetricsPipelineParameters(PipelineParameters):
     """Class for metrics pipeline parameters"""
 
-    state_data_input: str = attr.ib(
-        default=STATE_BASE_DATASET, validator=attr_validators.is_str
+    # TODO(#27373): Update to default to normalized_state_dataset_for_state_code() once
+    #  the ingest/normalization pipeline outputs all entities to the
+    #  us_xx_normalized_state dataset, whether or not they are normalized.
+    normalized_input: str = attr.ib(
+        default=NORMALIZED_STATE_DATASET, validator=attr_validators.is_str
     )
-
-    normalized_input: str = attr.ib(validator=attr_validators.is_str)
-
-    @normalized_input.default
-    def _normalized_input_default(self) -> str:
-        return normalized_state_dataset_for_state_code(
-            state_code=StateCode(self.state_code)
-        )
 
     person_filter_ids: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -65,6 +58,5 @@ class MetricsPipelineParameters(PipelineParameters):
     def get_sandboxable_dataset_param_names(cls) -> List[str]:
         return [
             *super().get_sandboxable_dataset_param_names(),
-            "state_data_input",
             "normalized_input",
         ]
