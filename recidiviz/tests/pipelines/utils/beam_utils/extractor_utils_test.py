@@ -183,11 +183,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=schema_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -196,10 +196,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(
@@ -346,11 +345,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionViolation,
@@ -359,10 +358,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StateSupervisionViolatedConditionEntry,
                     entities.StateSupervisionViolationResponseDecisionEntry,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(
@@ -479,11 +477,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code="US_XX",
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePersonRace,
                     entities.StatePersonEthnicity,
@@ -491,10 +489,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(
@@ -606,20 +603,19 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateCharge,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(
@@ -744,21 +740,20 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateIncarcerationSentence,
                     entities.StateCharge,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             print(
@@ -929,11 +924,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=schema_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -942,14 +937,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                required_reference_tables=[
+                required_reference_view_ids=[
                     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
                 ],
-                required_state_based_reference_tables=[
-                    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME
-                ],
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(
@@ -970,7 +962,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
                                 ],
                                 entities.StateAssessment.__name__: [entity_assessment],
                                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_to_county_of_residence_data,
-                                SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME: locations_to_names_data,
                             },
                         )
                     ]
@@ -982,7 +973,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
     def testExtractDataForPipeline_withAssociationTablesAndFilter(self):
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated, where there are required association
-        tables, and a unifying_id_field filter is set."""
+        tables, and a root_entity_id_field filter is set."""
         required_schema_classes = [
             schema.StatePerson,
             schema.StateSupervisionSentence,
@@ -1103,20 +1094,19 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateCharge,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set={person_id_1},
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set={person_id_1},
             )
 
             assert_that(
@@ -1163,18 +1153,17 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code="US_XX",
                 project_id=project,
                 entities_dataset=dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=None,
-                required_reference_tables=[
+                required_reference_view_ids=[
                     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
                 ],
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(
@@ -1308,11 +1297,11 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=schema_person.state_code,
                 project_id=project,
                 entities_dataset=normalized_dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -1321,10 +1310,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     normalized_entities.NormalizedStateProgramAssignment,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(
@@ -1445,20 +1433,19 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ):
             test_pipeline = TestPipeline()
 
-            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+            output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
                 state_code=entity_person.state_code,
                 project_id=project,
                 entities_dataset=normalized_dataset,
-                reference_dataset=dataset,
+                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     normalized_entities.NormalizedStateSupervisionViolation,
                     normalized_entities.NormalizedStateSupervisionViolationResponse,
                 ],
-                required_reference_tables=None,
-                required_state_based_reference_tables=None,
-                unifying_class=entities.StatePerson,
-                unifying_id_field_filter_set=None,
+                required_reference_view_ids=[],
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=None,
             )
 
             assert_that(

@@ -30,7 +30,7 @@ from typing import (
 )
 
 import apache_beam as beam
-from apache_beam.pvalue import PBegin
+from apache_beam.pvalue import AsList, PBegin, PCollection
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
 from recidiviz.common.constants.states import StateCode
@@ -55,9 +55,15 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
     json_serializable_list_value_handler,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
-from recidiviz.pipelines.utils.beam_utils.extractor_utils import ExtractDataForPipeline
+from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
+    ExtractRootEntityDataForPipeline,
+    ImportTable,
+)
 from recidiviz.pipelines.utils.execution_utils import (
+    EntityClassName,
+    TableName,
     TableRow,
+    UnifyingId,
     get_job_id,
     person_and_kwargs_for_identifier,
 )
@@ -188,17 +194,44 @@ class MetricPipeline(
             self.required_state_based_reference_tables().copy()
         )
 
-        pipeline_data = p | "Load required data" >> ExtractDataForPipeline(
-            state_code=state_code,
-            project_id=self.pipeline_parameters.project,
-            entities_dataset=self.pipeline_parameters.normalized_input,
-            reference_dataset=self.pipeline_parameters.reference_view_input,
-            required_entity_classes=self.required_entities(),
-            required_reference_tables=required_reference_tables,
-            required_state_based_reference_tables=required_state_based_reference_tables,
-            unifying_class=entities.StatePerson,
-            unifying_id_field_filter_set=person_id_filter_set,
+        pipeline_data = (
+            p
+            | "Load required person-level data"
+            >> ExtractRootEntityDataForPipeline(
+                state_code=state_code,
+                project_id=self.pipeline_parameters.project,
+                entities_dataset=self.pipeline_parameters.normalized_input,
+                reference_views_dataset=self.pipeline_parameters.reference_view_input,
+                required_entity_classes=self.required_entities(),
+                required_reference_view_ids=required_reference_tables,
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=person_id_filter_set,
+            )
         )
+
+        if required_state_based_reference_tables:
+            state_based_reference_data: Dict[TableName, PCollection[TableRow]] = {}
+            for table_id in required_state_based_reference_tables:
+                state_based_reference_data[
+                    table_id
+                ] = p | f"Load {table_id}" >> ImportTable(
+                    project_id=self.pipeline_parameters.project,
+                    dataset_id=self.pipeline_parameters.reference_view_input,
+                    table_id=table_id,
+                    state_code_filter=state_code,
+                )
+
+            pipeline_data = (
+                pipeline_data
+                | "Attach state-based reference data to entities"
+                >> beam.Map(
+                    self._attach_state_based_reference_data_to_entities,
+                    **{
+                        table_id: AsList(rows)
+                        for table_id, rows in state_based_reference_data.items()
+                    },
+                )
+            )
 
         person_events = pipeline_data | "Get Events" >> beam.ParDo(
             ClassifyResults(),
@@ -240,6 +273,29 @@ class MetricPipeline(
                     output_dataset=self.pipeline_parameters.output,
                     write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
                 )
+
+    def _attach_state_based_reference_data_to_entities(
+        self,
+        element: Tuple[
+            UnifyingId,
+            Dict[
+                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+            ],
+        ],
+        **state_based_reference_data: List[TableRow],
+    ) -> Tuple[
+        UnifyingId,
+        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
+    ]:
+        """Attaches state-wide reference tables (no root entity ID in the table) as side
+        inputs.
+        """
+        person_id, entities_and_reference_tables = element
+        final_entities_and_reference_tables = {
+            **entities_and_reference_tables,
+            **state_based_reference_data,
+        }
+        return person_id, final_entities_and_reference_tables
 
     @classmethod
     def parse_metric_types(cls, metric_types_str: str) -> Set[RecidivizMetricType]:
