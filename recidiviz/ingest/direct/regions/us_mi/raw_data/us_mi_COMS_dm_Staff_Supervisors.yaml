@@ -6,7 +6,6 @@ data_classification: source
 separator: †
 custom_line_terminator: ‡
 encoding: WINDOWS-1252
-always_historical_export: False
 primary_key_cols:
   - Staff_Omni_Employee_Id
   - Supervisor_Omni_Employee_Id
