@@ -52,7 +52,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
         FROM (
             SELECT
                 offendercases.*,
-                EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', term_date)) AS term_date_clean,
+                EXTRACT(date FROM CAST(term_date AS DATETIME)) AS term_date_clean,
                 projected_completion_date
             FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest` offendercases
             LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_sentence` supervision_sentence
@@ -64,7 +64,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
     us_nd_ed_regular AS (
         SELECT
             *,
-            EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', term_date)) AS term_date_clean,
+            EXTRACT(date FROM CAST(term_date AS DATETIME)) AS term_date_clean,
             'SUSPENDED' AS sentence_type,
         FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest` offendercases
         -- To identify early discharges from probation in US_ND, we were told to look for TA_TYPE = '5'
