@@ -69,7 +69,7 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         -- This subquery identifies individuals in "active revocation" where TA_TYPE = 13
         # TODO(#9210): Remove this logic when ingest issue is resolved, since these should be getting marked as supervision periods ending in "ABSCONSION" which are excluded from this table
         LEFT JOIN (
-                SELECT DATE(PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', PAROLE_TO)) AS PAROLE_TO, 
+                SELECT DATE(PAROLE_TO) AS PAROLE_TO, 
                         1 AS active_revocation ,
                         pei.person_id
                 FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest`
