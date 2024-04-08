@@ -3,6 +3,10 @@ file_tag: dbo_Parolee
 file_description: |-
   A table containing information that for people who are on Supervision in Pennsylvania
 data_classification: source
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252
 primary_key_cols:
   - ParoleNumber
 columns:
