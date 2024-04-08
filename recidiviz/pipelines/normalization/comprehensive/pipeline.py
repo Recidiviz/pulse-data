@@ -106,7 +106,9 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     convert_entities_to_normalized_dicts,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
-from recidiviz.pipelines.utils.beam_utils.extractor_utils import ExtractDataForPipeline
+from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
+    ExtractRootEntityDataForPipeline,
+)
 from recidiviz.pipelines.utils.execution_utils import TableRow, kwargs_for_entity_lists
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
@@ -177,13 +179,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         }
 
     @classmethod
-    def required_state_based_reference_tables(cls) -> Dict[Type[Entity], List[str]]:
-        return {
-            entities.StatePerson: [],
-            entities.StateStaff: [],
-        }
-
-    @classmethod
     def state_specific_required_delegates(
         cls,
     ) -> Dict[Type[Entity], List[Type[StateSpecificDelegate]]]:
@@ -217,17 +212,13 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
     def all_required_reference_table_ids(cls) -> List[str]:
         all_table_ids = []
         for root_entity_cls in cls.required_reference_tables():
-            all_table_ids += (
-                cls.required_state_based_reference_tables()[root_entity_cls]
-                + cls.required_reference_tables()[root_entity_cls]
-                + [
-                    t
-                    for table_ids in cls.state_specific_required_reference_tables()[
-                        root_entity_cls
-                    ].values()
-                    for t in table_ids
-                ]
-            )
+            all_table_ids += cls.required_reference_tables()[root_entity_cls] + [
+                t
+                for table_ids in cls.state_specific_required_reference_tables()[
+                    root_entity_cls
+                ].values()
+                for t in table_ids
+            ]
 
         return all_table_ids
 
@@ -300,27 +291,20 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 StateCode(state_code.upper()), []
             )
 
-            required_state_based_reference_tables = (
-                self.required_state_based_reference_tables()
-                .get(root_entity_type, [])
-                .copy()
-            )
-
             writable_entities = (
                 p
                 | f"Load required data for {root_entity_type.__name__}"
-                >> ExtractDataForPipeline(
+                >> ExtractRootEntityDataForPipeline(
                     state_code=state_code,
                     project_id=self.pipeline_parameters.project,
                     entities_dataset=self.pipeline_parameters.state_data_input,
-                    reference_dataset=self.pipeline_parameters.reference_view_input,
+                    reference_views_dataset=self.pipeline_parameters.reference_view_input,
                     required_entity_classes=self.required_entities().get(
                         root_entity_type
                     ),
-                    required_reference_tables=required_reference_tables,
-                    required_state_based_reference_tables=required_state_based_reference_tables,
-                    unifying_class=root_entity_type,
-                    unifying_id_field_filter_set=person_id_filter_set,
+                    required_reference_view_ids=required_reference_tables,
+                    root_entity_cls=root_entity_type,
+                    root_entity_id_filter_set=person_id_filter_set,
                 )
                 | f"Normalize entities for {root_entity_type.__name__}"
                 >> beam.ParDo(

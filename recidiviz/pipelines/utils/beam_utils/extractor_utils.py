@@ -33,7 +33,7 @@ from typing import (
 
 import apache_beam as beam
 from apache_beam import PCollection, Pipeline
-from apache_beam.pvalue import AsList, PBegin
+from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.persistence.database import schema_utils
@@ -79,25 +79,27 @@ EntityRelationshipDetails = NamedTuple(
 )
 
 
-class ExtractDataForPipeline(beam.PTransform):
-    """Builds all of the required entities for a pipeline, and pulls in any
-    required reference tables. Hydrates all existing connections between required
-    entities.
+class ExtractRootEntityDataForPipeline(beam.PTransform):
+    """
+    Reads and hydrates all root entity-level data from BigQuery, including hydrating
+    all existing connections between entities.
     """
 
     def __init__(
         self,
+        *,
         state_code: str,
         project_id: str,
         entities_dataset: str,
-        reference_dataset: str,
         required_entity_classes: Optional[
             List[Union[Type[Entity], Type[NormalizedStateEntity]]]
         ],
-        required_reference_tables: Optional[List[str]],
-        required_state_based_reference_tables: Optional[List[str]],
-        unifying_class: Type[Entity],
-        unifying_id_field_filter_set: Optional[Set[UnifyingId]] = None,
+        reference_views_dataset: str,
+        required_reference_view_ids: List[str],
+        root_entity_cls: (
+            Type[state_entities.StatePerson] | Type[state_entities.StateStaff]
+        ),
+        root_entity_id_filter_set: Optional[Set[UnifyingId]] = None,
     ):
         """Initializes the PTransform with the required arguments.
 
@@ -108,14 +110,18 @@ class ExtractDataForPipeline(beam.PTransform):
                 entities from.
             required_entity_classes: The list of required entity classes for the
                 pipeline. Must not contain any duplicates of any entities.
-            unifying_class: The Entity type whose id should be used to connect the
+            reference_views_dataset: The dataset to read reference view data from.
+            required_reference_view_ids: A list of table_ids for reference views that
+                should be loaded. Each of these views must have root entity-level data
+                (e.g. have a person_id column if the root_entity_cls is StatePerson).
+            root_entity_cls: The Entity type whose id should be used to connect the
                 required entities to each other. All entities listed in
                 |required_entity_classes| must have this entity's id field, but this
                 class does not necessarily need to be included in the list of
                 |required_entity_classes|. This value is usually StatePerson.
-            unifying_id_field_filter_set: When non-empty, we will only build entity
+            root_entity_id_filter_set: When non-empty, we will only build entity
                 objects that can be connected to root entities with one of these
-                unifying ids.
+                root entity ids.
         """
         super().__init__()
 
@@ -126,13 +132,10 @@ class ExtractDataForPipeline(beam.PTransform):
             raise ValueError("No valid data source passed to the pipeline.")
         self._entities_dataset = entities_dataset
 
-        if not reference_dataset:
+        if not reference_views_dataset:
             raise ValueError("No valid data reference source passed to the pipeline.")
-        self._reference_dataset = reference_dataset
-        self._required_reference_tables = required_reference_tables or []
-        self._required_state_based_reference_tables = (
-            required_state_based_reference_tables or []
-        )
+        self._reference_dataset = reference_views_dataset
+        self._required_reference_tables = required_reference_view_ids or []
 
         if required_entity_classes and len(set(required_entity_classes)) != len(
             required_entity_classes
@@ -155,11 +158,11 @@ class ExtractDataForPipeline(beam.PTransform):
 
         self._direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
 
-        if not unifying_class:
-            raise ValueError("No valid unifying_class passed to the pipeline.")
-        self._unifying_class = unifying_class
-        self._unifying_id_field = unifying_class.get_class_id_name()
-        self._unifying_id_field_filter_set = unifying_id_field_filter_set
+        if not root_entity_cls:
+            raise ValueError("No valid root_entity_cls passed to the pipeline.")
+        self._root_entity_cls = root_entity_cls
+        self._root_entity_id_field = root_entity_cls.get_class_id_name()
+        self._root_entity_id_field_filter_set = root_entity_id_filter_set
 
     def _get_relationships_to_hydrate(
         self,
@@ -273,8 +276,8 @@ class ExtractDataForPipeline(beam.PTransform):
             related_entity_class = relationship_property.property_entity_class
             related_entity_class_name = related_entity_class.__name__
 
-            if self._unifying_class in (related_entity_class, root_entity_class):
-                # All entities will be grouped with the unifying class that they are
+            if self._root_entity_cls in (related_entity_class, root_entity_class):
+                # All entities will be grouped with the root entity class that they are
                 # related to, so there's no need to query for these relationships
                 continue
 
@@ -329,10 +332,12 @@ class ExtractDataForPipeline(beam.PTransform):
                     entities_dataset=self._entities_dataset,
                     root_entity_class=root_entity_class_being_hydrated,
                     related_entity_class=related_entity_class_being_hydrated,
-                    unifying_id_field=self._unifying_id_field,
+                    # TODO(#22528): Update all naming in this file so that "unifying id"
+                    #  is now referred to as "root id".
+                    unifying_id_field=self._root_entity_id_field,
                     association_table=relationship_property.association_table,
                     related_id_field=relationship_property.association_table_entity_id_field,
-                    unifying_id_field_filter_set=self._unifying_id_field_filter_set,
+                    unifying_id_field_filter_set=self._root_entity_id_field_filter_set,
                     state_code=self._state_code,
                 )
             )
@@ -345,7 +350,7 @@ class ExtractDataForPipeline(beam.PTransform):
         entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
     ) -> PCollection[Tuple[UnifyingId, Entity]]:
         """Returns the hydrated entities of type |entity_class| as a PCollection,
-        where each element is a tuple in the format: (unifying_id, entity).
+        where each element is a tuple in the format: (root_entity_id, entity).
         """
         return (
             pipeline
@@ -354,8 +359,8 @@ class ExtractDataForPipeline(beam.PTransform):
                 project_id=self._project_id,
                 entities_dataset=self._entities_dataset,
                 entity_class=entity_class,
-                unifying_id_field=self._unifying_id_field,
-                unifying_id_field_filter_set=self._unifying_id_field_filter_set,
+                unifying_id_field=self._root_entity_id_field,
+                unifying_id_field_filter_set=self._root_entity_id_field_filter_set,
                 state_code=self._state_code,
             )
         )
@@ -429,21 +434,10 @@ class ExtractDataForPipeline(beam.PTransform):
                 project_id=self._project_id,
                 dataset_id=self._reference_dataset,
                 table_id=table_id,
-                table_key=self._unifying_id_field,
+                table_key=self._root_entity_id_field,
                 state_code_filter=self._state_code,
-                unifying_id_field=self._unifying_id_field,
-                unifying_id_filter_set=self._unifying_id_field_filter_set,
-            )
-
-        state_based_reference_data: Dict[TableName, PCollection[TableRow]] = {}
-        for table_id in self._required_state_based_reference_tables:
-            state_based_reference_data[
-                table_id
-            ] = input_or_inputs | f"Load {table_id}" >> ImportTable(
-                project_id=self._project_id,
-                dataset_id=self._reference_dataset,
-                table_id=table_id,
-                state_code_filter=self._state_code,
+                unifying_id_field=self._root_entity_id_field,
+                unifying_id_filter_set=self._root_entity_id_field_filter_set,
             )
 
         entities_and_associations: Dict[
@@ -451,8 +445,8 @@ class ExtractDataForPipeline(beam.PTransform):
             PCollection[Tuple[UnifyingId, Union[EntityAssociation, Entity, TableRow]]],
         ] = {**shallow_hydrated_entities, **hydrated_association_info, **reference_data}
 
-        # Group all entities and association tuples by the unifying_id
-        entities_and_association_info_by_unifying_id: PCollection[
+        # Group all entities and association tuples by the root_entity_id
+        entities_and_association_info_by_root_entity_id: PCollection[
             Tuple[
                 UnifyingId,
                 Dict[
@@ -463,33 +457,20 @@ class ExtractDataForPipeline(beam.PTransform):
         ] = (
             entities_and_associations
             | f"Group entities, associations, and reference tables by"
-            f" {self._unifying_id_field}" >> beam.CoGroupByKey()
+            f" {self._root_entity_id_field}" >> beam.CoGroupByKey()
         )
 
         fully_connected_hydrated_entities = (
-            entities_and_association_info_by_unifying_id
+            entities_and_association_info_by_root_entity_id
             | "Connect all entity relationships"
             >> beam.ParDo(
                 _ConnectHydratedRelatedEntities(),
-                unifying_class=self._unifying_class,
+                unifying_class=self._root_entity_cls,
                 relationships_to_hydrate=relationships_to_hydrate,
             )
         )
 
-        final_entities_with_state_based_reference = (
-            fully_connected_hydrated_entities
-            | "Attach state-based reference data to entities"
-            >> beam.ParDo(
-                _AttachStateBasedReferenceDataToEntities(),
-                state_based_reference_tables=self._required_state_based_reference_tables,
-                **{
-                    table_id: AsList(rows)
-                    for table_id, rows in state_based_reference_data.items()
-                },
-            )
-        )
-
-        return final_entities_with_state_based_reference
+        return fully_connected_hydrated_entities
 
 
 @with_input_types(
@@ -739,9 +720,6 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
         ] = {**fully_connected_hydrated_entities, **reference_table_data}
 
         yield unifying_id, all_pipeline_data
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
 
 
 @with_input_types(
@@ -1196,64 +1174,6 @@ class _ShallowHydrateEntity(beam.DoFn):
             raise ValueError(f"Invalid unifying_id_field: {unifying_id_field}")
 
         yield (unifying_id, hydrated_entity)
-
-    def to_runner_api_parameter(self, unused_context):
-        pass
-
-
-@with_input_types(
-    beam.typehints.Tuple[
-        UnifyingId,
-        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
-    ],
-    beam.typehints.List[TableName],
-)
-@with_output_types(
-    beam.typehints.Tuple[
-        UnifyingId,
-        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
-    ]
-)
-class _AttachStateBasedReferenceDataToEntities(beam.DoFn):
-    """Attaches state-wide reference tables (no unifying ID in the table) as side inputs."""
-
-    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
-    # pylint: disable=W0223
-
-    # pylint: disable=arguments-differ
-    def process(
-        self,
-        element: Tuple[
-            UnifyingId,
-            Dict[
-                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
-            ],
-        ],
-        state_based_reference_tables: List[TableName],
-        *_args,
-        **kwargs,
-    ) -> Iterable[
-        Tuple[
-            UnifyingId,
-            Dict[
-                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
-            ],
-        ]
-    ]:
-        person_id, entities_and_reference_tables = element
-        state_based_reference_data: Dict[TableName, List[TableRow]] = {}
-        for state_based_reference_table in state_based_reference_tables:
-            state_based_reference_data[state_based_reference_table] = kwargs[
-                state_based_reference_table
-            ]
-        final_entities_and_reference_tables = {
-            **entities_and_reference_tables,
-            **state_based_reference_data,
-        }
-        yield person_id, final_entities_and_reference_tables
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
 
 
 def _get_value_from_table_row(table_row: TableRow, field: str) -> Any:

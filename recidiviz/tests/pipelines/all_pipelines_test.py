@@ -80,13 +80,7 @@ class TestReferenceViews(unittest.TestCase):
 
             if hasattr(pipeline, "required_state_based_reference_tables"):
                 all_required_reference_tables.update(
-                    {
-                        table
-                        for _, reference_tables in pipeline.required_state_based_reference_tables().items()
-                        for table in reference_tables
-                    }
-                    if issubclass(pipeline, ComprehensiveNormalizationPipeline)
-                    else set(pipeline.required_state_based_reference_tables())
+                    pipeline.required_state_based_reference_tables()
                 )
 
             if hasattr(pipeline, "state_specific_required_reference_tables"):
