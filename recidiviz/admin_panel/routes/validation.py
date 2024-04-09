@@ -25,7 +25,9 @@ from recidiviz.admin_panel.admin_stores import (
     get_validation_status_store,
 )
 from recidiviz.utils.types import assert_type
-from recidiviz.validation.configured_validations import get_all_validations_by_name
+from recidiviz.validation.configured_validations import (
+    get_all_deployed_validations_by_name,
+)
 
 
 def add_validation_routes(admin_panel: Blueprint) -> None:
@@ -80,7 +82,7 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
         "/api/validation_metadata/description/<validation_name>", methods=["POST"]
     )
     def fetch_validation_description(validation_name: str) -> Tuple[str, HTTPStatus]:
-        validations = get_all_validations_by_name()
+        validations = get_all_deployed_validations_by_name()
         if validation_name not in validations:
             return (
                 f"No validation name matches the name {validation_name}",

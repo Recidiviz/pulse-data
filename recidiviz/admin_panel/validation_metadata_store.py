@@ -57,7 +57,9 @@ from recidiviz.validation.checks.sameness_check import (
     SamenessPerRowValidationResultDetails,
     SamenessPerViewValidationResultDetails,
 )
-from recidiviz.validation.configured_validations import get_all_validations_by_name
+from recidiviz.validation.configured_validations import (
+    get_all_deployed_validations_by_name,
+)
 from recidiviz.validation.validation_models import DataValidationJobResultDetails
 from recidiviz.validation.validation_result_storage import (
     VALIDATION_RESULTS_BIGQUERY_ADDRESS,
@@ -479,7 +481,7 @@ class ValidationStatusStore(AdminPanelStore):
         self, validation_name: str, state_code: str
     ) -> str:
         """Returns rows in the error view of a given validation"""
-        validations_by_name = get_all_validations_by_name()
+        validations_by_name = get_all_deployed_validations_by_name()
         if validation_name not in validations_by_name:
             raise ValueError(
                 f"Did not find validation with name {validations_by_name} - cannot load "
