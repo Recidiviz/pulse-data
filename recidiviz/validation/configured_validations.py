@@ -21,6 +21,7 @@ from typing import Dict, List, Tuple
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.utils import metadata
 from recidiviz.validation import config
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -924,5 +925,16 @@ def get_all_validations() -> List[DataValidationCheck]:
     return all_data_validations
 
 
-def get_all_validations_by_name() -> Dict[str, DataValidationCheck]:
-    return {v.validation_name: v for v in get_all_validations()}
+def get_all_deployed_validations() -> List[DataValidationCheck]:
+    """Returns the full list of configured validations to perform for the current
+    project_id.
+    """
+    return [
+        validation
+        for validation in get_all_validations()
+        if validation.should_deploy_in_project(metadata.project_id())
+    ]
+
+
+def get_all_deployed_validations_by_name() -> Dict[str, DataValidationCheck]:
+    return {v.validation_name: v for v in get_all_deployed_validations()}

@@ -308,7 +308,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         )
 
     @patch(
-        "recidiviz.admin_panel.validation_metadata_store.get_all_validations_by_name"
+        "recidiviz.admin_panel.validation_metadata_store.get_all_deployed_validations_by_name"
     )
     def test_errors_table(self, mock_get_validations: mock.MagicMock) -> None:
         mock_get_validations.return_value = {

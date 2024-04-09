@@ -32,13 +32,18 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.tests.utils.monitoring_test_utils import OTLMock
-from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCPEnvironment,
+)
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
     SamenessDataValidationCheck,
     SamenessDataValidationCheckType,
 )
 from recidiviz.validation.configured_validations import (
+    get_all_deployed_validations,
     get_all_validations,
     get_validation_global_config,
     get_validation_region_configs,
@@ -718,33 +723,74 @@ class TestFetchValidations(TestCase):
 
     @patch(
         "recidiviz.utils.environment.get_gcp_environment",
-        return_value=GCPEnvironment.STAGING.value,
+        MagicMock(return_value=GCPEnvironment.STAGING.value),
     )
-    def test_cross_product_states_and_checks_staging(
-        self, _mock_get_environment: MagicMock
-    ) -> None:
-        all_validations = get_all_validations()
+    @patch(
+        "recidiviz.utils.metadata.project_id",
+        MagicMock(return_value=GCP_PROJECT_STAGING),
+    )
+    def test_cross_product_states_and_checks_staging(self) -> None:
+        all_validations = {v.validation_name for v in get_all_validations()}
+        all_deployed_validations = {
+            v.validation_name for v in get_all_deployed_validations()
+        }
+        all_validations_not_deployed_in_staging = (
+            all_validations - all_deployed_validations
+        )
         all_region_configs = get_validation_region_configs()
         global_config = get_validation_global_config()
+        # exclude globlal exclusions for validations not set to run in staging
+        global_exclusions_in_staging = {
+            e
+            for e in global_config.disabled
+            if e not in all_validations_not_deployed_in_staging
+        }
 
         for state_code, config in all_region_configs.items():
-            num_exclusions = len(config.exclusions) + len(global_config.disabled)
-            expected_length = len(all_validations) - num_exclusions
-            result = _fetch_validation_jobs_to_perform(
+            # exclude state-specific exclusions for validations not set to run in staging
+            region_exclusions_in_staging = {
+                e
+                for e in config.exclusions
+                if e not in all_validations_not_deployed_in_staging
+            }
+            num_exclusions_in_staging = len(region_exclusions_in_staging) + len(
+                global_exclusions_in_staging
+            )
+            expected_validations_in_staging = (
+                len(all_deployed_validations) - num_exclusions_in_staging
+            )
+            actual_validations_in_staging = _fetch_validation_jobs_to_perform(
                 region_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
             )
-            self.assertEqual(expected_length, len(result))
+            self.assertEqual(
+                expected_validations_in_staging, len(actual_validations_in_staging)
+            )
 
     @patch(
         "recidiviz.utils.environment.get_gcp_environment",
-        return_value=GCPEnvironment.PRODUCTION.value,
+        MagicMock(return_value=GCPEnvironment.PRODUCTION.value),
     )
-    def test_cross_product_states_and_checks_production(
-        self, _mock_get_environment: MagicMock
-    ) -> None:
-        all_validations = get_all_validations()
+    @patch(
+        "recidiviz.utils.metadata.project_id",
+        MagicMock(return_value=GCP_PROJECT_PRODUCTION),
+    )
+    def test_cross_product_states_and_checks_production(self) -> None:
+        all_validations = {v.validation_name for v in get_all_validations()}
+        all_deployed_validations = {
+            v.validation_name for v in get_all_deployed_validations()
+        }
+        all_validations_not_deployed_in_prod = (
+            all_validations - all_deployed_validations
+        )
         region_configs_to_validate = get_validation_region_configs()
         global_config = get_validation_global_config()
+        # exclude globlal exclusions for validations not set to run in prod
+        global_exclusions_in_prod = {
+            e
+            for e in global_config.disabled
+            if e not in all_validations_not_deployed_in_prod
+        }
+
         launched_state_codes = [
             region
             for region, config in region_configs_to_validate.items()
@@ -771,15 +817,27 @@ class TestFetchValidations(TestCase):
         )
 
         for state_code, config in region_configs_to_validate.items():
-            num_exclusions = len(config.exclusions) + len(global_config.disabled)
-            expected_length = len(all_validations) - num_exclusions
-            result = _fetch_validation_jobs_to_perform(
+            # exclude state-specific exclusions for validations not set to run in prod
+            region_exclusions_in_prod = {
+                e
+                for e in config.exclusions
+                if e not in all_validations_not_deployed_in_prod
+            }
+            num_exclusions_in_prod = len(region_exclusions_in_prod) + len(
+                global_exclusions_in_prod
+            )
+            expected_validations_in_prod = (
+                len(all_deployed_validations) - num_exclusions_in_prod
+            )
+            actual_validations_in_prod = _fetch_validation_jobs_to_perform(
                 region_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
             )
-            self.assertEqual(expected_length, len(result))
+            self.assertEqual(
+                expected_validations_in_prod, len(actual_validations_in_prod)
+            )
 
     @patch("recidiviz.validation.validation_manager.get_validation_region_configs")
-    @patch("recidiviz.validation.validation_manager.get_all_validations")
+    @patch("recidiviz.validation.validation_manager.get_all_deployed_validations")
     def test_fetch_validation_jobs_to_perform_applies_configs(
         self,
         mock_get_all_validations_fn: MagicMock,

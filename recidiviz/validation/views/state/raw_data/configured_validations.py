@@ -17,6 +17,7 @@
 """"Configured validations related to raw data tables."""
 from typing import Dict, List
 
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck
 from recidiviz.validation.validation_config import ValidationRegionConfig
@@ -40,6 +41,7 @@ def get_all_raw_data_validations(
             ExistenceDataValidationCheck(
                 view_builder=builder,
                 validation_category=ValidationCategory.FRESHNESS,
+                projects_to_deploy={GCP_PROJECT_PRODUCTION},
             )
             for builder in ALL_STALE_CRITICAL_RAW_DATA_VIEW_BUILDERS
         ],
@@ -49,6 +51,7 @@ def get_all_raw_data_validations(
                 comparison_columns=["row_count", "prev_row_count"],
                 region_configs=region_configs,
                 validation_category=ValidationCategory.CONSISTENCY,
+                projects_to_deploy={GCP_PROJECT_PRODUCTION},
             )
             for builder in ALL_STALBLE_HISTORICAL_COUNTS_VIEW_BUILDER
         ],

@@ -41,7 +41,7 @@ from recidiviz.utils.environment import (
 )
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.validation.configured_validations import (
-    get_all_validations,
+    get_all_deployed_validations,
     get_validation_global_config,
     get_validation_region_configs,
 )
@@ -315,7 +315,7 @@ def _fetch_validation_jobs_to_perform(
     Creates and returns validation jobs for all validations meeting the name filter,
     for the given region code, and with the dataset overrides if given.
     """
-    validation_checks = get_all_validations()
+    validation_checks = get_all_deployed_validations()
     region_configs = get_validation_region_configs()
     global_config = get_validation_global_config()
 

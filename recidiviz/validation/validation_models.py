@@ -18,7 +18,7 @@
 """Models representing data validation."""
 import abc
 from enum import Enum
-from typing import Generic, List, Optional, TypeVar
+from typing import Generic, List, Optional, Set, TypeVar
 
 import attr
 
@@ -68,6 +68,11 @@ class DataValidationCheck(BuildableAttr):
     # A suffix to add to the end of the view name to generate the validation_name.
     validation_name_suffix: Optional[str] = attr.ib(default=None)
 
+    # The set of project ids to deploy this validation in. If None, deploys this in all
+    # projects. If an empty set, does not deploy in any projects. Make sure this is
+    # a subset of view_builder.projects_to_deploy.
+    projects_to_deploy: Optional[Set[str]] = attr.ib(default=None)
+
     # If this run should be declared a success regardless of the thresholds.
     dev_mode: bool = attr.ib(default=False)
 
@@ -76,6 +81,9 @@ class DataValidationCheck(BuildableAttr):
         return self.view_builder.view_id + (
             f"_{self.validation_name_suffix}" if self.validation_name_suffix else ""
         )
+
+    def should_deploy_in_project(self, project_id: str) -> bool:
+        return self.projects_to_deploy is None or project_id in self.projects_to_deploy
 
     @property
     @abc.abstractmethod

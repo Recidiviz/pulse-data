@@ -21,10 +21,27 @@ from unittest.mock import MagicMock, patch
 
 import attr
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.validation import views as views_module
-from recidiviz.validation.configured_validations import get_all_validations
+from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
+from recidiviz.validation.checks.sameness_check import (
+    SamenessDataValidationCheck,
+    SamenessDataValidationCheckType,
+)
+from recidiviz.validation.configured_validations import (
+    get_all_deployed_validations,
+    get_all_validations,
+)
+from recidiviz.validation.validation_config import ValidationRegionConfig
+from recidiviz.validation.validation_models import (
+    ValidationCategory,
+    ValidationCheckType,
+)
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
     INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
@@ -73,6 +90,24 @@ class TestConfiguredValidations(unittest.TestCase):
             self.assertIsNotNone(
                 builder.materialized_address,
                 f"Found validation view that is not materialized: {builder.address}",
+            )
+
+    def test_validations_projects_subset_of_views_projects(self) -> None:
+        validations = get_all_validations()
+        not_subsets = []
+        for validation in validations:
+            validation_projects = validation.projects_to_deploy or set(GCP_PROJECTS)
+            view_builder_projects = validation.view_builder.projects_to_deploy or set(
+                GCP_PROJECTS
+            )
+            if not validation_projects <= view_builder_projects:
+                not_subsets.append(validation)
+
+        if not_subsets:
+            raise ValueError(
+                f"Found validation that whose projects_to_deploy is not a subset of "
+                f"the view buuilder's projects to deploy: "
+                f"{[v.validation_name for v in not_subsets]}"
             )
 
     # TODO(#28613): migrate away from this test requiring top-level, expensive vars
@@ -131,3 +166,115 @@ class TestConfiguredValidations(unittest.TestCase):
                 f"configured validation in configured_validations.py: "
                 f"{[b.address for b in not_registered_in_validation]}"
             )
+
+    @patch("recidiviz.validation.configured_validations.get_all_validations")
+    @patch("recidiviz.validation.configured_validations.get_validation_region_configs")
+    def test_get_all_deployed_validations(
+        self,
+        mock_get_region_configs: MagicMock,
+        mock_all_validations: MagicMock,
+    ) -> None:
+        existence_builder = SimpleBigQueryViewBuilder(
+            project_id="my_project",
+            dataset_id="my_dataset",
+            view_id="existence_view",
+            description="existence_view description",
+            view_query_template="SELECT NULL LIMIT 0",
+        )
+        sameness_builder = SimpleBigQueryViewBuilder(
+            project_id="my_project",
+            dataset_id="my_dataset",
+            view_id="sameness_view",
+            description="sameness_view description",
+            view_query_template="SELECT NULL LIMIT 1",
+        )
+        mock_get_region_configs.return_value = {
+            "US_XX": ValidationRegionConfig(
+                region_code="US_XX",
+                dev_mode=False,
+                exclusions={},
+                num_allowed_rows_overrides={},
+                max_allowed_error_overrides={},
+            ),
+        }
+        excluded = [
+            ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=existence_builder,
+                validation_name_suffix=None,
+                validation_type=ValidationCheckType.EXISTENCE,
+                dev_mode=False,
+                hard_num_allowed_rows=10,
+                soft_num_allowed_rows=10,
+                projects_to_deploy=set(),
+            ),
+            ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=existence_builder,
+                validation_name_suffix=None,
+                validation_type=ValidationCheckType.EXISTENCE,
+                dev_mode=False,
+                hard_num_allowed_rows=10,
+                soft_num_allowed_rows=10,
+                projects_to_deploy={"test-project-1"},
+            ),
+        ]
+
+        included = [
+            ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=existence_builder,
+                validation_name_suffix=None,
+                validation_type=ValidationCheckType.EXISTENCE,
+                dev_mode=False,
+                hard_num_allowed_rows=10,
+                soft_num_allowed_rows=10,
+            ),
+            ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=existence_builder,
+                validation_name_suffix=None,
+                validation_type=ValidationCheckType.EXISTENCE,
+                dev_mode=False,
+                hard_num_allowed_rows=10,
+                soft_num_allowed_rows=10,
+                projects_to_deploy=None,
+            ),
+            ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=existence_builder,
+                validation_name_suffix=None,
+                validation_type=ValidationCheckType.EXISTENCE,
+                dev_mode=False,
+                hard_num_allowed_rows=10,
+                soft_num_allowed_rows=10,
+                projects_to_deploy={"test-project"},
+            ),
+            ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=existence_builder,
+                validation_name_suffix=None,
+                validation_type=ValidationCheckType.EXISTENCE,
+                dev_mode=False,
+                hard_num_allowed_rows=10,
+                soft_num_allowed_rows=10,
+                projects_to_deploy={"test-project", "test-project-2"},
+            ),
+            SamenessDataValidationCheck(
+                validation_category=ValidationCategory.CONSISTENCY,
+                view_builder=sameness_builder,
+                validation_name_suffix=None,
+                comparison_columns=["col1", "col2"],
+                sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+                dev_mode=False,
+                hard_max_allowed_error=0.3,
+                soft_max_allowed_error=0.3,
+                validation_type=ValidationCheckType.SAMENESS,
+                region_configs=mock_get_region_configs(),
+            ),
+        ]
+
+        mock_all_validations.return_value = [*included, *excluded]
+
+        deployed_validations = get_all_deployed_validations()
+        assert deployed_validations == included
