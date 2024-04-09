@@ -550,11 +550,32 @@ class EventCountMetric(PeriodEventAggregatedMetric):
     Example metric: Number of technical violations.
     """
 
+    # When two (or more) event rows for the same unit of observation (e.g. the same person) are present on the
+    # same day, we will count two (ore more) distinct events when the values in these columns are different.
+    # Otherwise, we treat those rows as the same event.
+    event_segmentation_columns: Optional[List[str]] = None
+
     def generate_aggregation_query_fragment(self, event_date_col: str) -> str:
+
+        # If `event_segmentation_columns` are provided, add to the set of fields used to calculate the
+        # COUNT DISTINCT.
+        event_segmentation_columns = []
+        if self.event_segmentation_columns:
+            event_segmentation_columns = self.event_segmentation_columns
+        event_segmentation_columns_json = [
+            f'JSON_EXTRACT_SCALAR(event_attributes, "$.{col}")'
+            for col in event_segmentation_columns
+        ]
+        event_segmentation_columns_str = ",\n                    " + ", ".join(
+            event_segmentation_columns_json
+        )
         return f"""
             COUNT(DISTINCT IF(
                 {self.get_metric_conditions_string()},
-                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, {event_date_col}), NULL
+                CONCAT(
+                    {self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, 
+                    {event_date_col}{event_segmentation_columns_str}
+                ), NULL
             )) AS {self.name}
         """
 
