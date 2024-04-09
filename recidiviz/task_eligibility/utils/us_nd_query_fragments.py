@@ -34,6 +34,11 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
 )
 
+MINIMUM_SECURITY_FACILITIES = [
+    "JRCC",  # James River Correctional Center,
+    "MRCC",  # Missouri River Correctional Center
+]
+
 
 def parole_review_date_criteria_builder(
     criteria_name: str,
