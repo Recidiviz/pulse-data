@@ -24,7 +24,10 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import granted_work_release
-from recidiviz.task_eligibility.criteria.general import custody_level_is_minimum
+from recidiviz.task_eligibility.criteria.general import (
+    custody_level_is_minimum,
+    not_in_work_release,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release,
     work_release_committee_requirements,
@@ -48,6 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         custody_level_is_minimum.VIEW_BUILDER,
         incarceration_within_1_year_of_ftcd_or_prd_or_cpp_release.VIEW_BUILDER,
         work_release_committee_requirements.VIEW_BUILDER,
+        not_in_work_release.VIEW_BUILDER,
     ],
     completion_event_builder=granted_work_release.VIEW_BUILDER,
 )
