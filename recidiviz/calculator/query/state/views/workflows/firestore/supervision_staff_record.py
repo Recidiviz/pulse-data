@@ -124,12 +124,13 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
                 full_query.surname,
                 full_query.role_subtype,
                 -- TODO(Recidiviz/recidiviz-dashboards#5246): consider using _array instead and making this plural
-                attrs.supervisor_staff_external_id_primary as supervisor_external_id
+                supervisor_external_id
             FROM full_query
             LEFT JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
                 ON full_query.id = attrs.officer_id
                 AND full_query.state_code = attrs.state_code
-                AND {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date_exclusive")}
+                AND {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date_exclusive")}, 
+                UNNEST(supervisor_staff_external_id_array) AS supervisor_external_id
         )
     SELECT {{columns}}
     FROM final_query
