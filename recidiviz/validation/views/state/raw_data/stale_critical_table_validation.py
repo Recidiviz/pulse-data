@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_launched_in_env,
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -129,7 +129,7 @@ class StaleCriticalRawDataQueryBuilder:
 
 def get_stale_critical_raw_data_builders() -> List[SimpleBigQueryViewBuilder]:
     view_builders = []
-    for state_code in get_direct_ingest_states_launched_in_env():
+    for state_code in get_direct_ingest_states_existing_in_env():
 
         region_config = get_region_raw_file_config(state_code.value)
         query_builder = StaleCriticalRawDataQueryBuilder(region_config)

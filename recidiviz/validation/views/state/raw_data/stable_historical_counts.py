@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_launched_in_env,
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -155,7 +155,7 @@ class StableHistoricalRawDataCountsQueryBuilder:
 
 def get_stable_historical_counts_view_builders() -> List[SimpleBigQueryViewBuilder]:
     view_builders = []
-    for state_code in get_direct_ingest_states_launched_in_env():
+    for state_code in get_direct_ingest_states_existing_in_env():
 
         region_config = get_region_raw_file_config(state_code.value)
         query_builder = StableHistoricalRawDataCountsQueryBuilder(region_config)
@@ -182,5 +182,4 @@ ALL_STALBLE_HISTORICAL_COUNTS_VIEW_BUILDER = (
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         for builder in ALL_STALBLE_HISTORICAL_COUNTS_VIEW_BUILDER:
-            if "us_tn" in builder.address.to_str():
-                builder.build_and_print()
+            builder.build_and_print()
