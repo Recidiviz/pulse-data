@@ -3320,25 +3320,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
-        default_delegate = UsXxSupervisionDelegate(
-            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-        )
-
-        (
-            level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id,
-        ) = supervising_location_info(
-            supervision_period,
-            default_delegate,
-        )
-
-        deprecated_supervising_district_external_id = (
-            default_delegate.get_deprecated_supervising_district_external_id(
-                level_1_supervision_location_external_id,
-                level_2_supervision_location_external_id,
-            )
-        )
-
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
@@ -3353,9 +3334,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_level=supervision_period.supervision_level,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            supervision_out_of_state=default_delegate.is_supervision_location_out_of_state(
-                deprecated_supervising_district_external_id
-            ),
+            supervision_out_of_state=False,
         )
 
         self.assertEqual(
@@ -3423,25 +3402,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
-        default_delegate = UsXxSupervisionDelegate(
-            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-        )
-
-        (
-            level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id,
-        ) = supervising_location_info(
-            supervision_period,
-            default_delegate,
-        )
-
-        deprecated_supervising_district_external_id = (
-            default_delegate.get_deprecated_supervising_district_external_id(
-                level_1_supervision_location_external_id,
-                level_2_supervision_location_external_id,
-            )
-        )
-
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
@@ -3456,9 +3416,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             supervision_level=supervision_period.supervision_level,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            supervision_out_of_state=default_delegate.is_supervision_location_out_of_state(
-                deprecated_supervising_district_external_id
-            ),
+            supervision_out_of_state=False,
         )
 
         self.assertEqual(
@@ -6180,17 +6138,6 @@ def expected_population_events(
         for day_on_supervision in days_on_supervision:
             case_compliance = case_compliances.get(day_on_supervision)
 
-            default_delegate = UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            )
-
-            deprecated_supervising_district_external_id = (
-                default_delegate.get_deprecated_supervising_district_external_id(
-                    level_1_supervision_location_external_id,
-                    level_2_supervision_location_external_id,
-                )
-            )
-
             event = SupervisionPopulationEvent(
                 state_code=supervision_period.state_code,
                 year=day_on_supervision.year,
@@ -6220,9 +6167,7 @@ def expected_population_events(
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_compliance=case_compliance,
                 projected_end_date=projected_supervision_completion_date,
-                supervision_out_of_state=default_delegate.is_supervision_location_out_of_state(
-                    deprecated_supervising_district_external_id
-                ),
+                supervision_out_of_state=False,
             )
 
             expected_events.append(event)

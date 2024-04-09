@@ -25,11 +25,6 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate i
     StateSpecificSupervisionDelegate,
 )
 
-_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS: List[str] = [
-    "INTERSTATE PROBATION",
-    "PAROLE COMMISSION OFFICE",
-]
-
 
 class UsIxSupervisionDelegate(StateSpecificSupervisionDelegate):
     """US_IX implementation of the StateSpecificSupervisionDelegate."""
@@ -38,20 +33,6 @@ class UsIxSupervisionDelegate(StateSpecificSupervisionDelegate):
         """In US_IX, people on DUAL supervision are tracked as mutually exclusive from groups of people
         on PAROLE or PROBATION."""
         return True
-
-    def is_supervision_location_out_of_state(
-        self,
-        deprecated_supervising_district_external_id: Optional[str],
-    ) -> bool:
-        """For Idaho, we look at the supervision district identifier to see if it's a non-Idaho
-        entity/jurisdiction."""
-        # TODO(#4713): Rely on level_2_supervising_district_external_id, once it is populated.
-        return (
-            deprecated_supervising_district_external_id is not None
-            and deprecated_supervising_district_external_id.startswith(
-                tuple(_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS)
-            )
-        )
 
     def assessment_types_to_include_for_class(
         self, assessment_class: StateAssessmentClass

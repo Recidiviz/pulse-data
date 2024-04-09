@@ -274,9 +274,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                 included_in_state_population = (
                     not overlaps_with_ip and sp_in_state_population_based_on_metadata
                 ) and not is_supervision_out_of_state(
-                    supervision_period.custodial_authority,
-                    deprecated_supervising_district_external_id,
-                    supervision_delegate,
+                    supervision_period.custodial_authority
                 )
                 end_date_exclusive = (
                     sp_duration.upper_bound_exclusive_date
