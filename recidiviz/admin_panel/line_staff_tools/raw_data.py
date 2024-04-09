@@ -321,6 +321,11 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "name": "EMP_Note_Due",
         "type": "DATE",
     },
+    "Last JRCR Date": {
+        "mode": "NULLABLE",
+        "name": "Last_JRCR_Date",
+        "type": "DATE",
+    },
     "Last XEMP Date": {
         "mode": "NULLABLE",
         "name": "Last_XEMP_Date",
