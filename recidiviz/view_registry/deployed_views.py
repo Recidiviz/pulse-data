@@ -147,6 +147,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "task_eligibility_candidates_us_mi",
     "task_eligibility_completion_events",
     "task_eligibility_completion_events_general",
+    "task_eligibility_completion_events_us_nd",
     "task_eligibility_completion_events_us_mi",
     "task_eligibility_completion_events_us_mo",
     "task_eligibility_completion_events_us_me",
