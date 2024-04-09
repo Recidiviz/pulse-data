@@ -32,6 +32,9 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.views.dataflow_metrics_materialized import (
+    most_recent_dataflow_metrics,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_data_pruning_new_raw_data_dataset
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -47,6 +50,7 @@ from recidiviz.pipelines.calculation_data_storage_manager import (
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_normalization_pipeline_enabled_states,
 )
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,
 )
@@ -57,6 +61,8 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     "fake_calculation_pipeline_templates.yaml",
 )
 
+MOST_RECENT_DATAFLOW_METRICS_MODULE = most_recent_dataflow_metrics.__name__
+
 
 class MockMetricEnum(Enum):
     """Mock for the RecidivizMetricType enum."""
@@ -64,6 +70,24 @@ class MockMetricEnum(Enum):
     METRIC_1 = "METRIC_1"
     METRIC_2 = "METRIC_2"
     METRIC_3 = "METRIC_3"
+
+
+class MockMetric1(RecidivizMetric):
+    @classmethod
+    def get_description(cls) -> str:
+        return "Metric 1"
+
+
+class MockMetric2(RecidivizMetric):
+    @classmethod
+    def get_description(cls) -> str:
+        return "Metric 2"
+
+
+class MockMetric3(RecidivizMetric):
+    @classmethod
+    def get_description(cls) -> str:
+        return "Metric 3"
 
 
 class CalculationDataStorageManagerTest(unittest.TestCase):
@@ -141,6 +165,16 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             self.fake_dataflow_tables_to_metric_types
         )
 
+        self.most_recent_dataflow_metrics_patcher = mock.patch(
+            f"{MOST_RECENT_DATAFLOW_METRICS_MODULE}.DATAFLOW_TABLES_TO_METRICS",
+            {
+                "fake_pipeline_no_limit_metric_table": MockMetric1,
+                "fake_pipeline_with_limit_metric_2_table": MockMetric2,
+                "fake_pipeline_with_limit_metric_3_table": MockMetric3,
+            },
+        )
+        self.most_recent_dataflow_metrics_patcher.start()
+
         self.mock_production_template_yaml = FAKE_PIPELINE_CONFIG_YAML_PATH
         self.mock_always_unbounded_date_metrics = [MockMetricEnum.METRIC_1]
 
@@ -169,6 +203,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
         self.dataflow_config_patcher.stop()
+        self.most_recent_dataflow_metrics_patcher.stop()
 
     def test_move_old_dataflow_metrics_to_cold_storage(self) -> None:
         """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to

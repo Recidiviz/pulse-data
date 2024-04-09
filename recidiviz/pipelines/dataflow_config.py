@@ -116,6 +116,11 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     ViolationWithResponseMetric: "violation_with_response_metrics",
 }
 
+DATAFLOW_TABLES_TO_METRICS = {
+    table_name: metric_class
+    for metric_class, table_name in DATAFLOW_METRICS_TO_TABLES.items()
+}
+
 # A map from the BigQuery Dataflow metric table to the RecidivizMetricType stored in the table
 # TODO(#28513): This should be an abstract property on the metric objects, instead of separately maintained lists
 DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {

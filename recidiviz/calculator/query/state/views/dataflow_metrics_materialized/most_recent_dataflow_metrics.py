@@ -24,7 +24,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
 )
-from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.pipelines.dataflow_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+    DATAFLOW_TABLES_TO_METRICS,
+)
+from recidiviz.pipelines.utils.identifier_models import SupervisionLocationMixin
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,11 +53,12 @@ MOST_RECENT_JOBS_TEMPLATE: str = """
         )
     )    
     SELECT
-        metric.*,
+        metric.* {except_clause},
         -- TODO(#28413): Person demographics passes *UNKNOWN through, and replaces NULL with PRESENT_WITHOUT_INFO, while the metric pipelines return NULL in these cases.
         IF(demographics.prioritized_race_or_ethnicity IN ('INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'PRESENT_WITHOUT_INFO'),
            NULL,
-           demographics.prioritized_race_or_ethnicity) as prioritized_race_or_ethnicity
+           demographics.prioritized_race_or_ethnicity) as prioritized_race_or_ethnicity,
+        {extra_columns_clause}
     FROM `{project_id}.{metrics_dataset}.{metric_table}` metric
     JOIN (
         SELECT state_code, metric_type, job_id
@@ -87,6 +92,24 @@ def make_most_recent_metric_view_builders(
     description = f"{metric_name} for the most recent job run"
     view_id = f"most_recent_{metric_name}"
 
+    except_clause = ""
+    extra_columns_clause = ""
+
+    metric_class = DATAFLOW_TABLES_TO_METRICS[metric_name]
+    if issubclass(metric_class, SupervisionLocationMixin):
+        # TODO(#4709): Remove this except clause in the same PR that removes
+        #  supervising_district_external_id from the SupervisionLocationMixin
+        #  definition.
+        except_clause = "EXCEPT (supervising_district_external_id)"
+        extra_columns_clause = """
+        -- TODO(#4709): This field is deprecated and downstream uses should be deleted 
+        -- entirely.
+        CASE
+            WHEN state_code = 'US_ND' THEN level_1_supervision_location_external_id
+            ELSE COALESCE(level_2_supervision_location_external_id, level_1_supervision_location_external_id)
+        END AS supervising_district_external_id,
+        """
+
     if (
         metric_name in VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION
         and split_on_included_in_population
@@ -103,6 +126,8 @@ def make_most_recent_metric_view_builders(
                 sessions_dataset=SESSIONS_DATASET,
                 should_materialize=True,
                 metrics_filter="WHERE included_in_state_population = TRUE",
+                except_clause=except_clause,
+                extra_columns_clause=extra_columns_clause,
             ),
             SimpleBigQueryViewBuilder(
                 dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -115,6 +140,8 @@ def make_most_recent_metric_view_builders(
                 sessions_dataset=SESSIONS_DATASET,
                 should_materialize=True,
                 metrics_filter="WHERE included_in_state_population = FALSE",
+                except_clause=except_clause,
+                extra_columns_clause=extra_columns_clause,
             ),
         ]
     return [
@@ -128,6 +155,8 @@ def make_most_recent_metric_view_builders(
             sessions_dataset=SESSIONS_DATASET,
             should_materialize=True,
             metrics_filter="",
+            except_clause=except_clause,
+            extra_columns_clause=extra_columns_clause,
         )
     ]
 
