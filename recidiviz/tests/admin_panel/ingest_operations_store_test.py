@@ -23,7 +23,6 @@ from unittest import mock
 from unittest.case import TestCase
 from unittest.mock import patch
 
-import attr
 import pytest
 import pytz
 from fakeredis import FakeRedis
@@ -53,9 +52,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
     DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
-    RawDataClassification,
     RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -575,34 +572,12 @@ class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
 class FileStalenessTest(unittest.TestCase):
     """Tests for calculating file staleness"""
 
-    def setUp(self) -> None:
-        self.file_config = DirectIngestRawFileConfig(
-            file_tag="myFile",
-            file_path="/path/to/myFile.yaml",
-            file_description="This is a raw data file",
-            data_classification=RawDataClassification.SOURCE,
-            columns=[],
-            custom_line_terminator=None,
-            primary_key_cols=[],
-            supplemental_order_by_clause="",
-            encoding="UTF-8",
-            separator=",",
-            ignore_quotes=False,
-            always_historical_export=True,
-            no_valid_primary_keys=False,
-            import_chunk_size_rows=10,
-            infer_columns_from_config=False,
-            table_relationships=[],
-            update_cadence=RawDataFileUpdateCadence.WEEKLY,
-            is_code_file=False,
-        )
-
     def test_weekly_file_stale(self) -> None:
         with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
             discovery_time = datetime(year=2020, month=1, day=1, tzinfo=pytz.UTC)
             self.assertFalse(
                 IngestOperationsStore.calculate_if_file_is_stale(
-                    discovery_time, self.file_config
+                    discovery_time, RawDataFileUpdateCadence.WEEKLY
                 )
             )
 
@@ -610,19 +585,16 @@ class FileStalenessTest(unittest.TestCase):
             discovery_time = datetime(year=2019, month=12, day=25, tzinfo=pytz.UTC)
             self.assertTrue(
                 IngestOperationsStore.calculate_if_file_is_stale(
-                    discovery_time, self.file_config
+                    discovery_time, RawDataFileUpdateCadence.WEEKLY
                 )
             )
 
     def test_daily_file_stale(self) -> None:
-        daily_config = attr.evolve(
-            self.file_config, update_cadence=RawDataFileUpdateCadence.DAILY
-        )
         with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
             discovery_time = datetime(year=2020, month=1, day=2, tzinfo=pytz.UTC)
             self.assertFalse(
                 IngestOperationsStore.calculate_if_file_is_stale(
-                    discovery_time, daily_config
+                    discovery_time, RawDataFileUpdateCadence.DAILY
                 )
             )
 
@@ -630,26 +602,6 @@ class FileStalenessTest(unittest.TestCase):
             discovery_time = datetime(year=2019, month=1, day=1, tzinfo=pytz.UTC)
             self.assertTrue(
                 IngestOperationsStore.calculate_if_file_is_stale(
-                    discovery_time, daily_config
-                )
-            )
-
-    def test_irregular_file_stale(self) -> None:
-        irregular_config = attr.evolve(
-            self.file_config, update_cadence=RawDataFileUpdateCadence.IRREGULAR
-        )
-        with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
-            discovery_time = datetime(year=2020, month=1, day=2, tzinfo=pytz.UTC)
-            self.assertFalse(
-                IngestOperationsStore.calculate_if_file_is_stale(
-                    discovery_time, irregular_config
-                )
-            )
-
-        with freeze_time(datetime(year=2020, month=1, day=3, tzinfo=pytz.UTC)):
-            discovery_time = datetime(year=2012, month=1, day=1, tzinfo=pytz.UTC)
-            self.assertFalse(
-                IngestOperationsStore.calculate_if_file_is_stale(
-                    discovery_time, irregular_config
+                    discovery_time, RawDataFileUpdateCadence.DAILY
                 )
             )
