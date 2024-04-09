@@ -43,6 +43,7 @@ VIEW_QUERY_TEMPLATE = """
       WHEN data_system = 'lotr' THEN 'US_OZ_LOTR_ID'
       WHEN data_system = 'sm' THEN 'US_OZ_SM'
       WHEN data_system = 'hg' THEN 'US_OZ_HG_ID'
+      WHEN data_system = 'egt' THEN 'US_OZ_EGT'
     END AS external_id_type,
     person_id AS person_external_id, 
     CAST(NULL AS STRING) AS facility,
