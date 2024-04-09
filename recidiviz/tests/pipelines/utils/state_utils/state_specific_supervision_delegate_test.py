@@ -72,22 +72,6 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         self.assertEqual(level_1, "1")
         self.assertEqual(level_2, None)
 
-    def test_supervision_period_is_out_of_state_with_identifier(self) -> None:
-        self.assertFalse(
-            self.supervision_delegate.is_supervision_location_out_of_state(
-                "INTERSTATE PROBATION - remainder of identifier"
-            )
-        )
-
-    def test_supervision_period_is_out_of_state_with_incorrect_identifier(
-        self,
-    ) -> None:
-        self.assertFalse(
-            self.supervision_delegate.is_supervision_location_out_of_state(
-                "Incorrect - remainder of identifier"
-            )
-        )
-
     @staticmethod
     def create_population_event(
         state_code: str, supervising_district_external_id: Optional[str]

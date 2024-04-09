@@ -114,15 +114,6 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         """
         return level_2_supervision_location or level_1_supervision_location
 
-    def is_supervision_location_out_of_state(
-        self,
-        deprecated_supervising_district_external_id: Optional[str],
-    ) -> bool:
-        """Returns whether the person's supervision location indicates supervision
-        served out-of-state. By default, we assume the location indicates in-state
-        supervision."""
-        return False
-
     def supervision_period_in_supervision_population_in_non_excluded_date_range(
         self,
         supervision_period: NormalizedStateSupervisionPeriod,

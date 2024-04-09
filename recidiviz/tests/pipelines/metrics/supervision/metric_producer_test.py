@@ -70,14 +70,8 @@ from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import 
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
-    UsXxSupervisionDelegate,
-)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
     UsXxSupervisionMetricsProducerDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate import (
-    UsIxSupervisionDelegate,
 )
 
 ALL_METRICS_INCLUSIONS = set(SupervisionMetricType)
@@ -1544,9 +1538,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id="INTERSTATE PROBATION - 123",
             projected_end_date=None,
-            supervision_out_of_state=UsIxSupervisionDelegate(
-                []
-            ).is_supervision_location_out_of_state("INTERSTATE PROBATION - 123"),
+            supervision_out_of_state=True,
         )
 
         supervision_events: List[SupervisionEvent] = [
@@ -1878,16 +1870,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    class OutOfStateDelegate(UsXxSupervisionDelegate):
-        def is_supervision_location_out_of_state(
-            self,
-            deprecated_supervising_district_external_id: Optional[str],
-        ) -> bool:
-            return True
-
     def test_include_event_in_metric_out_of_state(self) -> None:
-        supervision_delegate = self.OutOfStateDelegate([])
-
         event = SupervisionPopulationEvent(
             state_code="US_XX",
             year=2018,
@@ -1898,9 +1881,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
             projected_end_date=None,
-            supervision_out_of_state=supervision_delegate.is_supervision_location_out_of_state(
-                "some_district"
-            ),
+            supervision_out_of_state=True,
         )
         self.assertTrue(
             self.metric_producer.include_event_in_metric(

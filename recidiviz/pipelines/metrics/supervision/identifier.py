@@ -429,8 +429,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
                 supervision_out_of_state = is_supervision_out_of_state(
                     supervision_period.custodial_authority,
-                    deprecated_supervising_district_external_id,
-                    supervision_delegate,
                 )
                 event = SupervisionPopulationEvent(
                     state_code=supervision_period.state_code,
