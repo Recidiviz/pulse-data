@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_egt_person` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ID
+  - Name
+  - DOB
+  - Address
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ID
+          id_type: $literal("US_OZ_EGT")
+    full_name:
+      $person_name:
+        $full_name: Name
+    birthdate: DOB
+    current_address: Address

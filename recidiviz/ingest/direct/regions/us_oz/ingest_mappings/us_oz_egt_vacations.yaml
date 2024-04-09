@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_egt_vacations` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ID
+  - PersonID
+  - Location
+  - StartDate
+  - EndDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PersonID
+          id_type: $literal("US_OZ_EGT")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          admission_date: StartDate
+          release_date: EndDate
+          facility: Location
+          external_id:
+            # Prefix the IDs with EGT so they don't clash with other data systems &
+            # follow convention
+            $concat:
+              $values:
+                - $literal("EGT")
+                - ID
