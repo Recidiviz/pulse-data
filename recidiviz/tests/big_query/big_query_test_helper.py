@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ DTYPES = {
     "integer": {int, pd.Int64Dtype, numpy.dtypes.Int64DType, numpy.int64},
     "bool": {bool, pd.BooleanDtype, numpy.dtypes.BoolDType, numpy.bool_},
 }
+
 
 # TODO(#15020): Get rid of this interface once the postgres implementation is deleted.
 class BigQueryTestHelper:
@@ -192,6 +193,7 @@ class BigQueryTestHelper:
             numpy.datetime64,
             db_dtypes.DateDtype,
             numpy.dtypes.ObjectDType,
+            numpy.dtypes.DateTime64DType,
             # Collection types are not hashable so there are issues with setting
             # collection type columns as index columns.
             list,

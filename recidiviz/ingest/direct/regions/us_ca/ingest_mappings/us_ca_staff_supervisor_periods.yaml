@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - supervisee_BadgeNumber
+  - supervisor_BadgeNumber
+  - start_date
+  - end_date
+  - ParoleUnit
+unused_columns:
+  - ParoleUnit
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: supervisee_BadgeNumber
+          id_type: $literal("US_CA_BADGE_NO")
+    supervisor_periods:
+      - StateStaffSupervisorPeriod:
+          external_id:
+            $concat:
+              $values:
+                - supervisee_BadgeNumber
+                - supervisor_BadgeNumber
+                - start_date
+          supervisor_staff_external_id: supervisor_BadgeNumber
+          supervisor_staff_external_id_type: $literal("US_CA_BADGE_NO")
+          start_date: start_date
+          end_date: end_date
