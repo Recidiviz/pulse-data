@@ -255,11 +255,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             ) = supervision_delegate.supervision_location_from_supervision_site(
                 supervision_period.supervision_site
             )
-            deprecated_supervising_district_external_id = (
-                supervision_delegate.get_deprecated_supervising_district_external_id(
-                    level_1_supervision_location, level_2_supervision_location
-                )
-            )
             case_type = identify_most_severe_case_type(supervision_period)
             sp_in_state_population_based_on_metadata = supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
                 supervision_period
@@ -291,7 +286,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     case_type=case_type,
                     custodial_authority=supervision_period.custodial_authority,
                     supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-                    supervising_district_external_id=deprecated_supervising_district_external_id,
                     level_1_supervision_location_external_id=level_1_supervision_location,
                     level_2_supervision_location_external_id=level_2_supervision_location,
                     included_in_state_population=included_in_state_population,

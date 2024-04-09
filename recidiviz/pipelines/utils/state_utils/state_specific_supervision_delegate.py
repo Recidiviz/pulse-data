@@ -101,19 +101,6 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
             level_2_supervision_location or None,
         )
 
-    # TODO(#4709): Delete this delegate function once the field
-    #  supervising_district_external_id is no longer referenced by our views and we can
-    #  remove it from our metric output.
-    def get_deprecated_supervising_district_external_id(
-        self,
-        level_1_supervision_location: Optional[str],
-        level_2_supervision_location: Optional[str],
-    ) -> Optional[str]:
-        """Returns the supervision location value that should be used to populate the
-        deprecated supervising_district_external_id field in our metrics.
-        """
-        return level_2_supervision_location or level_1_supervision_location
-
     def supervision_period_in_supervision_population_in_non_excluded_date_range(
         self,
         supervision_period: NormalizedStateSupervisionPeriod,

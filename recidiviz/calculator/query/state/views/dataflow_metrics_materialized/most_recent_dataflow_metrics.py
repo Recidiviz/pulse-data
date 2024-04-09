@@ -97,10 +97,6 @@ def make_most_recent_metric_view_builders(
 
     metric_class = DATAFLOW_TABLES_TO_METRICS[metric_name]
     if issubclass(metric_class, SupervisionLocationMixin):
-        # TODO(#4709): Remove this except clause in the same PR that removes
-        #  supervising_district_external_id from the SupervisionLocationMixin
-        #  definition.
-        except_clause = "EXCEPT (supervising_district_external_id)"
         extra_columns_clause = """
         -- TODO(#4709): This field is deprecated and downstream uses should be deleted 
         -- entirely.

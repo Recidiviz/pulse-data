@@ -145,10 +145,3 @@ class UsNdSupervisionDelegate(StateSpecificSupervisionDelegate):
         ]
 
         return level_1_supervision_location, level_2_supervision_location
-
-    def get_deprecated_supervising_district_external_id(
-        self,
-        level_1_supervision_location: Optional[str],
-        level_2_supervision_location: Optional[str],
-    ) -> Optional[str]:
-        return level_1_supervision_location

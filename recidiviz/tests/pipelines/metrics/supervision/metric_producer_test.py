@@ -308,7 +308,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
                 supervising_officer_staff_id=10000,
-                supervising_district_external_id="DISTRICT X",
+                level_1_supervision_location_external_id="DISTRICT X",
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
@@ -321,7 +321,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
                 supervising_officer_staff_id=10000,
-                supervising_district_external_id="DISTRICT X",
+                level_1_supervision_location_external_id="DISTRICT X",
                 projected_end_date=None,
             ),
         ]
@@ -372,7 +372,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=True,
                 supervising_officer_staff_id=10000,
-                supervising_district_external_id="district5",
+                level_1_supervision_location_external_id="district5",
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -445,7 +445,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=False,
                 supervising_officer_staff_id=10000,
-                supervising_district_external_id="district5",
+                level_1_supervision_location_external_id="district5",
             ),
             SupervisionPopulationEvent(
                 state_code="US_XX",
@@ -521,7 +521,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=False,
-                supervising_district_external_id="district5",
+                level_1_supervision_location_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
             ProjectedSupervisionCompletionEvent(
@@ -531,7 +531,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=True,
-                supervising_district_external_id="district5",
+                level_1_supervision_location_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
             SupervisionPopulationEvent(
@@ -626,7 +626,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2020, 1, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
-                supervising_district_external_id="district5",
+                level_1_supervision_location_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
             ProjectedSupervisionCompletionEvent(
@@ -1283,7 +1283,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True,
-                supervising_district_external_id="district5",
+                level_1_supervision_location_external_id="district5",
                 supervising_officer_staff_id=10000,
             )
         ]
@@ -1398,7 +1398,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True,
-                supervising_district_external_id="district5",
+                level_1_supervision_location_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
             SupervisionPopulationEvent(
@@ -1536,7 +1536,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             month=1,
             event_date=date(2010, 1, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervising_district_external_id="INTERSTATE PROBATION - 123",
+            level_1_supervision_location_external_id="INTERSTATE PROBATION - 123",
             projected_end_date=None,
             supervision_out_of_state=True,
         )
@@ -1572,30 +1572,30 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
     @freeze_time("2010-12-01")
-    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
+    def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
     ) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="US_ID",
+            state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ID", race=StateRace.WHITE
+            state_code="US_IX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         event = SupervisionPopulationEvent(
-            state_code="US_ID",
+            state_code="US_IX",
             year=2010,
             month=1,
             event_date=date(2010, 1, 1),
@@ -1636,36 +1636,36 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
     @freeze_time("2010-12-01")
-    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state(
+    def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_not_out_of_state(
         self,
     ) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="US_ID",
+            state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ID", race=StateRace.WHITE
+            state_code="US_IX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
-                state_code="US_ID",
+                state_code="US_IX",
                 year=2010,
                 month=1,
                 event_date=date(2010, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervising_district_external_id="INVALID - 123",
+                level_1_supervision_location_external_id="INVALID - 123",
                 projected_end_date=None,
             ),
         ]
@@ -1688,31 +1688,31 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2010-12-01")
-    def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
+    def test_produce_supervision_metrics_US_IX_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
         self,
     ) -> None:
         person = StatePerson.new_with_defaults(
-            state_code="US_ID",
+            state_code="US_IX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ID", race=StateRace.WHITE
+            state_code="US_IX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ID", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_IX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
-                state_code="US_ID",
+                state_code="US_IX",
                 year=2010,
                 month=1,
                 event_date=date(2010, 1, 1),

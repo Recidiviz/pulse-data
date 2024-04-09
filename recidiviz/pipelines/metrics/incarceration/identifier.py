@@ -463,13 +463,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             supervision_delegate=supervision_delegate,
         )
 
-        deprecated_supervising_district_external_id = (
-            supervision_delegate.get_deprecated_supervising_district_external_id(
-                commitment_details.level_1_supervision_location_external_id,
-                commitment_details.level_2_supervision_location_external_id,
-            )
-        )
-
         return IncarcerationCommitmentFromSupervisionAdmissionEvent(
             state_code=incarceration_period.state_code,
             included_in_state_population=incarceration_delegate.is_period_included_in_state_population(
@@ -500,7 +493,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             violation_history_description=violation_history.violation_history_description,
             violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
             supervising_officer_staff_id=commitment_details.supervising_officer_staff_id,
-            supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=(
                 commitment_details.level_1_supervision_location_external_id
             ),

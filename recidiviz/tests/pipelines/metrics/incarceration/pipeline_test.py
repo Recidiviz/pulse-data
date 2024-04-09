@@ -584,7 +584,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
-                supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
