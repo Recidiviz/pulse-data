@@ -25,6 +25,7 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentSpanValueAtStartMetric,
     DailyAvgSpanValueMetric,
+    EventCountMetric,
     EventMetricConditionsMixin,
     EventValueMetric,
     SpanMetricConditionsMixin,
@@ -164,3 +165,20 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                     f"More than one unit_of_observation_type found for `{metric.name}` metric. "
                     f"All event selectors must be associated with the same unit_of_observation_type."
                 )
+
+    # Check that EventCount distinct attribute columns are all supported Event attributes
+    def test_compatible_event_segmentation_columns(self) -> None:
+        for metric in itertools.chain.from_iterable(
+            METRICS_BY_POPULATION_TYPE.values()
+        ):
+            if (
+                isinstance(metric, EventCountMetric)
+                and metric.event_segmentation_columns
+            ):
+                for event in metric.event_types:
+                    for col in metric.event_segmentation_columns:
+                        if col not in EVENTS_BY_TYPE[event].attribute_cols:
+                            raise ValueError(
+                                f"Configured event_segmentation_columns `{col}` is not supported by "
+                                f"{event.value} event. Supported attributes: {EVENTS_BY_TYPE[event].attribute_cols}"
+                            )
