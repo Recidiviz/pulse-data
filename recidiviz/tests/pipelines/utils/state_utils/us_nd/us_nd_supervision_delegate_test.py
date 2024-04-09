@@ -157,22 +157,3 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
             _ = self.supervision_delegate.supervision_location_from_supervision_site(
                 "12345"
             )
-
-    @parameterized.expand(
-        [
-            (None, None, None),
-            ("9", "Region 3", "9"),
-        ]
-    )
-    def test_get_deprecated_supervising_district_external_id(
-        self,
-        level_1_supervision_location: Optional[str],
-        level_2_supervision_location: Optional[str],
-        expected_district_external_id: Optional[str],
-    ) -> None:
-        self.assertEqual(
-            expected_district_external_id,
-            self.supervision_delegate.get_deprecated_supervising_district_external_id(
-                level_1_supervision_location, level_2_supervision_location
-            ),
-        )

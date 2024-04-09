@@ -416,11 +416,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         event_date
                     )
 
-                deprecated_supervising_district_external_id = supervision_delegate.get_deprecated_supervising_district_external_id(
-                    level_1_supervision_location_external_id,
-                    level_2_supervision_location_external_id,
-                )
-
                 projected_end_date = supervision_delegate.get_projected_completion_date(
                     supervision_period=supervision_period,
                     incarceration_sentences=incarceration_sentences,
@@ -448,7 +443,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     most_severe_response_decision=violation_history.most_severe_response_decision,
                     response_count=violation_history.response_count,
                     supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-                    supervising_district_external_id=deprecated_supervising_district_external_id,
                     level_1_supervision_location_external_id=level_1_supervision_location_external_id,
                     level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                     supervision_level=supervision_period.supervision_level,
@@ -571,13 +565,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_delegate,
         )
 
-        deprecated_supervising_district_external_id = (
-            supervision_delegate.get_deprecated_supervising_district_external_id(
-                level_1_supervision_location_external_id,
-                level_2_supervision_location_external_id,
-            )
-        )
-
         in_incarceration_population_on_date = (
             incarceration_period_index.was_in_incarceration_population_on_date(
                 start_date
@@ -604,7 +591,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-            supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,
             level_2_supervision_location_external_id=level_2_supervision_location_external_id,
             custodial_authority=supervision_period.custodial_authority,
@@ -717,13 +703,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
             )
 
-            deprecated_supervising_district_external_id = (
-                supervision_delegate.get_deprecated_supervising_district_external_id(
-                    level_1_supervision_location_external_id,
-                    level_2_supervision_location_external_id,
-                )
-            )
-
             in_incarceration_population_on_date = (
                 incarceration_period_index.was_in_incarceration_population_on_date(
                     termination_date
@@ -759,7 +738,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 termination_reason=supervision_period.termination_reason,
                 assessment_score_change=assessment_score_change,
                 supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-                supervising_district_external_id=deprecated_supervising_district_external_id,
                 level_1_supervision_location_external_id=level_1_supervision_location_external_id,
                 level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                 custodial_authority=supervision_period.custodial_authority,
@@ -941,13 +919,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         last_day_of_projected_month = last_day_of_month(projected_completion_date)
 
-        deprecated_supervising_district_external_id = (
-            supervision_delegate.get_deprecated_supervising_district_external_id(
-                level_1_supervision_location_external_id,
-                level_2_supervision_location_external_id,
-            )
-        )
-
         # TODO(#2975): Note that this metric measures success by projected completion month. Update or expand this
         #  metric to capture the success of early termination as well
         return ProjectedSupervisionCompletionEvent(
@@ -961,7 +932,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             case_type=case_type,
             successful_completion=successful_completion,
             supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-            supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,
             level_2_supervision_location_external_id=level_2_supervision_location_external_id,
             custodial_authority=supervision_period.custodial_authority,

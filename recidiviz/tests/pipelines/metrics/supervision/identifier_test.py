@@ -1430,14 +1430,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_type,
-                supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
             ),
             create_start_event_from_period(
                 supervision_period,
-                supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
             ),
         ]
@@ -2155,12 +2153,10 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_start_event_from_period(
                 supervision_period,
                 UsIxSupervisionDelegate([]),
-                supervising_district_external_id="DISTRICT_1",
             ),
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="DISTRICT_1",
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
@@ -2256,14 +2252,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_start_event_from_period(
                 supervision_period,
                 UsPaSupervisionDelegate([]),
-                supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
             ),
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 in_supervision_population_on_date=True,
@@ -4311,7 +4305,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    supervising_district_external_id="DISTRICTX",
                     level_1_supervision_location_external_id="DISTRICTX",
                 )
             ],
@@ -4369,7 +4362,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    supervising_district_external_id=None,
                 )
             ],
             projected_completion_events,
@@ -6157,10 +6149,6 @@ def expected_population_events(
                 most_severe_response_decision=most_severe_response_decision,
                 response_count=response_count,
                 supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
-                supervising_district_external_id=(
-                    level_2_supervision_location_external_id
-                    or level_1_supervision_location_external_id
-                ),
                 level_1_supervision_location_external_id=level_1_supervision_location_external_id,
                 level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                 supervision_level=supervision_period.supervision_level,
@@ -6583,13 +6571,6 @@ def create_start_event_from_period(
         supervision_delegate,
     )
 
-    deprecated_supervising_district_external_id = (
-        supervision_delegate.get_deprecated_supervising_district_external_id(
-            level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id,
-        )
-    )
-
     assert period.start_date is not None
 
     event = SupervisionStartEvent(
@@ -6600,7 +6581,6 @@ def create_start_event_from_period(
         supervision_type=period.supervision_type,
         supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_officer_staff_id=period.supervising_officer_staff_id,
-        supervising_district_external_id=deprecated_supervising_district_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         supervision_level=period.supervision_level,
@@ -6630,13 +6610,6 @@ def create_termination_event_from_period(
         supervision_delegate,
     )
 
-    deprecated_supervising_district_external_id = (
-        supervision_delegate.get_deprecated_supervising_district_external_id(
-            level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id,
-        )
-    )
-
     termination_reason = period.termination_reason
 
     if period.termination_date and not termination_reason:
@@ -6653,7 +6626,6 @@ def create_termination_event_from_period(
         supervision_type=period.supervision_type,
         supervision_level=period.supervision_level,
         supervision_level_raw_text=period.supervision_level_raw_text,
-        supervising_district_external_id=deprecated_supervising_district_external_id,
         supervising_officer_staff_id=period.supervising_officer_staff_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,

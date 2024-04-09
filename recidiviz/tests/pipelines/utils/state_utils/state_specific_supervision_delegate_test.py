@@ -17,7 +17,6 @@
 """Unit tests for state_specific_supervision_delegate default functions"""
 import unittest
 from datetime import date
-from typing import Optional
 
 from parameterized import parameterized
 
@@ -39,7 +38,6 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
 )
-from recidiviz.pipelines.metrics.supervision.events import SupervisionPopulationEvent
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
@@ -71,20 +69,6 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         ) = self.supervision_delegate.supervision_location_from_supervision_site("1")
         self.assertEqual(level_1, "1")
         self.assertEqual(level_2, None)
-
-    @staticmethod
-    def create_population_event(
-        state_code: str, supervising_district_external_id: Optional[str]
-    ) -> SupervisionPopulationEvent:
-        return SupervisionPopulationEvent(
-            state_code=state_code,
-            year=2010,
-            month=1,
-            event_date=date(2010, 1, 1),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervising_district_external_id=supervising_district_external_id,
-            projected_end_date=None,
-        )
 
     @parameterized.expand(
         [
