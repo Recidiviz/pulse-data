@@ -566,8 +566,10 @@ class EventCountMetric(PeriodEventAggregatedMetric):
             f'JSON_EXTRACT_SCALAR(event_attributes, "$.{col}")'
             for col in event_segmentation_columns
         ]
-        event_segmentation_columns_str = ",\n                    " + ", ".join(
-            event_segmentation_columns_json
+        event_segmentation_columns_str = (
+            ",\n                    " + ", ".join(event_segmentation_columns_json)
+            if len(event_segmentation_columns_json) > 0
+            else ""
         )
         return f"""
             COUNT(DISTINCT IF(
