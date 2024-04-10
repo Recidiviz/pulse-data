@@ -30,7 +30,25 @@ PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_NAME = "person_caseload_location_sessions
 PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_DESCRIPTION = """
 View representing assignments for all states using default logic. For all default
 states, we should validate that the results of this assignment table for the current
-day snapshot align with the location and caseload information in person_record."""
+day snapshot align with the location and caseload information in person_record.
+
+## Field Definitions
+
+|	Field	|	Description	|
+|	--------------------	|	--------------------	|
+|	person_id	|	Unique person identifier	|
+|	compartment_level_1	|	Level 1 Compartment	|
+|	state_code	|	State	|
+|	start_date	|	Start day of session	|
+|	end_date_exclusive	|	Day that session ends	|
+|	caseload_id	|	Caseload under which the person may be surfaced for a Workflows opportunity (see below for further details)	|
+|	location_id	|	Location to which the person is associated (see below for further details)	|
+
+The logic for deriving caseload and location differs by compartment:
+* Supervision: caseload_id = supervising_officer_external_id; location_id = supervision_district
+* Incarceration: caseload_id = facility; location_id = "<facility>, <housing_unit>"
+    * Some states (US_ME, US_IX, US_TN) don't use housing_unit in person_record.location, so for those states, we use location_id = facility 
+"""
 
 PERSON_CASELOAD_LOCATION_SESSIONS_QUERY_TEMPLATE = """
 SELECT 
@@ -46,7 +64,11 @@ SELECT
         AS caseload_id,
     CASE
         WHEN compartment_level_1 LIKE 'SUPERVISION%' THEN supervision_district_name
-        WHEN compartment_level_1 LIKE 'INCARCERATION%' THEN ARRAY_TO_STRING([facility, housing_unit], ', ')
+        WHEN compartment_level_1 LIKE 'INCARCERATION%' THEN
+            CASE
+                WHEN state_code IN ('US_ME', 'US_IX', 'US_TN') THEN facility
+                ELSE ARRAY_TO_STRING([facility, housing_unit], ', ')  
+            END
         END
         AS location_id,
 FROM
