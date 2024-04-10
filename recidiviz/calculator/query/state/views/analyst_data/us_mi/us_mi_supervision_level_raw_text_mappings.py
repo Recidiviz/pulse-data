@@ -60,7 +60,7 @@ SELECT DISTINCT
     'COMS' as source,
     supervision_level_raw_text AS supervision_level_raw_text,
     supervision_level_raw_text AS description,
-    IF(LOWER(supervision_level_raw_text) LIKE '%sai%',TRUE, NULL) AS is_sai,
+    IF(LOWER(supervision_level_raw_text) LIKE '%special alternative incarceration%',TRUE, NULL) AS is_sai,
     IF(((LOWER(supervision_level_raw_text) LIKE '%ems%' OR LOWER(supervision_level) LIKE '%gps%')
       AND (LOWER(supervision_level_raw_text) NOT LIKE '%non-ems%' AND LOWER(supervision_level) NOT LIKE '%non-gps%')), TRUE, NULL) AS is_em,
     IF(LOWER(supervision_level_raw_text) LIKE '%admin%',TRUE, NULL) AS is_minimum_excluded,

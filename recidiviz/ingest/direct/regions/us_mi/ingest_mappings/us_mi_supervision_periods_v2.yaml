@@ -29,6 +29,7 @@ input_columns:
   - prev_movement_reason_id
   - most_recent_supervision_level_id
   - modifier
+  - specialties
 unused_columns:
   - next_order_type_id_list
   - first_name
@@ -785,16 +786,9 @@ output:
                         $values:
                           - $literal("MODIFIER")
                           - modifier
-                    $mappings:
-                      StateSupervisionLevel.IN_CUSTODY:
-                        - "MODIFIER-MPVU"
-                        - "MODIFIER-Pending Revocation Hearing"
-                        - "MODIFIER-Paroled to Custody"
-                        - "MODIFIER-In Prison"
-                        - "MODIFIER-In Jail"
-                        - "MODIFIER-Paroled to Custody (Fed/Outstate)"
-                        - "MODIFIER-#2 Warrant Issued Sentenced Over 90 Days"
-                        - "MODIFIER-#2 Warrant Issued"
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
               # If this period has a in custody related supervision site, map to IN_CUSTODY
               - $else_if:
                   $in:
@@ -809,10 +803,9 @@ output:
                         $values:
                           - $literal("SUPERVISION_SITE")
                           - dest_name
-                    $mappings:
-                      StateSupervisionLevel.IN_CUSTODY:
-                        - "SUPERVISION_SITE-PAROLED IN CUSTODY"
-                        - "SUPERVISION_SITE-Paroled to Michigan Custody"
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
               # if this period is an OTHER_STATE period, supervision level is null, and
               # we wouldn't be imputing it based on most recent supervision level, then
               # let's set supervision level to INTERNAL_UNKNOWN so that they won't be
@@ -826,7 +819,15 @@ output:
                     - $equal:
                         - dest_location_type_id
                         - $literal("2155")
-                $then: $literal_enum(StateSupervisionLevel.INTERNAL_UNKNOWN)
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("OTHER_STATE")
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_internal_unknown_level
               - $else_if:
                   $in:
                     $value: movement_reason_id
@@ -838,7 +839,16 @@ output:
                       - $literal("103") # Held Under Custody - Jail Sentence
                       - $literal("102") # Held Under Custody - New Criminal Processing
                       - $literal("156") # Probationer Held Under Custody
-                $then: $literal_enum(StateSupervisionLevel.IN_CUSTODY)
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("MOVEMENT_REASON")
+                          - movement_reason_id
+                          - specialties
+                        $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.map_in_custody_level
               - $else:
                   $enum_mapping:
                     $raw_text:
@@ -847,7 +857,12 @@ output:
                       $conditional:
                         - $if:
                             $not_null: supervision_level_id
-                          $then: supervision_level_id
+                          $then:
+                            $concat:
+                              $values:
+                                - supervision_level_id
+                                - specialties
+                              $separator: "##"
                         - $else_if:
                             $and:
                               - $not_null: most_recent_supervision_level_id
@@ -857,6 +872,7 @@ output:
                               $values:
                                 - most_recent_supervision_level_id
                                 - $literal("imputed")
+                                - specialties
                               $separator: "##"
                     $custom_parser: us_mi_custom_enum_parsers.parse_supervision_level
           conditions: special_condition_ids
