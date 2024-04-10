@@ -39,6 +39,7 @@ WITH base AS (
 SELECT DISTINCT
     off.COMMITMENT_ID AS external_id,
     doc.PERSON_ID AS person_id,
+    doc.DOC_ID AS doc_id,
     off.UPDT_DTM AS group_update_datetime,
     -- See view description for explanation of datetime field hierarchy.
     COALESCE(
