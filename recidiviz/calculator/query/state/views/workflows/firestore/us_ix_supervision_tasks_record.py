@@ -166,6 +166,7 @@ US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
             state_code,
             officer_id,
             ARRAY_AGG(task IGNORE NULLS) AS tasks,
+            [] AS needs,
         FROM all_supervision_tasks
         WHERE task IS NOT NULL
         GROUP BY 1,2,3
