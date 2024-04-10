@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_incidents`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - PERSON_ID
+  - COUNTY
+  - COUNTY_ID
+  - JUDGE_ID
+  - COURT_FIRST_NAME
+  - COURT_MIDDLE_NAME
+  - COURT_LAST_NAME
+  - ARS_ID
+  - OFFENSE_ID
+  - OFFENSE_DTM
+  - NCIC_CODE
+  - ARS_CODE
+  - SUBSECTION_CODE
+  - OFFENSE_NUMBER
+  - DESCRIPTION
+  - MURDER_DEGREE
+  - TRNSTN_PGM_RLS_INELIG_FLAG
+  - VIOLENCE_FLAG
+  - CONTROLLING_OFFENSE_FLAG
+  - SEX_OFFENSE_FLAG
+unused_columns: [COUNTY_ID, ARS_ID]
+variables:
+  - violent_bool:
+      $equal:
+        - VIOLENCE_FLAG
+        - $literal("Y")
+  - sex_offense_bool:
+      $equal:
+        - SEX_OFFENSE_FLAG
+        - $literal("Y")
+  - controlling_bool:
+      $equal:
+        - CONTROLLING_OFFENSE_FLAG
+        - $literal("True")
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    sentences:
+      - StateSentence:
+          external_id: OFFENSE_ID
+          charges:
+            - StateChargeV2:
+                external_id: OFFENSE_ID
+                offense_date: OFFENSE_DTM
+                county_code: COUNTY
+                ncic_code: NCIC_CODE
+                statute:
+                  $concat:
+                    $values:
+                      - ARS_CODE
+                      - SUBSECTION_CODE
+                description: DESCRIPTION
+                classification_subtype: MURDER_DEGREE
+                is_violent: $variable(violent_bool)
+                is_sex_offense: $variable(sex_offense_bool)
+                counts: OFFENSE_NUMBER
+                charge_notes: TRNSTN_PGM_RLS_INELIG_FLAG
+                is_controlling: $variable(controlling_bool)
+                judge_external_id: JUDGE_ID
+                judge_full_name:
+                  $json_dict:
+                    given_names: COURT_FIRST_NAME
+                    middle_name: COURT_MIDDLE_NAME
+                    surname: COURT_LAST_NAME
+                status: $literal_enum(StateChargeV2Status.PRESENT_WITHOUT_INFO)
