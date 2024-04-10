@@ -69,6 +69,7 @@ from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_supervision_delegate impo
 from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 
 HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = (
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[StateSupervisionCaseType.GENERAL][
@@ -179,8 +180,12 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=evaluation_date,
-            assessments=assessments,
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                assessments, lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -276,16 +281,21 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=evaluation_date,
-            assessments=[],
-            supervision_contacts=contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
         )
         self.assertEqual(
             len(expected_contacts),
-            us_ix_supervision_compliance._face_to_face_contacts_on_date(
-                evaluation_date
+            us_ix_supervision_compliance._count_contacts_on_date(
+                evaluation_date,
+                us_ix_supervision_compliance.filter_for_face_to_face_contacts(),
             ),
         )
 
@@ -341,8 +351,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -395,8 +409,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -449,8 +467,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -503,8 +525,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -774,8 +800,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -817,8 +847,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -860,8 +894,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1008,8 +1046,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1104,8 +1146,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1143,8 +1189,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1182,8 +1232,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1242,8 +1296,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1316,8 +1374,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                supervision_contacts, lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1355,8 +1417,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1394,8 +1460,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1428,8 +1498,12 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1469,8 +1543,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1503,8 +1581,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1540,8 +1622,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1577,8 +1663,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1612,8 +1702,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1649,8 +1743,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1688,8 +1786,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1724,8 +1826,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_date,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1757,8 +1863,12 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1818,8 +1928,12 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[assessment],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [assessment], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1862,8 +1976,12 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
-            assessments=[assessment],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [assessment], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1905,8 +2023,12 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
-            assessments=[assessment],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [assessment], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1960,8 +2082,12 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
-            assessments=[assessment_boundary],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [assessment_boundary], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -1990,8 +2116,13 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
-            assessments=[assessment_under_boundary],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [assessment_under_boundary],
+                lambda assessment: assessment.assessment_date,
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2071,10 +2202,13 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
-            assessments=[
-                self._assessment_with_score(100)
-            ],  # No downgrade regardless of score
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [self._assessment_with_score(100)],  # No downgrade regardless of score
+                lambda assessment: assessment.assessment_date,
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2105,8 +2239,13 @@ class TestSupervisionDowngrades(unittest.TestCase):
             supervision_period=self._supervision_period_with_level(level),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
-            assessments=[self._assessment_with_score(score)],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [self._assessment_with_score(score)],
+                lambda assessment: assessment.assessment_date,
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2122,8 +2261,13 @@ class TestSupervisionDowngrades(unittest.TestCase):
             supervision_period=self._supervision_period_with_level(level),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
-            assessments=[self._assessment_with_score(score - 1)],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [self._assessment_with_score(score - 1)],
+                lambda assessment: assessment.assessment_date,
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2171,8 +2315,13 @@ class TestSupervisionDowngrades(unittest.TestCase):
             supervision_period=self._supervision_period_with_level(level),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
-            assessments=[self._assessment_with_score(score)],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [self._assessment_with_score(score)],
+                lambda assessment: assessment.assessment_date,
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2188,8 +2337,13 @@ class TestSupervisionDowngrades(unittest.TestCase):
             supervision_period=self._supervision_period_with_level(level),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
-            assessments=[self._assessment_with_score(score - 1)],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [self._assessment_with_score(score - 1)],
+                lambda assessment: assessment.assessment_date,
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2214,8 +2368,12 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2233,8 +2391,12 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=self.start_of_supervision,
-            assessments=[],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [], lambda assessment: assessment.assessment_date
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),
@@ -2259,18 +2421,23 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=supervision_start,
-            assessments=[
-                # this would result in a MINIMUM recommendation
-                NormalizedStateAssessment.new_with_defaults(
-                    state_code=StateCode.US_IX.value,
-                    external_id="a1",
-                    assessment_type=StateAssessmentType.LSIR,
-                    assessment_date=supervision_start - timedelta(days=14),
-                    assessment_score=1,
-                    sequence_num=0,
-                )
-            ],
-            supervision_contacts=[],
+            assessments_by_date=RangeQuerier(
+                [
+                    # this would result in a MINIMUM recommendation
+                    NormalizedStateAssessment.new_with_defaults(
+                        state_code=StateCode.US_IX.value,
+                        external_id="a1",
+                        assessment_type=StateAssessmentType.LSIR,
+                        assessment_date=supervision_start - timedelta(days=14),
+                        assessment_score=1,
+                        sequence_num=0,
+                    )
+                ],
+                lambda assessment: assessment.assessment_date,
+            ),
+            supervision_contacts_by_date=RangeQuerier(
+                [], lambda contact: contact.contact_date
+            ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIxSupervisionDelegate([]),

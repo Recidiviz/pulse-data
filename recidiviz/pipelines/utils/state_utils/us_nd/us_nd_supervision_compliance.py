@@ -30,7 +30,7 @@
 import logging
 import sys
 from datetime import date, timedelta
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, cast
 
 from dateutil.relativedelta import relativedelta
 
@@ -156,7 +156,7 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             required_contacts,
             period_days,
             NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
-            self._get_applicable_home_visits_between_dates,
+            self.filter_for_home_visit_contacts(),
             use_business_days=False,
         )
 
@@ -188,7 +188,7 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         """Returns when the next face-to-face contact should be. Returns None if compliance standards are
         unknown or no subsequent face-to-face contacts are required."""
 
-        # North Dakota has contact rquirements by month. For example, Medium-level supervisees need f2f
+        # North Dakota has contact requirements by month. For example, Medium-level supervisees need f2f
         # contact once every 2 calendar months. So if the last contact was Feb 12, the contact requirement
         # wouldn't be in violation until May 1. Inversely, as long as we had a contact by the beginning
         # of the calendar month 2 months previous, we are in compliance.
@@ -198,18 +198,17 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             period_months,
         ) = self._get_required_face_to_face_contacts_and_period_months_for_level()
 
-        contacts_since_supervision_start = (
-            self._get_applicable_face_to_face_contacts_between_dates(
-                self.start_of_supervision, compliance_evaluation_date
+        contact_dates = [
+            # The range querier filters out contacts without a date, but we need this
+            # check to satisfy mypy.
+            cast(date, contact.contact_date)
+            for contact in self._reverse_sorted_contacts(
+                start_inclusive=self.start_of_supervision,
+                end_inclusive=compliance_evaluation_date,
+                contact_filter=self.filter_for_face_to_face_contacts(),
+                most_recent_n=required_contacts,
             )
-        )
-        contact_dates = sorted(
-            [
-                contact.contact_date
-                for contact in contacts_since_supervision_start
-                if contact.contact_date is not None
-            ]
-        )
+        ]
 
         if len(contact_dates) < required_contacts:
             # Not enough contacts. Give the PO until the full period window has elapsed
@@ -220,9 +219,7 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         else:
             # If n contacts are required every k month, this looks at the nth-to-last contact
             # and returns the date k months after that.
-            candidate_day = contact_dates[-required_contacts] + relativedelta(
-                months=period_months
-            )
+            candidate_day = contact_dates[-1] + relativedelta(months=period_months)
 
         # Need to project candidate_day to last day of the month.
         return (candidate_day + relativedelta(months=1)).replace(day=1) - timedelta(
@@ -245,7 +242,6 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         compliance_evaluation_date: Optional[date] = None,
         most_recent_employment_verification_date: Optional[date] = None,
     ) -> Optional[date]:
-
         """US_ND currently has no requirements for employment verifications"""
 
         return None

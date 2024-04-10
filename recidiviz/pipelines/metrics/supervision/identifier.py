@@ -106,6 +106,7 @@ from recidiviz.pipelines.utils.supervision_period_utils import (
 from recidiviz.pipelines.utils.supervision_type_identification import (
     sentence_supervision_type_to_supervision_periods_supervision_type,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 
 
 class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
@@ -193,6 +194,12 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period_index = NormalizedSupervisionPeriodIndex(
             sorted_supervision_periods=supervision_periods
         )
+        assessments_by_date = RangeQuerier(
+            assessments, lambda assessment: assessment.assessment_date
+        )
+        supervision_contacts_by_date = RangeQuerier(
+            supervision_contacts, lambda contact: contact.contact_date
+        )
 
         sorted_violation_responses = sort_normalized_entities_by_sequence_num(
             violation_responses
@@ -228,9 +235,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         supervision_period=supervision_period,
                         supervision_period_index=supervision_period_index,
                         incarceration_period_index=incarceration_period_index,
-                        assessments=assessments,
+                        assessments_by_date=assessments_by_date,
                         violation_responses_for_history=violation_responses_for_history,
-                        supervision_contacts=supervision_contacts,
+                        supervision_contacts_by_date=supervision_contacts_by_date,
                         violation_delegate=violation_delegate,
                         supervision_delegate=supervision_delegate,
                     )
@@ -279,11 +286,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        assessments: List[NormalizedStateAssessment],
+        assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
         violation_responses_for_history: List[
             NormalizedStateSupervisionViolationResponse
         ],
-        supervision_contacts: List[StateSupervisionContact],
+        supervision_contacts_by_date: RangeQuerier[date, StateSupervisionContact],
         violation_delegate: StateSpecificViolationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[SupervisionPopulationEvent]:
@@ -354,8 +361,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 supervision_period,
                 case_type,
                 start_of_supervision,
-                assessments,
-                supervision_contacts,
+                assessments_by_date,
+                supervision_contacts_by_date,
                 violation_responses_for_history,
                 incarceration_period_index,
                 supervision_delegate,
@@ -388,7 +395,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
                 most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                     event_date,
-                    assessments,
+                    assessments_by_date,
                     assessment_class=StateAssessmentClass.RISK,
                     supervision_delegate=supervision_delegate,
                 )

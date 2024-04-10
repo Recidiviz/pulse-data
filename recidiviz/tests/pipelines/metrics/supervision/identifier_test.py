@@ -136,6 +136,7 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 
 _STATE_CODE = "US_XX"
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
@@ -2878,9 +2879,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_reports,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -2978,9 +2983,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_responses,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3082,9 +3091,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_reports,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3164,9 +3177,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_reports,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3262,9 +3279,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_reports,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3344,9 +3365,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_reports,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3426,9 +3451,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_reports,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3483,9 +3512,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_reports,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3603,9 +3636,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_responses,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3688,9 +3725,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_period,
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_responses,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3771,9 +3812,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods[1],
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_responses,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3853,9 +3898,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_periods[1],
                 supervision_period_index,
                 incarceration_period_index,
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 violation_responses,
-                supervision_contacts,
+                RangeQuerier(
+                    supervision_contacts, lambda contact: contact.contact_date
+                ),
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
                     DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -6697,8 +6746,8 @@ def _generate_case_compliances(
         supervision_period,
         StateSupervisionCaseType.GENERAL,
         start_date,
-        assessments or [],
-        face_to_face_contacts or [],
+        RangeQuerier(assessments or [], lambda assessment: assessment.assessment_date),
+        RangeQuerier(face_to_face_contacts or [], lambda contact: contact.contact_date),
         violation_responses or [],
         incarceration_period_index=(
             incarceration_period_index or default_normalized_ip_index_for_tests()

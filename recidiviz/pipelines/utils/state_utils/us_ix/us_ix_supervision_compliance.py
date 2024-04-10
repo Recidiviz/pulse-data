@@ -63,7 +63,7 @@
 import logging
 import sys
 from datetime import date, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
@@ -77,8 +77,8 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionContact
 from recidiviz.pipelines.metrics.utils.supervision_case_compliance_manager import (
+    ContactFilter,
     StateSupervisionCaseComplianceManager,
 )
 from recidiviz.pipelines.utils.supervision_level_policy import SupervisionLevelPolicy
@@ -332,7 +332,7 @@ class UsIxSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             required_contacts,
             period_days,
             NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
-            self._get_applicable_face_to_face_contacts_between_dates,
+            self.filter_for_face_to_face_contacts(),
             use_business_days=True,
         )
 
@@ -407,21 +407,16 @@ class UsIxSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
         return supervision_level_raw_text in ("LOW", "MODERATE", "HIGH")
 
-    def _get_applicable_home_visits_between_dates(
-        self, lower_bound_inclusive: date, upper_bound_inclusive: date
-    ) -> List[StateSupervisionContact]:
+    @classmethod
+    def filter_for_home_visit_contacts(cls) -> ContactFilter:
         """In Idaho, home visits are considered location only and are collateral vs.
         face-to-face agnostic."""
-        return [
-            contact
-            for contact in self.supervision_contacts
-            # These are the types of contacts that can satisfy the home visit requirement
-            if contact.location == StateSupervisionContactLocation.RESIDENCE
+        return ContactFilter(
             # Contact must be marked as completed
-            and contact.status == StateSupervisionContactStatus.COMPLETED
-            and contact.contact_date is not None
-            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
-        ]
+            statuses={StateSupervisionContactStatus.COMPLETED},
+            # These are the types of contacts that can satisfy the home visit requirement
+            locations={StateSupervisionContactLocation.RESIDENCE},
+        )
 
     def _next_recommended_home_visit_date(
         self,
@@ -459,7 +454,7 @@ class UsIxSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             required_contacts,
             period_days,
             NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
-            self._get_applicable_home_visits_between_dates,
+            self.filter_for_home_visit_contacts(),
             use_business_days=False,
         )
 
@@ -492,7 +487,7 @@ class UsIxSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             required_contacts,
             period_days,
             NEW_SUPERVISION_TREATMENT_CONTACT_DEADLINE_DAYS,
-            self._get_applicable_treatment_collateral_contacts_between_dates,
+            self.filter_for_treatment_collateral_contacts(),
             use_business_days=False,
         )
 
@@ -574,9 +569,7 @@ class UsIxSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             required_contacts_per_period,
             period_days,
             NEW_SUPERVISION_EMPLOYMENT_VERIFICATION_DAYS,
-            get_applicable_contacts_function=(
-                self._get_applicable_employment_verifications_between_dates
-            ),
+            self.filter_for_employment_verification_contacts(),
             use_business_days=False,
         )
 

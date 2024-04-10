@@ -131,6 +131,7 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 from recidiviz.utils.types import assert_type
 
 _STATE_CODE = "US_XX"
@@ -549,7 +550,9 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
-            assessments=assessments,
+            assessments_by_date=RangeQuerier(
+                assessments, lambda assessment: assessment.assessment_date
+            ),
             sorted_violation_responses=sorted_violation_responses,
             county_of_residence=county_of_residence,
         )
@@ -930,7 +933,9 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
-            assessments=assessments,
+            assessments_by_date=RangeQuerier(
+                assessments, lambda assessment: assessment.assessment_date
+            ),
             sorted_violation_responses=sorted_violation_responses,
             county_of_residence=_COUNTY_OF_RESIDENCE,
             commitment_from_supervision_delegate=commitment_from_supervision_delegate,

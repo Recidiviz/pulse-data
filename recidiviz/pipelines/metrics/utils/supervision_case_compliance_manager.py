@@ -19,9 +19,11 @@
     where necessary.
 """
 import abc
+import itertools
 from datetime import date, timedelta
-from typing import Callable, List, Optional
+from typing import Iterator, List, Optional, Set, cast
 
+import attr
 import numpy as np
 from dateutil.relativedelta import relativedelta
 
@@ -58,6 +60,29 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate i
     StateSpecificSupervisionDelegate,
 )
 from recidiviz.pipelines.utils.supervision_level_policy import SupervisionLevelPolicy
+from recidiviz.utils.range_querier import RangeQuerier
+
+
+@attr.s
+class ContactFilter:
+    contact_types: Optional[Set[StateSupervisionContactType]] = attr.ib(default=None)
+    statuses: Optional[Set[StateSupervisionContactStatus]] = attr.ib(default=None)
+    locations: Optional[Set[StateSupervisionContactLocation]] = attr.ib(default=None)
+    verified_employment: Optional[bool] = attr.ib(default=None)
+
+    def matches(self, contact: StateSupervisionContact) -> bool:
+        if self.contact_types and contact.contact_type not in self.contact_types:
+            return False
+        if self.statuses and contact.status not in self.statuses:
+            return False
+        if self.locations and contact.location not in self.locations:
+            return False
+        if (
+            self.verified_employment is not None
+            and contact.verified_employment is not self.verified_employment
+        ):
+            return False
+        return True
 
 
 class StateSupervisionCaseComplianceManager:
@@ -69,8 +94,8 @@ class StateSupervisionCaseComplianceManager:
         supervision_period: NormalizedStateSupervisionPeriod,
         case_type: StateSupervisionCaseType,
         start_of_supervision: date,
-        assessments: List[NormalizedStateAssessment],
-        supervision_contacts: List[StateSupervisionContact],
+        assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
+        supervision_contacts_by_date: RangeQuerier[date, StateSupervisionContact],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -79,8 +104,8 @@ class StateSupervisionCaseComplianceManager:
         self.supervision_period = supervision_period
         self.case_type = case_type
         self.start_of_supervision = start_of_supervision
-        self.assessments = assessments
-        self.supervision_contacts = supervision_contacts
+        self.assessments_by_date = assessments_by_date
+        self.supervision_contacts_by_date = supervision_contacts_by_date
         self.violation_responses = violation_responses
         self.incarceration_period_index = incarceration_period_index
         self.supervision_delegate = supervision_delegate
@@ -108,15 +133,17 @@ class StateSupervisionCaseComplianceManager:
         assessment_count = self._completed_assessments_on_date(
             compliance_evaluation_date
         )
-        face_to_face_count = self._face_to_face_contacts_on_date(
-            compliance_evaluation_date
+        face_to_face_count = self._count_contacts_on_date(
+            compliance_evaluation_date, self.filter_for_face_to_face_contacts()
         )
-        home_visit_count = self._home_visits_on_date(compliance_evaluation_date)
+        home_visit_count = self._count_contacts_on_date(
+            compliance_evaluation_date, self.filter_for_home_visit_contacts()
+        )
 
         most_recent_assessment = (
             find_most_recent_applicable_assessment_of_class_for_state(
                 compliance_evaluation_date,
-                self.assessments,
+                self.assessments_by_date,
                 assessment_class=StateAssessmentClass.RISK,
                 supervision_delegate=self.supervision_delegate,
             )
@@ -127,8 +154,9 @@ class StateSupervisionCaseComplianceManager:
             else None
         )
 
-        most_recent_employment_verification_date = (
-            self._most_recent_employment_verification(compliance_evaluation_date)
+        most_recent_employment_verification_date = self._most_recent_contact_date(
+            compliance_evaluation_date,
+            self.filter_for_employment_verification_contacts(),
         )
 
         next_recommended_assessment_date = None
@@ -168,17 +196,18 @@ class StateSupervisionCaseComplianceManager:
             most_recent_assessment_date=most_recent_assessment_date,
             next_recommended_assessment_date=next_recommended_assessment_date,
             face_to_face_count=face_to_face_count,
-            most_recent_face_to_face_date=self._most_recent_face_to_face_contact(
-                compliance_evaluation_date
+            most_recent_face_to_face_date=self._most_recent_contact_date(
+                compliance_evaluation_date, self.filter_for_face_to_face_contacts()
             ),
             next_recommended_face_to_face_date=next_recommended_face_to_face_date,
-            most_recent_home_visit_date=self._most_recent_home_visit_contact(
-                compliance_evaluation_date
+            most_recent_home_visit_date=self._most_recent_contact_date(
+                compliance_evaluation_date, self.filter_for_home_visit_contacts()
             ),
             next_recommended_home_visit_date=next_recommended_home_visit_date,
             home_visit_count=home_visit_count,
-            most_recent_treatment_collateral_contact_date=self._most_recent_treatment_collateral_contact(
-                compliance_evaluation_date
+            most_recent_treatment_collateral_contact_date=self._most_recent_contact_date(
+                compliance_evaluation_date,
+                self.filter_for_treatment_collateral_contacts(),
             ),
             next_recommended_treatment_collateral_contact_date=next_recommended_treatment_collateral_contact_date,
             recommended_supervision_downgrade_level=self._get_recommended_supervision_downgrade_level(
@@ -211,146 +240,86 @@ class StateSupervisionCaseComplianceManager:
             compliance_evaluation_date,
         )
 
-    def _most_recent_face_to_face_contact(
-        self, compliance_evaluation_date: date
+    def _most_recent_contact_date(
+        self, compliance_evaluation_date: date, contact_filter: ContactFilter
     ) -> Optional[date]:
-        """Gets the most recent face to face contact date. If there is not any, it returns None."""
-        return self._default_most_recent_contact_date(
-            compliance_evaluation_date,
-            self._get_applicable_face_to_face_contacts_between_dates,
+        """Gets the most contact date. If there is not any, it returns None."""
+        most_recent_contact = next(
+            self._reverse_sorted_contacts(
+                start_inclusive=self.start_of_supervision,
+                end_inclusive=compliance_evaluation_date,
+                contact_filter=contact_filter,
+                most_recent_n=1,
+            ),
+            None,
+        )
+        if most_recent_contact:
+            return most_recent_contact.contact_date
+        return None
+
+    def _count_contacts_on_date(
+        self, compliance_evaluation_date: date, contact_filter: ContactFilter
+    ) -> int:
+        """Returns the number of contacts on compliance_evaluation_date."""
+        return len(
+            list(
+                self._reverse_sorted_contacts(
+                    start_inclusive=compliance_evaluation_date,
+                    end_inclusive=compliance_evaluation_date,
+                    contact_filter=contact_filter,
+                    most_recent_n=None,
+                )
+            )
         )
 
-    def _face_to_face_contacts_on_date(self, compliance_evaluation_date: date) -> int:
-        """Returns the number of face-to-face contacts that were completed on compliance_evaluation_date."""
-        applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(
-            lower_bound_inclusive=compliance_evaluation_date,
-            upper_bound_inclusive=compliance_evaluation_date,
-        )
-
-        return len(applicable_contacts)
-
-    def _get_applicable_face_to_face_contacts_between_dates(
-        self, lower_bound_inclusive: date, upper_bound_inclusive: date
-    ) -> List[StateSupervisionContact]:
-        """Returns the completed contacts that can be counted as face-to-face contacts and occurred between the
-        lower_bound_inclusive date and the upper_bound_inclusive date.
-        """
-        return [
-            contact
-            for contact in self.supervision_contacts
-            # These are the types of contacts that can satisfy the face-to-face contact requirement
-            if contact.contact_type
-            in (
+    @classmethod
+    def filter_for_face_to_face_contacts(cls) -> ContactFilter:
+        return ContactFilter(
+            contact_types={
                 StateSupervisionContactType.DIRECT,
                 StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
-            )
-            # Contact must be marked as completed
-            and contact.status == StateSupervisionContactStatus.COMPLETED
-            and contact.contact_date is not None
-            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
-        ]
+            },
+            statuses={StateSupervisionContactStatus.COMPLETED},
+        )
+
+    @classmethod
+    def filter_for_home_visit_contacts(cls) -> ContactFilter:
+        return ContactFilter(
+            contact_types={
+                StateSupervisionContactType.DIRECT,
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
+            },
+            statuses={StateSupervisionContactStatus.COMPLETED},
+            locations={StateSupervisionContactLocation.RESIDENCE},
+        )
+
+    @classmethod
+    def filter_for_treatment_collateral_contacts(cls) -> ContactFilter:
+        return ContactFilter(
+            contact_types={
+                StateSupervisionContactType.COLLATERAL,
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
+            },
+            statuses={StateSupervisionContactStatus.COMPLETED},
+            locations={StateSupervisionContactLocation.TREATMENT_PROVIDER},
+        )
+
+    @classmethod
+    def filter_for_employment_verification_contacts(cls) -> ContactFilter:
+        return ContactFilter(verified_employment=True)
 
     def _completed_assessments_on_date(self, compliance_evaluation_date: date) -> int:
         """Returns the number of assessments that were completed on the compliance evaluation date."""
-        assessments_on_compliance_date = [
-            assessment
-            for assessment in self.assessments
-            if assessment.assessment_date is not None
-            and assessment.assessment_score is not None
-            and assessment.assessment_date == compliance_evaluation_date
-        ]
-
-        return len(assessments_on_compliance_date)
-
-    def _home_visits_on_date(self, compliance_evaluation_date: date) -> int:
-        """Returns the number of face-to-face contacts that were completed on compliance_evaluation_date."""
-        applicable_visits = self._get_applicable_home_visits_between_dates(
-            lower_bound_inclusive=compliance_evaluation_date,
-            upper_bound_inclusive=compliance_evaluation_date,
+        return len(
+            [
+                assessment
+                for assessment in self.assessments_by_date.get_sorted_items_in_range(
+                    start_inclusive=compliance_evaluation_date,
+                    end_inclusive=compliance_evaluation_date,
+                )
+                if assessment.assessment_score is not None
+            ]
         )
-        return len(applicable_visits)
-
-    def _get_applicable_home_visits_between_dates(
-        self, lower_bound_inclusive: date, upper_bound_inclusive: date
-    ) -> List[StateSupervisionContact]:
-        """Returns the completed contacts that can be counted as home visits and occurred between the
-        lower_bound_inclusive date and the upper_bound_inclusive date.
-        """
-        return [
-            contact
-            for contact in self.supervision_contacts
-            # These are the types of contacts that can satisfy the home visit requirement
-            if contact.location == StateSupervisionContactLocation.RESIDENCE
-            and contact.contact_type
-            in (
-                StateSupervisionContactType.DIRECT,
-                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
-            )
-            # Contact must be marked as completed
-            and contact.status == StateSupervisionContactStatus.COMPLETED
-            and contact.contact_date is not None
-            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
-        ]
-
-    def _most_recent_home_visit_contact(
-        self, compliance_evaluation_date: date
-    ) -> Optional[date]:
-        """Gets the most recent home visit contact date. If there is not any, it returns None."""
-        return self._default_most_recent_contact_date(
-            compliance_evaluation_date, self._get_applicable_home_visits_between_dates
-        )
-
-    def _most_recent_treatment_collateral_contact(
-        self, compliance_evaluation_date: date
-    ) -> Optional[date]:
-        """Gets the most recent face to face contact date. If there is not any, it returns None."""
-        return self._default_most_recent_contact_date(
-            compliance_evaluation_date,
-            self._get_applicable_treatment_collateral_contacts_between_dates,
-        )
-
-    def _get_applicable_treatment_collateral_contacts_between_dates(
-        self, lower_bound_inclusive: date, upper_bound_inclusive: date
-    ) -> List[StateSupervisionContact]:
-        """Returns the completed contacts that can be counted as treatment provider
-        collateral contacts and occurred between the lower_bound_inclusive date and the
-        upper_bound_inclusive date.
-        """
-        return [
-            contact
-            for contact in self.supervision_contacts
-            if contact.contact_type
-            in (
-                StateSupervisionContactType.COLLATERAL,
-                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
-            )
-            and contact.location == StateSupervisionContactLocation.TREATMENT_PROVIDER
-            # Contact must be marked as completed
-            and contact.status == StateSupervisionContactStatus.COMPLETED
-            and contact.contact_date is not None
-            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
-        ]
-
-    def _most_recent_employment_verification(
-        self, compliance_evaluation_date: date
-    ) -> Optional[date]:
-        """Gets the most recent face to face contact date. If there is not any, it returns None."""
-        return self._default_most_recent_contact_date(
-            compliance_evaluation_date,
-            self._get_applicable_employment_verifications_between_dates,
-        )
-
-    def _get_applicable_employment_verifications_between_dates(
-        self, lower_bound_inclusive: date, upper_bound_inclusive: date
-    ) -> List[StateSupervisionContact]:
-        """Returns all supervision contacts where verified_employment = True"""
-        return [
-            contact
-            for contact in self.supervision_contacts
-            if contact.verified_employment is True
-            and contact.contact_date is not None
-            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
-        ]
 
     def _awaiting_new_intake_assessment(
         self,
@@ -378,7 +347,7 @@ class StateSupervisionCaseComplianceManager:
         most_recent_assessment = (
             find_most_recent_applicable_assessment_of_class_for_state(
                 evaluation_date,
-                self.assessments,
+                self.assessments_by_date,
                 assessment_class=StateAssessmentClass.RISK,
                 supervision_delegate=self.supervision_delegate,
             )
@@ -414,28 +383,36 @@ class StateSupervisionCaseComplianceManager:
 
         return recommended_level
 
-    def _default_most_recent_contact_date(
+    def _reverse_sorted_contacts(
         self,
-        compliance_evaluation_date: date,
-        get_applicable_contacts_function: Callable[
-            [date, date], List[StateSupervisionContact]
-        ],
-    ) -> Optional[date]:
-        """Provides a base implementation, describing when the most recent contact
-        occurred. Returns None if compliance standards are unknown or no contacts
-        have occurred."""
-        applicable_contacts = get_applicable_contacts_function(
-            self.start_of_supervision, compliance_evaluation_date
-        )
-        contact_dates = [
-            contact.contact_date
-            for contact in applicable_contacts
-            if contact.contact_date is not None
-        ]
-        if not contact_dates:
-            return None
+        *,
+        start_inclusive: date,
+        end_inclusive: date,
+        contact_filter: ContactFilter,
+        most_recent_n: Optional[int],
+    ) -> Iterator[StateSupervisionContact]:
+        """Gets contacts between two dates ordered from most recent to oldest.
 
-        return max(contact_dates)
+        The date parameters are inclusive, so to get contacts for a single date, the
+        start and end should both be set to that date.
+
+        If `most_recent_n` is set, only the first `most_recent_n` contacts will be
+        returned and any older contacts that are still in the date range will be
+        skipped. For instance, if `most_recent_n` is set to 1, only the most recent
+        contact in the date range is returned. If it is not set, then all of the
+        contacts in the range are returned.
+        """
+        return itertools.islice(
+            filter(
+                contact_filter.matches,
+                reversed(
+                    self.supervision_contacts_by_date.get_sorted_items_in_range(
+                        start_inclusive, end_inclusive
+                    )
+                ),
+            ),
+            most_recent_n,
+        )
 
     def _default_next_recommended_contact_date_given_requirements(
         self,
@@ -443,9 +420,7 @@ class StateSupervisionCaseComplianceManager:
         required_contacts_per_period: int,
         period_length_days: int,
         new_supervision_contact_deadline_days: int,
-        get_applicable_contacts_function: Callable[
-            [date, date], List[StateSupervisionContact]
-        ],
+        contact_filter: ContactFilter,
         use_business_days: bool,
     ) -> Optional[date]:
         """Provides a base implementation, describing when the next contact
@@ -455,16 +430,17 @@ class StateSupervisionCaseComplianceManager:
         if required_contacts_per_period == 0:
             return None
 
-        contacts_since_supervision_start = get_applicable_contacts_function(
-            self.start_of_supervision, compliance_evaluation_date
-        )
-        contact_dates = sorted(
-            [
-                contact.contact_date
-                for contact in contacts_since_supervision_start
-                if contact.contact_date is not None
-            ]
-        )
+        contact_dates = [
+            # The range querier filters out contacts without a date, but we need this
+            # check to satisfy mypy.
+            cast(date, contact.contact_date)
+            for contact in self._reverse_sorted_contacts(
+                start_inclusive=self.start_of_supervision,
+                end_inclusive=compliance_evaluation_date,
+                contact_filter=contact_filter,
+                most_recent_n=required_contacts_per_period,
+            )
+        ]
         if not contact_dates:
             # No contacts. First contact required is within NEW_SUPERVISION_CONTACT_DEADLINE_DAYS.
             return (
@@ -491,9 +467,7 @@ class StateSupervisionCaseComplianceManager:
         # If n contacts are required every k days, this looks at the nth-to-last contact
         # and returns the date k days after that, as the latest day that the next contact
         # can happen to still be in compliance.
-        return contact_dates[-required_contacts_per_period] + timedelta(
-            days=period_length_days
-        )
+        return contact_dates[-1] + timedelta(days=period_length_days)
 
     @abc.abstractmethod
     def _guidelines_applicable_for_case(self, evaluation_date: date) -> bool:
