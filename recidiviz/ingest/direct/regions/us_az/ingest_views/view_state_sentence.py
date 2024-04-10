@@ -27,7 +27,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
     SELECT
         off.OFFENSE_ID AS external_id,
-        off.COMMITMENT_ID AS sentence_group_external_id,
+        CONCAT(off.COMMITMENT_ID, '-', doc.DOC_ID) AS sentence_group_external_id,
         CASE
             WHEN life.DESCRIPTION IN ('Life (35 to Life)', 'Life (25 to Life)', 'Life', 'Natural Life')
             THEN 1

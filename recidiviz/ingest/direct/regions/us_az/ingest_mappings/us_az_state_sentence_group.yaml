@@ -2,6 +2,7 @@
 manifest_language: 1.0.0
 input_columns:
   - external_id
+  - doc_id
   - person_id
   - group_update_datetime
   - CommunitySupervisionBeginDate
@@ -22,6 +23,7 @@ output:
             $concat:
               $values:
                 - external_id
+                - doc_id
                 - sequence_num
           group_update_datetime: group_update_datetime
           parole_eligibility_date_external: CommunitySupervisionBeginDate
