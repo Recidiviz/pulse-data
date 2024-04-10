@@ -33,6 +33,7 @@ from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
+from recidiviz.persistence.database.schema.justice_counts import schema
 
 MONTH_NAMES = list(calendar.month_name)
 FUZZY_MATCHING_SCORE_CUTOFF = 90
@@ -165,3 +166,10 @@ def get_month_value_from_string(
             metric_key=metric_key,
         )
     return MONTH_NAMES.index(column_value)
+
+
+def separate_file_name_from_system(filename: str) -> str:
+    parts = filename.split("/")
+    if len(parts) == 2 and parts[0] in {system.value for system in schema.System}:
+        return parts[1]
+    return filename

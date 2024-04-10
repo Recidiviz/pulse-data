@@ -27,6 +27,9 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
+from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
+    separate_file_name_from_system,
+)
 from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
     SpreadsheetUploader,
 )
@@ -367,6 +370,11 @@ class WorkbookUploader:
         It then loads the new temporary file and returns the xls to continue the rest of
         the Bulk Upload process.
         """
+        filename = (
+            separate_file_name_from_system(filename=filename)
+            if filename is not None
+            else ""
+        )
         with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
             filename
         ) as writer:

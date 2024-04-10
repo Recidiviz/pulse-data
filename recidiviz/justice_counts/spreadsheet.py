@@ -38,6 +38,9 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
+from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
+    separate_file_name_from_system,
+)
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
@@ -151,9 +154,11 @@ class SpreadsheetInterface:
                 "uploaded_by_v2": uploader_id_to_json.get(
                     spreadsheet.uploaded_by, {"name": "Automatic Upload", "role": None}
                 ),
-                "ingested_at": spreadsheet.ingested_at.timestamp() * 1000
-                if spreadsheet.ingested_at is not None
-                else None,
+                "ingested_at": (
+                    spreadsheet.ingested_at.timestamp() * 1000
+                    if spreadsheet.ingested_at is not None
+                    else None
+                ),
                 "status": spreadsheet.status.value,
                 "system": spreadsheet.system.value,
             }
@@ -422,9 +427,11 @@ class SpreadsheetInterface:
             ):
                 metric_errors.append(
                     {
-                        "display_name": sheet_name_to_metricfile[sheet_name].display_name  # type: ignore[union-attr]
-                        if sheet_name in sheet_name_to_metricfile
-                        else None,
+                        "display_name": (
+                            sheet_name_to_metricfile[sheet_name].display_name  # type: ignore[union-attr]
+                            if sheet_name in sheet_name_to_metricfile
+                            else None
+                        ),
                         "sheet_name": sheet_name,
                         "messages": [e.to_json() for e in errors],
                     }
@@ -572,18 +579,20 @@ class SpreadsheetInterface:
         system: schema.System, agency: schema.Agency
     ) -> List[MetricDefinition]:
         return MetricInterface.get_metric_definitions_by_systems(
-            systems={
-                schema.System[system]
-                for system in agency.systems or []
-                if schema.System[system] in schema.System.supervision_subsystems()
-                or schema.System[system] == schema.System.SUPERVISION
-            }
-            if system.name == "SUPERVISION"
-            # Only send over metric definitions for the current system unless
-            # the agency is uploading for supervision, which sheets contain
-            # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,
-            # and PROBATION
-            else {system},
+            systems=(
+                {
+                    schema.System[system]
+                    for system in agency.systems or []
+                    if schema.System[system] in schema.System.supervision_subsystems()
+                    or schema.System[system] == schema.System.SUPERVISION
+                }
+                if system.name == "SUPERVISION"
+                # Only send over metric definitions for the current system unless
+                # the agency is uploading for supervision, which sheets contain
+                # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,
+                # and PROBATION
+                else {system}
+            ),
         )
 
     @staticmethod
@@ -597,7 +606,7 @@ class SpreadsheetInterface:
         # (3) the uploaded file's file type.
         file_type = BulkUploadFileType.from_suffix(filename.rsplit(".", 1)[1].lower())
         if file_type == BulkUploadFileType.CSV:
-            new_file_name = filename.rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
+            new_file_name = separate_file_name_from_system(filename=filename).rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
             metric = new_file_name.rsplit(".", 1)[0].split("/")[-1]
             if isinstance(file, bytes):
                 s = str(file, "utf-8")
