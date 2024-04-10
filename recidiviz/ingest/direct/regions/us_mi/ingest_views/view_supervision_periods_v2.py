@@ -213,7 +213,7 @@ coms_levels_a AS (
     CAST(Entered_Date as DATETIME) AS last_update_date
   FROM {COMS_Supervision_Levels}
 ),
--- This CTE compiles the periods based on the specific COMS levels
+-- This CTE compiles the periods based on the specific COMS supervision schedules
 coms_levels_b as (
   SELECT DISTINCT
     Offender_Number,
@@ -275,7 +275,11 @@ COMS_levels AS (
                 then NULL 
                 else coms_end_date 
                 end as coms_end_date,
-            CONCAT(COALESCE(a.supervision_level_value, 'NONE'), '_', COALESCE(b.supervision_level_value, 'NONE')) as supervision_level_value,
+            CONCAT(
+                COALESCE(a.supervision_level_value, 'NONE'), 
+                '_', 
+                COALESCE(b.supervision_level_value, 'NONE')
+                ) as supervision_level_value,
             ROW_NUMBER() 
                 OVER(PARTITION BY p.Offender_Number, coms_start_date, coms_end_date 
                      ORDER BY a.last_update_date desc, b.last_update_date desc, a.record_id, b.record_id) as rnk,
@@ -347,6 +351,21 @@ modifiers_periods AS (
     FROM {COMS_Modifiers} mod
     INNER JOIN {ADH_OFFENDER} off ON LTRIM(mod.Offender_Number, '0') = off.offender_number
 )
+"""
+
+SPECIALTIES_CTE = """
+-- This CTE compiles the periods based on the specific COMS specialties
+specialties_periods as (
+  SELECT DISTINCT
+    offender_id,
+    Specialty_Id,
+    (DATE(Start_Date)) AS specialty_start_date,
+    COALESCE((DATE(End_Date)), DATE(9999,9,9)) AS specialty_end_date,
+    Specialty,
+    (DATE(Entered_Date)) as Entered_Date
+  FROM {COMS_Specialties} spec
+  INNER JOIN {ADH_OFFENDER} off ON LTRIM(spec.Offender_Number, '0') = off.offender_number
+) 
 """
 
 EMPLOYEE_ASSIGNMENTS_CTE = """
@@ -499,6 +518,10 @@ MODIFIERS_COLUMNS = """
     Modifier
 """
 
+SPECIALTIES_COLUMNS = """
+    specialties
+"""
+
 LEGAL_ORDER_COLUMNS = """
     legal_order_id_combined,
     order_type_id_list,
@@ -521,6 +544,7 @@ WITH {ALL_MOVEMENTS_CTE},
 {SUPERVISON_MOVEMENT_PERIODS_CTE},
 {SUPERVISION_LEVELS_CTE},
 {MODIFIERS_CTE},
+{SPECIALTIES_CTE},
 {EMPLOYEE_ASSIGNMENTS_CTE},
 {LEGAL_ORDERS_CTE},
 {MISC_CTE},
@@ -615,6 +639,20 @@ tiny_spans as (
                 distinct offender_id,
                 modifier_end_date as dte
             from modifiers_periods
+            )
+            union all
+            (
+            select
+                distinct offender_id,
+                specialty_start_date as dte
+            from specialties_periods
+            )
+            union all
+            (
+            select
+                distinct offender_id,
+                specialty_end_date as dte
+            from specialties_periods
             )
         ) unioned
         -- don't include periods in the future
@@ -718,7 +756,7 @@ spans_movements_supervision_modifiers as (
 --       2. Also joining on supervision conditions here since they link with legal orders.  
 --       3. There are cases where supervision condition closing date is before legal order end date, so only joining on supervision conditions onto a time span if it's before the condition closing date
 
-spans_supervision_legal as (
+spans_supervision_legal_with_specialties as (
   select 
     offender_id,
     {PERIOD_COLUMNS},
@@ -728,7 +766,8 @@ spans_supervision_legal as (
     STRING_AGG(distinct legal_order_id, ',' ORDER BY legal_order_id) as legal_order_id_combined,
     STRING_AGG(distinct order_type_id, ',' ORDER BY order_type_id) as order_type_id_list,
     STRING_AGG(distinct supervision_condition_id, ',' ORDER BY supervision_condition_id) as supervision_condition_id_combined,
-    STRING_AGG(distinct special_condition_id, ',' ORDER BY special_condition_id) as special_condition_ids
+    STRING_AGG(distinct special_condition_id, ',' ORDER BY special_condition_id) as special_condition_ids,
+    STRING_AGG(distinct Specialty, '&' ORDER BY Specialty) as specialties
   from (
     select distinct
         sp.offender_id,
@@ -739,7 +778,8 @@ spans_supervision_legal as (
         legal.legal_order_id,
         legal.order_type_id,
         supervision_condition_id,
-        cond.special_condition_id
+        cond.special_condition_id,
+        spec.Specialty
     from spans_movements_supervision_modifiers sp
         left join legal_orders legal on (
             sp.offender_id = legal.offender_id 
@@ -758,6 +798,18 @@ spans_supervision_legal as (
             and legal.legal_order_id = cond.legal_order_id
             and (date(cond.closing_date) >= sp.period_end or (date(cond.closing_date)) is null)
             )
+        left join specialties_periods spec on (
+            sp.offender_id = spec.offender_id 
+            and (spec.specialty_start_date <= sp.period_start)
+            and 
+                (
+                    (sp.period_end is not null and spec.specialty_end_date >= sp.period_end)
+                    or
+                    (sp.period_end is null and spec.specialty_end_date > sp.period_start)
+                    or
+                    (spec.specialty_end_date is null)
+                )
+            ) 
   ) sub
   group by 
     offender_id,    
@@ -780,9 +832,10 @@ spans_all_combos as (
       {SUPERVISION_LEVEL_COLUMNS},
       {MODIFIERS_COLUMNS},
       {LEGAL_ORDER_COLUMNS},
+      {SPECIALTIES_COLUMNS},
       {EMPLOYEE_COLUMNS},
       RANK() OVER(PARTITION BY sp.offender_id, period_start, period_end ORDER BY source, priority) as booking_rnk
-    from spans_supervision_legal sp
+    from spans_supervision_legal_with_specialties sp
       left join offender_booking_assignment emp on (sp.offender_id = emp.offender_id 
                                                     and (emp.employee_start <= sp.period_start)
                                                             and 
@@ -831,7 +884,8 @@ select
     LAST_VALUE(supervision_level_value IGNORE NULLS)
         OVER (PARTITION BY offender_id, legal_order_id_combined ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id
         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS most_recent_supervision_level_id,
-    modifier
+    modifier,
+    specialties
 from spans_all_combos
 where movement_reason_id is not null;
 """

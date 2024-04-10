@@ -596,3 +596,19 @@ def map_housing_unit_type_START(
         return StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT
 
     return None
+
+
+def map_in_custody_level(raw_text: str) -> Optional[StateSupervisionLevel]:
+
+    if raw_text:
+        return StateSupervisionLevel.IN_CUSTODY
+
+    return None
+
+
+def map_internal_unknown_level(raw_text: str) -> Optional[StateSupervisionLevel]:
+
+    if raw_text:
+        return StateSupervisionLevel.INTERNAL_UNKNOWN
+
+    return None
