@@ -734,6 +734,7 @@ from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_violation_response_normal
 from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_violations_delegate import (
     UsTnViolationDelegate,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 from recidiviz.utils.types import assert_type
 
 
@@ -838,8 +839,8 @@ def get_state_specific_case_compliance_manager(
     supervision_period: NormalizedStateSupervisionPeriod,
     case_type: StateSupervisionCaseType,
     start_of_supervision: date,
-    assessments: List[NormalizedStateAssessment],
-    supervision_contacts: List[StateSupervisionContact],
+    assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
+    supervision_contacts_by_date: RangeQuerier[date, StateSupervisionContact],
     violation_responses: List[NormalizedStateSupervisionViolationResponse],
     incarceration_period_index: NormalizedIncarcerationPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,
@@ -855,8 +856,8 @@ def get_state_specific_case_compliance_manager(
             supervision_period,
             case_type,
             start_of_supervision,
-            assessments,
-            supervision_contacts,
+            assessments_by_date,
+            supervision_contacts_by_date,
             violation_responses,
             incarceration_period_index,
             supervision_delegate,
@@ -867,8 +868,8 @@ def get_state_specific_case_compliance_manager(
             supervision_period,
             case_type,
             start_of_supervision,
-            assessments,
-            supervision_contacts,
+            assessments_by_date,
+            supervision_contacts_by_date,
             violation_responses,
             incarceration_period_index,
             supervision_delegate,

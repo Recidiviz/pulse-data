@@ -42,6 +42,7 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_supervision_delegate impo
 from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 
 
 # pylint: disable=protected-access
@@ -80,7 +81,9 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 StateAssessmentClass.RISK,
                 self.LsirOnlySupervisionDelegate([]),
             )
@@ -102,7 +105,9 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                [assessment],
+                RangeQuerier(
+                    [assessment], lambda assessment: assessment.assessment_date
+                ),
                 StateAssessmentClass.RISK,
                 self.LsirOnlySupervisionDelegate([]),
             )
@@ -132,7 +137,9 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                [assessment],
+                RangeQuerier(
+                    [assessment], lambda assessment: assessment.assessment_date
+                ),
                 StateAssessmentClass.RISK,
                 self.NoRiskAssessmentSupervisionDelegate([]),
             )
@@ -154,7 +161,9 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                [assessment],
+                RangeQuerier(
+                    [assessment], lambda assessment: assessment.assessment_date
+                ),
                 StateAssessmentClass.RISK,
                 UsXxSupervisionDelegate([]),
             )
@@ -190,7 +199,9 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 StateAssessmentClass.RISK,
                 UsIxSupervisionDelegate([]),
             )
@@ -226,7 +237,9 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                assessments,
+                RangeQuerier(
+                    assessments, lambda assessment: assessment.assessment_date
+                ),
                 StateAssessmentClass.RISK,
                 UsNdSupervisionDelegate([]),
             )
@@ -265,7 +278,10 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
             oras_assessment.assessment_type = assessment_type
             most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                [lsir_assessment, oras_assessment],
+                RangeQuerier(
+                    [lsir_assessment, oras_assessment],
+                    lambda assessment: assessment.assessment_date,
+                ),
                 StateAssessmentClass.RISK,
                 UsMoSupervisionDelegate([]),
             )
@@ -296,7 +312,10 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
         most_recent_assessment = (
             assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                 date(2018, 4, 30),
-                [assessment_1, assessment_2],
+                RangeQuerier(
+                    [assessment_1, assessment_2],
+                    lambda assessment: assessment.assessment_date,
+                ),
                 StateAssessmentClass.RISK,
                 UsXxSupervisionDelegate([]),
             )

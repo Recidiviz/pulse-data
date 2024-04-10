@@ -17,7 +17,7 @@
 """Utils for dealing with assessment data in the calculation pipelines."""
 import sys
 from datetime import date
-from typing import List, Optional
+from typing import Optional
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -26,11 +26,12 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 
 
 def find_most_recent_applicable_assessment_of_class_for_state(
     cutoff_date: date,
-    assessments: List[NormalizedStateAssessment],
+    assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
     assessment_class: StateAssessmentClass,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[NormalizedStateAssessment]:
@@ -46,17 +47,29 @@ def find_most_recent_applicable_assessment_of_class_for_state(
     if not assessment_types_to_include:
         return None
 
-    applicable_assessments_before_date = [
+    applicable_assessments_before_date = (
         assessment
-        for assessment in assessments
+        for assessment in reversed(
+            assessments_by_date.get_sorted_items_in_range(
+                start_inclusive=None, end_inclusive=cutoff_date
+            )
+        )
         if assessment.assessment_type in assessment_types_to_include
         and assessment.assessment_score is not None
-        and assessment.assessment_date is not None
-        and assessment.assessment_date <= cutoff_date
-    ]
+    )
+
+    most_recent_assessment = next(applicable_assessments_before_date, None)
+    if most_recent_assessment is None:
+        return None
+
+    assessments_on_most_recent_date = [most_recent_assessment]
+    while (
+        next_assessment := next(applicable_assessments_before_date, None)
+    ) and next_assessment.assessment_date == most_recent_assessment.assessment_date:
+        assessments_on_most_recent_date.append(next_assessment)
 
     return max(
-        applicable_assessments_before_date,
+        assessments_on_most_recent_date,
         key=lambda a: (a.sequence_num if a and a.sequence_num else -sys.maxsize),
         default=None,
     )
