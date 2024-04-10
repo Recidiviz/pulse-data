@@ -124,6 +124,7 @@ def normalized_periods_for_calculations(
     sp_normalization_manager = SupervisionPeriodNormalizationManager(
         person_id=person_id,
         supervision_periods=supervision_periods,
+        incarceration_periods=incarceration_periods,
         delegate=sp_normalization_delegate,
         earliest_death_date=earliest_death_date,
         incarceration_sentences=incarceration_sentences,

@@ -39,6 +39,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     merge_additional_attributes_maps,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
@@ -69,6 +70,16 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         self, sorted_supervision_periods: List[StateSupervisionPeriod]
     ) -> List[StateSupervisionPeriod]:
         """States may have specific logic to drop periods that should be fully ignored
+        before the rest of supervision period normalization proceeds.
+        """
+        return sorted_supervision_periods
+
+    def close_incorrectly_open_supervision_periods(
+        self,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateSupervisionPeriod]:
+        """States may have specific logic to close periods that should closed
         before the rest of supervision period normalization proceeds.
         """
         return sorted_supervision_periods
@@ -153,6 +164,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         self,
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
+        incarceration_periods: List[StateIncarcerationPeriod],
         delegate: StateSpecificSupervisionNormalizationDelegate,
         incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_sentences: List[NormalizedStateSupervisionSentence],
@@ -168,6 +180,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         self.delegate = delegate
         self._incarceration_sentences = incarceration_sentences
         self._supervision_sentences = supervision_sentences
+        self._incarceration_periods = incarceration_periods
 
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
@@ -232,6 +245,13 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
 
             mid_processing_periods = self.delegate.infer_additional_periods(
                 self._person_id, mid_processing_periods
+            )
+
+            mid_processing_periods = (
+                self.delegate.close_incorrectly_open_supervision_periods(
+                    mid_processing_periods,
+                    self._incarceration_periods,
+                )
             )
 
             # Process fields on final supervision period set

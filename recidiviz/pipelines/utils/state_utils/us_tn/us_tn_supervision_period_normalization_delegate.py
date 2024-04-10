@@ -18,10 +18,17 @@
 import datetime
 from typing import List, Optional
 
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodReleaseReason,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+    StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -63,3 +70,56 @@ class UsTnSupervisionNormalizationDelegate(
             return previous_period.supervision_level
 
         return sp.supervision_level
+
+    def close_incorrectly_open_supervision_periods(
+        self,
+        # superivision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        # incarceration_period_index: NormalizedIncarcerationPeriodIndex,
+        # incarceration_period: StateIncarcerationPeriod,
+        # supervision_period: StateSupervisionPeriod,
+    ) -> List[StateSupervisionPeriod]:
+        """OffenderMovement is the source of truth logic for movements in TN but is not used in Supervision Periods
+        View so there are a number of open Supervision Periods that need to be closed. We use Incarceration Periods
+        that end with SENTENCE_SERVED and overlap with Supervision Periods to close these out as expected.
+        """
+        # if open supervision period, close
+
+        if (
+            len(sorted_supervision_periods) >= 1
+            and len(sorted_incarceration_periods) >= 1
+        ):
+            last_supervision_period = sorted_supervision_periods[-1]
+            last_incarceration_period = sorted_incarceration_periods[-1]
+
+            if (
+                last_incarceration_period.release_date is not None
+                and last_supervision_period.start_date is not None
+            ):
+                if (
+                    last_supervision_period.termination_date is None
+                    and last_incarceration_period.release_reason
+                    == StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+                    and last_incarceration_period.release_date
+                    > last_supervision_period.start_date
+                ):
+                    # Make last supervision period termination_date equal to last incarceration
+                    # period end date
+                    last_supervision_period.termination_date = (
+                        last_incarceration_period.release_date
+                    )
+
+                    # Make TerminationReason discharge to close out period
+                    last_supervision_period.termination_reason = (
+                        StateSupervisionPeriodTerminationReason.DISCHARGE
+                    )
+
+                    # Make termination_reason_raw_text the release_reason_raw_text from the IP to understand why period is closed
+                    last_supervision_period.termination_reason_raw_text = (
+                        last_incarceration_period.release_reason_raw_text
+                    )
+
+                    sorted_supervision_periods[-1] = last_supervision_period
+
+        return sorted_supervision_periods
