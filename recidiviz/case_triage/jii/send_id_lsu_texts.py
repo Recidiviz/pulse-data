@@ -288,142 +288,134 @@ def send_id_lsu_texts(
             previous_batch_id=previous_batch_id,
         )
 
-    # FOR TEST PURPOSES
-    if bigquery_view in [
-        "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_playtesting",
-        "recidiviz-staging.michelle_id_lsu_jii.michelle_id_lsu_jii_solo_test",
-        "recidiviz-staging.hsalas_scratch.ix_lsu_jii_pilot_2_POs",
-    ]:
-        logging.info("Iterate through dictionary construction from bigquery")
-        # Iterate through the dictionary that maps external ids to phone numbers to text strings
-        for (
-            external_id,
-            phone_num_to_text_dict,
-        ) in external_id_to_phone_num_to_text_dict.items():
-            for phone_number, text_body in phone_num_to_text_dict.items():
-                document_id = f"{state_code}_{external_id}"
-                logging.info("document_id: %s", document_id)
+    logging.info("Iterate through dictionary construction from bigquery")
+    # Iterate through the dictionary that maps external ids to phone numbers to text strings
+    for (
+        external_id,
+        phone_num_to_text_dict,
+    ) in external_id_to_phone_num_to_text_dict.items():
+        for phone_number, text_body in phone_num_to_text_dict.items():
+            document_id = f"{state_code}_{external_id}"
+            logging.info("document_id: %s", document_id)
 
-                if previous_batch_id is not None and redeliver_failed_messages is True:
-                    # Filter to only send texts to individuals if previous text failed
-                    if document_id not in external_ids_to_retry:
-                        continue
+            if previous_batch_id is not None and redeliver_failed_messages is True:
+                # Filter to only send texts to individuals if previous text failed
+                if document_id not in external_ids_to_retry:
+                    continue
 
-                # Check that current document_id has not opted-out
-                if document_id in opt_out_document_ids:
+            # Check that current document_id has not opted-out
+            if document_id in opt_out_document_ids:
+                logging.info(
+                    "JII with document id %s has opted-out of receiving texts. Will not attempt to send message.",
+                    document_id,
+                )
+                continue
+
+            logging.info(
+                "Twilio send SMS gcp environment: [%s]",
+                get_gcp_environment(),
+            )
+            base_url = STAGING_URL
+            if get_gcp_environment() == "production":
+                base_url = PRODUCTION_URL
+            if callback_url is not None:
+                base_url = callback_url
+
+            # If this is an initial/welcome text, and the individual has already
+            # received an initial/welcome text in the past, do not attempt to send
+            # them an initial/welcome text
+            if message_type == MessageType.INITIAL_TEXT.value:
+                if document_id in initial_text_document_ids:
                     logging.info(
-                        "JII with document id %s has opted-out of receiving texts. Will not attempt to send message.",
+                        "Individual with document id [%s] has already received initial text. Do not attempt to send initial text.",
                         document_id,
                     )
                     continue
 
-                logging.info(
-                    "Twilio send SMS gcp environment: [%s]",
-                    get_gcp_environment(),
-                )
-                base_url = STAGING_URL
-                if get_gcp_environment() == "production":
-                    base_url = PRODUCTION_URL
-                if callback_url is not None:
-                    base_url = callback_url
-
-                # If this is an initial/welcome text, and the individual has already
-                # received an initial/welcome text in the past, do not attempt to send
-                # them an initial/welcome text
-                if message_type == MessageType.INITIAL_TEXT.value:
-                    if document_id in initial_text_document_ids:
-                        logging.info(
-                            "Individual with document id [%s] has already received initial text. Do not attempt to send initial text.",
-                            document_id,
-                        )
-                        continue
-
-                # If this is an eligibility text, and the individual has not
-                # received an initial/welcome text in the past, do not attempt to send
-                # them an eligibility text
-                if message_type == MessageType.ELIGIBILITY_TEXT.value:
-                    if document_id not in initial_text_document_ids:
-                        logging.info(
-                            "Individual with document id [%s] has not received initial text. Do not attempt to send eligibility text.",
-                            document_id,
-                        )
-                        continue
-
-                if dry_run is True:
+            # If this is an eligibility text, and the individual has not
+            # received an initial/welcome text in the past, do not attempt to send
+            # them an eligibility text
+            if message_type == MessageType.ELIGIBILITY_TEXT.value:
+                if document_id not in initial_text_document_ids:
                     logging.info(
-                        "DRY RUN: Would send the following text to individual with document id: %s",
+                        "Individual with document id [%s] has not received initial text. Do not attempt to send eligibility text.",
                         document_id,
                     )
-                    with open(
-                        f"{current_batch_id}_texts.txt", "a", encoding="utf-8"
-                    ) as file:
-                        file.write(phone_number)
-                        file.write("\n")
-                        file.write(text_body)
-                        file.write("\n")
-                        file.write("\n")
-                        file.close()
                     continue
-                # Send text message to individual
+
+            if dry_run is True:
                 logging.info(
-                    "Sending text to individual with document id: %s", document_id
+                    "DRY RUN: Would send the following text to individual with document id: %s",
+                    document_id,
                 )
-                firestore_individual_path = f"twilio_messages/{document_id}"
-                try:
-                    response = twilio_client.messages.create(
-                        body=text_body,
-                        messaging_service_sid=messaging_service_sid,
-                        to=phone_number,
-                        status_callback=f"{base_url}/jii/webhook/twilio_status",
-                    )
+                with open(
+                    f"{current_batch_id}_texts.txt", "a", encoding="utf-8"
+                ) as file:
+                    file.write(phone_number)
+                    file.write("\n")
+                    file.write(text_body)
+                    file.write("\n")
+                    file.write("\n")
+                    file.close()
+                continue
+            # Send text message to individual
+            logging.info("Sending text to individual with document id: %s", document_id)
+            firestore_individual_path = f"twilio_messages/{document_id}"
+            try:
+                response = twilio_client.messages.create(
+                    body=text_body,
+                    messaging_service_sid=messaging_service_sid,
+                    to=phone_number,
+                    status_callback=f"{base_url}/jii/webhook/twilio_status",
+                )
 
-                    # Store the individual's phone number in their individual level doc
-                    logging.info(
-                        "Updating individual's phone_numbers with document id: %s",
-                        document_id,
-                    )
-                    firestore_client.set_document(
-                        document_path=firestore_individual_path,
-                        data={
-                            "last_phone_num_update": datetime.datetime.now(
-                                datetime.timezone.utc
-                            ),
-                            "phone_numbers": ArrayUnion([phone_number]),
-                        },
-                        merge=True,
-                    )
+                # Store the individual's phone number in their individual level doc
+                logging.info(
+                    "Updating individual's phone_numbers with document id: %s",
+                    document_id,
+                )
+                firestore_client.set_document(
+                    document_path=firestore_individual_path,
+                    data={
+                        "last_phone_num_update": datetime.datetime.now(
+                            datetime.timezone.utc
+                        ),
+                        "phone_numbers": ArrayUnion([phone_number]),
+                    },
+                    merge=True,
+                )
 
-                    # Next, update their message level doc
-                    firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{current_batch_id}"
-                    logging.info(
-                        "Updating individual's message level doc with document id: %s",
-                        document_id,
-                    )
-                    firestore_client.set_document(
-                        document_path=firestore_message_path,
-                        data={
-                            "timestamp": datetime.datetime.now(datetime.timezone.utc),
-                            "message_sid": response.sid,
-                            "body": text_body,
-                            "phone_number": phone_number,
-                            "message_type": message_type,
+                # Next, update their message level doc
+                firestore_message_path = f"twilio_messages/{document_id}/lsu_eligibility_messages/eligibility_{current_batch_id}"
+                logging.info(
+                    "Updating individual's message level doc with document id: %s",
+                    document_id,
+                )
+                firestore_client.set_document(
+                    document_path=firestore_message_path,
+                    data={
+                        "timestamp": datetime.datetime.now(datetime.timezone.utc),
+                        "message_sid": response.sid,
+                        "body": text_body,
+                        "phone_number": phone_number,
+                        "message_type": message_type,
+                    },
+                    merge=True,
+                )
+            except Exception as e:
+                logging.error("Error sending sms request to Twilio. Error: %s", e)
+                firestore_client.set_document(
+                    firestore_individual_path,
+                    {
+                        "status": ExternalSystemRequestStatus.FAILURE.value,
+                        "updated": {
+                            "date": datetime.datetime.now(datetime.timezone.utc),
+                            "by": "RECIDIVIZ",
                         },
-                        merge=True,
-                    )
-                except Exception as e:
-                    logging.error("Error sending sms request to Twilio. Error: %s", e)
-                    firestore_client.set_document(
-                        firestore_individual_path,
-                        {
-                            "status": ExternalSystemRequestStatus.FAILURE.value,
-                            "updated": {
-                                "date": datetime.datetime.now(datetime.timezone.utc),
-                                "by": "RECIDIVIZ",
-                            },
-                            "errors": [str(e)],
-                        },
-                        merge=True,
-                    )
+                        "errors": [str(e)],
+                    },
+                    merge=True,
+                )
 
 
 def _update_statuses_from_previous_batch(
