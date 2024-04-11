@@ -168,6 +168,33 @@ class AgencyInterface:
         return q.one_or_none()
 
     @staticmethod
+    def get_agency_by_name_state_and_systems(
+        session: Session,
+        name: str,
+        state_code: str,
+        systems: List[str],
+        with_settings: bool = False,
+        with_users: bool = False,
+    ) -> schema.Agency:
+
+        q = session.query(schema.Agency).filter(
+            schema.Agency.name == name,
+            schema.Agency.state_code == state_code,
+            schema.Agency.systems == systems,
+        )
+
+        if with_settings is True:
+            q = q.options(joinedload(schema.Agency.agency_settings))
+
+        if with_users is True:
+            q = q.options(
+                selectinload(schema.Agency.user_account_assocs).joinedload(
+                    schema.AgencyUserAccountAssociation.user_account
+                )
+            )  # eagerly load the users in this agency
+        return q.one_or_none()
+
+    @staticmethod
     def get_agencies_by_name(session: Session, names: List[str]) -> List[schema.Agency]:
         agencies = (
             session.query(schema.Agency).filter(schema.Agency.name.in_(names)).all()
