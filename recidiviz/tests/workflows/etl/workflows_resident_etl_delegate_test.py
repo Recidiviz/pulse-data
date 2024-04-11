@@ -45,6 +45,9 @@ class WorkflowsResidentETLDelegateTest(TestCase):
         delegate = WorkflowsResidentETLDelegate(StateCode.US_TN)
         self.assertTrue(delegate.supports_file("resident_record.json"))
 
+        delegate = WorkflowsResidentETLDelegate(StateCode.US_ID)
+        self.assertTrue(delegate.supports_file("resident_record.json"))
+
         delegate = WorkflowsResidentETLDelegate(StateCode.US_WW)
         self.assertTrue(delegate.supports_file("resident_record.json"))
 
@@ -86,6 +89,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "facilityId": "ABC",
                     "unitId": "ABC 123",
                     "facilityUnitId": "ABC-_-ABC 123",
+                    "gender": "FEMALE",
                     "admissionDate": "2023-01-01",
                     "releaseDate": "2027-03-28",
                     "sccpEligibilityDate": None,
@@ -118,6 +122,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "facilityId": "FAKE CORRECTIONAL FACILITY",
                     "unitId": "UNIT 1",
                     "facilityUnitId": "FAKE CORRECTIONAL FACILITY-_-UNIT 1",
+                    "gender": "FEMALE",
                     "admissionDate": "2023-01-01",
                     "releaseDate": "2024-03-28",
                     "sccpEligibilityDate": "2023-08-14",
@@ -154,6 +159,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "facilityId": "FAKE VIEW CORRECTIONAL FACILITY",
                     "unitId": "UNIT 1",
                     "facilityUnitId": "FAKE VIEW CORRECTIONAL FACILITY-_-UNIT 1",
+                    "gender": "MALE",
                     "admissionDate": "2020-07-11",
                     "releaseDate": "2026-01-23",
                     "sccpEligibilityDate": "2023-03-17",
@@ -189,6 +195,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "facilityId": "FACILITY NAME",
                     "unitId": None,
                     "facilityUnitId": "FACILITY NAME-_-",
+                    "gender": "UNKNOWN",
                     "admissionDate": "2023-05-01",
                     "releaseDate": "2024-05-01",
                     "sccpEligibilityDate": None,
