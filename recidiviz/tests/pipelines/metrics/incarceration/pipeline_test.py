@@ -313,14 +313,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": state_code,
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -332,7 +324,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateAssessment.__tablename__: assessment_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
         return data_dict
@@ -448,19 +439,10 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 

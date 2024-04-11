@@ -224,7 +224,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
             commitment_from_supervision_delegate=UsPaCommitmentFromSupervisionDelegate(),
-            supervision_delegate=UsPaSupervisionDelegate([]),
+            supervision_delegate=UsPaSupervisionDelegate(),
         )
 
     def test_get_commitment_from_supervision_details_pvc(self) -> None:

@@ -203,14 +203,6 @@ class TestProgramPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation_response)
         ]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
         data_dict_overrides: Dict[str, Iterable[Any]] = {
@@ -221,7 +213,6 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -396,14 +387,6 @@ class TestProgramPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation_response)
         ]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
@@ -414,7 +397,6 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
 
         data_dict.update(data_dict_overrides)
@@ -494,18 +476,11 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        supervision_location_to_name_map = {
-            "state_code": "US_XX",
-            "level_1_supervision_location_external_id": "site",
-            "level_2_supervision_location_external_id": "district",
-        }
-
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [program_assignment],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         assert program_assignment.program_id is not None
@@ -590,18 +565,11 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        supervision_location_to_name_map = {
-            "state_code": "US_XX",
-            "level_1_supervision_location_external_id": "site",
-            "level_2_supervision_location_external_id": "district",
-        }
-
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [program_assignment],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         assert program_assignment.program_id is not None
@@ -673,18 +641,11 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        supervision_location_to_name_map = {
-            "state_code": "US_XX",
-            "level_1_supervision_location_external_id": "site",
-            "level_2_supervision_location_external_id": "district",
-        }
-
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         test_pipeline = TestPipeline()
@@ -737,18 +698,11 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_location_to_name_map = {
-            "state_code": "US_XX",
-            "level_1_supervision_location_external_id": "site",
-            "level_2_supervision_location_external_id": "district",
-        }
-
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [program_assignment],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [],
-            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         assert program_assignment.program_id is not None

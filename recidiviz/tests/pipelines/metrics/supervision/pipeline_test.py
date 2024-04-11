@@ -166,7 +166,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             self.metric_producer_supervision_delegate_patcher.start()
         )
         self.mock_metric_producer_supervision_delegate.return_value = (
-            UsXxSupervisionDelegate([])
+            UsXxSupervisionDelegate()
         )
         self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
@@ -346,14 +346,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_contact_data = [normalized_database_base_dict(supervision_contact)]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         us_mo_sentence_status_data: Iterable[Dict[str, Any]] = [
             {
                 "state_code": state_code,
@@ -434,7 +426,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -728,14 +719,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         ]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -748,7 +731,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -935,14 +917,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         ]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -954,7 +928,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -1009,9 +982,6 @@ class TestClassifyEvents(unittest.TestCase):
         supervision_contacts: Optional[
             Iterable[entities.StateSupervisionContact]
         ] = None,
-        supervision_location_to_names_association: Optional[
-            Iterable[Dict[Any, Any]]
-        ] = None,
     ) -> Dict[str, Iterable[Any]]:
         return {
             entities.StatePerson.__name__: [person],
@@ -1034,8 +1004,6 @@ class TestClassifyEvents(unittest.TestCase):
             entities.StateSupervisionContact.__name__: (
                 supervision_contacts if supervision_contacts else []
             ),
-            "supervision_location_ids_to_names": supervision_location_to_names_association
-            or [],
         }
 
     def testClassifyEvents(self) -> None:
@@ -1191,7 +1159,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ".state_calculation_config_manager._get_state_specific_supervision_delegate"
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([])
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"

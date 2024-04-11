@@ -188,7 +188,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         self.assertEqual(
@@ -289,7 +289,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         self.assertEqual(
             len(expected_contacts),
@@ -359,7 +359,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         face_to_face_frequency_sufficient = (
@@ -417,7 +417,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_face_to_face = (
@@ -475,7 +475,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_face_to_face = (
@@ -533,7 +533,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_face_to_face = (
@@ -808,7 +808,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_recommended_face_to_face_date = (
@@ -855,7 +855,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         face_to_face_frequency_sufficient = (
@@ -902,7 +902,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         face_to_face_frequency_sufficient = (
@@ -1054,7 +1054,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_face_to_face = (
@@ -1154,7 +1154,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_home_visit = (
@@ -1197,7 +1197,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_home_visit = (
@@ -1240,7 +1240,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_home_visit = (
@@ -1304,7 +1304,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_home_visit = (
@@ -1382,7 +1382,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_treatment_contact = us_ix_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1425,7 +1425,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_treatment_contact = us_ix_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1468,7 +1468,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         next_treatment_contact = us_ix_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1506,7 +1506,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         self.assertTrue(us_ix_supervision_compliance._is_new_level_system("LOW"))
         self.assertFalse(us_ix_supervision_compliance._is_new_level_system("Low"))
@@ -1551,7 +1551,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         applicable = us_ix_supervision_compliance._guidelines_applicable_for_case(
@@ -1589,7 +1589,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         applicable = us_ix_supervision_compliance._guidelines_applicable_for_case(
@@ -1630,7 +1630,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         applicable = us_ix_supervision_compliance._guidelines_applicable_for_case(
@@ -1671,7 +1671,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         self.assertFalse(
@@ -1710,7 +1710,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         applicable = us_ix_supervision_compliance._guidelines_applicable_for_case(
@@ -1751,7 +1751,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         applicable = us_ix_supervision_compliance._guidelines_applicable_for_case(
@@ -1794,7 +1794,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         self.assertFalse(
@@ -1834,7 +1834,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         self.assertFalse(
@@ -1871,7 +1871,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         # Before the change guidelines should apply to someone with MAXIMUM supervision level
@@ -1936,7 +1936,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         reassessment_date = us_ix_supervision_compliance._next_recommended_reassessment(
@@ -1984,7 +1984,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         reassessment_date = us_ix_supervision_compliance._next_recommended_reassessment(
@@ -2031,7 +2031,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         reassessment_date = us_ix_supervision_compliance._next_recommended_reassessment(
@@ -2090,7 +2090,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         boundary_deadline = (
@@ -2125,7 +2125,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         reassessment_deadline = (
@@ -2211,7 +2211,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         self.assertIsNone(
             us_ix_supervision_compliance._get_recommended_supervision_downgrade_level(
@@ -2248,7 +2248,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         self.assertIsNone(
             compliance_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -2270,7 +2270,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         recommended_level = (
             compliance_downgrade._get_recommended_supervision_downgrade_level(
@@ -2324,7 +2324,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         self.assertIsNone(
             compliance_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -2346,7 +2346,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         recommended_level = (
             compliance_downgrade._get_recommended_supervision_downgrade_level(
@@ -2376,7 +2376,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         self.assertIsNone(
             no_assessments_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -2399,7 +2399,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
         self.assertEqual(
             no_assessments_should_downgrade._get_recommended_supervision_downgrade_level(
@@ -2440,7 +2440,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ),
             violation_responses=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsIxSupervisionDelegate([]),
+            supervision_delegate=UsIxSupervisionDelegate(),
         )
 
         self.assertIsNone(

@@ -60,17 +60,6 @@ from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manage
 
 _STATE_CODE = "US_XX"
 
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS = {
-    "level 1": {
-        "state_code": _STATE_CODE,
-        "level_1_supervision_location_external_id": "level 1",
-        "level_2_supervision_location_external_id": "level 2",
-    }
-}
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST = list(
-    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS.values()
-)
-
 
 class TestFindProgramEvents(unittest.TestCase):
     """Tests the find_program_events function."""

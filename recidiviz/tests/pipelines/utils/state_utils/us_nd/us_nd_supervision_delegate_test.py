@@ -17,7 +17,7 @@
 """Tests for the us_nd_supervision_delegate.py file"""
 import unittest
 from datetime import date
-from typing import List, Optional
+from typing import List
 
 from parameterized import parameterized
 
@@ -39,7 +39,7 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
     """Unit tests for UsNdSupervisionDelegate"""
 
     def setUp(self) -> None:
-        self.supervision_delegate = UsNdSupervisionDelegate([])
+        self.supervision_delegate = UsNdSupervisionDelegate()
 
     @parameterized.expand(
         [
@@ -128,32 +128,4 @@ class TestUsNdSupervisionDelegate(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = self.supervision_delegate.get_incarceration_period_supervision_type_at_release(
                 incarceration_period
-            )
-
-    @parameterized.expand(
-        [
-            (None, None),
-            ("1", "Region 3"),
-            ("2", "Region 2"),
-            ("9", "Region 3"),
-        ]
-    )
-    def test_supervision_location_from_supervision_site(
-        self,
-        supervision_site: Optional[str],
-        expected_level_2_supervision_location: Optional[str],
-    ) -> None:
-        self.assertEqual(
-            (supervision_site, expected_level_2_supervision_location),
-            self.supervision_delegate.supervision_location_from_supervision_site(
-                supervision_site
-            ),
-        )
-
-    def test_supervision_location_from_supervision_site_unexpected(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError, "Found unexpected supervision_site value: 12345"
-        ):
-            _ = self.supervision_delegate.supervision_location_from_supervision_site(
-                "12345"
             )

@@ -152,8 +152,9 @@ class SupervisionLocationMixin(BuildableAttr):
     # external ID the next-lowest-level sub-geography after
     # level_1_supervision_sub_geography_external_id. For example, in PA this is a
     # "district" where level 1 is an office.
-    # TODO(#19343): Remove this field once it's no longer read by the most_recent_*
-    #  metrics views.
+    # TODO(#19343): This value is null for all states except PA and overwritten downstream
+    #  by logic in BQ views. Once we update PA to hydrate supervision_site properly, we
+    #  can remove this metrics field entirely.
     level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
 
 

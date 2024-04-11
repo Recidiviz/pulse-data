@@ -19,9 +19,6 @@ for details on how to launch a local run.
 """
 from typing import Dict, List, Type, Union
 
-from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
-    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
-)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
@@ -81,7 +78,7 @@ class SupervisionMetricsPipeline(MetricPipeline):
 
     @classmethod
     def required_state_based_reference_tables(cls) -> List[str]:
-        return [SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME]
+        return []
 
     @classmethod
     def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:

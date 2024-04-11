@@ -142,19 +142,6 @@ _STATE_CODE = "US_XX"
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 _DEFAULT_SSVR_ID = 999
 
-DEFAULT_LEVEL_1_SUPERVISION_LOCATION = "level_1"
-DEFAULT_LEVEL_2_SUPERVISION_LOCATION = "level_2"
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS = {
-    DEFAULT_LEVEL_1_SUPERVISION_LOCATION: {
-        "state_code": _STATE_CODE,
-        "level_1_supervision_location_external_id": DEFAULT_LEVEL_1_SUPERVISION_LOCATION,
-        "level_2_supervision_location_external_id": DEFAULT_LEVEL_2_SUPERVISION_LOCATION,
-    }
-}
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST = list(
-    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS.values()
-)
-
 
 class TestClassifySupervisionEvents(unittest.TestCase):
     """Tests for the find_supervision_events function."""
@@ -191,7 +178,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             NormalizedStateAssessment.base_class_name(): assessments,
             StateSupervisionContact.__name__: supervision_contacts,
             NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses,
-            "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             "us_mo_sentence_statuses": us_mo_sentence_statuses or [],
         }
         if not state_code_override:
@@ -2153,7 +2139,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                UsIxSupervisionDelegate([]),
+                UsIxSupervisionDelegate(),
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -2252,7 +2238,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                UsPaSupervisionDelegate([]),
+                UsPaSupervisionDelegate(),
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
             ),
@@ -2430,7 +2416,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                UsIxSupervisionDelegate([]),
+                UsIxSupervisionDelegate(),
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -2887,9 +2873,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -2991,9 +2975,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3099,9 +3081,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3185,9 +3165,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3287,9 +3265,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3373,9 +3349,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3459,9 +3433,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3520,9 +3492,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3644,9 +3614,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3733,9 +3701,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3820,9 +3786,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3906,9 +3870,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                     supervision_contacts, lambda contact: contact.contact_date
                 ),
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                ),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3955,9 +3917,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4013,9 +3973,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4084,9 +4042,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     second_supervision_period,
                 ]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4172,9 +4128,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     second_supervision_period,
                 ]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(2, len(projected_completion_events))
@@ -4269,9 +4223,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     second_supervision_period,
                 ]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(2, len(projected_completion_events))
@@ -4336,9 +4288,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4394,9 +4344,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
         self.assertEqual(1, len(projected_completion_events))
 
@@ -4452,9 +4400,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4506,9 +4452,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4543,9 +4487,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4581,9 +4523,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4624,9 +4564,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4682,9 +4620,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4723,9 +4659,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4765,9 +4699,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4841,9 +4773,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     incarceration_supervision_period,
                 ]
             ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(2, len(projected_completion_events))
@@ -4939,9 +4869,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         assessment_score_change = last_assessment_score - first_reassessment_score
@@ -4989,9 +4917,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -5047,9 +4973,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -5092,9 +5016,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(None, termination_event)
@@ -5184,9 +5106,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -5232,9 +5152,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments=[],
             violation_responses_for_history=[],
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -5355,9 +5273,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -5446,9 +5362,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -5522,9 +5436,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             violation_delegate=UsXxViolationDelegate(),
-            supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            supervision_delegate=UsXxSupervisionDelegate(),
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -5667,9 +5579,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             first_supervision_period,
             supervision_period_index,
             incarceration_period_index,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         if first_supervision_period.termination_date is None:
@@ -5746,9 +5656,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             first_supervision_period,
             supervision_period_index,
             incarceration_period_index,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         if first_supervision_period.termination_date is None:
@@ -5812,9 +5720,7 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_period,
             supervision_period_index,
             incarceration_period_index,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         if supervision_period.start_date is None:
@@ -6267,9 +6173,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(-6, assessment_score_change)
@@ -6316,9 +6220,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -6369,7 +6271,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            self.SecondAssessmentDelegate([]),
+            self.SecondAssessmentDelegate(),
         )
 
         self.assertEqual(-4, assessment_score_change)
@@ -6426,9 +6328,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -6483,9 +6383,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -6510,9 +6408,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -6567,9 +6463,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -6605,9 +6499,7 @@ class TestTerminationReasonFunctionCoverageCompleteness(unittest.TestCase):
 
 def create_start_event_from_period(
     period: NormalizedStateSupervisionPeriod,
-    supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
-        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-    ),
+    supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(),
     **kwargs: Any,
 ) -> SupervisionStartEvent:
     """Creates the SupervisionStartEvent we expect to be created from the given
@@ -6644,9 +6536,7 @@ def create_start_event_from_period(
 
 def create_termination_event_from_period(
     period: NormalizedStateSupervisionPeriod,
-    supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
-        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-    ),
+    supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(),
     **kwargs: Any,
 ) -> SupervisionTerminationEvent:
     """Creates the SupervisionTerminationEvent we expect to be created from the given
@@ -6752,12 +6642,7 @@ def _generate_case_compliances(
         incarceration_period_index=(
             incarceration_period_index or default_normalized_ip_index_for_tests()
         ),
-        supervision_delegate=(
-            supervision_delegate
-            or UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            )
-        ),
+        supervision_delegate=(supervision_delegate or UsXxSupervisionDelegate()),
     )
     # There will only be case compliance output if there's a case compliance manager implemented for the given state.
     if not state_specific_case_compliance_manager:
