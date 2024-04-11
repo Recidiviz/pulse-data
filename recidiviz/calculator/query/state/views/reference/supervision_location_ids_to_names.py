@@ -82,18 +82,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             `{project_id}.{us_mo_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_district_to_region_latest`
         USING (level_1_supervision_location_external_id)
     ),
-    nd_location_names AS (
-        SELECT
-            state_code,
-            level_3_supervision_location_external_id,
-            level_3_supervision_location_name,
-            level_2_supervision_location_external_id,
-            level_2_supervision_location_name,
-            level_1_supervision_location_external_id,
-            level_1_supervision_location_name,
-        FROM
-            `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
-    ),
     id_location_names AS (
         SELECT
             DISTINCT
@@ -178,9 +166,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
-    ),
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY

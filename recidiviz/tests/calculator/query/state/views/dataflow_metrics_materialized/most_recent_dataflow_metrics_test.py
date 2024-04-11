@@ -32,6 +32,12 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized import
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     make_most_recent_metric_view_builders,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.person_demographics import (
+    PERSON_DEMOGRAPHICS_VIEW_BUILDER,
+)
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.utils.identifier_models import SupervisionLocationMixin
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -257,9 +263,7 @@ class MostRecentDataflowMetricsTest(BigQueryEmulatorTestCase):
             address=metrics_address,
             data=old_job_data + new_job_data,
         )
-        demographics_address = BigQueryAddress(
-            dataset_id=SESSIONS_DATASET, table_id="person_demographics_materialized"
-        )
+        demographics_address = PERSON_DEMOGRAPHICS_VIEW_BUILDER.table_for_query
         self.create_mock_table(
             address=demographics_address,
             schema=[
@@ -274,6 +278,29 @@ class MostRecentDataflowMetricsTest(BigQueryEmulatorTestCase):
                 # fmt: off
                 {"state_code": "A", "person_id": 101, "prioritized_race_or_ethnicity": "BLACK"},
                 {"state_code": "B", "person_id": 201, "prioritized_race_or_ethnicity": "INTERNAL_UNKNOWN"},
+                # fmt: on
+            ],
+        )
+
+        location_ids_address = (
+            SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER.table_for_query
+        )
+        self.create_mock_table(
+            address=location_ids_address,
+            schema=[
+                schema_field_for_type("state_code", str),
+                schema_field_for_type("level_1_supervision_location_external_id", str),
+                schema_field_for_type("level_2_supervision_location_external_id", str),
+            ],
+        )
+        self.load_rows_into_table(
+            address=location_ids_address,
+            data=[
+                # fmt: off
+                {"state_code": "A", "level_1_supervision_location_external_id": "district_1", "level_2_supervision_location_external_id": None},
+                {"state_code": "A", "level_1_supervision_location_external_id": "district_2", "level_2_supervision_location_external_id": None},
+                {"state_code": "B", "level_1_supervision_location_external_id": "district_1", "level_2_supervision_location_external_id": "region_1",},
+                {"state_code": "B", "level_1_supervision_location_external_id": "district_2", "level_2_supervision_location_external_id": "region_2",},
                 # fmt: on
             ],
         )

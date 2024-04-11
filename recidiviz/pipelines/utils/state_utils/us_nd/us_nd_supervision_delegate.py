@@ -40,6 +40,7 @@ RELEASE_REASON_RAW_TEXT_TO_SUPERVISION_TYPE = {
     "RPAR": StateSupervisionPeriodSupervisionType.PAROLE,
 }
 
+# TODO(#22528): Delete this entirely as the logic is replicated downstream in BQ views
 # Mapping of ND supervision district (level 1) to supervision region (level 2).
 LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING = {
     "1": "Region 3",
@@ -123,8 +124,7 @@ class UsNdSupervisionDelegate(StateSpecificSupervisionDelegate):
 
         return supervision_type
 
-    # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
-    #  location distinction directly into our schema and are hydrating both for ND.
+    # TODO(#22528): Delete this entirely as the logic is replicated downstream in BQ views
     def supervision_location_from_supervision_site(
         self,
         supervision_site: Optional[str],
