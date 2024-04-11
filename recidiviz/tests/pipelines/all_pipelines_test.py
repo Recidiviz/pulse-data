@@ -62,7 +62,6 @@ class TestReferenceViews(unittest.TestCase):
                 continue
             self.assertTrue(
                 hasattr(pipeline, "required_reference_tables")
-                or hasattr(pipeline, "required_state_based_reference_tables")
                 or hasattr(pipeline, "state_specific_required_reference_tables")
             )
 
@@ -76,11 +75,6 @@ class TestReferenceViews(unittest.TestCase):
                     }
                     if issubclass(pipeline, ComprehensiveNormalizationPipeline)
                     else set(pipeline.required_reference_tables())
-                )
-
-            if hasattr(pipeline, "required_state_based_reference_tables"):
-                all_required_reference_tables.update(
-                    pipeline.required_state_based_reference_tables()
                 )
 
             if hasattr(pipeline, "state_specific_required_reference_tables"):
