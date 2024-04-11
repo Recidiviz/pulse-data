@@ -73,8 +73,8 @@ def staff_query_template(role: str) -> str:
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
     FROM ({source_tbl}) supervision_staff
     INNER JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
-        ON attrs.state_code = supervision_staff.state_code AND attrs.officer_id = supervision_staff.external_id, 
-        UNNEST(supervisor_staff_external_id_array) AS supervisor_external_id
+        ON attrs.state_code = supervision_staff.state_code AND attrs.officer_id = supervision_staff.external_id 
+    LEFT JOIN UNNEST(attrs.supervisor_staff_external_id_array) AS supervisor_external_id
     INNER JOIN `{{project_id}}.normalized_state.state_staff` staff 
         ON attrs.staff_id = staff.staff_id AND attrs.state_code = staff.state_code
     WHERE staff.state_code = '{state}' 
