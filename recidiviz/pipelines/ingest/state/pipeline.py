@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 import apache_beam as beam
 from apache_beam import Pipeline
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
@@ -112,13 +113,13 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         return "INGEST"
 
     @classmethod
-    def all_required_reference_table_ids(cls) -> List[str]:
+    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
         return []
 
     def run_pipeline(self, p: Pipeline) -> None:
         field_index = CoreEntityFieldIndex()
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
-        state_code = StateCode(self.pipeline_parameters.state_code)
+        state_code = StateCode(self.pipeline_parameters.state_code.upper())
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
 
         region = direct_ingest_regions.get_direct_ingest_region(

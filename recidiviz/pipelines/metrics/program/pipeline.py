@@ -19,6 +19,7 @@ for details on how to launch a local run.
 """
 from typing import Dict, List, Type, Union
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
@@ -54,7 +55,7 @@ class ProgramMetricsPipeline(MetricPipeline):
         ]
 
     @classmethod
-    def required_reference_tables(cls) -> List[str]:
+    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
         return []
 
     @classmethod
@@ -64,7 +65,9 @@ class ProgramMetricsPipeline(MetricPipeline):
         ]
 
     @classmethod
-    def state_specific_required_reference_tables(cls) -> Dict[StateCode, List[str]]:
+    def state_specific_input_reference_view_builders(
+        cls,
+    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
         return {}
 
     @classmethod
