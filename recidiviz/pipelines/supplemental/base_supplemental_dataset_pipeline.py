@@ -21,6 +21,7 @@ from typing import Dict, List, Type
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import schema_field_for_type
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
@@ -35,13 +36,14 @@ class SupplementalDatasetPipeline(BasePipeline[SupplementalPipelineParameters]):
         return SupplementalPipelineParameters
 
     @classmethod
-    def all_required_reference_table_ids(cls) -> List[str]:
-        return cls.required_reference_tables()
+    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
+        return cls.input_reference_view_builders()
 
     @classmethod
     @abc.abstractmethod
-    def required_reference_tables(cls) -> List[str]:
-        """Returns the list of required reference tables for the pipeline."""
+    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
+        """Returns a list of builders for views whose queries should be run to
+        produce input data for the pipeline."""
 
     @classmethod
     @abc.abstractmethod

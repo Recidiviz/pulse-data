@@ -19,8 +19,9 @@ for details on how to launch a local run.
 """
 from typing import Dict, List, Type, Union
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_NAME,
+    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
@@ -73,7 +74,7 @@ class SupervisionMetricsPipeline(MetricPipeline):
         ]
 
     @classmethod
-    def required_reference_tables(cls) -> List[str]:
+    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
         return []
 
     @classmethod
@@ -85,11 +86,13 @@ class SupervisionMetricsPipeline(MetricPipeline):
         ]
 
     @classmethod
-    def state_specific_required_reference_tables(cls) -> Dict[StateCode, List[str]]:
+    def state_specific_input_reference_view_builders(
+        cls,
+    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
         return {
             # We need to bring in the US_MO sentence status table to load
             # state-specific versions of sentences
-            StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
+            StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_BUILDER]
         }
 
     @classmethod

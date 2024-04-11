@@ -22,8 +22,9 @@ from __future__ import absolute_import
 
 from typing import Dict, List, Type, Union
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
@@ -59,10 +60,8 @@ class RecidivismMetricsPipeline(MetricPipeline):
         ]
 
     @classmethod
-    def required_reference_tables(
-        cls,
-    ) -> List[str]:
-        return [PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME]
+    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
+        return [PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER]
 
     @classmethod
     def state_specific_required_delegates(
@@ -73,9 +72,9 @@ class RecidivismMetricsPipeline(MetricPipeline):
         ]
 
     @classmethod
-    def state_specific_required_reference_tables(
+    def state_specific_input_reference_view_builders(
         cls,
-    ) -> Dict[StateCode, List[str]]:
+    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
         return {}
 
     @classmethod

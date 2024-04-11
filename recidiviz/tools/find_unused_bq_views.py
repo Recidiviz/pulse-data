@@ -43,7 +43,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     EXTERNAL_REFERENCE_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
-    REFERENCE_VIEWS_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
@@ -331,8 +330,8 @@ def _get_all_dataflow_pipeline_referenced_addresses() -> Set[BigQueryAddress]:
     pipeline_addresses = set()
     for pipeline_class in collect_all_pipeline_classes():
         pipeline_addresses |= {
-            BigQueryAddress(dataset_id=REFERENCE_VIEWS_DATASET, table_id=table_id)
-            for table_id in pipeline_class.all_required_reference_table_ids()
+            builder.address
+            for builder in pipeline_class.all_input_reference_view_builders()
         }
 
     return pipeline_addresses

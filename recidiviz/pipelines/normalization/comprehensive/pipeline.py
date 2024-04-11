@@ -37,14 +37,15 @@ from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
-    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
+    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
-    STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
+    STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_NAME,
+    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
@@ -169,11 +170,13 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         }
 
     @classmethod
-    def required_reference_tables(cls) -> Dict[Type[Entity], List[str]]:
+    def input_reference_view_builders(
+        cls,
+    ) -> Dict[Type[Entity], List[BigQueryViewBuilder]]:
         return {
             entities.StatePerson: [
-                STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
-                STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
+                STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
+                STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
             ],
             entities.StateStaff: [],
         }
@@ -195,32 +198,33 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         }
 
     @classmethod
-    def state_specific_required_reference_tables(
+    def state_specific_input_reference_view_builders(
         cls,
-    ) -> Dict[Type[Entity], Dict[StateCode, List[str]]]:
+    ) -> Dict[Type[Entity], Dict[StateCode, List[BigQueryViewBuilder]]]:
         return {
             entities.StatePerson: {
                 # We need to bring in the US_MO sentence status table to do
                 # do state-specific processing of the sentences for normalizing
                 # supervision periods.
-                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
+                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_BUILDER],
             },
             entities.StateStaff: {},
         }
 
     @classmethod
-    def all_required_reference_table_ids(cls) -> List[str]:
-        all_table_ids = []
-        for root_entity_cls in cls.required_reference_tables():
-            all_table_ids += cls.required_reference_tables()[root_entity_cls] + [
-                t
-                for table_ids in cls.state_specific_required_reference_tables()[
+    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
+        all_builders = []
+
+        for root_entity_cls in cls.input_reference_view_builders():
+            all_builders += cls.input_reference_view_builders()[root_entity_cls] + [
+                vb
+                for view_builders in cls.state_specific_input_reference_view_builders()[
                     root_entity_cls
                 ].values()
-                for t in table_ids
+                for vb in view_builders
             ]
 
-        return all_table_ids
+        return all_builders
 
     @classmethod
     def entity_normalizer(cls) -> ComprehensiveEntityNormalizer:
@@ -254,7 +258,7 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         _ = schema.StatePerson()
         _ = schema.StateStaff()
 
-        state_code = self.pipeline_parameters.state_code
+        state_code = StateCode(self.pipeline_parameters.state_code.upper())
         person_id_filter_set = (
             {
                 int(person_id)
@@ -283,33 +287,35 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                     normalized_entity_associations.add(
                         f"{child_entity_class.__name__}_{parent_entity_class.__name__}"
                     )
-            required_reference_tables = self.required_reference_tables().get(
+            reference_view_builders = self.input_reference_view_builders().get(
                 root_entity_type, []
-            ).copy() + self.state_specific_required_reference_tables().get(
+            ).copy() + self.state_specific_input_reference_view_builders().get(
                 root_entity_type, {}
             ).get(
-                StateCode(state_code.upper()), []
+                state_code, []
             )
 
             writable_entities = (
                 p
                 | f"Load required data for {root_entity_type.__name__}"
                 >> ExtractRootEntityDataForPipeline(
-                    state_code=state_code,
+                    state_code=state_code.value,
                     project_id=self.pipeline_parameters.project,
                     entities_dataset=self.pipeline_parameters.state_data_input,
                     reference_views_dataset=self.pipeline_parameters.reference_view_input,
                     required_entity_classes=self.required_entities().get(
                         root_entity_type
                     ),
-                    required_reference_view_ids=required_reference_tables,
+                    required_reference_view_ids=[
+                        vb.view_id for vb in reference_view_builders
+                    ],
                     root_entity_cls=root_entity_type,
                     root_entity_id_filter_set=person_id_filter_set,
                 )
                 | f"Normalize entities for {root_entity_type.__name__}"
                 >> beam.ParDo(
                     NormalizeEntities(),
-                    state_code=self.pipeline_parameters.state_code,
+                    state_code=state_code.value,
                     root_entity_type=root_entity_type,
                     entity_normalizer=self.entity_normalizer(),
                     state_specific_required_delegates=self.state_specific_required_delegates().get(
@@ -319,7 +325,7 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 | f"Convert to dict to be written to BQ {root_entity_type.__name__}"
                 >> beam.ParDo(
                     NormalizedEntityTreeWritableDicts(),
-                    state_code=self.pipeline_parameters.state_code,
+                    state_code=state_code.value,
                 ).with_outputs(
                     *normalized_entity_class_names, *normalized_entity_associations
                 )

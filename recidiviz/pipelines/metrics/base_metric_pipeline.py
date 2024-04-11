@@ -33,6 +33,7 @@ import apache_beam as beam
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
@@ -110,8 +111,9 @@ class MetricPipeline(
 
     @classmethod
     @abc.abstractmethod
-    def required_reference_tables(cls) -> List[str]:
-        """Returns the list of reference tables required for the pipeline that are person-id based."""
+    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
+        """Returns a list of builders for views whose queries should be run to
+        produce input data for the pipeline."""
 
     @classmethod
     @abc.abstractmethod
@@ -120,16 +122,19 @@ class MetricPipeline(
 
     @classmethod
     @abc.abstractmethod
-    def state_specific_required_reference_tables(cls) -> Dict[StateCode, List[str]]:
-        """Returns a dictionary mapping state codes to the names of state-specific tables
-        required to run pipelines in the state."""
+    def state_specific_input_reference_view_builders(
+        cls,
+    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
+        """Returns a dictionary mapping state codes to the builders of views whose
+        queries should be run to produce input data for the pipeline for the given
+        state only."""
 
     @classmethod
-    def all_required_reference_table_ids(cls) -> List[str]:
-        return cls.required_reference_tables() + [
-            t
-            for table_ids in cls.state_specific_required_reference_tables().values()
-            for t in table_ids
+    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
+        return cls.input_reference_view_builders() + [
+            vb
+            for view_builders in cls.state_specific_input_reference_view_builders().values()
+            for vb in view_builders
         ]
 
     @classmethod
@@ -158,7 +163,7 @@ class MetricPipeline(
         _ = schema.StatePerson()
 
         pipeline_parameters = self.pipeline_parameters
-        state_code = pipeline_parameters.state_code
+        state_code = StateCode(pipeline_parameters.state_code.upper())
         person_id_filter_set = (
             {
                 int(person_id)
@@ -170,23 +175,23 @@ class MetricPipeline(
 
         metric_types = self.parse_metric_types(self.pipeline_parameters.metric_types)
 
-        required_reference_tables = (
-            self.required_reference_tables().copy()
-            + self.state_specific_required_reference_tables().get(
-                StateCode(state_code.upper()), []
-            )
+        reference_view_builders = (
+            self.input_reference_view_builders()
+            + self.state_specific_input_reference_view_builders().get(state_code, [])
         )
 
         pipeline_data = (
             p
             | "Load required person-level data"
             >> ExtractRootEntityDataForPipeline(
-                state_code=state_code,
+                state_code=state_code.value,
                 project_id=self.pipeline_parameters.project,
                 entities_dataset=self.pipeline_parameters.normalized_input,
                 reference_views_dataset=self.pipeline_parameters.reference_view_input,
                 required_entity_classes=self.required_entities(),
-                required_reference_view_ids=required_reference_tables,
+                required_reference_view_ids=[
+                    vb.view_id for vb in reference_view_builders
+                ],
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=person_id_filter_set,
             )
@@ -194,7 +199,7 @@ class MetricPipeline(
 
         person_events = pipeline_data | "Get Events" >> beam.ParDo(
             ClassifyResults(),
-            state_code=self.pipeline_parameters.state_code,
+            state_code=state_code.value,
             identifier=self.identifier(),
             state_specific_required_delegates=self.state_specific_required_delegates(),
             included_result_classes=self.metric_producer().included_result_classes(
@@ -210,7 +215,7 @@ class MetricPipeline(
                 project_id=self.pipeline_parameters.project,
                 region=self.pipeline_parameters.region,
                 job_name=self.pipeline_parameters.job_name,
-                state_code=self.pipeline_parameters.state_code,
+                state_code=state_code.value,
                 metric_types=metric_types,
                 calculation_month_count=self.pipeline_parameters.calculation_month_count,
                 metric_producer=self.metric_producer(),
