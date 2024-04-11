@@ -143,9 +143,9 @@ def calculate_columns_helper(
     environment: str,
 ) -> Tuple[str, str]:
     site = (
-        "https://dashboard-staging.justice-counts.org/agency/"
+        f"https://dashboard-staging.justice-counts.org/agency/{str(agency_id)}/"
         if environment == "STAGING"
-        else "https://dashboard-demo.justice-counts.org/agency/"
+        else f"https://dashboard-demo.justice-counts.org/agency/{str(agency_id)}/"
     )
     # Encode agency name as URI
     link = site + urllib.parse.quote(agency_name).lower()
