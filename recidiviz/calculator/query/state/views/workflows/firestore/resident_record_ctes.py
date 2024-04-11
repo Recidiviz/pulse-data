@@ -31,6 +31,7 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
             dataflow.person_id,
             person_external_id,
             sp.full_name AS person_name,
+            sp.gender AS gender,
             IF( dataflow.state_code IN ({level_2_state_codes}),
                 COALESCE(locations.level_2_incarceration_location_external_id, dataflow.facility),
                 dataflow.facility) AS facility_id,
@@ -111,7 +112,7 @@ _RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_CTE = f"""
             {revert_nonnull_start_date_clause('admission_date')} AS admission_date, 
             {revert_nonnull_end_date_clause('release_date')} AS release_date
         FROM incarceration_dates
-        GROUP BY 1,2,3,4,5,6,7
+        GROUP BY 1,2,3,4,5,6,7,8
     ),
 """
 
@@ -270,6 +271,7 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
             ic.person_name,
             ic.person_id,
             ic.person_external_id,
+            ic.gender,
             officer_id,
             -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
             CASE WHEN ic.state_code = 'US_TN' THEN hu.facility_id ELSE ic.facility_id END AS facility_id,
@@ -296,6 +298,7 @@ _RESIDENTS_CTE = """
             state_code,
             person_name,
             person_id,
+            gender,
             officer_id,
             facility_id,
             unit_id,
