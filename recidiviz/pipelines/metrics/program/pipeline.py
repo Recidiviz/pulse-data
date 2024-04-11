@@ -58,10 +58,6 @@ class ProgramMetricsPipeline(MetricPipeline):
         return []
 
     @classmethod
-    def required_state_based_reference_tables(cls) -> List[str]:
-        return []
-
-    @classmethod
     def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
         return [
             StateSpecificSupervisionDelegate,
