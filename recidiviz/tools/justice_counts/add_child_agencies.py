@@ -122,9 +122,14 @@ def add_child_agencies(
                 super_agency.name,
             )
             for child_agency_name in child_agency_names:
-                existing_agency = AgencyInterface.get_agency_by_name(
-                    session=session, name=child_agency_name
+
+                existing_agency = AgencyInterface.get_agency_by_name_state_and_systems(
+                    session=session,
+                    systems=systems,
+                    name=child_agency_name,
+                    state_code=super_agency.state_code,
                 )
+
                 name = child_agency_name
                 if existing_agency is not None:
                     updated_name = (

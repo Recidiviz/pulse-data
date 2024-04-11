@@ -28,7 +28,7 @@ python -m recidiviz.tools.justice_counts.migrate_agency \
 import argparse
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
@@ -50,11 +50,17 @@ from recidiviz.utils.params import str_to_bool, str_to_list
 
 logger = logging.getLogger(__name__)
 
-agency_name_to_user_jsons: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-agency_name_to_report_json: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-report_id_to_datapoint_json_list: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-agency_name_to_agency_json: Dict[str, Dict[str, Any]] = {}
-agency_name_to_metric_settings: Dict[str, List[MetricInterface]] = {}
+agency_name_id_to_user_jsons: Dict[Tuple[str, int], List[Dict[str, Any]]] = defaultdict(
+    list
+)
+agency_name_id_to_report_json: Dict[
+    Tuple[str, int], List[Dict[str, Any]]
+] = defaultdict(list)
+report_id_to_datapoint_json_list: Dict[
+    Tuple[str, int], List[Dict[str, Any]]
+] = defaultdict(list)
+agency_name_id_to_agency_json: Dict[Tuple[str, int], Dict[str, Any]] = {}
+agency_name_id_to_metric_settings: Dict[Tuple[str, int], List[MetricInterface]] = {}
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -100,7 +106,7 @@ def migrate_agency_data(
     """
     Migrates agency data by creating new agencies, reports, and datapoints
     based on the data saved in the global variables listed at the top of the
-    file (i.e agency_name_to_metric_settings).
+    file (i.e agency_name_id_to_metric_settings).
     """
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
     with local_project_id_override(destination_project_name):
@@ -117,15 +123,23 @@ def migrate_agency_data(
                     "------------------------------------------------------------"
                 )
                 logger.info("Migrating data to %s", destination_project_name)
-                for agency_name, agency_json in agency_name_to_agency_json.items():
+                for (
+                    agency_name,
+                    agency_id,
+                ), agency_json in agency_name_id_to_agency_json.items():
                     logger.info(
                         "------------------------------------------------------------"
                     )
                     logger.info("Migrating %s", agency_name)
-                    existing_agency = AgencyInterface.get_agency_by_name(
-                        session=session, name=agency_name
-                    )
 
+                    existing_agency = (
+                        AgencyInterface.get_agency_by_name_state_and_systems(
+                            session=session,
+                            systems=agency_json["systems"],
+                            name=agency_name,
+                            state_code=agency_json["state_code"],
+                        )
+                    )
                     if existing_agency is not None:
                         logger.info(
                             "%s already exists in %s, skipping",
@@ -158,7 +172,9 @@ def migrate_agency_data(
                                 )
                             )
                             existing_user_emails.add(csg_user.email)
-                    for user_json in agency_name_to_user_jsons[agency_name]:
+                    for user_json in agency_name_id_to_user_jsons[
+                        (agency_name, agency_id)
+                    ]:
                         if user_json["email"] in existing_user_emails:
                             continue
 
@@ -187,14 +203,18 @@ def migrate_agency_data(
                         )
 
                     logger.info("Migrating Metric Settings...")
-                    for metric_setting in agency_name_to_metric_settings[agency_name]:
+                    for metric_setting in agency_name_id_to_metric_settings[
+                        (agency_name, agency_id)
+                    ]:
                         MetricSettingInterface.add_or_update_agency_metric_setting(
                             session=session,
                             agency=curr_agency,
                             agency_metric=metric_setting,
                         )
                     logger.info("Migrating Reports...")
-                    for report_json in agency_name_to_report_json[agency_name]:
+                    for report_json in agency_name_id_to_report_json[
+                        (agency_name, agency_id)
+                    ]:
                         (
                             date_range_start,
                             date_range_end,
@@ -252,11 +272,11 @@ def migrate_agency_data(
                                     dimension_identifier_to_member=datapoint_json[
                                         "dimension_identifier_to_member"
                                     ],
-                                    value_type=schema.ValueType(
-                                        datapoint_json["value_type"]
-                                    )
-                                    if datapoint_json["value_type"] is not None
-                                    else None,
+                                    value_type=(
+                                        schema.ValueType(datapoint_json["value_type"])
+                                        if datapoint_json["value_type"] is not None
+                                        else None
+                                    ),
                                     created_at=datapoint_json["created_at"],
                                     last_updated=datapoint_json["last_updated"],
                                     is_report_datapoint=True,
@@ -300,8 +320,8 @@ def get_agency_data(
                 )
 
                 logger.info("Saving report from %s", source_project_name)
-                global agency_name_to_report_json
-                agency_name_to_report_json = defaultdict(list)
+                global agency_name_id_to_report_json
+                agency_name_id_to_report_json = defaultdict(list)
                 global report_id_to_datapoint_json_list
                 report_id_to_datapoint_json_list = defaultdict(list)
 
@@ -312,15 +332,17 @@ def get_agency_data(
                         editor_id_to_json={},
                     )
                     json["created_at"] = report.created_at
-                    agency_name_to_report_json[report.source.name].append(json)
+                    agency_name_id_to_report_json[
+                        (report.source.name, report.source_id)
+                    ].append(json)
                     datapoint_json_list = [
                         {
                             "report_id": d.report_id,
                             "metric_definition_key": d.metric_definition_key,
                             "value": d.value,
-                            "value_type": d.value_type.value
-                            if d.value_type is not None
-                            else None,
+                            "value_type": (
+                                d.value_type.value if d.value_type is not None else None
+                            ),
                             "dimension_identifier_to_member": d.dimension_identifier_to_member,
                             "created_at": d.created_at,
                             "last_updated": d.last_updated,
@@ -329,9 +351,9 @@ def get_agency_data(
                     ]
                     report_id_to_datapoint_json_list[report.id] = datapoint_json_list
 
-                global agency_name_to_agency_json
-                agency_name_to_agency_json = {
-                    a.name: a.to_json(with_team=True, with_settings=True)
+                global agency_name_id_to_agency_json
+                agency_name_id_to_agency_json = {
+                    (a.name, a.id): a.to_json(with_team=True, with_settings=True)
                     for a in agencies_to_migrate
                 }
 
@@ -339,10 +361,10 @@ def get_agency_data(
                     "Saving metric setting data and user information from %s",
                     source_project_name,
                 )
-                global agency_name_to_metric_settings
-                agency_name_to_metric_settings = {}
-                global agency_name_to_user_jsons
-                agency_name_to_user_jsons = defaultdict(list)
+                global agency_name_id_to_metric_settings
+                agency_name_id_to_metric_settings = {}
+                global agency_name_id_to_user_jsons
+                agency_name_id_to_user_jsons = defaultdict(list)
                 for agency in agencies_to_migrate:
                     metric_settings = (
                         MetricSettingInterface.get_agency_metric_interfaces(
@@ -350,8 +372,10 @@ def get_agency_data(
                             agency=agency,
                         )
                     )
-                    agency_name_to_metric_settings[agency.name] = metric_settings
-                    agency_name_to_user_jsons[agency.name] = [
+                    agency_name_id_to_metric_settings[
+                        (agency.name, agency.id)
+                    ] = metric_settings
+                    agency_name_id_to_user_jsons[(agency.name, agency.id)] = [
                         {
                             "email": u.user_account.email,
                             "role": u.role.value if u.role is not None else u.role,
