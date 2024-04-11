@@ -30,9 +30,6 @@ from mock import patch
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
-    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
@@ -875,14 +872,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             }
         ]
 
-        locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         assessment_data = [normalized_database_base_dict(schema_assessment)]
         data_dict = default_data_dict_for_root_schema_classes([schema.StatePerson])
 
@@ -894,7 +883,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StatePersonRace.__tablename__: races_data,
             PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_to_county_of_residence_data,
-            SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME: locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 

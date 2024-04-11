@@ -217,14 +217,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_period, {"sequence_num": 0})
         ]
 
-        supervision_locations_to_names_data = [
-            {
-                "state_code": "US_XX",
-                "level_1_supervision_location_external_id": "level 1",
-                "level_2_supervision_location_external_id": "level 2",
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -232,7 +224,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         # Given the empty dictionaries, we ignore the overall type until we fill in data.
         data_dict.update(data_dict_overrides)  # type:ignore
@@ -347,9 +338,6 @@ class TestClassifyResults(unittest.TestCase):
         person: entities.StatePerson,
         incarceration_periods: Optional[List[entities.StateIncarcerationPeriod]] = None,
         supervision_periods: Optional[List[entities.StateSupervisionPeriod]] = None,
-        supervision_locations_to_names_associations_kv: Optional[
-            List[Dict[Any, Any]]
-        ] = None,
     ) -> Dict[str, List]:
         return {
             entities.StatePerson.__name__: [person],
@@ -359,8 +347,6 @@ class TestClassifyResults(unittest.TestCase):
             entities.StateSupervisionPeriod.__name__: (
                 supervision_periods if supervision_periods else []
             ),
-            "supervision_location_ids_to_names": supervision_locations_to_names_associations_kv
-            or [],
         }
 
     def test_classify_results(self) -> None:
@@ -398,12 +384,6 @@ class TestClassifyResults(unittest.TestCase):
                 sequence_num=0,
             )
         )
-
-        supervision_location_to_name_map = {
-            "state_code": "US_XX",
-            "level_1_supervision_location_external_id": "level 1",
-            "level_2_supervision_location_external_id": "level 2",
-        }
 
         self.assertIsNotNone(incarceration_period.admission_date)
         self.assertIsNotNone(incarceration_period.admission_reason)
@@ -446,9 +426,6 @@ class TestClassifyResults(unittest.TestCase):
             person=self.fake_person,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
-            supervision_locations_to_names_associations_kv=[
-                supervision_location_to_name_map
-            ],
         )
 
         test_pipeline = TestPipeline()

@@ -19,9 +19,6 @@ import os
 from datetime import date
 from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
-from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
-    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
-)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
@@ -803,7 +800,7 @@ def get_required_state_specific_delegates(
         elif required_delegate is StateSpecificSupervisionDelegate:
             required_state_specific_delegates[
                 required_delegate.__name__
-            ] = _get_state_specific_supervision_delegate(state_code, entity_kwargs)
+            ] = _get_state_specific_supervision_delegate(state_code)
         else:
             raise ValueError(
                 f"Unexpected required delegate {required_delegate} for pipeline."
@@ -1358,52 +1355,42 @@ def _get_state_specific_incarceration_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-# TODO(#10891): Make this a private method once it's no longer being called from
-#  outside of this file
 def _get_state_specific_supervision_delegate(
     state_code: str,
-    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
 ) -> StateSpecificSupervisionDelegate:
     """Returns the type of StateSpecificSupervisionDelegate that should be used for
     supervision calculations in a given |state_code|."""
-    # Type is needed to set mypy to respect list of table rows instead of expecting
-    # a union of entities or table rows.
-    supervision_location_to_names: List[TableRow] = [
-        a
-        for a in entity_kwargs[SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME]
-        if isinstance(a, dict)
-    ]
     if state_code == StateCode.US_AR.value:
-        return UsArSupervisionDelegate(supervision_location_to_names)
+        return UsArSupervisionDelegate()
     if state_code == StateCode.US_CA.value:
-        return UsCaSupervisionDelegate(supervision_location_to_names)
+        return UsCaSupervisionDelegate()
     if state_code == StateCode.US_CO.value:
-        return UsCoSupervisionDelegate(supervision_location_to_names)
+        return UsCoSupervisionDelegate()
     if state_code == StateCode.US_IA.value:
-        return UsIaSupervisionDelegate(supervision_location_to_names)
+        return UsIaSupervisionDelegate()
     if state_code == StateCode.US_ME.value:
-        return UsMeSupervisionDelegate(supervision_location_to_names)
+        return UsMeSupervisionDelegate()
     if state_code == StateCode.US_MI.value:
-        return UsMiSupervisionDelegate(supervision_location_to_names)
+        return UsMiSupervisionDelegate()
     if state_code == StateCode.US_MO.value:
-        return UsMoSupervisionDelegate(supervision_location_to_names)
+        return UsMoSupervisionDelegate()
     if state_code == StateCode.US_NC.value:
-        return UsNcSupervisionDelegate(supervision_location_to_names)
+        return UsNcSupervisionDelegate()
     if state_code == StateCode.US_ND.value:
-        return UsNdSupervisionDelegate(supervision_location_to_names)
+        return UsNdSupervisionDelegate()
     if state_code == StateCode.US_OR.value:
-        return UsOrSupervisionDelegate(supervision_location_to_names)
+        return UsOrSupervisionDelegate()
     if state_code == StateCode.US_PA.value:
-        return UsPaSupervisionDelegate(supervision_location_to_names)
+        return UsPaSupervisionDelegate()
     if state_code == StateCode.US_TN.value:
-        return UsTnSupervisionDelegate(supervision_location_to_names)
+        return UsTnSupervisionDelegate()
     if state_code == StateCode.US_OZ.value:
-        return UsOzSupervisionDelegate(supervision_location_to_names)
+        return UsOzSupervisionDelegate()
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
-        return UsIxSupervisionDelegate(supervision_location_to_names)
+        return UsIxSupervisionDelegate()
     if state_code == StateCode.US_AZ.value:
-        return UsAzSupervisionDelegate(supervision_location_to_names)
+        return UsAzSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 

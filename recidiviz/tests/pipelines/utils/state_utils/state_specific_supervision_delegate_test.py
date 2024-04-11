@@ -20,6 +20,9 @@ from datetime import date
 
 from parameterized import parameterized
 
+from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -30,6 +33,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
@@ -38,18 +42,12 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
 )
+from recidiviz.pipelines.utils.state_utils import state_calculation_config_manager
+from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
-)
-
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES = {
-    "1": {
-        "level_1_supervision_location_external_id": "1",
-        "level_2_supervision_location_external_id": "DISTRICT",
-    }
-}
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST = list(
-    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES.values()
 )
 
 
@@ -57,16 +55,42 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
     """Unit tests for state_specific_supervision_delegate default function implementations."""
 
     def setUp(self) -> None:
-        self.supervision_delegate = UsXxSupervisionDelegate([])
-        self.default_supervision_delegate = UsXxSupervisionDelegate(
-            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-        )
+        self.default_supervision_delegate = UsXxSupervisionDelegate()
+
+    def test_no_new_supervision_location_from_supervision_site_override(self) -> None:
+        allowed_override_states = [StateCode.US_PA]
+        for state_code in StateCode:
+            if state_code in allowed_override_states:
+                continue
+            try:
+                # pylint: disable=protected-access
+                delegate = state_calculation_config_manager._get_state_specific_supervision_delegate(
+                    state_code.value
+                )
+                if (
+                    delegate.supervision_location_from_supervision_site
+                    is not StateSpecificSupervisionDelegate.supervision_location_from_supervision_site
+                ):
+                    raise ValueError(
+                        f"Found override of supervision_location_from_supervision_site() "
+                        f"on the StateSpecificSupervisionDelegate for state "
+                        f"[{state_code.value}]. States should make every possible "
+                        f"effort to avoid state-specific logic here. For most states, "
+                        f"the level_2_supervision_location_external_id is derived in "
+                        f"the most_recent_dataflow_metrics_* views by joining with the "
+                        f"{SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME} view."
+                    )
+            except ValueError:
+                # No delegate for this state
+                continue
 
     def test_supervision_location_from_supervision_site(self) -> None:
         (
             level_1,
             level_2,
-        ) = self.supervision_delegate.supervision_location_from_supervision_site("1")
+        ) = self.default_supervision_delegate.supervision_location_from_supervision_site(
+            "1"
+        )
         self.assertEqual(level_1, "1")
         self.assertEqual(level_2, None)
 
@@ -80,7 +104,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
     )
     def test_lsir_score_bucket(self, _name: str, score: int, bucket: str) -> None:
         self.assertEqual(
-            self.supervision_delegate.set_lsir_assessment_score_bucket(
+            self.default_supervision_delegate.set_lsir_assessment_score_bucket(
                 assessment_score=score,
                 assessment_level=None,
             ),
@@ -123,7 +147,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         )
 
         self.assertEqual(
-            self.supervision_delegate.get_projected_completion_date(
+            self.default_supervision_delegate.get_projected_completion_date(
                 supervision_period=supervision_period,
                 supervision_sentences=[supervision_sentence],
                 incarceration_sentences=[],
@@ -151,7 +175,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         )
 
         self.assertIsNone(
-            self.supervision_delegate.get_projected_completion_date(
+            self.default_supervision_delegate.get_projected_completion_date(
                 supervision_period=supervision_period,
                 supervision_sentences=[],
                 incarceration_sentences=[],
@@ -193,7 +217,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         )
 
         self.assertEqual(
-            self.supervision_delegate.get_projected_completion_date(
+            self.default_supervision_delegate.get_projected_completion_date(
                 supervision_period=supervision_period,
                 supervision_sentences=[supervision_sentence],
                 incarceration_sentences=[],
@@ -235,7 +259,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         )
 
         self.assertEqual(
-            self.supervision_delegate.get_projected_completion_date(
+            self.default_supervision_delegate.get_projected_completion_date(
                 supervision_period=supervision_period,
                 incarceration_sentences=[incarceration_sentence],
                 supervision_sentences=[],
@@ -292,7 +316,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         )
 
         self.assertEqual(
-            self.supervision_delegate.get_projected_completion_date(
+            self.default_supervision_delegate.get_projected_completion_date(
                 supervision_period=supervision_period,
                 incarceration_sentences=[incarceration_sentence],
                 supervision_sentences=[supervision_sentence],

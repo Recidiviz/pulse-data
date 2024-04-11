@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ND implementation of the supervision delegate"""
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -38,34 +38,6 @@ RELEASE_REASON_RAW_TEXT_TO_SUPERVISION_TYPE = {
     "PARL": StateSupervisionPeriodSupervisionType.PAROLE,
     "PV": StateSupervisionPeriodSupervisionType.PAROLE,
     "RPAR": StateSupervisionPeriodSupervisionType.PAROLE,
-}
-
-# TODO(#22528): Delete this entirely as the logic is replicated downstream in BQ views
-# Mapping of ND supervision district (level 1) to supervision region (level 2).
-LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING = {
-    "1": "Region 3",
-    "2": "Region 2",
-    "3": "Region 5",
-    "4": "Region 1",
-    "5": "Region 6",
-    "6": "Region 2",
-    "7": "Region 1",
-    "8": "Region 2",
-    "9": "Region 3",
-    "10": "Region 5",
-    "11": "Region 4",
-    "12": "Region 6",
-    "13": "Region 4",
-    "14": "Region 2",
-    "15": "Region 2",
-    "16": "Region 4",
-    "17": "Central Office",
-    "18": "Region 5",
-    "19": "Region 1",
-    "20": "Region 5",
-    "21": "Region 2",
-    "22": "Region 1",
-    "23": "Region 6",
 }
 
 
@@ -123,25 +95,3 @@ class UsNdSupervisionDelegate(StateSpecificSupervisionDelegate):
             )
 
         return supervision_type
-
-    # TODO(#22528): Delete this entirely as the logic is replicated downstream in BQ views
-    def supervision_location_from_supervision_site(
-        self,
-        supervision_site: Optional[str],
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Retrieves level 1 and level 2 location information from a supervision site."""
-
-        if not supervision_site:
-            return None, None
-
-        if supervision_site not in LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING:
-            raise ValueError(
-                f"Found unexpected supervision_site value: {supervision_site}"
-            )
-
-        level_1_supervision_location = supervision_site
-        level_2_supervision_location = LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING[
-            level_1_supervision_location
-        ]
-
-        return level_1_supervision_location, level_2_supervision_location

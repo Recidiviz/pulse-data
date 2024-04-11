@@ -86,18 +86,6 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 _DEFAULT_SUPERVISION_PERIOD_ID_2 = 888
 
-DEFAULT_LEVEL_1_SUPERVISION_LOCATION_EXTERNAL_ID = "level 1"
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES = {
-    DEFAULT_LEVEL_1_SUPERVISION_LOCATION_EXTERNAL_ID: {
-        "state_code": "US_XX",
-        "level_1_supervision_location_external_id": DEFAULT_LEVEL_1_SUPERVISION_LOCATION_EXTERNAL_ID,
-        "level_2_supervision_location_external_id": "level 2",
-    }
-}
-DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST = list(
-    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES.values()
-)
-
 
 class TestGetCommitmentDetails(unittest.TestCase):
     """Tests the get_commitment_from_supervision_details function."""
@@ -107,9 +95,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
-        supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
-            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-        ),
+        supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(),
         commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate = UsXxCommitmentFromSupervisionDelegate(),
     ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
@@ -486,9 +472,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         commitment_details = self._test_get_commitment_from_supervision_details(
             incarceration_period,
-            supervision_delegate=UsPaSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST
-            ),
+            supervision_delegate=UsPaSupervisionDelegate(),
             supervision_periods=[supervision_period],
             incarceration_period_index=ip_index,
         )

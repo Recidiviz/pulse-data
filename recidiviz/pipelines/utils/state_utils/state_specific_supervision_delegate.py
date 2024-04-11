@@ -20,7 +20,7 @@ supervision."""
 # pylint: disable=unused-argument
 import abc
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -40,7 +40,6 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
 )
-from recidiviz.pipelines.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -48,17 +47,6 @@ from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
 
 class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in categorizing various attributes of supervision."""
-
-    def __init__(
-        self,
-        supervision_locations_to_names_list: List[Dict[str, Any]],
-    ) -> None:
-        self.level_1_supervision_location_info: Dict[
-            str, Dict[str, Any]
-        ] = list_of_dicts_to_dict_with_keys(
-            supervision_locations_to_names_list,
-            key="level_1_supervision_location_external_id",
-        )
 
     def supervision_types_mutually_exclusive(self) -> bool:
         """For some states, we want to track people on DUAL supervision as mutually exclusive from the groups of people on
@@ -71,6 +59,9 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         """
         return False
 
+    # TODO(#19343): Once we are able to remove this delegate, we should be able to
+    #  remove the custom handling of PA level 2 locations in
+    #  most_recent_dataflow_metrics.py.
     def supervision_location_from_supervision_site(
         self,
         supervision_site: Optional[str],
@@ -86,20 +77,10 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         """
         # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
         #  location distinction directly into our schema.
-        level_1_supervision_location = supervision_site
-        level_2_supervision_location = (
-            self.level_1_supervision_location_info[supervision_site][
-                "level_2_supervision_location_external_id"
-            ]
-            if supervision_site
-            and supervision_site in self.level_1_supervision_location_info
-            else None
-        )
+        level_1_supervision_location = supervision_site or None
+        level_2_supervision_location = None
 
-        return (
-            level_1_supervision_location or None,
-            level_2_supervision_location or None,
-        )
+        return level_1_supervision_location, level_2_supervision_location
 
     def supervision_period_in_supervision_population_in_non_excluded_date_range(
         self,

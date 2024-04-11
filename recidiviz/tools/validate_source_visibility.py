@@ -221,14 +221,17 @@ def main() -> int:
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.direct",
-                    "recidiviz.datasets.static_data.config",
                     "recidiviz.persistence",
                 }
             )
-        if (
-            "us_id_case_note" in pipeline.__name__
-            or "us_ix_case_note" in pipeline.__name__
-        ):
+
+            if "normalization" in pipeline.__name__:
+                valid_prefixes = valid_prefixes.union(
+                    {
+                        "recidiviz.datasets.static_data.config",
+                    }
+                )
+        if "us_ix_case_note" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.big_query.big_query_address",
