@@ -423,6 +423,9 @@ class OutliersProductConfiguration:
     # The string that describes a metric that is at or below the statewide rate
     at_or_below_rate_label: str = attr.ib(default="At or below statewide rate")
 
+    # The string that describes a metric that is at or ABOVE the statewide rate
+    at_or_above_rate_label: str = attr.ib(default="At or above statewide rate")
+
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
 

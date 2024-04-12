@@ -218,6 +218,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             none_are_outliers_label="label1",
             worse_than_rate_label="label2",
             exclusion_reason_description="description",
+            at_or_above_rate_label="label3",
         )
 
         response = self.test_client.get(
