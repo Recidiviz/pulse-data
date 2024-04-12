@@ -485,6 +485,10 @@ class IngestOperationsStore(AdminPanelStore):
             # the file is stale if it has been over one week plus a one day buffer period past the latest discovery time
             return latest_discovery_time < datetime.now(pytz.utc) - timedelta(days=8)
 
+        if update_cadence == RawDataFileUpdateCadence.MONTHLY:
+            # the file is stale if it has been over one month plus a one day buffer period past the latest discovery time
+            return latest_discovery_time < datetime.now(pytz.utc) - timedelta(days=31)
+
         if update_cadence == RawDataFileUpdateCadence.IRREGULAR:
             # file staleness cannot be determined so we always return False if there is an irregular file cadence
             return False
