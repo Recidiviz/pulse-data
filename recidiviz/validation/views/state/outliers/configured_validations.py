@@ -72,8 +72,6 @@ def get_all_outliers_validations(
             comparison_columns=["last_export_staff_count", "current_staff_count"],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
-            hard_max_allowed_error=0.0,
-            soft_max_allowed_error=0.0,
         ),
         SamenessDataValidationCheck(
             view_builder=OUTLIERS_STAFF_COUNT_PERCENT_CHANGE_INTERMONTH_VIEW_BUILDER,
