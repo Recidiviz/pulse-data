@@ -52,7 +52,7 @@ WITH
     AND omni_sls.source = "OMNI"
   LEFT JOIN 
     `{{project_id}}.analyst_data.us_mi_supervision_level_raw_text_mappings` coms_sls
-  ON SPLIT(c.correctional_level_raw_text, "##")[OFFSET(0)] \
+  ON REPLACE(sls.correctional_level_raw_text, "##IMPUTED", "") \
     = coms_sls.supervision_level_raw_text \
     AND coms_sls.source = 'COMS'
   WHERE

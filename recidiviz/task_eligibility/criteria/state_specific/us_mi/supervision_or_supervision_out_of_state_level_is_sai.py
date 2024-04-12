@@ -17,6 +17,7 @@
 """This criteria view builder defines spans of time that clients are on supervision after participating in
  SAI (Special Alternative Incarceration) based on supervision level raw text values that contain SAI.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -25,9 +26,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-)
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -64,7 +62,7 @@ WITH sai_spans AS (
          = omni_map.supervision_level_raw_text \
         AND omni_map.source = "OMNI"
     LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
-        ON SPLIT(sls.correctional_level_raw_text, "##")[OFFSET(0)] \
+        ON REPLACE(sls.correctional_level_raw_text, "##IMPUTED", "") \
         = coms_map.supervision_level_raw_text \
         AND coms_map.source = 'COMS'
     WHERE state_code = "US_MI"

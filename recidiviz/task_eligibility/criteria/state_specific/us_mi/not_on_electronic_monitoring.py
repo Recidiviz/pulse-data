@@ -17,17 +17,15 @@
 """This criteria view builder defines spans of time that clients are not on a supervision level that indicates
 electronic monitoring
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
     aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-)
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -63,7 +61,7 @@ includes electronic monitoring */
     LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` omni_map
         ON REGEXP_EXTRACT(sls.correctional_level_raw_text, r'(\\d+)') = omni_map.supervision_level_raw_text and omni_map.source = 'OMNI'
     LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
-        ON SPLIT(sls.correctional_level_raw_text, '##')[OFFSET(0)] = coms_map.supervision_level_raw_text and coms_map.source = 'COMS'
+        ON REPLACE(sls.correctional_level_raw_text, "##IMPUTED", "") = coms_map.supervision_level_raw_text and coms_map.source = 'COMS'
     WHERE state_code = "US_MI"
     AND compartment_level_1 = 'SUPERVISION'
     AND (omni_map.is_em OR coms_map.is_em)
