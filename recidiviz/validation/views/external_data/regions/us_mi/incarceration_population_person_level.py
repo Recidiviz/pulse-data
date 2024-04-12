@@ -256,7 +256,13 @@ SELECT
   person_external_id,
   'US_MI_DOC' as external_id_type,
   date_of_stay,
-  facility
+  facility,
+  Confinement_Level, 
+  Management_Level, 
+  True_Sec_Level, 
+  Actual_Sec_Level, 
+  STG, 
+  MH_Treatment
 FROM (
     {_SUBQUERY_TEMPLATE}
 )
