@@ -79,7 +79,7 @@ eligible combination of supervision and initial assessment level */
   ON REGEXP_EXTRACT(sl.supervision_level_raw_text, r'(\\d+)') = \
   omni_map.supervision_level_raw_text AND omni_map.source  = 'OMNI'
   LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
-  ON SPLIT(sl.supervision_level_raw_text, "##")[OFFSET(0)] = coms_map.supervision_level_raw_text AND coms_map.source = 'COMS'
+  ON REPLACE(sl.supervision_level_raw_text, "##IMPUTED", "") = coms_map.supervision_level_raw_text AND coms_map.source = 'COMS'
 )
 SELECT * EXCEPT (description, initial_assessment_level),
     TO_JSON(STRUCT(description AS supervision_level_raw_text, 

@@ -871,8 +871,8 @@ output:
                             $concat:
                               $values:
                                 - most_recent_supervision_level_id
-                                - $literal("imputed")
                                 - specialties
+                                - $literal("imputed")
                               $separator: "##"
                     $custom_parser: us_mi_custom_enum_parsers.parse_supervision_level
           conditions: special_condition_ids
