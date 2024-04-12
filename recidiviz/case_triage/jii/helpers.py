@@ -35,13 +35,13 @@ from recidiviz.case_triage.workflows.utils import (
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.string import StrictStringFormatter
 
-INITIAL_TEXT = "Hi {given_name}, we are reaching out to notify you that we will be sending text messages to this phone number on behalf of the Idaho Department of Correction. These texts will share information about options available on supervision."
-FULLY_ELIGIBLE_TEXT = "Hi {given_name}, according to records from the Idaho Department of Correction, you may be eligible for the Limited Supervision Unit (LSU). To learn more about LSU, visit rviz.co/id_lsu. If you’re interested in learning more, you can reach out to {po_name} or your current PO. They can answer any questions and review your case to see if you've met all the requirements. You may or may not be approved for LSU."
-MISSING_NEGATIVE_UA_OR_INCOME_OPENER = "Hi {given_name}, according to records from the Idaho Department of Correction, you may be close to being eligible for the Limited Supervision Unit (LSU). To learn more about LSU visit rviz.co/id_lsu. This program is optional, but if you are interested in joining, you can do the following to become eligible:\n"
-MISSING_INCOME_BULLET = "\n- Verify that you have a job, are a full-time student, or have enough lawful income from sources other than a job. You can do so by sharing a recent paycheck stub or other documents with your PO, {po_name}.\n"
-MISSING_NEGATIVE_UA_BULLET = "\n- Visit the parole and probation office to provide a negative urine analysis test\n"
-MISSING_NEGATIVE_UA_OR_INCOME_CLOSER = "\nIf you’re interested in learning more, you can reach out to {po_name} or your current PO. You may or may not be approved for LSU."
-ALL_CLOSER = "\n\nReply STOP if you would like to stop receiving these messages at any time. To resubscribe, reply START. We're currently unable to respond to messages sent to this number. Your PO can answer any questions you may have."
+INITIAL_TEXT = "Hi {given_name}, we’re reaching out on behalf of the Idaho Department of Correction (IDOC). We will send information about your eligibility for opportunities such as the Limited Supervision Unit (LSU), which offers a lower level of supervision.\n\nIf you have questions, reach out to {po_name}."
+FULLY_ELIGIBLE_TEXT = "Hi {given_name}, according to IDOC records, you might be eligible for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins. To learn more, visit rviz.co/id_lsu\n\nIf you are interested in LSU, reach out to {po_name} or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601. They can check if you’ve met all the requirements.\n\nYou may or may not be approved for LSU."
+MISSING_NEGATIVE_UA_OR_INCOME_OPENER = "Hi {given_name}, according to IDOC records, you are almost eligible for the Limited Supervision Unit (LSU). LSU is a lower level of supervision with monthly online check-ins. To learn more, visit rviz.co/id_lsu.\n\nLSU is optional, but if you are interested, you can do the following:\n"
+MISSING_INCOME_BULLET = "\n- You may share documents showing that you have a job, are a full-time student, or have other income such as a pension or disability benefits.\n"
+MISSING_NEGATIVE_UA_BULLET = "\n- You may provide a urine analysis test at the parole and probation office. You must test negative to be eligible for LSU.\n"
+MISSING_NEGATIVE_UA_OR_INCOME_CLOSER = "\nIf you have questions or would like to complete the steps above, reach out to {po_name} or a specialist at specialistsd3@idoc.idaho.gov or (208) 454-7601.\n\nYou may or may not be approved for LSU. You are not required to participate in LSU, nor required to complete any of the above steps."
+ALL_CLOSER = "\n\nReply STOP to stop receiving these messages at any time. We’re unable to respond to messages sent to this number."
 
 
 def generate_initial_text_messages_dict(
@@ -59,8 +59,11 @@ def generate_initial_text_messages_dict(
         external_id = str(individual["external_id"])
         phone_num = str(individual["phone_number"])
         given_name = literal_eval(individual["person_name"])["given_names"].title()
+        po_name = individual["po_name"].title()
         text_body = """"""
-        text_body += StrictStringFormatter().format(INITIAL_TEXT, given_name=given_name)
+        text_body += StrictStringFormatter().format(
+            INITIAL_TEXT, given_name=given_name, po_name=po_name
+        )
         text_body += ALL_CLOSER
         external_id_to_phone_num_to_text_dict[external_id] = {phone_num: text_body}
         logging.info("Initial text constructed for external_id: %s", external_id)
@@ -149,9 +152,7 @@ def construct_text_body(
         )
 
     if missing_income_verified_within_3_months is True:
-        text_body += StrictStringFormatter().format(
-            MISSING_INCOME_BULLET, po_name=po_name
-        )
+        text_body += MISSING_INCOME_BULLET
     if missing_negative_ua_within_90_days is True:
         text_body += MISSING_NEGATIVE_UA_BULLET
     if (
