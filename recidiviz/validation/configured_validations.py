@@ -250,6 +250,9 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 from recidiviz.validation.views.state.supervision_termination_reason_no_date import (
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.supervisor_roster_exclusions import (
+    SUPERVISOR_ROSTER_EXCLUSION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.client_and_resident_record_percent_change_in_eligibility_exceeded import (
     CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,
 )
@@ -461,6 +464,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SUPERVISOR_ROSTER_EXCLUSION_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
