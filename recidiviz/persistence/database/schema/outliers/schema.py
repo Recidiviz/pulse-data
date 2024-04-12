@@ -268,7 +268,8 @@ class Configuration(OutliersBase):
     # server_default parameter and autogenerate a migration so that existing values
     # in the database have this column hydrated.
     # Be sure to add this column to the below:
-    #     - recidiviz/admin_panel/line_staff_tools/outliers_api_schemas.py
+    #     - recidiviz/admin_panel/line_staff_tools/outliers_api_schemas.py::ConfigurationSchema
+    #     - recidiviz/outliers/types.py::OutliersProductConfiguration
     #     - frontends/admin-panel/src/InsightsStore/models/InsightsConfiguration.ts
     #     - frontends/admin-panel/src/components/Insights/AddConfigForm.tsx
     absconders_label = Column(String, nullable=False, server_default="absconders")

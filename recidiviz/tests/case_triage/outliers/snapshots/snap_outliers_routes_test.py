@@ -303,6 +303,7 @@ snapshots[
     "TestOutliersRoutes.TestOutliersRoutes test_get_state_configuration_success"
 ] = {
     "config": {
+        "atOrAboveRateLabel": "label3",
         "atOrBelowRateLabel": "At or below statewide rate",
         "clientEvents": [{"displayName": "Sanctions", "name": "violation_responses"}],
         "exclusionReasonDescription": "description",
