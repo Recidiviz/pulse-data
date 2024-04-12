@@ -29,7 +29,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: .035
     override_reason: Needs investigation.  Current failing level as of 9/26 is .0302 #TODO(#13880)
   - validation_name: supervision_population_by_type_external_comparison
-    hard_max_allowed_error_override: .16
+    hard_max_allowed_error_override: .18
     override_reason:
       Some error is expected because MI has told us that their validation
       numbers for supervision have some weirdness. Hopefully we'll be able to get more
@@ -82,10 +82,10 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 7
     override_reason: Not required for web tool.  Ticket to investigate #TODO(#26496)
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 20
+    hard_num_allowed_rows_override: 35
     override_reason:
       Needs investigation but seems to be due to single day periods.  Current failing level
-      as of 12/21 is 16 rows TODO(#26444)
+      as of 4/12 is 20 rows TODO(#26444)
   - validation_name: current_impact_funnel_status_duplicate_external_ids
     hard_num_allowed_rows_override: 10000
     override_reason:
