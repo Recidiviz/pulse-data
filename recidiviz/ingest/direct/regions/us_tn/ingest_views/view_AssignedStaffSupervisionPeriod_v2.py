@@ -263,7 +263,40 @@ override_backdated_discharges AS (
     FROM all_supervision_periods asp
     LEFT JOIN {AssignedStaff} ast ON ast.StaffID = asp.SupervisionOfficerID AND asp.OffenderID = ast.OffenderID AND asp.EndDate=CAST(ast.EndDate AS DATETIME) AND AssignmentEndReason IN ('DIS','EXP')
     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
-) 
+), 
+last_movement_from_OffenderMovement AS (
+  # Taking the latest movement of each person from OffenderMovement, which is considered to be the source of truth table, so we 
+  # can close incorrectly open periods in the next CTE. 
+  SELECT 
+    OffenderID, 
+    CAST(MovementDateTime AS DATETIME) AS MovementDatetime, 
+    MovementType, 
+    MovementReason,
+    FROM {OffenderMovement}
+    WHERE TRUE 
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementDateTime DESC) = 1
+), close_oos_periods AS (
+  #TODO(#28831): Revisit how we are closing out open out of state supervision periods when we integrate OffenderMovement table more. 
+  # Taking the last movement from OffenderMovement and closing open periods if that MovementReason is 
+  # 'ISC' (interstate compact) with the MovementType last two letters being 'OJ'.
+  SELECT 
+    OffenderID,
+    SupervisionType,
+    SupervisionOfficerID,
+    AssignmentType,
+    Site,
+    SupervisionOfficerFirstName,
+    SupervisionOfficerLastName,
+    SupervisionOfficerSuffix,
+    SupervisionLevel, 
+    StartDate,
+    IF(EndDate IS NULL AND MovementReason = 'ISC' AND RIGHT(MovementType, 2) = 'OJ', MovementDateTime, EndDate) AS EndDate, 
+    AdmissionReason, 
+    IF(TerminationReason IS NULL AND MovementReason = 'ISC' AND RIGHT(MovementType, 2) = 'OJ', MovementReason, TerminationReason) AS TerminationReason,
+  FROM override_backdated_discharges
+  LEFT JOIN last_movement_from_OffenderMovement
+  USING (OffenderID)
+)
 SELECT
     OffenderID,
     SupervisionType,
@@ -275,11 +308,11 @@ SELECT
     SupervisionOfficerSuffix,
     SupervisionLevel, 
     StartDate,
-    CAST(EndDate as DATE) as EndDate,
+    CAST(IF(EndDate < StartDate AND TerminationReason = 'ISC', StartDate, EndDate) AS DATE) AS EndDate, 
     AdmissionReason, 
     TerminationReason,
     ROW_NUMBER() OVER person_window AS SupervisionPeriodSequenceNumber
-    FROM override_backdated_discharges 
+    FROM close_oos_periods 
     WINDOW person_window AS (PARTITION BY OffenderID ORDER BY StartDate ASC, EndDate ASC, SupervisionType, AssignmentType, SupervisionLevel, SupervisionOfficerID, AdmissionReason, TerminationReason)
 """
 
