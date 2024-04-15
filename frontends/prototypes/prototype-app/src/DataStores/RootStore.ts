@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { AuthSettings, AuthStore } from "@recidiviz/auth";
-import { when } from "mobx";
+import { makeObservable, runInAction, when } from "mobx";
 
 import { authenticate } from "../firebase";
 import UserStore from "./UserStore";
@@ -38,6 +38,8 @@ class RootStore {
 
   userStore: UserStore;
 
+  firestoreAuthorized = false;
+
   constructor() {
     this.authStore = new AuthStore({ authSettings: getAuthSettings() });
 
@@ -45,11 +47,16 @@ class RootStore {
       rootStore: this,
     });
 
+    makeObservable(this, { firestoreAuthorized: true });
+
     // authenticate to Firestore once user is authorized
     when(
       () => this.authStore.isAuthorized,
       async () => {
-        authenticate(await this.authStore.getTokenSilently());
+        await authenticate(await this.authStore.getTokenSilently());
+        runInAction(() => {
+          this.firestoreAuthorized = true;
+        });
       }
     );
   }
