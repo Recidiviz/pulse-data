@@ -149,6 +149,12 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             ]
         )
         self.session.commit()
+        self.agency_A_id = agency_A.id
+        self.agency_B_id = agency_B.id
+        self.agency_C_id = agency_C.id
+        self.user_A_id = user_A.id
+        self.user_B_id = user_B.id
+        self.user_B_id = user_B.id
 
     # UserAccount
 
@@ -199,9 +205,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 original_name="original_name",
                 uploaded_by=user.auth0_user_id,
                 standardized_name="standardized_name",
-                agency_id=AgencyInterface.get_agency_by_name(
-                    session=self.session, name="Agency Alpha"
-                ).id,
+                agency_id=self.agency_A_id,
                 system=System.LAW_ENFORCEMENT,
                 status=SpreadsheetStatus.UPLOADED,
                 uploaded_at=datetime.datetime.now(tz=datetime.timezone.utc),
@@ -289,12 +293,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
     ) -> None:
         self.load_users_and_agencies()
 
-        agency_A_id = AgencyInterface.get_agency_by_name(
-            session=self.session, name="Agency Alpha"
-        ).id
-        agency_B_id = AgencyInterface.get_agency_by_name(
-            session=self.session, name="Agency Law Enforcement"
-        ).id
         # Create a new user
         response = self.client.put(
             "/admin/user",
@@ -303,7 +301,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                     {
                         "name": "Jane Doe",
                         "email": "email1@test.com",
-                        "agency_ids": [agency_A_id, agency_B_id],
+                        "agency_ids": [self.agency_A_id, self.agency_B_id],
                     }
                 ]
             },
@@ -316,12 +314,12 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             schema.UserAccount,
         )
         self.assertEqual(len(user.agency_assocs), 2)
-        self.assertEqual(user.agency_assocs[0].agency_id, agency_A_id)
+        self.assertEqual(user.agency_assocs[0].agency_id, self.agency_A_id)
         self.assertEqual(
             user.agency_assocs[0].role,
             schema.UserAccountRole.AGENCY_ADMIN,
         )
-        self.assertEqual(user.agency_assocs[1].agency_id, agency_B_id)
+        self.assertEqual(user.agency_assocs[1].agency_id, self.agency_B_id)
         self.assertEqual(
             user.agency_assocs[1].role,
             schema.UserAccountRole.AGENCY_ADMIN,
@@ -335,13 +333,13 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                     {
                         "name": "Jane Smith Doe",
                         "email": "email1@test.com",
-                        "agency_ids": [agency_B_id],
+                        "agency_ids": [self.agency_B_id],
                         "user_account_id": user.id,
                     },
                     {
                         "name": "John Doe",
                         "email": "email2@test.com",
-                        "agency_ids": [agency_A_id],
+                        "agency_ids": [self.agency_A_id],
                     },
                 ]
             },
@@ -356,7 +354,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertIsNotNone(jane_doe)
         self.assertEqual(jane_doe.name, "Jane Smith Doe")
         self.assertEqual(len(jane_doe.agency_assocs), 1)
-        self.assertEqual(jane_doe.agency_assocs[0].agency_id, agency_B_id)
+        self.assertEqual(jane_doe.agency_assocs[0].agency_id, self.agency_B_id)
         self.assertEqual(
             jane_doe.agency_assocs[0].role,
             schema.UserAccountRole.AGENCY_ADMIN,
@@ -371,7 +369,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertIsNotNone(john_doe)
         self.assertEqual(john_doe.name, "John Doe")
         self.assertEqual(len(john_doe.agency_assocs), 1)
-        self.assertEqual(john_doe.agency_assocs[0].agency_id, agency_A_id)
+        self.assertEqual(john_doe.agency_assocs[0].agency_id, self.agency_A_id)
         self.assertEqual(
             john_doe.agency_assocs[0].role,
             schema.UserAccountRole.AGENCY_ADMIN,
@@ -444,8 +442,11 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        agency = AgencyInterface.get_agency_by_name(
-            session=self.session, name="New Agency"
+        agency = AgencyInterface.get_agency_by_name_state_and_systems(
+            session=self.session,
+            name="New Agency",
+            state_code="us_ca",
+            systems=["LAW_ENFORCEMENT", "JAILS"],
         )
         self.assertIsNotNone(agency)
         self.assertFalse(agency.is_superagency)
@@ -462,10 +463,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         # Update name, users, and child agency, and turn on dashboard
-        law_enforcement_agency = AgencyInterface.get_agency_by_name(
-            session=self.session, name="Agency Alpha"
-        )
-        law_enforcement_agency_id = law_enforcement_agency.id
         response = self.client.put(
             "/admin/agency",
             json={
@@ -474,7 +471,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "systems": ["LAW_ENFORCEMENT", "JAILS"],
                 "is_superagency": True,
                 "super_agency_id": None,
-                "child_agency_ids": [law_enforcement_agency_id],
+                "child_agency_ids": [self.agency_A_id],
                 "agency_id": agency.id,
                 "team": [
                     {"user_account_id": user_B_id, "role": "AGENCY_ADMIN"},
@@ -485,9 +482,12 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
-        self.assertEqual(response_json["child_agency_ids"], [law_enforcement_agency_id])
-        agency = AgencyInterface.get_agency_by_name(
-            session=self.session, name="New Agency New Name"
+        self.assertEqual(response_json["child_agency_ids"], [self.agency_A_id])
+        agency = AgencyInterface.get_agency_by_name_state_and_systems(
+            session=self.session,
+            name="New Agency New Name",
+            state_code="us_ca",
+            systems=["LAW_ENFORCEMENT", "JAILS"],
         )
         self.assertIsNotNone(agency)
         self.assertTrue(agency.is_superagency)
@@ -533,8 +533,11 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
         self.assertEqual(response_json["child_agency_ids"], [])
-        agency = AgencyInterface.get_agency_by_name(
-            session=self.session, name="New Agency New Name"
+        agency = AgencyInterface.get_agency_by_name_state_and_systems(
+            session=self.session,
+            name="New Agency New Name",
+            state_code="us_ca",
+            systems=["LAW_ENFORCEMENT", "JAILS"],
         )
         self.assertIsNotNone(agency)
         self.assertFalse(agency.is_superagency)

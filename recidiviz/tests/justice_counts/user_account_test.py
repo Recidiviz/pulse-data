@@ -83,8 +83,11 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 email="test@email.com",
                 auth0_client=self.test_auth0_client,
             )
-            agency = AgencyInterface.get_agency_by_name(
-                session=session, name="Agency Gamma"
+            agency = AgencyInterface.get_agency_by_name_state_and_systems(
+                session=session,
+                name="Agency Gamma",
+                state_code="us_ar",
+                systems=[schema.System.LAW_ENFORCEMENT.value],
             )
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
