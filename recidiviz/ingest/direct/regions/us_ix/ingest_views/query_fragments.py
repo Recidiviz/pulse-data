@@ -500,6 +500,7 @@ transfer_details_cte AS (
         ON DOCLocationFromId = loc_from.LocationId
     LEFT JOIN location_details_cte loc_to
         ON DOCLocationToId = loc_to.LocationId
+    WHERE TransferStatusDesc = "Confirmed"
 )"""
 
 # requires TRANSFER_DETAILS_CTE
