@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_staff_and_role_period` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - BadgeNumber
+  - start_date
+  - end_date
+  - ParoleUnit
+  - type
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: BadgeNumber
+          id_type: $literal("US_CA_BADGE_NO")
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - BadgeNumber
+                - ParoleUnit
+                - start_date
+          start_date: start_date
+          end_date: end_date
+          location_external_id: ParoleUnit
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - BadgeNumber
+                - ParoleUnit
+                - start_date
+          start_date: start_date
+          end_date: end_date
+          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+          role_subtype:
+            $conditional:
+              - $if:
+                  $equal:
+                    - type
+                    - $literal("Supv")
+                $then: $literal_enum(StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR)
+              - $else: $literal_enum(StateStaffRoleSubtype.SUPERVISION_OFFICER)
