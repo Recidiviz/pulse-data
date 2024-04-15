@@ -159,6 +159,10 @@ class MetricBenchmark(OutliersBase):
     threshold = Column(Float, nullable=False)
     # Caseload type, if applicable. 'ALL' indicates the metric benchmark is statewide.
     caseload_type = Column(String, primary_key=True)
+    # If it exists, the top x% of officers to highlight for this metric
+    top_x_pct = Column(Integer)
+    # The percentile value to compare an individual rate to and determine if they are in the top_x_pct
+    top_x_pct_percentile_value = Column(Float)
 
 
 class SupervisionOfficerOutlierStatus(OutliersBase):
@@ -189,6 +193,12 @@ class SupervisionOfficerOutlierStatus(OutliersBase):
     threshold = Column(Float, nullable=False)
     # Whether the officer is either FAR, MET or NEAR the metric's target
     status = Column(String, nullable=False)
+    # If it exists, highlight the top x% of officers for this metric
+    top_x_pct = Column(Integer)
+    # The percentile value to compare an individual rate to and determine if they are in the top_x_pct
+    top_x_pct_percentile_value = Column(Float)
+    # Whether the officer's metric rate is in the top x% of individuals for this metric
+    is_top_x_pct = Column(Boolean)
 
 
 class SupervisionClientEvent(OutliersBase):

@@ -48,7 +48,7 @@ officer_metrics_with_caseload_type AS (
     m.metric_value AS metric_rate,
     -- Keep an entry for each officer that compares to the statewide target, e.g. benchmark where caseload type is 'ALL'
     'ALL' AS caseload_type
-  FROM `{{project_id}}.outliers_views.supervision_officer_metrics_materialized` m 
+  FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized` m 
   WHERE
     m.value_type = 'RATE'
   -- TODO(#24119): Add comparison to metrics aggregated by caseload type
@@ -76,9 +76,22 @@ officer_metrics_with_caseload_type AS (
             WHEN b.target - m.metric_rate <= b.threshold THEN 'NEAR'
             ELSE 'FAR'
         END
-    END AS status
+    END AS status,
+    b.top_x_pct,
+    b.top_x_pct_percentile_value,
+    CASE 
+      WHEN
+        b.top_x_pct IS NOT NULL
+        THEN CASE
+          -- If the metric is an ADVERSE metric, highlighting the top 10% means highlighting officers with rates below the 10th percentile value
+          WHEN m.metric_id IN ({list_to_query_string(get_metric_id_by_outcome(MetricOutcome.ADVERSE), quoted=True)}) THEN m.metric_rate < b.top_x_pct_percentile_value
+          -- If the metric is a FAVORABLE metric, highlighting the top 10% means highlighting officers with rates above the 90th percentile value
+          WHEN m.metric_id IN ({list_to_query_string(get_metric_id_by_outcome(MetricOutcome.FAVORABLE), quoted=True)}) THEN m.metric_rate > b.top_x_pct_percentile_value
+        END
+      ELSE NULL 
+    END AS is_top_x_pct
   FROM officer_metrics_with_caseload_type m
-  INNER JOIN `{{project_id}}.outliers_views.metric_benchmarks_materialized` b 
+  INNER JOIN `{{project_id}}.{{outliers_views_dataset}}.metric_benchmarks_materialized` b 
     USING (state_code, end_date, period, metric_id, caseload_type)
 )
 
@@ -104,7 +117,11 @@ SUPERVISION_OFFICER_OUTLIER_STATUS_VIEW_BUILDER = SelectedColumnsBigQueryViewBui
         "target",
         "threshold",
         "status",
+        "top_x_pct",
+        "top_x_pct_percentile_value",
+        "is_top_x_pct",
     ],
+    outliers_views_dataset=dataset_config.OUTLIERS_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
