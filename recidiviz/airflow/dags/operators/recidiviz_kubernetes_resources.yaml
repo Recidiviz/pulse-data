@@ -61,7 +61,7 @@ UpdateAllManagedViewsEntrypoint:
   default_resources:
     limits:
       cpu: 1000m
-      memory: 2Gi
+      memory: 3Gi
 
 MetricExportTimelinessEntrypoint:
   default_resources:
