@@ -151,6 +151,10 @@ class OutliersMetricConfig:
     # The query fragment to use to filter analyst_data.person_events for this metric's events
     metric_event_conditions_string: str = attr.ib(default=None)
 
+    # The top percent (as an integer) of officers to highlight for this metric, if applicable;
+    # i.e. top_x_pct = 10 translates to highlighting officers that are in the top 10%
+    top_x_pct: int | None = attr.ib(default=None)
+
     @classmethod
     def build_from_metric(
         cls,
@@ -162,6 +166,7 @@ class OutliersMetricConfig:
         event_name_past_tense: str,
         # TODO(#27455): Remove the default value when the copy is ready for PA and IX
         description_markdown: str = "",
+        top_x_pct: int | None = None,
     ) -> "OutliersMetricConfig":
         return cls(
             metric.name,
@@ -173,6 +178,7 @@ class OutliersMetricConfig:
             event_name_past_tense,
             description_markdown,
             metric.metric_event_conditions_string,
+            top_x_pct,
         )
 
 
@@ -328,6 +334,9 @@ class SupervisionOfficerEntity:
     # List of objects that represent what metrics the officer is an Outlier for
     # If the list is empty, then the officer is not an Outlier on any metric.
     outlier_metrics: list = attr.ib()
+    # List of objects that represent what metrics the officer is in the top x% for the latest period for,
+    # where x can be specified on the OutliersMetricConfig in a state's OutliersBackendConfig
+    top_x_pct_metrics: list = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         # TODO(#28217): To refine when designing Insights with disaggregated caseload types

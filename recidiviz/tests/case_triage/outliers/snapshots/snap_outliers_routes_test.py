@@ -188,6 +188,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
         "outlierMetrics": [],
         "pseudonymizedId": "hashhash",
         "supervisorExternalId": "102",
+        "topXPctMetrics": [],
     }
 }
 
@@ -212,6 +213,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
         ],
         "pseudonymizedId": "hashhash",
         "supervisorExternalId": "102",
+        "topXPctMetrics": [],
     }
 }
 
@@ -238,6 +240,9 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             ],
             "pseudonymizedId": "hashhash",
             "supervisorExternalId": "102",
+            "topXPctMetrics": [
+                {"metricId": "incarceration_starts_and_inferred", "topXPct": 10}
+            ],
         },
         {
             "caseloadType": None,
@@ -252,6 +257,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
+            "topXPctMetrics": [],
         },
     ]
 }
@@ -281,6 +287,7 @@ snapshots[
             ],
             "pseudonymizedId": "hashhash",
             "supervisorExternalId": "102",
+            "topXPctMetrics": [],
         },
         {
             "caseloadType": None,
@@ -295,6 +302,7 @@ snapshots[
             "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
+            "topXPctMetrics": [],
         },
     ]
 }
@@ -322,6 +330,7 @@ Incarceration rate denominator description""",
                 "name": "incarceration_starts_and_inferred",
                 "outcomeType": "ADVERSE",
                 "titleDisplayName": "Incarceration Rate (CPVs & TPVs)",
+                "topXPct": None,
             },
             {
                 "bodyDisplayName": "absconsion rate",
@@ -332,6 +341,7 @@ Incarceration rate denominator description""",
                 "name": "absconsions_bench_warrants",
                 "outcomeType": "ADVERSE",
                 "titleDisplayName": "Absconsion Rate",
+                "topXPct": None,
             },
         ],
         "noneAreOutliersLabel": "label1",

@@ -19,6 +19,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.outliers.utils import (
+    get_highlight_percentile_value_query,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -27,7 +30,7 @@ _VIEW_NAME = "metric_benchmarks"
 _DESCRIPTION = """Metrics that are aggregated at the state or caseload level and used as the benchmarks/targets."""
 
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
 
 WITH 
 statewide_iqrs AS (
@@ -36,10 +39,14 @@ statewide_iqrs AS (
         end_date,
         metric_id,
         APPROX_QUANTILES(metric_value, 4)[OFFSET(3)] - APPROX_QUANTILES(metric_value, 4)[OFFSET(1)] AS iqr
-    FROM `{project_id}.outliers_views.supervision_officer_metrics_materialized`
+    FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized`
     WHERE value_type = 'RATE' AND period = 'YEAR'
     GROUP BY 1, 2, 3
 )
+, statewide_highlight_values AS (
+    {get_highlight_percentile_value_query()}
+)
+-- TODO(#24119): Add highlight calculation by caseload type
 -- TODO(#24119): Add iqr calculation by caseload type
 , metric_benchmarks AS (
     SELECT 
@@ -50,16 +57,20 @@ statewide_iqrs AS (
         -- Keep an entry where caseload type is ALL to indicate that the benchmark is statewide
         'ALL' AS caseload_type,
         m.metric_value AS target,
-        statewide_iqrs.iqr AS threshold
-    FROM `{project_id}.outliers_views.supervision_state_metrics_materialized` m
+        statewide_iqrs.iqr AS threshold,
+        statewide_highlight_values.top_x_pct AS top_x_pct,
+        statewide_highlight_values.top_x_pct_percentile_value
+    FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_state_metrics_materialized` m
     LEFT JOIN statewide_iqrs
+        USING (state_code, metric_id, end_date)
+    LEFT JOIN statewide_highlight_values
         USING (state_code, metric_id, end_date)
     WHERE m.value_type = 'RATE'
 -- TODO(#24119): Add metrics aggregated by caseload type
 )
 
 SELECT 
-    {columns}
+    {{columns}}
 FROM 
     metric_benchmarks
 """
@@ -78,7 +89,10 @@ METRIC_BENCHMARKS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "caseload_type",
         "target",
         "threshold",
+        "top_x_pct",
+        "top_x_pct_percentile_value",
     ],
+    outliers_views_dataset=dataset_config.OUTLIERS_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

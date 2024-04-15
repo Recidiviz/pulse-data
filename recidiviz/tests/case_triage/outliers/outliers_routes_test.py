@@ -346,6 +346,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                             ],
                         }
                     ],
+                    top_x_pct_metrics=[
+                        {
+                            "metric_id": "incarceration_starts_and_inferred",
+                            "top_x_pct": 10,
+                        }
+                    ],
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -357,6 +363,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     caseload_type=None,
                     outlier_metrics=[],
+                    top_x_pct_metrics=[],
                 ),
             ]
 
@@ -421,6 +428,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                             ],
                         }
                     ],
+                    top_x_pct_metrics=[],
                 ),
                 SupervisionOfficerEntity(
                     full_name=PersonName(
@@ -432,6 +440,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     district="Hogwarts",
                     caseload_type=None,
                     outlier_metrics=[],
+                    top_x_pct_metrics=[],
                 ),
             ]
 
@@ -671,6 +680,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -745,6 +755,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -807,6 +818,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             caseload_type=None,
             outlier_metrics=[],
+            top_x_pct_metrics=[],
         )
         mock_get_supervisor.return_value = None
 
@@ -866,6 +878,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -933,6 +946,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         with local_project_id_override("test-project"):
@@ -1021,6 +1035,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 },
             ],
+            top_x_pct_metrics=[],
         )
 
         mock_get_supervisor.return_value = None
@@ -1088,6 +1103,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -1170,6 +1186,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -1284,6 +1301,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -1343,6 +1361,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             district="Guts",
             caseload_type=None,
             outlier_metrics=[],
+            top_x_pct_metrics=[],
         )
 
         mock_get_supervisor.return_value = None
@@ -1401,6 +1420,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     ],
                 }
             ],
+            top_x_pct_metrics=[],
         )
 
         mock_get_supervisor.return_value = None

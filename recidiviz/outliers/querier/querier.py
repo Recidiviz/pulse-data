@@ -817,7 +817,7 @@ class OutliersQuerier:
     ) -> Dict[str, SupervisionOfficerEntity]:
         """
         Returns a dictionary of officer external id to SupervisionOfficerEntity objects that includes information
-        on the state's metrics that the officer is an outlier for.
+        on the state's metrics that the officer is an outlier for or is in the top x% for.
 
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
@@ -889,6 +889,20 @@ class OutliersQuerier:
                             SupervisionOfficerOutlierStatus.end_date.desc(),
                         )
                     ).label("statuses_over_time"),
+                    # Get an array of JSON objects for the officer's rates and statuses in the selected periods
+                    func.array_agg(
+                        aggregate_order_by(
+                            func.jsonb_build_object(
+                                "is_top_x_pct",
+                                SupervisionOfficerOutlierStatus.is_top_x_pct,
+                                "top_x_pct",
+                                SupervisionOfficerOutlierStatus.top_x_pct,
+                                "end_date",
+                                SupervisionOfficerOutlierStatus.end_date,
+                            ),
+                            SupervisionOfficerOutlierStatus.end_date.desc(),
+                        )
+                    ).label("is_top_x_pct_over_time"),
                 )
             )
 
@@ -911,6 +925,7 @@ class OutliersQuerier:
             for record in officer_status_records:
                 external_id = record.external_id
 
+                # Get whether or not the officer was an outlier for the period with the requested end date
                 try:
                     # Since statuses_over_time is sorted by end_date descending, the first item should be the latest.
                     latest_period_status_obj = record.statuses_over_time[0]
@@ -924,6 +939,23 @@ class OutliersQuerier:
 
                 is_outlier = latest_period_status_obj["status"] == "FAR"
 
+                # Get whether or not the officer is in the top x% of a metric for the period with the requested end date
+                try:
+                    # Since is_top_x_pct_over_time is sorted by end_date descending, the first item should be the latest.
+                    latest_is_top_x_pct_obj = record.is_top_x_pct_over_time[0]
+
+                    if latest_is_top_x_pct_obj["end_date"] != str(end_date):
+                        # If the officer doesn't have any is_top_x_pct between the earliest_end_date and end_date, skip this row.
+                        is_top_x_pct = False
+                    else:
+                        is_top_x_pct = latest_is_top_x_pct_obj.get(
+                            "is_top_x_pct", False
+                        )
+
+                except IndexError:
+                    # If is_top_x_pct_over_time is empty, the metric is not configured to calculate top x% officers.
+                    is_top_x_pct = False
+
                 if record.external_id in officer_external_id_to_entity:
                     if is_outlier:
                         officer_external_id_to_entity[
@@ -932,6 +964,17 @@ class OutliersQuerier:
                             {
                                 "metric_id": record.metric_id,
                                 "statuses_over_time": record.statuses_over_time,
+                            }
+                        )
+                    if is_top_x_pct:
+                        officer_external_id_to_entity[
+                            external_id
+                        ].top_x_pct_metrics.append(
+                            {
+                                "metric_id": record.metric_id,
+                                "top_x_pct": record.is_top_x_pct_over_time[0][
+                                    "top_x_pct"
+                                ],
                             }
                         )
                 else:
@@ -952,6 +995,16 @@ class OutliersQuerier:
                                 }
                             ]
                             if is_outlier
+                            else []
+                        ),
+                        top_x_pct_metrics=(
+                            [
+                                {
+                                    "metric_id": record.metric_id,
+                                    "top_x_pct": record.statuses_over_time,
+                                }
+                            ]
+                            if is_top_x_pct
                             else []
                         ),
                     )

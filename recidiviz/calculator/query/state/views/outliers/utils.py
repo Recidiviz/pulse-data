@@ -19,6 +19,7 @@ from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states imp
     get_outliers_enabled_states_for_bigquery,
 )
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
+from recidiviz.outliers.types import MetricOutcome
 
 
 def format_state_specific_officer_aggregated_metric_filters() -> str:
@@ -68,3 +69,41 @@ def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
             )
 
     return "\n    UNION ALL\n".join(state_specific_ctes)
+
+
+def get_highlight_percentile_value_query() -> str:
+    """
+    Returns unioned SELECT statements where each subquery calculates the
+    percentile value that should be used to determine if an individual metric rate
+    is in the top_x_pct for a given state, metric, and period end date.
+    """
+    state_metric_specific_stmts = []
+
+    for state_code in get_outliers_enabled_states_for_bigquery():
+        config = get_outliers_backend_config(state_code)
+        for metric in config.metrics:
+            if metric.top_x_pct is None:
+                continue
+
+            if metric.outcome_type == MetricOutcome.FAVORABLE:
+                # For favorable metrics, where performing above the target is positive, highlighting the top 10% means finding officers with rates above the 90th percentile.
+                percentile = 100 - metric.top_x_pct
+            else:
+                # For adverse metrics, performing below the target is positive. Thus, calculating top 10% here means finding officers with rates below the 10th percentile value.
+                percentile = metric.top_x_pct
+
+            state_metric_specific_stmts.append(
+                f"""
+    SELECT
+        state_code,
+        end_date,
+        metric_id,
+        {metric.top_x_pct if metric.top_x_pct else 'NULL'} AS top_x_pct,
+        APPROX_QUANTILES(metric_value, 100)[OFFSET({percentile})] AS top_x_pct_percentile_value
+    FROM `{{project_id}}.{{outliers_views_dataset}}.supervision_officer_metrics_materialized`
+    WHERE value_type = 'RATE' AND period = 'YEAR' AND metric_id = '{metric.name}' AND state_code = '{state_code}'
+    GROUP BY 1, 2, 3
+"""
+            )
+
+    return "\n    UNION ALL\n".join(state_metric_specific_stmts)

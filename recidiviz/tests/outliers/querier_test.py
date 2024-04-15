@@ -79,6 +79,10 @@ def load_model_fixture(
                     row["attributes"] = json.loads(row["attributes"])
                 if k == "has_seen_onboarding" and v != "":
                     row["has_seen_onboarding"] = json.loads(row["has_seen_onboarding"])
+                if v == "True":
+                    row[k] = True
+                if v == "False":
+                    row[k] = False
                 if v == "":
                     row[k] = None
             results.append(row)
@@ -274,6 +278,36 @@ class TestOutliersQuerier(TestCase):
             pseudonymized_officer_id="officerhash3", num_lookback_periods=0
         )
         self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match")  # type: ignore[attr-defined]
+
+    def test_get_supervision_officer_entity_found_match_with_highlights(self) -> None:
+        # Return matching supervision officer entity where officer should be highlighted for a metric in the latest period
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash3", num_lookback_periods=0
+        )
+        self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match_with_highlights")  # type: ignore[attr-defined]
+
+    def test_get_supervision_officer_entity_found_match_not_top_x_pct(self) -> None:
+        # Return matching supervision officer entity where officer has highlight information, but should not be highlighted
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash9", num_lookback_periods=0
+        )
+        self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_found_match_not_top_x_pct")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"
+    )
+    def test_get_supervision_officer_entity_highlight_in_prev_period_only(
+        self, mock_config: MagicMock
+    ) -> None:
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[TEST_METRIC_2],
+        )
+
+        # Return matching supervision officer entity where officer is highlighted in a previous period but not the latest
+        actual = OutliersQuerier(StateCode.US_PA).get_supervision_officer_entity(
+            pseudonymized_officer_id="officerhash7", num_lookback_periods=1
+        )
+        self.snapshot.assert_match(actual, name="test_get_supervision_officer_entity_highlight_in_prev_period_only")  # type: ignore[attr-defined]
 
     def test_get_supervision_officer_entity_no_match(self) -> None:
         # Return None because none found
