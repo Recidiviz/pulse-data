@@ -180,18 +180,15 @@ supervision_location_prep_cte AS
   SELECT 
     OffenderId, 
     ifnull(ParoleUnit, 'null') AS ParoleUnit,
-    ifnull(ParoleRegion, 'null') AS ParoleRegion,
-    ifnull(ParoleDistrict, 'null') AS ParoleDistrict,
     update_datetime, 
-    CONCAT(ifnull(ParoleDistrict, 'null'),'@@',ifnull(ParoleRegion, 'null'),'@@',ifnull(ParoleDistrict, 'null')) AS fullLoc
+    -- We could probably remove Region and District from this -- see TODO(#28585).
+    CONCAT(ifnull(ParoleRegion, 'null'),'@@',ifnull(ParoleDistrict, 'null'),'@@',ifnull(ParoleUnit, 'null')) AS fullLoc
   FROM {PersonParole@ALL}
 ),
 supervision_location_prep_cte2 AS (
   SELECT
     OffenderId, 
     ParoleUnit,
-    ParoleDistrict, 
-    ParoleRegion,
     fullLoc,
     lag(fullLoc) over (Partition by OffenderId order by update_datetime) AS prev_fullLoc,
     update_datetime
