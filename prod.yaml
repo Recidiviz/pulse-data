@@ -18,7 +18,7 @@ liveness_check:
   check_interval_sec: 5
   initial_delay_sec: 30
 readiness_check:
-  app_start_timeout_sec: 120
+  app_start_timeout_sec: 360
 
 beta_settings:
   cloud_sql_instances: recidiviz-123:us-east1:prod-justice-counts-data, recidiviz-123:us-central1:prod-case-triage-data, recidiviz-123:us-east1:prod-operations-data-0xf04e58, recidiviz-123:us-central1:prod-outliers-data, justice-counts-production:us-central1:prod-justice-counts-data
