@@ -88,18 +88,22 @@ columns:
       - value: White
   - name: ParoleRegion
     description: >-
-      The region the parolee is paroled in. We need this information in addition
-      to  BadgeNumber because some agents are active in multiple units, and this
-      allows  us to understand which unit this individual is being supervised under
-      (needs to be confirmed that this information is accurate). This is sometimes null
-      as well.  This is being investigated here:
-      https://docs.google.com/document/d/1btF1k4KotghdKkAxjUNQOY9mYZcNnk1NL_t4XJyLm9w/edit#bookmark=id.vgjp81eb5voo
+      The region the parolee is paroled in.
   - name: ParoleDistrict
     description: >-
-      The district the parolee is paroled in. See ParoleRegion.
+      The district the parolee is paroled in.
   - name: ParoleUnit
     description: >-
-      The unit the parolee is paroled in. See ParoleRegion.
+      The unit the parolee is paroled in. Sometimes this is null for a week or two, then
+      a unit appears here. This may be a transition period. I'm not sure what that means
+      yet, or how ingest handles these currently. See TODO(#28585).
+
+      This may be outdated 4/1: We need this information in addition to  BadgeNumber
+      because some agents are active in multiple units, and this allows  us to
+      understand which unit this individual is being supervised under (needs to be
+      confirmed that this information is accurate). This is sometimes null as
+      well.  This is being investigated here:
+      https://docs.google.com/document/d/1btF1k4KotghdKkAxjUNQOY9mYZcNnk1NL_t4XJyLm9w/edit#bookmark=id.vgjp81eb5voo
   - name: ParoleAgentName
     is_pii: True
     description: >-
