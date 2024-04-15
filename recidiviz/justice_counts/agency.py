@@ -43,10 +43,9 @@ class AgencyInterface:
         is_superagency: Optional[bool] = None,
         with_users: bool = False,
     ) -> schema.Agency:
-        """We first look up existing agency by ID, then fallback to name,
-        if no ID is available. If there is an existing agency, the metadata
-        is updated with the fields passed in. If there is no existing agency,
-        a new agency is created with the metadata passed in.
+        """If there is an existing agency, meaning that agency_id is not None,
+        the metadata is updated with the fields passed in. If there is no
+        existing agency, a new agency is created with the metadata passed in.
         """
 
         existing_agency = (
@@ -54,9 +53,7 @@ class AgencyInterface:
                 session=session, agency_id=agency_id, with_users=with_users
             )
             if agency_id is not None
-            else AgencyInterface.get_agency_by_name(
-                session=session, name=name, with_users=with_users
-            )
+            else None
         )
 
         # agency_id is not None for update requests, agency_id is None
@@ -193,20 +190,6 @@ class AgencyInterface:
                 )
             )  # eagerly load the users in this agency
         return q.one_or_none()
-
-    @staticmethod
-    def get_agencies_by_name(session: Session, names: List[str]) -> List[schema.Agency]:
-        agencies = (
-            session.query(schema.Agency).filter(schema.Agency.name.in_(names)).all()
-        )
-        found_agency_names = {a.name for a in agencies}
-        if len(names) != len(found_agency_names):
-            missing_agency_names = set(names).difference(found_agency_names)
-            raise ValueError(
-                f"Could not find the following agencies: {missing_agency_names}"
-            )
-
-        return agencies
 
     @staticmethod
     def get_agencies(
