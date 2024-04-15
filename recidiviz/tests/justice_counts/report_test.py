@@ -22,7 +22,6 @@ from typing import List
 
 from freezegun import freeze_time
 
-from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
@@ -66,24 +65,21 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     annual_report,
                 ]
             )
+            session.commit()
+            monthly_report_agency_id = monthly_report.source_id
+            annual_report_agency_id = annual_report.source_id
 
-        with SessionFactory.using_database(self.database_key) as session:
-            agency_A = AgencyInterface.get_agency_by_name(
-                session=session, name="Agency Alpha"
-            )
             reports_agency_A = ReportInterface.get_reports_by_agency_id(
                 session=session,
-                agency_id=agency_A.id,
+                agency_id=monthly_report_agency_id,
             )
-            self.assertEqual(reports_agency_A[0].source_id, agency_A.id)
-            agency_B = AgencyInterface.get_agency_by_name(
-                session=session, name="Agency Law Enforcement"
-            )
+            self.assertEqual(reports_agency_A, [monthly_report])
+
             reports_agency_B = ReportInterface.get_reports_by_agency_id(
                 session=session,
-                agency_id=agency_B.id,
+                agency_id=annual_report_agency_id,
             )
-            self.assertEqual(reports_agency_B[0].source_id, agency_B.id)
+            self.assertEqual(reports_agency_B, [annual_report])
 
     def test_delete_reports(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

@@ -58,10 +58,25 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
 
     def test_get_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            agency_1 = AgencyInterface.get_agency_by_name(
-                session=session, name="Agency Alpha"
+            agencyAlphaByNameStateSystem = (
+                AgencyInterface.get_agency_by_name_state_and_systems(
+                    session=session,
+                    name="Agency Alpha",
+                    state_code="us_ca",
+                    systems=[schema.System.LAW_ENFORCEMENT.value],
+                )
             )
-            self.assertEqual(agency_1.name, "Agency Alpha")
+            agencyBetaByNameStateSystem = (
+                AgencyInterface.get_agency_by_name_state_and_systems(
+                    session=session,
+                    name="Beta Initiative",
+                    state_code="us_ak",
+                    systems=[schema.System.LAW_ENFORCEMENT.value],
+                )
+            )
+
+            self.assertEqual(agencyAlphaByNameStateSystem.name, "Agency Alpha")
+            self.assertEqual(agencyBetaByNameStateSystem.name, "Beta Initiative")
 
             allAgencies = AgencyInterface.get_agencies(session=session)
             self.assertEqual(
@@ -71,29 +86,13 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             allAgencyIds = AgencyInterface.get_agency_ids(session=session)
             self.assertEqual(sorted(allAgencyIds), sorted(a.id for a in allAgencies))
 
-            agenciesByName = AgencyInterface.get_agencies_by_name(
-                session=session, names=["Agency Alpha", "Beta Initiative"]
-            )
-            self.assertEqual(
-                {a.name for a in agenciesByName}, {"Agency Alpha", "Beta Initiative"}
-            )
-
             agenciesById = AgencyInterface.get_agencies_by_id(
                 session=session,
-                agency_ids=[agency.id for agency in agenciesByName],
+                agency_ids=[agency.id for agency in allAgencies],
             )
             self.assertEqual(
                 {a.name for a in agenciesById}, {"Agency Alpha", "Beta Initiative"}
             )
-
-            # Raise error if one of the agencies not found
-            with self.assertRaisesRegex(
-                ValueError, "Could not find the following agencies: {'Agency Beta'}"
-            ):
-                AgencyInterface.get_agencies_by_name(
-                    session=session,
-                    names=["Agency Alpha", "Agency Beta"],
-                )
 
     @freeze_time("2023-09-17 12:00:01", tz_offset=0)
     def test_create_agency(self) -> None:
