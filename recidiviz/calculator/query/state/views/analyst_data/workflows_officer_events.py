@@ -216,9 +216,9 @@ def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -
             f"""`{{project_id}}.{{workflows_views_dataset}}.{config.table_name}`"""
         )
 
-    cols_to_dedup_by = ["user_external_id"]
+    cols_to_dedup_by = ["email"]
     # The order of the steps to construct cols_to_dedup_by matters, so that events are deduped
-    # by user_external_id (officer), person_external_id (if applicable), opportunity_type (if applicable), then event date
+    # by email (officer), person_external_id (if applicable), opportunity_type (if applicable), then event date
     if config.has_person_external_id:
         cols_to_dedup_by.append("person_external_id")
     if config.has_opportunity_type:
@@ -232,6 +232,7 @@ def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -
 SELECT
     state_code,
     user_external_id AS officer_id,
+    email,
     "{config.officer_event_name.value}" AS event,
     EXTRACT(DATETIME FROM timestamp AT TIME ZONE "US/Eastern") AS event_ts,
     "{config.workflows_event_type}" AS event_type, 
@@ -295,6 +296,7 @@ WITH events AS (
         opportunity_type,
         new_status,
         context_page,
+        email,
     FROM events
     INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_record_materialized` USING (state_code, person_external_id), UNNEST(all_eligible_opportunities) AS opportunity_type
     WHERE event_type = "PROFILE_VIEWED"
@@ -309,7 +311,8 @@ SELECT
     person_external_id,
     {get_case_when_path_then_opportunity_type_str()}
     new_status,
-    context_page
+    context_page,
+    email,
 FROM events
 WHERE event_type != "PROFILE_VIEWED"
 
@@ -325,6 +328,7 @@ SELECT
     opportunity_type,
     new_status,
     context_page, 
+    email,
 FROM profile_viewed_events
 """
 
@@ -335,7 +339,7 @@ WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=WORKFLOWS_OFFICER_EVENTS_QUERY_TEMPLATE,
     description=WORKFLOWS_OFFICER_EVENTS_DESCRIPTION,
     should_materialize=True,
-    clustering_fields=["state_code", "officer_id"],
+    clustering_fields=["state_code", "email"],
     workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
     workflows_segment_dataset=PULSE_DASHBOARD_SEGMENT_DATASET,
 )

@@ -42,6 +42,7 @@ def user_event_template(
                         user_hash AS user_id,
                         external_id AS user_external_id,
                         district,
+                        email_address AS email
                     FROM `{project_id}.{reference_views_dataset}.product_roster_materialized`)"""
     )
 
@@ -74,6 +75,7 @@ def user_event_template(
         timestamp,
         session_id,
         user_external_id,
+        rdu.email,
         district,
         {','.join([f"events.{c}" for c in add_columns])}{',' if add_columns else ''}
     FROM (
