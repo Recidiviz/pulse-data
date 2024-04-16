@@ -143,8 +143,8 @@ MOCK_CONFIGS = {
 
 @pytest.mark.uses_db
 @pytest.mark.usefixtures("snapshottest_snapshot")
-class TestOutliersQuerier(TestCase):
-    """Implements tests for the OutliersQuerier."""
+class TestWorkflowsQuerier(TestCase):
+    """Implements tests for the WorkflowsQuerier."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -198,7 +198,6 @@ class TestOutliersQuerier(TestCase):
         super().tearDownClass()
 
     def test_get_opportunities(self) -> None:
-
         actual = WorkflowsQuerier(StateCode.US_ID).get_opportunities()
 
         expected = [
@@ -361,3 +360,26 @@ class TestOutliersQuerier(TestCase):
             actual["usIdCrcWorkRelease"].call_to_action, "Approve them all"
         )
         self.snapshot.assert_match(actual, name="test_get_top_config_ignores_inactive_configs_even_if_fv_matches")  # type: ignore[attr-defined]
+
+    def test_get_configs_for_type_returns_newest_first(self) -> None:
+        actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type("usIdSLD")
+
+        self.assertEqual(2, len(actual))
+        self.assertGreater(actual[0].created_at, actual[1].created_at)
+        self.snapshot.assert_match(actual, name="test_get_configs_for_type_returns_newest_first")  # type: ignore[attr-defined]
+
+    def test_get_configs_for_type_respects_offset(self) -> None:
+        actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
+            "usIdSLD", offset=1
+        )
+
+        self.assertEqual(1, len(actual))
+        self.assertEqual(datetime.datetime(2023, 5, 8), actual[0].created_at)
+
+    def test_get_configs_for_type_respects_limit(self) -> None:
+        actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
+            "usIdSLD", limit=1
+        )
+
+        self.assertEqual(1, len(actual))
+        self.assertEqual(datetime.datetime(2023, 5, 17), actual[0].created_at)

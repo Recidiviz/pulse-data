@@ -19,6 +19,8 @@
 from marshmallow import fields
 
 from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
+from recidiviz.case_triage.workflows.api_schemas import WorkflowsConfigSchema
+from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
 
 
 class StateCodeSchema(CamelCaseSchema):
@@ -41,3 +43,15 @@ class OpportunitySchema(CamelCaseSchema):
     last_updated_by = fields.Str(required=True)
 
     feature_variant = fields.Str(required=False)
+
+
+class OpportunityConfigurationSchema(WorkflowsConfigSchema):
+    """
+    Schema representing and opportunity configuration with additional
+    information used in the admin panel.
+    """
+
+    description = fields.Str(required=True)
+    created_at = fields.Str(required=True)
+    created_by = fields.Str(required=True)
+    status = fields.Enum(OpportunityStatus, required=True)

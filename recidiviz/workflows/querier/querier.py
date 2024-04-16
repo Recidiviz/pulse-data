@@ -130,31 +130,7 @@ class WorkflowsQuerier:
                 OpportunityConfiguration.status == OpportunityStatus.ACTIVE,
             )
 
-            return [
-                FullOpportunityConfig(
-                    id=config.id,
-                    state_code=config.state_code,
-                    opportunity_type=config.opportunity_type,
-                    created_by=config.created_by,
-                    created_at=config.created_at,
-                    description=config.description,
-                    status=config.status,
-                    display_name=config.display_name,
-                    methodology_url=config.methodology_url,
-                    initial_header=config.initial_header,
-                    denial_reasons=config.denial_reasons,
-                    eligible_criteria_copy=config.eligible_criteria_copy,
-                    ineligible_criteria_copy=config.ineligible_criteria_copy,
-                    dynamic_eligibility_text=config.dynamic_eligibility_text,
-                    call_to_action=config.call_to_action,
-                    snooze=config.snooze,
-                    feature_variant=config.feature_variant,
-                    is_alert=config.is_alert,
-                    denial_text=config.denial_text,
-                    sidebar_components=config.sidebar_components,
-                )
-                for config in configs
-            ]
+            return [FullOpportunityConfig.from_db_entry(config) for config in configs]
 
     def get_top_config_for_opportunity_types(
         self, opportunity_types: List[str], active_feature_variants: List[str]
@@ -215,3 +191,25 @@ class WorkflowsQuerier:
                     )
 
         return config_map
+
+    def get_configs_for_type(
+        self,
+        opportunity_type: str,
+        offset: int = 0,
+        limit: int = 10,
+    ) -> List[FullOpportunityConfig]:
+        """
+        Given an opportunity type, returns all stored configs with the most-recent first.
+        """
+        with self.database_session() as session:
+            configs = (
+                session.query(OpportunityConfiguration)
+                .filter(
+                    OpportunityConfiguration.opportunity_type == opportunity_type,
+                )
+                .order_by(OpportunityConfiguration.created_at.desc())
+                .offset(offset)
+                .limit(limit)
+            )
+
+            return [FullOpportunityConfig.from_db_entry(config) for config in configs]

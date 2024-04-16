@@ -17,12 +17,15 @@
 """Type definitions for Workflows products"""
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import attr
 import cattrs
 
-from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
+from recidiviz.persistence.database.schema.workflows.schema import (
+    OpportunityConfiguration,
+    OpportunityStatus,
+)
 
 
 class WorkflowsSystemType(Enum):
@@ -67,14 +70,14 @@ class OpportunityConfig:
     display_name: str = attr.ib()
     methodology_url: str = attr.ib()
     initial_header: str = attr.ib()
-    denial_reasons: str = attr.ib()
-    eligible_criteria_copy: str = attr.ib()
-    ineligible_criteria_copy: str = attr.ib()
+    denial_reasons: Dict[str, str] = attr.ib()
+    eligible_criteria_copy: Dict[str, Any] = attr.ib()
+    ineligible_criteria_copy: Dict[str, Any] = attr.ib()
     dynamic_eligibility_text: str = attr.ib()
     call_to_action: str = attr.ib()
-    snooze: str = attr.ib()
+    snooze: Dict[str, Any] = attr.ib()
     is_alert: bool = attr.ib()
-    sidebar_components: str = attr.ib()
+    sidebar_components: List[str] = attr.ib()
     denial_text: Optional[str] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
@@ -113,6 +116,31 @@ class FullOpportunityConfig(OpportunityConfig):
     description: str = attr.ib()
     status: OpportunityStatus = attr.ib()
     feature_variant: str = attr.ib(default=None)
+
+    @classmethod
+    def from_db_entry(cls, config: OpportunityConfiguration) -> "FullOpportunityConfig":
+        return FullOpportunityConfig(
+            id=config.id,
+            state_code=config.state_code,
+            opportunity_type=config.opportunity_type,
+            created_by=config.created_by,
+            created_at=config.created_at,
+            description=config.description,
+            status=config.status,
+            display_name=config.display_name,
+            methodology_url=config.methodology_url,
+            initial_header=config.initial_header,
+            denial_reasons=config.denial_reasons,
+            eligible_criteria_copy=config.eligible_criteria_copy,
+            ineligible_criteria_copy=config.ineligible_criteria_copy,
+            dynamic_eligibility_text=config.dynamic_eligibility_text,
+            call_to_action=config.call_to_action,
+            snooze=config.snooze,
+            feature_variant=config.feature_variant,
+            is_alert=config.is_alert,
+            denial_text=config.denial_text,
+            sidebar_components=config.sidebar_components,
+        )
 
 
 @attr.s

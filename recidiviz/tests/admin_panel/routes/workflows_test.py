@@ -21,13 +21,44 @@ from http import HTTPStatus
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+import pytest
 from flask import Flask, url_for
 from flask_smorest import Api
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.workflows import workflows_blueprint
+from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
+from recidiviz.workflows.types import FullOpportunityConfig
 
 
+def generate_config(
+    config_id: int, created_at: datetime.datetime, is_active: bool = True
+) -> FullOpportunityConfig:
+    return FullOpportunityConfig(
+        id=config_id,
+        state_code="US_ID",
+        opportunity_type="usIdSLD",
+        display_name="display",
+        methodology_url="url",
+        initial_header="header",
+        denial_reasons={"DENY": "Denied"},
+        eligible_criteria_copy={},
+        ineligible_criteria_copy={},
+        dynamic_eligibility_text="text",
+        call_to_action="do something",
+        snooze={},
+        is_alert=False,
+        sidebar_components=["someComponent"],
+        denial_text="Deny",
+        created_at=created_at,
+        created_by="Mary",
+        description="A config",
+        status=OpportunityStatus.ACTIVE if is_active else OpportunityStatus.INACTIVE,
+        feature_variant="feature_variant",
+    )
+
+
+@pytest.mark.usefixtures("snapshottest_snapshot")
 class WorkflowsAdminPanelEndpointTests(TestCase):
     """Test for the workflows admin panel Flask routes."""
 
@@ -52,6 +83,11 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             self.opportunities_url = url_for(
                 "workflows.OpportunitiesAPI", state_code_str="US_ID"
             )
+            self.opportunity_configuration_url = url_for(
+                "workflows.OpportunityConfigurationsAPI",
+                state_code_str="US_ID",
+                opportunity_type="usIdSLD",
+            )
 
     ########
     # GET /workflows/enabled_state_codes
@@ -72,7 +108,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         )
 
     ########
-    # GET /outliers/enabled_state_codes
+    # GET /workflows/<state_code>/opportunities
     ########
 
     @patch(
@@ -118,3 +154,32 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
 
         self.assertEqual(HTTPStatus.OK, response.status_code)
         self.assertEqual(expected_response, response.json)
+
+    ########
+    # GET /workflows/<state_code>/<opportunity_type>/configurations
+    ########
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_get_configs_for_opportunity(
+        self, mock_enabled_states: MagicMock, mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+        mock_configs = [
+            generate_config(1, datetime.datetime(2024, 5, 12), is_active=True),
+            generate_config(2, datetime.datetime(2024, 5, 13), is_active=False),
+            generate_config(3, datetime.datetime(2024, 5, 15), is_active=True),
+        ]
+
+        mock_querier.return_value.get_configs_for_type.return_value = mock_configs
+
+        response = self.client.get(self.opportunity_configuration_url)
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        self.assertEqual(3, len(response.json))  # type: ignore[arg-type]
+        self.snapshot.assert_match(  # type: ignore[attr-defined]
+            response.json, name="test_get_configs_for_opportunity"
+        )
