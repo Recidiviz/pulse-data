@@ -51,8 +51,8 @@ statewide_iqrs AS (
     CAST(NULL AS STRING) AS state_code,
     CAST(NULL AS DATE) AS end_date,
     CAST(NULL AS STRING) AS metric_id,
-    CAST(NULL AS STRING) AS top_x_pct,
-    CAST(NULL AS STRING) AS top_x_pct_percentile_value
+    CAST(NULL AS INT64) AS top_x_pct,
+    CAST(NULL AS FLOAT64) AS top_x_pct_percentile_value
 )
 -- TODO(#24119): Add highlight calculation by caseload type
 -- TODO(#24119): Add iqr calculation by caseload type
