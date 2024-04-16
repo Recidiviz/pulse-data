@@ -1,4 +1,4 @@
 state_code,opportunity_type,updated_by,updated_at,gating_feature_variant
 US_ID,usIdCrcWorkRelease,tony@recidivizors.org,2023-04-26,
-US_ID,usIdFastFTRD,daniel@recizens.org,2023-04-26,someFeatureVariant
-US_ID,usIdSLD,ken@redidiviz.org,2023-04-26,someOtherFeatureVariant
+US_ID,usIdFastFTRD,daniel@recizens.org,2023-04-27,someFeatureVariant
+US_ID,usIdSLD,ken@redidiviz.org,2023-04-28,someOtherFeatureVariant

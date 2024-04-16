@@ -17,6 +17,7 @@
 """Tests for the Workflows querier"""
 import copy
 import csv
+import datetime
 import json
 import os
 from typing import Dict, List, Optional
@@ -80,6 +81,10 @@ WORK_RELEASE_INFO = FullOpportunityInfo(
     system_type=WorkflowsSystemType.SUPERVISION,
     url_section="work_release_path",
     firestore_collection="work_release_collection",
+    experiment_id="work_release_experiment_id",
+    completion_event="work_release_event",
+    last_updated_at=datetime.datetime(2023, 4, 26),
+    last_updated_by="tony@recidivizors.org",
 )
 
 FAST_FTRD_INFO = FullOpportunityInfo(
@@ -89,6 +94,10 @@ FAST_FTRD_INFO = FullOpportunityInfo(
     gating_feature_variant="someFeatureVariant",
     url_section="fast_path",
     firestore_collection="fast_collection",
+    experiment_id="fast_experiment_id",
+    completion_event="fast_event",
+    last_updated_at=datetime.datetime(2023, 4, 27),
+    last_updated_by="daniel@recizens.org",
 )
 
 SLD_INFO = FullOpportunityInfo(
@@ -98,6 +107,10 @@ SLD_INFO = FullOpportunityInfo(
     gating_feature_variant="someOtherFeatureVariant",
     url_section="sld_path",
     firestore_collection="sld_collection",
+    experiment_id="sld_experiment_id",
+    completion_event="sld_event",
+    last_updated_at=datetime.datetime(2023, 4, 28),
+    last_updated_by="ken@redidiviz.org",
 )
 
 
