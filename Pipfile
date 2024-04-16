@@ -119,7 +119,9 @@ dateparser = "*"
 pandas = "<2.0.0"
 more-itertools = "*"
 lxml = "*"
-opentelemetry-api = "*"
+# TODO(#28552): Unpin opentelemetry -- pinned to identify if this is the root cause of
+# monitoring cost increases.
+opentelemetry-api = "==1.22.0"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-gcp-monitoring = "*"
 opentelemetry-exporter-gcp-trace = "*"
