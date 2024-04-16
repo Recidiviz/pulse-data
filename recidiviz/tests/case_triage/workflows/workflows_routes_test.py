@@ -1827,13 +1827,18 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 initial_header="header",
                 dynamic_eligibility_text="dynamic text[|s]",
                 call_to_action="action",
-                snooze='{"foo": 12}',
+                snooze={"foo": 12},
                 is_alert=False,
                 denial_text=None,
-                eligible_criteria_copy='{"criteria":{"text":"baz","tooltip":"fill this:{{opportunity.client.goop}}"}}',
-                ineligible_criteria_copy="{}",
-                denial_reasons='{"DENY":"Denied"}',
-                sidebar_components='["someComponent","someOtherComponent"]',
+                eligible_criteria_copy={
+                    "criteria": {
+                        "text": "baz",
+                        "tooltip": "fill this:{{opportunity.client.goop}}",
+                    }
+                },
+                ineligible_criteria_copy={},
+                denial_reasons={"DENY": "Denied"},
+                sidebar_components=["someComponent", "someOtherComponent"],
             )
         }
 

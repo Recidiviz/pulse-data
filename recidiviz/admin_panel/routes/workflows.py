@@ -24,6 +24,7 @@ from flask_smorest import Blueprint
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.line_staff_tools.workflows_api_schemas import (
+    OpportunityConfigurationSchema,
     OpportunitySchema,
     StateCodeSchema,
 )
@@ -32,9 +33,18 @@ from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states im
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.workflows.querier.querier import WorkflowsQuerier
-from recidiviz.workflows.types import FullOpportunityInfo
+from recidiviz.workflows.types import FullOpportunityConfig, FullOpportunityInfo
 
 workflows_blueprint = Blueprint("workflows", "workflows")
+
+
+def refine_state_code(state_code_str: str) -> StateCode:
+    if state_code_str not in get_workflows_enabled_states():
+        raise ValueError(
+            f"Cannot retrieve opportunities for invalid state: {state_code_str}"
+        )
+
+    return StateCode(state_code_str.upper())
 
 
 @workflows_blueprint.route("enabled_state_codes")
@@ -59,11 +69,21 @@ class OpportunitiesAPI(MethodView):
 
     @workflows_blueprint.response(HTTPStatus.OK, OpportunitySchema(many=True))
     def get(self, state_code_str: str) -> List[FullOpportunityInfo]:
-        if state_code_str not in get_workflows_enabled_states():
-            raise ValueError(
-                f"Cannot retrieve opportunities for invalid state: {state_code_str}"
-            )
-
-        state_code = StateCode(state_code_str.upper())
+        state_code = refine_state_code(state_code_str)
         opportunities = WorkflowsQuerier(state_code).get_opportunities()
         return opportunities
+
+
+@workflows_blueprint.route("<state_code_str>/<opportunity_type>/configurations")
+class OpportunityConfigurationsAPI(MethodView):
+    """Endpoint to list configs for a given workflow type."""
+
+    @workflows_blueprint.response(
+        HTTPStatus.OK, OpportunityConfigurationSchema(many=True)
+    )
+    def get(
+        self, state_code_str: str, opportunity_type: str
+    ) -> List[FullOpportunityConfig]:
+        state_code = refine_state_code(state_code_str)
+        configs = WorkflowsQuerier(state_code).get_configs_for_type(opportunity_type)
+        return configs
