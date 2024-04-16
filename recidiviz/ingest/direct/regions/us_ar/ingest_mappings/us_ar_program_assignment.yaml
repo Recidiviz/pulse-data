@@ -11,6 +11,14 @@ input_columns:
   - WRKASSIGNSTATUSDATE
   - WORKASSIGNMENTAUTHBY
 unused_columns: []
+variables:
+  - is_valid_id:
+      $and:
+        - $not_null: WORKASSIGNMENTAUTHBY
+        - $custom:
+            $function: us_ar_custom_parsers.is_known_staff_id
+            $args:
+              staff_id: WORKASSIGNMENTAUTHBY
 output:
   StatePerson:
     external_ids:
@@ -63,9 +71,11 @@ output:
                       - $literal("CMP") # Completed
                       - $literal("REL") # Released
                 $then: WRKASSIGNSTATUSDATE
-          referring_staff_external_id: WORKASSIGNMENTAUTHBY
+          referring_staff_external_id:
+            $conditional:
+              - $if: $variable(is_valid_id)
+                $then: WORKASSIGNMENTAUTHBY
           referring_staff_external_id_type:
             $conditional:
-              - $if:
-                  $not_null: WORKASSIGNMENTAUTHBY
+              - $if: $variable(is_valid_id)
                 $then: $literal("US_AR_PARTYID")

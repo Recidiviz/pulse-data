@@ -31,6 +31,20 @@ from recidiviz.common.date import calendar_unit_date_diff
 from recidiviz.common.str_field_utils import safe_parse_days_from_duration_pieces
 
 
+def is_known_staff_id(staff_id: str) -> bool:
+    """Some staff IDs returned in ingest views don't have a matching ID in the source
+    table used for state_staff, resulting in invalid staff IDs making it through ingest.
+    To prevent errors, these IDs are tagged with 'UNKNOWN' (e.g. 12345-UNKNOWN) and then
+    nulled out in the mappings, such that the ID itself is still visible in the ingest view
+    results but doesn't try to create a new state staff entity. Currently only used for the
+    program_assignment view (staff_role_location_period has the same issue, but those entities
+    simply aren't ingested if there's no match for the ID).
+    """
+    # TODO(#28833): Revisit once we know why there are gaps in PERSONPROFILE, to make sure
+    # that we're ingesting state_staff from the correct sources.
+    return "UNKNOWN" not in staff_id
+
+
 def is_suspended_sentence(sentence_types: str) -> bool:
     """Identifies suspended sentences; returns True if every sentence type is
     'Suspended Sentence','Pre-Adjudicated', or null."""
