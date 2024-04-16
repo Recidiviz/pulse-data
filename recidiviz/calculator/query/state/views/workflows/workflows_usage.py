@@ -19,7 +19,6 @@ This view is the source for the Workflows Usage dashboard in Looker.
 It includes relevant front-end events from the Workflows product.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     WORKFLOWS_VIEWS_DATASET,
@@ -42,34 +41,25 @@ WORKFLOWS_OFFICER_EVENT_NAME_SET = {
 }
 
 
-WORKFLOWS_USAGE_QUERY_TEMPLATE = f"""
-WITH workflows_events AS (
-    SELECT
-        * EXCEPT (event_date, event_attributes, officer_id),
-        officer_id AS officer_external_id,
-        event_date as event_ts,
-        DATE(event_date) AS event_date,
-        JSON_EXTRACT_SCALAR(event_attributes, '$.opportunity_type') AS opportunity_type,
-        JSON_EXTRACT_SCALAR(event_attributes, '$.person_external_id') AS person_external_id,
-        JSON_EXTRACT_SCALAR(event_attributes, '$.event_type') AS event_type,
-        JSON_EXTRACT_SCALAR(event_attributes, '$.new_status') AS new_status
-    FROM `{{project_id}}.{{analyst_views_dataset}}.officer_events_materialized`
-    WHERE event IN ({list_to_query_string(list(WORKFLOWS_OFFICER_EVENT_NAME_SET), quoted=True)})
-)
+WORKFLOWS_USAGE_QUERY_TEMPLATE = """
 SELECT
     state_code,
-    officer_external_id,
+    officer_id AS officer_external_id,
+    user_full_name_clean AS officer_full_name_clean,
+    email,
     opportunity_type,
-    event_date,
+    DATE(event_ts) AS event_date,
     event,
     event_type,
     person_external_id,
     new_status,
     event_ts,
-    MIN(event_date) OVER (PARTITION BY state_code, opportunity_type, officer_external_id) AS officer_first_workflow_event_date,
-    MAX(event_date) OVER () AS max_event_date,
-    ROW_NUMBER() OVER (PARTITION BY state_code, officer_external_id, workflows_events.opportunity_type, event_type, person_external_id ORDER BY event_ts DESC) = 1 AS latest_within_event_type
-FROM workflows_events
+    MIN(DATE(event_ts)) OVER (PARTITION BY state_code, opportunity_type, email) AS officer_first_workflow_event_date,
+    MAX(DATE(event_ts)) OVER () AS max_event_date,
+    ROW_NUMBER() OVER (PARTITION BY state_code, email, opportunity_type, event_type, person_external_id ORDER BY event_ts DESC) = 1 AS latest_within_event_type
+FROM `{project_id}.{analyst_views_dataset}.workflows_officer_events_materialized`
+LEFT JOIN `{project_id}.{workflows_views_dataset}.reidentified_dashboard_users` 
+    USING (state_code, email)
 """
 
 WORKFLOWS_USAGE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -79,6 +69,7 @@ WORKFLOWS_USAGE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=WORKFLOWS_USAGE_DESCRIPTION,
     should_materialize=True,
     analyst_views_dataset=ANALYST_VIEWS_DATASET,
+    workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
 )
 
 

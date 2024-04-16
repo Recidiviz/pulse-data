@@ -37,6 +37,8 @@ SELECT
     -- Not all users have entries in *_staff_record so fill in information from the roster for them
     COALESCE(supervision_staff.id, incarceration_staff.id, users.external_id) AS user_external_id,
     COALESCE(supervision_staff.district, incarceration_staff.district, users.district) AS district,
+    COALESCE(supervision_staff.email, incarceration_staff.email, users.email_address) AS email,
+    COALESCE(staff.full_name_clean, CONCAT(INITCAP(SPLIT(users.first_name, " ")[OFFSET(0)]), " ", INITCAP(users.last_name))) AS user_full_name_clean,
 FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` users
 -- TODO(#27254) Get this data from somewhere that's not *_staff_record
 LEFT JOIN `{project_id}.{workflows_views_dataset}.supervision_staff_record_materialized` supervision_staff
@@ -47,6 +49,11 @@ LEFT JOIN `{project_id}.{workflows_views_dataset}.incarceration_staff_record_mat
     -- The roster only has US_ID and the staff record only has US_IX
     ON (users.state_code = incarceration_staff.state_code OR (users.state_code = "US_ID" AND incarceration_staff.state_code = "US_IX"))
     AND LOWER(users.email_address) = LOWER(incarceration_staff.email)
+LEFT JOIN `{project_id}.{reference_views_dataset}.state_staff_with_names` staff
+    -- The roster only has US_ID and should use US_IX for the staff ingested data 
+    ON (users.state_code = staff.state_code OR (users.state_code = "US_ID" AND staff.state_code = "US_IX"))
+    AND LOWER(users.email_address) = LOWER(staff.email)
+QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, user_id, user_external_id, email, district ORDER BY user_full_name_clean) = 1
 """
 
 REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

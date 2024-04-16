@@ -35,7 +35,8 @@ WITH staff_names_base AS (
         TRIM(CONCAT(COALESCE(given_names, ''), ' ', COALESCE(surname, ''))) AS full_name,
         -- TODO(#21702): Eliminate all references to legacy_supervising_officer_external_id -
         -- views should be joining to staff_id instead
-        external_id AS legacy_supervising_officer_external_id
+        external_id AS legacy_supervising_officer_external_id,
+        email
     FROM (
         SELECT
           state_code,
