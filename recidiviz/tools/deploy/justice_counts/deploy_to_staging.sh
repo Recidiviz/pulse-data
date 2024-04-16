@@ -17,30 +17,12 @@ BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
+# shellcheck source=recidiviz/tools/deploy/justice_counts/get_next_version.sh
+source "${BASH_SOURCE_DIR}/../justice_counts/get_next_version.sh"
 
 JUSTICE_COUNTS_PROJECT_ID='justice-counts-staging'
 PUBLISHER_CLOUD_RUN_SERVICE="publisher-web"
 DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
-VERSION=''
-
-# Used to automatically determine the versions with which to tag the
-# backend and frontend commits that are being deployed. We look up
-# previous tags and increment the minor version by 1.
-function get_next_version {
-    run_cmd git fetch --all --tags --prune --prune-tags --force
-
-    LAST_VERSION_TAG_ON_BRANCH=$(git tag | grep "jc" | sort_versions | tail -n 1) || exit_on_fail
-
-    if [[ ! ${LAST_VERSION_TAG_ON_BRANCH} =~ ^jc.v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-        echo_error "Invalid version - must be of the format vX.Y.Z"
-        run_cmd exit 1
-    fi
-
-    MAJOR=${BASH_REMATCH[1]}
-    MINOR=${BASH_REMATCH[2]}
-
-    VERSION="v${MAJOR}.$((MINOR+1)).0"
-}
 
 echo "Checking script is executing in a pipenv shell..."
 run_cmd check_running_in_pipenv_shell
@@ -65,7 +47,7 @@ cd ../pulse-data || exit
 
 # Step 2: Determine next version tag (e.g. jc.v1.55.0)
 
-get_next_version || exit_on_fail
+VERSION=$(./recidiviz/tools/deploy/justice_counts/get_next_version.sh) || exit_on_fail
 echo "Next version is ${VERSION}"
 
 # Step 3: Build Docker image
