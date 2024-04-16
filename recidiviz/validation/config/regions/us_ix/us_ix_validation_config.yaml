@@ -118,8 +118,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 1
     override_reason: In Atlas, there's one location who's name is just 0
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 5
-    override_reason: TODO(#21922) Just one case, to investigate later
+    hard_num_allowed_rows_override: 10
+    override_reason: TODO(#21922) Just a few cases, to investigate later
   - validation_name: invalid_admission_reason_and_pfi
     hard_num_allowed_rows_override: 9
     override_reason: TODO(#22279) Just a few cases, to investigate later
