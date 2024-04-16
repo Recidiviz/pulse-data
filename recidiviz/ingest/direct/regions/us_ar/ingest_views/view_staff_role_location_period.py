@@ -65,6 +65,10 @@ WHERE PARTYRELSTART != '1000-01-01 00:00:00'
 -- data. We filter on this date in order to avoid ingesting periods without start dates.
   AND PARTYTYPE = '1' 
   AND RELATEDPARTYTYPE = '2' 
+  AND PARTYID IN (
+    SELECT DISTINCT PARTYID
+    FROM {PERSONPROFILE}
+  )
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
