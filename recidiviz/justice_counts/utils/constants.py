@@ -221,6 +221,7 @@ AGENCIES_TO_EXCLUDE = {
     525: "West Virginia Division of Corrections and Rehabilitation",
     526: "Wisconsin Department of Corrections",
     527: "Wyoming Department of Corrections",
+    1437: "Wisconsin Law Enforcement - All Agencies",
     1455: "Law Enforcement [DEMO]",
     1458: "Courts [DEMO]",
     1459: "Defense [DEMO]",
