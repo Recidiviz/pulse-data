@@ -62,6 +62,7 @@ def _make_most_recent_population_span_to_single_day_metric_view_builder(
         population_span_metrics_table=metric_name,
         materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
         should_materialize=True,
+        clustering_fields=["state_code"],
     )
 
 
