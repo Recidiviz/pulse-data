@@ -120,6 +120,7 @@ columns:
   - name: RURAL_DIRECTIONS
     description: |-
       directions on how to get to rural address
+    is_pii: True
   - name: CREATE_USERID
     description: |-
       No description available in AZ data dictionary as of 10/31/23.
