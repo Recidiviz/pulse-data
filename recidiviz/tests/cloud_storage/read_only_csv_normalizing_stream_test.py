@@ -32,32 +32,20 @@ from recidiviz.cloud_storage.read_only_csv_normalizing_stream import (
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
-NO_TRAILING_LINE_TERMINATOR_PATH = fixtures.as_filepath(
+NO_TRAILING_LINE_TERMINATOR_FILENAME = (
     "example_file_structure_windows_1252_no_trailing_newline.csv"
 )
-
-NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH = fixtures.as_filepath(
+NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME = (
     "example_file_structure_commas_no_trailing_newline.csv"
 )
-
-TRAILING_LINE_TERMINATOR_PATH = fixtures.as_filepath(
-    "example_file_structure_windows_1252.csv"
-)
-
-TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH = fixtures.as_filepath(
-    "example_file_structure_commas.csv"
-)
-
-EMPTY_FILE_PATH = fixtures.as_filepath("completely_empty.csv")
-ONLY_A_NEWLINE_PATH = fixtures.as_filepath("only_a_newline.csv")
-SINGLE_LINE_PATH = fixtures.as_filepath("columns_no_contents.csv")
-SINGLE_LINE_EXPECTED_OUTPUT_PATH = fixtures.as_filepath(
-    "columns_no_contents_quoted.csv"
-)
-SINGLE_LINE_NO_TRAILING_NEWLINE_PATH = fixtures.as_filepath(
-    "columns_no_contents_no_trailing_newline.csv"
-)
-SINGLE_LINE_NO_TRAILING_NEWLINE_EXPECTED_OUTPUT_PATH = fixtures.as_filepath(
+TRAILING_LINE_TERMINATOR_FILENAME = "example_file_structure_windows_1252.csv"
+TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME = "example_file_structure_commas.csv"
+EMPTY_FILE_FILENAME = "completely_empty.csv"
+ONLY_A_NEWLINE_FILENAME = "only_a_newline.csv"
+SINGLE_LINE_FILENAME = "columns_no_contents.csv"
+SINGLE_LINE_EXPECTED_OUTPUT_FILENAME = "columns_no_contents_quoted.csv"
+SINGLE_LINE_NO_TRAILING_NEWLINE_FILENAME = "columns_no_contents_no_trailing_newline.csv"
+SINGLE_LINE_NO_TRAILING_NEWLINE_EXPECTED_OUTPUT_FILENAME = (
     "columns_no_contents_quoted_no_trailing_newline.csv"
 )
 
@@ -128,7 +116,7 @@ class TestCsvNormalizingIO(unittest.TestCase):
             f"Mismatched read values for max_read_length={max_read_length}",
         )
 
-    def run_read_iterataive_test(
+    def run_read_iterative_test(
         self,
         input_file_path: str,
         expected_result_path: str,
@@ -268,8 +256,8 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_empty_file(self) -> None:
         self.run_read_all_test(
-            input_file_path=EMPTY_FILE_PATH,
-            expected_result_path=EMPTY_FILE_PATH,
+            input_file_path=fixtures.as_filepath(EMPTY_FILE_FILENAME),
+            expected_result_path=fixtures.as_filepath(EMPTY_FILE_FILENAME),
             encoding="UTF-8",
             line_terminator="\n",
             delimiter=",",
@@ -277,8 +265,8 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_single_newline_file(self) -> None:
         self.run_read_all_test(
-            input_file_path=ONLY_A_NEWLINE_PATH,
-            expected_result_path=ONLY_A_NEWLINE_PATH,
+            input_file_path=fixtures.as_filepath(ONLY_A_NEWLINE_FILENAME),
+            expected_result_path=fixtures.as_filepath(ONLY_A_NEWLINE_FILENAME),
             encoding="UTF-8",
             line_terminator="\n",
             delimiter=",",
@@ -286,8 +274,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_single_line_file(self) -> None:
         self.run_read_all_test(
-            input_file_path=SINGLE_LINE_PATH,
-            expected_result_path=SINGLE_LINE_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(SINGLE_LINE_FILENAME),
+            expected_result_path=fixtures.as_filepath(
+                SINGLE_LINE_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="UTF-8",
             line_terminator="\n",
             delimiter=",",
@@ -295,8 +285,12 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_single_line_file_no_trailing_newline(self) -> None:
         self.run_read_all_test(
-            input_file_path=SINGLE_LINE_NO_TRAILING_NEWLINE_PATH,
-            expected_result_path=SINGLE_LINE_NO_TRAILING_NEWLINE_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(
+                SINGLE_LINE_NO_TRAILING_NEWLINE_FILENAME
+            ),
+            expected_result_path=fixtures.as_filepath(
+                SINGLE_LINE_NO_TRAILING_NEWLINE_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="UTF-8",
             line_terminator="\n",
             delimiter=",",
@@ -304,8 +298,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_whole_file_ending_in_line_terminator(self) -> None:
         self.run_read_all_test(
-            input_file_path=TRAILING_LINE_TERMINATOR_PATH,
-            expected_result_path=TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(TRAILING_LINE_TERMINATOR_FILENAME),
+            expected_result_path=fixtures.as_filepath(
+                TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="WINDOWS-1252",
             line_terminator="†",
             delimiter="‡",
@@ -313,8 +309,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_whole_file_ending_no_trailing_line_terminator(self) -> None:
         self.run_read_all_test(
-            input_file_path=NO_TRAILING_LINE_TERMINATOR_PATH,
-            expected_result_path=NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(NO_TRAILING_LINE_TERMINATOR_FILENAME),
+            expected_result_path=fixtures.as_filepath(
+                NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="WINDOWS-1252",
             line_terminator="†",
             delimiter="‡",
@@ -322,8 +320,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_line(self) -> None:
         self.run_read_lines_test(
-            input_file_path=TRAILING_LINE_TERMINATOR_PATH,
-            expected_result_path=TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(TRAILING_LINE_TERMINATOR_FILENAME),
+            expected_result_path=fixtures.as_filepath(
+                TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="WINDOWS-1252",
             line_terminator="†",
             delimiter="‡",
@@ -333,8 +333,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
     def test_read_line_bounded(self) -> None:
         for i in range(1, 30):
             self.run_read_lines_test(
-                input_file_path=TRAILING_LINE_TERMINATOR_PATH,
-                expected_result_path=TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+                input_file_path=fixtures.as_filepath(TRAILING_LINE_TERMINATOR_FILENAME),
+                expected_result_path=fixtures.as_filepath(
+                    TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+                ),
                 encoding="WINDOWS-1252",
                 line_terminator="†",
                 delimiter="‡",
@@ -344,9 +346,11 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_iterative_file_ending_in_line_terminator(self) -> None:
         for i in range(1, 45):
-            self.run_read_iterataive_test(
-                input_file_path=TRAILING_LINE_TERMINATOR_PATH,
-                expected_result_path=TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            self.run_read_iterative_test(
+                input_file_path=fixtures.as_filepath(TRAILING_LINE_TERMINATOR_FILENAME),
+                expected_result_path=fixtures.as_filepath(
+                    TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+                ),
                 block_size=i,
                 encoding="WINDOWS-1252",
                 line_terminator="†",
@@ -355,9 +359,13 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_iterative_file_ending_no_trailing_line_terminator(self) -> None:
         for i in range(1, 45):
-            self.run_read_iterataive_test(
-                input_file_path=NO_TRAILING_LINE_TERMINATOR_PATH,
-                expected_result_path=NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            self.run_read_iterative_test(
+                input_file_path=fixtures.as_filepath(
+                    NO_TRAILING_LINE_TERMINATOR_FILENAME
+                ),
+                expected_result_path=fixtures.as_filepath(
+                    NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+                ),
                 block_size=i,
                 encoding="WINDOWS-1252",
                 line_terminator="†",
@@ -366,8 +374,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_dataframe_whole_file_ending_in_line_terminator(self) -> None:
         self.run_gcs_csv_reader_test(
-            input_file_path=TRAILING_LINE_TERMINATOR_PATH,
-            expected_result_path=TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(TRAILING_LINE_TERMINATOR_FILENAME),
+            expected_result_path=fixtures.as_filepath(
+                TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="WINDOWS-1252",
             line_terminator="†",
             delimiter="‡",
@@ -375,8 +385,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_dataframe_whole_file_ending_no_trailing_line_terminator(self) -> None:
         self.run_gcs_csv_reader_test(
-            input_file_path=NO_TRAILING_LINE_TERMINATOR_PATH,
-            expected_result_path=NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(NO_TRAILING_LINE_TERMINATOR_FILENAME),
+            expected_result_path=fixtures.as_filepath(
+                NO_TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="WINDOWS-1252",
             line_terminator="†",
             delimiter="‡",
@@ -384,8 +396,10 @@ class TestCsvNormalizingIO(unittest.TestCase):
 
     def test_read_dataframe_single_line(self) -> None:
         self.run_single_line_gcs_csv_reader_test(
-            input_file_path=TRAILING_LINE_TERMINATOR_PATH,
-            expected_result_path=TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_PATH,
+            input_file_path=fixtures.as_filepath(TRAILING_LINE_TERMINATOR_FILENAME),
+            expected_result_path=fixtures.as_filepath(
+                TRAILING_LINE_TERMINATOR_EXPECTED_OUTPUT_FILENAME
+            ),
             encoding="WINDOWS-1252",
             line_terminator="†",
             delimiter="‡",

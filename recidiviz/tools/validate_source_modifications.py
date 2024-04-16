@@ -29,6 +29,7 @@ $ python -m recidiviz.tools.validate_source_modifications [--commit-range RANGE]
 """
 
 import argparse
+import functools
 import logging
 import os
 import re
@@ -151,91 +152,97 @@ BUILD_INFRA_KEY = "build_infra"
 US_IX_KEY = "us_ix"
 FLEX_KEY = "dataflow_env"
 
-MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
-    # admin panel files
-    ADMIN_PANEL_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {
-                    os.path.relpath(validation_pb2.__file__)[: -len("_pb2.py")]
-                    + ".proto",  # proto
-                }
-            ),
-            then_modified_files=frozenset(
-                {
-                    os.path.relpath(validation_pb2.__file__),  # generated proto source
-                    os.path.relpath(validation_pb2.__file__) + "i",  # proto type hints
-                    os.path.join(
-                        ADMIN_PANEL_DIRECTORY,
-                        os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
-                        + ".js",
-                    ),  # javascript
-                    os.path.join(
-                        ADMIN_PANEL_DIRECTORY,
-                        os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
-                        + ".d.ts",
-                    ),  # typescript
-                }
-            ),
-        )
-    ],
-    # pipfile
-    PIPFILE_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset({"Pipfile"}),
-            then_modified_files=frozenset({"Pipfile.lock"}),
-        )
-    ],
-    # ingest docs
-    INGEST_DOCS_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {f"recidiviz/ingest/direct/regions/{region_code}/raw_data/"}
-            ),
-            then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
-        )
-        for region_code in get_existing_region_codes()
-    ],
-    ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
-    # ignore files
-    IGNORE_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset({".gitignore"}),
-            then_modified_files=frozenset({".dockerignore", ".gcloudignore"}),
-        )
-    ],
-    # build infrastructure
-    BUILD_INFRA_KEY: [
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    "mirror/copy.bara.sky",
-                    "Dockerfile.case-triage-pathways.dockerignore",
-                    "Dockerfile.justice-counts.dockerignore",
-                }
+
+@functools.cache
+def get_modified_file_assertions() -> Dict[str, List[RequiredModificationSets]]:
+    return {
+        # admin panel files
+        ADMIN_PANEL_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset(
+                    {
+                        os.path.relpath(validation_pb2.__file__)[: -len("_pb2.py")]
+                        + ".proto",  # proto
+                    }
+                ),
+                then_modified_files=frozenset(
+                    {
+                        os.path.relpath(
+                            validation_pb2.__file__
+                        ),  # generated proto source
+                        os.path.relpath(validation_pb2.__file__)
+                        + "i",  # proto type hints
+                        os.path.join(
+                            ADMIN_PANEL_DIRECTORY,
+                            os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
+                            + ".js",
+                        ),  # javascript
+                        os.path.join(
+                            ADMIN_PANEL_DIRECTORY,
+                            os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
+                            + ".d.ts",
+                        ),  # typescript
+                    }
+                ),
             )
-        ),
-    ],
-    # Ensure that any files copied from ID are kept in sync between the two regions.
-    US_IX_KEY: [
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    "recidiviz/ingest/direct/regions/us_id/raw_data/us_id_current_day_daily_summary.yaml",
-                    "recidiviz/ingest/direct/regions/us_ix/raw_data/us_ix_current_day_daily_summary.yaml",
-                }
+        ],
+        # pipfile
+        PIPFILE_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset({"Pipfile"}),
+                then_modified_files=frozenset({"Pipfile.lock"}),
             )
-        ),
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {"recidiviz/pipelines/utils/state_utils/us_id/"}
+        ],
+        # ingest docs
+        INGEST_DOCS_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset(
+                    {f"recidiviz/ingest/direct/regions/{region_code}/raw_data/"}
+                ),
+                then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
+            )
+            for region_code in get_existing_region_codes()
+        ],
+        ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
+        # ignore files
+        IGNORE_KEY: [
+            RequiredModificationSets(
+                if_modified_files=frozenset({".gitignore"}),
+                then_modified_files=frozenset({".dockerignore", ".gcloudignore"}),
+            )
+        ],
+        # build infrastructure
+        BUILD_INFRA_KEY: [
+            RequiredModificationSets.for_symmetric_check(
+                frozenset(
+                    {
+                        "mirror/copy.bara.sky",
+                        "Dockerfile.case-triage-pathways.dockerignore",
+                        "Dockerfile.justice-counts.dockerignore",
+                    }
+                )
             ),
-            then_modified_files=frozenset(
-                {"recidiviz/pipelines/utils/state_utils/us_ix/"}
+        ],
+        # Ensure that any files copied from ID are kept in sync between the two regions.
+        US_IX_KEY: [
+            RequiredModificationSets.for_symmetric_check(
+                frozenset(
+                    {
+                        "recidiviz/ingest/direct/regions/us_id/raw_data/us_id_current_day_daily_summary.yaml",
+                        "recidiviz/ingest/direct/regions/us_ix/raw_data/us_ix_current_day_daily_summary.yaml",
+                    }
+                )
             ),
-        ),
-    ],
-}
+            RequiredModificationSets(
+                if_modified_files=frozenset(
+                    {"recidiviz/pipelines/utils/state_utils/us_id/"}
+                ),
+                then_modified_files=frozenset(
+                    {"recidiviz/pipelines/utils/state_utils/us_ix/"}
+                ),
+            ),
+        ],
+    }
 
 
 def _match_filenames(
@@ -281,7 +288,7 @@ def check_assertions(
     """
     failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = []
 
-    for set_to_validate, modifications in MODIFIED_FILE_ASSERTIONS.items():
+    for set_to_validate, modifications in get_modified_file_assertions().items():
         if set_to_validate in sets_to_skip:
             logging.info("Skipping %s check due to skip commits.", set_to_validate)
             continue
@@ -366,7 +373,7 @@ def _get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
         for valid_message in full_validation_message:
             skip_sets = [
                 key
-                for key in MODIFIED_FILE_ASSERTIONS
+                for key in get_modified_file_assertions()
                 if _should_skip(valid_message, key)
             ]
             sets_to_skip = sets_to_skip.union(skip_sets)
