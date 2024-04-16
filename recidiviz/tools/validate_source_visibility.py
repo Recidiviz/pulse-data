@@ -465,6 +465,7 @@ def main() -> int:
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.view_registry",
+                "recidiviz.workflows",
             }
         ),
     )

@@ -71,6 +71,8 @@ class WorkflowsQuerier:
                 Opportunity.state_code,
                 Opportunity.opportunity_type,
                 Opportunity.gating_feature_variant,
+                Opportunity.updated_at,
+                Opportunity.updated_by,
             )
 
             infos: List[FullOpportunityInfo] = []
@@ -88,6 +90,10 @@ class WorkflowsQuerier:
                         system_type=get_system_for_opportunity(
                             opportunity.opportunity_type
                         ),
+                        completion_event=str(config.task_completion_event),
+                        experiment_id=config.experiment_id,
+                        last_updated_at=opportunity.updated_at,
+                        last_updated_by=opportunity.updated_by,
                     )
                 )
 

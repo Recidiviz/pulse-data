@@ -49,6 +49,10 @@ class FullOpportunityInfo(OpportunityInfo):
     """The opportunity info with additional fields not used in the client
     such as gating information."""
 
+    experiment_id: str = attr.ib()
+    completion_event: str = attr.ib()
+    last_updated_at: datetime = attr.ib()
+    last_updated_by: str = attr.ib()
     gating_feature_variant: str = attr.ib(default=None)
 
 
