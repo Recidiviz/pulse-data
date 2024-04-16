@@ -260,19 +260,14 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         sessions.*,
         starts.start_reason,
         starts.start_sub_reason,
-        ends.end_reason,
-        MIN(sessions.start_date) OVER(PARTITION BY sessions.person_id) AS earliest_start_date,
-        LAG(sessions.compartment_level_1) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS inflow_from_level_1,
-        LAG(sessions.compartment_level_2) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS inflow_from_level_2,
-        LEAD(sessions.compartment_level_1) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS outflow_to_level_1,
-        LEAD(sessions.compartment_level_2) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS outflow_to_level_2,
-        LAG(ends.end_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_reason,
-        LEAD(starts.start_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_reason,
-        LEAD(starts.start_sub_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_sub_reason,
-        LAG(sessions.end_date_exclusive) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_date_exclusive,
-        LEAD(sessions.start_date) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_date,
-        COALESCE(LAG(CONCAT(sessions.compartment_level_1, sessions.compartment_level_2)) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date),'') !=
-           COALESCE(CONCAT(sessions.compartment_level_1, sessions.compartment_level_2),'') AS new_compartment,
+        -- TODO(#27883): Investigate other cases of same-day supervision and incarceration end reasons
+        ends.end_reason AS end_reason_original,
+        IF(ends.end_reason IN ('RELEASED_FROM_TEMPORARY_CUSTODY','TEMPORARY_RELEASE')
+            AND alternative_ends.end_reason IN ('ADMITTED_TO_INCARCERATION','REVOCATION'),
+            ends.end_reason,  alternative_ends.end_reason) AS end_reason_alternative,        
+        IF(ends.end_reason IN ('RELEASED_FROM_TEMPORARY_CUSTODY','TEMPORARY_RELEASE')
+            AND alternative_ends.end_reason IN ('ADMITTED_TO_INCARCERATION','REVOCATION'),
+            alternative_ends.end_reason, ends.end_reason) AS end_reason,
     FROM sessions_with_start_end_bool sessions
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_session_start_reasons_materialized` starts
         ON sessions.person_id =  starts.person_id
@@ -288,6 +283,95 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         AND (sessions.compartment_level_1 = ends.compartment_level_1
         OR (ends.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 IN ('SUPERVISION_OUT_OF_STATE', 'INVESTIGATION'))
         OR (ends.compartment_level_1 = 'INCARCERATION' AND sessions.compartment_level_1 = 'INCARCERATION_OUT_OF_STATE'))
+    -- TODO(#27884): Consider cases of overlapping incarceration and supervision start reasons as well
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_session_end_reasons_materialized` alternative_ends
+        ON alternative_ends.release_termination_date = sessions.end_date_exclusive
+        AND alternative_ends.person_id = sessions.person_id
+        AND sessions.last_sub_session
+        AND sessions.compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
+        AND alternative_ends.metric_source = 'SUPERVISION_TERMINATION'
+    )
+    ,
+    sessions_with_inflows_outflows AS
+    (
+    SELECT
+        *,
+        MIN(start_date) OVER(PARTITION BY person_id) AS earliest_start_date,
+        LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date ASC) AS inflow_from_level_1,
+        LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date ASC) AS inflow_from_level_2,
+        LEAD(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date ASC) AS outflow_to_level_1,
+        LEAD(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date ASC) AS outflow_to_level_2,
+        LAG(end_reason) OVER (PARTITION BY person_id ORDER BY start_date ASC) AS prev_end_reason,
+        LAG(end_reason_alternative) OVER (PARTITION BY person_id ORDER BY start_date ASC) AS prev_end_reason_alternative,
+        LEAD(start_reason) OVER (PARTITION BY person_id ORDER BY start_date ASC) AS next_start_reason,
+        LEAD(start_sub_reason) OVER (PARTITION BY person_id ORDER BY start_date ASC) AS next_start_sub_reason,
+        LAG(end_date_exclusive) OVER (PARTITION BY person_id ORDER BY start_date ASC) AS prev_end_date_exclusive,
+        LEAD(start_date) OVER (PARTITION BY person_id ORDER BY start_date ASC) AS next_start_date,
+        COALESCE(LAG(CONCAT(compartment_level_1, compartment_level_2)) OVER(PARTITION BY person_id ORDER BY start_date),'') !=
+           COALESCE(CONCAT(compartment_level_1, compartment_level_2),'') AS new_compartment,
+    FROM sessions_joined_with_dataflow
+    )
+    ,
+    sessions_with_inferred_booleans AS
+    (
+    SELECT
+        *,
+        /*
+        The following field is used in conjunction with the `is_inferred_compartment` field to enforce that
+        recategorization of compartment values are applied to all adjacent sessions of the same original
+        compartment type
+        */
+        SUM(IF(new_compartment,1,0)) OVER(PARTITION BY person_id, state_code ORDER BY start_date) AS session_id_prelim,
+        metric_source = 'INFERRED'
+            AND prev_end_reason IN (
+                    'SENTENCE_SERVED','COMMUTED','DISCHARGE','EXPIRATION','PARDONED',
+                    'RELEASED_FROM_ERRONEOUS_ADMISSION', 'RELEASED_FROM_TEMPORARY_CUSTODY',
+                    'TEMPORARY_RELEASE', 'VACATED'
+                )  AS inferred_release,
+        metric_source = 'INFERRED'
+            AND (prev_end_reason IN ('ABSCONSION','ESCAPE')
+                 OR next_start_reason IN ('RETURN_FROM_ABSCONSION','RETURN_FROM_ESCAPE')
+                 OR (next_start_reason = 'REVOCATION' AND next_start_sub_reason = 'ABSCONDED')
+                ) AS inferred_escape,
+        metric_source = 'INFERRED'
+            AND prev_end_reason = 'DEATH' AS inferred_death,
+        metric_source = 'INFERRED'
+            AND (prev_end_reason = 'RELEASED_IN_ERROR' OR next_start_reason = 'RETURN_FROM_ERRONEOUS_RELEASE') AS inferred_erroneous,
+        metric_source = 'INFERRED'
+            -- TODO(#27881): Investigate implication of removing inflow_from condition in pending custody inference
+            AND inflow_from_level_1 = 'SUPERVISION'
+            AND (prev_end_reason in ('REVOCATION', 'ADMITTED_TO_INCARCERATION')
+                OR (next_start_reason IN ('REVOCATION', 'SANCTION_ADMISSION'))) AS inferred_pending_custody,
+        metric_source = 'INFERRED'
+            AND inflow_from_level_1 = 'INCARCERATION'
+            AND prev_end_reason IN ('CONDITIONAL_RELEASE', 'RELEASED_TO_SUPERVISION') AS inferred_pending_supervision,
+        metric_source = 'INFERRED'
+            AND prev_end_reason = 'TRANSFER_TO_OTHER_JURISDICTION' AS inferred_oos,
+        metric_source = 'INFERRED'
+            AND prev_end_reason = 'SUSPENSION' AS inferred_suspension,
+        metric_source = 'INFERRED'
+            AND inflow_from_level_1 = outflow_to_level_1 AND inflow_from_level_2 = outflow_to_level_2
+            AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
+            AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
+            AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date_exclusive, DAY) < {mo_data_gap_days}) AS inferred_missing_data,
+        metric_source = 'INFERRED'
+            AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+            AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+            AND state_code = 'US_MO'
+            AND DATE_DIFF(COALESCE(next_start_date, last_day_of_data), prev_end_date_exclusive, DAY) >= {mo_data_gap_days} AS inferred_mo_release,
+        metric_source = 'INFERRED'
+            AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+            AND next_start_reason = 'RETURN_FROM_SUSPENSION'
+            AND state_code = 'US_MO' AS inferred_mo_suspension,
+        metric_source = 'INFERRED'
+            AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+            AND next_start_reason IN ('NEW_ADMISSION', 'TEMPORARY_CUSTODY')
+            AND state_code = 'US_MO' AS inferred_mo_pending_custody,
+        metric_source = 'INFERRED'
+            AND prev_end_reason IN ('ADMITTED_TO_INCARCERATION','REVOCATION')
+            AND prev_end_reason_alternative IN ('RELEASED_FROM_TEMPORARY_CUSTODY','TEMPORARY_RELEASE')
+            AS inferred_unknown,
+    FROM sessions_with_inflows_outflows
     )
     ,
     sessions_with_inferred_compartments AS
@@ -306,7 +390,9 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         dataflow_session_id,
         state_code,
         COALESCE(
-            CASE WHEN inferred_release OR inferred_mo_release THEN 'LIBERTY'
+            CASE 
+                WHEN inferred_unknown THEN 'INTERNAL_UNKNOWN'
+                WHEN inferred_release OR inferred_mo_release THEN 'LIBERTY'
                 WHEN inferred_escape
                     OR (start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION"))
                     THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
@@ -321,7 +407,9 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
                 WHEN inferred_suspension OR inferred_mo_suspension THEN 'SUSPENSION'
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
-            CASE WHEN inferred_release OR inferred_mo_release THEN 'LIBERTY_REPEAT_IN_SYSTEM'
+            CASE 
+                WHEN inferred_unknown THEN 'INTERNAL_UNKNOWN'
+                WHEN inferred_release OR inferred_mo_release THEN 'LIBERTY_REPEAT_IN_SYSTEM'
                 WHEN inferred_escape
                     OR (start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION"))
                     THEN 'ABSCONSION'
@@ -355,6 +443,8 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         end_date_exclusive,
         start_reason,
         start_sub_reason,
+        end_reason_original,
+        end_reason_alternative,
         end_reason,
         metric_source,
         last_day_of_data,
@@ -373,62 +463,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
             OR inferred_death OR inferred_erroneous OR inferred_pending_custody OR inferred_pending_supervision
             OR inferred_oos OR inferred_suspension OR inferred_missing_data OR inferred_mo_release
             OR inferred_mo_suspension OR inferred_mo_pending_custody, FALSE) AS is_inferred_compartment,
-    FROM
-        (
-        SELECT
-            *,
-            /*
-            The following field is used in conjunction with the `is_inferred_compartment` field to enforce that
-            recategorization of compartment values are applied to all adjacent sessions of the same original
-            compartment type
-            */
-            SUM(IF(new_compartment,1,0)) OVER(PARTITION BY person_id, state_code ORDER BY start_date) AS session_id_prelim,
-            metric_source = 'INFERRED'
-                AND prev_end_reason IN (
-                        'SENTENCE_SERVED','COMMUTED','DISCHARGE','EXPIRATION','PARDONED',
-                        'RELEASED_FROM_ERRONEOUS_ADMISSION', 'RELEASED_FROM_TEMPORARY_CUSTODY',
-                        'TEMPORARY_RELEASE', 'VACATED'
-                    )  AS inferred_release,
-            metric_source = 'INFERRED'
-                AND (prev_end_reason IN ('ABSCONSION','ESCAPE')
-                     OR next_start_reason IN ('RETURN_FROM_ABSCONSION','RETURN_FROM_ESCAPE')
-                     OR (next_start_reason = 'REVOCATION' AND next_start_sub_reason = 'ABSCONDED')
-                    ) AS inferred_escape,
-            metric_source = 'INFERRED'
-                AND prev_end_reason = 'DEATH' AS inferred_death,
-            metric_source = 'INFERRED'
-                AND (prev_end_reason = 'RELEASED_IN_ERROR' OR next_start_reason = 'RETURN_FROM_ERRONEOUS_RELEASE') AS inferred_erroneous,
-            metric_source = 'INFERRED'
-                AND inflow_from_level_1 = 'SUPERVISION'
-                AND (prev_end_reason in ('REVOCATION', 'ADMITTED_TO_INCARCERATION')
-                    OR (next_start_reason IN ('REVOCATION', 'SANCTION_ADMISSION'))) AS inferred_pending_custody,
-            metric_source = 'INFERRED'
-                AND inflow_from_level_1 = 'INCARCERATION'
-                AND prev_end_reason IN ('CONDITIONAL_RELEASE', 'RELEASED_TO_SUPERVISION') AS inferred_pending_supervision,
-            metric_source = 'INFERRED'
-                AND prev_end_reason = 'TRANSFER_TO_OTHER_JURISDICTION' AS inferred_oos,
-            metric_source = 'INFERRED'
-                AND prev_end_reason = 'SUSPENSION' AS inferred_suspension,
-            metric_source = 'INFERRED'
-                AND inflow_from_level_1 = outflow_to_level_1 AND inflow_from_level_2 = outflow_to_level_2
-                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
-                AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
-                AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date_exclusive, DAY) < {mo_data_gap_days}) AS inferred_missing_data,
-            metric_source = 'INFERRED'
-                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
-                AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
-                AND state_code = 'US_MO'
-                AND DATE_DIFF(COALESCE(next_start_date, last_day_of_data), prev_end_date_exclusive, DAY) >= {mo_data_gap_days} AS inferred_mo_release,
-            metric_source = 'INFERRED'
-                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
-                AND next_start_reason = 'RETURN_FROM_SUSPENSION'
-                AND state_code = 'US_MO' AS inferred_mo_suspension,
-            metric_source = 'INFERRED'
-                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
-                AND next_start_reason IN ('NEW_ADMISSION', 'TEMPORARY_CUSTODY')
-                AND state_code = 'US_MO' AS inferred_mo_pending_custody,
-        FROM sessions_joined_with_dataflow
-        )
+    FROM sessions_with_inferred_booleans 
     )
     /*
     In situations where we overwrite an original compartment value due to inference, ensure that all adjacent
