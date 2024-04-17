@@ -157,6 +157,7 @@ output:
                         - Z1A # MINIMUM SUPV PROBATION
                         - Z1M # MISDEMEANOR, MIN SUPV
                         - ZMI # MINIMUM SUPV PAROLE
+                        - 4EI # MINIMUM INCENTIVE
 
                       StateSupervisionLevel.MEDIUM:
                         - 3D3 # ELEVATED - DRC PHASE 3
@@ -178,6 +179,7 @@ output:
                         - Z2A # MEDIUM SUPV PROBATION
                         - Z2M # MISDEMEANOR, MED SUPV
                         - ZME # MEDIUM SUPV PAROLE
+                        - 3EI # MEDIUM INCENTIVE
 
                       StateSupervisionLevel.HIGH:
                         # TODO(#10634): [Pathways][US_TN] Determine supervision level groupings
@@ -210,6 +212,7 @@ output:
                         - XGE # SEX OFFENDER ON GPS - ENH
                         - XNE # SEX OFFENDER NO GPS - ENH
                         - ZEN # ENHANCED SUPERVISION
+                        - 1EI # ENHANCED INCENTIVE
 
                       StateSupervisionLevel.IN_CUSTODY:
                         - 9IC # ADM - IN CUST TDOC SENT
@@ -291,8 +294,3 @@ output:
                         - ZSS # SUSPENDED SUPV PAROLE
                         - ZTS # TEMPORARY STATUS
                         - ZTV # TECHNICAL VIOLATOR
-                          # TODO(#27330): Move these 3 to more appropriate mappings once
-                          # they're better understood.
-                        - 1EI # ENHANCED INCENTIVE
-                        - 3EI # MEDIUM INCENTIVE
-                        - 4EI # MINIMUM INCENTIVE
