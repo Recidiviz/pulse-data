@@ -94,3 +94,19 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
             ),
             StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         )
+
+    def test_incarceration_facility_override(self) -> None:
+        egt_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE, external_id="EGT-1"
+        )
+        self.assertEqual(
+            self.delegate.incarceration_facility_override(egt_period),
+            "THE-CRIB",
+        )
+        hg_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE, external_id="HG-1"
+        )
+        self.assertEqual(
+            self.delegate.incarceration_facility_override(hg_period),
+            None,
+        )
