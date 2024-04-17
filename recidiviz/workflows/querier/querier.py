@@ -17,7 +17,7 @@
 """Querier class to encapsulate requests to the Workflows postgres DBs."""
 import logging
 from functools import cached_property
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 import attr
 from sqlalchemy.orm import sessionmaker
@@ -197,17 +197,21 @@ class WorkflowsQuerier:
         opportunity_type: str,
         offset: int = 0,
         limit: int = 10,
+        status: Optional[OpportunityStatus] = None,
     ) -> List[FullOpportunityConfig]:
         """
         Given an opportunity type, returns all stored configs with the most-recent first.
         """
         with self.database_session() as session:
+            configs = session.query(OpportunityConfiguration).filter(
+                OpportunityConfiguration.opportunity_type == opportunity_type,
+            )
+
+            if status is not None:
+                configs = configs.filter(OpportunityConfiguration.status == status)
+
             configs = (
-                session.query(OpportunityConfiguration)
-                .filter(
-                    OpportunityConfiguration.opportunity_type == opportunity_type,
-                )
-                .order_by(OpportunityConfiguration.created_at.desc())
+                configs.order_by(OpportunityConfiguration.created_at.desc())
                 .offset(offset)
                 .limit(limit)
             )

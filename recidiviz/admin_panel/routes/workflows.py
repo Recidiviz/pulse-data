@@ -17,7 +17,7 @@
 """Admin panel routes for configuring workflows settings."""
 
 from http import HTTPStatus
-from typing import List
+from typing import Any, Dict, List
 
 from flask.views import MethodView
 from flask_smorest import Blueprint
@@ -25,6 +25,7 @@ from flask_smorest import Blueprint
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.line_staff_tools.workflows_api_schemas import (
     OpportunityConfigurationSchema,
+    OpportunityConfigurationsQueryArgs,
     OpportunitySchema,
     StateCodeSchema,
 )
@@ -78,12 +79,25 @@ class OpportunitiesAPI(MethodView):
 class OpportunityConfigurationsAPI(MethodView):
     """Endpoint to list configs for a given workflow type."""
 
+    @workflows_blueprint.arguments(
+        OpportunityConfigurationsQueryArgs,
+        location="query",
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
     @workflows_blueprint.response(
         HTTPStatus.OK, OpportunityConfigurationSchema(many=True)
     )
     def get(
-        self, state_code_str: str, opportunity_type: str
+        self,
+        query_args: Dict[str, Any],
+        state_code_str: str,
+        opportunity_type: str,
     ) -> List[FullOpportunityConfig]:
+        offset = query_args.get("offset", 0)
+        status = query_args.get("status", None)
+
         state_code = refine_state_code(state_code_str)
-        configs = WorkflowsQuerier(state_code).get_configs_for_type(opportunity_type)
+        configs = WorkflowsQuerier(state_code).get_configs_for_type(
+            opportunity_type, offset=offset, status=status
+        )
         return configs

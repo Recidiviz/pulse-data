@@ -18,7 +18,10 @@
 
 from marshmallow import fields
 
-from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
+from recidiviz.case_triage.api_schemas_utils import (
+    CamelCaseSchema,
+    CamelOrSnakeCaseSchema,
+)
 from recidiviz.case_triage.workflows.api_schemas import WorkflowsConfigSchema
 from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
 
@@ -55,3 +58,12 @@ class OpportunityConfigurationSchema(WorkflowsConfigSchema):
     created_at = fields.Str(required=True)
     created_by = fields.Str(required=True)
     status = fields.Enum(OpportunityStatus, required=True)
+
+
+class OpportunityConfigurationsQueryArgs(CamelOrSnakeCaseSchema):
+    """
+    Schema representing query args for OpportunityConfigurationsAPI
+    """
+
+    offset = fields.Int(required=False)
+    status = fields.Enum(OpportunityStatus, required=False)

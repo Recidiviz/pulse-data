@@ -34,6 +34,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.workflows.schema import (
     Opportunity,
     OpportunityConfiguration,
+    OpportunityStatus,
     WorkflowsBase,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -383,3 +384,28 @@ class TestWorkflowsQuerier(TestCase):
 
         self.assertEqual(1, len(actual))
         self.assertEqual(datetime.datetime(2023, 5, 17), actual[0].created_at)
+
+    def test_get_configs_for_type_respects_status(self) -> None:
+        actual_active = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
+            "usIdCrcWorkRelease", status=OpportunityStatus.ACTIVE
+        )
+
+        self.assertEqual(1, len(actual_active))
+        self.assertEqual(datetime.datetime(2023, 5, 3), actual_active[0].created_at)
+        self.assertEqual("base config", actual_active[0].description)
+
+        actual_inactive = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
+            "usIdCrcWorkRelease", status=OpportunityStatus.INACTIVE
+        )
+
+        self.assertEqual(2, len(actual_inactive))
+        self.assertEqual("experimental config", actual_inactive[0].description)
+        self.assertEqual("base config", actual_inactive[1].description)
+
+    def test_get_configs_for_type_respects_offset_and_status(self) -> None:
+        actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
+            "usIdCrcWorkRelease", offset=1, status=OpportunityStatus.INACTIVE
+        )
+
+        self.assertEqual(1, len(actual))
+        self.assertEqual("base config", actual[0].description)
