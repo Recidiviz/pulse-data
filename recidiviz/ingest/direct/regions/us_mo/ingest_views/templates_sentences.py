@@ -59,18 +59,26 @@ BOND_STATUSES = (
     "99O7120",  # DATA ERROR-Bond Forfeiture
 )
 
+MAGIC_DATES = (
+    "0",
+    "19000000",
+    "20000000",
+    "66666666",
+    "77777777",
+    "88888888",  # Interstate Compact
+    "99999999",
+)
+
 # Filters out pretrial and future status codes from {{LBAKRDTA_TAK026}}
 STATUS_CODE_FILTERS = f"""
 -- sentences with only pre-trial investigation statuses get dropped
 NOT (
   -- Investigation start code prefixes
-  BW_SCD LIKE '05I5%' OR
   BW_SCD LIKE '10I5%' OR
-  BW_SCD LIKE '25I5%' OR
   BW_SCD LIKE '30I5%' OR
-  BW_SCD LIKE '35I5%' OR
+  BW_SCD LIKE '%5I5%' OR
   -- Investigation end code prefixes
-  BW_SCD LIKE '95O5%' OR
+  BW_SCD LIKE '%5O5%' OR
   BW_SCD LIKE '99O5%'
 ) 
 -- sentences with only pre-trial bond statuses get dropped
@@ -86,11 +94,21 @@ AND (
 
 # Used to query supervision sentences that are not
 # pretrial bond or investigation (decided by status).
-# Available tables are aliased as BU, BV, and BW -
+# Available tables are aliased as BU, BS, BV, and BW -
 # referring to their respective column prefix (e.g. BU_DOC)
-FROM_BU_BV_BW_WHERE_NOT_PRETRIAL = f"""
+# We join to BS to ensure every sentence is affiliated with a charge,
+# because there are some BU rows with BU_SEO = 0 (administrative cruft)
+
+# TODO(#28813) Handle Interstate Compact Supervision Sentences
+FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL = f"""
 FROM
     {{LBAKRDTA_TAK024}} AS BU
+JOIN
+    {{LBAKRDTA_TAK022}} AS BS
+ON
+    BU.BU_DOC = BS.BS_DOC AND
+    BU.BU_CYC = BS.BS_CYC AND
+    BU.BU_SEO = BS.BS_SEO
 JOIN
     {{LBAKRDTA_TAK025}} AS BV
 ON
@@ -106,14 +124,7 @@ ON
     BV.BV_SSO = BW.BW_SSO
 WHERE
     -- sentence must have valid imposed_date
-    BU.BU_SF NOT IN (   
-        '0', 
-        '19000000',
-        '20000000',
-        '66666666',
-        '77777777',
-        '88888888',
-        '99999999'
-    )
-AND {STATUS_CODE_FILTERS}
+    BU.BU_SF NOT IN {MAGIC_DATES} 
+AND 
+    {STATUS_CODE_FILTERS}
 """

@@ -12,6 +12,8 @@ columns:
     is_pii: True
     description: |-
       DOC ID Number
+      This is the Offender's Department of Corrections master number. 
+      This is a unique computer generated number which will remain with the Offender for life.
   - name: BS_CYC
     description: |-
       Cycle Number
@@ -24,18 +26,31 @@ columns:
   - name: BS_SCF
     description: |-
       Sentence Completed Flag
+      This is the flag which will be set to Y = yes when a sentence is completed
   - name: BS_CRT
     description: |-
       Court Number
+      This is the cause/docket number assigned by the Circuit Court. 
+      This number identifies the proceedings from which this offender was received, and it is obtained from 
+      sentence and judgement paperwork. This field may be blank for interstate compact offenders. 
+      Enter the number including dashes and letters as it appears on the sentence and judgement. 
+      (Also known as the Docket Number (P&P), Police Report Number for Deferred Prosecution, or Court Case Number (AI)).
   - name: BS_NRN
     description: |-
       Name Record Number
   - name: BS_ASO
     description: |-
       Sentence Missouri Charge Code
+      This will contain the 8-digit code associated with this offense from court papers or the Missouri Charge Code Manual. 
+      Felony class may be used to insure the correct match. Positions 1 through 5 are the major category code. 
+      Positions 6 and 7 contain the NCIC/State Modifier range. 
+      These positions of the MO Code match the last two digits of the NCIC code for the charge. 
+      The eighth position may be 0 for Not Applicable, 1 for Attempt, 2 for Accessory or 3 for Conspiracy.
   - name: BS_NCI
     description: |-
       Sentence NCIC Code
+      This is the NCIC code for this offense as found in the National Crime Information Center's Code 
+      Manual referenced in the Missouri Charge Code Manual.
   - name: BS_OCN
     description: |-
       Sentence Offense Cycle Number
@@ -57,6 +72,9 @@ columns:
   - name: BS_CCI
     description: |-
       Sentence Consecutive/Concurrent Index
+      This indicates whether this sentence is being served concurrent/consecutive to another sentence.
+      This relationship of sentences is derived from the sentence and judgement papers. 
+      The allowed values are: ' ' - Single Sentence or Primary Sentence, 'CC' - Concurrent, 'CS' - Consecutive
   - name: BS_CRQ
     description: |-
       Sentence Consecutive/Concurrent XRef
@@ -72,6 +90,9 @@ columns:
   - name: BS_PD
     description: |-
       Sentence Max Release/Expiration Date
+      This is the date (YYYYMMDD) of the maximum release/expiration day of this sentence. 
+      For a life sentence, 99999999 is used. For an indeterminate or interstate sentence, 88888888 is used. 
+      For field supervision records of a court-ordered assessment or investigation, 66666666 is used.
   - name: BS_DO
     description: |-
       Sentence Offense Date
@@ -82,6 +103,7 @@ columns:
     is_pii: True
     description: |-
       Sentence Offense Description
+      This is the literal description of this offense taken from the court papers.
   - name: BS_AR
     description: |-
       Arrest Date

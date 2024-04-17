@@ -45,7 +45,8 @@ after getting common critical dates from their charges. We filter down to unique
 and critical date, allowing us to get changes in sentence length data from each source.
 """
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
-    FROM_BU_BV_BW_WHERE_NOT_PRETRIAL,
+    FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL,
+    MAGIC_DATES,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -101,12 +102,6 @@ def critical_date_column() -> str:
     """
 
 
-def bad_dates() -> str:
-    return str(
-        ("0", "19000000", "20000000", "66666666", "77777777", "88888888", "99999999")
-    )
-
-
 PROJECTED_COMPLETION_DATES = f"""
 SELECT DISTINCT
     BS_DOC AS DOC,
@@ -125,7 +120,7 @@ FROM (
     FROM 
         {{LBAKRDTA_TAK022@ALL}}
     WHERE
-        BS_PD NOT IN {bad_dates()}
+        BS_PD NOT IN {MAGIC_DATES}
 ) AS _bs
 """
 
@@ -162,7 +157,7 @@ ON
     BQ_CYC = CG_CYC AND
     BQ_ESN = CG_ESN
 WHERE
-    CG_MD NOT IN {bad_dates()}
+    CG_MD NOT IN {MAGIC_DATES}
 """
 
 INCARCERATION_SENTENCES = f"""
@@ -185,9 +180,17 @@ FROM (
         CASE WHEN BT_SLM IN ('99', '88', '66') THEN NULL ELSE BT_SLM END AS BT_SLM, -- sentence length, months
         CASE WHEN BT_SLD IN ('99', '88', '66') THEN NULL ELSE BT_SLD END AS BT_SLD, -- sentence length, days
         BT_SCT, -- earned time
-        CASE WHEN BT_PC NOT IN {bad_dates()} THEN BT_PC ELSE NULL END AS BT_PC
+        CASE WHEN BT_PC NOT IN {MAGIC_DATES} THEN BT_PC ELSE NULL END AS BT_PC
     FROM 
-        {{LBAKRDTA_TAK023@ALL}}
+        {{LBAKRDTA_TAK023@ALL}} AS bt
+    JOIN
+        {{LBAKRDTA_TAK022}} AS bs
+    ON
+        bt.BT_DOC = bs.BS_DOC AND
+        bt.BT_CYC = bs.BS_CYC AND
+        bt.BT_SEO = bs.BS_SEO
+    WHERE
+        BT_SD NOT IN {MAGIC_DATES}
 ) AS _bt
 """
 
@@ -196,7 +199,7 @@ SELECT DISTINCT
     BU.BU_DOC, -- unique for each person
     BU.BU_CYC, -- unique for each sentence group
     BU.BU_SEO -- unique for each charge
-{FROM_BU_BV_BW_WHERE_NOT_PRETRIAL}
+{FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL}
 """
 
 SUPERVISION_SENTENCES = f"""

@@ -106,6 +106,17 @@ class UsMoSentenceStatusTest(unittest.TestCase):
         self.assertFalse(inc_in_status.is_incarceration_out_status)
         self.assertTrue(inc_out_status.is_incarceration_out_status)
 
+    def test_status_description_converter(self) -> None:
+        stat = self._build_test_status(
+            status_code="05I5000",
+            status_description="New Pre-Sentence Investigation",
+        )
+        self.assertEqual(stat.status_description, "NEW PRE-SENTENCE INVESTIGATION")
+
+        code, descript = '40I7000@@"Field Supv to DAI-Oth Sentence"'.split("@@")
+        stat = self._build_test_status(status_code=code, status_description=descript)
+        self.assertEqual(stat.status_description, '"FIELD SUPV TO DAI-OTH SENTENCE"')
+
     def test_is_investigation_status(self) -> None:
         investigation_statuses = [
             self._build_test_status(

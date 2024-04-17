@@ -139,12 +139,13 @@ def _sentencing_entities_checks(
     """
     for sentence in state_person.sentences:
         if not sentence.imposed_date:
-            yield f"Found person {state_person.limited_pii_repr()} with sentence having no imposed_date."
+            yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
         if not sentence.sentence_type:
-            yield f"Found person {state_person.limited_pii_repr()} with sentence having no StateSentenceType."
+            yield f"Found sentence {sentence.limited_pii_repr()} with no StateSentenceType."
         elif sentence.sentence_type in {
             StateSentenceType.PAROLE,
             StateSentenceType.PROBATION,
+            StateSentenceType.TREATMENT,
         }:
             continue
         for status in sentence.sentence_status_snapshots:
@@ -172,7 +173,8 @@ def validate_root_entity(
     error_messages.extend(_unique_constraint_check(root_entity, field_index))
 
     # TODO(#27113) Check sequence_num on LedgerEntity objects
-    # TODO(#28695) Fix upstream parsing of status codes in US_MO
+    if isinstance(root_entity, state_entities.StatePerson):
+        error_messages.extend(_sentencing_entities_checks(root_entity))
 
     return error_messages
 

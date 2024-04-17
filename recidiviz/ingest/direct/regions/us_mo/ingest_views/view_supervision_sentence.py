@@ -30,7 +30,7 @@ We do not ingest sentences that only have pre-trial status codes!
 This includes pre-trial investigation and pre-trial bonds.
 """
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
-    FROM_BU_BV_BW_WHERE_NOT_PRETRIAL,
+    FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -63,12 +63,13 @@ SELECT
     BU.BU_SEO, -- unique for each charge
     BU.BU_SF,  -- imposition date
     BW.BW_SCD AS imposition_status
-{FROM_BU_BV_BW_WHERE_NOT_PRETRIAL}
+{FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL}
 QUALIFY
     -- Keep the first status (at imposition) to create StateSentenceType and ensure the correct imposition date
     (ROW_NUMBER() OVER(PARTITION BY BU_DOC, BU_CYC, BU_SEO ORDER BY CAST(BV_SSO AS INT64)) = 1)
 """
 
+# TODO(#28813) Handle Interstate Compact Supervision Sentences
 VIEW_QUERY_TEMPLATE = f"""
 WITH
     charge_info AS ({CHARGE_INFO}),

@@ -1248,7 +1248,8 @@ def get_recidiviz_sentence_status(raw_text: str) -> StateSentenceStatus:
     return status.state_sentence_status or StateSentenceStatus.EXTERNAL_UNKNOWN
 
 
-# TODO(#28189): Expand status code knowledge/coverage for supervision type classification
+# TODO(#28189): Expand status code knowledge/coverage for supervision type classification.
+# We default to PROBATION
 def parse_state_sentence_type_from_supervision_status(
     raw_text: str,
 ) -> StateSentenceType:
@@ -1261,6 +1262,12 @@ def parse_state_sentence_type_from_supervision_status(
         status_code=status_code,
         status_description=status_description,
     )
-    if sentence_type := status.supervision_sentence_type_status_classification:
+    sentence_type = status.supervision_sentence_type_status_classification
+    if (
+        sentence_type != StateSentenceType.INTERNAL_UNKNOWN
+        and sentence_type is not None
+    ):
         return sentence_type
-    return StateSentenceType.INTERNAL_UNKNOWN
+    # We assume everything from the TAK024 (Sentence Prob) is
+    # in fact, PROBATION. Unless it has been parsed otherwise above.
+    return StateSentenceType.PROBATION

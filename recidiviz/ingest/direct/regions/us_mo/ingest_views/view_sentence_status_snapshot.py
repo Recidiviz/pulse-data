@@ -24,7 +24,8 @@ Raw data files include:
   - LBAKRDTA_TAK026 has the information for sentence status snapshots
 """
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.templates_sentences import (
-    STATUS_CODE_FILTERS,
+    FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL,
+    MAGIC_DATES,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -32,51 +33,63 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# Gets statuses that are not pre-trial and not in the future
-FILTERED_STATUSES = f"""
-SELECT
-    BW_DOC AS DOC, -- person
-    BW_CYC AS CYC, -- sentence group
-    BW_SSO AS SSO, -- crosswalk number to link sentence to status
+SUPERVISION_STATUSES = f"""
+SELECT 
+    BV_DOC AS person_external_id,
+    CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'SUPERVISION') AS sentence_external_id,
+    BW_SSO,  -- status sequence num
+    BW_SY,  -- status code change date
+    BW_SCD  -- status code
+{FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL}
+"""
+
+# TODO(#28880) Remove the join to TAK022 BS here after raw data migration.
+INCARCERATION_STATUSES = f"""
+SELECT 
+    BV_DOC AS person_external_id,
+    CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'INCARCERATION') AS sentence_external_id,
+    BW_SSO,  -- status sequence num
     BW_SY,  -- status code change date
     BW_SCD  -- status code
 FROM
-    {{LBAKRDTA_TAK026}}
-WHERE 
-    {STATUS_CODE_FILTERS}
-"""
-
-SENTENCE_SEQUENCE = """
-SELECT
-    BV_DOC AS DOC,
-    BV_CYC AS CYC,
-    BV_SSO AS SSO,
-    CASE 
-        WHEN BV_FSO = '0' THEN
-            CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'INCARCERATION')
-        ELSE
-            CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'SUPERVISION')
-    END AS sentence_external_id
-FROM
-    {LBAKRDTA_TAK025}
+    {{LBAKRDTA_TAK023}} AS BT
+JOIN
+    {{LBAKRDTA_TAK022}} AS BS
+ON
+    BT.BT_DOC = BS.BS_DOC AND
+    BT.BT_CYC = BS.BS_CYC AND
+    BT.BT_SEO = BS.BS_SEO
+JOIN
+    {{LBAKRDTA_TAK025}} AS BV
+ON
+    BT.BT_DOC = BV.BV_DOC AND
+    BT.BT_CYC = BV.BV_CYC AND
+    BT.BT_SEO = BV.BV_SEO
+JOIN
+     {{LBAKRDTA_TAK026}} AS BW
+ON
+    BV.BV_DOC = BW.BW_DOC AND
+    BV.BV_CYC = BW.BW_CYC AND
+    BV.BV_SSO = BW.BW_SSO
+WHERE
+    -- Incarceration statuses have an FSO of 0
+    BV_FSO = '0'
+AND
+    -- We get weekly data with expected statuses for the (future) week,
+    -- so this ensures we only get statuses that have happened
+    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
+AND
+    -- sentence must have valid imposed_date
+    BT_SD NOT IN {MAGIC_DATES}
 """
 
 VIEW_QUERY_TEMPLATE = f"""
 WITH 
-    filtered_sentence_statuses AS ({FILTERED_STATUSES}),
-    sentence_sequence AS ({SENTENCE_SEQUENCE})
-SELECT 
-    DOC AS person_external_id,
-    sentence_sequence.sentence_external_id,
-    CAST(sentence_sequence.SSO AS INT64) AS BW_SSO,  -- status sequence num
-    filtered_sentence_statuses.BW_SY,  -- status code change date
-    filtered_sentence_statuses.BW_SCD  -- status code
-FROM 
-    sentence_sequence
-JOIN 
-    filtered_sentence_statuses
-USING
-    (DOC, CYC, SSO)
+    inc_status AS ({INCARCERATION_STATUSES}),
+    sup_status AS ({SUPERVISION_STATUSES})
+SELECT * FROM inc_status
+UNION ALL
+SELECT * FROM sup_status
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
