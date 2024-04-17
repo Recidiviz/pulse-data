@@ -217,3 +217,26 @@ class WorkflowsQuerier:
             )
 
             return [FullOpportunityConfig.from_db_entry(config) for config in configs]
+
+    def get_config_for_id(
+        self, opportunity_type: str, config_id: int
+    ) -> Optional[FullOpportunityConfig]:
+        """
+        Given an id and an opportunity type, returns the config with that id, if any
+        """
+        with self.database_session() as session:
+            # The id column is an autoincrementing primary key. It is guaranteed to be
+            # unique by the DB. This query will always find 0 or 1 documents.
+            config = (
+                session.query(OpportunityConfiguration)
+                .filter(
+                    OpportunityConfiguration.opportunity_type == opportunity_type,
+                    OpportunityConfiguration.id == config_id,
+                )
+                .first()
+            )
+
+            if config is None:
+                return None
+
+            return FullOpportunityConfig.from_db_entry(config)

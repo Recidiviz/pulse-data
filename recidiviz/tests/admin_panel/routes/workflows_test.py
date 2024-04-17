@@ -33,6 +33,7 @@ from recidiviz.workflows.types import FullOpportunityConfig
 TEST_WORKFLOW_TYPE = "usIdSLD"
 TEST_OFFSET = 17
 TEST_STATUS = OpportunityStatus.INACTIVE
+TEST_CONFIG_ID = 6264
 
 
 def generate_config(
@@ -98,6 +99,12 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
                 opportunity_type=TEST_WORKFLOW_TYPE,
                 offset=TEST_OFFSET,
                 status=TEST_STATUS.name,
+            )
+            self.single_opportunity_configuration_url = url_for(
+                "workflows.OpportunitySingleConfigurationAPI",
+                state_code_str="US_ID",
+                opportunity_type=TEST_WORKFLOW_TYPE,
+                config_id=TEST_CONFIG_ID,
             )
 
     ########
@@ -215,3 +222,40 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             offset=TEST_OFFSET,
             status=TEST_STATUS,
         )
+
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_get_single_config_by_id(
+        self, mock_enabled_states: MagicMock, mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        response = self.client.get(self.single_opportunity_configuration_url)
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        mock_querier.return_value.get_config_for_id.assert_called_with(
+            TEST_WORKFLOW_TYPE,
+            TEST_CONFIG_ID,
+        )
+
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_get_single_config_by_id_returns_bad_request_on_failure(
+        self, mock_enabled_states: MagicMock, mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        mock_querier.return_value.get_config_for_id.return_value = None
+
+        response = self.client.get(self.single_opportunity_configuration_url)
+
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
