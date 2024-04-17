@@ -1850,6 +1850,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertIn("oppType", response.get_json()["enabledConfigs"])  # type: ignore
+        self.assertIn("stateCode", response.get_json()["enabledConfigs"]["oppType"])  # type: ignore
 
     def test_workflows_config_disabled_state(self) -> None:
         with self.test_app.test_request_context():

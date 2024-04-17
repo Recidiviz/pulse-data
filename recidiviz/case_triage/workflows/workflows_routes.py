@@ -754,10 +754,10 @@ def create_workflows_api_blueprint() -> Blueprint:
 
     @workflows_api.get("/<state>/opportunities")
     @workflows_api.response(HTTPStatus.OK, WorkflowsConfigurationsResponseSchema)
-    def get_opportunities(state: str) -> Response:
+    def get_opportunities(state: str) -> dict:
         state_code = state.upper()
         if state_code not in get_workflows_enabled_states():
-            return make_response(jsonify({"enabledConfigs": {}}), HTTPStatus.OK)
+            return {"enabled_configs": {}}
 
         feature_variants: List[str] = list(g.get("feature_variants", {}).keys())
 
@@ -781,8 +781,6 @@ def create_workflows_api_blueprint() -> Blueprint:
             for opp in opps
         }
 
-        response_blob = {"enabledConfigs": config_response}
-
-        return make_response(jsonify(response_blob), HTTPStatus.OK)
+        return {"enabled_configs": config_response}
 
     return workflows_api
