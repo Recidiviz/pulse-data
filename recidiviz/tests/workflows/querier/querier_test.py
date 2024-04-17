@@ -409,3 +409,21 @@ class TestWorkflowsQuerier(TestCase):
 
         self.assertEqual(1, len(actual))
         self.assertEqual("base config", actual[0].description)
+
+    def test_get_config_for_id(self) -> None:
+        actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id("usIdSLD", 3)
+
+        self.assertIsNotNone(actual)
+        self.assertEqual(datetime.datetime(2023, 5, 8), actual.created_at)  # type: ignore
+
+    def test_get_config_for_id_returns_none_for_nonexistent_id(self) -> None:
+        actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id("usIdSLD", 333)
+
+        self.assertIsNone(actual)
+
+    def test_get_config_for_id_returns_none_for_mismatched_id(self) -> None:
+        actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id(
+            "usIdCrcWorkRelease", 3
+        )
+
+        self.assertIsNone(actual)

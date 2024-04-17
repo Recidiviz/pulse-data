@@ -20,7 +20,7 @@ from http import HTTPStatus
 from typing import Any, Dict, List
 
 from flask.views import MethodView
-from flask_smorest import Blueprint
+from flask_smorest import Blueprint, abort
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.line_staff_tools.workflows_api_schemas import (
@@ -101,3 +101,30 @@ class OpportunityConfigurationsAPI(MethodView):
             opportunity_type, offset=offset, status=status
         )
         return configs
+
+
+@workflows_blueprint.route(
+    "<state_code_str>/<opportunity_type>/configurations/<int:config_id>"
+)
+class OpportunitySingleConfigurationAPI(MethodView):
+    """Endpoint to retrieve a config given an id."""
+
+    @workflows_blueprint.response(HTTPStatus.OK, OpportunityConfigurationSchema())
+    def get(
+        self,
+        state_code_str: str,
+        opportunity_type: str,
+        config_id: int,
+    ) -> FullOpportunityConfig:
+        state_code = refine_state_code(state_code_str)
+        config = WorkflowsQuerier(state_code).get_config_for_id(
+            opportunity_type, config_id
+        )
+
+        if config is None:
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                message=f"No config matching {opportunity_type=} {config_id=}",
+            )
+
+        return config
