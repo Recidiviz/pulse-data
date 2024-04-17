@@ -51,6 +51,7 @@ GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
 RECIDIVIZ_ENV = "RECIDIVIZ_ENV"
 GOOGLE_CLOUD_PROJECT = "GOOGLE_CLOUD_PROJECT"
+DATA_PLATFORM_VERSION = "DATA_PLATFORM_VERSION"
 
 
 # TODO(#21450) Rename to in_app_engine_env
@@ -301,8 +302,8 @@ def in_gunicorn() -> bool:
     return "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
 
 
-def get_app_engine_version() -> str:
-    return os.getenv("GAE_VERSION", "")
+def get_data_platform_version() -> str:
+    return os.getenv(DATA_PLATFORM_VERSION, "")
 
 
 class ServiceType(Enum):
@@ -314,7 +315,7 @@ def get_service_type() -> ServiceType:
 
 
 def in_app_engine() -> bool:
-    return get_app_engine_version() != ""
+    return bool(os.getenv("GAE_VERSION"))
 
 
 def get_admin_panel_base_url() -> Optional[str]:
