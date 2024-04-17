@@ -60,8 +60,8 @@ WITH
     ),
     classification_filter AS (	
         SELECT DISTINCT 	
-            OffenderId, ClassificationDecisionDate, RecommendedCustody, ClassificationDecision, ClassificationSequenceNumber,	
-            ROW_NUMBER() OVER (PARTITION BY OffenderId, ClassificationDecisionDate ORDER BY ClassificationSequenceNumber DESC, 	
+            OffenderId, ClassificationDate, RecommendedCustody, ClassificationDecision, ClassificationSequenceNumber,	
+            ROW_NUMBER() OVER (PARTITION BY OffenderId, ClassificationDate ORDER BY ClassificationSequenceNumber DESC, 	
             (CASE WHEN RecommendedCustody = 'MAX' THEN 1 	
             WHEN RecommendedCustody = 'CLS' THEN 2 	
             WHEN RecommendedCustody = 'MED' THEN 3  	
@@ -71,8 +71,8 @@ WITH
         FROM {Classification}
         LEFT JOIN find_max_offender_discharge_movement_date USING (OffenderID)
         WHERE ClassificationDecision = 'A'  # denotes final custody level	
-        AND EXTRACT(YEAR FROM CAST(ClassificationDecisionDate AS DATETIME)) > 2002  # Data is not reliable before 	
-        AND ClassificationDecisionDate <= COALESCE(MaxDischargeDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
+        AND EXTRACT(YEAR FROM CAST(ClassificationDate AS DATETIME)) > 2002  # Data is not reliable before 	
+        AND ClassificationDate <= COALESCE(MaxDischargeDate, '9999-12-31') # Filter out any data linked to someone after they have been discharged 	
     ), 
     cell_bed_assignment_setup AS (
             SELECT DISTINCT
@@ -110,7 +110,7 @@ WITH
 
         SELECT  	
             OffenderId, 	
-            ClassificationDecisionDate || '.000000' AS MovementDateTime, ## add this so date format the same	
+            ClassificationDate || '.000000' AS MovementDateTime, ## add this so date format the same	
             'CUSTCHANGEFH' as MovementType, # Generated so last two are FH and query handles correctly	
             'CUST CHANGE' AS MovementReason, 	
             null AS FromLocationID, 	
