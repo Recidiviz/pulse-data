@@ -63,6 +63,7 @@ resource "google_composer_environment" "default_v2" {
         "secrets-backend_kwargs"                    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
       env_variables = {
+        "DATA_PLATFORM_VERSION"      = var.docker_image_tag
         "RECIDIVIZ_APP_ENGINE_IMAGE" = "us.gcr.io/${var.project_id}/appengine/default:${var.docker_image_tag}"
         "SENDGRID_API_KEY"           = data.google_secret_manager_secret_version.airflow_sendgrid_api_key.secret_data,
         "SENDGRID_MAIL_FROM"         = var.project_id == "recidiviz-staging" ? "alerts+airflow-staging@recidiviz.org" : "alerts+airflow-production@recidiviz.org"
