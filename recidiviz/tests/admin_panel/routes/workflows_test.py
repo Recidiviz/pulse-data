@@ -30,6 +30,10 @@ from recidiviz.admin_panel.routes.workflows import workflows_blueprint
 from recidiviz.persistence.database.schema.workflows.schema import OpportunityStatus
 from recidiviz.workflows.types import FullOpportunityConfig
 
+TEST_WORKFLOW_TYPE = "usIdSLD"
+TEST_OFFSET = 17
+TEST_STATUS = OpportunityStatus.INACTIVE
+
 
 def generate_config(
     config_id: int, created_at: datetime.datetime, is_active: bool = True
@@ -86,7 +90,14 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             self.opportunity_configuration_url = url_for(
                 "workflows.OpportunityConfigurationsAPI",
                 state_code_str="US_ID",
-                opportunity_type="usIdSLD",
+                opportunity_type=TEST_WORKFLOW_TYPE,
+            )
+            self.opportunity_configuration_url_with_query_params = url_for(
+                "workflows.OpportunityConfigurationsAPI",
+                state_code_str="US_ID",
+                opportunity_type=TEST_WORKFLOW_TYPE,
+                offset=TEST_OFFSET,
+                status=TEST_STATUS.name,
             )
 
     ########
@@ -182,4 +193,25 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         self.assertEqual(3, len(response.json))  # type: ignore[arg-type]
         self.snapshot.assert_match(  # type: ignore[attr-defined]
             response.json, name="test_get_configs_for_opportunity"
+        )
+
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_get_configs_for_opportunity_passes_query_params(
+        self, mock_enabled_states: MagicMock, mock_querier: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+
+        response = self.client.get(self.opportunity_configuration_url_with_query_params)
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        mock_querier.return_value.get_configs_for_type.assert_called_with(
+            TEST_WORKFLOW_TYPE,
+            offset=TEST_OFFSET,
+            status=TEST_STATUS,
         )
