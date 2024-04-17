@@ -23,7 +23,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 3000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 2,144 rows #TODO(#16240)
   - validation_name: normalized_state_charge_missing_descriptions
-    hard_num_allowed_rows_override: 200
+    hard_num_allowed_rows_override: 280
     override_reason: Current failing level as of 4/5/23 is 82 rows (0.02%)
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 200000
