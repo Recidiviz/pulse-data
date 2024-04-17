@@ -51,6 +51,9 @@ class BigQueryViewCollectorTest(unittest.TestCase):
     good_view_1: DeflatedView
     good_view_2: DeflatedView
     good_view_3: DeflatedView
+    good_view_4: DeflatedView
+    good_view_5: DeflatedView
+    good_view_6: DeflatedView
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -74,6 +77,18 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             dataset_id="my_dataset_3",
             view_id="early_discharge_incarceration_sentence",
             view_query="SELECT * FROM table1",
+        )
+        cls.good_view_4 = attr.evolve(
+            cls.good_view_1,
+            view_query="SELECT * FROM table4",
+        )
+        cls.good_view_5 = attr.evolve(
+            cls.good_view_2,
+            view_query="SELECT * FROM table5",
+        )
+        cls.good_view_6 = attr.evolve(
+            cls.good_view_2,
+            view_query="SELECT * FROM table6",
         )
 
     def setUp(self) -> None:
@@ -240,4 +255,161 @@ class BigQueryViewCollectorTest(unittest.TestCase):
                 builder_type=FakeBigQueryViewBuilder,
                 view_dir_module=test_views,
                 view_file_prefix_filter="bad_view_builder_wrong_type",
+            )
+
+    def test_collect_view_builders_collect(self) -> None:
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
+            builder_type=FakeBigQueryViewBuilder,
+            view_dir_module=test_views,
+            view_file_prefix_filter="g",
+            recurse=True,
+            collect_builders_from_callables=True,
+        )
+        views: List[BigQueryView] = [builder.build() for builder in builders]
+        self.assertCountEqual(
+            [
+                BigQueryViewCollectorTest.good_view_1,
+                BigQueryViewCollectorTest.good_view_2,
+                BigQueryViewCollectorTest.good_view_3,
+                BigQueryViewCollectorTest.good_view_4,
+                BigQueryViewCollectorTest.good_view_5,
+                BigQueryViewCollectorTest.good_view_6,
+            ],
+            self._deflated(views),
+        )
+
+    def test_collect_view_builders_collect_empty_prefix(self) -> None:
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
+            builder_type=FakeBigQueryViewBuilder,
+            view_dir_module=test_views,
+            view_file_prefix_filter="alternate",
+            recurse=True,
+            collect_builders_from_callables=True,
+            builder_callable_name_regex="view_builder",
+        )
+        views: List[BigQueryView] = [builder.build() for builder in builders]
+        self.assertCountEqual(
+            [
+                BigQueryViewCollectorTest.good_view_5,
+            ],
+            self._deflated(views),
+        )
+
+    def test_collect_view_builders_collect_alt_prefix(self) -> None:
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
+            builder_type=FakeBigQueryViewBuilder,
+            view_dir_module=test_views,
+            view_file_prefix_filter="alternate",
+            recurse=True,
+            collect_builders_from_callables=True,
+            builder_callable_name_regex="hello.*",
+        )
+        views: List[BigQueryView] = [builder.build() for builder in builders]
+        self.assertCountEqual(
+            [
+                BigQueryViewCollectorTest.good_view_5,
+            ],
+            self._deflated(views),
+        )
+
+    def test_collect_callables_not_present(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"File \[.*g_view_collector_1.py\] has no top-level attribute "
+            r"matching \[VIEW\]",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=FakeBigQueryViewBuilder,
+                view_dir_module=test_views,
+                view_file_prefix_filter="g_view_collector_1",
+                recurse=True,
+                collect_builders_from_callables=True,
+                view_builder_attribute_name_regex="VIEW",
+                builder_callable_name_regex="VIEW",
+            )
+
+    def test_collect_callables_is_just_list(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected empty list for attribute \[collect_empty_view_builder\] in "
+            r"file \[.*empty_view_collector_1.py\].",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=FakeBigQueryViewBuilder,
+                view_dir_module=test_views,
+                view_file_prefix_filter="empty_view_collector_1",
+                recurse=True,
+                collect_builders_from_callables=True,
+            )
+
+    def test_collect_callables_is_correctly_typed_but_empty(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected empty list for attribute \[collect_view_builder\] in file "
+            r"\[.*empty_view_collector_2.py\].",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=FakeBigQueryViewBuilder,
+                view_dir_module=test_views,
+                view_file_prefix_filter="empty_view_collector_2",
+                recurse=True,
+                collect_builders_from_callables=True,
+            )
+
+    def test_collect_callables_is_incorrectly_typed(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"An attribute in List \[collect_view_builder\] in file "
+            r"\[.*bad_view_collector_1.py\] did not match expected type "
+            r"\[FakeBigQueryViewBuilder\].",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=FakeBigQueryViewBuilder,
+                view_dir_module=test_views,
+                view_file_prefix_filter="bad_view_collector_1",
+                recurse=True,
+                collect_builders_from_callables=True,
+            )
+
+    def test_collect_callable_is_not_a_callable(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected type \[<class 'str'>\] for \[collect_view_builder\] in "
+            r"\[.*bad_view_collector_3.py\]. Expected type \[Callable\]",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=FakeBigQueryViewBuilder,
+                view_dir_module=test_views,
+                view_file_prefix_filter="bad_view_collector_3",
+                recurse=True,
+                collect_builders_from_callables=True,
+            )
+
+    def test_collect_callables_takes_args(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected parameters to callable \[collect_view_builder\] in "
+            r"\[.*bad_view_collector_2\]. Expected no paramaeters.",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=FakeBigQueryViewBuilder,
+                view_dir_module=test_views,
+                view_file_prefix_filter="bad_view_collector_2",
+                recurse=True,
+                collect_builders_from_callables=True,
+            )
+
+    def test_collect_views_too_narrow_view_type_for_callable(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected type \[FakeBigQueryViewBuilder\] for attribute "
+            r"\[collect_view_builder\] in file \[.*g_view_collector_1.py\]. "
+            r"Expected type \[MetricBigQueryView\].",
+        ):
+            # One of the views is only a BigQueryView, not a MetricBigQueryView
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=MetricBigQueryView,
+                view_dir_module=test_views,
+                view_file_prefix_filter="g_",
+                collect_builders_from_callables=True,
             )

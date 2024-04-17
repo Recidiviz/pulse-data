@@ -28,6 +28,7 @@ from recidiviz.big_query.big_query_view import (
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
 VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
+VIEW_BUILDER_CALLABLE_NAME_REGEX = "collect_.*view_builder"
 
 
 class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMixin):
@@ -47,6 +48,8 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
         builder_type: Type[BigQueryViewBuilderType],
         view_dir_module: ModuleType,
         recurse: bool = False,
+        collect_builders_from_callables: bool = False,
+        builder_callable_name_regex: str = VIEW_BUILDER_CALLABLE_NAME_REGEX,
         view_file_prefix_filter: Optional[str] = None,
         view_builder_attribute_name_regex: str = VIEW_BUILDER_EXPECTED_NAME,
         validate_builder_fn: Optional[
@@ -62,6 +65,12 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
             view_dir_module: The module for the directory that contains all the view
                 definition files.
             recurse: If true, look inside submodules of view_dir_module for view files.
+            collect_builders_from_callables: If True, will also find callables that match
+                the |builder_callable_regex|, collect all return objects, validate them as
+                valid |attribute_type|s and include them in the returned list.
+            builder_callable_regex: If |collect_builders_from_callables| is set, this
+                regex will be used to identify module attributes to invoke and include
+                the resulting objects in the returned list.
             view_file_prefix_filter: When set, collection filters out any files whose
                 name does not have this prefix.
             validate_builder_fn: When set, this function will be called with each
@@ -80,6 +89,8 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
             attribute_type=builder_type,
             dir_module=view_dir_module,
             recurse=recurse,
+            collect_from_callables=collect_builders_from_callables,
+            callable_name_regex=builder_callable_name_regex,
             file_prefix_filter=view_file_prefix_filter,
             attribute_name_regex=view_builder_attribute_name_regex,
             validate_fn=validate_builder_fn,
