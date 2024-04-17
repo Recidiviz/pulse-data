@@ -39,6 +39,7 @@ SELECT
     TO_JSON(STRUCT(start_date AS most_recent_work_release_start_date)) AS reason,
 FROM `{project_id}.{sessions_dataset}.work_release_sessions_materialized`
 GROUP BY 1,2,3,4
+HAVING start_date < end_date
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
