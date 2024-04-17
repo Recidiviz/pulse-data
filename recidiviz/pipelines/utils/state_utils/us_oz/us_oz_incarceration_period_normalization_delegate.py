@@ -75,3 +75,16 @@ class UsOzIncarcerationNormalizationDelegate(
         ):
             return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
         return incarceration_period.admission_reason
+
+    def incarceration_facility_override(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[str]:
+        """Overrides the facility for individuals in the EGT data system.
+        All other data systems return the existing facility attached to the incarceration period.
+        """
+        if incarceration_period.external_id and (
+            incarceration_period.external_id.upper().startswith("EGT")
+        ):
+            return "THE-CRIB"
+        return incarceration_period.facility
