@@ -21,21 +21,41 @@ columns:
   - name: BT_SD
     description: |-
       Sentence Date
+      This is the date (YYYYMMDD) of sentencing derived from the sentence and judgement papers.
   - name: BT_SLY
     description: |-
       Sentence Length Years
+      This is the number of whole years for the length of prison sentence fixed by the court in the sentence and judgement papers. 
+      Life sentences are entered a 9999. Interstate Compact offenders may have indefinite sentence lengths and should 
+      be entered as 8888 for institutional offenders. 
+      Interstate Compact Parolees under field supervision may have the actual sentence length entered. 
+      For field supervision records of a court-ordered assessment or investigation, this field is not required.
   - name: BT_SLM
     description: |-
       Sentence Length Months
+      This is the number of months less than one year for the length of prison sentence fixed by the court 
+      in the sentence and judgement papers. Life sentences are entered as 99. 
+      Interstate Compact offenders may have indefinite sentence lengths and should be 
+      entered as 88 for institutional offenders. Interstate Compact Parolees under field supervision may have the 
+      actual sentence length entered. For field supervision records of a court-ordered assessment or investigation, 
+      this field is not required.
   - name: BT_SLD
     description: |-
       Sentence Length Days
+      This is the number of days less than one month for the length of prison sentence fixed by the court 
+      in the sentence and judgement papers. Life sentences are entered as 99. Interstate Compact offenders may have 
+      indefinite sentence lengths and should be entered as 88 for institutional offenders. 
+      Interstate Compact Parolees under field supervision may have the actual sentence length entered. 
+      For field supervision records of a court-ordered assessment or investigation, this field is not required.
   - name: BT_CRR
     description: |-
       Sentence Minimum Release Type
   - name: BT_PC
     description: |-
       Sentence Minimum Release Date
+      This is the date (YYYYMMDD) calculated as the offender's minimum release date on this active sentence. 
+      For a life sentence, 99999999 is used. For an indeterminate or interstate sentence, 88888888 is used. 
+      For field supervision records of a court-ordered assessment or investigation, 66666666 is used.
   - name: BT_ABS
     description: |-
       Sentence Non Credit Time Institutional
