@@ -390,7 +390,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         source_filename="us_nd_work_release_form_record.json",
         export_collection_name="US_ND-workReleaseReferrals",
         opportunity_type_path_str="WorkRelease",
-        person_record_type=PersonRecordType.CLIENT,
+        person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_OR,
