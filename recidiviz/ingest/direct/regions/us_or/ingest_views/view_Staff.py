@@ -26,7 +26,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 SELECT DISTINCT CASELOAD 
-FROM {RCDVZ_CISPRDDTA_CMCMST}
+FROM {RCDVZ_CISPRDDTA_CMCMST@ALL}
 WHERE CASELOAD IS NOT NULL
 """
 

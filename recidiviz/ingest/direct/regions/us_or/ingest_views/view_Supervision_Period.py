@@ -30,7 +30,7 @@ VIEW_QUERY_TEMPLATE = """
 WITH
 transfers AS (
   # These are cell level movements, already in period form, and the where qualifiers make sure we are grabbing the correct
-  # date times since there are a lot of erroneous incorrect open periods. This makes sure the open period correctly signifies 
+  # date times since there are a lot of erroneous/incorrect open periods. This makes sure an open period correctly signifies 
   # someone has no additional movements and is still incarcerated. 
   SELECT t.*
   FROM (
@@ -53,6 +53,8 @@ transfers AS (
     AND (MOVE_IN_DATE < MOVE_OUT_DATE OR MOVE_OUT_DATE IS NULL) # removes bad data with reverse periods (but need to keep actually open periods)
 ), 
 high_level_transfers AS (
+  # These are slightly higher level movements than the previous CTE, primarily transfers. This table is already in period
+  # form and the TRANSFER_REASON helps fill in more period information. 
   SELECT
     RECORD_KEY, 
     CUSTODY_NUMBER,
@@ -64,7 +66,10 @@ high_level_transfers AS (
     TRANSFER_TO_DATE,
     RESPONSIBLE_DIVISION
   FROM {RCDVZ_PRDDTA_OP010P}
-), releases AS (
+), 
+releases AS (
+  # These are slightly higher level movements than the previous CTE, primarily release information. This table is already in period
+  # form and the RELEASE_REASON helps fill in more period information. 
   SELECT
     RECORD_KEY, 
     CUSTODY_NUMBER,
@@ -73,7 +78,10 @@ high_level_transfers AS (
     RELEASE_DATE,
     RELEASE_REASON
   FROM {RCDVZ_PRDDTA_OP009P}
-), custody AS (
+), 
+custody AS (
+  # This table contains the highlest level custody information of the previous CTEs, primarily custody information. One person should 
+  # have the same custody number through incarceration to supervision until liberty. This table is already in period form.
   SELECT 
     RECORD_KEY, 
     CUSTODY_NUMBER,
@@ -81,14 +89,18 @@ high_level_transfers AS (
     CUSTODY_TYPE,
     DISCHARGE_DATE,
   FROM {RCDVZ_PRDDTA_OP008P}
-), locations AS (
+), 
+locations AS (
+  # This CTE pulls additional information about the locations someone may be reporting to. 
   SELECT
     LOCATION_CODE,
     LOCATION_TYPE,
     LOCATION_NAME,
     COUNTY,
   FROM {RCDVZ_DOCDTA_TBLOCA}
-), clean_supervision_levels AS (
+), 
+clean_supervision_levels AS (
+  # This CTE pulls supervision level data for a person and normalizes the erroneous values that all fit into Low/Med/High supervision level.
   SELECT
     RECORD_KEY, 
     ENTRY_DATE, 
@@ -101,6 +113,7 @@ high_level_transfers AS (
   WHERE ENTRY_DATE IS NOT NULL
 ),
 highest_suplevel AS (
+  # This CTE makes the higher level of supervision take precedent over the others in the event they get conflicting supervision levels assigned on the same date.
   SELECT 
     RECORD_KEY,
     ENTRY_DATE,
@@ -110,6 +123,7 @@ highest_suplevel AS (
   WHERE COMMUNITY_SUPER_LVL IS NOT NULL
 ),
 prev_supervision_level AS (
+  # Grabbing the higher supervision level per date per person and get the last supervision level, making the previous one X if there were none before. 
   SELECT 
     RECORD_KEY,
     ENTRY_DATE, 
@@ -159,8 +173,9 @@ periods AS (
     AND transfers.ADMISSION_NUMBER = releases.ADMISSION_NUMBER
   WHERE LOCATION_TYPE NOT IN ('L', 'I') # Institution or Jail 
   AND high_level_transfers.RESPONSIBLE_DIVISION NOT IN ('I', 'L') # Only counting as Incarceration Period if custodial authority is jail or prison facility
-), adding_supervision_level AS (
-  # Joining in custody level where the date is between MOVE_IN_DATE and MOVE_OUT_DATE.
+), 
+adding_supervision_level AS (
+  # Joining in supervision level where the date is between MOVE_IN_DATE and MOVE_OUT_DATE.
   SELECT 
     periods.RECORD_KEY,
     PERIOD_ID,
@@ -182,7 +197,7 @@ periods AS (
   AND sc.ENTRY_DATE BETWEEN MOVE_IN_DATE AND COALESCE(MOVE_OUT_DATE,'9999-01-01')
 ),
 info_to_split_periods_with_supervision_level_changes AS ( 
-  # Setting up to add additional periods for when multiple custody level classifications happen within one existing period,
+  # Setting up to add additional periods for when multiple supervision level classifications happen within one existing period,
   # and carrying admission reasons for next period through to release reason of previous to populate. 
   SELECT 
     RECORD_KEY,
@@ -202,8 +217,9 @@ info_to_split_periods_with_supervision_level_changes AS (
     IFNULL(RELEASE_REASON, LEAD(ADMISSION_REASON) OVER (PARTITION BY RECORD_KEY ORDER BY period_id)) AS RELEASE_REASON,
     RESPONSIBLE_DIVISION
   FROM adding_supervision_level
-), split_periods_with_multiple_supervision_levels AS (
-  # Breaking up duplicate periods with different custody levels by using entry_date to end one and begin the next, 
+), 
+split_periods_with_multiple_supervision_levels AS (
+  # Breaking up duplicate periods with different supervision levels by using entry_date to end one and begin the next, 
   # also adding CUST_CHANGE as admission/release reason for these instances.
   SELECT DISTINCT
     RECORD_KEY,
@@ -222,15 +238,10 @@ info_to_split_periods_with_supervision_level_changes AS (
     IF(PERIOD_ID = NEXT_PERIOD, 'SUPLEVEL_CHANGE', RELEASE_REASON) AS RELEASE_REASON,
     RESPONSIBLE_DIVISION
   FROM info_to_split_periods_with_supervision_level_changes
-), staff_caseloads AS (
-  # Adding this to make sure all caseloads have a corresponding entry in CMCMST, which we use for State_Staff
-  SELECT DISTINCT 
-    RECORD_KEY, 
-    CASELOAD
-    FROM {RCDVZ_PRDDTA_OP013P}
-    WHERE CASELOAD IN (SELECT DISTINCT CASELOAD FROM {RCDVZ_CISPRDDTA_CMCMST})
-), new_periods AS (
-  SELECT
+), 
+new_periods AS (
+  # Reassinging period id after properly splitting periods with supervision level changes. 
+  SELECT DISTINCT
     RECORD_KEY,
     ROW_NUMBER() OVER (PARTITION BY RECORD_KEY ORDER BY MOVE_IN_DATE, MOVE_OUT_DATE, spl.CURRENT_STATUS, LOCATION_TYPE, COUNTY, LOCATION_NAME, FACILITY, COMMUNITY_SUPER_LVL, spl.ADMISSION_REASON, RELEASE_REASON, spl.RESPONSIBLE_DIVISION) AS PERIOD_ID,
     spl.CURRENT_STATUS,
@@ -244,17 +255,57 @@ info_to_split_periods_with_supervision_level_changes AS (
     spl.ADMISSION_REASON,
     RELEASE_REASON,
     spl.RESPONSIBLE_DIVISION,
-    cl.CASELOAD
   FROM split_periods_with_multiple_supervision_levels spl
-  #TODO(#26950): Update to use @ALL to get historical caseload ids
-  LEFT JOIN staff_caseloads cl
-  USING (RECORD_KEY)
 ), 
 supervision_levels_prior_to_supervision_start AS (
-SELECT b.*
- FROM (
-  SELECT
-    np.RECORD_KEY,
+  # Getting supervision levels that were assigned within the 30 days before the first supervision period.
+  SELECT b.*
+  FROM (
+    SELECT
+      np.RECORD_KEY,
+      PERIOD_ID,
+      CURRENT_STATUS,
+      LOCATION_TYPE, 
+      MOVE_IN_DATE,
+      MOVE_OUT_DATE,
+      COUNTY,
+      LOCATION_NAME,
+      FACILITY,
+      IFNULL(np.COMMUNITY_SUPER_LVL, sc.COMMUNITY_SUPER_LVL) AS COMMUNITY_SUPER_LVL,
+      ADMISSION_REASON,
+      RELEASE_REASON,
+      RESPONSIBLE_DIVISION,
+      ROW_NUMBER() OVER (PARTITION BY np.RECORD_KEY, period_id ORDER BY ENTRY_DATE DESC) as seq
+    FROM new_periods np
+    LEFT JOIN supervision_changes sc
+    ON np.RECORD_KEY = sc.RECORD_KEY
+    AND period_id = 1
+    AND (DATE(sc.ENTRY_DATE)) BETWEEN DATE_SUB(DATE(MOVE_IN_DATE), INTERVAL 30 DAY) AND (DATE(MOVE_IN_DATE))
+  ) b
+  WHERE seq = 1
+),
+staff_caseloads AS (
+  # OR overwrites their CASELOAD data so we are using @ALL and the LAST_UPDATE_WHEN field to capture when supervising officer changes
+  SELECT DISTINCT 
+    RECORD_KEY, 
+    CASELOAD, 
+    LAST_UPDATED_WHEN
+    FROM (
+      SELECT DISTINCT 
+        RECORD_KEY,
+        CASELOAD,
+        LAST_UPDATED_WHEN,
+        IFNULL(LAG(caseload) OVER(PARTITION BY record_key ORDER BY LAST_UPDATED_WHEN), 'X') AS LAST_CASELOAD
+      FROM {RCDVZ_PRDDTA_OP013P@ALL}
+    )
+    # Adding this filter to make sure all caseloads have a corresponding entry in CMCMST, which we use for State_Staff
+    WHERE CASELOAD IN (SELECT DISTINCT CASELOAD FROM {RCDVZ_CISPRDDTA_CMCMST@ALL})
+    AND CASELOAD != LAST_CASELOAD
+), 
+adding_caseloads AS (
+  # Joining in CASELOAD where the LAST_UPDATED_WHEN date is between MOVE_IN_DATE and MOVE_OUT_DATE.
+  SELECT 
+    sls.RECORD_KEY,
     PERIOD_ID,
     CURRENT_STATUS,
     LOCATION_TYPE, 
@@ -263,23 +314,112 @@ SELECT b.*
     COUNTY,
     LOCATION_NAME,
     FACILITY,
-    IFNULL(np.COMMUNITY_SUPER_LVL, sc.COMMUNITY_SUPER_LVL) AS COMMUNITY_SUPER_LVL,
+    COMMUNITY_SUPER_LVL,
     ADMISSION_REASON,
     RELEASE_REASON,
     RESPONSIBLE_DIVISION,
-    CASELOAD, 
-    ROW_NUMBER() OVER (PARTITION BY np.RECORD_KEY, period_id ORDER BY ENTRY_DATE DESC) as seq
-  FROM new_periods np
-  LEFT JOIN supervision_changes sc
-  ON np.RECORD_KEY = sc.RECORD_KEY
-  AND period_id = 1
-  AND (DATE(sc.ENTRY_DATE)) BETWEEN DATE_SUB(DATE(MOVE_IN_DATE), INTERVAL 30 DAY) AND (DATE(MOVE_IN_DATE))
- ) b
- WHERE seq = 1
+    CASELOAD,
+    LAST_UPDATED_WHEN
+  FROM supervision_levels_prior_to_supervision_start sls
+  LEFT JOIN staff_caseloads sc
+  ON sls.RECORD_KEY = sc.RECORD_KEY 
+  AND sc.LAST_UPDATED_WHEN BETWEEN MOVE_IN_DATE AND COALESCE(MOVE_OUT_DATE,'9999-01-01')
+),
+setup_split_periods_with_caseload_changes AS ( 
+  # Setting up to add additional periods for when multiple caseload changes happen within one existing period,
+  # and carrying admission reasons for next period through to release reason of previous to populate. 
+  SELECT 
+    RECORD_KEY,
+    PERIOD_ID,
+    LEAD(PERIOD_ID) OVER(PARTITION BY RECORD_KEY ORDER BY PERIOD_ID, LAST_UPDATED_WHEN) AS NEXT_PERIOD,
+    LAG(PERIOD_ID) OVER(PARTITION BY RECORD_KEY ORDER BY PERIOD_ID, LAST_UPDATED_WHEN) AS LAST_PERIOD,
+    CURRENT_STATUS,
+    LOCATION_TYPE, 
+    MOVE_IN_DATE,
+    MOVE_OUT_DATE,
+    COUNTY,
+    LOCATION_NAME,
+    FACILITY,
+    COMMUNITY_SUPER_LVL,
+    LAST_UPDATED_WHEN,
+    ADMISSION_REASON,
+    RELEASE_REASON,
+    RESPONSIBLE_DIVISION, 
+    CASELOAD
+  FROM adding_caseloads
+), 
+split_periods_with_multiple_caseload_changes AS (
+  # Breaking up duplicate periods with different CASELOADS by using LAST_UPDATED_WHEN to end one and begin the next, 
+  # also adding CASELOAD_CHANGE as admission/release reason for these instances.
+  SELECT DISTINCT
+    RECORD_KEY,
+    PERIOD_ID AS OLD_PERIOD,
+    LAST_PERIOD,
+    NEXT_PERIOD,
+    CURRENT_STATUS,
+    LOCATION_TYPE, 
+    IF(PERIOD_ID = LAST_PERIOD, LAG(LAST_UPDATED_WHEN) OVER(PARTITION BY RECORD_KEY ORDER BY PERIOD_ID, MOVE_IN_DATE), MOVE_IN_DATE) AS MOVE_IN_DATE, 
+    IF(PERIOD_ID = NEXT_PERIOD, LAST_UPDATED_WHEN, MOVE_OUT_DATE) AS MOVE_OUT_DATE, 
+    COUNTY,
+    LOCATION_NAME,
+    FACILITY,
+    COMMUNITY_SUPER_LVL,
+    IF(PERIOD_ID = LAST_PERIOD, 'CASELOAD_CHANGE', ADMISSION_REASON) AS ADMISSION_REASON,
+    IF(PERIOD_ID = NEXT_PERIOD, 'CASELOAD_CHANGE', RELEASE_REASON) AS RELEASE_REASON,
+    RESPONSIBLE_DIVISION, 
+    CASELOAD
+  FROM setup_split_periods_with_caseload_changes
+), 
+fixed_periods AS (
+  SELECT DISTINCT
+    RECORD_KEY,
+    ROW_NUMBER() OVER (PARTITION BY RECORD_KEY ORDER BY MOVE_IN_DATE, MOVE_OUT_DATE, spc.CURRENT_STATUS, LOCATION_TYPE, COUNTY, LOCATION_NAME, FACILITY, COMMUNITY_SUPER_LVL, spc.ADMISSION_REASON, RELEASE_REASON, spc.RESPONSIBLE_DIVISION) AS PERIOD_ID,
+    CURRENT_STATUS,
+    LOCATION_TYPE, 
+    MOVE_IN_DATE,
+    MOVE_OUT_DATE,
+    COUNTY,
+    LOCATION_NAME,
+    FACILITY,
+    COMMUNITY_SUPER_LVL,
+    ADMISSION_REASON,
+    RELEASE_REASON,
+    RESPONSIBLE_DIVISION,
+    CASELOAD
+  FROM split_periods_with_multiple_caseload_changes spc
+), 
+current_caseloads AS (
+  # Each person only has one row in OP013P latest so this grabs their most up to date caseload. 
+  SELECT DISTINCT CASELOAD, RECORD_KEY 
+  FROM {RCDVZ_PRDDTA_OP013P}
+  WHERE CASELOAD IN (SELECT DISTINCT CASELOAD FROM RCDVZ_CISPRDDTA_CMCMST__ALL_generated_view)
+),
+caseloads_for_open_periods AS (
+  # Some caseloads are assigned before or after all supervision period dates. In order to ensure all open periods have the most accurate 
+  # caseload for products, join back to source of truth OP013P latest when open period caseload is null.
+  SELECT DISTINCT
+    fp.RECORD_KEY,
+    PERIOD_ID, 
+    fp.CURRENT_STATUS,
+    LOCATION_TYPE, 
+    MOVE_IN_DATE,
+    MOVE_OUT_DATE,
+    COUNTY,
+    LOCATION_NAME,
+    FACILITY,
+    fp.COMMUNITY_SUPER_LVL,
+    fp.ADMISSION_REASON,
+    fp.RELEASE_REASON,
+    fp.RESPONSIBLE_DIVISION, 
+    IFNULL(fp.CASELOAD, fill.CASELOAD) AS CASELOAD
+  FROM fixed_periods fp
+  LEFT JOIN  current_caseloads fill
+  ON fp.RECORD_KEY = fill.RECORD_KEY
+  AND fp.MOVE_OUT_DATE IS NULL 
 ),
 final AS (
-  # Carrying custody level over periods and adding a return from court release reason. 
-  SELECT 
+  # Carrying supervision level and caseload id over periods. 
+  SELECT DISTINCT
     RECORD_KEY,
     PERIOD_ID, 
     CURRENT_STATUS,
@@ -293,8 +433,8 @@ final AS (
     ADMISSION_REASON,
     RELEASE_REASON,
     RESPONSIBLE_DIVISION, 
-    CASELOAD
-  FROM supervision_levels_prior_to_supervision_start
+    LAST_VALUE(CASELOAD ignore nulls) OVER (periods_for_person range between UNBOUNDED preceding and current row) AS CASELOAD,
+  FROM caseloads_for_open_periods
   WINDOW periods_for_person AS (PARTITION BY RECORD_KEY ORDER BY PERIOD_ID)
 )
 SELECT * FROM final

@@ -91,6 +91,7 @@ output:
                   - SUPLEVEL_CHANGE # Recidiviz-made to indicate period changes due to supervision level change
                   - PROB # Probation-Status Change Only
                   - TRAN # Transferred to another location
+                  - CASELOAD_CHANGE # Recidiviz-made to indicate period changes due to caseload change
                 StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - RETU # Return to Sentencing State - Inst. Only (only 1 instance)
                 StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
@@ -173,6 +174,7 @@ output:
                   - SUPLEVEL_CHANGE # Recidiviz-made to indicate period changes due to supervision level change
                   - TRAN # Transferred to another location
                   - CUST # Custody Change (only 4 instances)
+                  - CASELOAD_CHANGE # Recidiviz-made to indicate period changes due to caseload change
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                   - SPEC # Special Purpose / Special Education (old code)
                   - BNPB # Conv. to Bench Prob. Court Order Req'd.
