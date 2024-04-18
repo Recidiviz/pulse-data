@@ -44,6 +44,7 @@ SELECT
 FROM `{{project_id}}.{{sessions_dataset}}.location_sessions_materialized`
 WHERE state_code = 'US_ND'
   AND facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
+  AND start_date < end_date
 GROUP BY 1,2,3,4
 """
 
