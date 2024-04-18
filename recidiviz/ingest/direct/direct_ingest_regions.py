@@ -28,7 +28,7 @@ from typing import Any, Dict, Optional
 import attr
 import yaml
 
-from recidiviz.common.attr_converters import lowercase_str
+from recidiviz.common.attr_converters import str_to_lowercase_str
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -54,7 +54,7 @@ class DirectIngestRegion:
         playground: (bool) If this is a playground region and should only exist in staging.
     """
 
-    region_code: str = attr.ib(converter=lowercase_str)
+    region_code: str = attr.ib(converter=str_to_lowercase_str)
     agency_name: str = attr.ib()
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)

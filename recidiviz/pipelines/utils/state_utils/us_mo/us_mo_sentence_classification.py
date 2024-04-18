@@ -20,7 +20,7 @@ from typing import Optional
 
 import attr
 
-from recidiviz.common.attr_converters import uppercase_str
+from recidiviz.common.attr_converters import optional_str_to_uppercase_str
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
@@ -49,7 +49,8 @@ class UsMoSentenceStatus(BuildableAttr):
     status_code: str = attr.ib()
 
     # Human-readable status code description
-    status_description: str = attr.ib(converter=uppercase_str)
+    # Will be an uppercase or empty str
+    status_description: str = attr.ib(converter=optional_str_to_uppercase_str)
 
     # MO DOC id for person associated with this sentence
     person_external_id: str = attr.ib()
@@ -205,6 +206,9 @@ class UsMoSentenceStatus(BuildableAttr):
 
         if self.is_lifetime_supervision_start_status:
             return StateSupervisionSentenceSupervisionType.PAROLE
+
+        if not self.status_description:
+            return StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
 
         if "PROB" in self.status_description:
             return StateSupervisionSentenceSupervisionType.PROBATION
