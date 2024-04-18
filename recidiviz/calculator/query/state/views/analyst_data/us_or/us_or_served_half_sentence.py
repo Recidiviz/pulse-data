@@ -45,9 +45,74 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
         separately when evaluating eligibility for OR earned discharge. If we decide to
         change this in the future, we can refactor this subcriterion query to rely upon
         sentence_spans. */
-        SELECT * 
+        SELECT
+            *,
+            /* Truncate external_id. (We'll use this to match incarceration sentences to
+            their respective PPS sentences.) We have to truncate it so that we can link
+            sentences that have the same underlying charge. (See OR ingest mappings to
+            see how external_id is constructed.) */
+            REGEXP_EXTRACT(external_id, '^[0-9]*-[0-9]*-[0-9]*-[0-9]*') AS external_id_truncated,
         FROM ({sentence_attributes()})
         WHERE state_code='US_OR' AND sentence_type='SUPERVISION'
+    ),
+    /* In cases where a client's incarceration sentence is commuted, the remaining time
+    they would have spent in incarceration is spent on supervision but doesn't count as
+    time accrued for EDIS. (OR made an agency decision to only count time served after
+    the date on which they would have originally been released from incarceration.)
+    Consequently, we can't use max_sentence_length_days_calculated to determine
+    time-served requirements for the purposes of EDIS when someone with a commuted
+    incarceration sentence is now serving their post-prison sentence, because
+    max_sentence_length_days_calculated reflects the total time that person will spend
+    on supervision and not the originally imposed PPS sentence length. In this CTE and
+    those that follow, we get the original PPS sentence length for those PPS sentences
+    associated with commuted incarceration sentences. */
+    commuted_incarceration_sentences AS (
+        SELECT
+            state_code,
+            person_id,
+            /* Truncate external_id. (We'll use this to match incarceration sentences to
+            their respective PPS sentences.) We have to truncate it so that we can link
+            sentences that have the same underlying charge. (See OR ingest mappings to
+            see how external_id is constructed.) */
+            REGEXP_EXTRACT(external_id, '^[0-9]*-[0-9]*-[0-9]*-[0-9]*') AS external_id_truncated,
+            CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_DAYS') AS INT64) AS pps_sentence_days,
+            CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_MONTHS') AS INT64) AS pps_sentence_months,
+            CAST(JSON_VALUE(sentence_metadata, '$.PPS_SENTENCE_YEARS') AS INT64) AS pps_sentence_years,
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
+        WHERE state_code='US_OR' AND sentence_type='INCARCERATION' AND status='COMMUTED'
+    ),
+    supervision_sentences_with_commuted_incarceration_sentences AS (
+        /* Here, we link PPS sentences that were preceded by commuted incarceration
+        sentences with those incarceration sentences. */
+        SELECT
+            state_code,
+            person_id,
+            sentence_id,
+            /* Calculate the total number of days for PPS sentences associated with
+            commuted incarceration sentences. */
+            DATE_DIFF(end_date,
+                      DATE_SUB(DATE_SUB(DATE_SUB(end_date, INTERVAL pps_sentence_years YEAR), INTERVAL pps_sentence_months MONTH), INTERVAL pps_sentence_days DAY),
+                      DAY) AS pps_sentence_length_days_calculated,
+            TRUE AS preceded_by_commuted_incarceration_sentence,
+        FROM sentences
+        INNER JOIN commuted_incarceration_sentences
+            USING (state_code, person_id, external_id_truncated)
+    ),
+    sentences_with_corrected_lengths AS (
+        /* Here, we get the correct (for the purpose of EDIS) sentence length (in days)
+        for each supervision sentence. We use max_sentence_length_days_calculated except
+        for when supervision sentences are preceded by commuted incarceration sentences,
+        in which case we use the original PPS sentence length associated with the
+        commuted incarceration sentence. */
+        SELECT
+            sentences.* EXCEPT (max_sentence_length_days_calculated),
+            IF(sswcis.preceded_by_commuted_incarceration_sentence,
+               sswcis.pps_sentence_length_days_calculated,
+               sentences.max_sentence_length_days_calculated
+            ) AS corrected_sentence_length_days_calculated,
+        FROM sentences
+        LEFT JOIN supervision_sentences_with_commuted_incarceration_sentences sswcis
+            USING (state_code, person_id, sentence_id)
     ),
     critical_date_spans AS (
         SELECT
@@ -62,9 +127,9 @@ US_OR_SERVED_HALF_SENTENCE_QUERY_TEMPLATE = f"""
             to find the point in time at which someone has half their sentence
             remaining. */
             DATE_SUB(end_date,
-                     INTERVAL CAST(FLOOR(max_sentence_length_days_calculated / 2) AS INT64) DAY
+                     INTERVAL CAST(FLOOR(corrected_sentence_length_days_calculated / 2) AS INT64) DAY
             ) AS critical_date,
-        FROM sentences
+        FROM sentences_with_corrected_lengths
     ),
     {critical_date_has_passed_spans_cte(attributes=['sentence_id'])}
     SELECT
