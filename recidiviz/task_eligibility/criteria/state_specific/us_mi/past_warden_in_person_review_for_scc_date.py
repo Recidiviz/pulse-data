@@ -43,7 +43,7 @@ because the last warden in person SCC review date was more than 6 months ago."""
 _CRITERIA_QUERY_1 = """
     SELECT
         * EXCEPT (reason),
-        NULL AS administrative_solitary_start_date,
+        NULL AS solitary_start_date,
         NULL AS latest_warden_in_person_scc_review_date,
         NULL AS number_of_expected_reviews,
         NULL AS number_of_reviews
@@ -53,8 +53,8 @@ _CRITERIA_QUERY_1 = """
 _CRITERIA_QUERY_2 = f"""
     SELECT
         * EXCEPT (reason),
-        {extract_object_from_json(object_column = 'administrative_solitary_start_date', 
-                                  object_type = 'DATE')} AS administrative_solitary_start_date,
+        {extract_object_from_json(object_column = 'solitary_start_date', 
+                                  object_type = 'DATE')} AS solitary_start_date,
         {extract_object_from_json(object_column = 'latest_warden_in_person_scc_review_date', 
                                   object_type = 'DATE')} AS latest_warden_in_person_scc_review_date,           
         {extract_object_from_json(object_column = 'number_of_expected_reviews', 
@@ -65,7 +65,7 @@ _CRITERIA_QUERY_2 = f"""
 """
 
 
-_JSON_CONTENT = """MIN(administrative_solitary_start_date) AS administrative_solitary_start_date,
+_JSON_CONTENT = """MIN(solitary_start_date) AS solitary_start_date,
                     MAX(latest_warden_in_person_scc_review_date) AS latest_warden_in_person_scc_review_date,
                     MAX(number_of_expected_reviews) AS number_of_expected_reviews,
                     MAX(number_of_reviews) AS number_of_reviews"""
