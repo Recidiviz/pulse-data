@@ -1,0 +1,56 @@
+address:
+  dataset_id: external_reference
+  table_id: offense_description_to_labels
+schema:
+  - name: offense_description
+    type: STRING
+    mode: NULLABLE
+  - name: probability
+    type: FLOAT
+    mode: NULLABLE
+  - name: uccs_code
+    type: INTEGER
+    mode: NULLABLE
+  - name: uccs_description
+    type: STRING
+    mode: NULLABLE
+  - name: uccs_category
+    type: STRING
+    mode: NULLABLE
+  - name: ncic_code
+    type: INTEGER
+    mode: NULLABLE
+  - name: ncic_description
+    type: STRING
+    mode: NULLABLE
+  - name: ncic_category
+    type: STRING
+    mode: NULLABLE
+  - name: nibrs_code
+    type: STRING
+    mode: NULLABLE
+  - name: nibrs_description
+    type: STRING
+    mode: NULLABLE
+  - name: nibrs_category
+    type: STRING
+    mode: NULLABLE
+  - name: crime_against
+    type: STRING
+    mode: NULLABLE
+  - name: is_drug
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: is_violent
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: offense_completed
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: offense_attempted
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: offense_conspired
+    type: BOOLEAN
+    mode: NULLABLE
+clustering_fields: null

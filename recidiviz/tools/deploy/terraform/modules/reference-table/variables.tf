@@ -37,11 +37,6 @@ variable "table_name" {
   type = string
 }
 
-# JSON schema to use for the BigQuery table. As noted in the terraform docs, the fields are order dependent.
-variable "schema" {
-  type = string
-}
-
 # Path to the root of the recidiviz repo
 variable "recidiviz_root" {
   type = string

@@ -1,0 +1,29 @@
+address:
+  dataset_id: export_archives
+  table_id: workflows_client_record_archive
+schema:
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: pseudonymized_id
+    type: STRING
+    mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: compliant_reporting_eligible
+    type: STRING
+    mode: NULLABLE
+  - name: remaining_criteria_needed
+    type: STRING
+    mode: NULLABLE
+  - name: officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: expiration_date
+    type: DATE
+    mode: NULLABLE
+  - name: all_eligible_opportunities
+    type: STRING
+    mode: REPEATED
+clustering_fields: null

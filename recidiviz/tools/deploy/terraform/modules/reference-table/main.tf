@@ -17,6 +17,7 @@
 
 locals {
   gcs_file_name = "${var.table_name}.csv"
+  source_tables = "${var.recidiviz_root}/big_query/source_tables/schema"
 }
 
 resource "google_storage_bucket_object" "table_data" {
@@ -47,5 +48,5 @@ resource "google_bigquery_table" "table" {
     ]
   }
 
-  schema = var.schema
+  schema = jsonencode(yamldecode(file("${local.source_tables}/${var.dataset_id}/${var.table_name}.yaml"))["schema"])
 }
