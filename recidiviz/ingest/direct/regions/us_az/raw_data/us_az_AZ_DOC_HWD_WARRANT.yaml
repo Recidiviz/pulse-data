@@ -96,6 +96,8 @@ columns:
   - name: PERSON_ID
     description: foreign key to person table
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_AZ_PERSON_ID
   - name: CSED
     description: CSED date strored on warant detail screen
   - name: RELEASE_DTM

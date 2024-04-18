@@ -40,6 +40,8 @@ columns:
     description: |-
       fk to person
     is_pii: True
+    field_type: staff_external_id
+    external_id_type: US_AZ_PERSON_ID
   - name: STATE_VIOLATION_ID
     description: |-
       fk to rule_violation - state violation code
