@@ -35,6 +35,9 @@ exclusions:
       TODO(#27607) the new data from atlas didn't quite match up with the existing
       external validation data we had. rather than remove this validation, we are
       migrating it and marking it as broken with a todo.
+  - validation_name: sentence_comparison
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#28863) Hydrate new sentencing entities
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     hard_max_allowed_error_override: 0.165
