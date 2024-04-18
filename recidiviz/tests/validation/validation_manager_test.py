@@ -1030,9 +1030,14 @@ class TestFetchValidations(TestCase):
             )
 
     def test_all_builders_referenced_by_validations_are_in_view_config(self) -> None:
-        builders_in_validations = {v.view_builder for v in get_all_validations()}
+        builders_in_validations = {
+            v.view_builder.address for v in get_all_validations()
+        }
         validation_views_not_in_view_config = builders_in_validations.difference(
-            validation_view_config.get_view_builders_for_views_to_update()
+            {
+                builder.address
+                for builder in validation_view_config.get_view_builders_for_views_to_update()
+            }
         )
 
         self.assertEqual(set(), validation_views_not_in_view_config)

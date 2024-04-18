@@ -171,6 +171,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
             ),
             description=self.view_builder.description,
             should_materialize=True,
+            projects_to_deploy=self.view_builder.projects_to_deploy,
         )
 
     def updated_for_region(

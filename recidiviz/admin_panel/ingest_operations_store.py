@@ -60,8 +60,8 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
     DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
-    RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -374,7 +374,7 @@ class IngestOperationsStore(AdminPanelStore):
                 if file_tag in region_config.raw_file_configs:
                     raw_file_config = region_config.raw_file_configs[file_tag]
                     file_tag_metadata["isStale"] = self.calculate_if_file_is_stale(
-                        summary.latest_discovery_time, raw_file_config.update_cadence
+                        summary.latest_discovery_time, raw_file_config
                     )
 
                 file_tag_metadata = {
@@ -473,26 +473,12 @@ class IngestOperationsStore(AdminPanelStore):
 
     @staticmethod
     def calculate_if_file_is_stale(
-        latest_discovery_time: datetime, update_cadence: RawDataFileUpdateCadence
+        latest_discovery_time: datetime, config: DirectIngestRawFileConfig
     ) -> bool:
-        if update_cadence == RawDataFileUpdateCadence.DAILY:
-            # the file is stale if it has been over one day plus a 12 hour buffer period past the latest discovery time
-            return latest_discovery_time < datetime.now(pytz.utc) - timedelta(
-                days=1
-            ) - timedelta(hours=12)
 
-        if update_cadence == RawDataFileUpdateCadence.WEEKLY:
-            # the file is stale if it has been over one week plus a one day buffer period past the latest discovery time
-            return latest_discovery_time < datetime.now(pytz.utc) - timedelta(days=8)
-
-        if update_cadence == RawDataFileUpdateCadence.MONTHLY:
-            # the file is stale if it has been over one month plus a one day buffer period past the latest discovery time
-            return latest_discovery_time < datetime.now(pytz.utc) - timedelta(days=31)
-
-        if update_cadence == RawDataFileUpdateCadence.IRREGULAR:
-            # file staleness cannot be determined so we always return False if there is an irregular file cadence
+        if not config.has_regularly_updated_data():
             return False
 
-        raise ValueError(
-            f"update_cadence value is invalid, expected DAILY, WEEKLY, or IRREGULAR. found: {update_cadence}"
+        return latest_discovery_time < datetime.now(pytz.utc) - timedelta(
+            days=config.max_days_before_stale()
         )
