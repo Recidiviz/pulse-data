@@ -14,6 +14,8 @@ columns:
     description: |-
       DOC person Id. Foreign key with PERSON table
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_AZ_PERSON_ID
   - name: DOC_NUMBER
     description: |-
       Control number (previous DOC#)
@@ -219,3 +221,16 @@ columns:
   - name: ADMISSION_TYPE
     description: |-
       Admission Type calculated from Traffic History
+table_relationships:
+  - foreign_table: AZ_DOC_DSC_STAFF_REVIEW
+    join_logic:
+      - AZ_DOC_DSC_STAFF_REVIEW.DOC_ID = DOC_EPISODE.DOC_ID
+  - foreign_table: AZ_DOC_INMATE_TRAFFIC_HISTORY
+    join_logic:
+      - AZ_DOC_INMATE_TRAFFIC_HISTORY.DOC_ID = DOC_EPISODE.DOC_ID
+  - foreign_table: AZ_DOC_SC_EPISODE
+    join_logic:
+      - AZ_DOC_SC_EPISODE.DOC_ID = DOC_EPISODE.DOC_ID
+  - foreign_table: AZ_DOC_HOME_PLAN
+    join_logic:
+      - AZ_DOC_HOME_PLAN.DOC_ID = DOC_EPISODE.DOC_ID

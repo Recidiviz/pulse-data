@@ -6,9 +6,14 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - PERSON_ID
+is_primary_person_table: True
 columns:
   - name: PERSON_ID
     description: Is the PK. PERSON_ID is always unique across all the business groups
+    field_type: person_external_id
+    external_id_type: US_AZ_PERSON_ID
+    is_primary_for_external_id_type: True
+    is_pii: True
   - name: PERSON_TYPE_ID
     description: Lookup category = PERSON_TYPE
   - name: FIRST_NAME
@@ -99,3 +104,23 @@ table_relationships:
   - foreign_table: OCCUPANCY
     join_logic:
       - PERSON.PERSON_ID = OCCUPANCY.PERSON_ID
+  - foreign_table: DPP_EPISODE
+    join_logic:
+      - PERSON.PERSON_ID = DPP_EPISODE.PERSON_ID
+  - foreign_table: DOC_EPISODE
+    join_logic:
+      - PERSON.PERSON_ID = DOC_EPISODE.PERSON_ID
+  - foreign_table: LOOKUPS
+    join_logic:
+      - PERSON.PERSON_TYPE_ID = LOOKUPS.LOOKUP_ID
+  # TODO(#29005): Uncomment these additional table relationships once I can join to
+  # LOOKUPS more than once.
+  # - foreign_table: LOOKUPS
+  #   join_logic:
+  #     - PERSON.HOUSING_STATUS_ID = LOOKUPS.LOOKUP_ID
+  # - foreign_table: LOOKUPS
+  #   join_logic:
+  #     - PERSON.DOC_FACILITY_ID = LOOKUPS.LOOKUP_ID
+  # - foreign_table: LOOKUPS
+  #   join_logic:
+  #     - PERSON.STATUS_ID = LOOKUPS.LOOKUP_ID
