@@ -38,7 +38,7 @@ _CRITERIA_NAME = "US_MI_EXPECTED_NUMBER_OF_ADD_IN_PERSON_SECURITY_CLASSIFICATION
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is eligible
 for an ADD in person security classification review based on the number of observed reviews. 
 
-A resident is eligible for an in person review from the ADD every year they are in administrative solitary confinement, 
+A resident is eligible for an in person review from the ADD every year they are in solitary confinement, 
 regardless of if they transfer facilities.
 
 This view keeps a tally of how many ADD in person reviews a resident should have, and subtracts instances where we 
@@ -47,21 +47,21 @@ see an ADD in person review take place."""
 _QUERY_TEMPLATE = f"""
    WITH review_dates AS (
        /* This CTE generates the dates for which an ADD in person scc review should occur. These should happen 
-       at one year intervals from the start date of the ad seg stay. */
+       at one year intervals from the start date of the solitary stay. */
         SELECT 
             h.state_code,
             h.person_id, 
             DATE_TRUNC(DATE_ADD(h.start_date, INTERVAL offset MONTH), WEEK(MONDAY)) AS change_date
-        FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` h,
+        FROM `{{project_id}}.{{sessions_dataset}}.us_mi_housing_unit_type_collapsed_solitary_sessions_materialized` h,
             UNNEST(GENERATE_ARRAY(12, 1200, 12)) AS offset
         WHERE
         --calculate recurring scc reviews until the solitary session ends or for 100 years
-          offset <= DATE_DIFF({nonnull_end_date_exclusive_clause('end_date_exclusive')}, start_date, MONTH)
+          DATE_TRUNC(DATE_ADD(h.start_date, INTERVAL offset MONTH), WEEK(MONDAY)) <= {nonnull_end_date_exclusive_clause('end_date_exclusive')}
           --because the case note for tracking add reviews was introduced in 04/2024, we only start counting up
           --expected reviews at most one year prior to this date. Therefore, everyone in ad seg for > 1 year should 
           --be due for one (and not more) review
           AND DATE_ADD(start_date, INTERVAL offset MONTH) >= '2023-04-01' 
-          AND h.housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
+          AND h.housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
           AND h.state_code = 'US_MI'
     ),
     population_change_dates AS (
@@ -87,10 +87,10 @@ _QUERY_TEMPLATE = f"""
             0 AS expected_review,
             0 AS activity_type,
         FROM
-            `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` h
+            `{{project_id}}.{{sessions_dataset}}.us_mi_housing_unit_type_collapsed_solitary_sessions_materialized` h
         WHERE
             state_code = 'US_MI'
-            AND housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
+            AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
             AND start_date <= '2023-04-01'
        
         UNION ALL
@@ -103,10 +103,10 @@ _QUERY_TEMPLATE = f"""
             0 AS expected_review,
             0 AS activity_type,
         FROM
-            `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` h
+            `{{project_id}}.{{sessions_dataset}}.us_mi_housing_unit_type_collapsed_solitary_sessions_materialized` h
         WHERE
             state_code = 'US_MI'
-            AND housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
+            AND housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
         
         UNION ALL
         
@@ -153,28 +153,28 @@ _QUERY_TEMPLATE = f"""
             ts.person_id,
             ts.start_date,
             ts.end_date,
-            hu.housing_unit_type_session_id,
+            hu.session_id,
             hu.start_date AS housing_start_date,
             hu.end_date_exclusive AS housing_end_date,
             SUM(expected_review) OVER (PARTITION BY ts.state_code, 
                                                     ts.person_id,
-                                                    hu.housing_unit_type_session_id
+                                                    hu.session_id
                                     ORDER BY ts.start_date
             ) AS expected_reviews,
             SUM(activity_type) OVER (PARTITION BY ts.state_code, 
                                                     ts.person_id,
-                                                    hu.housing_unit_type_session_id
+                                                    hu.session_id
                                     ORDER BY ts.start_date
             ) AS reviews_due,
         FROM
             time_spans ts
         INNER JOIN
-            `{{project_id}}.{{sessions_dataset}}.housing_unit_type_sessions_materialized` hu
+            `{{project_id}}.{{sessions_dataset}}.us_mi_housing_unit_type_collapsed_solitary_sessions_materialized` hu
             ON ts.person_id = hu.person_id
             AND ts.state_code = hu.state_code
             AND ts.start_date < {nonnull_end_date_clause('hu.end_date_exclusive')}
             AND hu.start_date < {nonnull_end_date_clause('ts.end_date')}
-            AND hu.housing_unit_type = 'ADMINISTRATIVE_SOLITARY_CONFINEMENT'
+            AND hu.housing_unit_type_collapsed_solitary = 'SOLITARY_CONFINEMENT'
     )
     SELECT 
         t.state_code,
@@ -183,7 +183,7 @@ _QUERY_TEMPLATE = f"""
         t.end_date,
         t.reviews_due > 0 AS meets_criteria,
         TO_JSON(STRUCT(
-                housing_start_date AS administrative_solitary_start_date,
+                housing_start_date AS solitary_start_date,
                 t.expected_reviews AS number_of_expected_reviews,
                 t.expected_reviews-t.reviews_due AS number_of_reviews,
                 p.change_date AS latest_add_in_person_scc_review_date

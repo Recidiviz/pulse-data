@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Michigan state specific view of solitary confinement sessions within a specific facility and excluding
-the START program."""
+"""Michigan state specific view of solitary confinement sessions excluding the START program."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
@@ -23,15 +22,14 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_NAME = (
-    "us_mi_facility_housing_unit_type_collapsed_solitary_sessions"
+US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_NAME = (
+    "us_mi_housing_unit_type_collapsed_solitary_sessions"
 )
 
-US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_DESCRIPTION = """
-Michigan state specific view of solitary confinement sessions within a specific facility and excluding
-the START program."""
+US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_DESCRIPTION = """
+Michigan state specific view of solitary confinement sessions,excluding the START program."""
 
-US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE = f"""
+US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE = f"""
  WITH solitary_sessions_without_start_preprocessed AS (
    /* This CTE sessionizes all adjacent solitary housing_unit_type sessions, with the exception of START sessions,
    that are within the same facility. Because clients who are part of START are in 
@@ -50,20 +48,20 @@ US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE = f"
     )
     ({aggregate_adjacent_spans(
         table_name="solitary_sessions_without_start_preprocessed",
-        attribute=["housing_unit_type_collapsed_solitary","facility"],
+        attribute=["housing_unit_type_collapsed_solitary"],
         end_date_field_name='end_date_exclusive'
     )})
 """
 
-US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    view_id=US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_NAME,
-    description=US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_DESCRIPTION,
-    view_query_template=US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE,
-    should_materialize=False,
+    view_id=US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_NAME,
+    description=US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_DESCRIPTION,
+    view_query_template=US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_QUERY_TEMPLATE,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_MI_FACILITY_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER.build_and_print()
+        US_MI_HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER.build_and_print()
