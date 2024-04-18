@@ -18,11 +18,24 @@
 Contains helper functions to use as a "converter" functions in an attr.ib
 and largely exist to make MyPy happy.
 """
+from typing import Optional
 
 
-def lowercase_str(s: str) -> str:
+def str_to_lowercase_str(s: str) -> str:
     return s.lower()
 
 
-def uppercase_str(s: str) -> str:
+def optional_str_to_lowercase_str(s: Optional[str]) -> str:
+    if not s:
+        return ""
+    return s.lower()
+
+
+def str_to_uppercase_str(s: str) -> str:
+    return s.upper()
+
+
+def optional_str_to_uppercase_str(s: Optional[str]) -> str:
+    if not s:
+        return ""
     return s.upper()

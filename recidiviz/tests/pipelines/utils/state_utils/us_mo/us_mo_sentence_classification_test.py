@@ -17,6 +17,7 @@
 """Tests for classes and helpers in us_mo_sentence_classification.py."""
 import datetime
 import unittest
+from typing import Optional
 
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoSentenceStatus,
@@ -116,6 +117,22 @@ class UsMoSentenceStatusTest(unittest.TestCase):
         code, descript = '40I7000@@"Field Supv to DAI-Oth Sentence"'.split("@@")
         stat = self._build_test_status(status_code=code, status_description=descript)
         self.assertEqual(stat.status_description, '"FIELD SUPV TO DAI-OTH SENTENCE"')
+
+    def test_status_description_converter_handles_build_from_dictionary(self) -> None:
+        # Builer allows None values to sneak in
+        stat: Optional[UsMoSentenceStatus] = UsMoSentenceStatus.build_from_dictionary(
+            {
+                "status_code": "05I5000",
+                "status_description": None,
+                "status_date": None,
+                "sentence_status_external_id": None,
+                "sentence_external_id": "000-1000",
+            }
+        )
+        # We check it isn't None for MyPy
+        if stat is None:
+            raise ValueError("UsMoSentenceStatus should not be None")
+        self.assertEqual(stat.status_description, "")
 
     def test_is_investigation_status(self) -> None:
         investigation_statuses = [
