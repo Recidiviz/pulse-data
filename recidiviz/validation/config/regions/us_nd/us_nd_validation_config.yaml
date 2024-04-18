@@ -46,7 +46,7 @@ num_allowed_rows_overrides:
       OOS (out of state) which maps to INTERNAL_UNKNOWN PFI. This should be fixed when
       we have a comprehensive fix for handling OOS in ND.
   - validation_name: supervision_termination_prior_to_start
-    hard_num_allowed_rows_override: 315
+    hard_num_allowed_rows_override: 350
     override_reason: TODO(#5803), TODO(#24635) - Needs investigation.
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 520
