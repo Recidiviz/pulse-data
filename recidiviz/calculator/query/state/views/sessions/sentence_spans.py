@@ -44,8 +44,8 @@ sentences AS (
         attr.completion_date AS end_date_exclusive,
         sent.sentence_imposed_group_id AS sentence_imposed_group_id_actual_completion,
         attr.sentences_preprocessed_id AS sentences_preprocessed_id_actual_completion,
-        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_projected_completion,
-        CAST(NULL AS INTEGER) AS sentence_deadline_id,
+        CAST(NULL AS INT64) AS sentences_preprocessed_id_projected_completion,
+        CAST(NULL AS INT64) AS sentence_deadline_id,
     FROM `{{project_id}}.sessions.sentence_imposed_group_summary_materialized` sent,
     UNNEST(offense_attributes) AS attr
     WHERE attr.date_imposed != {nonnull_end_date_clause('attr.completion_date')}
@@ -57,10 +57,10 @@ sentences AS (
         sent.person_id,
         sent.date_imposed AS start_date,
         sent.projected_completion_date_max AS end_date_exclusive,
-        CAST(NULL AS INTEGER) AS sentence_imposed_group_id_actual_completion,
-        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_actual_completion,
+        CAST(NULL AS INT64) AS sentence_imposed_group_id_actual_completion,
+        CAST(NULL AS INT64) AS sentences_preprocessed_id_actual_completion,
         sent.sentences_preprocessed_id AS sentences_preprocessed_id_projected_completion,
-        CAST(NULL AS INTEGER) AS sentence_deadline_id,
+        CAST(NULL AS INT64) AS sentence_deadline_id,
     FROM `{{project_id}}.sessions.sentences_preprocessed_materialized` sent
     WHERE date_imposed != {nonnull_end_date_clause('projected_completion_date_max')}
 
@@ -71,9 +71,9 @@ sentences AS (
         person_id,
         start_date,
         end_date_exclusive,
-        CAST(NULL AS INTEGER) AS sentence_imposed_group_id_actual_completion,
-        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_actual_completion,
-        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_projected_completion,
+        CAST(NULL AS INT64) AS sentence_imposed_group_id_actual_completion,
+        CAST(NULL AS INT64) AS sentences_preprocessed_id_actual_completion,
+        CAST(NULL AS INT64) AS sentences_preprocessed_id_projected_completion,
         sentence_deadline_id,
     FROM `{{project_id}}.sessions.sentence_deadline_spans_materialized`
 ),

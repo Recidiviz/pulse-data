@@ -44,7 +44,7 @@ WITH ME_MM_dates AS (
     SAFE.PARSE_DATE('%Y%m%d',CG_MD) AS minimum_eligibility_date,
     SAFE.PARSE_DATE('%Y%m%d',CG_MM) AS minimum_mandatory_release_date 
     FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT) DESC) = 1
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT64) DESC) = 1
 ), 
 -- TODO(#19222): Use ingested values when available
 PPR_date AS (

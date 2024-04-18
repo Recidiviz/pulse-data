@@ -401,7 +401,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = f"""
                 (
                   SELECT *,
                       CAST(CAST(ProposedDate AS datetime) AS DATE) AS proposed_date,
-                      CAST(SanctionLevel AS INT) AS sanction_level
+                      CAST(SanctionLevel AS INT64) AS sanction_level
                     FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Violations_latest`
                     JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Sanctions_latest` 
                     USING(TriggerNumber)

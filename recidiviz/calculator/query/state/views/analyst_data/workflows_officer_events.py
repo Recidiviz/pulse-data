@@ -234,7 +234,7 @@ SELECT
     user_external_id AS officer_id,
     email,
     "{config.officer_event_name.value}" AS event,
-    EXTRACT(DATETIME FROM timestamp AT TIME ZONE "US/Eastern") AS event_ts,
+    DATETIME(timestamp, "US/Eastern") AS event_ts,
     "{config.workflows_event_type}" AS event_type, 
     { "" if config.has_person_external_id else "CAST(NULL AS STRING) AS "}person_external_id,
     { "" if config.has_opportunity_type else "CAST(NULL AS STRING) AS "}opportunity_type,

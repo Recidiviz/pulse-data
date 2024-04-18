@@ -57,7 +57,7 @@ SELECT
   0 AS placeholder_count
 FROM table_rows
 GROUP BY state_code, {column_name}
-ORDER BY state_code;
+ORDER BY state_code
 """
 
 NON_ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE = """
@@ -76,7 +76,7 @@ SELECT
   IFNULL(SUM(CASE WHEN external_id IS NULL THEN 1 END), 0) AS placeholder_count
 FROM table_rows
 GROUP BY state_code, {column_name}
-ORDER BY state_code;
+ORDER BY state_code
 """
 
 STATE_TABLE_NON_ENUM_COLUMN_DESCRIPTION_TEMPLATE = """View for non-enum column: [{col}]

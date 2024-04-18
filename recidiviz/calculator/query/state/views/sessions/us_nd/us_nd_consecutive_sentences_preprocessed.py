@@ -40,9 +40,9 @@ US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     (
     SELECT 
         SAFE_CAST(SAFE_CAST(REGEXP_REPLACE(OFFENDER_BOOK_ID, r',', '')  AS NUMERIC) AS STRING) AS booking_num,
-        SAFE_CAST(SAFE_CAST(CHARGE_SEQ AS INT) AS STRING) AS seq_num,
+        SAFE_CAST(SAFE_CAST(CHARGE_SEQ AS INT64) AS STRING) AS seq_num,
         IF(CONSECUTIVE_COUNT_FLAG = 'Y',
-            SAFE_CAST(SAFE_CAST(CONSEC_TO_SENTENCE_SEQ AS INT) AS STRING), NULL) AS consec_seq_num,
+            SAFE_CAST(SAFE_CAST(CONSEC_TO_SENTENCE_SEQ AS INT64) AS STRING), NULL) AS consec_seq_num,
     FROM `{project_id}.{raw_dataset}.elite_offendersentences_latest`
     /*
     Very rarely (<0.03% of cases) are duplicated on booking number and sequence number. When this occurs, it is the case

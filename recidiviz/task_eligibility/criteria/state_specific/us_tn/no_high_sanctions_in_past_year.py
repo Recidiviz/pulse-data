@@ -52,7 +52,7 @@ _REASON_QUERY = f"""
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON pei.external_id = a.OffenderID
         AND id_type = "US_TN_DOC"
-    WHERE CAST(SanctionLevel AS INT) > 1
+    WHERE CAST(SanctionLevel AS INT64) > 1
     )
     ,
     /*
