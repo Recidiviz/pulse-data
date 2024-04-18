@@ -285,6 +285,29 @@ export const getPermissionsTableColumns = (
       },
     },
     {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+      width: 150,
+      filters: [...filterData(data)((d) => d.role)],
+      onFilter: (
+        value: string | number | boolean,
+        record: StateUserPermissionsResponse
+      ) => {
+        return (
+          record.role?.indexOf(value as keyof StateUserPermissionsResponse) ===
+          0
+        );
+      },
+      sorter: (
+        a: StateUserPermissionsResponse,
+        b: StateUserPermissionsResponse
+      ) => a.role?.localeCompare(b.role),
+      render: (text, record) => {
+        return formatText(text, record);
+      },
+    },
+    {
       title: "District",
       dataIndex: "district",
       width: 250,

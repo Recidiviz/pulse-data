@@ -312,7 +312,9 @@ const StateUserPermissionsView = (): JSX.Element => {
           data,
           stateRoleData,
           setUserToEnable
-        )}
+        ).filter((column) => {
+          return column.dataIndex !== "role";
+        })}
         scroll={canScroll ? { x: 2000 } : undefined}
         key={tableKey}
         pagination={{ showSizeChanger: true }}
