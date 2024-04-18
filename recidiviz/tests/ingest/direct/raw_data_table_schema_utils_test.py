@@ -92,6 +92,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
                     import_chunk_size_rows=200,
                     table_relationships=[],
                     update_cadence=RawDataFileUpdateCadence.WEEKLY,
+                    is_code_file=False,
                 )
             },
         )

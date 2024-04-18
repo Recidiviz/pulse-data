@@ -95,7 +95,7 @@ class DeployedViewsTest(unittest.TestCase):
 
         if prod_not_staging := prod_builder_addresses - staging_builder_addresses:
             raise ValueError(
-                f"Found view builders that are returned only in prod. The list of"
+                f"Found view builders that are returned only in prod. The list of "
                 f"builders / addresses should be the same across projects. "
                 f"Prod-only addresses: {prod_not_staging}"
             )

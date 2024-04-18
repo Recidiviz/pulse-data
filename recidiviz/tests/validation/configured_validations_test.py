@@ -21,6 +21,7 @@ from unittest.mock import MagicMock, patch
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
@@ -110,7 +111,6 @@ class TestConfiguredValidations(unittest.TestCase):
                 f"{[v.validation_name for v in not_subsets]}"
             )
 
-    # TODO(#28613): migrate away from this test requiring top-level, expensive vars
     def test_all_validation_builders_configured_in_a_validation(self) -> None:
         found_builders = set(
             BigQueryViewCollector.collect_view_builders_in_module(
@@ -121,11 +121,13 @@ class TestConfiguredValidations(unittest.TestCase):
                 recurse=True,
                 view_builder_attribute_name_regex=".*_VIEW_BUILDER(S?)",
                 expect_builders_in_all_files=False,
+                collect_builders_from_callables=True,
+                builder_callable_name_regex="collect_.*view_builders",
             )
         )
 
         found_validation_builders = set(
-            builder
+            builder.address
             for builder in found_builders
             if builder.address.dataset_id == VIEWS_DATASET
             # TODO(#15080): Configure validations for these views which were
@@ -144,8 +146,8 @@ class TestConfiguredValidations(unittest.TestCase):
         )
 
         validations = get_all_validations()
-        builders_in_validations: Set[BigQueryViewBuilder] = {
-            v.view_builder for v in validations
+        builders_in_validations: Set[BigQueryAddress] = {
+            v.view_builder.address for v in validations
         }
 
         if in_validation_but_not_found := (
@@ -154,8 +156,7 @@ class TestConfiguredValidations(unittest.TestCase):
             raise ValueError(
                 f"Found validation registered in a configured validation in "
                 f"configured_validations.py, but which is not defined in the validation "
-                f"views directory: "
-                f"{[b.address for b in in_validation_but_not_found]}"
+                f"views directory: {in_validation_but_not_found}"
             )
 
         if not_registered_in_validation := (
@@ -164,7 +165,7 @@ class TestConfiguredValidations(unittest.TestCase):
             raise ValueError(
                 f"Found validation view builders that are not registered in a "
                 f"configured validation in configured_validations.py: "
-                f"{[b.address for b in not_registered_in_validation]}"
+                f"{not_registered_in_validation}"
             )
 
     @patch("recidiviz.validation.configured_validations.get_all_validations")
