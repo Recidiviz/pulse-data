@@ -46,6 +46,7 @@ def scc_form(
     description: str,
     view_id: str,
     task_name: str,
+    almost_eligible_days: int = 7,
 ) -> SimpleBigQueryViewBuilder:
     """
     Creates a big query view builder that generates the opportunity record query needed for all
@@ -85,7 +86,8 @@ def scc_form(
     WITH current_population AS (
 {join_current_task_eligibility_spans_with_external_id(state_code="'US_MI'",
 													  tes_task_query_view=task_name,
-													  id_type="'US_MI_DOC'")}
+													  id_type="'US_MI_DOC'", 
+                                                      additional_columns='tes.start_date')}
 ),
 release_dates AS (
 /* Queries raw data for the min and max release dates */ 
@@ -226,7 +228,7 @@ GROUP BY person_id
 
     UNION ALL
 
-    -- ALMOST ELIGIBLE (7 days from upcoming scc review regardless of the criteria)
+    -- ALMOST ELIGIBLE (x days from upcoming scc review regardless of the criteria)
     SELECT
         pei.external_id,
         tes.person_id,
@@ -235,6 +237,7 @@ GROUP BY person_id
         tes.next_reasons AS reasons,
         tes.ineligible_criteria,
         tes.is_eligible,
+        tes.start_date,
     FROM (
         SELECT 
             c.*,
@@ -251,10 +254,10 @@ GROUP BY person_id
            CURRENT_DATE('US/Eastern') BETWEEN tes.start_date AND 
                                          {nonnull_end_date_exclusive_clause('tes.end_date')}
             AND tes.state_code = 'US_MI'
-            --select spans of time where someone is currently not eligible, but will be within the next 7 days
+            --select spans of time where someone is currently not eligible, but will be within the next x days
             AND next_eligibility
             AND NOT is_eligible
-            AND DATE_DIFF(next_start_date, CURRENT_DATE("US/Eastern"), DAY) BETWEEN 0 AND 7
+            AND DATE_DIFF(next_start_date, CURRENT_DATE("US/Eastern"), DAY) BETWEEN 0 AND {almost_eligible_days}
 ),
 reasons_for_eligibility AS (
 /* Queries the reasons for eligibility from the currently eligible or upcoming eligible span */
@@ -289,6 +292,7 @@ SELECT
     tes.external_id AS external_id,
     tes.reasons,
     tes.is_eligible,
+    IF(tes.is_eligible,DATE_DIFF(CURRENT_DATE("US/Eastern"), tes.start_date, DAY)>=7, False) AS is_overdue,
     --form information
     tes.external_id AS form_information_prisoner_number,
     INITCAP(JSON_VALUE(PARSE_JSON(sp.full_name), '$.given_names'))

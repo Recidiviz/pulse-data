@@ -69,7 +69,8 @@ _CRITERIA_QUERY_2 = f"""
 _JSON_CONTENT = """MIN(facility_solitary_start_date) AS facility_solitary_start_date,
                     MAX(latest_scc_review_date) AS latest_scc_review_date,
                     MAX(number_of_expected_reviews) AS number_of_expected_reviews,
-                    MAX(number_of_reviews) AS number_of_reviews"""
+                    MAX(number_of_reviews) AS number_of_reviews,
+                    IF(LOGICAL_OR(meets_criteria), start_date, NULL) AS next_scc_date"""
 
 _QUERY_TEMPLATE = f"""
 {combining_several_criteria_into_one(
