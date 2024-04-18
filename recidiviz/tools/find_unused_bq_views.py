@@ -117,6 +117,9 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_panel_opened import (
+    CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snoozed import (
     CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER,
 )
@@ -301,6 +304,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     ),
     PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER.address: (
         "Will be referenced by custom_aggregated_metrics_lookml_generator (see #28113) (Ben Packer 3/18/24)"
+    ),
+    CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER.address: (
+        "Will be referenced to support Workflows milestones_funnel work (see #28875) (Michelle Orden 4/11/24)"
     ),
 }
 

@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.workflows.clients_latest_referral_st
 from recidiviz.calculator.query.state.views.workflows.clients_milestones_congratulations_sent import (
     CLIENTS_MILESTONES_CONGRATULATIONS_SENT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_panel_opened import (
+    CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_opportunity_previewed import (
     CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_BUILDER,
 )
@@ -120,4 +123,5 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
     WORKFLOWS_USAGE_VIEW_BUILDER,
+    CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
 ]
