@@ -33,6 +33,8 @@ from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryB
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 
+RAW_DATA_LATEST_VIEW_ID_SUFFIX = "_latest"
+
 
 class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
     """Factory class for building DirectIngestRawDataTableLatestView"""
@@ -48,7 +50,7 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
         self.raw_data_source_instance = raw_data_source_instance
         self.region_code = region_code
         self.raw_file_config = raw_file_config
-        self.view_id = f"{raw_file_config.file_tag}_latest"
+        self.view_id = f"{raw_file_config.file_tag}{RAW_DATA_LATEST_VIEW_ID_SUFFIX}"
         self.description = f"{raw_file_config.file_tag} latest view"
         self.dataset_id = raw_latest_views_dataset_for_region(
             state_code=StateCode(region_code.upper()),
