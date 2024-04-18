@@ -1,0 +1,29 @@
+address:
+  dataset_id: export_archives
+  table_id: workflows_legacy_client_record_archive
+schema:
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: compliant_reporting_eligible
+    type: STRING
+    mode: NULLABLE
+  - name: remaining_criteria_needed
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_time_on_supervision_level
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_drug_screen
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_fines_fees
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_recent_rejection
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_serious_sanctions
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

@@ -38,25 +38,6 @@ module "county_resident_adult_populations_table" {
   read_from_local = true
 
   table_name = "county_resident_adult_populations"
-  schema     = <<EOF
-[
-  {
-    "name": "fips",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "year",
-    "type": "INTEGER",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "population",
-    "type": "INTEGER",
-    "mode": "NULLABLE"
-  }
-]
-EOF
 }
 
 module "county_resident_populations_table" {
@@ -69,25 +50,6 @@ module "county_resident_populations_table" {
   read_from_local = true
 
   table_name = "county_resident_populations"
-  schema     = <<EOF
-[
-  {
-    "name": "fips",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "year",
-    "type": "INTEGER",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "population",
-    "type": "INTEGER",
-    "mode": "NULLABLE"
-  }
-]
-EOF
 }
 
 module "county_fips_table" {
@@ -100,30 +62,6 @@ module "county_fips_table" {
   read_from_local = true
 
   table_name = "county_fips"
-  schema     = <<EOF
-[
-  {
-    "name": "fips",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "state_code",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "county_code",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "county_name",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  }
-]
-EOF
 }
 
 module "us_nd_incarceration_facility_names_table" {
@@ -136,20 +74,6 @@ module "us_nd_incarceration_facility_names_table" {
   read_from_local = true
 
   table_name = "us_nd_incarceration_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "facility_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "facility_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_me_incarceration_facility_names_table" {
@@ -162,20 +86,6 @@ module "us_me_incarceration_facility_names_table" {
   read_from_local = true
 
   table_name = "us_me_incarceration_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "facility_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "facility_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_tn_supervision_facility_names_table" {
@@ -188,35 +98,6 @@ module "us_tn_supervision_facility_names_table" {
   read_from_local = true
 
   table_name = "us_tn_supervision_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "facility_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "facility_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "type",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "district",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "division",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 
@@ -230,35 +111,6 @@ module "us_tn_supervision_locations_table" {
   read_from_local = true
 
   table_name = "us_tn_supervision_locations"
-  schema     = <<EOF
-[
-  {
-    "name": "site_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "site_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "type",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "district",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "division",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_id_supervision_unit_to_district_map_table" {
@@ -271,20 +123,6 @@ module "us_id_supervision_unit_to_district_map_table" {
   read_from_local = true
 
   table_name = "us_id_supervision_unit_to_district_map"
-  schema     = <<EOF
-[
-  {
-    "name": "level_1_supervision_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "level_2_supervision_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_id_supervision_district_names_table" {
@@ -297,20 +135,6 @@ module "us_id_supervision_district_names_table" {
   read_from_local = true
 
   table_name = "us_id_supervision_district_names"
-  schema     = <<EOF
-[
-  {
-    "name": "level_2_supervision_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "level_2_supervision_location_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_id_incarceration_facility_names_table" {
@@ -323,20 +147,6 @@ module "us_id_incarceration_facility_names_table" {
   read_from_local = true
 
   table_name = "us_id_incarceration_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "facility_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "facility_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_id_incarceration_facility_map_table" {
@@ -349,20 +159,6 @@ module "us_id_incarceration_facility_map_table" {
   read_from_local = true
 
   table_name = "us_id_incarceration_facility_map"
-  schema     = <<EOF
-[
-  {
-    "name": "level_1_incarceration_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "level_2_incarceration_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_tn_incarceration_facility_names_table" {
@@ -375,20 +171,6 @@ module "us_tn_incarceration_facility_names_table" {
   read_from_local = true
 
   table_name = "us_tn_incarceration_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "facility_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "facility_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_tn_incarceration_facility_map_table" {
@@ -401,20 +183,6 @@ module "us_tn_incarceration_facility_map_table" {
   read_from_local = true
 
   table_name = "us_tn_incarceration_facility_map"
-  schema     = <<EOF
-[
-  {
-    "name": "level_1_incarceration_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "level_2_incarceration_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_mi_incarceration_facility_names_table" {
@@ -427,20 +195,6 @@ module "us_mi_incarceration_facility_names_table" {
   read_from_local = true
 
   table_name = "us_mi_incarceration_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "facility_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "facility_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_co_incarceration_facility_names_table" {
@@ -453,20 +207,6 @@ module "us_co_incarceration_facility_names_table" {
   read_from_local = true
 
   table_name = "us_co_incarceration_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "facility_code",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "facility_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_co_incarceration_facility_map_table" {
@@ -479,25 +219,6 @@ module "us_co_incarceration_facility_map_table" {
   read_from_local = true
 
   table_name = "us_co_incarceration_facility_map"
-  schema     = <<EOF
-[
-  {
-    "name": "level_1_incarceration_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "level_2_incarceration_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "level_3_incarceration_location_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
 }
 
 module "us_mo_incarceration_facility_names_table" {
@@ -510,20 +231,7 @@ module "us_mo_incarceration_facility_names_table" {
   read_from_local = true
 
   table_name = "us_mo_incarceration_facility_names"
-  schema     = <<EOF
-[
-  {
-    "name": "incarceration_location_level_1_external_id",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "incarceration_location_level_1_name",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
+
 }
 
 module "state_resident_populations_table" {
@@ -536,40 +244,6 @@ module "state_resident_populations_table" {
   read_from_local = true
 
   table_name = "state_resident_populations"
-  schema     = <<EOF
-[
-  {
-    "name": "state",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "age_group",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "race",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "ethnicity",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "gender",
-    "type": "STRING",
-    "mode": "NULLABLE"
-  },
-  {
-    "name": "population",
-    "type": "INTEGER",
-    "mode": "NULLABLE"
-  }
-]
-EOF
 }
 
 
@@ -583,94 +257,4 @@ module "offense_description_to_labels_table" {
   read_from_local = false
 
   table_name = "offense_description_to_labels"
-  schema     = <<EOF
-[
-      {
-        "mode": "NULLABLE",
-        "name": "offense_description",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "probability",
-        "type": "FLOAT"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "uccs_code",
-        "type": "INTEGER"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "uccs_description",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "uccs_category",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "ncic_code",
-        "type": "INTEGER"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "ncic_description",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "ncic_category",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "nibrs_code",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "nibrs_description",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "nibrs_category",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "crime_against",
-        "type": "STRING"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "is_drug",
-        "type": "BOOLEAN"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "is_violent",
-        "type": "BOOLEAN"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "offense_completed",
-        "type": "BOOLEAN"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "offense_attempted",
-        "type": "BOOLEAN"
-      },
-      {
-        "mode": "NULLABLE",
-        "name": "offense_conspired",
-        "type": "BOOLEAN"
-      }
-    ]
-
-EOF
 }

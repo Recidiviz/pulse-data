@@ -1,0 +1,14 @@
+address:
+  dataset_id: external_reference
+  table_id: county_resident_adult_populations
+schema:
+  - name: fips
+    type: STRING
+    mode: NULLABLE
+  - name: year
+    type: INTEGER
+    mode: NULLABLE
+  - name: population
+    type: INTEGER
+    mode: NULLABLE
+clustering_fields: null

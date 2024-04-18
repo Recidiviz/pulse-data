@@ -1,0 +1,35 @@
+address:
+  dataset_id: export_archives
+  table_id: outliers_supervision_officer_outlier_status_archive
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: metric_id
+    type: STRING
+    mode: NULLABLE
+  - name: period
+    type: STRING
+    mode: NULLABLE
+  - name: end_date
+    type: DATE
+    mode: NULLABLE
+  - name: metric_rate
+    type: FLOAT
+    mode: NULLABLE
+  - name: caseload_type
+    type: STRING
+    mode: NULLABLE
+  - name: target
+    type: FLOAT
+    mode: NULLABLE
+  - name: threshold
+    type: FLOAT
+    mode: NULLABLE
+  - name: status
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

@@ -1,0 +1,32 @@
+address:
+  dataset_id: export_archives
+  table_id: workflows_snooze_status_archive
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: opportunity_type
+    type: STRING
+    mode: NULLABLE
+  - name: snoozed_by
+    type: STRING
+    mode: NULLABLE
+  - name: snooze_start_date
+    type: DATE
+    mode: NULLABLE
+  - name: snooze_end_date
+    type: DATE
+    mode: NULLABLE
+  - name: denial_reasons
+    type: STRING
+    mode: REPEATED
+  - name: other_reason
+    type: STRING
+    mode: NULLABLE
+  - name: as_of
+    type: DATE
+    mode: NULLABLE
+clustering_fields: null

@@ -1,0 +1,23 @@
+address:
+  dataset_id: export_archives
+  table_id: workflows_resident_record_archive
+schema:
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: pseudonymized_id
+    type: STRING
+    mode: NULLABLE
+  - name: person_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: facility_id
+    type: STRING
+    mode: NULLABLE
+  - name: all_eligible_opportunities
+    type: STRING
+    mode: REPEATED
+clustering_fields: null
