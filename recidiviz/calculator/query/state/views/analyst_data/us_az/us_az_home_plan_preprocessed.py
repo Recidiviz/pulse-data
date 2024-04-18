@@ -21,6 +21,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -35,21 +36,33 @@ in Arizona and attaches it to the relevant incarceration period."""
 
 US_AZ_HOME_PLAN_PREPROCESSED_QUERY_TEMPLATE = """
 WITH base AS (
-SELECT DISTINCT 
-    DOC_ID, 
-    HOME_PLAN_DETAIL_ID, 
-    HOME_PLAN_ID, 
-    IS_HOMELESS_REQUEST, 
-    lookups.DESCRIPTION AS APPROVAL_STATUS,
-    MAX(app.CREATE_DTM) OVER (PARTITION BY HOME_PLAN_DETAIL_ID) AS UPDATE_DATE
+SELECT DISTINCT
+  DOC_ID,
+  HOME_PLAN_ID, 
+  HOME_PLAN_DETAIL_ID,
+  IS_HOMELESS_REQUEST, 
+  lookups.DESCRIPTION AS APPROVAL_STATUS, 
+  det.CREATE_DTM,
 FROM {project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_latest hp
 LEFT JOIN {project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_DETAIL_latest det
 USING(HOME_PLAN_ID)
+LEFT JOIN {project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest lookups
+ON(det.APPROVAL_STATUS_ID = lookups.LOOKUP_ID)
+AND hp.active_flag = 'Y'
+), 
+base_with_dates AS (
+SELECT DISTINCT
+  base.* EXCEPT (CREATE_DTM),
+  CASE WHEN 
+    APPROVAL_STATUS = 'Address Approved'
+        THEN MAX(app.CREATE_DTM) OVER (PARTITION BY HOME_PLAN_DETAIL_ID) 
+    ELSE base.CREATE_DTM
+  END AS UPDATE_DATE
+FROM base 
 LEFT JOIN {project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_APPROVAL_latest app
 USING(HOME_PLAN_DETAIL_ID)
-LEFT JOIN {project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest lookups
-ON(det.APPROVAL_STATUS_ID = LOOKUP_ID)
-), base_with_status AS (
+),
+dates_with_status AS (
 SELECT 
     DOC_ID, 
     HOME_PLAN_DETAIL_ID,
@@ -62,14 +75,34 @@ SELECT
         WHEN APPROVAL_STATUS = 'Cancelled' THEN 'HOME PLAN CANCELLED'
     END AS PLAN_STATUS,
     UPDATE_DATE
-FROM base
-), status_joined_to_IP AS (
-    SELECT *, ip.incarceration_period_id, ip.person_id
-    FROM base_with_status
-    LEFT JOIN {project_id}.{normalized_state_dataset}.state_incarceration_period ip
-    ON(SPLIT(ip.external_id, '-')[SAFE_OFFSET(1)] = base_with_status.DOC_ID)
+FROM base_with_dates
+), 
+status_joined_to_IP AS (
+SELECT 
+    dates_with_status.*, 
+    ip.admission_date AS ip_adm_date, 
+    ip.person_id
+FROM dates_with_status
+LEFT JOIN {project_id}.{normalized_state_dataset}.state_incarceration_period ip
+ON(SPLIT(ip.external_id, '-')[SAFE_OFFSET(1)] = dates_with_status.DOC_ID)
+),
+status_joined_to_sessions AS (
+SELECT 
+    sjip.person_id, 
+    sjip.doc_id,
+    cs.session_id,
+    sjip.is_homeless_request,
+    sjip.plan_status,
+    sjip.update_date,
+    cs.start_date, 
+    cs.end_date_exclusive
+FROM status_joined_to_IP sjip
+INNER JOIN {project_id}.{sessions_dataset}.compartment_sessions cs
+ON (cs.person_id = sjip.person_id 
+AND cs.start_date = sjip.ip_adm_date)
 )
-SELECT * FROM status_joined_to_IP
+SELECT DISTINCT * 
+FROM status_joined_to_sessions
 """
 
 US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -82,6 +115,7 @@ US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         instance=DirectIngestInstance.PRIMARY,
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )
 
