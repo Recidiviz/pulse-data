@@ -177,6 +177,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q7 impo
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q8 import (
     US_TN_CAF_Q8_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_classification_raw import (
+    US_TN_CLASSIFICATION_RAW_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
 )
@@ -323,5 +326,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
     US_TN_MAX_STAYS_VIEW_BUILDER,
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
+    US_TN_CLASSIFICATION_RAW_VIEW_BUILDER,
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 ]

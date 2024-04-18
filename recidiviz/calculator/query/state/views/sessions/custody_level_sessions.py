@@ -37,8 +37,21 @@ CUSTODY_LEVEL_SESSIONS_QUERY_TEMPLATE = f"""
         correctional_level AS custody_level,
         start_date,
         end_date_exclusive,
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` css
     WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
+        -- TODO(#5178): Once custody level ingest issues in TN are resolved, this can be removed
+        AND state_code != "US_TN"
+    
+    UNION ALL
+    
+    -- TODO(#5178): Once custody level ingest issues in TN are resolved, this can be removed
+    SELECT
+        state_code,
+        person_id,
+        custody_level,
+        start_date,
+        end_date_exclusive
+    FROM `{{project_id}}.analyst_data.us_tn_classification_raw_materialized`    
     )
     ,
     sessionized_cte AS

@@ -40,6 +40,21 @@ CUSTODY_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = f"""
         end_date_exclusive,
     FROM `{{project_id}}.sessions.compartment_sub_sessions_materialized`
     WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
+        -- TODO(#5178): Once custody level ingest issues in TN are resolved, this can be removed
+        AND state_code != "US_TN"
+    
+    UNION ALL
+    
+    -- TODO(#5178): Once custody level ingest issues in TN are resolved, this can be removed
+    SELECT
+        state_code,
+        person_id,
+        custody_level,
+        custody_level_raw_text,
+        start_date,
+        end_date_exclusive
+    FROM `{{project_id}}.analyst_data.us_tn_classification_raw_materialized`    
+    
     )
     SELECT *
     FROM ({aggregate_adjacent_spans(table_name='sub_sessions_cte',
