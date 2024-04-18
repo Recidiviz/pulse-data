@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from freezegun import freeze_time
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -75,12 +76,53 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 )
             )
 
+            AgencyInterface.create_or_update_agency(
+                session=session,
+                name="2 System Initiative",
+                systems=[schema.System.LAW_ENFORCEMENT, schema.System.PRISONS],
+                state_code="us_ak",
+                fips_county_code="us_ak_anchorage",
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
+            )
+
+            twoSystemsByNameStateSystem = (
+                AgencyInterface.get_agency_by_name_state_and_systems(
+                    session=session,
+                    name="2 System Initiative",
+                    state_code="us_ak",
+                    systems=[
+                        schema.System.LAW_ENFORCEMENT.value,
+                        schema.System.PRISONS.value,
+                    ],
+                )
+            )
+
+            twoSystemsByNameStateSystemDifferentOrder = (
+                AgencyInterface.get_agency_by_name_state_and_systems(
+                    session=session,
+                    name="2 System Initiative",
+                    state_code="us_ak",
+                    systems=[
+                        schema.System.PRISONS.value,
+                        schema.System.LAW_ENFORCEMENT.value,
+                    ],
+                )
+            )
+
             self.assertEqual(agencyAlphaByNameStateSystem.name, "Agency Alpha")
             self.assertEqual(agencyBetaByNameStateSystem.name, "Beta Initiative")
+            self.assertEqual(twoSystemsByNameStateSystem.name, "2 System Initiative")
+            self.assertEqual(
+                twoSystemsByNameStateSystemDifferentOrder.name, "2 System Initiative"
+            )
 
             allAgencies = AgencyInterface.get_agencies(session=session)
             self.assertEqual(
-                {a.name for a in allAgencies}, {"Agency Alpha", "Beta Initiative"}
+                {a.name for a in allAgencies},
+                {"Agency Alpha", "Beta Initiative", "2 System Initiative"},
             )
 
             allAgencyIds = AgencyInterface.get_agency_ids(session=session)
@@ -91,7 +133,8 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 agency_ids=[agency.id for agency in allAgencies],
             )
             self.assertEqual(
-                {a.name for a in agenciesById}, {"Agency Alpha", "Beta Initiative"}
+                {a.name for a in agenciesById},
+                {"Agency Alpha", "Beta Initiative", "2 System Initiative"},
             )
 
     @freeze_time("2023-09-17 12:00:01", tz_offset=0)
@@ -158,6 +201,44 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             gamma_agency.to_json()["team"][0]["auth0_user_id"],
             user.auth0_user_id,
         )
+
+        # Test non-unique agency
+        try:
+            gamma_agency = AgencyInterface.create_or_update_agency(
+                session=session,
+                name="Agency Gamma",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ca",
+                fips_county_code="us_ca_sacramento",
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
+            )
+        except JusticeCountsServerError as e:
+            self.assertEqual(e.code, "agency_already_exists")
+            self.assertEqual(
+                e.description,
+                "Agency with name 'Agency Gamma' already exists with the state and the systems selected.",
+            )
+
+            gamma_agency = AgencyInterface.create_or_update_agency(
+                session=session,
+                name="Agency Gamma",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ny",
+                fips_county_code=None,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
+            )
+            self.assertIsNotNone(gamma_agency)
+            self.assertEqual(gamma_agency.name, "Agency Gamma")
+            self.assertEqual(gamma_agency.state_code, "us_ny")
+            self.assertEqual(
+                gamma_agency.systems, [schema.System.LAW_ENFORCEMENT.value]
+            )
 
     def test_get_child_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

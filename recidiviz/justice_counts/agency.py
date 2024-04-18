@@ -20,6 +20,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
@@ -53,7 +54,12 @@ class AgencyInterface:
                 session=session, agency_id=agency_id, with_users=with_users
             )
             if agency_id is not None
-            else None
+            else AgencyInterface.get_agency_by_name_state_and_systems(
+                session=session,
+                name=name,
+                state_code=state_code,
+                systems=[s.value for s in systems],
+            )
         )
 
         # agency_id is not None for update requests, agency_id is None
@@ -61,7 +67,7 @@ class AgencyInterface:
         if agency_id is None and existing_agency is not None:
             raise JusticeCountsServerError(
                 code="agency_already_exists",
-                description=f"Agency with name '{name}' already exists",
+                description=f"Agency with name '{name}' already exists with the state and the systems selected.",
             )
 
         if existing_agency is not None:
@@ -145,26 +151,6 @@ class AgencyInterface:
         return agencies
 
     @staticmethod
-    def get_agency_by_name(
-        session: Session,
-        name: str,
-        with_settings: bool = False,
-        with_users: bool = False,
-    ) -> schema.Agency:
-        # ilike is case insensitive
-        q = session.query(schema.Agency).filter(schema.Agency.name.ilike(name))
-        if with_settings is True:
-            q = q.options(joinedload(schema.Agency.agency_settings))
-
-        if with_users is True:
-            q = q.options(
-                selectinload(schema.Agency.user_account_assocs).joinedload(
-                    schema.AgencyUserAccountAssociation.user_account
-                )
-            )  # eagerly load the users in this agency
-        return q.one_or_none()
-
-    @staticmethod
     def get_agency_by_name_state_and_systems(
         session: Session,
         name: str,
@@ -173,12 +159,33 @@ class AgencyInterface:
         with_settings: bool = False,
         with_users: bool = False,
     ) -> schema.Agency:
+        """
+        Retrieve an agency from the database based on its name, state code, and the systems.
+
+        Args:
+            session (Session): The SQLAlchemy session.
+            name (str): The name of the agency.
+            state_code (str): The state code of the agency.
+            systems (List[str]): A list of system names (strings, not schema.System objects).
+            with_settings (bool, optional): Whether to include agency settings in the result. Defaults to False.
+            with_users (bool, optional): Whether to include user accounts associated with the agency in the result. Defaults to False.
+
+        Returns:
+            schema.Agency or None: The agency matching the criteria, or None if not found.
+        """
 
         q = session.query(schema.Agency).filter(
             schema.Agency.name == name,
-            schema.Agency.state_code == state_code,
-            schema.Agency.systems == systems,
+            func.lower(schema.Agency.state_code) == func.lower(state_code),
+            func.array_length(schema.Agency.systems, 1) == len(systems),
+            # Checks for agencies that have a 1-dimensional array with the same
+            # length of the systems array thats passed in
         )
+
+        for system in systems:
+            # This for-loop checks if every element in the systems array that
+            # is passed in, is also in DB agency that we are querying for.
+            q = q.filter(schema.Agency.systems.any(system))
 
         if with_settings is True:
             q = q.options(joinedload(schema.Agency.agency_settings))
