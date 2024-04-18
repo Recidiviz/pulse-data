@@ -61,6 +61,7 @@ from recidiviz.metrics.export.products.product_configs import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
+from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
@@ -276,12 +277,13 @@ def build_dataflow_pipeline_task_group(
             sandbox_prefix = get_sandbox_prefix(dag_run)
 
             config = pipeline_config.get()
+            if parameter_cls is IngestPipelineParameters:
+                config["ingest_instance"] = ingest_instance
             if ingest_instance == "SECONDARY":
                 config["job_name"] = f"{job_name}-{ingest_instance.lower()}"
 
             parameters: PipelineParameters = parameter_cls(
                 project=get_project_id(),
-                ingest_instance=ingest_instance,
                 **config,  # type: ignore
             )
 

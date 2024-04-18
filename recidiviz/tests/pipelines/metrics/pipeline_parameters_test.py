@@ -48,7 +48,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
             "output": "test_output",
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -75,7 +74,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "normalized_input": NORMALIZED_STATE_DATASET,
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -102,7 +100,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "output": "test_output",
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "-1",
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -134,7 +131,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "reference_view_input": "test_view",
             "normalized_input": "normalized_input",
             "person_filter_ids": "123 12323 324",
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -166,7 +162,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "person_filter_ids": "123 12323 324",
             "calculation_month_count": "36",
             "output": "my_prefix_test_output",
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)

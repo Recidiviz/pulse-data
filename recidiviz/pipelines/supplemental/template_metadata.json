@@ -14,13 +14,6 @@
       "regexes": ["US_[A-Z]{2}"]
     },
     {
-      "name": "ingest_instance",
-      "label": "Ingest instance",
-      "helpText": "Ingest instance that the pipeline is running for.",
-      "regexes": ["PRIMARY|SECONDARY"],
-      "isOptional": true
-    },
-    {
       "name": "output",
       "label": "Test output dataset",
       "helpText": "If specified, the pipeline will write to this test dataset.",
