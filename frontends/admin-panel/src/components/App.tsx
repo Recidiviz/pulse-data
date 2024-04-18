@@ -50,6 +50,7 @@ import StoreProvider from "./StoreProvider";
 import { EnvironmentType } from "./types";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
+import WorkflowsOpportunitiesView from "./Workflows/WorkflowsOpportunitiesView";
 
 type MenuItem = Required<MenuProps>["items"][number];
 type QueryString = {
@@ -144,6 +145,10 @@ const items: MenuProps["items"] = [
     getItem(
       "Insights Configuration",
       LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE
+    ),
+    getItem(
+      "Workflows Configuration",
+      LineStaffTools.WORKFLOWS_CONFIGURATION_ROUTE
     ),
   ]),
   getItem("On-Call", OnCall.ON_CALL_BASE_ROUTE),
@@ -286,6 +291,10 @@ const App = (): JSX.Element => {
             <Route
               path={LineStaffTools.INSIGHTS_CONFIGURATION_ROUTE}
               component={InsightsConfigurationsView}
+            />
+            <Route
+              path={LineStaffTools.WORKFLOWS_CONFIGURATION_ROUTE}
+              component={WorkflowsOpportunitiesView}
             />
           </StoreProvider>
           <Redirect from="/" to={IngestOperations.INGEST_DATAFLOW_ROUTE} />

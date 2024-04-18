@@ -31,6 +31,13 @@ write_to_file 'pathways_user' recidiviz/local/gsm/pathways_db_user
 write_to_file 'example' recidiviz/local/gsm/pathways_db_password
 write_to_file '5432' recidiviz/local/gsm/pathways_db_port
 
+# Database secrets
+write_to_file 'workflows' recidiviz/local/gsm/workflows_cloudsql_instance_id
+write_to_file 'localhost' recidiviz/local/gsm/workflows_db_host
+write_to_file 'workflows_user' recidiviz/local/gsm/workflows_db_user
+write_to_file 'example' recidiviz/local/gsm/workflows_db_password
+write_to_file '5432' recidiviz/local/gsm/workflows_db_port
+
 # These secrets are used to insert contact notes for TN
 US_TN_INSERT_CONTACT_NOTE_URL=$(get_secret recidiviz-staging workflows_us_tn_insert_contact_note_url)
 US_TN_INSERT_CONTACT_NOTE_KEY=$(get_secret recidiviz-staging workflows_us_tn_insert_contact_note_key)

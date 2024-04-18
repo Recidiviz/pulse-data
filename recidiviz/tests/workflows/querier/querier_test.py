@@ -49,6 +49,7 @@ from recidiviz.workflows.types import FullOpportunityInfo, WorkflowsSystemType
 def load_model_fixture(
     model: WorkflowsBase, filename: Optional[str] = None
 ) -> List[Dict]:
+    """Loads the model fixtures from CSV"""
     filename = f"{model.__tablename__}.csv" if filename is None else filename
     fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
     results = []
@@ -68,6 +69,10 @@ def load_model_fixture(
                     }
                     and v != ""
                 ):
+                    if k == "sidebar_components":
+                        # postgres expects arrays to be wrapped in braces, so we need to
+                        # replace them with JSON-spec brackets
+                        v = f"[{v[1:-1]}]"
                     row[k] = json.loads(v)
                 if v == "":
                     row[k] = None
@@ -78,7 +83,7 @@ def load_model_fixture(
 
 WORK_RELEASE_INFO = FullOpportunityInfo(
     state_code="US_ID",
-    opportunity_type="usIdCrcWorkRelease",
+    opportunity_type="usIdCRCWorkRelease",
     system_type=WorkflowsSystemType.SUPERVISION,
     url_section="work_release_path",
     firestore_collection="work_release_collection",
@@ -90,7 +95,7 @@ WORK_RELEASE_INFO = FullOpportunityInfo(
 
 FAST_FTRD_INFO = FullOpportunityInfo(
     state_code="US_ID",
-    opportunity_type="usIdFastFTRD",
+    opportunity_type="pastFTRD",
     system_type=WorkflowsSystemType.SUPERVISION,
     gating_feature_variant="someFeatureVariant",
     url_section="fast_path",
@@ -103,7 +108,7 @@ FAST_FTRD_INFO = FullOpportunityInfo(
 
 SLD_INFO = FullOpportunityInfo(
     state_code="US_ID",
-    opportunity_type="usIdSLD",
+    opportunity_type="usIdSupervisionLevelDowngrade",
     system_type=WorkflowsSystemType.SUPERVISION,
     gating_feature_variant="someOtherFeatureVariant",
     url_section="sld_path",
@@ -289,7 +294,7 @@ class TestWorkflowsQuerier(TestCase):
     def test_get_active_configs_for_single_opportunity_type(self) -> None:
         actual = WorkflowsQuerier(
             StateCode.US_ID
-        ).get_active_configs_for_opportunity_types(["usIdCrcWorkRelease"])
+        ).get_active_configs_for_opportunity_types(["usIdCRCWorkRelease"])
 
         self.assertEqual(1, len(actual))
         self.assertEqual("Approve them all", actual[0].call_to_action)
@@ -300,14 +305,16 @@ class TestWorkflowsQuerier(TestCase):
     def test_get_active_configs_for_multiple_opportunity_types(self) -> None:
         actual = WorkflowsQuerier(
             StateCode.US_ID
-        ).get_active_configs_for_opportunity_types(["usIdCrcWorkRelease", "usIdSLD"])
+        ).get_active_configs_for_opportunity_types(
+            ["usIdCRCWorkRelease", "usIdSupervisionLevelDowngrade"]
+        )
 
         self.assertEqual(3, len(actual))
         self.snapshot.assert_match(actual, name="test_get_active_configs_for_multiple_opportunity_types")  # type: ignore[attr-defined]
 
     def test_get_top_config_for_single_type_no_fv(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_top_config_for_opportunity_types(
-            ["usIdCrcWorkRelease"], []
+            ["usIdCRCWorkRelease"], []
         )
 
         self.assertEqual(1, len(actual))
@@ -315,7 +322,7 @@ class TestWorkflowsQuerier(TestCase):
 
     def test_get_top_config_for_single_type_irrelevant_fvs(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_top_config_for_opportunity_types(
-            ["usIdCrcWorkRelease"], ["madeUpValue", "theyreAllMadeUp"]
+            ["usIdCRCWorkRelease"], ["madeUpValue", "theyreAllMadeUp"]
         )
 
         self.assertEqual(1, len(actual))
@@ -323,47 +330,59 @@ class TestWorkflowsQuerier(TestCase):
 
     def test_get_top_config_from_multiple_available(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_top_config_for_opportunity_types(
-            ["usIdSLD"], ["otherFeatureVariant"]
+            ["usIdSupervisionLevelDowngrade"], ["otherFeatureVariant"]
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual(actual["usIdSLD"].call_to_action, "Downgrade all of them")
+        self.assertEqual(
+            actual["usIdSupervisionLevelDowngrade"].call_to_action,
+            "Downgrade all of them",
+        )
         self.snapshot.assert_match(actual, name="test_get_top_config_from_multiple_available")  # type: ignore[attr-defined]
 
     def test_get_top_config_from_multiple_available_no_relevant_fv_set(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_top_config_for_opportunity_types(
-            ["usIdSLD"], ["irrelevant"]
+            ["usIdSupervisionLevelDowngrade"], ["irrelevant"]
         )
 
         self.assertEqual(1, len(actual))
-        self.assertEqual(actual["usIdSLD"].call_to_action, "Downgrades all around")
+        self.assertEqual(
+            actual["usIdSupervisionLevelDowngrade"].call_to_action,
+            "Downgrades all around",
+        )
         self.snapshot.assert_match(actual, name="test_get_top_config_from_multiple_available_no_relevant_fv_set")  # type: ignore[attr-defined]
 
     def test_get_top_config_returns_config_for_each_type(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_top_config_for_opportunity_types(
-            ["usIdSLD", "usIdCrcWorkRelease"], ["otherFeatureVariant"]
+            ["usIdSupervisionLevelDowngrade", "usIdCRCWorkRelease"],
+            ["otherFeatureVariant"],
         )
 
         self.assertEqual(2, len(actual))
-        self.assertEqual(actual["usIdSLD"].call_to_action, "Downgrade all of them")
         self.assertEqual(
-            actual["usIdCrcWorkRelease"].call_to_action, "Approve them all"
+            actual["usIdSupervisionLevelDowngrade"].call_to_action,
+            "Downgrade all of them",
+        )
+        self.assertEqual(
+            actual["usIdCRCWorkRelease"].call_to_action, "Approve them all"
         )
         self.snapshot.assert_match(actual, name="test_get_top_config_returns_config_for_each_type")  # type: ignore[attr-defined]
 
     def test_get_top_config_ignores_inactive_configs_even_if_fv_matches(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_top_config_for_opportunity_types(
-            ["usIdCrcWorkRelease"], ["experimentalFeature"]
+            ["usIdCRCWorkRelease"], ["experimentalFeature"]
         )
 
         self.assertEqual(1, len(actual))
         self.assertEqual(
-            actual["usIdCrcWorkRelease"].call_to_action, "Approve them all"
+            actual["usIdCRCWorkRelease"].call_to_action, "Approve them all"
         )
         self.snapshot.assert_match(actual, name="test_get_top_config_ignores_inactive_configs_even_if_fv_matches")  # type: ignore[attr-defined]
 
     def test_get_configs_for_type_returns_newest_first(self) -> None:
-        actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type("usIdSLD")
+        actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
+            "usIdSupervisionLevelDowngrade"
+        )
 
         self.assertEqual(2, len(actual))
         self.assertGreater(actual[0].created_at, actual[1].created_at)
@@ -371,7 +390,7 @@ class TestWorkflowsQuerier(TestCase):
 
     def test_get_configs_for_type_respects_offset(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
-            "usIdSLD", offset=1
+            "usIdSupervisionLevelDowngrade", offset=1
         )
 
         self.assertEqual(1, len(actual))
@@ -379,7 +398,7 @@ class TestWorkflowsQuerier(TestCase):
 
     def test_get_configs_for_type_respects_limit(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
-            "usIdSLD", limit=1
+            "usIdSupervisionLevelDowngrade", limit=1
         )
 
         self.assertEqual(1, len(actual))
@@ -387,7 +406,7 @@ class TestWorkflowsQuerier(TestCase):
 
     def test_get_configs_for_type_respects_status(self) -> None:
         actual_active = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
-            "usIdCrcWorkRelease", status=OpportunityStatus.ACTIVE
+            "usIdCRCWorkRelease", status=OpportunityStatus.ACTIVE
         )
 
         self.assertEqual(1, len(actual_active))
@@ -395,7 +414,7 @@ class TestWorkflowsQuerier(TestCase):
         self.assertEqual("base config", actual_active[0].description)
 
         actual_inactive = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
-            "usIdCrcWorkRelease", status=OpportunityStatus.INACTIVE
+            "usIdCRCWorkRelease", status=OpportunityStatus.INACTIVE
         )
 
         self.assertEqual(2, len(actual_inactive))
@@ -404,20 +423,24 @@ class TestWorkflowsQuerier(TestCase):
 
     def test_get_configs_for_type_respects_offset_and_status(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_configs_for_type(
-            "usIdCrcWorkRelease", offset=1, status=OpportunityStatus.INACTIVE
+            "usIdCRCWorkRelease", offset=1, status=OpportunityStatus.INACTIVE
         )
 
         self.assertEqual(1, len(actual))
         self.assertEqual("base config", actual[0].description)
 
     def test_get_config_for_id(self) -> None:
-        actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id("usIdSLD", 3)
+        actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id(
+            "usIdSupervisionLevelDowngrade", 3
+        )
 
         self.assertIsNotNone(actual)
         self.assertEqual(datetime.datetime(2023, 5, 8), actual.created_at)  # type: ignore
 
     def test_get_config_for_id_returns_none_for_nonexistent_id(self) -> None:
-        actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id("usIdSLD", 333)
+        actual = WorkflowsQuerier(StateCode.US_ID).get_config_for_id(
+            "usIdSupervisionLevelDowngrade", 333
+        )
 
         self.assertIsNone(actual)
 

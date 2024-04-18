@@ -75,7 +75,9 @@ class OpportunitiesAPI(MethodView):
         return opportunities
 
 
-@workflows_blueprint.route("<state_code_str>/<opportunity_type>/configurations")
+@workflows_blueprint.route(
+    "<state_code_str>/opportunities/<opportunity_type>/configurations"
+)
 class OpportunityConfigurationsAPI(MethodView):
     """Endpoint to list configs for a given workflow type."""
 
@@ -104,7 +106,7 @@ class OpportunityConfigurationsAPI(MethodView):
 
 
 @workflows_blueprint.route(
-    "<state_code_str>/<opportunity_type>/configurations/<int:config_id>"
+    "<state_code_str>/opportunities/<opportunity_type>/configurations/<int:config_id>"
 )
 class OpportunitySingleConfigurationAPI(MethodView):
     """Endpoint to retrieve a config given an id."""

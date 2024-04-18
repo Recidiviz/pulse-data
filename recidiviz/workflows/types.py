@@ -75,7 +75,7 @@ class OpportunityConfig:
     ineligible_criteria_copy: Dict[str, Any] = attr.ib()
     dynamic_eligibility_text: str = attr.ib()
     call_to_action: str = attr.ib()
-    snooze: Dict[str, Any] = attr.ib()
+    snooze: Dict[str, Any] | None = attr.ib()
     is_alert: bool = attr.ib()
     sidebar_components: List[str] = attr.ib()
     denial_text: Optional[str] = attr.ib()

@@ -20,14 +20,22 @@ import PropTypes from "prop-types";
 import React, { useContext } from "react";
 
 import { InsightsStore } from "../../InsightsStore/InsightsStore";
+import { WorkflowsStore } from "../../WorkflowsStore/WorkflowsStore";
 
-const StoreContext = React.createContext<undefined | InsightsStore>(undefined);
+const StoreContext = React.createContext<undefined | RootStore>(undefined);
+
+type RootStore = {
+  insightsStore: InsightsStore;
+  workflowsStore: WorkflowsStore;
+};
 
 const StoreProvider: React.FC = observer(function StoreProvider({ children }) {
+  const rootStore: RootStore = {
+    insightsStore: new InsightsStore(),
+    workflowsStore: new WorkflowsStore(),
+  };
   return (
-    <StoreContext.Provider value={new InsightsStore()}>
-      {children}
-    </StoreContext.Provider>
+    <StoreContext.Provider value={rootStore}>{children}</StoreContext.Provider>
   );
 });
 
@@ -37,10 +45,18 @@ StoreProvider.propTypes = {
 
 export default StoreProvider;
 
-export function useInsightsStore(): InsightsStore {
+export function useRootStore(): RootStore {
   const context = useContext(StoreContext);
   if (context === undefined) {
-    throw new Error("useInsightsStore must be used within a StoreProvider");
+    throw new Error("useRootStore must be used within a StoreProvider");
   }
-  return context;
+  return context as RootStore;
+}
+
+export function useInsightsStore(): InsightsStore {
+  return useRootStore().insightsStore;
+}
+
+export function useWorkflowsStore(): WorkflowsStore {
+  return useRootStore().workflowsStore;
 }

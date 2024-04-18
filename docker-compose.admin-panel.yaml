@@ -13,11 +13,13 @@ services:
       - justice_counts_db_socket:/cloudsql/justice_counts
       - operations_db_socket:/cloudsql/operations
       - outliers_db_socket:/cloudsql/outliers
+      - workflows_db_socket:/cloudsql/workflows
     depends_on:
       - case_triage_db
       - justice_counts_db
       - operations_db
       - outliers_db
+      - workflows_db
       - redis
     ports:
       - "5050:5000"
