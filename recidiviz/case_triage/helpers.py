@@ -108,7 +108,8 @@ def add_cors_headers_helper(
     response.vary = "Origin"
     response.access_control_allow_origin = request.origin
     response.access_control_allow_headers = parse_set_header(
-        "authorization, sentry-trace, x-csrf-token, content-type"
+        # `baggage` is added by sentry. It only seems to reach the server during local development
+        "authorization, sentry-trace, x-csrf-token, content-type, baggage"
     )
     response.access_control_allow_credentials = True
     # Cache preflight responses for 2 hours

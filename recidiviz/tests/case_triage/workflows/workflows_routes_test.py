@@ -1893,7 +1893,7 @@ class TestWorkflowsCORS(WorkflowsBlueprintTestCase):
         request_origin="http://localhost:3000",
         expected_headers={
             "Access-Control-Allow-Origin": "http://localhost:3000",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type, baggage",
             "Access-Control-Max-Age": "7200",
             "Vary": "Origin",
         },
@@ -1904,7 +1904,7 @@ class TestWorkflowsCORS(WorkflowsBlueprintTestCase):
         request_origin="http://localhost:3000",
         expected_headers={
             "Access-Control-Allow-Origin": "http://localhost:3000",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type, baggage",
             "Access-Control-Max-Age": "7200",
             "Vary": "Origin",
         },
@@ -1915,7 +1915,7 @@ class TestWorkflowsCORS(WorkflowsBlueprintTestCase):
         request_origin="https://dashboard-staging.recidiviz.org",
         expected_headers={
             "Access-Control-Allow-Origin": "https://dashboard-staging.recidiviz.org",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type, baggage",
             "Vary": "Origin",
         },
     )
@@ -1925,7 +1925,7 @@ class TestWorkflowsCORS(WorkflowsBlueprintTestCase):
         request_origin="https://dashboard.recidiviz.org",
         expected_headers={
             "Access-Control-Allow-Origin": "https://dashboard.recidiviz.org",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type, baggage",
             "Vary": "Origin",
         },
     )
@@ -1935,7 +1935,7 @@ class TestWorkflowsCORS(WorkflowsBlueprintTestCase):
         request_origin="https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
         expected_headers={
             "Access-Control-Allow-Origin": "https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
-            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace, x-csrf-token, content-type, baggage",
             "Vary": "Origin",
         },
     )

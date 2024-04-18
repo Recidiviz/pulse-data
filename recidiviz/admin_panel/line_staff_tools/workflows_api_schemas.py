@@ -37,15 +37,15 @@ class OpportunitySchema(CamelCaseSchema):
     """Schema representing the base information about an opportunity."""
 
     state_code = fields.Str(required=True)
-    name = fields.Str(required=True)
-    system = fields.Str(required=True)
-    url = fields.Str(required=True)
+    opportunity_type = fields.Str(required=True)
+    system_type = fields.Str(required=True)
+    url_section = fields.Str(required=True)
     completion_event = fields.Str(required=True)
     experiment_id = fields.Str(required=True)
     last_updated_at = fields.Str(required=True)
     last_updated_by = fields.Str(required=True)
 
-    feature_variant = fields.Str(required=False)
+    gating_feature_variant = fields.Str(required=False)
 
 
 class OpportunityConfigurationSchema(WorkflowsConfigSchema):

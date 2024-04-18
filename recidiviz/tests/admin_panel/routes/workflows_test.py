@@ -143,9 +143,9 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         mock_config = [
             {
                 "state_code": "US_ID",
-                "name": "Opportunity Name",
-                "system": "INCARCERATION",
-                "url": "url-path",
+                "opportunity_type": "Opportunity Name",
+                "system_type": "INCARCERATION",
+                "url_section": "url-path",
                 "completion_event": "event_id",
                 "experiment_id": "experiment_id",
                 "last_updated_at": datetime.datetime(2024, 4, 15),
@@ -158,9 +158,9 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         expected_response = [
             {
                 "stateCode": "US_ID",
-                "name": "Opportunity Name",
-                "system": "INCARCERATION",
-                "url": "url-path",
+                "opportunityType": "Opportunity Name",
+                "systemType": "INCARCERATION",
+                "urlSection": "url-path",
                 "completionEvent": "event_id",
                 "experimentId": "experiment_id",
                 "lastUpdatedBy": "bob",
