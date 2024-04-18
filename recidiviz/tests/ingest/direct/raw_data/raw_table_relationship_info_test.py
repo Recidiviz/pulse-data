@@ -619,7 +619,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
             ],
             transforms=[
                 JoinTransform(col1, "REPLACE({col_name}, 'a', 'b')"),
-                JoinTransform(col2, "CAST({col_name} AS INT)"),
+                JoinTransform(col2, "CAST({col_name} AS INT64"),
             ],
         )
 

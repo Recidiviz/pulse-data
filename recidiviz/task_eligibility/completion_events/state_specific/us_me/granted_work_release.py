@@ -37,7 +37,7 @@ SELECT
     state_code,
     person_id,
     SAFE_CAST(LEFT(CUSTODY_DATE, 10) AS DATE) AS completion_event_date,
-#TODO(#16722): pull custody level from ingested data once it is hydrated in our schema
+# TODO(#16722): pull custody level from ingested data once it is hydrated in our schema
 FROM `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_112_CUSTODY_LEVEL_latest`
 INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
     ON CIS_100_CLIENT_ID = external_id

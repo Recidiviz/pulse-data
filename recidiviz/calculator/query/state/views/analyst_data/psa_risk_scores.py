@@ -449,7 +449,7 @@ on or prior to the start date of the session
 , scaled_by_state_year_reincarceration_rate_cte AS (
     SELECT
         *,
-        AVG(CAST(reincarcerated_within_one_year_of_supervision_start AS INT)) OVER
+        AVG(CAST(reincarcerated_within_one_year_of_supervision_start AS INT64)) OVER
             (PARTITION BY state_code, start_year, total_nca_points)
             AS prob_reincarceration_within_one_year_for_state_year,
     FROM

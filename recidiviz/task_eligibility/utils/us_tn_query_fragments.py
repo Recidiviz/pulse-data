@@ -620,7 +620,7 @@ def us_tn_classification_forms(
     LEFT JOIN (
         SELECT OffenderID, HealthRelatedClassification 
         FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.HealthExam_latest`
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(ExamNumber AS INT) DESC) = 1  
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(ExamNumber AS INT64) DESC) = 1  
     ) health
         ON pei.external_id = health.OffenderID
     LEFT JOIN vantage latest_vantage

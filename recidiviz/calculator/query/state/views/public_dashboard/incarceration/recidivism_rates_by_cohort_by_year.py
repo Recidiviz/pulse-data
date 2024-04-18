@@ -166,7 +166,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
         SELECT
           cohort_info.state_code,
           cohort_info.cohort_start_year AS release_cohort,
-          CAST(cohort_info.cohort_months/12 AS INTEGER) AS followup_years,
+          CAST(cohort_info.cohort_months/12 AS INT64) AS followup_years,
             CASE
             WHEN cohort_info.gender = 'TRANS_FEMALE' THEN 'FEMALE'
             WHEN cohort_info.gender = 'TRANS_MALE' THEN 'MALE'

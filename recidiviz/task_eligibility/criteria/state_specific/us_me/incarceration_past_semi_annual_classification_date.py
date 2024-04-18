@@ -60,7 +60,7 @@ _QUERY_TEMPLATE = f"""
         SELECT 
           syr.* EXCEPT (reclasses_needed),
           IFNULL(GREATEST(
-            CAST(JSON_EXTRACT_SCALAR(ar.reason,'$.reclasses_needed') AS INT),
+            CAST(JSON_EXTRACT_SCALAR(ar.reason,'$.reclasses_needed') AS INT64),
             syr.reclasses_needed
           ), 0) AS reclasses_needed,
         FROM super_sessions_with_6_years_remaining_premerged syr

@@ -403,7 +403,7 @@ def violations_within_time_interval_criteria_builder(
         "ARRAY_AGG(violation_date IGNORE NULLS ORDER BY violation_date DESC)"
     )
     if display_single_violation_date:
-        violation_date_content_in_reason_blob += "[0]"
+        violation_date_content_in_reason_blob += "[OFFSET(0)]"
 
     criteria_query = f"""WITH supervision_violations AS (
         SELECT

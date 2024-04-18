@@ -46,7 +46,7 @@ SELECT
 FROM
   `{project_id}.{base_dataset}.{table_name}`
 GROUP BY state_code, `{column_name}`
-ORDER BY state_code, `{column_name}`;
+ORDER BY state_code, `{column_name}`
 """
 
 ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE = """
@@ -58,7 +58,7 @@ SELECT
 FROM
   `{project_id}.{base_dataset}.{table_name}`
 GROUP BY state_code, `{column_name}`
-ORDER BY state_code, `{column_name}`;
+ORDER BY state_code, `{column_name}`
 """
 
 STATE_TABLE_ENUM_COLUMN_DESCRIPTION_TEMPLATE = """View that counts the instances of
