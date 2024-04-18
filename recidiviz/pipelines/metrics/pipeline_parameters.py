@@ -46,17 +46,18 @@ class MetricsPipelineParameters(PipelineParameters):
     calculation_month_count: int = attr.ib(
         default=-1, validator=attr_validators.is_int, converter=int
     )
+    output: str = attr.ib(
+        validator=attr_validators.is_str, default=DATAFLOW_METRICS_DATASET
+    )
 
     @property
     def flex_template_name(self) -> str:
         return "metrics"
 
-    def define_output(self) -> str:
-        return DATAFLOW_METRICS_DATASET
+    @classmethod
+    def get_input_dataset_param_names(cls) -> List[str]:
+        return ["reference_view_input", "normalized_input"]
 
     @classmethod
-    def get_sandboxable_dataset_param_names(cls) -> List[str]:
-        return [
-            *super().get_sandboxable_dataset_param_names(),
-            "normalized_input",
-        ]
+    def get_output_dataset_param_names(cls) -> List[str]:
+        return ["output"]

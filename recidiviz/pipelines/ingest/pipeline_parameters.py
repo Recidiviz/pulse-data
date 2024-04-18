@@ -37,6 +37,10 @@ INGEST_PIPELINE_NAME = "ingest"
 class IngestPipelineParameters(PipelineParameters):
     """Class for ingest pipeline parameters"""
 
+    ingest_instance: str = attr.ib(
+        default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
+    )
+
     raw_data_table_input: str = attr.ib(validator=attr_validators.is_str)
 
     @raw_data_table_input.default
@@ -51,6 +55,14 @@ class IngestPipelineParameters(PipelineParameters):
     @ingest_view_results_output.default
     def _ingest_view_results_output_default(self) -> str:
         return ingest_view_materialization_results_dataset(
+            StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
+        )
+
+    output: str = attr.ib(validator=attr_validators.is_str)
+
+    @output.default
+    def _output_default(self) -> str:
+        return state_dataset_for_state_code(
             StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
         )
 
@@ -79,19 +91,14 @@ class IngestPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "ingest"
 
-    def define_output(self) -> str:
-        return state_dataset_for_state_code(
-            StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
-        )
-
     def __attrs_post_init__(self) -> None:
         both_are_overwritten = (
-            self.output != self.define_output()
+            self.output != self._output_default()
             and self.ingest_view_results_output
             != self._ingest_view_results_output_default()
         )
         both_are_default = (
-            self.output == self.define_output()
+            self.output == self._output_default()
             and self.ingest_view_results_output
             == self._ingest_view_results_output_default()
         )
@@ -108,8 +115,15 @@ class IngestPipelineParameters(PipelineParameters):
             )
 
     @classmethod
-    def get_sandboxable_dataset_param_names(cls) -> List[str]:
+    def get_input_dataset_param_names(cls) -> List[str]:
         return [
-            *super().get_sandboxable_dataset_param_names(),
+            "raw_data_table_input",
+            "reference_view_input",
+        ]
+
+    @classmethod
+    def get_output_dataset_param_names(cls) -> List[str]:
+        return [
             "ingest_view_results_output",
+            "output",
         ]

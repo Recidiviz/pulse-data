@@ -14,13 +14,6 @@
       "regexes": ["US_[A-Z]{2}"]
     },
     {
-      "name": "ingest_instance",
-      "label": "Ingest instance",
-      "helpText": "Ingest instance that the pipeline is running for.",
-      "regexes": ["PRIMARY|SECONDARY"],
-      "isOptional": true
-    },
-    {
       "name": "metric_types",
       "label": "Metric types",
       "helpText": "Metric types to collect for this pipeline.",

@@ -40,7 +40,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import GCP_PROJECTS, in_test
 from recidiviz.utils.params import str_matches_regex_type
@@ -94,15 +93,9 @@ class PipelineParameters:
     project: str = attr.ib(validator=attr_validators.is_str)
     state_code: str = attr.ib(validator=attr_validators.is_str)
     pipeline: str = attr.ib(validator=attr_validators.is_str)
-    ingest_instance: str = attr.ib(
-        default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
-    )
-    output: str = attr.ib(validator=attr_validators.is_str)
 
-    @output.default
-    def _output_default(self) -> str:
-        return self.define_output()
-
+    # TODO(#22528): Delete this parameter entirely once we read reference view queries
+    #  directly from queries.
     reference_view_input: str = attr.ib(
         default=REFERENCE_VIEWS_DATASET, validator=attr_validators.is_str
     )
@@ -152,17 +145,21 @@ class PipelineParameters:
 
     @classmethod
     @abc.abstractmethod
-    def get_sandboxable_dataset_param_names(cls) -> List[str]:
-        """Returns a list of dataset parameter names that will be used in the pipeline and can take sandbox prefixes."""
-        return ["output", "reference_view_input"]
+    def get_input_dataset_param_names(cls) -> List[str]:
+        """Returns a list of parameter names that contain dataset_ids for datasets used
+        as input to this pipeline
+        """
+
+    @classmethod
+    @abc.abstractmethod
+    def get_output_dataset_param_names(cls) -> List[str]:
+        """Returns a list of parameter names that contain dataset_ids for datasets used
+        as input to this pipeline
+        """
 
     @property
     @abc.abstractmethod
     def flex_template_name(self) -> str:
-        pass
-
-    @abc.abstractmethod
-    def define_output(self) -> str:
         pass
 
     @classmethod
@@ -320,7 +317,10 @@ class PipelineParameters:
                     sandbox_prefix,
                     getattr(self, dataset_param_name),
                 )
-                for dataset_param_name in self.get_sandboxable_dataset_param_names()
+                for dataset_param_name in [
+                    *self.get_input_dataset_param_names(),
+                    *self.get_output_dataset_param_names(),
+                ]
             },
             # Add -test suffix to avoid firing Pagerduty alerts
             job_name=f"{converted_sandbox_prefix}-{self.job_name}-test",

@@ -263,6 +263,7 @@ def main() -> int:
         "recidiviz.big_query",
         "recidiviz.common",
         "recidiviz.cloud_storage",
+        "recidiviz.ingest.direct.dataset_config",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.export.products",
         "recidiviz.persistence.database.reserved_words",

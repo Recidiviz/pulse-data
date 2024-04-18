@@ -19,6 +19,7 @@ from typing import List
 
 import attr
 
+from recidiviz.common import attr_validators
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 
@@ -27,13 +28,18 @@ from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DA
 class SupplementalPipelineParameters(PipelineParameters):
     """Class for supplemental pipeline parameters"""
 
+    output: str = attr.ib(
+        validator=attr_validators.is_str, default=SUPPLEMENTAL_DATA_DATASET
+    )
+
     @property
     def flex_template_name(self) -> str:
         return "supplemental"
 
-    def define_output(self) -> str:
-        return SUPPLEMENTAL_DATA_DATASET
+    @classmethod
+    def get_input_dataset_param_names(cls) -> List[str]:
+        return ["reference_view_input"]
 
     @classmethod
-    def get_sandboxable_dataset_param_names(cls) -> List[str]:
-        return super().get_sandboxable_dataset_param_names()
+    def get_output_dataset_param_names(cls) -> List[str]:
+        return ["output"]

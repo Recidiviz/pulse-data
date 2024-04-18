@@ -40,16 +40,20 @@ class NormalizationPipelineParameters(PipelineParameters):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    output: str = attr.ib(validator=attr_validators.is_str)
+
+    @output.default
+    def _output_default(self) -> str:
+        return normalized_state_dataset_for_state_code(StateCode(self.state_code))
+
     @property
     def flex_template_name(self) -> str:
         return "normalization"
 
-    def define_output(self) -> str:
-        return normalized_state_dataset_for_state_code(StateCode(self.state_code))
+    @classmethod
+    def get_input_dataset_param_names(cls) -> List[str]:
+        return ["reference_view_input", "state_data_input"]
 
     @classmethod
-    def get_sandboxable_dataset_param_names(cls) -> List[str]:
-        return [
-            *super().get_sandboxable_dataset_param_names(),
-            "state_data_input",
-        ]
+    def get_output_dataset_param_names(cls) -> List[str]:
+        return ["output"]

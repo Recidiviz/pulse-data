@@ -42,7 +42,6 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             "pipeline": "test_pipeline_name",
             "output": "test_output",
             "reference_view_input": REFERENCE_VIEWS_DATASET,
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -64,7 +63,6 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             "pipeline": "test_pipeline_name",
             "output": SUPPLEMENTAL_DATA_DATASET,
             "reference_view_input": REFERENCE_VIEWS_DATASET,
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -88,7 +86,6 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             "pipeline": "test_pipeline_name",
             "reference_view_input": "my_prefix_test_view",
             "output": "my_prefix_test_output",
-            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
