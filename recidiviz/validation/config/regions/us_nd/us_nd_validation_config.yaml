@@ -7,6 +7,9 @@ exclusions:
     exclusion_reason:
       ND ingest constructs one supervision period per supervision sentence - we expect supervision
       periods to overlap
+  - validation_name: sentence_comparison
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#28866) Hydrate new sentencing entities
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 0.05

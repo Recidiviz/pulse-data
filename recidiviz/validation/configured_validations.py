@@ -185,6 +185,9 @@ from recidiviz.validation.views.state.revocation_matrix_distribution_by_race_com
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sentences.compare_v2_and_v1_sentences import (
+    SENTENCE_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sentences.normalized_state_charge_missing_descriptions import (
     NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER,
 )
@@ -922,6 +925,15 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             validation_category=ValidationCategory.INVARIANT,
             region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=SENTENCE_COMPARISON_VIEW_BUILDER,
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                "imposition_v2",
+                "imposition_v1",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
         ),
     ]
 

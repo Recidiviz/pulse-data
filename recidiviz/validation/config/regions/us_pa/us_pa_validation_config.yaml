@@ -8,6 +8,9 @@ exclusions:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: PA has not provided us with person-level validation data for supervising officers
+  - validation_name: sentence_comparison
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#28868) Hydrate new sentencing entities
 
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison

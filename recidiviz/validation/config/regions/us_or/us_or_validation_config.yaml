@@ -5,6 +5,9 @@ exclusions:
   - validation_name: dataflow_metrics_supervising_officer_staff_id_all_null
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: There is no supervising officer data in OR so all supervising officer external id should be null.
+  - validation_name: sentence_comparison
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#28867) Hydrate new sentencing entities
 max_allowed_error_overrides: []
 num_allowed_rows_overrides:
   - validation_name: normalized_state_charge_missing_descriptions
