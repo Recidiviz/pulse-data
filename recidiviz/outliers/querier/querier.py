@@ -863,6 +863,7 @@ class OutliersQuerier:
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
                     SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
@@ -872,6 +873,7 @@ class OutliersQuerier:
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
                     SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
@@ -985,6 +987,7 @@ class OutliersQuerier:
                         external_id=record.external_id,
                         pseudonymized_id=record.pseudonymized_id,
                         supervisor_external_id=record.supervisor_external_id,
+                        supervisor_external_ids=record.supervisor_external_ids,
                         district=record.supervision_district,
                         caseload_type=record.specialized_caseload_type,
                         outlier_metrics=(

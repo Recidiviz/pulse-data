@@ -3,6 +3,7 @@ Snapshots for recidiviz/tests/outliers/querier_test.py
 Update snapshots automatically by running `pytest recidiviz/tests/outliers/querier_test.py --snapshot-update
 Remember to include a docstring like this after updating the snapshots for Pylint purposes
 """
+
 # -*- coding: utf-8 -*-
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
@@ -63,6 +64,9 @@ snapshots[
     ),
     "103": GenericRepr(
         "OfficerSupervisorReportData(metrics=[], metrics_without_outliers=[OutliersMetricConfig(name='incarceration_starts_and_inferred', outcome_type=<MetricOutcome.ADVERSE: 'ADVERSE'>, title_display_name='Incarceration Rate (CPVs & TPVs)', body_display_name='incarceration rate', event_name='incarcerations', event_name_singular='incarceration', event_name_past_tense='were incarcerated', description_markdown='Incarceration rate description\\n\\n<br />\\nIncarceration rate denominator description', metric_event_conditions_string='(event = \"INCARCERATION_START\"  AND JSON_EXTRACT_SCALAR(event_attributes, \"$.is_discretionary\") IN (\"true\")) OR (event = \"SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON\"  AND JSON_EXTRACT_SCALAR(event_attributes, \"$.is_discretionary\") IN (\"true\"))', top_x_pct=None), OutliersMetricConfig(name='task_completions_transfer_to_limited_supervision', outcome_type=<MetricOutcome.FAVORABLE: 'FAVORABLE'>, title_display_name='Limited Supervision Unit Transfer Rate', body_display_name='Limited Supervision Unit transfer rate(s)', event_name='LSU transfers', event_name_singular='LSU transfer', event_name_past_tense='were transferred to LSU', description_markdown='', metric_event_conditions_string='(event = \"TASK_COMPLETED\"  AND JSON_EXTRACT_SCALAR(event_attributes, \"$.task_type\") IN (\"TRANSFER_TO_LIMITED_SUPERVISION\"))', top_x_pct=None)], recipient_email_address='manager3@recidiviz.org', additional_recipients=['manager2@recidiviz.org'])"
+    ),
+    "104": GenericRepr(
+        "OfficerSupervisorReportData(metrics=[], metrics_without_outliers=[OutliersMetricConfig(name='incarceration_starts_and_inferred', outcome_type=<MetricOutcome.ADVERSE: 'ADVERSE'>, title_display_name='Incarceration Rate (CPVs & TPVs)', body_display_name='incarceration rate', event_name='incarcerations', event_name_singular='incarceration', event_name_past_tense='were incarcerated', description_markdown='Incarceration rate description\\n\\n<br />\\nIncarceration rate denominator description', metric_event_conditions_string='(event = \"INCARCERATION_START\"  AND JSON_EXTRACT_SCALAR(event_attributes, \"$.is_discretionary\") IN (\"true\")) OR (event = \"SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON\"  AND JSON_EXTRACT_SCALAR(event_attributes, \"$.is_discretionary\") IN (\"true\"))', top_x_pct=None), OutliersMetricConfig(name='task_completions_transfer_to_limited_supervision', outcome_type=<MetricOutcome.FAVORABLE: 'FAVORABLE'>, title_display_name='Limited Supervision Unit Transfer Rate', body_display_name='Limited Supervision Unit transfer rate(s)', event_name='LSU transfers', event_name_singular='LSU transfer', event_name_past_tense='were transferred to LSU', description_markdown='', metric_event_conditions_string='(event = \"TASK_COMPLETED\"  AND JSON_EXTRACT_SCALAR(event_attributes, \"$.task_type\") IN (\"TRANSFER_TO_LIMITED_SUPERVISION\"))', top_x_pct=None)], recipient_email_address='manager4@recidiviz.org', additional_recipients=['manager2@recidiviz.org', 'manager3@recidiviz.org'])"
     ),
 }
 
@@ -231,19 +235,51 @@ Incarceration rate denominator description""",
         ],
         "recipient_email_address": "manager3@recidiviz.org",
     },
+    "104": {
+        "additional_recipients": ["manager2@recidiviz.org", "manager3@recidiviz.org"],
+        "metrics": [],
+        "metrics_without_outliers": [
+            {
+                "body_display_name": "incarceration rate",
+                "description_markdown": """Incarceration rate description
+
+<br />
+Incarceration rate denominator description""",
+                "event_name": "incarcerations",
+                "event_name_past_tense": "were incarcerated",
+                "event_name_singular": "incarceration",
+                "name": "incarceration_starts_and_inferred",
+                "outcome_type": "ADVERSE",
+                "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                "top_x_pct": None,
+            },
+            {
+                "body_display_name": "Limited Supervision Unit transfer rate(s)",
+                "description_markdown": "",
+                "event_name": "LSU transfers",
+                "event_name_past_tense": "were transferred to LSU",
+                "event_name_singular": "LSU transfer",
+                "name": "task_completions_transfer_to_limited_supervision",
+                "outcome_type": "FAVORABLE",
+                "title_display_name": "Limited Supervision Unit Transfer Rate",
+                "top_x_pct": None,
+            },
+        ],
+        "recipient_email_address": "manager4@recidiviz.org",
+    },
 }
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_officers_for_supervisor"
 ] = [
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names=None, name_suffix=None), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-03-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-02-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-01-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2022-12-01', 'metric_rate': 0.8}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names=None, name_suffix=None), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-03-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-02-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2023-01-01', 'metric_rate': 0.8}, {'status': 'FAR', 'end_date': '2022-12-01', 'metric_rate': 0.8}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}])"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names=None, name_suffix=None), external_id='04', pseudonymized_id='officerhash4', supervisor_external_id='102', district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'task_completions_transfer_to_limited_supervision', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0}]}], top_x_pct_metrics=[])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='4', middle_names=None, name_suffix=None), external_id='04', pseudonymized_id='officerhash4', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'task_completions_transfer_to_limited_supervision', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0}, {'status': 'FAR', 'end_date': '2023-04-01', 'metric_rate': 0}]}], top_x_pct_metrics=[])"
     ),
     GenericRepr(
-        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names=None, name_suffix=None), external_id='06', pseudonymized_id='officerhash6', supervisor_external_id='102', district='2', caseload_type=None, outlier_metrics=[], top_x_pct_metrics=[])"
+        "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='6', middle_names=None, name_suffix=None), external_id='06', pseudonymized_id='officerhash6', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', caseload_type=None, outlier_metrics=[], top_x_pct_metrics=[])"
     ),
 ]
 
@@ -270,23 +306,23 @@ snapshots[
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names=None, name_suffix=None), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names=None, name_suffix=None), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}])"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match_not_top_x_pct"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names=None, name_suffix=None), external_id='09', pseudonymized_id='officerhash9', supervisor_external_id='103', district=None, caseload_type=None, outlier_metrics=[], top_x_pct_metrics=[])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='9', middle_names=None, name_suffix=None), external_id='09', pseudonymized_id='officerhash9', supervisor_external_id='103', supervisor_external_ids=['103'], district=None, caseload_type=None, outlier_metrics=[], top_x_pct_metrics=[])"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_found_match_with_highlights"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names=None, name_suffix=None), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='3', middle_names=None, name_suffix=None), external_id='03', pseudonymized_id='officerhash3', supervisor_external_id='102', supervisor_external_ids=['102'], district='2', caseload_type=None, outlier_metrics=[{'metric_id': 'absconsions_bench_warrants', 'statuses_over_time': [{'status': 'FAR', 'end_date': '2023-05-01', 'metric_rate': 0.8}]}], top_x_pct_metrics=[{'metric_id': 'incarceration_starts_and_inferred', 'top_x_pct': 10}])"
 )
 
 snapshots[
     "TestOutliersQuerier.TestOutliersQuerier test_get_supervision_officer_entity_highlight_in_prev_period_only"
 ] = GenericRepr(
-    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names=None, name_suffix=None), external_id='07', pseudonymized_id='officerhash7', supervisor_external_id='101', district='1', caseload_type=None, outlier_metrics=[], top_x_pct_metrics=[])"
+    "SupervisionOfficerEntity(full_name=PersonName(given_names='Officer', surname='7', middle_names=None, name_suffix=None), external_id='07', pseudonymized_id='officerhash7', supervisor_external_id='101', supervisor_external_ids=['101'], district='1', caseload_type=None, outlier_metrics=[], top_x_pct_metrics=[])"
 )

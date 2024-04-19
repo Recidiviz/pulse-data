@@ -64,6 +64,7 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
 def load_model_fixture(
     model: OutliersBase, filename: Optional[str] = None
 ) -> List[Dict]:
+    """Helper to load fixture data into the local Postgresql DB"""
     filename = f"{model.__tablename__}.csv" if filename is None else filename
     fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
     results = []
@@ -71,14 +72,18 @@ def load_model_fixture(
         reader = csv.DictReader(fixture_file)
         for row in reader:
             for k, v in row.items():
-                if k == "full_name":
-                    row["full_name"] = json.loads(row["full_name"])
-                if k == "client_name":
-                    row["client_name"] = json.loads(row["client_name"])
-                if k == "attributes" and v != "":
-                    row["attributes"] = json.loads(row["attributes"])
-                if k == "has_seen_onboarding" and v != "":
-                    row["has_seen_onboarding"] = json.loads(row["has_seen_onboarding"])
+                if (
+                    k
+                    in {
+                        "full_name",
+                        "client_name",
+                        "attributes",
+                        "has_seen_onboarding",
+                        "supervisor_external_ids",
+                    }
+                    and v != ""
+                ):
+                    row[k] = json.loads(v)
                 if v == "True":
                     row[k] = True
                 if v == "False":

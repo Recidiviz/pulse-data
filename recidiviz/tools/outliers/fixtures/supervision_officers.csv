@@ -1,10 +1,10 @@
-state_code,external_id,staff_id,full_name,pseudonymized_id,supervisor_external_id,supervision_district,specialized_caseload_type
-US_PA,01,00001,"{""given_names"": ""OFFICER"", ""surname"": ""1""}",officerhash1,101,1,
-US_PA,02,00002,"{""given_names"": ""OFFICER"", ""surname"": ""2""}",officerhash2,101,1,OTHER
-US_PA,03,00003,"{""given_names"": ""OFFICER"", ""surname"": ""3""}",officerhash3,102,2,
-US_PA,04,00004,"{""given_names"": ""OFFICER"", ""surname"": ""4""}",officerhash4,102,2,
-US_PA,05,00005,"{""given_names"": ""OFFICER"", ""surname"": ""5""}",officerhash5,101,1,
-US_PA,06,00006,"{""given_names"": ""OFFICER"", ""surname"": ""6""}",officerhash6,102,2,
-US_PA,07,00007,"{""given_names"": ""OFFICER"", ""surname"": ""7""}",officerhash7,101,1,
-US_PA,08,00008,"{""given_names"": ""OFFICER"", ""surname"": ""8""}",officerhash8,101,1,
-US_PA,09,00009,"{""given_names"": ""OFFICER"", ""surname"": ""9""}",officerhash9,103,,
+state_code,external_id,staff_id,full_name,pseudonymized_id,supervisor_external_id,supervisor_external_ids,supervision_district,specialized_caseload_type
+US_PA,01,00001,"{""given_names"": ""OFFICER"", ""surname"": ""1""}",officerhash1,101,"[""101"", ""104""]",1,
+US_PA,02,00002,"{""given_names"": ""OFFICER"", ""surname"": ""2""}",officerhash2,101,"[""101""]",1,OTHER
+US_PA,03,00003,"{""given_names"": ""OFFICER"", ""surname"": ""3""}",officerhash3,102,"[""102""]",2,
+US_PA,04,00004,"{""given_names"": ""OFFICER"", ""surname"": ""4""}",officerhash4,102,"[""102""]",2,
+US_PA,05,00005,"{""given_names"": ""OFFICER"", ""surname"": ""5""}",officerhash5,101,"[""101""]",1,
+US_PA,06,00006,"{""given_names"": ""OFFICER"", ""surname"": ""6""}",officerhash6,102,"[""102""]",2,
+US_PA,07,00007,"{""given_names"": ""OFFICER"", ""surname"": ""7""}",officerhash7,101,"[""101""]",1,
+US_PA,08,00008,"{""given_names"": ""OFFICER"", ""surname"": ""8""}",officerhash8,101,"[""101""]",1,
+US_PA,09,00009,"{""given_names"": ""OFFICER"", ""surname"": ""9""}",officerhash9,103,"[""103""]",,
