@@ -17,9 +17,10 @@
 """Querier class to encapsulate requests to the Workflows postgres DBs."""
 import logging
 from functools import cached_property
-from typing import Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import attr
+from sqlalchemy import insert, update
 from sqlalchemy.orm import sessionmaker
 
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
@@ -240,3 +241,74 @@ class WorkflowsQuerier:
                 return None
 
             return FullOpportunityConfig.from_db_entry(config)
+
+    def add_config(
+        self,
+        opportunity_type: str,
+        state_code: StateCode,
+        created_by: str,
+        created_at: str,
+        description: str,
+        feature_variant: Optional[str],
+        display_name: str,
+        methodology_url: str,
+        is_alert: bool,
+        initial_header: str,
+        denial_reasons: Dict[str, Any],
+        eligible_criteria_copy: Dict[str, Any],
+        ineligible_criteria_copy: Dict[str, Any],
+        dynamic_eligibility_text: str,
+        call_to_action: str,
+        denial_text: Optional[str],
+        snooze: Dict[str, Any],
+        sidebar_components: List[str],
+    ) -> int:
+        """
+        Given an opportunity type and a config, adds that config to the database,
+        deactivating any existing configs with the same gating for the given opportunity.
+        """
+        with self.database_session() as session:
+
+            insert_statement = (
+                insert(OpportunityConfiguration)
+                .values(
+                    state_code=state_code,
+                    opportunity_type=opportunity_type,
+                    created_by=created_by,
+                    created_at=created_at,
+                    description=description,
+                    status=OpportunityStatus.ACTIVE,
+                    feature_variant=feature_variant,
+                    display_name=display_name,
+                    methodology_url=methodology_url,
+                    is_alert=is_alert,
+                    initial_header=initial_header,
+                    denial_reasons=denial_reasons,
+                    eligible_criteria_copy=eligible_criteria_copy,
+                    ineligible_criteria_copy=ineligible_criteria_copy,
+                    dynamic_eligibility_text=dynamic_eligibility_text,
+                    call_to_action=call_to_action,
+                    denial_text=denial_text,
+                    snooze=snooze,
+                    sidebar_components=sidebar_components,
+                )
+                .returning(OpportunityConfiguration.id)
+            )
+
+            config_id = session.execute(insert_statement).scalar()
+
+            # Deactivate all configs with matching gating
+            update_statement = (
+                update(OpportunityConfiguration)
+                .filter(
+                    OpportunityConfiguration.opportunity_type == opportunity_type,
+                    OpportunityConfiguration.feature_variant == feature_variant,
+                    OpportunityConfiguration.id != config_id,
+                )
+                .values(status=OpportunityStatus.INACTIVE)
+            )
+
+            session.execute(update_statement)
+            session.commit()
+
+            return config_id

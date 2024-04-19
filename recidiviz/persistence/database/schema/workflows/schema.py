@@ -66,8 +66,18 @@ class OpportunityConfiguration(WorkflowsBase):
 
     __tablename__ = "opportunity_configuration"
 
-    # Manage this table via alembic
-    __table_args__ = {"info": {RUN_MIGRATIONS: True}}
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ("state_code", "opportunity_type"),
+            [
+                "opportunity.state_code",
+                "opportunity.opportunity_type",
+            ],
+            name="fk_opportunity_state_code_opportunty_type",
+        ),
+        # Manage this table via alembic
+        {"info": {RUN_MIGRATIONS: True}},
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     state_code = Column(String, nullable=False)
@@ -119,13 +129,3 @@ class OpportunityConfiguration(WorkflowsBase):
 
     # Sidebar components to display
     sidebar_components = Column(ARRAY(String), nullable=False, server_default="{}")
-
-    __tableargs__ = (
-        ForeignKeyConstraint(
-            ["state_code", "opportunity_type"],
-            [
-                "opportunity.state_code",
-                "opportunity.opportunity_type",
-            ],
-        ),
-    )

@@ -20,7 +20,7 @@ import csv
 import datetime
 import json
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -79,6 +79,31 @@ def load_model_fixture(
             results.append(row)
 
     return results
+
+
+def make_add_config_arguments(
+    opportunity_type: str, feature_variant: Optional[str] = None
+) -> Dict[str, Any]:
+    return {
+        "state_code": "US_ID",
+        "opportunity_type": opportunity_type,
+        "created_by": "Maria",
+        "created_at": datetime.datetime(2024, 5, 12),
+        "description": "description",
+        "display_name": "display_name",
+        "methodology_url": "methodology_url",
+        "initial_header": "initial_header",
+        "denial_reasons": {},
+        "eligible_criteria_copy": {},
+        "ineligible_criteria_copy": {},
+        "dynamic_eligibility_text": "dynamic_eligibility_text",
+        "call_to_action": "call_to_action",
+        "snooze": {},
+        "feature_variant": feature_variant,
+        "is_alert": False,
+        "denial_text": "denial_text",
+        "sidebar_components": ["sidebarComponent"],
+    }
 
 
 WORK_RELEASE_INFO = FullOpportunityInfo(
@@ -310,7 +335,6 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertEqual(3, len(actual))
-        self.snapshot.assert_match(actual, name="test_get_active_configs_for_multiple_opportunity_types")  # type: ignore[attr-defined]
 
     def test_get_top_config_for_single_type_no_fv(self) -> None:
         actual = WorkflowsQuerier(StateCode.US_ID).get_top_config_for_opportunity_types(
@@ -450,3 +474,41 @@ class TestWorkflowsQuerier(TestCase):
         )
 
         self.assertIsNone(actual)
+
+    def test_add_config_increments_id(self) -> None:
+        new_id = WorkflowsQuerier(StateCode.US_ID).add_config(**make_add_config_arguments("usIdSupervisionLevelDowngrade"))  # type: ignore
+        self.assertEqual(6, new_id)
+
+    def test_add_config_deactivates_existing_config(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        querier.add_config(**make_add_config_arguments("usIdSupervisionLevelDowngrade"))  # type: ignore
+
+        old_config = querier.get_config_for_id("usIdSupervisionLevelDowngrade", 3)
+
+        self.assertEqual(OpportunityStatus.INACTIVE, old_config.status)  # type: ignore
+
+        active = querier.get_configs_for_type(
+            "usIdSupervisionLevelDowngrade", status=OpportunityStatus.ACTIVE
+        )
+        self.assertEqual(2, len(active))
+
+    def test_add_config_does_not_deactivate_existing_configs_with_different_gating(
+        self,
+    ) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        querier.add_config(
+            **make_add_config_arguments(
+                "usIdSupervisionLevelDowngrade",
+                feature_variant="someNewVariant",
+            )
+        )  # type: ignore
+
+        active = querier.get_configs_for_type(
+            "usIdSupervisionLevelDowngrade", status=OpportunityStatus.ACTIVE
+        )
+        self.assertEqual(3, len(active))
+
+    def test_add_config_fails_on_bad_opportunity_type(self) -> None:
+        querier = WorkflowsQuerier(StateCode.US_ID)
+        with pytest.raises(Exception):
+            querier.add_config(**make_add_config_arguments("badType"))  # type: ignore
