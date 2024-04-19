@@ -620,6 +620,7 @@ def generate_agency_summary_csv(
     agencies, system_columns = process_systems(agencies=agencies)
 
     columns = [
+        "id",
         "name",
         "state",
         CREATED_AT,
