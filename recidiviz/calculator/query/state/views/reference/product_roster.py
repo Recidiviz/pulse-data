@@ -77,6 +77,8 @@ ROUTES = [
     "system_supervisionToLiberty",
     "operations",
     "workflows",
+    "insights",
+    "insights_supervision_supervisors-list",
 ]
 
 PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -107,7 +109,7 @@ PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     expanded_routes="\n        ".join(
         [
-            f"COALESCE(CAST(JSON_VALUE(override_routes, '$.{route}') AS BOOL), CAST(JSON_VALUE(default_routes, '$.{route}') AS BOOL), FALSE) AS routes_{route},"
+            f"COALESCE(CAST(JSON_VALUE(override_routes, '$.{route}') AS BOOL), CAST(JSON_VALUE(default_routes, '$.{route}') AS BOOL), FALSE) AS routes_{route.replace('-', '_')},"
             for route in ROUTES
         ]
     ),

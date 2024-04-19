@@ -41,12 +41,12 @@ class TestFindUnusedBQViews(unittest.TestCase):
                 2) If this view is no longer needed but there is a reason why you want to delete it in 
                   a later follow-up PR (e.g. because there are a lot of views to delete, you want to 
                   validate your change first, etc), add the address to 
-                  OTHER_ADDRESSES_TO_KEEP_WITH_REASON with your name, date, and a comment that includes
+                  UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON with your name, date, and a comment that includes
                   a linked cleanup task.
                 3) If this is a new view that will soon be used in a product view, add the address to 
-                  OTHER_ADDRESSES_TO_KEEP_WITH_REASON with your name, date, and a comment that includes
+                  UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON with your name, date, and a comment that includes
                   a linked task that encompasses the work to use this new view downstream. This view
-                  should be removed from OTHER_ADDRESSES_TO_KEEP_WITH_REASON once it does have a
+                  should be removed from UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON once it does have a
                   downstream product use.
                 4) If this view is still in use in LOOKER and cannot be deleted, add the address to 
                   LOOKER_REFERENCED_ADDRESSES.

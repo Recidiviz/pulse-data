@@ -90,6 +90,12 @@ from recidiviz.calculator.query.state.views.external_reference.state_resident_po
 from recidiviz.calculator.query.state.views.external_reference.state_resident_populations_combined_race_ethnicity import (
     STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
+    SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_supervisors import (
+    SUPERVISION_IMPACT_METRICS_SUPERVISORS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_outlier_status_archive import (
     SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
 )
@@ -98,6 +104,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervi
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_officers_archive import (
     SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
+    SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
@@ -308,6 +317,15 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER.address: (
         "Will be referenced to support Workflows milestones_funnel work (see #28875) (Michelle Orden 4/11/24)"
     ),
+    SUPERVISION_USAGE_METRICS_VIEW_BUILDER.address: (
+        "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
+    ),
+    SUPERVISION_IMPACT_METRICS_SUPERVISORS_VIEW_BUILDER.address: (
+        "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
+    ),
+    SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER.address: (
+        "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
+    ),
 }
 
 DATASETS_REFERENCED_BY_MISC_PROCESSES = {
@@ -345,7 +363,7 @@ def _get_all_dataflow_pipeline_referenced_addresses() -> Set[BigQueryAddress]:
 
 def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
     """Returns true for views that may not be in use but can be ignored if they happen
-    to be. These views are not tracked in OTHER_ADDRESSES_TO_KEEP_WITH_REASON because
+    to be. These views are not tracked in UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON because
     they aren't views that are important enough to keep that parent views should be
     marked as "used".
     """

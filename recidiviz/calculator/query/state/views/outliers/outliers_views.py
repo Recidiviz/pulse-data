@@ -30,6 +30,12 @@ from recidiviz.calculator.query.state.views.outliers.supervision_clients import 
 from recidiviz.calculator.query.state.views.outliers.supervision_district_managers import (
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
+    SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_supervisors import (
+    SUPERVISION_IMPACT_METRICS_SUPERVISORS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics import (
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
 )
@@ -54,6 +60,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
+    SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
+)
 
 OUTLIERS_ARCHIVE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
@@ -73,6 +82,14 @@ OUTLIERS_VIEW_BUILDERS_TO_EXPORT: List[BigQueryViewBuilder] = [
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
 ]
 
+OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT: List[BigQueryViewBuilder] = [
+    SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
+    SUPERVISION_IMPACT_METRICS_SUPERVISORS_VIEW_BUILDER,
+    SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
+]
+
 OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = (
-    OUTLIERS_VIEW_BUILDERS_TO_EXPORT + OUTLIERS_ARCHIVE_VIEW_BUILDERS
+    OUTLIERS_VIEW_BUILDERS_TO_EXPORT
+    + OUTLIERS_ARCHIVE_VIEW_BUILDERS
+    + OUTLIERS_IMPACT_VIEW_BUILDERS_TO_EXPORT
 )
