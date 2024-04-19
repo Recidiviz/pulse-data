@@ -16,10 +16,10 @@
 # =============================================================================
 """
 This validation view compares StateIncarcerationSentence and StateSupervisionSentence
-with StateSentence entities.
+with StateSentence entities--ensuring they have the same charge.
 
-We are looking for StateSentence entities of that do not have v1 counterpart
-by joining external ID.
+We are looking for StateSentence/StateChargeV2 pairings that do not have v1 counterpart
+by joining external IDs.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -30,40 +30,64 @@ from recidiviz.validation.views import dataset_config
 
 # Originally this checked sentence_type as well, but
 # many of the v1 sentences were actually INTERNAL_UNKNOWN.
-# So we are checking imposition date instead which should
+# So we are checking charge external ID which should
 # be consistent between both versions of the schema.
 V2_SENTENCES = """
     SELECT 
-        person_id, 
-        external_id, 
-        imposed_date AS imposition_v2,
-        state_code AS region_code
+        sentence.external_id AS sentence_external_id, 
+        charge_v2.external_id AS charge_v2_external_id,
+        state_code
     FROM 
-        `{project_id}.{state_dataset}.state_sentence`
+        `{project_id}.{state_dataset}.state_charge_v2_state_sentence_association`
+    JOIN
+        `{project_id}.{state_dataset}.state_charge_v2` AS charge_v2
+    USING 
+        (charge_v2_id, state_code)
+    JOIN
+        `{project_id}.{state_dataset}.state_sentence` AS sentence
+    USING
+        (sentence_id, state_code)
 """
 
+# TODO(#29211) Update this query to handle US_ID external IDs once entities are hydrated
 V1_SENTENCES = """
     SELECT 
-        person_id, 
-        CASE 
-            WHEN state_code = 'US_MO'
-            THEN concat(external_id, '-INCARCERATION')
-        END AS external_id,
-        date_imposed AS imposition_v1,
-        state_code AS region_code
+        CASE WHEN state_code = 'US_MO'
+            THEN CONCAT(sentence.external_id, '-INCARCERATION') 
+            ELSE sentence.external_id 
+        END AS sentence_external_id, 
+        charge.external_id AS charge_v1_external_id,
+        state_code
     FROM 
-        `{project_id}.{state_dataset}.state_incarceration_sentence`
+        `{project_id}.{state_dataset}.state_charge_incarceration_sentence_association`
+    JOIN
+        `{project_id}.{state_dataset}.state_charge` AS charge
+    USING
+        (charge_id, state_code)
+    JOIN
+        `{project_id}.{state_dataset}.state_incarceration_sentence` AS sentence
+    USING
+        (incarceration_sentence_id, state_code)
+
     UNION ALL
+
     SELECT 
-        person_id, 
-        CASE 
-            WHEN state_code = 'US_MO'
-            THEN concat(external_id, '-SUPERVISION')
-        END AS external_id,
-        date_imposed AS imposition_v1,
-        state_code AS region_code
+        CASE WHEN state_code = 'US_MO'
+            THEN CONCAT(sentence.external_id, '-SUPERVISION') 
+            ELSE sentence.external_id 
+        END AS sentence_external_id, 
+        charge.external_id AS charge_v1_external_id,
+        state_code
     FROM 
-        `{project_id}.{state_dataset}.state_supervision_sentence`
+        `{project_id}.{state_dataset}.state_charge_supervision_sentence_association`
+    JOIN
+        `{project_id}.{state_dataset}.state_charge` AS charge
+    USING
+        (charge_id, state_code)
+    JOIN
+        `{project_id}.{state_dataset}.state_supervision_sentence` AS sentence
+    USING
+        (supervision_sentence_id, state_code)
 """
 
 
@@ -71,10 +95,14 @@ QUERY = f"""
 WITH 
     v2 AS ({V2_SENTENCES}),
     v1 AS ({V1_SENTENCES})
-SELECT * 
+SELECT 
+    state_code AS region_code,
+    sentence_external_id,
+    charge_v1_external_id,
+    charge_v2_external_id
 FROM v2 
 LEFT JOIN v1 
-USING(person_id, external_id, region_code)
+USING (state_code, sentence_external_id)
 """
 
 
