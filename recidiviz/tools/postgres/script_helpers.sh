@@ -28,45 +28,6 @@ export CLOUDSQL_PROXY_IMAGE_NAME="gcr.io/cloudsql-docker/gce-proxy"
 export CLOUDSQL_PROXY_IMAGE_VERSION="1.31.0"
 export CLOUDSQL_PROXY_IMAGE="${CLOUDSQL_PROXY_IMAGE_NAME}:${CLOUDSQL_PROXY_IMAGE_VERSION}"
 
-function vpn_is_installed () {
-  open -Ra "Jamf Trust"
-}
-
-function disable_vpn () {
-  open -a "Jamf Trust" "com.jamf.trust://?action=disable_vpn"
-  vpnStatus=$(scutil --nc list | grep Connected)
-  while [[ "$vpnStatus" = *VPN:com.jamf.trust* ]]
-  do
-    echo "Waiting for VPN to disconnect"
-    sleep 2
-    vpnStatus=$(scutil --nc list | grep Connected)
-  done
-}
-
-function enable_vpn () {
-  open -a "Jamf Trust" "com.jamf.trust://?action=enable_vpn"
-  vpnStatus=$(scutil --nc list | grep Connected)
-  while [[ "$vpnStatus" != *VPN:com.jamf.trust* ]]
-  do
-    echo "Waiting for VPN to reconnect"
-    sleep 2
-    vpnStatus=$(scutil --nc list | grep Connected)
-  done
-}
-
-function set_vpn_status () {
-  if vpn_is_installed ; then
-    if [[ $1 = "Disable" ]]; then
-      disable_vpn
-    else
-      enable_vpn
-    fi
-  else
-     echo "VPN not installed on machine. Skipping this step."
-  fi
-}
-
-
 function wait_for_postgres () {
   HOST=$1
   PORT=$2
