@@ -171,7 +171,7 @@ function control_start {
 
   set_vpn_status "Disable"
   echo "Starting Cloud SQL Proxy container for ${DATABASE_CONNECTION_STRING}..."
-
+  
   # The docker container runs with ~/.config/gcloud mounted as a volume to /config
   # It assumes the existence of application_default_credentials.json
   # Run `gcloud auth application-default login` if you are running into authentication errors
