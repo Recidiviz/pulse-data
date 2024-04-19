@@ -1,0 +1,290 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: us_tn_standards_due
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: Region
+    type: STRING
+    mode: NULLABLE
+  - name: Site
+    type: STRING
+    mode: NULLABLE
+  - name: Staff_ID
+    type: STRING
+    mode: NULLABLE
+  - name: Staff_First_Name
+    type: STRING
+    mode: NULLABLE
+  - name: Staff_Last_Name
+    type: STRING
+    mode: NULLABLE
+  - name: Offender_ID
+    type: INTEGER
+    mode: NULLABLE
+  - name: First_Name
+    type: STRING
+    mode: NULLABLE
+  - name: Last_Name
+    type: STRING
+    mode: NULLABLE
+  - name: Address_Line1
+    type: STRING
+    mode: NULLABLE
+  - name: Address_Line2
+    type: STRING
+    mode: NULLABLE
+  - name: Address_City
+    type: STRING
+    mode: NULLABLE
+  - name: Address_State
+    type: STRING
+    mode: NULLABLE
+  - name: Address_Zip
+    type: STRING
+    mode: NULLABLE
+  - name: Phone_Number
+    type: INTEGER
+    mode: NULLABLE
+  - name: Age
+    type: INTEGER
+    mode: NULLABLE
+  - name: Assignment_Type
+    type: STRING
+    mode: NULLABLE
+  - name: Case_Type
+    type: STRING
+    mode: NULLABLE
+  - name: Plan_Start_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Supervision_Level
+    type: STRING
+    mode: NULLABLE
+  - name: Prior_Supervision_Level
+    type: STRING
+    mode: NULLABLE
+  - name: EXP_Date
+    type: DATE
+    mode: NULLABLE
+  - name: _180_Day_Prior_EXP
+    type: DATE
+    mode: NULLABLE
+  - name: Freq_of_FAC_Contact_GT_1
+    type: INTEGER
+    mode: NULLABLE
+  - name: FAC_Note_4
+    type: DATE
+    mode: NULLABLE
+  - name: FAC_Note_3
+    type: DATE
+    mode: NULLABLE
+  - name: FAC_Note_2
+    type: DATE
+    mode: NULLABLE
+  - name: FAC_Note_1
+    type: DATE
+    mode: NULLABLE
+  - name: FAC_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_FAC_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_FAC_Note_Type
+    type: STRING
+    mode: NULLABLE
+  - name: Last_FACV_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_FAC1_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_FAC2_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_HOMF_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_HOMF_Time
+    type: TIME
+    mode: NULLABLE
+  - name: Last_AHOM_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Number_of_AHOM
+    type: INTEGER
+    mode: NULLABLE
+  - name: Last_HOMC_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_HOMV_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_HV_Type
+    type: STRING
+    mode: NULLABLE
+  - name: HV_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_RIS_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_CCRI_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_CCR_Date
+    type: DATE
+    mode: NULLABLE
+  - name: New_Case_Start
+    type: DATE
+    mode: NULLABLE
+  - name: Last_Strong_R
+    type: DATE
+    mode: NULLABLE
+  - name: Risk_Level
+    type: STRING
+    mode: NULLABLE
+  - name: Last_FSWR_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Alcohol_Drug_Needs
+    type: STRING
+    mode: NULLABLE
+  - name: Mental_Health_Needs
+    type: STRING
+    mode: NULLABLE
+  - name: RIS_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: DRU_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_Sanctions_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_Sanctions_Type
+    type: STRING
+    mode: NULLABLE
+  - name: Last_DRU_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_DRU_Type
+    type: STRING
+    mode: NULLABLE
+  - name: Number_of_Drug_Screens
+    type: INTEGER
+    mode: NULLABLE
+  - name: Last_DRUL_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_EMP_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_EMP_Type_s_
+    type: STRING
+    mode: NULLABLE
+  - name: EMP_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_JRCR_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_XEMP_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_EMPT_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_OCP_Note
+    type: DATE
+    mode: NULLABLE
+  - name: OCP_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_SOT_Note
+    type: DATE
+    mode: NULLABLE
+  - name: SOT_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_SOTT_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_RSS_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_RSS_Type
+    type: STRING
+    mode: NULLABLE
+  - name: RSS_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_FEE_Note
+    type: DATE
+    mode: NULLABLE
+  - name: FEE_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_ARR_Note
+    type: DATE
+    mode: NULLABLE
+  - name: Last_ARR_Type
+    type: STRING
+    mode: NULLABLE
+  - name: ARR_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_SPE_Note
+    type: DATE
+    mode: NULLABLE
+  - name: SPE_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_SPET_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_ZZZI_Date
+    type: DATE
+    mode: NULLABLE
+  - name: ZZZI_GT_45_days
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: Last_ISC_note
+    type: DATE
+    mode: NULLABLE
+  - name: ISC_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_IOT_Note
+    type: DATE
+    mode: NULLABLE
+  - name: IOT_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: TRTE2_Date
+    type: DATE
+    mode: NULLABLE
+  - name: TRTE1_Date
+    type: DATE
+    mode: NULLABLE
+  - name: date_of_standards
+    type: DATE
+    mode: NULLABLE
+  - name: Birth_Date
+    type: DATE
+    mode: NULLABLE
+  - name: Last_VER_note
+    type: DATE
+    mode: NULLABLE
+  - name: VER_Note_Due
+    type: DATE
+    mode: NULLABLE
+  - name: Last_NCIC_Note
+    type: DATE
+    mode: NULLABLE
+  - name: NCIC_Note_Due
+    type: DATE
+    mode: NULLABLE
+clustering_fields: null

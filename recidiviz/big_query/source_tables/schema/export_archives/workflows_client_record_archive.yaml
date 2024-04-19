@@ -1,6 +1,9 @@
 address:
   dataset_id: export_archives
   table_id: workflows_client_record_archive
+description:
+  This table contains daily archives of the client_record export for Workflows,
+  which are read directly from Cloud Storage.
 schema:
   - name: person_external_id
     type: STRING

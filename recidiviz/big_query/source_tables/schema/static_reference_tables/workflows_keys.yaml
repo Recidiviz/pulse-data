@@ -1,0 +1,14 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: workflows_keys
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: key
+    type: STRING
+    mode: REQUIRED
+  - name: value
+    type: STRING
+    mode: REQUIRED
+clustering_fields: null

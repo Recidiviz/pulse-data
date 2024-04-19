@@ -1,0 +1,20 @@
+address:
+  dataset_id: us_ix_validation_oneoffs
+  table_id: county_jail_09_2020_incarceration_population
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: date_of_stay
+    type: DATE
+    mode: NULLABLE
+  - name: facility
+    type: STRING
+    mode: NULLABLE
+  - name: legal_status
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

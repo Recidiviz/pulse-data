@@ -1,0 +1,111 @@
+address:
+  dataset_id: supplemental_data
+  table_id: us_id_case_note_matched_entities
+description: "TODO(#29156): Delete this table and its references"
+schema:
+  - name: person_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: agnt_case_updt_id
+    type: STRING
+    mode: NULLABLE
+  - name: create_dt
+    type: DATE
+    mode: NULLABLE
+  - name: create_by_usr_id
+    type: STRING
+    mode: NULLABLE
+  - name: agnt_note_title
+    type: STRING
+    mode: NULLABLE
+  - name: violation
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: sanction
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: extend
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: absconsion
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: in_custody
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: agents_warning
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: revocation
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: other
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: new_investigation
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: any_treatment
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: treatment_complete
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: new_crime
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: interlock
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: case_plan
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: ncic_ilets_nco_check
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: community_service
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: dui
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: not_m_dui
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: ssdi_ssi
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: pending
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: not_cs
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: transfer_chrono
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: lsu
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: specialty_court
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: psi
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: court
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: waiver
+    type: BOOLEAN
+    mode: NULLABLE
+  - name: ua
+    type: BOOLEAN
+    mode: NULLABLE
+clustering_fields: null

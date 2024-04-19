@@ -1,0 +1,245 @@
+address:
+  dataset_id: vera_data
+  table_id: incarceration_trends
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: yfips
+    type: INTEGER
+    mode: REQUIRED
+  - name: year
+    type: INTEGER
+    mode: NULLABLE
+  - name: fips
+    type: INTEGER
+    mode: NULLABLE
+  - name: state
+    type: STRING
+    mode: NULLABLE
+  - name: county_name
+    type: STRING
+    mode: NULLABLE
+  - name: total_pop
+    type: INTEGER
+    mode: NULLABLE
+  - name: total_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: female_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: male_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: asian_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: black_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: latino_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: native_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: other_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: white_pop_15to64
+    type: INTEGER
+    mode: NULLABLE
+  - name: urbanicity
+    type: STRING
+    mode: NULLABLE
+  - name: region
+    type: STRING
+    mode: NULLABLE
+  - name: division
+    type: STRING
+    mode: NULLABLE
+  - name: commuting_zone
+    type: INTEGER
+    mode: NULLABLE
+  - name: metro_area
+    type: INTEGER
+    mode: NULLABLE
+  - name: land_area
+    type: FLOAT
+    mode: NULLABLE
+  - name: total_jail_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: total_jail_adm_dcrp
+    type: FLOAT
+    mode: NULLABLE
+  - name: female_jail_adm_dcrp
+    type: FLOAT
+    mode: NULLABLE
+  - name: male_jail_adm_dcrp
+    type: FLOAT
+    mode: NULLABLE
+  - name: total_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: female_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: male_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: asian_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: black_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: latino_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: native_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: white_jail_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: total_jail_pretrial
+    type: FLOAT
+    mode: NULLABLE
+  - name: female_jail_pretrial
+    type: FLOAT
+    mode: NULLABLE
+  - name: male_jail_pretrial
+    type: FLOAT
+    mode: NULLABLE
+  - name: jail_from_state_prison
+    type: FLOAT
+    mode: NULLABLE
+  - name: jail_from_other_state_prison
+    type: FLOAT
+    mode: NULLABLE
+  - name: jail_from_state_jail
+    type: FLOAT
+    mode: NULLABLE
+  - name: jail_from_other_state_jail
+    type: FLOAT
+    mode: NULLABLE
+  - name: jail_from_fed
+    type: FLOAT
+    mode: NULLABLE
+  - name: jail_from_ice
+    type: FLOAT
+    mode: NULLABLE
+  - name: total_jail_pop_dcrp
+    type: FLOAT
+    mode: NULLABLE
+  - name: female_jail_pop_dcrp
+    type: FLOAT
+    mode: NULLABLE
+  - name: male_jail_pop_dcrp
+    type: FLOAT
+    mode: NULLABLE
+  - name: total_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: female_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: male_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: asian_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: black_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: latino_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: native_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: other_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: white_prison_pop
+    type: FLOAT
+    mode: NULLABLE
+  - name: total_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: female_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: male_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: asian_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: black_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: latino_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: native_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: other_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: white_prison_adm
+    type: FLOAT
+    mode: NULLABLE
+  - name: num_facilites
+    type: INTEGER
+    mode: NULLABLE
+  - name: num_employees
+    type: INTEGER
+    mode: NULLABLE
+  - name: confined_pop
+    type: INTEGER
+    mode: NULLABLE
+  - name: capacity
+    type: INTEGER
+    mode: NULLABLE
+  - name: ucr_population
+    type: INTEGER
+    mode: NULLABLE
+  - name: index_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: violent_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: property_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: murder_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: rape_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: robbery_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: agr_assault_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: burglary_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: larceny_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: mv_theft_crime
+    type: INTEGER
+    mode: NULLABLE
+  - name: arson_crime
+    type: INTEGER
+    mode: NULLABLE
+clustering_fields: null

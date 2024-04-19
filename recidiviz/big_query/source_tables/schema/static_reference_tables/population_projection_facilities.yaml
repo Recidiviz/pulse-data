@@ -1,0 +1,14 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: population_projection_facilities
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: facility
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

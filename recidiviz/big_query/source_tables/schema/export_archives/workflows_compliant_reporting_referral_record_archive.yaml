@@ -1,6 +1,9 @@
 address:
   dataset_id: export_archives
   table_id: workflows_compliant_reporting_referral_record_archive
+description:
+  This table contains daily archives of the compliant_reporting_referral_record
+  export for Workflows, which are read directly from Cloud Storage.
 schema:
   - name: tdoc_id
     type: STRING

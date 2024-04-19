@@ -1,0 +1,26 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: geo_cis_referrals_matched
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: experiment_id
+    type: STRING
+    mode: NULLABLE
+  - name: variant_id
+    type: STRING
+    mode: NULLABLE
+  - name: block_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: variant_date
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null

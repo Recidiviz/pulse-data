@@ -1,0 +1,26 @@
+address:
+  dataset_id: spark_public_output_data
+  table_id: population_estimate_raw
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: simulation_tag
+    type: STRING
+    mode: REQUIRED
+  - name: simulation_date
+    type: DATE
+    mode: REQUIRED
+  - name: scenario
+    type: STRING
+    mode: REQUIRED
+  - name: compartment
+    type: STRING
+    mode: REQUIRED
+  - name: population
+    type: FLOAT
+    mode: REQUIRED
+  - name: date_created
+    type: TIMESTAMP
+    mode: REQUIRED
+clustering_fields: null

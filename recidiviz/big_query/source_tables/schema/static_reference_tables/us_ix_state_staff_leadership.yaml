@@ -1,0 +1,44 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: us_ix_state_staff_leadership
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: external_id_type
+    type: STRING
+    mode: NULLABLE
+  - name: external_id
+    type: STRING
+    mode: NULLABLE
+  - name: FirstName
+    type: STRING
+    mode: NULLABLE
+  - name: MiddleName
+    type: STRING
+    mode: NULLABLE
+  - name: LastName
+    type: STRING
+    mode: NULLABLE
+  - name: Suffix
+    type: STRING
+    mode: NULLABLE
+  - name: Email
+    type: STRING
+    mode: NULLABLE
+  - name: role_subtype_raw_text
+    type: STRING
+    mode: NULLABLE
+  - name: LocationId
+    type: STRING
+    mode: NULLABLE
+  - name: LocationName
+    type: STRING
+    mode: NULLABLE
+  - name: active_flag
+    type: INTEGER
+    mode: NULLABLE
+clustering_fields: null

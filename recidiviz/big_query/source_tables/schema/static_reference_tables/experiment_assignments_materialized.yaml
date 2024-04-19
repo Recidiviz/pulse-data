@@ -1,0 +1,26 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: experiment_assignments_materialized
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: experiment_id
+    type: STRING
+    mode: NULLABLE
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: unit_id
+    type: STRING
+    mode: NULLABLE
+  - name: unit_type
+    type: STRING
+    mode: NULLABLE
+  - name: variant_id
+    type: STRING
+    mode: NULLABLE
+  - name: variant_date
+    type: DATE
+    mode: NULLABLE
+clustering_fields: null

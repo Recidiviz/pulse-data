@@ -1,0 +1,20 @@
+address:
+  dataset_id: us_nd_validation_oneoffs
+  table_id: incarcerated_individuals_2021_11_01
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: Facility
+    type: STRING
+    mode: NULLABLE
+  - name: Offender_ID
+    type: STRING
+    mode: NULLABLE
+  - name: Booking_Begin_Date
+    type: STRING
+    mode: NULLABLE
+  - name: Booking_End
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

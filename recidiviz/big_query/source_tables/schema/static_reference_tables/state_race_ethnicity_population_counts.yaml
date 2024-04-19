@@ -1,0 +1,20 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: state_race_ethnicity_population_counts
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: race_or_ethnicity
+    type: STRING
+    mode: NULLABLE
+  - name: population_count
+    type: INTEGER
+    mode: NULLABLE
+  - name: representation_priority
+    type: INTEGER
+    mode: NULLABLE
+clustering_fields: null
