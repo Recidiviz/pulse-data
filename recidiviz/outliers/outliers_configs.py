@@ -28,6 +28,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+    TREATMENT_STARTS,
     VIOLATION_RESPONSES,
     VIOLATIONS,
 )
@@ -231,6 +232,38 @@ Denominator is the average daily caseload for the officer over the given time pe
         ],
         supervision_officer_metric_exclusions="""
     --TODO(#25695): Revisit this after excluding admin supervision levels    
+    AND avg_daily_population BETWEEN 10 AND 175
+    AND prop_period_with_critical_caseload >= 0.75""",
+    ),
+    StateCode.US_CA: OutliersBackendConfig(
+        metrics=[
+            OutliersMetricConfig.build_from_metric(
+                metric=ABSCONSIONS_BENCH_WARRANTS,
+                title_display_name="Absconding Rate",
+                body_display_name="absconding rate",
+                event_name="abscondings",
+                event_name_singular="absconding",
+                event_name_past_tense="absconded",
+                description_markdown="""All reported abscondings in a given time period.
+
+<br />
+Denominator is the average daily caseload for the officer over the given time period.""",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=TREATMENT_STARTS,
+                title_display_name="Program Start Rate",
+                body_display_name="program start rate",
+                event_name="program starts",
+                event_name_singular="program start",
+                event_name_past_tense="had a program start",
+                top_x_pct=10,
+                description_markdown="""All reported program starts in a given time period.
+
+<br />
+Denominator is the average daily caseload for the officer over the given time period.""",
+            ),
+        ],
+        supervision_officer_metric_exclusions="""
     AND avg_daily_population BETWEEN 10 AND 175
     AND prop_period_with_critical_caseload >= 0.75""",
     ),
