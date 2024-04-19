@@ -934,8 +934,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=SENTENCE_COMPARISON_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
             comparison_columns=[
-                "imposition_v2",
-                "imposition_v1",
+                "charge_v1_external_id",
+                "charge_v2_external_id",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
         ),
