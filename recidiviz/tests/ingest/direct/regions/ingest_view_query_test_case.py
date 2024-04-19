@@ -17,7 +17,6 @@
 """An implementation of BigQueryViewTestCase with functionality specific to testing
 ingest view queries.
 """
-import abc
 import datetime
 import os.path
 from collections import defaultdict
@@ -25,9 +24,7 @@ from concurrent import futures
 from typing import Dict, List, Tuple
 
 import pandas as pd
-import pytest
 import pytz
-from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 from more_itertools import one
 
@@ -59,12 +56,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.big_query.big_query_test_helper import (
-    BigQueryTestHelper,
-    query_view,
-)
-from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
-from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
+from recidiviz.tests.big_query.big_query_test_helper import query_view
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestTestFixturePath,
     load_dataframe_from_path,
@@ -80,9 +72,10 @@ DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime.now(tz=pytz.UTC) - datetime.tim
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime.utcnow()
 
 
-class IngestViewTestBigQueryDatabaseDelegate(BigQueryTestHelper):
-    """An interface for ingest view testing logic that is specific to the underlying
-    database used for the test."""
+class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
+    """An extension of BigQueryEmulatorTestCase with functionality specific to testing
+    ingest view queries.
+    """
 
     @staticmethod
     def ingest_view_for_tag(
@@ -92,36 +85,17 @@ class IngestViewTestBigQueryDatabaseDelegate(BigQueryTestHelper):
             get_direct_ingest_region(region_code), []
         ).get_query_builder_by_view_name(ingest_view_name)
 
-    @abc.abstractmethod
-    def load_mock_raw_table(
-        self,
-        region_code: str,
-        file_tag: str,
-        mock_data: pd.DataFrame,
-    ) -> None:
-        """Insert data for this raw file into the test database."""
-
-    @abc.abstractmethod
-    def normalize_expected_columns(self, columns: Tuple[str, ...]) -> Tuple[str, ...]:
-        """Normalize column names of the expected data to match output from the database."""
-
-
-# TODO(#15020): Merge this with the test case once all view tests are migrated
-class IngestViewQueryTester:
-    """Ingest view test code independent of database"""
-
-    def __init__(self, helper: IngestViewTestBigQueryDatabaseDelegate) -> None:
-        self.helper = helper
+    def setUp(self) -> None:
+        super().setUp()
+        self.region_code: str
+        # TODO(#19137): Get the view builder directly instead of requiring the test to
+        # do that.
+        self.ingest_view: DirectIngestViewQueryBuilder
+        self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
+        self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
 
     def run_ingest_view_test(
-        self,
-        test_method_name: str,
-        fixtures_files_name: str,
-        region_code: str,
-        ingest_view: DirectIngestViewQueryBuilder,
-        query_run_dt: datetime.datetime,
-        file_update_dt: datetime.datetime,
-        create_expected: bool,
+        self, fixtures_files_name: str, create_expected: bool = False
     ) -> None:
         """Reads in the expected output CSV file from the ingest view fixture path and
         asserts that the results from the raw data ingest view query are equal. Prints
@@ -136,30 +110,41 @@ class IngestViewQueryTester:
         Passing `create_expected=True` will first create the expected output csv before
         the comparison check.
         """
+        self.bq_client.create_dataset_if_necessary(
+            dataset_ref=DatasetReference(
+                project=self.project_id,
+                dataset_id=raw_tables_dataset_for_region(
+                    state_code=StateCode(self.region_code),
+                    instance=DirectIngestInstance.PRIMARY,
+                ),
+            )
+        )
 
         fixture_name = os.path.splitext(fixtures_files_name)[0]
         expected_test_name = f"test_{fixture_name}"
-        if test_method_name != expected_test_name:
+        if self._testMethodName != expected_test_name:
             raise ValueError(
                 f"Expected test name [{expected_test_name}] for fixture file name "
-                f"[{fixtures_files_name}]. Found [{test_method_name}]"
+                f"[{fixtures_files_name}]. Found [{self._testMethodName}]"
             )
 
         self._create_mock_raw_bq_tables_from_fixtures(
-            region_code=region_code,
-            ingest_view=ingest_view,
+            region_code=self.region_code,
+            ingest_view=self.ingest_view,
             raw_fixtures_name=fixtures_files_name,
-            file_update_dt=file_update_dt,
+            file_update_dt=self.file_update_dt,
         )
 
         expected_output_fixture_path = (
             DirectIngestTestFixturePath.for_ingest_view_test_results_fixture(
-                region_code=region_code,
-                ingest_view_name=ingest_view.ingest_view_name,
+                region_code=self.region_code,
+                ingest_view_name=self.ingest_view.ingest_view_name,
                 file_name=fixtures_files_name,
             ).full_path()
         )
-        results = self._query_ingest_view_for_builder(ingest_view, query_run_dt)
+        results = self._query_ingest_view_for_builder(
+            self.ingest_view, self.query_run_dt
+        )
 
         if create_expected:
             if environment.in_ci():
@@ -177,6 +162,30 @@ class IngestViewQueryTester:
         pd.options.display.max_rows = 999
         pd.options.display.max_colwidth = 999
         self.compare_results_to_fixture(results, expected_output_fixture_path)
+
+    def load_mock_raw_table(
+        self,
+        region_code: str,
+        file_tag: str,
+        mock_data: pd.DataFrame,
+    ) -> None:
+        address = BigQueryAddress(
+            dataset_id=raw_tables_dataset_for_region(
+                state_code=StateCode(region_code), instance=DirectIngestInstance.PRIMARY
+            ),
+            table_id=file_tag,
+        )
+        region_config = get_region_raw_file_config(region_code)
+        self.create_mock_table(
+            address=address,
+            schema=DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
+                raw_file_config=region_config.raw_file_configs[file_tag],
+                columns=mock_data.columns.values,
+            ),
+            check_exists=False,
+            create_dataset=False,
+        )
+        self.load_rows_into_table(address, mock_data.to_dict("records"))
 
     @staticmethod
     def _check_valid_fixture_columns(
@@ -256,7 +265,7 @@ class IngestViewQueryTester:
 
             create_table_futures = {
                 executor.submit(
-                    self.helper.load_mock_raw_table,
+                    self.load_mock_raw_table,
                     region_code=region_code,
                     file_tag=file_tag,
                     mock_data=raw_data_df,
@@ -343,7 +352,7 @@ class IngestViewQueryTester:
                 raw_data_datetime_upper_bound=query_run_dt,
             )
         )
-        return query_view(self.helper, ingest_view.ingest_view_name, view_query)
+        return query_view(self, ingest_view.ingest_view_name, view_query)
 
     def compare_results_to_fixture(
         self, results: pd.DataFrame, expected_output_fixture_path: str
@@ -358,158 +367,9 @@ class IngestViewQueryTester:
             csv.get_rows_as_tuples(expected_output_fixture_path, skip_header_row=False)
         )
 
-        columns = self.helper.normalize_expected_columns(expected_output.pop(0))
+        columns = expected_output.pop(0)
         expected = pd.DataFrame(
             replace_empty_with_null(expected_output), columns=columns
         )
 
-        self.helper.compare_expected_and_result_dfs(expected=expected, results=results)
-
-
-# TODO(#15020): Delete this once all view tests are migrated
-@pytest.mark.uses_db
-class IngestViewQueryTestCase(
-    BigQueryViewTestCase, IngestViewTestBigQueryDatabaseDelegate
-):
-    """An extension of BigQueryViewTestCase with functionality specific to testing
-    ingest view queries.
-    """
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.region_code: str
-
-        # TODO(#19137): Get the view builder directly instead of requiring the test to
-        # do that.
-        self.ingest_view: DirectIngestViewQueryBuilder
-        self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
-        self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
-
-        self.tester = IngestViewQueryTester(self)
-
-    def run_ingest_view_test(
-        self, fixtures_files_name: str, create_expected: bool = False
-    ) -> None:
-        self.tester.run_ingest_view_test(
-            test_method_name=self._testMethodName,
-            fixtures_files_name=fixtures_files_name,
-            region_code=self.region_code,
-            ingest_view=self.ingest_view,
-            query_run_dt=self.query_run_dt,
-            file_update_dt=self.file_update_dt,
-            create_expected=create_expected,
-        )
-
-    def load_mock_raw_table(
-        self,
-        region_code: str,
-        file_tag: str,
-        mock_data: pd.DataFrame,
-    ) -> None:
-        region_config = get_region_raw_file_config(region_code)
-        bq_schema = (
-            DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-                raw_file_config=region_config.raw_file_configs[file_tag],
-                columns=mock_data.columns.values,
-            )
-        )
-        mock_schema = PostgresTableSchema.from_big_query_schema_fields(
-            # Postgres does case-sensitive lowercase search on all non-quoted
-            # column (and table) names. We lowercase all the column names so that
-            # a query like "SELECT MyCol FROM table;" finds the column "mycol".
-            [
-                bigquery.SchemaField(
-                    name=schema_field.name.lower(),
-                    field_type=schema_field.field_type,
-                    mode=schema_field.mode,
-                )
-                for schema_field in bq_schema
-            ]
-        )
-        mock_data.columns = list(mock_schema.data_types.keys())
-        # For the raw data tables we make the table name `us_xx_file_tag`. It would be
-        # closer to the actual produced query to make it something like
-        # `us_xx_raw_data_file_tag`, but that more easily gets us closer to the 63
-        # character hard limit imposed by Postgres.
-        self.create_mock_bq_table(
-            dataset_id=region_code.lower(),
-            # Postgres does case-sensitive lowercase search on all non-quoted
-            # table (and column) names. We lowercase all the table names so that
-            # a query like "SELECT my_col FROM MyTable;" finds the table "mytable".
-            table_id=file_tag.lower(),
-            mock_schema=mock_schema,
-            mock_data=mock_data,
-        )
-
-    def normalize_expected_columns(self, columns: Tuple[str, ...]) -> Tuple[str, ...]:
-        return tuple(column.lower() for column in columns)
-
-
-@pytest.mark.uses_bq_emulator
-class IngestViewEmulatorQueryTestCase(
-    BigQueryEmulatorTestCase, IngestViewTestBigQueryDatabaseDelegate
-):
-    """An extension of BigQueryEmulatorTestCase with functionality specific to testing
-    ingest view queries.
-    """
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.region_code: str
-        # TODO(#19137): Get the view builder directly instead of requiring the test to
-        # do that.
-        self.ingest_view: DirectIngestViewQueryBuilder
-        self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
-        self.file_update_dt = DEFAULT_FILE_UPDATE_DATETIME
-
-        self.tester = IngestViewQueryTester(self)
-
-    def run_ingest_view_test(
-        self, fixtures_files_name: str, create_expected: bool = False
-    ) -> None:
-        self.bq_client.create_dataset_if_necessary(
-            dataset_ref=DatasetReference(
-                project=self.project_id,
-                dataset_id=raw_tables_dataset_for_region(
-                    state_code=StateCode(self.region_code),
-                    instance=DirectIngestInstance.PRIMARY,
-                ),
-            )
-        )
-
-        self.tester.run_ingest_view_test(
-            test_method_name=self._testMethodName,
-            fixtures_files_name=fixtures_files_name,
-            region_code=self.region_code,
-            ingest_view=self.ingest_view,
-            query_run_dt=self.query_run_dt,
-            file_update_dt=self.file_update_dt,
-            create_expected=create_expected,
-        )
-
-    def load_mock_raw_table(
-        self,
-        region_code: str,
-        file_tag: str,
-        mock_data: pd.DataFrame,
-    ) -> None:
-        address = BigQueryAddress(
-            dataset_id=raw_tables_dataset_for_region(
-                state_code=StateCode(region_code), instance=DirectIngestInstance.PRIMARY
-            ),
-            table_id=file_tag,
-        )
-        region_config = get_region_raw_file_config(region_code)
-        self.create_mock_table(
-            address=address,
-            schema=DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-                raw_file_config=region_config.raw_file_configs[file_tag],
-                columns=mock_data.columns.values,
-            ),
-            check_exists=False,
-            create_dataset=False,
-        )
-        self.load_rows_into_table(address, mock_data.to_dict("records"))
-
-    def normalize_expected_columns(self, columns: Tuple[str, ...]) -> Tuple[str, ...]:
-        return columns
+        self.compare_expected_and_result_dfs(expected=expected, results=results)
