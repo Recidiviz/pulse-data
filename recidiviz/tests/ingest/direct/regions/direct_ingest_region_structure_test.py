@@ -99,7 +99,6 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 )
 from recidiviz.tests.ingest.direct.regions.ingest_view_query_test_case import (
     IngestViewEmulatorQueryTestCase,
-    IngestViewQueryTestCase,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils import environment, metadata
@@ -782,12 +781,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 var = getattr(ingest_view_test_file_module, attribute)
                 if not inspect.isclass(var):
                     continue
-                if var not in (
-                    IngestViewQueryTestCase,
-                    IngestViewEmulatorQueryTestCase,
-                ) and (
-                    issubclass(var, IngestViewQueryTestCase)
-                    or issubclass(var, IngestViewEmulatorQueryTestCase)
+                if var is not IngestViewEmulatorQueryTestCase and issubclass(
+                    var, IngestViewEmulatorQueryTestCase
                 ):
                     test_class_candidates.append(var)
 
