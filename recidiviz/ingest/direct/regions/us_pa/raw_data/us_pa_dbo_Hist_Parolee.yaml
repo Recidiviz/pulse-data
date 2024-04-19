@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dbo_Hist_Parolee
+file_description: |-
+  A table containing information for JII on parole from 1/1/2022 through 4/10/2024.  This is a 
+  one time transfer that was provided by PA since we stopped getting the dbo_Parolee table
+  in 2022, and we have just started getting it again in 2024
+data_classification: source
+no_valid_primary_keys: True
+primary_key_cols: []
+columns:
+  - name: ParoleNumber
+    is_pii: True
+    description: |-
+      External ID for a unique person who has been supervised by PBPP.
+    field_type: person_external_id
+    external_id_type: US_PA_PBPP
+  - name: Release_Date
+    description: Date released to parole (YYYYMMDD)
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%Y%m%d', {col_name})"
+  - name: DOBYear
+    description: Year of birth
+  - name: DOBMonth
+    description: Month of birth
+  - name: DOBDay
+    description: Date of birth
+  - name: Last_Name
+    description: Last name
+    is_pii: True
+  - name: First_Name
+    description: First name
+    is_pii: True
+  - name: Middle_Name
+    description: Middle name
+    is_pii: True
+  - name: Suffix
+    description: Name suffix
+  - name: Alias
+    description: Name alias
+    is_pii: True
+  - name: Agent_Name_and_Badge
+    description: Agent name and badge (of format "[Last name], [First name] [Middle initial and of suffix if exists] [Badge no]")
+    is_pii: True
+  - name: sex_type
+    description: Sex
+    known_values:
+      - value: M
+        description: Male
+      - value: F
+        description: Female
+  - name: Race
+    description: Race
+    known_values:
+      - value: W
+        description: White
+      - value: B
+        description: Black
+      - value: A
+        description: Asian
+      - value: N
+        description: Unknown (TODO(#29084))
+      - value: I
+        description: Unknown (TODO(#29084))
+  - name: ParoleCountID
+    description: External ID for a particular stint of a particular person under supervision by PADOC
+separator: ","
+custom_line_terminator: "\n"
+ignore_quotes: False
+encoding: WINDOWS-1252
+always_historical_export: True
