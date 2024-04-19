@@ -59,13 +59,14 @@ output:
                       StateSupervisionLevel.RESIDENTIAL_PROGRAM:
                         - Category P
                         - SO Category P
+                      StateSupervisionLevel.LIMITED:
+                        - Deported
+                        - Pending Deport
                     $ignore:
-                      - Deported
                       - EO Non-Specialized
                       - OCS Sex Offender
                       - Act Gang GPS Specialized
                       - In-Home Det Monitor
-                      - Pending Deport
                       - Act Gang GPS Non-Specialized
                       - In-Home Det Sanction
                       - Category I
