@@ -77,6 +77,8 @@ ROUTES = [
     "system_supervisionToLiberty",
     "operations",
     "workflows",
+    "workflowsSupervision",
+    "workflowsFacilities",
     "insights",
     "insights_supervision_supervisors-list",
 ]
