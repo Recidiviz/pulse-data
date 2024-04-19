@@ -200,10 +200,11 @@ function confirm_cmd {
 STATE_CODE_LOWERCASE=${STATE_CODE,,}                 # convert to lowercase
 STATE_CODE_FOR_JOB_NAME=${STATE_CODE_LOWERCASE//_/-} # replace underscores with dashes
 
-SANDBOX_STATE_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_state_primary"
+STANDARD_STATE_SPECIFIC_STATE_DATASET="${STATE_CODE_LOWERCASE}_state_primary"
+SANDBOX_STATE_DATASET="${SANDBOX_PREFIX}_${STANDARD_STATE_SPECIFIC_STATE_DATASET}"
 SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STATE_CODE_LOWERCASE}_normalized_state"
-SANDBOX_NORMALIZED_DATASET="${SANDBOX_PREFIX}_normalized_state"
-SANDBOX_METRICS_DATASET="${SANDBOX_PREFIX}_dataflow_metrics"
+STANDARD_NORMALIZED_STATE_DATASET="normalized_state"
+SANDBOX_NORMALIZED_DATASET="${SANDBOX_PREFIX}_${STANDARD_NORMALIZED_STATE_DATASET}"
 
 # Create datasets
 echo "Ready to create sandbox normalization dataset for ${STATE_CODE}."
@@ -231,7 +232,7 @@ echo "Ready to run sandbox ingest pipeline for ${STATE_CODE}."
 confirm_cmd python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
 	--project "${PROJECT_ID}" \
 	--state_code "${STATE_CODE}" \
-	--sandbox_prefix "${SANDBOX_PREFIX}"
+	--output_sandbox_prefix "${SANDBOX_PREFIX}"
 
 echo "If applicable, you should confirm that the ingest pipeline is complete before proceeding."
 
@@ -241,10 +242,10 @@ confirm_cmd python -m recidiviz.tools.calculator.run_sandbox_calculation_pipelin
 	--pipeline comprehensive_normalization \
 	--type normalization \
 	--project "${PROJECT_ID}" \
-	--job_name "${SANDBOX_PREFIX}-${STATE_CODE_FOR_JOB_NAME}-normalization-test" \
-	--sandbox_output_dataset "${SANDBOX_STATE_SPECIFIC_NORMALIZED_DATASET}" \
+	--job_name "${STATE_CODE_FOR_JOB_NAME}-normalization" \
+	--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 	--state_code "${STATE_CODE}" \
-	--state_data_input "${SANDBOX_STATE_DATASET}"
+	--input_dataset_overrides_json "'{\"${STANDARD_STATE_SPECIFIC_STATE_DATASET}\": \"${SANDBOX_STATE_DATASET}\"}'"
 
 echo "If applicable, you should confirm that the normalization pipeline is complete before proceeding."
 
@@ -266,10 +267,10 @@ for pipeline in "${!PIPELINES[@]}"; do
 		--pipeline "${pipeline_lowercase}" \
 		--type metrics \
 		--project "${PROJECT_ID}" \
-		--job_name "${SANDBOX_PREFIX}-${STATE_CODE_FOR_JOB_NAME}-${pipeline_for_job_name}-test" \
-		--sandbox_output_dataset "${SANDBOX_METRICS_DATASET}" \
+		--job_name "${STATE_CODE_FOR_JOB_NAME}-${pipeline_for_job_name}" \
+		--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 		--state_code "${STATE_CODE}" \
-		--normalized_input "${SANDBOX_NORMALIZED_DATASET}" \
+		--input_dataset_overrides_json "'{\"${STANDARD_NORMALIZED_STATE_DATASET}\": \"${SANDBOX_NORMALIZED_DATASET}\"}'" \
 		--metric_types "${metric_types[*]}"
 done
 

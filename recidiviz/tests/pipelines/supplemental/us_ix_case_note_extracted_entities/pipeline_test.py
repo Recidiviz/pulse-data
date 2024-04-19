@@ -18,6 +18,7 @@
 import unittest
 from typing import Any, Dict, Iterable, Optional, Set
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
     US_IX_CASE_UPDATE_INFO_VIEW_NAME,
@@ -32,7 +33,10 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteExactOutputToBigQuery,
     FakeWriteToBigQueryFactory,
 )
-from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import run_test_pipeline
+from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
+    run_test_pipeline,
+)
 
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
@@ -129,7 +133,10 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
 
         write_to_bq_constructor = (
             self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
-                SUPPLEMENTAL_DATA_DATASET,
+                expected_dataset=BigQueryAddressOverrides.format_sandbox_dataset(
+                    DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
+                    SUPPLEMENTAL_DATA_DATASET,
+                ),
                 expected_output=self.final_data,
             )
         )

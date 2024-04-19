@@ -67,6 +67,9 @@ from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
 )
 from recidiviz.pipelines.pipeline_parameters import (
+    PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME,
+    PIPELINE_JOB_NAME_ARG_NAME,
+    PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME,
     PipelineParameters,
     PipelineParametersT,
 )
@@ -279,16 +282,22 @@ def build_dataflow_pipeline_task_group(
             config = pipeline_config.get()
             if parameter_cls is IngestPipelineParameters:
                 config["ingest_instance"] = ingest_instance
+            updated_job_name = job_name
             if ingest_instance == "SECONDARY":
-                config["job_name"] = f"{job_name}-{ingest_instance.lower()}"
+                updated_job_name = f"{updated_job_name}-{ingest_instance.lower()}"
+
+            if sandbox_prefix:
+                config[PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME] = sandbox_prefix
+                # TODO(#27373): Actually hydrate this based on which pipelines have
+                #  run earlier in the DAG.
+                config[PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME] = None
+
+            config[PIPELINE_JOB_NAME_ARG_NAME] = updated_job_name
 
             parameters: PipelineParameters = parameter_cls(
                 project=get_project_id(),
                 **config,  # type: ignore
             )
-
-            if sandbox_prefix:
-                parameters = parameters.update_with_sandbox_prefix(sandbox_prefix)
 
             return parameters.flex_template_launch_body()
 

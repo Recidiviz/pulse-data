@@ -18,12 +18,15 @@
 import json
 import os
 import time
+from typing import Set, Type
 
 import google.auth
 import google.auth.transport.requests
 import requests
 
 from recidiviz import pipelines
+from recidiviz.pipelines.base_pipeline import BasePipeline
+from recidiviz.pipelines.flex_pipeline_runner import pipeline_cls_for_pipeline_name
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import get_environment_for_project
@@ -53,8 +56,24 @@ def get_template_path(pipeline_type: str) -> str:
     return os.path.join(pipeline_root_path, template_path)
 
 
+def get_all_reference_query_input_datasets_for_pipeline(
+    pipeline_cls: Type[BasePipeline],
+) -> Set[str]:
+    """Returns all datasets that reference queries for this pipeline may query from."""
+    return {
+        parent_table.dataset_id
+        for vb in pipeline_cls.all_input_reference_view_builders()
+        for parent_table in vb.build().parent_tables
+    }
+
+
 def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) -> None:
     """Runs the pipeline designated by the given |params|."""
+    pipeline_cls = pipeline_cls_for_pipeline_name(params.pipeline)
+    params.check_for_valid_input_dataset_overrides(
+        get_all_reference_query_input_datasets_for_pipeline(pipeline_cls)
+    )
+
     _, username = os.path.split(params.template_metadata_subdir)
     launch_body = params.flex_template_launch_body()
     template_gcs_path = params.template_gcs_path(params.project)

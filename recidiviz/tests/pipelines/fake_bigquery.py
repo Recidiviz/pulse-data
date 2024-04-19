@@ -709,6 +709,7 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
 
     def create_fake_bq_sink_constructor(
         self,
+        *,
         expected_dataset: str,
         **kwargs: Any,
     ) -> Callable[

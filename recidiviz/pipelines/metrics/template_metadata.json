@@ -14,6 +14,20 @@
       "regexes": ["US_[A-Z]{2}"]
     },
     {
+      "name": "output_sandbox_prefix",
+      "label": "Output sandbox prefix",
+      "helpText": "If specified, this prefix will be applied to the name of all output datasets for this pipeline.",
+      "regexes": ["[0-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "input_dataset_overrides_json",
+      "label": "A map of default dataset to overrides for that dataset",
+      "helpText": "When specified, the datasets in the keys of this JSON dict will be replaced with the corresponding value when reading inputs for this pipeline.",
+      "regexes": ["{.*}"],
+      "isOptional": true
+    },
+    {
       "name": "metric_types",
       "label": "Metric types",
       "helpText": "Metric types to collect for this pipeline.",
@@ -24,27 +38,6 @@
       "label": "Number of months to calculate",
       "helpText": "The number of months to limit the monthly calculation output to. If set to -1, does not limit the calculations.",
       "regexes": ["^-?[0-9]+$"],
-      "isOptional": true
-    },
-    {
-      "name": "output",
-      "label": "Test output dataset",
-      "helpText": "If specified, the pipeline will write results to this test dataset.",
-      "regexes": ["[0-9a-z_]+"],
-      "isOptional": true
-    },
-    {
-      "name": "normalized_input",
-      "label": "BigQuery dataset to query for normalized versions of entities",
-      "helpText": "If specified, the pipeline will query this BigQuery dataset for normalized versions of entities.",
-      "regexes": ["[0-9a-z_]+"],
-      "isOptional": true
-    },
-    {
-      "name": "reference_view_input",
-      "label": "BigQuery reference view dataset to query",
-      "helpText": "If specified, the pipeline will query this BigQuery reference view dataset instead of the default.",
-      "regexes": ["[0-9a-z_]+"],
       "isOptional": true
     },
     {

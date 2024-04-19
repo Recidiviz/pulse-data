@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for supplemental pipeline parameters"""
-from typing import List
+from typing import List, Set
 
 import attr
 
-from recidiviz.common import attr_validators
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 
@@ -28,18 +27,22 @@ from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DA
 class SupplementalPipelineParameters(PipelineParameters):
     """Class for supplemental pipeline parameters"""
 
-    output: str = attr.ib(
-        validator=attr_validators.is_str, default=SUPPLEMENTAL_DATA_DATASET
-    )
+    @property
+    def output(self) -> str:
+        return self.get_output_dataset(SUPPLEMENTAL_DATA_DATASET)
 
     @property
     def flex_template_name(self) -> str:
         return "supplemental"
 
     @classmethod
-    def get_input_dataset_param_names(cls) -> List[str]:
+    def custom_sandbox_indicator_parameters(cls) -> Set[str]:
+        return set()
+
+    @classmethod
+    def get_input_dataset_property_names(cls) -> List[str]:
         return ["reference_view_input"]
 
     @classmethod
-    def get_output_dataset_param_names(cls) -> List[str]:
+    def get_output_dataset_property_names(cls) -> List[str]:
         return ["output"]
