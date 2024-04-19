@@ -22,7 +22,7 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from io import TextIOWrapper
-from typing import Any, Dict, Iterator, List, Optional, TextIO, Union
+from typing import IO, Any, Dict, Iterator, List, Optional, Union
 from zipfile import ZipFile, is_zipfile
 
 from google.api_core import retry
@@ -352,16 +352,31 @@ class GCSFileSystemImpl(GCSFileSystem):
     def open(
         self,
         path: GcsfsFilePath,
+        mode: str = "r",
         chunk_size: Optional[int] = None,
         encoding: Optional[str] = None,
-    ) -> Iterator[TextIO]:
+        verifiable: bool = True,
+    ) -> Iterator[IO]:
+
         blob = self._get_blob(path)
-        with blob.open("rb", chunk_size=chunk_size) as f:
-            verifiable_reader = VerifiableBytesReader(f, name=path.uri())
-            try:
-                yield TextIOWrapper(buffer=verifiable_reader, encoding=encoding)
-            finally:
-                verifiable_reader.verify_crc32c(blob.crc32c)
+
+        if verifiable:
+            # if we are wanting to verify the download of text, we need to first wrap it
+            # in a bytes reader and then convert it to a text stream
+            needs_text_wrapper = mode in ("r", "rt")
+
+            with blob.open("rb", chunk_size=chunk_size) as f:
+                verifiable_reader = VerifiableBytesReader(f, name=path.uri())
+                try:
+                    if needs_text_wrapper:
+                        yield TextIOWrapper(buffer=verifiable_reader, encoding=encoding)
+                    else:
+                        yield verifiable_reader
+                finally:
+                    verifiable_reader.verify_crc32c(blob.crc32c)
+        else:
+            with blob.open(mode=mode, chunk_size=chunk_size, encoding=encoding) as f:
+                yield f
 
     @retry.Retry(predicate=google_api_retry_predicate)
     def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:

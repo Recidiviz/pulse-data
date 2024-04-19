@@ -18,7 +18,7 @@
 
 import abc
 from contextlib import contextmanager
-from typing import Dict, Iterator, List, Optional, TextIO, Union
+from typing import IO, Dict, Iterator, List, Optional, Union
 
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
@@ -159,13 +159,18 @@ class GCSFileSystem:
     def open(
         self,
         path: GcsfsFilePath,
+        mode: str = "r",
         chunk_size: Optional[int] = None,
         encoding: Optional[str] = None,
-    ) -> Iterator[TextIO]:
-        """Returns a read-only file handler for the blob contents.
+        verifiable: bool = True,
+    ) -> Iterator[IO]:
+        """Returns a file handler for the given |path|.
 
-        Streams the contents from GCS for reduced memory consumption. If all of the
-        contents are read, verifies that the checksum is correct (or raises).
+        If the file is opened in read mode, contents is streamed from GCS for reduced
+        memory consumption. If |verifiable| is True and all of the contents are read,
+        will verify that the checksum is correct (or raises).
+
+        |verifiable| can only be set to True when in a read-like mode.
         """
 
     @abc.abstractmethod

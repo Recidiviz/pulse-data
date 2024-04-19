@@ -25,17 +25,7 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from enum import Enum
-from typing import (
-    Callable,
-    Dict,
-    Generic,
-    Iterator,
-    List,
-    Optional,
-    TextIO,
-    TypeVar,
-    Union,
-)
+from typing import IO, Callable, Dict, Generic, Iterator, List, Optional, TypeVar, Union
 
 import pytz
 
@@ -274,10 +264,18 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def open(
         self,
         path: GcsfsFilePath,
+        mode: str = "r",
         chunk_size: Optional[int] = None,
         encoding: Optional[str] = None,
-    ) -> Iterator[TextIO]:
-        with self.gcs_file_system.open(path, chunk_size, encoding) as f:
+        verifiable: bool = True,
+    ) -> Iterator[IO]:
+        with self.gcs_file_system.open(
+            path,
+            mode=mode,
+            chunk_size=chunk_size,
+            encoding=encoding,
+            verifiable=verifiable,
+        ) as f:
             yield f
 
     @staticmethod

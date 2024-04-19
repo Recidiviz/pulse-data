@@ -21,7 +21,7 @@ import logging
 import os
 import re
 from datetime import datetime, timezone
-from typing import Dict, Iterator, List, Optional, TextIO, Tuple
+from typing import IO, Dict, Iterator, List, Optional, Tuple
 
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.firestore_admin_v1 import CreateIndexRequest, Index
@@ -68,7 +68,7 @@ class WorkflowsETLDelegate(abc.ABC):
             )
         )
 
-    def get_file_stream(self, filename: str) -> Iterator[TextIO]:
+    def get_file_stream(self, filename: str) -> Iterator[IO]:
         """Returns a stream of the contents of the file this delegate is watching for."""
         client = GcsfsFactory.build()
 
