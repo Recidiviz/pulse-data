@@ -17,9 +17,12 @@
 """Unit tests to test the PipelineParameters classes"""
 import os
 import unittest
-from typing import Any
+from typing import Any, List, Type
+
+import attr
 
 import recidiviz
+from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
@@ -29,6 +32,13 @@ from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
+
+ALL_PARAMETERS_SUBCLASSES: List[Type[PipelineParameters]] = [
+    IngestPipelineParameters,
+    MetricsPipelineParameters,
+    NormalizationPipelineParameters,
+    SupplementalPipelineParameters,
+]
 
 
 class TestValidPipelineParameters(unittest.TestCase):
@@ -71,22 +81,66 @@ class TestValidPipelineParameters(unittest.TestCase):
             d: dict[str, Any] = pipeline.get()
             SupplementalPipelineParameters(project=self.PROJECT_ID, **d)
 
-    def test_valid_input_dataset_param_names(self) -> None:
-        for pipeline_params_subclass in PipelineParameters.__subclasses__():
-            for param_name in pipeline_params_subclass.get_input_dataset_param_names():
+    def test_valid_get_input_dataset_property_names(self) -> None:
+        for pipeline_params_subclass in ALL_PARAMETERS_SUBCLASSES:
+            # These are values that can be passed as a keyword to the class
+            input_arg_fields = set(attr.fields_dict(pipeline_params_subclass))
+            for (
+                property_name
+            ) in pipeline_params_subclass.get_input_dataset_property_names():
                 self.assertTrue(
-                    hasattr(pipeline_params_subclass, param_name),
-                    f"Found invalid param name returned from get_input_dataset_param_names() "
-                    f"for class [{pipeline_params_subclass.__class__}]: {param_name}."
+                    hasattr(pipeline_params_subclass, property_name),
+                    f"Found invalid property name returned from get_input_dataset_property_names() "
+                    f"for class [{pipeline_params_subclass.__name__}]: {property_name}."
+                    f"That field does not exist on that class.",
+                )
+                self.assertNotIn(
+                    property_name,
+                    input_arg_fields,
+                    f"Found invalid property name returned from get_input_dataset_property_names() "
+                    f"for class [{pipeline_params_subclass.__name__}]: {property_name}."
+                    "Input dataset properties cannot be values passed to the class at "
+                    "instantiation time. These are derived from other inputs.",
+                )
+
+    def test_valid_output_dataset_property_names(self) -> None:
+        for pipeline_params_subclass in ALL_PARAMETERS_SUBCLASSES:
+            # These are values that can be passed as a keyword to the class
+            input_arg_fields = set(attr.fields_dict(pipeline_params_subclass))
+            for (
+                property_name
+            ) in pipeline_params_subclass.get_output_dataset_property_names():
+                self.assertTrue(
+                    hasattr(pipeline_params_subclass, property_name),
+                    f"Found invalid property name returned from get_output_dataset_property_names() "
+                    f"for class [{pipeline_params_subclass.__name__}]: {property_name}."
+                    f"That field does not exist on that class.",
+                )
+                self.assertNotIn(
+                    property_name,
+                    input_arg_fields,
+                    f"Found invalid property name returned from get_output_dataset_property_names() "
+                    f"for class [{pipeline_params_subclass.__name__}]: {property_name}."
+                    "Output dataset properties cannot be values passed to the class at "
+                    "instantiation time. These are derived from other inputs.",
+                )
+
+    def test_valid_sandbox_indicator_parameters(self) -> None:
+        for pipeline_params_subclass in ALL_PARAMETERS_SUBCLASSES:
+            # These are values that can be passed as a keyword to the class
+            input_arg_fields = set(attr.fields_dict(pipeline_params_subclass))
+            for param in pipeline_params_subclass.all_sandbox_indicator_parameters():
+                self.assertTrue(
+                    hasattr(pipeline_params_subclass, param),
+                    f"Found invalid parameter name returned from all_sandbox_indicator_parameters() "
+                    f"for class [{pipeline_params_subclass.__name__}]: {param}."
                     f"That field does not exist on that class.",
                 )
 
-    def test_valid_output_dataset_param_names(self) -> None:
-        for pipeline_params_subclass in PipelineParameters.__subclasses__():
-            for param_name in pipeline_params_subclass.get_output_dataset_param_names():
-                self.assertTrue(
-                    hasattr(pipeline_params_subclass, param_name),
-                    f"Found invalid param name returned from get_output_dataset_param_names() "
-                    f"for class [{pipeline_params_subclass.__class__}]: {param_name}."
-                    f"That field does not exist on that class.",
-                )
+                if param not in input_arg_fields:
+                    self.fail(
+                        f"Found invalid parameter name returned from all_sandbox_indicator_parameters() "
+                        f"for class [{pipeline_params_subclass.__name__}]: {param}."
+                        f"That field is not a parameter that can be passed to the class at "
+                        f"instantiation time.",
+                    )

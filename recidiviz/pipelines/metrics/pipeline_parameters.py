@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for metrics pipeline parameters"""
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import attr
 
@@ -34,9 +34,9 @@ class MetricsPipelineParameters(PipelineParameters):
     # TODO(#27373): Update to default to normalized_state_dataset_for_state_code() once
     #  the ingest/normalization pipeline outputs all entities to the
     #  us_xx_normalized_state dataset, whether or not they are normalized.
-    normalized_input: str = attr.ib(
-        default=NORMALIZED_STATE_DATASET, validator=attr_validators.is_str
-    )
+    @property
+    def normalized_input(self) -> str:
+        return self.get_input_dataset(NORMALIZED_STATE_DATASET)
 
     person_filter_ids: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -46,18 +46,23 @@ class MetricsPipelineParameters(PipelineParameters):
     calculation_month_count: int = attr.ib(
         default=-1, validator=attr_validators.is_int, converter=int
     )
-    output: str = attr.ib(
-        validator=attr_validators.is_str, default=DATAFLOW_METRICS_DATASET
-    )
+
+    @property
+    def output(self) -> str:
+        return self.get_output_dataset(DATAFLOW_METRICS_DATASET)
 
     @property
     def flex_template_name(self) -> str:
         return "metrics"
 
     @classmethod
-    def get_input_dataset_param_names(cls) -> List[str]:
+    def custom_sandbox_indicator_parameters(cls) -> Set[str]:
+        return {"person_filter_ids"}
+
+    @classmethod
+    def get_input_dataset_property_names(cls) -> List[str]:
         return ["reference_view_input", "normalized_input"]
 
     @classmethod
-    def get_output_dataset_param_names(cls) -> List[str]:
+    def get_output_dataset_property_names(cls) -> List[str]:
         return ["output"]

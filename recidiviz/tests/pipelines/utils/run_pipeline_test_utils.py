@@ -23,12 +23,6 @@ from apache_beam.pipeline import Pipeline
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
-from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
@@ -206,6 +200,9 @@ def default_data_dict_for_pipeline_class(
     )
 
 
+DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX = "sandbox"
+
+
 def default_arg_list_for_pipeline(
     pipeline: Type[BasePipeline],
     state_code: str,
@@ -220,12 +217,12 @@ def default_arg_list_for_pipeline(
         project_id,
         "--state_code",
         state_code,
-        "--ingest_instance",
-        "SECONDARY",
         "--job_name",
         "test-job",
         "--pipeline",
         "pipeline",
+        "--output_sandbox_prefix",
+        DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     ]
 
     if unifying_id_field_filter_set:
@@ -254,21 +251,10 @@ def default_arg_list_for_pipeline(
     elif issubclass(pipeline, SupplementalDatasetPipeline):
         pass
     elif issubclass(pipeline, StateIngestPipeline):
-        # TODO(#25244) Update this to be able to automatically use the sandbox update rather than hardcoding
         pipeline_args.extend(
             [
-                "--output",
-                state_dataset_for_state_code(
-                    StateCode(state_code), DirectIngestInstance.SECONDARY, "sandbox"
-                ),
-                "--ingest_view_results_output",
-                ingest_view_materialization_results_dataset(
-                    StateCode(state_code), DirectIngestInstance.SECONDARY, "sandbox"
-                ),
-            ]
-        )
-        pipeline_args.extend(
-            [
+                "--ingest_instance",
+                "SECONDARY",
                 "--raw_data_upper_bound_dates_json",
                 '{"table1":"2022-07-04T00:00:00.000000",'
                 '"table2":"2022-07-04T00:00:00.000000",'

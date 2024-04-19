@@ -104,7 +104,10 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQueryWithEmulator,
     FakeWriteOutputToBigQueryWithValidator,
 )
-from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import run_test_pipeline
+from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
+    run_test_pipeline,
+)
 from recidiviz.tests.utils.fake_region import fake_region
 
 INGEST_INTEGRATION = "ingest_integration"
@@ -156,13 +159,17 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
     @classmethod
     def expected_ingest_view_dataset(cls) -> str:
         return ingest_view_materialization_results_dataset(
-            cls.region_code(), cls.ingest_instance(), "sandbox"
+            cls.region_code(),
+            cls.ingest_instance(),
+            DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
         )
 
     @classmethod
     def expected_state_dataset(cls) -> str:
         return state_dataset_for_state_code(
-            cls.region_code(), cls.ingest_instance(), "sandbox"
+            cls.region_code(),
+            cls.ingest_instance(),
+            DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
         )
 
     def setUp(self) -> None:

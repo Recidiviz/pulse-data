@@ -21,6 +21,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Type
 
 import mock
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -53,6 +54,7 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
 )
@@ -103,7 +105,10 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             )
         )
         write_to_bq_constructor = self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
-            f"{state_code.lower()}_normalized_state",
+            expected_dataset=BigQueryAddressOverrides.format_sandbox_dataset(
+                DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
+                f"{state_code.lower()}_normalized_state",
+            ),
             expected_output_tags=[
                 entity.__name__
                 for _, managers in self.pipeline_class.required_entity_normalization_managers().items()

@@ -124,7 +124,7 @@ class BigQueryAddressOverrides:
 
         def __init__(
             self,
-            sandbox_prefix: str,
+            sandbox_prefix: Optional[str],
             full_dataset_overrides: Optional[Dict[str, str]] = None,
             address_overrides: Optional[Dict[BigQueryAddress, BigQueryAddress]] = None,
         ):
@@ -133,7 +133,8 @@ class BigQueryAddressOverrides:
 
             Args:
                 sandbox_prefix: The prefix that will be appended to all non-custom
-                    overrides registered with this Builder.
+                    overrides registered with this Builder. May be null if this builder
+                    will be only used for custom overrides.
                 full_dataset_overrides: A map of dataset_ids and the dataset all views in
                     that dataset should be written to instead of the original dataset.
                     This should not be used outside of the
@@ -148,7 +149,7 @@ class BigQueryAddressOverrides:
             datasets overlap, this constructor will throw.
             """
 
-            self.sandbox_prefix = sandbox_prefix
+            self._sandbox_prefix_opt = sandbox_prefix
             self._full_dataset_overrides: Dict[str, str] = full_dataset_overrides or {}
             self._address_overrides: Dict[BigQueryAddress, BigQueryAddress] = (
                 address_overrides or {}
@@ -156,6 +157,15 @@ class BigQueryAddressOverrides:
             _validate_no_conflicting_overrides(
                 self._full_dataset_overrides, self._address_overrides
             )
+
+        @property
+        def _sandbox_prefix(self) -> str:
+            if self._sandbox_prefix_opt is None:
+                raise ValueError(
+                    "Found null sandbox prefix - this builder can only be "
+                    "used for custom overrides that do not require a sandbox prefix."
+                )
+            return self._sandbox_prefix_opt
 
         def build(self) -> "BigQueryAddressOverrides":
             return BigQueryAddressOverrides(
@@ -186,7 +196,7 @@ class BigQueryAddressOverrides:
                 )
             self._address_overrides[address] = BigQueryAddress(
                 dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
-                    self.sandbox_prefix, address.dataset_id
+                    self._sandbox_prefix, address.dataset_id
                 ),
                 table_id=address.table_id,
             )
@@ -210,7 +220,7 @@ class BigQueryAddressOverrides:
             self._full_dataset_overrides[
                 dataset_id
             ] = BigQueryAddressOverrides.format_sandbox_dataset(
-                self.sandbox_prefix, dataset_id
+                self._sandbox_prefix, dataset_id
             )
             return self
 
@@ -238,11 +248,12 @@ class BigQueryAddressOverrides:
                 )
             self._verify_no_conflicting_address_overrides(original_dataset_id)
             if (
-                new_dataset_id
-                == BigQueryAddressOverrides.format_sandbox_dataset(
-                    self.sandbox_prefix, original_dataset_id
-                )
+                self._sandbox_prefix_opt
                 and not force_allow_custom
+                and new_dataset_id
+                == BigQueryAddressOverrides.format_sandbox_dataset(
+                    self._sandbox_prefix, original_dataset_id
+                )
             ):
                 raise ValueError(
                     f"The new_dataset_id [{new_dataset_id}] matches the standard sandbox "

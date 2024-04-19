@@ -25,15 +25,9 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           --job_name JOB_NAME \
           --project PROJECT \
           --state_code STATE_CODE \
-          --sandbox_output_dataset SANDBOX_OUTPUT_DATASET \
-          --calculation_month_count NUM_MONTHS \
-          [--normalized_input INPUT] \
-          [--state_data_input INPUT] \
-          [--reference_view_input REFERENCE_VIEW_INPUT] \
-          [--ingest_instance PRIMARY] \
-          [--skip_build] \
-          # Note: The --metric_types arg must be last since it is a list
-          [--metric_types METRIC_TYPES]
+          --output_sandbox_prefix OUTPUT_SANDBOX_PREFIX \
+          [--input_dataset_overrides_json INPUT_DATASET_OVERRIDES_JSON]
+          [--skip_build]
 
           ..and any other pipeline-specific args
 
@@ -42,25 +36,29 @@ Examples:
         --pipeline recidivism_metrics \
         --type metrics \
         --project recidiviz-staging \
-        --job_name my-nd-recidivism-metrics-test \
-        --sandbox_output_dataset username_dataflow_metrics \
-        --state_code US_ND \
+        --job_name recidivism-metrics \
+        --output_sandbox_prefix username \
+        --input_dataset_overrides_json '{"normalized_state": "my_sandbox_normalized_state"}'
+        --state_code US_XX \
+        --calculation_month_count 36
+        # Note: The --metric_types arg must be last since it is a list
         --metric_types "REINCARCERATION_COUNT REINCARCERATION_RATE"
 
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
         --pipeline comprehensive_normalization \
         --type normalization \
         --project recidiviz-staging \
-        --job_name my-nd-normalization-test \
-        --sandbox_output_dataset username_us_nd_normalized_state \
-        --state_code US_ND
+        --job_name us-xx-normalization \
+        --output_sandbox_prefix username \
+        --input_dataset_overrides_json '{"us_xx_state_primary": "my_sandbox_us_xx_state_primary"}' \
+        --state_code US_XX
 
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
         --pipeline us_ix_case_note_extracted_entities_supplemental \
         --type supplemental \
         --project recidiviz-staging \
-        --job_name my-id-supplemental-test \
-        --sandbox_output_dataset username_supplemental_data \
+        --job_name us-ix-supplemental \
+        --output_sandbox_prefix username \
         --state_code US_IX
 
 You must also include any arguments required by the given pipeline.
@@ -87,6 +85,7 @@ from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
     run_sandbox_dataflow_pipeline,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.metadata import local_project_id_override
 
 PIPELINE_PARAMETER_TYPES: Dict[str, Type[PipelineParameters]] = {
     "metrics": MetricsPipelineParameters,
@@ -149,7 +148,8 @@ def main() -> None:
                 "Have you already created a sandbox dataflow dataset called "
                 f"`{getattr(params, attr)}` using `create_or_update_dataflow_sandbox`?",
             )
-    run_sandbox_dataflow_pipeline(params, known_args.skip_build)
+    with local_project_id_override(params.project):
+        run_sandbox_dataflow_pipeline(params, known_args.skip_build)
 
 
 if __name__ == "__main__":

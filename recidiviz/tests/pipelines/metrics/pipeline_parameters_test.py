@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for MetricsPipelineParameters"""
+import json
 import unittest
+from unittest.mock import MagicMock, patch
 
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
@@ -23,6 +25,10 @@ from recidiviz.calculator.query.state.dataset_config import (
     REFERENCE_VIEWS_DATASET,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
+from recidiviz.pipelines.metrics.supervision.pipeline import SupervisionMetricsPipeline
+from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
+    get_all_reference_query_input_datasets_for_pipeline,
+)
 
 
 class TestMetricsPipelineParameters(unittest.TestCase):
@@ -36,42 +42,12 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             region="us-west1",
             job_name="test-job",
             metric_types="TEST_METRIC",
-            output="test_output",
             calculation_month_count=36,
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "reference_view_input": REFERENCE_VIEWS_DATASET,
-            "normalized_input": NORMALIZED_STATE_DATASET,
-            "metric_types": "TEST_METRIC",
-            "calculation_month_count": "36",
-            "output": "test_output",
-        }
-
-        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-
-        self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
-
-    def test_creation_no_output(self) -> None:
-        pipeline_parameters = MetricsPipelineParameters(
-            project="recidiviz-456",
-            state_code="US_OZ",
-            pipeline="test_pipeline_name",
-            region="us-west1",
-            job_name="test-job",
-            metric_types="TEST_METRIC",
-            calculation_month_count=36,
-        )
-
-        expected_parameters = {
-            "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
-            "output": DATAFLOW_METRICS_DATASET,
-            "reference_view_input": REFERENCE_VIEWS_DATASET,
-            "normalized_input": NORMALIZED_STATE_DATASET,
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
         }
@@ -80,6 +56,13 @@ class TestMetricsPipelineParameters(unittest.TestCase):
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "test-job")
+
+        self.assertEqual(NORMALIZED_STATE_DATASET, pipeline_parameters.normalized_input)
+        self.assertEqual(
+            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
+        )
+        self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
+        self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
     def test_creation_without_calculation_month_count(self) -> None:
         pipeline_parameters = MetricsPipelineParameters(
@@ -89,15 +72,11 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             region="us-west1",
             job_name="test-job",
             metric_types="TEST_METRIC",
-            output="test_output",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "reference_view_input": REFERENCE_VIEWS_DATASET,
-            "normalized_input": NORMALIZED_STATE_DATASET,
-            "output": "test_output",
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "-1",
         }
@@ -107,62 +86,100 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "test-job")
 
-    def test_creation_debug_params(self) -> None:
+        self.assertEqual(NORMALIZED_STATE_DATASET, pipeline_parameters.normalized_input)
+        self.assertEqual(
+            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
+        )
+        self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
+        self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
+
+    def test_creation_debug_params_no_prefix(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, "This sandbox pipeline must define an output_sandbox_prefix."
+        ):
+            _ = MetricsPipelineParameters(
+                project="recidiviz-456",
+                state_code="US_OZ",
+                pipeline="test_pipeline_name",
+                region="us-west1",
+                job_name="test-job",
+                metric_types="TEST_METRIC",
+                calculation_month_count=36,
+                # Raises because this debug value is set
+                person_filter_ids="123 12323 324",
+            )
+
+    def test_creation_with_sandbox_prefix(self) -> None:
+        input_dataset_overrides_json = json.dumps(
+            {NORMALIZED_STATE_DATASET: "some_completely_different_dataset"}
+        )
         pipeline_parameters = MetricsPipelineParameters(
             project="recidiviz-456",
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
+            job_name="job-test",
             metric_types="TEST_METRIC",
-            output="test_output",
             calculation_month_count=36,
-            reference_view_input="test_view",
-            normalized_input="normalized_input",
             person_filter_ids="123 12323 324",
+            output_sandbox_prefix="my_prefix",
+            input_dataset_overrides_json=input_dataset_overrides_json,
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
             "metric_types": "TEST_METRIC",
-            "calculation_month_count": "36",
-            "output": "test_output",
-            "reference_view_input": "test_view",
-            "normalized_input": "normalized_input",
             "person_filter_ids": "123 12323 324",
+            "calculation_month_count": "36",
+            "output_sandbox_prefix": "my_prefix",
+            "input_dataset_overrides_json": input_dataset_overrides_json,
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-job-test")
 
-        self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
+        self.assertEqual(
+            "some_completely_different_dataset", pipeline_parameters.normalized_input
+        )
+        self.assertEqual(
+            REFERENCE_VIEWS_DATASET,
+            pipeline_parameters.reference_view_input,
+        )
 
-    def test_update_with_sandbox_prefix(self) -> None:
+        self.assertEqual("my_prefix_dataflow_metrics", pipeline_parameters.output)
+        self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
+    def test_check_for_valid_input_dataset_overrides(self) -> None:
+        input_dataset_overrides_json = json.dumps(
+            # The normalization pipelines read from normalized_state, not
+            # us_xx_normalized_state
+            {"us_xx_normalized_state": "some_completely_different_dataset"}
+        )
         pipeline_parameters = MetricsPipelineParameters(
             project="recidiviz-456",
-            state_code="US_OZ",
+            state_code="US_XX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
+            job_name="job-test",
             metric_types="TEST_METRIC",
-            output="test_output",
             calculation_month_count=36,
-            reference_view_input="test_view",
-            normalized_input="normalized_input",
             person_filter_ids="123 12323 324",
-        ).update_with_sandbox_prefix("my_prefix")
-
-        expected_parameters = {
-            "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
-            "reference_view_input": "my_prefix_test_view",
-            "normalized_input": "my_prefix_normalized_input",
-            "metric_types": "TEST_METRIC",
-            "person_filter_ids": "123 12323 324",
-            "calculation_month_count": "36",
-            "output": "my_prefix_test_output",
-        }
-
-        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
+            output_sandbox_prefix="my_prefix",
+            input_dataset_overrides_json=input_dataset_overrides_json,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found original dataset \[us_xx_normalized_state\] in overrides which is "
+            r"not a dataset this pipeline reads from. Datasets you can override: "
+            r"\['normalized_state', 'reference_views', 'state', "
+            r"'us_mo_raw_data_up_to_date_views'\].",
+        ):
+            pipeline_parameters.check_for_valid_input_dataset_overrides(
+                get_all_reference_query_input_datasets_for_pipeline(
+                    SupervisionMetricsPipeline
+                )
+            )

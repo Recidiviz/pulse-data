@@ -26,6 +26,7 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 from more_itertools import one
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     NORMALIZED_STATE_DATASET,
@@ -121,6 +122,7 @@ from recidiviz.tests.pipelines.metrics.supervision.identifier_test import (
     create_termination_event_from_period,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
@@ -517,7 +519,10 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
         write_to_bq_constructor = (
             self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
-                DATAFLOW_METRICS_DATASET,
+                expected_dataset=BigQueryAddressOverrides.format_sandbox_dataset(
+                    DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
+                    DATAFLOW_METRICS_DATASET,
+                ),
                 expected_output_tags=[
                     metric_type.value for metric_type in expected_metric_types
                 ],
@@ -1182,9 +1187,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             project="recidiviz-456",
             state_code="US_XX",
             pipeline="supervision_metrics",
-            normalized_input="dataset_id",
-            reference_view_input="dataset_id",
-            output="dataset_id",
             metric_types="ALL",
             region="region",
             job_name="job",

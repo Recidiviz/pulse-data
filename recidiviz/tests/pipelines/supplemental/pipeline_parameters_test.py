@@ -15,12 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for SupplementalPipelineParameters"""
+import json
 import unittest
+from unittest.mock import MagicMock, patch
 
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
+)
+from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.pipeline import (
+    UsIxCaseNoteExtractedEntitiesPipeline,
+)
+from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
+    get_all_reference_query_input_datasets_for_pipeline,
 )
 
 
@@ -34,14 +42,11 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             pipeline="test_pipeline_name",
             region="us-west1",
             job_name="test-job",
-            output="test_output",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "output": "test_output",
-            "reference_view_input": REFERENCE_VIEWS_DATASET,
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -49,44 +54,79 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "test-job")
 
-    def test_creation_no_output(self) -> None:
+        self.assertEqual(SUPPLEMENTAL_DATA_DATASET, pipeline_parameters.output)
+        self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
+
+    def test_parameters_with_sandbox_prefix(self) -> None:
         pipeline_parameters = SupplementalPipelineParameters(
             project="recidiviz-456",
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
             job_name="test-job",
+            output_sandbox_prefix="my_prefix",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "output": SUPPLEMENTAL_DATA_DATASET,
-            "reference_view_input": REFERENCE_VIEWS_DATASET,
-        }
-
-        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-
-        self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
-
-    def test_update_with_sandbox_prefix(self) -> None:
-        pipeline_parameters = SupplementalPipelineParameters(
-            project="recidiviz-456",
-            state_code="US_OZ",
-            pipeline="test_pipeline_name",
-            region="us-west1",
-            job_name="test-job",
-            output="test_output",
-            reference_view_input="test_view",
-        ).update_with_sandbox_prefix("my_prefix")
-
-        expected_parameters = {
-            "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
-            "reference_view_input": "my_prefix_test_view",
-            "output": "my_prefix_test_output",
+            "output_sandbox_prefix": "my_prefix",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
         self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
+
+        self.assertEqual(
+            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
+        )
+        self.assertEqual("my_prefix_supplemental_data", pipeline_parameters.output)
+        self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
+    def test_check_for_valid_input_dataset_overrides(self) -> None:
+        input_overrides_json = json.dumps(
+            # This pipeline is for IX so doesn't read from us_yy_raw_data
+            {"us_yy_raw_data": "some_other_raw_data_table"}
+        )
+        pipeline_parameters = SupplementalPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_IX",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test-job",
+            output_sandbox_prefix="my_prefix",
+            input_dataset_overrides_json=input_overrides_json,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found original dataset \[us_yy_raw_data\] in overrides which is not a "
+            r"dataset this pipeline reads from. Datasets you can override: "
+            r"\['normalized_state', 'reference_views', "
+            r"'us_ix_raw_data_up_to_date_views'\].",
+        ):
+            pipeline_parameters.check_for_valid_input_dataset_overrides(
+                get_all_reference_query_input_datasets_for_pipeline(
+                    UsIxCaseNoteExtractedEntitiesPipeline
+                )
+            )
+
+        input_overrides_json = json.dumps(
+            # This override is valid
+            {"us_ix_raw_data_up_to_date_views": "some_other_raw_data_table"}
+        )
+        pipeline_parameters = SupplementalPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_IX",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test-job",
+            output_sandbox_prefix="my_prefix",
+            input_dataset_overrides_json=input_overrides_json,
+        )
+        pipeline_parameters.check_for_valid_input_dataset_overrides(
+            get_all_reference_query_input_datasets_for_pipeline(
+                UsIxCaseNoteExtractedEntitiesPipeline
+            )
+        )

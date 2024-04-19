@@ -14,24 +14,17 @@
       "regexes": ["US_[A-Z]{2}"]
     },
     {
-      "name": "output",
-      "label": "Test output dataset",
-      "helpText": "If specified, the pipeline will write to this test dataset.",
+      "name": "output_sandbox_prefix",
+      "label": "Output sandbox prefix",
+      "helpText": "If specified, this prefix will be applied to the name of all output datasets for this pipeline.",
       "regexes": ["[0-9a-z_]+"],
       "isOptional": true
     },
     {
-      "name": "state_data_input",
-      "label": "BigQuery dataset to query for state entities",
-      "helpText": "If specified, the pipeline will query this dataset instead of the default.",
-      "regexes": ["[0-9a-z_]+"],
-      "isOptional": true
-    },
-    {
-      "name": "reference_view_input",
-      "label": "BigQuery reference view dataset to query",
-      "helpText": "If specified, the pipeline will query this BigQuery reference view dataset instead of the default.",
-      "regexes": ["[0-9a-z_]+"],
+      "name": "input_dataset_overrides_json",
+      "label": "A map of default dataset to overrides for that dataset",
+      "helpText": "When specified, the datasets in the keys of this JSON dict will be replaced with the corresponding value when reading inputs for this pipeline.",
+      "regexes": ["{.*}"],
       "isOptional": true
     },
     {

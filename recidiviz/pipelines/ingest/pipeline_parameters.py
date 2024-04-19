@@ -16,7 +16,7 @@
 # =============================================================================
 """Class for ingest pipeline parameters"""
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import attr
 
@@ -41,29 +41,29 @@ class IngestPipelineParameters(PipelineParameters):
         default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
     )
 
-    raw_data_table_input: str = attr.ib(validator=attr_validators.is_str)
-
-    @raw_data_table_input.default
-    def _raw_data_table_input_default(self) -> str:
-        return raw_tables_dataset_for_region(
-            state_code=StateCode(self.state_code),
-            instance=DirectIngestInstance(self.ingest_instance.upper()),
+    @property
+    def raw_data_table_input(self) -> str:
+        return self.get_input_dataset(
+            raw_tables_dataset_for_region(
+                state_code=StateCode(self.state_code),
+                instance=DirectIngestInstance(self.ingest_instance.upper()),
+            )
         )
 
-    ingest_view_results_output: str = attr.ib(validator=attr_validators.is_str)
-
-    @ingest_view_results_output.default
-    def _ingest_view_results_output_default(self) -> str:
-        return ingest_view_materialization_results_dataset(
-            StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
+    @property
+    def ingest_view_results_output(self) -> str:
+        return self.get_output_dataset(
+            ingest_view_materialization_results_dataset(
+                StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
+            )
         )
 
-    output: str = attr.ib(validator=attr_validators.is_str)
-
-    @output.default
-    def _output_default(self) -> str:
-        return state_dataset_for_state_code(
-            StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
+    @property
+    def output(self) -> str:
+        return self.get_output_dataset(
+            state_dataset_for_state_code(
+                StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
+            )
         )
 
     ingest_view_results_only: bool = attr.ib(
@@ -91,38 +91,22 @@ class IngestPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "ingest"
 
-    def __attrs_post_init__(self) -> None:
-        both_are_overwritten = (
-            self.output != self._output_default()
-            and self.ingest_view_results_output
-            != self._ingest_view_results_output_default()
-        )
-        both_are_default = (
-            self.output == self._output_default()
-            and self.ingest_view_results_output
-            == self._ingest_view_results_output_default()
-        )
-        if not both_are_overwritten and not both_are_default:
-            raise ValueError(
-                "Invalid pipeline parameters for output datasets. Only one of the "
-                "following is a sandbox dataset (either both must be sandbox or neither): "
-                f"output is {self.output}, ingest_view_results_output is {self.ingest_view_results_output}"
-            )
-        if both_are_default and self.ingest_views_to_run:
-            raise ValueError(
-                "Invalid pipeline parameters for ingest_views_to_run. Cannot run a subset"
-                " of ingest views without specifying a sandbox dataset."
-            )
+    @classmethod
+    def custom_sandbox_indicator_parameters(cls) -> Set[str]:
+        return {
+            "ingest_views_to_run",
+            "ingest_view_results_only",
+        }
 
     @classmethod
-    def get_input_dataset_param_names(cls) -> List[str]:
+    def get_input_dataset_property_names(cls) -> List[str]:
         return [
             "raw_data_table_input",
             "reference_view_input",
         ]
 
     @classmethod
-    def get_output_dataset_param_names(cls) -> List[str]:
+    def get_output_dataset_property_names(cls) -> List[str]:
         return [
             "ingest_view_results_output",
             "output",

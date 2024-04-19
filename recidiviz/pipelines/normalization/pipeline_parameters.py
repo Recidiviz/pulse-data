@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for normalization pipeline parameters"""
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import attr
 
@@ -32,28 +32,32 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 class NormalizationPipelineParameters(PipelineParameters):
     """Class for normalization pipeline parameters"""
 
-    state_data_input: str = attr.ib(
-        default=STATE_BASE_DATASET, validator=attr_validators.is_str
-    )
+    @property
+    def state_data_input(self) -> str:
+        return self.get_input_dataset(STATE_BASE_DATASET)
 
     person_filter_ids: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    output: str = attr.ib(validator=attr_validators.is_str)
-
-    @output.default
-    def _output_default(self) -> str:
-        return normalized_state_dataset_for_state_code(StateCode(self.state_code))
+    @property
+    def output(self) -> str:
+        return self.get_output_dataset(
+            normalized_state_dataset_for_state_code(StateCode(self.state_code))
+        )
 
     @property
     def flex_template_name(self) -> str:
         return "normalization"
 
     @classmethod
-    def get_input_dataset_param_names(cls) -> List[str]:
+    def custom_sandbox_indicator_parameters(cls) -> Set[str]:
+        return {"person_filter_ids"}
+
+    @classmethod
+    def get_input_dataset_property_names(cls) -> List[str]:
         return ["reference_view_input", "state_data_input"]
 
     @classmethod
-    def get_output_dataset_param_names(cls) -> List[str]:
+    def get_output_dataset_property_names(cls) -> List[str]:
         return ["output"]

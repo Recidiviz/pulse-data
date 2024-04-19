@@ -21,7 +21,7 @@ Usage:
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
         --project PROJECT_ID \
         --state_code US_XX \
-        --sandbox_prefix SANDBOX_PREFIX \
+        --output_sandbox_prefix output_sandbox_prefix \
         [--ingest_instance INSTANCE] \
         [--skip_build True/False] 
 
@@ -29,12 +29,12 @@ Examples:
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
         --project recidiviz-staging \
         --state_code US_CA \
-        --sandbox_prefix my_prefix
+        --output_sandbox_prefix ageiduschek
 
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
         --project recidiviz-staging \
         --state_code US_CA \
-        --sandbox_prefix my_prefix \
+        --output_sandbox_prefix my_prefix \
         --ingest_instance SECONDARY \
         --ingest_view_results_only True \
         --skip_build True \
@@ -47,14 +47,9 @@ import logging
 from datetime import datetime
 from typing import List, Tuple
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
@@ -120,7 +115,7 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
     )
 
     parser.add_argument(
-        "--sandbox_prefix",
+        "--output_sandbox_prefix",
         required=True,
         type=str,
         help="The prefix to use for any sandbox output datasets as well as the pipeline job name.",
@@ -144,27 +139,17 @@ def get_extra_pipeline_parameter_args(
     project: str,
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
-    sandbox_prefix: str,
+    output_sandbox_prefix: str,
 ) -> List[str]:
     """Returns additional pipeline command-line args that can be inferred from the
     state code, instance and sandbox prefix.
     """
 
     job_name = ingest_pipeline_name(
-        state_code=state_code, instance=ingest_instance, sandbox_prefix=sandbox_prefix
-    )
-
-    sandbox_output_dataset = state_dataset_for_state_code(
-        state_code,
-        ingest_instance,
-        sandbox_dataset_prefix=sandbox_prefix,
-    )
-
-    sandbox_ingest_view_results_output_dataset = (
-        BigQueryAddressOverrides.format_sandbox_dataset(
-            sandbox_prefix,
-            ingest_view_materialization_results_dataset(state_code, ingest_instance),
-        )
+        state_code=state_code,
+        instance=ingest_instance,
+        # The prefix/test suffix is applied by the pipeline args
+        sandbox_prefix=None,
     )
 
     right_now = datetime.now()
@@ -228,10 +213,8 @@ def get_extra_pipeline_parameter_args(
         state_code.value,
         "--job_name",
         job_name,
-        "--sandbox_output_dataset",
-        sandbox_output_dataset,
-        "--sandbox_ingest_view_results_output_dataset",
-        sandbox_ingest_view_results_output_dataset,
+        "--output_sandbox_prefix",
+        output_sandbox_prefix,
         "--raw_data_upper_bound_dates_json",
         raw_data_upper_bound_dates_json,
     ]
@@ -246,7 +229,7 @@ def main() -> None:
         known_args.project,
         known_args.state_code,
         known_args.ingest_instance,
-        known_args.sandbox_prefix,
+        known_args.output_sandbox_prefix,
     )
 
     params = IngestPipelineParameters.parse_from_args(
@@ -270,7 +253,7 @@ def main() -> None:
             bq_client,
             known_args.state_code,
             known_args.ingest_instance,
-            known_args.sandbox_prefix,
+            known_args.output_sandbox_prefix,
             allow_overwrite=True,
         )
 

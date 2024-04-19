@@ -22,9 +22,10 @@ import json
 import logging
 import os.path
 import re
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 import attr
+import attrs
 from apache_beam.options.pipeline_options import (
     PipelineOptions,
     SetupOptions,
@@ -34,53 +35,17 @@ from attr import Attribute
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    REFERENCE_VIEWS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
+from recidiviz.common.attr_converters import optional_json_str_to_dict
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import GCP_PROJECTS, in_test
 from recidiviz.utils.params import str_matches_regex_type
 
-
-class NormalizeSandboxJobName(argparse.Action):
-    """Since this is a test run, make sure the job name has a -test suffix."""
-
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Any = None,
-    ) -> None:
-        job_name = values
-        if not job_name.endswith("-test"):
-            job_name = job_name + "-test"
-            logging.info(
-                "Appending -test to the job_name because this is a test job: [%s]",
-                job_name,
-            )
-        setattr(namespace, self.dest, job_name)
-
-
-class ValidateSandboxDataset(argparse.Action):
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Any = None,
-    ) -> None:
-        if values == DATAFLOW_METRICS_DATASET:
-            parser.error(
-                f"--sandbox_output_dataset argument for test pipelines must be "
-                f"different than the standard Dataflow metrics dataset: "
-                f"{DATAFLOW_METRICS_DATASET}."
-            )
-        setattr(namespace, self.dest, values)
-
+PIPELINE_JOB_NAME_ARG_NAME = "job_name"
+PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME = "input_dataset_overrides_json"
+PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME = "output_sandbox_prefix"
 
 PipelineParametersT = TypeVar("PipelineParametersT", bound="PipelineParameters")
 
@@ -93,12 +58,82 @@ class PipelineParameters:
     project: str = attr.ib(validator=attr_validators.is_str)
     state_code: str = attr.ib(validator=attr_validators.is_str)
     pipeline: str = attr.ib(validator=attr_validators.is_str)
-
-    # TODO(#22528): Delete this parameter entirely once we read reference view queries
-    #  directly from queries.
-    reference_view_input: str = attr.ib(
-        default=REFERENCE_VIEWS_DATASET, validator=attr_validators.is_str
+    output_sandbox_prefix: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
+
+    input_dataset_overrides_json: Optional[Dict[str, Any]] = attr.ib(
+        default=None,
+        converter=optional_json_str_to_dict,
+        validator=attr_validators.is_opt_dict,
+    )
+
+    @property
+    def input_dataset_overrides(self) -> Optional[BigQueryAddressOverrides]:
+        if self.input_dataset_overrides_json is None:
+            return None
+
+        if not self.input_dataset_overrides_json:
+            raise ValueError(
+                "The input_dataset_overrides_json param was set with an empty "
+                "dictionary. Set input_dataset_overrides_json to None if there are "
+                "no overrides."
+            )
+
+        builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
+        for (
+            original_dataset,
+            override_dataset,
+        ) in self.input_dataset_overrides_json.items():
+            if original_dataset == override_dataset:
+                raise ValueError(
+                    f"Input dataset override for [{original_dataset}] must be "
+                    f"different than the original dataset."
+                )
+            builder.register_custom_dataset_override(
+                original_dataset, override_dataset, force_allow_custom=True
+            )
+        return builder.build()
+
+    @property
+    def output_dataset_overrides(self) -> Optional[BigQueryAddressOverrides]:
+        if not self.is_sandbox_pipeline:
+            return None
+
+        if not self.output_sandbox_prefix:
+            raise ValueError(
+                "Found sandbox pipeline where output_sandbox_prefix is not set."
+            )
+
+        builder = BigQueryAddressOverrides.Builder(
+            sandbox_prefix=self.output_sandbox_prefix
+        )
+        defaults_params = self._without_overrides()
+        for dataset_field in self.get_output_dataset_property_names():
+            default_dataset = getattr(defaults_params, dataset_field)
+            builder.register_sandbox_override_for_entire_dataset(default_dataset)
+        return builder.build()
+
+    def get_input_dataset(self, default_dataset_id: str) -> str:
+        if not (overrides := self.input_dataset_overrides):
+            return default_dataset_id
+        return overrides.get_dataset(default_dataset_id)
+
+    def get_output_dataset(self, default_dataset_id: str) -> str:
+        if not self.output_sandbox_prefix:
+            return default_dataset_id
+        if not (overrides := self.output_dataset_overrides):
+            raise ValueError(
+                f"Expected output dataset overrides when "
+                f"[{self.output_sandbox_prefix}] is set."
+            )
+        return overrides.get_dataset(default_dataset_id)
+
+    # TODO(#22528): Delete this property entirely once we read reference view queries
+    #  directly from queries.
+    @property
+    def reference_view_input(self) -> str:
+        return self.get_input_dataset(REFERENCE_VIEWS_DATASET)
 
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)
@@ -145,14 +180,14 @@ class PipelineParameters:
 
     @classmethod
     @abc.abstractmethod
-    def get_input_dataset_param_names(cls) -> List[str]:
+    def get_input_dataset_property_names(cls) -> List[str]:
         """Returns a list of parameter names that contain dataset_ids for datasets used
         as input to this pipeline
         """
 
     @classmethod
     @abc.abstractmethod
-    def get_output_dataset_param_names(cls) -> List[str]:
+    def get_output_dataset_property_names(cls) -> List[str]:
         """Returns a list of parameter names that contain dataset_ids for datasets used
         as input to this pipeline
         """
@@ -161,6 +196,118 @@ class PipelineParameters:
     @abc.abstractmethod
     def flex_template_name(self) -> str:
         pass
+
+    def __attrs_post_init__(self) -> None:
+        if self.is_sandbox_pipeline:
+            if not self.output_sandbox_prefix:
+                raise ValueError(
+                    f"This sandbox pipeline must define an output_sandbox_prefix. "
+                    f"Found non-default values for these fields: "
+                    f"{self._get_non_default_sandbox_indicator_parameters()}"
+                )
+
+            # Adjust sandbox job name so that it won't trigger alerting
+            self.job_name = self._get_job_name_for_sandbox_job(
+                self.job_name, self.output_sandbox_prefix
+            )
+
+    @staticmethod
+    def _get_job_name_for_sandbox_job(
+        original_job_name: str, output_sandbox_prefix: str
+    ) -> str:
+        job_name = original_job_name
+        job_name_friendly_prefix = output_sandbox_prefix.replace("_", "-")
+        if not job_name.startswith(job_name_friendly_prefix):
+            job_name = f"{job_name_friendly_prefix}-{job_name}"
+        if not job_name.endswith("-test"):
+            logging.info(
+                "Appending -test to the job_name because this is a test job: [%s]",
+                original_job_name,
+            )
+            job_name = f"{job_name}-test"
+        return job_name
+
+    @classmethod
+    @abc.abstractmethod
+    def custom_sandbox_indicator_parameters(cls) -> Set[str]:
+        """The names of parameters specific to this pipeline subclass which,
+        when any are set to non-default values, indicate that this is a sandbox run of
+        the pipeline and output must be directed to sandbox datasets. Must be overridden
+        by subclass datasets.
+        """
+
+    @classmethod
+    def all_sandbox_indicator_parameters(cls) -> Set[str]:
+        """The names of all parameters this pipeline can be instantiated with which,
+        when any are set to non-default values, indicate that this is a sandbox run of
+        the pipeline and output must be directed to sandbox datasets.
+        """
+
+        return {
+            PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME,
+            PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME,
+        } | cls.custom_sandbox_indicator_parameters()
+
+    def _get_non_default_sandbox_indicator_parameters(self) -> Set[str]:
+        non_default_fields = set()
+        for field_name, attribute in attr.fields_dict(type(self)).items():
+            if field_name not in self.all_sandbox_indicator_parameters():
+                continue
+            if attribute.default == attrs.NOTHING:
+                raise ValueError(
+                    f"Sandbox indicator parameter [{field_name}] must have a default "
+                    f"value defined."
+                )
+
+            if attribute.default != getattr(self, field_name):
+                non_default_fields.add(field_name)
+        return non_default_fields
+
+    @property
+    def is_sandbox_pipeline(self) -> bool:
+        """Returns true if the parameters were instantiated with any values that
+        indicate this is a sandbox run of the pipeline.
+        """
+        return bool(self._get_non_default_sandbox_indicator_parameters())
+
+    def _without_overrides(self: PipelineParametersT) -> PipelineParametersT:
+        """Returns a pipeline parameters instance with all values restored to defaults,
+        if applicable.
+        """
+        params_cls = type(self)
+        kwargs = {}
+        sandbox_indicator_params = self.all_sandbox_indicator_parameters()
+        for field_name in attr.fields_dict(params_cls):
+            if field_name in sandbox_indicator_params:
+                continue
+            kwargs[field_name] = getattr(self, field_name)
+        return params_cls(**kwargs)
+
+    def check_for_valid_input_dataset_overrides(
+        self, reference_query_input_datasets: Set[str]
+    ) -> None:
+        """Checks that the set of overridden input datasets in
+        input_dataset_overrides_json only contains datasets that are actual inputs to
+        this pipeline. Must provide a set of |reference_query_input_datasets| which
+        contains all datasets that any reference queries run by pipeline read from.
+        """
+        if not self.input_dataset_overrides_json:
+            return
+
+        without_overrides = self._without_overrides()
+        all_standard_input_datasets = {
+            getattr(without_overrides, input_property)
+            for input_property in self.get_input_dataset_property_names()
+        } | reference_query_input_datasets
+
+        for original_dataset in self.input_dataset_overrides_json:
+            if original_dataset not in all_standard_input_datasets:
+                raise ValueError(
+                    f"Found original dataset [{original_dataset}] in overrides "
+                    f"which is not a dataset this pipeline reads from. "
+                    f"Datasets you can override: "
+                    f"{sorted(all_standard_input_datasets)}."
+                )
 
     @classmethod
     def parse_from_args(
@@ -199,23 +346,13 @@ class PipelineParameters:
             required=True,
         )
 
-        if sandbox_pipeline:
-            parser.add_argument(
-                "--job_name",
-                dest="job_name",
-                type=str,
-                help="The name of the pipeline job to be run.",
-                required=True,
-                action=NormalizeSandboxJobName,
-            )
-        else:
-            parser.add_argument(
-                "--job_name",
-                dest="job_name",
-                type=str,
-                help="The name of the pipeline job to be run.",
-                required=True,
-            )
+        parser.add_argument(
+            "--job_name",
+            dest="job_name",
+            type=str,
+            help="The name of the pipeline job to be run.",
+            required=True,
+        )
 
         parser.add_argument(
             "--region",
@@ -260,6 +397,11 @@ class PipelineParameters:
                 is_optional = (
                     parameter["isOptional"] if "isOptional" in parameter else False
                 )
+                if sandbox_pipeline and name == PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME:
+                    # If this pipeline is being run locally, the output sandbox arg
+                    # must be set.
+                    is_optional = False
+
                 help_text = f"{parameter['label']}. {parameter['helpText']}"
 
                 arg_type: Union[Callable[[Any], str], Type] = (
@@ -268,24 +410,13 @@ class PipelineParameters:
                     else str
                 )
 
-                if sandbox_pipeline and name.endswith("output"):
-                    parser.add_argument(
-                        f"--sandbox_{name}_dataset",
-                        # Change output name to match what pipeline args expect
-                        dest=name,
-                        type=arg_type,
-                        help=f"{name} dataset where results should be written to for test jobs.",
-                        required=True,
-                        action=ValidateSandboxDataset,
-                    )
-                else:
-                    parser.add_argument(
-                        f"--{name}",
-                        dest=name,
-                        type=arg_type,
-                        required=not is_optional,
-                        help=help_text,
-                    )
+                parser.add_argument(
+                    f"--{name}",
+                    dest=name,
+                    type=arg_type,
+                    required=not is_optional,
+                    help=help_text,
+                )
         return parser.parse_known_args(argv)
 
     @property
@@ -305,26 +436,17 @@ class PipelineParameters:
             parameters = {key: getattr(self, key) for key in parameter_keys}
 
         # The Flex template expects all parameter values to be strings, so cast all non-null values to strings.
-        return {k: str(v) for k, v in parameters.items() if v is not None}
-
-    def update_with_sandbox_prefix(self, sandbox_prefix: str) -> "PipelineParameters":
-        # Need to convert underscores to dashes for pipeline job names to be valid
-        converted_sandbox_prefix = sandbox_prefix.replace("_", "-")
-        return attr.evolve(
-            self,
-            **{
-                dataset_param_name: BigQueryAddressOverrides.format_sandbox_dataset(
-                    sandbox_prefix,
-                    getattr(self, dataset_param_name),
-                )
-                for dataset_param_name in [
-                    *self.get_input_dataset_param_names(),
-                    *self.get_output_dataset_param_names(),
-                ]
-            },
-            # Add -test suffix to avoid firing Pagerduty alerts
-            job_name=f"{converted_sandbox_prefix}-{self.job_name}-test",
-        )
+        return {
+            k: (
+                json.dumps(v)
+                # This arg is parsed into a dictionary via a converter so needs to be
+                # dumped back to JSON.
+                if k in {PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME}
+                else str(v)
+            )
+            for k, v in parameters.items()
+            if v is not None
+        }
 
     def template_gcs_path(self, project_id: str) -> str:
         return GcsfsFilePath.from_bucket_and_blob_name(

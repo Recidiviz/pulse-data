@@ -310,3 +310,32 @@ class BigQueryAddressOverridesTest(unittest.TestCase):
             r"already has full dataset override set",
         ):
             builder.register_sandbox_override_for_address(address)
+
+    def test_builder_no_prefix(self) -> None:
+        builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
+
+        builder.register_custom_dataset_override(_DATASET_1, _DATASET_2)
+        overrides = builder.build()
+        address = BigQueryAddress(dataset_id=_DATASET_1, table_id=_TABLE_1)
+        self.assertEqual(
+            BigQueryAddress(dataset_id=_DATASET_2, table_id=_TABLE_1),
+            overrides.get_sandbox_address(address),
+        )
+
+    def test_builder_no_prefix_non_custom(self) -> None:
+        builder = BigQueryAddressOverrides.Builder(sandbox_prefix=None)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found null sandbox prefix - this builder can only be used for custom "
+            "overrides that do not require a sandbox prefix.",
+        ):
+            builder.register_sandbox_override_for_entire_dataset(_DATASET_1)
+
+        address = BigQueryAddress(dataset_id=_DATASET_2, table_id=_TABLE_1)
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found null sandbox prefix - this builder can only be used for custom "
+            "overrides that do not require a sandbox prefix.",
+        ):
+            builder.register_sandbox_override_for_address(address)

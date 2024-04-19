@@ -18,7 +18,10 @@
 Contains helper functions to use as a "converter" functions in an attr.ib
 and largely exist to make MyPy happy.
 """
-from typing import Optional
+import json
+from typing import Any, Dict, Optional
+
+from recidiviz.utils.types import assert_type
 
 
 def str_to_lowercase_str(s: str) -> str:
@@ -39,3 +42,16 @@ def optional_str_to_uppercase_str(s: Optional[str]) -> str:
     if not s:
         return ""
     return s.upper()
+
+
+def optional_json_str_to_dict(s: Optional[str]) -> Optional[Dict[str, Any]]:
+    """Parses a JSON string into a dictionary. If not null, the provided JSON string
+    must contain a top-level dictionary or this throws.
+    """
+    if s is None:
+        return None
+
+    if not s:
+        raise ValueError("Expecting valid JSON and not the empty string.")
+
+    return assert_type(json.loads(s), dict)
