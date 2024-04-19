@@ -24,6 +24,7 @@ function run_migrations {
 }
 
 # run_migrations clauses have been explicitly duplicated for ease of disabling/enabling per project
+set_vpn_status "Disable"
 if [[ "$PROJECT_ID" = 'recidiviz-123' ]]; then
   run_migrations OPERATIONS
   run_migrations JUSTICE_COUNTS
@@ -42,3 +43,4 @@ else
   echo_error "Unrecognized project id for migration: ${PROJECT_ID}"
   exit 1
 fi
+set_vpn_status "Enable"

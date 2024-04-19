@@ -33,7 +33,9 @@ function vpn_is_installed () {
 }
 
 function disable_vpn () {
-  open -a "Jamf Trust" "com.jamf.trust://?action=disable_vpn"
+  if [[ "$vpnStatus" = *VPN:com.jamf.trust* ]]; then
+    open -a "Jamf Trust" "com.jamf.trust://?action=disable_vpn"
+  fi
   vpnStatus=$(scutil --nc list | grep Connected)
   while [[ "$vpnStatus" = *VPN:com.jamf.trust* ]]
   do
@@ -44,7 +46,9 @@ function disable_vpn () {
 }
 
 function enable_vpn () {
-  open -a "Jamf Trust" "com.jamf.trust://?action=enable_vpn"
+  if [[ "$vpnStatus" != *VPN:com.jamf.trust* ]]; then
+    open -a "Jamf Trust" "com.jamf.trust://?action=enable_vpn"
+  fi
   vpnStatus=$(scutil --nc list | grep Connected)
   while [[ "$vpnStatus" != *VPN:com.jamf.trust* ]]
   do
