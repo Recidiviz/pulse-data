@@ -27,6 +27,9 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     MINIMUM_SECURITY_FACILITIES,
 )
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+)
 
 _CRITERIA_NAME = "US_ND_NOT_IN_MINIMUM_SECURITY_FACILITY"
 
@@ -44,7 +47,7 @@ SELECT
 FROM `{{project_id}}.{{sessions_dataset}}.location_sessions_materialized`
 WHERE state_code = 'US_ND'
   AND facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
-  AND start_date < end_date
+  AND start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 
