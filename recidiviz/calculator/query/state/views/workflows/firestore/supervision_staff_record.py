@@ -80,6 +80,7 @@ columns_minus_supervisor_id_str = list_to_query_string(columns_minus_supervisor_
 
 columns_with_supervisor_id = columns_minus_supervisor_id + [
     "supervisor_external_id",
+    "supervisor_external_ids",
 ]
 
 
@@ -114,7 +115,7 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
             SELECT {{columns_minus_supervisor_id}} FROM pa_staff
         )
         , final_query AS (
-            -- Adds `supervisor_external_id` column to supervision staff records
+            -- Adds `supervisor_external_id(s)` columns to supervision staff records
             SELECT
                 full_query.id,
                 full_query.state_code,
@@ -123,14 +124,13 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
                 full_query.given_names,
                 full_query.surname,
                 full_query.role_subtype,
-                -- TODO(Recidiviz/recidiviz-dashboards#5246): consider using _array instead and making this plural
-                supervisor_external_id
+                attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)] AS supervisor_external_id,
+                attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
             FROM full_query
             LEFT JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
                 ON full_query.id = attrs.officer_id
                 AND full_query.state_code = attrs.state_code
-                AND {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date_exclusive")} 
-            LEFT JOIN UNNEST(attrs.supervisor_staff_external_id_array) AS supervisor_external_id
+                AND {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date_exclusive")}
         )
     SELECT {{columns}}
     FROM final_query
