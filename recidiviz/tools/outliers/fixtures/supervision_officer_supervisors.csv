@@ -2,4 +2,3 @@ state_code,external_id,staff_id,full_name,pseudonymized_id,email,supervision_dis
 US_PA,101,61000000000101,"{""given_names"": ""SUPERVISOR"", ""surname"": ""1""}",hash1,supervisor1@recidiviz.org,
 US_PA,102,61000000000102,"{""given_names"": ""SUPERVISOR"", ""surname"": ""2""}",hash2,supervisor2@recidiviz.org,2
 US_PA,103,61000000000103,"{""given_names"": ""SUPERVISOR"", ""surname"": ""3""}",hash3,manager3@recidiviz.org,2
-US_PA,104,61000000000104,"{""given_names"": ""SUPERVISOR"", ""surname"": ""4""}",hash4,manager4@recidiviz.org,2

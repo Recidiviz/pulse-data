@@ -31,7 +31,7 @@ from sqlalchemy import (
     Integer,
     String,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -63,8 +63,6 @@ class SupervisionOfficer(PersonBase, OutliersBase):
     __tablename__ = "supervision_officers"
 
     supervisor_external_id = Column(String, nullable=True)
-    # List of the officer's supervisor external ids
-    supervisor_external_ids = Column(ARRAY(String), nullable=True)
     # Id of the supervision district the officer is assigned to
     supervision_district = Column(String, nullable=True)
     # specialized caseload type, if applicable
