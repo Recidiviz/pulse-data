@@ -36,25 +36,29 @@ import argparse
 import logging
 import os
 from typing import Optional
+from unittest.mock import create_autospec
 
 import pandas as pd
 
-from recidiviz.cloud_storage.gcsfs_csv_reader import (
-    GcsfsCsvReader,
-    GcsfsCsvReaderDelegate,
+from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawDataSplittingGcsfsCsvReaderDelegate,
     DirectIngestRawFileReader,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -62,7 +66,9 @@ from recidiviz.utils.params import str_to_bool
 TEST_BUCKET_PATH = "recidiviz-test-bucket"
 
 
-class DebuggingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
+class DebuggingGcsfsCsvReaderDelegate(
+    DirectIngestRawDataSplittingGcsfsCsvReaderDelegate
+):
     """CSV delegate that logs each call to aid in debugging."""
 
     def on_start_read_with_encoding(self, encoding: str) -> None:
@@ -81,7 +87,10 @@ class DebuggingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         logging.info(
             "Loaded DataFrame chunk [%d] has [%d] rows", chunk_num, df.shape[0]
         )
-        logging.info("Last row processed: %s", df.tail(1))
+
+        df = self.transform_dataframe(df)
+
+        logging.info("Last row processed after transformation: %s", df.tail(1))
         return True
 
     def on_unicode_decode_error(self, encoding: str, e: UnicodeError) -> bool:
@@ -132,7 +141,13 @@ def main(
 
     file_reader.read_raw_file_from_gcs(
         path=file_path,
-        delegate=DebuggingGcsfsCsvReaderDelegate(),
+        delegate=DebuggingGcsfsCsvReaderDelegate(
+            file_path,
+            DirectIngestGCSFileSystem(fs),
+            create_autospec(DirectIngestRawFileMetadata),  # unused, so mocked
+            create_autospec(GcsfsDirectoryPath),  # unused, so mocked
+            False,
+        ),
         chunk_size_override=chunk_size,
     )
 
