@@ -22,7 +22,7 @@ import shutil
 import threading
 from collections import defaultdict
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List, Optional, Set, TextIO, Union
+from typing import IO, Any, Dict, Iterator, List, Optional, Set, Union
 
 import attr
 
@@ -298,13 +298,17 @@ class FakeGCSFileSystem(GCSFileSystem):
     def open(
         self,
         path: GcsfsFilePath,
+        mode: str = "r",
         chunk_size: Optional[int] = None,
         encoding: Optional[str] = None,
-    ) -> Iterator[TextIO]:
+        verifiable: bool = True,
+    ) -> Iterator[IO]:
         if not self.exists(path):
             raise GCSBlobDoesNotExistError(f"Could not find blob at {path}")
 
-        with open(self.real_absolute_path_for_path(path), "r", encoding=encoding) as f:
+        with open(
+            self.real_absolute_path_for_path(path), mode=mode, encoding=encoding
+        ) as f:
             yield f
 
     def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:

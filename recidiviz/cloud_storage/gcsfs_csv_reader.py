@@ -18,7 +18,7 @@
 import abc
 import csv
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List, Optional, TextIO, Tuple, Union
+from typing import IO, Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -103,7 +103,7 @@ class GcsfsCsvReader:
     @contextmanager
     def _file_pointer_for_path(
         self, path: GcsfsFilePath, encoding: str
-    ) -> Iterator[TextIO]:
+    ) -> Iterator[IO]:
         """Returns a file pointer for the given path."""
 
         # From the GCSFileSystem docs (https://gcsfs.readthedocs.io/en/latest/api.html#gcsfs.core.GCSFileSystem),
@@ -115,8 +115,8 @@ class GcsfsCsvReader:
             yield f
 
     def _get_preprocessed_file_stream(
-        self, fp: TextIO, encoding: str, kwargs: Dict[str, Any]
-    ) -> Tuple[Union[ReadOnlyCsvNormalizingStream, TextIO], str, Dict[str, Any]]:
+        self, fp: IO, encoding: str, kwargs: Dict[str, Any]
+    ) -> Tuple[Union[ReadOnlyCsvNormalizingStream, IO], str, Dict[str, Any]]:
         """Returns a tuple of (readable stream, encoding, updated kwargs)
         to pass to pandas.read_csv(). The stream, encoding and kwargs may have been
         updated to handle certain configurations of arguments that pandas does not
@@ -131,7 +131,7 @@ class GcsfsCsvReader:
         delimiter = kwargs.get("sep")
         quoting = kwargs["quoting"]
         preprocessed_fp: Union[
-            ReadOnlyCsvNormalizingStream, TextIO
+            ReadOnlyCsvNormalizingStream, IO
         ] = ReadOnlyCsvNormalizingStream(
             fp,
             delimiter=delimiter or ",",

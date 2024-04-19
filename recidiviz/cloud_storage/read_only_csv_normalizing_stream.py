@@ -19,7 +19,7 @@ format with arbitrary delimiters and newline terminators to a standardized forma
 """
 import csv
 import logging
-from typing import Optional, TextIO
+from typing import IO, Optional
 
 DOUBLE_QUOTE = '"'
 ESCAPED_DOUBLE_QUOTE = '""'
@@ -39,7 +39,7 @@ class ReadOnlyCsvNormalizingStream:
     """
 
     def __init__(
-        self, fp: TextIO, delimiter: str, line_terminator: str, quoting: int
+        self, fp: IO, delimiter: str, line_terminator: str, quoting: int
     ) -> None:
         if quoting != csv.QUOTE_NONE:
             raise ValueError("No support for files with quoted values.")

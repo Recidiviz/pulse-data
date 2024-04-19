@@ -17,7 +17,7 @@
 """Classes defining delegate interface and implementations for ETLing demo data into Firestore."""
 import logging
 from pathlib import Path
-from typing import Dict, Iterator, TextIO
+from typing import IO, Dict, Iterator
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -47,7 +47,7 @@ def load_demo_fixture(
         def filepath_url(self, filename: str) -> str:
             return self.fixture_filepath(filename).as_uri()
 
-        def get_file_stream(self, filename: str) -> Iterator[TextIO]:
+        def get_file_stream(self, filename: str) -> Iterator[IO]:
             """Returns a stream of the contents of the file this delegate is watching for."""
             # bypassing self.get_filepath since it assumes a GCS file
             with open(self.fixture_filepath(filename), "r", encoding="utf8") as f:

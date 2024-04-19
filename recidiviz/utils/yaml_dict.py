@@ -16,7 +16,7 @@
 # =============================================================================
 """Functionality for working with objects parsed from YAML."""
 import copy
-from typing import Any, Dict, List, Optional, TextIO, Type, TypeVar, Union
+from typing import IO, Any, Dict, List, Optional, Type, TypeVar, Union
 
 import yaml
 
@@ -63,7 +63,7 @@ class YAMLDict:
             return YAMLDict(loaded_raw_yaml)
 
     @classmethod
-    def from_io(cls, contents: TextIO) -> "YAMLDict":
+    def from_io(cls, contents: IO) -> "YAMLDict":
         loaded_raw_yaml = yaml.safe_load(contents)
         return YAMLDict(loaded_raw_yaml)
 
