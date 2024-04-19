@@ -44,15 +44,7 @@ statewide_iqrs AS (
     GROUP BY 1, 2, 3
 )
 , statewide_highlight_values AS (
-    -- TODO(#28710) Uncomment this
-    -- {get_highlight_percentile_value_query()}
-    -- TODO(#28710) Remove null placeholders
-    SELECT
-    CAST(NULL AS STRING) AS state_code,
-    CAST(NULL AS DATE) AS end_date,
-    CAST(NULL AS STRING) AS metric_id,
-    CAST(NULL AS INT64) AS top_x_pct,
-    CAST(NULL AS FLOAT64) AS top_x_pct_percentile_value
+    {get_highlight_percentile_value_query()}
 )
 -- TODO(#24119): Add highlight calculation by caseload type
 -- TODO(#24119): Add iqr calculation by caseload type

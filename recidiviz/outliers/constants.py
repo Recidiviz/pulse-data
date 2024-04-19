@@ -84,6 +84,11 @@ TASK_COMPLETIONS_FULL_TERM_DISCHARGE = OutliersMetric(
     outcome_type=MetricOutcome.FAVORABLE,
 )
 
+TREATMENT_STARTS = OutliersMetric(
+    aggregated_metric=metric_config.TREATMENT_STARTS,
+    outcome_type=MetricOutcome.FAVORABLE,
+)
+
 # Lantern Events
 VIOLATIONS = OutliersClientEvent(aggregated_metric=metric_config.VIOLATIONS)
 VIOLATION_RESPONSES = OutliersClientEvent(metric_config.VIOLATION_RESPONSES)
