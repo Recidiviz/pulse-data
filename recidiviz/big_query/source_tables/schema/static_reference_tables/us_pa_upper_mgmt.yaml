@@ -1,0 +1,29 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: us_pa_upper_mgmt
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: ext_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: firstname
+    type: STRING
+    mode: NULLABLE
+  - name: lastname
+    type: STRING
+    mode: NULLABLE
+  - name: role
+    type: STRING
+    mode: NULLABLE
+  - name: region
+    type: STRING
+    mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: email
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

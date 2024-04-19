@@ -1,0 +1,29 @@
+address:
+  dataset_id: us_mo_validation_oneoffs
+  table_id: incarceration_population_by_facility_raw
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: year
+    type: INTEGER
+    mode: NULLABLE
+  - name: month
+    type: INTEGER
+    mode: NULLABLE
+  - name: date_of_stay
+    type: DATE
+    mode: NULLABLE
+  - name: facility
+    type: STRING
+    mode: NULLABLE
+  - name: population_count
+    type: INTEGER
+    mode: NULLABLE
+  - name: region_code
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

@@ -1,0 +1,71 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: CIS_589_RESTITUTION
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: Cis_100_Client_Id
+    type: STRING
+    mode: NULLABLE
+  - name: Cis_5001_5890_Rest_Type_Cd
+    type: STRING
+    mode: NULLABLE
+  - name: Cis_900_Inactivated_By_Id
+    type: STRING
+    mode: NULLABLE
+  - name: Condition_Of_Prob_Ind
+    type: STRING
+    mode: NULLABLE
+  - name: Created_By_Tx
+    type: STRING
+    mode: NULLABLE
+  - name: Created_On_Date
+    type: STRING
+    mode: NULLABLE
+  - name: Inactivated_Reason_Tx
+    type: STRING
+    mode: NULLABLE
+  - name: Locking_Tsp
+    type: STRING
+    mode: NULLABLE
+  - name: Logical_Delete_Ind
+    type: STRING
+    mode: NULLABLE
+  - name: Modified_By_Tx
+    type: STRING
+    mode: NULLABLE
+  - name: Modified_On_Date
+    type: STRING
+    mode: NULLABLE
+  - name: Pay_To_Da_Ind
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Amount_Num
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Comments_Tx
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Due_Date
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Paid_Date
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Paid_Ind
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Paid_Not_By_Tx
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Pmt_Schd_Tx
+    type: STRING
+    mode: NULLABLE
+  - name: Rest_Up_To_Ind
+    type: STRING
+    mode: NULLABLE
+  - name: Restitution_Id
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

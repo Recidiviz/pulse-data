@@ -1,0 +1,26 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: county_to_supervision_office_materialized
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: NULLABLE
+  - name: county_fips
+    type: STRING
+    mode: NULLABLE
+  - name: county_name
+    type: STRING
+    mode: NULLABLE
+  - name: district
+    type: STRING
+    mode: NULLABLE
+  - name: office
+    type: STRING
+    mode: NULLABLE
+  - name: region
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

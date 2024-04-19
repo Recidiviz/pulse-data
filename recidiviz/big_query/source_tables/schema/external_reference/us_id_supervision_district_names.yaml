@@ -1,6 +1,9 @@
 address:
   dataset_id: external_reference
   table_id: us_id_supervision_district_names
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
 schema:
   - name: level_2_supervision_location_external_id
     type: STRING

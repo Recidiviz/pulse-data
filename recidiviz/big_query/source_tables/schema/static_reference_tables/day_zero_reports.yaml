@@ -1,0 +1,20 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: day_zero_reports
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+  - name: person_external_id
+    type: STRING
+    mode: REQUIRED
+  - name: report_date
+    type: DATE
+    mode: REQUIRED
+  - name: opportunity_type
+    type: STRING
+    mode: REQUIRED
+clustering_fields: null

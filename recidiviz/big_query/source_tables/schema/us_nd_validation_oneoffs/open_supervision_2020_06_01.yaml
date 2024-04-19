@@ -1,0 +1,23 @@
+address:
+  dataset_id: us_nd_validation_oneoffs
+  table_id: open_supervision_2020_06_01
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: SID
+    type: STRING
+    mode: NULLABLE
+  - name: PAROLE_FR
+    type: STRING
+    mode: NULLABLE
+  - name: PAROLE_TO
+    type: STRING
+    mode: NULLABLE
+  - name: SITE_NAME
+    type: STRING
+    mode: NULLABLE
+  - name: CASE_NUMBER
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

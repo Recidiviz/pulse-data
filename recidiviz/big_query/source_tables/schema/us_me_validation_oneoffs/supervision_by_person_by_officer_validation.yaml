@@ -1,0 +1,35 @@
+address:
+  dataset_id: us_me_validation_oneoffs
+  table_id: supervision_by_person_by_officer_validation
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: person_external_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: current_status
+    type: STRING
+    mode: NULLABLE
+  - name: supervision_location
+    type: STRING
+    mode: NULLABLE
+  - name: officer_external_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: date_of_supervision
+    type: DATE
+    mode: NULLABLE
+  - name: officer_full_name
+    type: STRING
+    mode: NULLABLE
+  - name: officer_last_name
+    type: STRING
+    mode: NULLABLE
+  - name: officer_first_name
+    type: STRING
+    mode: NULLABLE
+  - name: officer_status
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

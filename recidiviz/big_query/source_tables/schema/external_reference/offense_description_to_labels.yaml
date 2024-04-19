@@ -1,6 +1,9 @@
 address:
   dataset_id: external_reference
   table_id: offense_description_to_labels
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
 schema:
   - name: offense_description
     type: STRING

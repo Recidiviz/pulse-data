@@ -1,0 +1,65 @@
+address:
+  dataset_id: us_pa_validation_oneoffs
+  table_id: 2021_06_incarceration_releases
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: mov_cur_inmt_num
+    type: STRING
+    mode: NULLABLE
+  - name: control_number
+    type: STRING
+    mode: NULLABLE
+  - name: last_chg_num_used
+    type: STRING
+    mode: NULLABLE
+  - name: mov_move_code
+    type: STRING
+    mode: NULLABLE
+  - name: mov_move_date
+    type: STRING
+    mode: NULLABLE
+  - name: mov_date_std
+    type: STRING
+    mode: NULLABLE
+  - name: parole_stat_cd
+    type: STRING
+    mode: NULLABLE
+  - name: mov_sent_stat_cd
+    type: STRING
+    mode: NULLABLE
+  - name: location_permanent
+    type: STRING
+    mode: NULLABLE
+  - name: location_temporary
+    type: STRING
+    mode: NULLABLE
+  - name: CurrLoc_Cd
+    type: STRING
+    mode: NULLABLE
+  - name: class_of_sent
+    type: STRING
+    mode: NULLABLE
+  - name: sex_type
+    type: STRING
+    mode: NULLABLE
+  - name: race
+    type: STRING
+    mode: NULLABLE
+  - name: date_of_birth
+    type: STRING
+    mode: NULLABLE
+  - name: marital_status
+    type: STRING
+    mode: NULLABLE
+  - name: country_of_birth
+    type: STRING
+    mode: NULLABLE
+  - name: offense
+    type: STRING
+    mode: NULLABLE
+  - name: LocationType
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null

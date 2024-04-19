@@ -1,6 +1,9 @@
 address:
   dataset_id: external_reference
   table_id: us_mo_incarceration_facility_names
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
 schema:
   - name: incarceration_location_level_1_external_id
     type: STRING

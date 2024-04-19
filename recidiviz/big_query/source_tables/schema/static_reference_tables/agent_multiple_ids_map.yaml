@@ -1,0 +1,17 @@
+address:
+  dataset_id: static_reference_tables
+  table_id: agent_multiple_ids_map
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: state_code
+    type: STRING
+    mode: REQUIRED
+  - name: external_id_to_map
+    type: STRING
+    mode: REQUIRED
+  - name: external_id_mapped
+    type: STRING
+    mode: REQUIRED
+clustering_fields: null
