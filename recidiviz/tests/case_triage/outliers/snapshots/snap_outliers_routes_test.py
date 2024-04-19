@@ -188,6 +188,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_not_outlier"] 
         "outlierMetrics": [],
         "pseudonymizedId": "hashhash",
         "supervisorExternalId": "102",
+        "supervisorExternalIds": ["102"],
         "topXPctMetrics": [],
     }
 }
@@ -213,6 +214,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officer_success"] = {
         ],
         "pseudonymizedId": "hashhash",
         "supervisorExternalId": "102",
+        "supervisorExternalIds": ["102"],
         "topXPctMetrics": [],
     }
 }
@@ -240,6 +242,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             ],
             "pseudonymizedId": "hashhash",
             "supervisorExternalId": "102",
+            "supervisorExternalIds": ["102"],
             "topXPctMetrics": [
                 {"metricId": "incarceration_starts_and_inferred", "topXPct": 10}
             ],
@@ -257,6 +260,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_officers_for_superviso
             "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
+            "supervisorExternalIds": ["102"],
             "topXPctMetrics": [],
         },
     ]
@@ -287,6 +291,7 @@ snapshots[
             ],
             "pseudonymizedId": "hashhash",
             "supervisorExternalId": "102",
+            "supervisorExternalIds": ["102"],
             "topXPctMetrics": [],
         },
         {
@@ -302,6 +307,7 @@ snapshots[
             "outlierMetrics": [],
             "pseudonymizedId": "hashhashhash",
             "supervisorExternalId": "102",
+            "supervisorExternalIds": ["102"],
             "topXPctMetrics": [],
         },
     ]

@@ -327,6 +327,8 @@ class SupervisionOfficerEntity:
     pseudonymized_id: str = attr.ib()
     # The officer's supervisor's external id
     supervisor_external_id: str = attr.ib()
+    # The officer's supervisor's external ids
+    supervisor_external_ids: List[str] = attr.ib()
     # The district the officer
     district: str = attr.ib()
     # The officer's caseload type in the latest period
