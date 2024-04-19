@@ -48,11 +48,6 @@ class EmailDeliveryTest(TestCase):
             report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
 
-        self.sendgrid_client_patcher = patch(
-            "recidiviz.reporting.email_delivery.SendGridClientWrapper"
-        )
-        self.mock_sendgrid_client = self.sendgrid_client_patcher.start().return_value
-
         self.utils_patcher = patch("recidiviz.reporting.email_delivery.utils")
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.gcs_factory_patcher = patch(
@@ -72,10 +67,71 @@ class EmailDeliveryTest(TestCase):
         self.default_reply_to_name = "Recidiviz Support"
 
     def tearDown(self) -> None:
-        self.sendgrid_client_patcher.stop()
         self.utils_patcher.stop()
         self.project_id_patcher.stop()
         self.gcs_factory_patcher.stop()
+
+
+class EmailDeliveryTestSendgridAutospec(EmailDeliveryTest):
+    """Tests for reporting/email_delivery.py."""
+
+    @patch("recidiviz.reporting.email_delivery.SendGridClientWrapper", autospec=True)
+    @patch("recidiviz.reporting.email_delivery.get_enforced_tls_only_state_codes")
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_deliver_unsupported_tls(
+        self,
+        mock_load_files_from_storage: MagicMock,
+        mock_enforced_tls_only_states: MagicMock,
+        mock_sendgrid_client_wrapper: MagicMock,
+    ) -> None:
+        mock_load_files_from_storage.return_value = self.mock_files
+        mock_enforced_tls_only_states.return_value = [StateCode.US_XX]
+        mock_sendgrid_client_wrapper.send_message.return_value = True
+
+        result = email_delivery.deliver(
+            self.batch,
+        )
+
+        self.assertEqual(len(result.successes), 1)
+        self.assertEqual(len(result.failures), 0)
+        mock_sendgrid_client_wrapper.assert_called_once_with("enforced_tls_only")
+
+    @patch("recidiviz.reporting.email_delivery.SendGridClientWrapper", autospec=True)
+    @patch("recidiviz.reporting.email_delivery.get_enforced_tls_only_state_codes")
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_deliver_enforced_tls(
+        self,
+        mock_load_files_from_storage: MagicMock,
+        mock_enforced_tls_only_states: MagicMock,
+        mock_sendgrid_client_wrapper: MagicMock,
+    ) -> None:
+        mock_load_files_from_storage.return_value = self.mock_files
+        mock_enforced_tls_only_states.return_value = []
+        mock_sendgrid_client_wrapper.send_message.return_value = True
+        with self.assertLogs(level="INFO"):
+            result = email_delivery.deliver(
+                self.batch,
+            )
+
+        self.assertEqual(len(result.successes), 1)
+        self.assertEqual(len(result.failures), 0)
+        mock_sendgrid_client_wrapper.assert_called_once_with()
+
+
+class EmailDeliveryTestWithSendgridSetup(EmailDeliveryTest):
+    """Tests for reporting/email_delivery.py."""
+
+    def setUp(self) -> None:
+        self.sendgrid_client_patcher = patch(
+            "recidiviz.reporting.email_delivery.SendGridClientWrapper"
+        )
+        self.mock_sendgrid_client = self.sendgrid_client_patcher.start().return_value
+
+        super().setUp()
+
+    def tearDown(self) -> None:
+        self.sendgrid_client_patcher.stop()
+        super().tearDown()
 
     def test_email_from_file_name_html(self) -> None:
         file_name = f"{self.to_address}.html"

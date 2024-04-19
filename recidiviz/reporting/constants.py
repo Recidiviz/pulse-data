@@ -16,6 +16,7 @@
 # =============================================================================
 """Include constants for use by email reports."""
 from enum import Enum
+from typing import List
 
 import attr
 
@@ -41,3 +42,13 @@ BRAND_STYLES = {
         "sans_serif": "font-family: 'Libre Franklin', sans-serif; line-height: 1.33; letter-spacing: -0.01em;",
     },
 }
+
+_STATE_CODES_WITH_ENFORCED_TLS_ONLY: List[StateCode] = [
+    StateCode.US_ID,
+    StateCode.US_IX,
+]
+
+
+def get_enforced_tls_only_state_codes() -> List[StateCode]:
+    """Returns a list of states where only TLS is required, but not a valid certificate"""
+    return _STATE_CODES_WITH_ENFORCED_TLS_ONLY

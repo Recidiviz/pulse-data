@@ -35,7 +35,12 @@ import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.reporting.constants import DEFAULT_EMAIL_SUBJECT, Batch, ReportType
+from recidiviz.reporting.constants import (
+    DEFAULT_EMAIL_SUBJECT,
+    Batch,
+    ReportType,
+    get_enforced_tls_only_state_codes,
+)
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
     SUBJECT_LINE_KEY,
@@ -115,7 +120,11 @@ def deliver(
 
     succeeded_email_sends: List[str] = []
     failed_email_sends: List[str] = []
-    sendgrid = SendGridClientWrapper()
+    sendgrid = (
+        SendGridClientWrapper(key_type="enforced_tls_only")
+        if batch.state_code in get_enforced_tls_only_state_codes()
+        else SendGridClientWrapper()
+    )
 
     for recipient_email_address in html_files:
         additional_cc_addresses = []
