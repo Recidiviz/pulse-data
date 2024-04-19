@@ -24,8 +24,9 @@ from sendgrid.helpers import mail as mail_helpers
 
 from recidiviz.utils import secrets
 
-_SENDGRID_API_KEY = "sendgrid_api_key"
 _JC_SENDGRID_API_KEY = "justice_counts_sendgrid_api_key"
+_SENDGRID_ENFORCED_TLS_AND_CERT_API_KEY = "sendgrid_enforced_tls_and_cert_api_key"
+_SENDGRID_ENFORCED_TLS_API_KEY = "sendgrid_enforced_tls_api_key"
 
 
 class SendGridClientWrapper:
@@ -33,13 +34,17 @@ class SendGridClientWrapper:
 
     def __init__(self, key_type: Optional[str] = None) -> None:
         if key_type == "justice_counts":
-            self.client = SendGridAPIClient(
-                api_key=self._get_sendgrid_api_key(secret_id=_JC_SENDGRID_API_KEY)
+            api_key = self._get_sendgrid_api_key(secret_id=_JC_SENDGRID_API_KEY)
+        elif key_type == "enforced_tls_only":
+            api_key = self._get_sendgrid_api_key(
+                secret_id=_SENDGRID_ENFORCED_TLS_API_KEY
             )
         else:
-            self.client = SendGridAPIClient(
-                api_key=self._get_sendgrid_api_key(secret_id=_SENDGRID_API_KEY)
+            api_key = self._get_sendgrid_api_key(
+                secret_id=_SENDGRID_ENFORCED_TLS_AND_CERT_API_KEY
             )
+
+        self.client = SendGridAPIClient(api_key=api_key)
 
     def _get_sendgrid_api_key(self, secret_id: str) -> str:
         """Returns the value for the SendGrid API key from the secrets manager."""
