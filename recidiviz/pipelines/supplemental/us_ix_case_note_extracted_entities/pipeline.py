@@ -24,11 +24,13 @@ from typing import Any, Dict, List, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
+from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
@@ -42,9 +44,14 @@ from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_n
     NOTE_TITLE_TEXT_ANALYZER,
     UsIxNoteTitleTextEntity,
 )
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
-from recidiviz.pipelines.utils.beam_utils.extractor_utils import ImportTable
+from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
+    ReadFromBigQuery,
+    WriteToBigQuery,
+)
 from recidiviz.pipelines.utils.execution_utils import TableRow
+from recidiviz.pipelines.utils.reference_query_providers import (
+    view_builders_as_state_filtered_query_providers,
+)
 
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
@@ -169,15 +176,18 @@ class UsIxCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
         }
 
     def run_pipeline(self, p: Pipeline) -> None:
+        state_code = StateCode(self.pipeline_parameters.state_code)
+        query_name, query_provider = one(
+            view_builders_as_state_filtered_query_providers(
+                [US_IX_CASE_UPDATE_INFO_VIEW_BUILDER],
+                state_code=state_code,
+                address_overrides=self.pipeline_parameters.input_dataset_overrides,
+            ).items()
+        )
         _ = (
             p
-            | "Load required reference table"
-            >> ImportTable(
-                project_id=self.pipeline_parameters.project,
-                dataset_id=self.pipeline_parameters.reference_view_input,
-                table_id=US_IX_CASE_UPDATE_INFO_VIEW_BUILDER.view_id,
-                state_code_filter=self.pipeline_parameters.state_code,
-            )
+            | f"Load [{query_name}] query results"
+            >> ReadFromBigQuery(query=query_provider.get_query())
             | "Extract text entities" >> beam.Map(self.extract_text_entities)
             | f"Write extracted text entities to {self.pipeline_parameters.output}.{self.table_id()}"
             >> WriteToBigQuery(

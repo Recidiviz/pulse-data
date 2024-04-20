@@ -24,6 +24,7 @@ from typing import (
     Generator,
     Iterable,
     List,
+    Mapping,
     NamedTuple,
     Optional,
     Set,
@@ -37,7 +38,12 @@ from apache_beam import PCollection, Pipeline
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.big_query.big_query_query_provider import (
+    BigQueryQueryProvider,
+    StateFilteredQueryProvider,
+)
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -51,9 +57,9 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
-    ConvertDictToKVTuple,
-    ReadFromBigQuery,
+from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import ReadFromBigQuery
+from recidiviz.pipelines.utils.beam_utils.load_query_results_keyed_by_column import (
+    LoadQueryResultsKeyedByColumn,
 )
 from recidiviz.pipelines.utils.execution_utils import (
     EntityAssociation,
@@ -63,6 +69,9 @@ from recidiviz.pipelines.utils.execution_utils import (
     TableRow,
     UnifyingId,
     select_query,
+)
+from recidiviz.pipelines.utils.reference_query_providers import (
+    RootEntityIdFilteredQueryProvider,
 )
 
 UNIFYING_ID_KEY = "unifying_id"
@@ -90,14 +99,13 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
     def __init__(
         self,
         *,
-        state_code: str,
+        state_code: StateCode,
         project_id: str,
         entities_dataset: str,
         required_entity_classes: Optional[
             List[Union[Type[Entity], Type[NormalizedStateEntity]]]
         ],
-        reference_views_dataset: str,
-        required_reference_view_ids: List[str],
+        reference_data_queries_by_name: Dict[str, StateFilteredQueryProvider],
         root_entity_cls: (
             Type[state_entities.StatePerson] | Type[state_entities.StateStaff]
         ),
@@ -112,10 +120,8 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 entities from.
             required_entity_classes: The list of required entity classes for the
                 pipeline. Must not contain any duplicates of any entities.
-            reference_views_dataset: The dataset to read reference view data from.
-            required_reference_view_ids: A list of table_ids for reference views that
-                should be loaded. Each of these views must have root entity-level data
-                (e.g. have a person_id column if the root_entity_cls is StatePerson).
+            reference_data_queries_by_name: Queries whose results should be returned
+                alongside the hydrated entity data.
             root_entity_cls: The Entity type whose id should be used to connect the
                 required entities to each other. All entities listed in
                 |required_entity_classes| must have this entity's id field, but this
@@ -134,10 +140,20 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             raise ValueError("No valid data source passed to the pipeline.")
         self._entities_dataset = entities_dataset
 
-        if not reference_views_dataset:
-            raise ValueError("No valid data reference source passed to the pipeline.")
-        self._reference_dataset = reference_views_dataset
-        self._required_reference_tables = required_reference_view_ids or []
+        filtered_reference_data_queries_by_name: Mapping[str, BigQueryQueryProvider]
+        if root_entity_id_filter_set:
+            filtered_reference_data_queries_by_name = {
+                query_name: RootEntityIdFilteredQueryProvider(
+                    original_query=query,
+                    root_entity_cls=root_entity_cls,
+                    root_entity_id_filter_set=root_entity_id_filter_set,
+                )
+                for query_name, query in reference_data_queries_by_name.items()
+            }
+        else:
+            filtered_reference_data_queries_by_name = reference_data_queries_by_name
+
+        self._reference_data_queries_by_name = filtered_reference_data_queries_by_name
 
         if required_entity_classes and len(set(required_entity_classes)) != len(
             required_entity_classes
@@ -340,7 +356,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                     association_table=relationship_property.association_table,
                     related_id_field=relationship_property.association_table_entity_id_field,
                     unifying_id_field_filter_set=self._root_entity_id_field_filter_set,
-                    state_code=self._state_code,
+                    state_code=self._state_code.value,
                 )
             )
 
@@ -363,7 +379,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 entity_class=entity_class,
                 unifying_id_field=self._root_entity_id_field,
                 unifying_id_field_filter_set=self._root_entity_id_field_filter_set,
-                state_code=self._state_code,
+                state_code=self._state_code.value,
             )
         )
 
@@ -429,17 +445,13 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
 
         reference_data: Dict[TableName, PCollection[Tuple[UnifyingId, TableRow]]] = {}
 
-        for table_id in self._required_reference_tables:
+        for query_name, query_provider in self._reference_data_queries_by_name.items():
             reference_data[
-                table_id
-            ] = input_or_inputs | f"Load {table_id}" >> ImportTableAsKVTuples(
-                project_id=self._project_id,
-                dataset_id=self._reference_dataset,
-                table_id=table_id,
-                table_key=self._root_entity_id_field,
-                state_code_filter=self._state_code,
-                unifying_id_field=self._root_entity_id_field,
-                unifying_id_filter_set=self._root_entity_id_field_filter_set,
+                query_name
+            ] = input_or_inputs | f"Load {query_name}" >> LoadQueryResultsKeyedByColumn(
+                key_column_name=self._root_entity_id_field,
+                query_name=query_name,
+                query_provider=query_provider,
             )
 
         entities_and_associations: Dict[
@@ -932,59 +944,6 @@ class ImportTable(beam.PTransform):
         )
 
         return table_contents
-
-
-@with_input_types(beam.typehints.Any)
-@with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
-class ImportTableAsKVTuples(beam.PTransform):
-    """Reads in rows from the given dataset_id.table_id table in BigQuery. Converts the
-    output rows into key-value tuples, where the keys are the values for the
-    self.table_key column in the table."""
-
-    def __init__(
-        self,
-        project_id: str,
-        dataset_id: str,
-        table_id: str,
-        table_key: str,
-        state_code_filter: str,
-        unifying_id_field: Optional[str] = None,
-        unifying_id_filter_set: Optional[Set[int]] = None,
-    ) -> None:
-        super().__init__()
-        self.project_id = project_id
-        self.dataset_id = dataset_id
-        self.table_id = table_id
-        self.table_key = table_key
-        self.state_code_filter = state_code_filter
-        self.unifying_id_field = unifying_id_field
-        self.unifying_id_filter_set = unifying_id_filter_set
-
-    # pylint: disable=arguments-renamed
-    def expand(self, pipeline: Pipeline) -> PCollection[Tuple[Any, Dict[str, Any]]]:
-        # Read in the table from BigQuery
-        table_contents = (
-            pipeline
-            | f"Read {self.dataset_id}.{self.table_id} from BigQuery"
-            >> ImportTable(
-                project_id=self.project_id,
-                dataset_id=self.dataset_id,
-                table_id=self.table_id,
-                state_code_filter=self.state_code_filter,
-                unifying_id_field=self.unifying_id_field,
-                unifying_id_filter_set=self.unifying_id_filter_set,
-            )
-        )
-
-        # Convert the table rows into key-value tuples with the value for the
-        # self.table_key column as the key
-        table_contents_as_kv = (
-            table_contents
-            | f"Convert {self.dataset_id}.{self.table_id} table to KV tuples"
-            >> beam.ParDo(ConvertDictToKVTuple(self.table_key))
-        )
-
-        return table_contents_as_kv
 
 
 class _ExtractAssociationValues(_ExtractValuesFromEntityBase):

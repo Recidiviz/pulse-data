@@ -41,9 +41,11 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -64,6 +66,9 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import UNIFYING_ID_KEY
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
+)
+from recidiviz.tests.pipelines.all_pipelines_test import (
+    get_all_pipeline_input_view_builders,
 )
 from recidiviz.tests.pipelines.calculator_test_utils import NormalizedDatabaseDict
 
@@ -283,8 +288,8 @@ class FakeReadFromBigQueryFactory:
         *,
         expected_entities_dataset: str,
         data_dict: DataTablesDict,
-        expected_reference_views_dataset: str = "reference_views",
         unifying_id_field: str = "person_id",
+        state_code: StateCode = StateCode.US_XX,
     ) -> Callable[[QueryStr, bool, bool], FakeReadFromBigQuery]:
         """Returns a constructors function that can mock the ReadFromBigQuery class and will return a
         FakeReadFromBigQuery instead.
@@ -298,10 +303,10 @@ class FakeReadFromBigQueryFactory:
         ) -> FakeReadFromBigQuery:
             table_values = self._extractor_utils_data_dict_query_fn(
                 expected_entities_dataset=expected_entities_dataset,
-                expected_reference_views_dataset=expected_reference_views_dataset,
                 query=query,
                 data_dict=data_dict,
                 unifying_id_field=unifying_id_field,
+                state_code=state_code,
             )
             return FakeReadFromBigQuery(table_values=table_values)
 
@@ -311,10 +316,10 @@ class FakeReadFromBigQueryFactory:
     def _extractor_utils_data_dict_query_fn(
         *,
         expected_entities_dataset: str,
-        expected_reference_views_dataset: str,
         query: QueryStr,
         data_dict: DataTablesDict,
         unifying_id_field: str,
+        state_code: StateCode,
     ) -> Iterable[NormalizedDatabaseDict]:
         """Default implementation of the fake query function, which parses, validates,
         and replicates the behavior of the provided query string, returning data out
@@ -335,13 +340,19 @@ class FakeReadFromBigQueryFactory:
                 unifying_id_field,
             )
 
-        if re.match(REFERENCE_VIEWS_QUERY_REGEX, query):
-            return FakeReadFromBigQueryFactory._do_fake_entity_table_query(
-                data_dict,
-                query,
-                expected_reference_views_dataset,
-                unifying_id_field,
+        for builder in get_all_pipeline_input_view_builders().values():
+            view_query = BigQueryQueryProvider.strip_semicolon(
+                builder.build(address_overrides=None).view_query
             )
+            if view_query in query:
+                return FakeReadFromBigQueryFactory._get_data_from_table(
+                    data_dict=data_dict,
+                    table_name=builder.view_id,
+                    state_code_value=state_code.value,
+                    root_entity_id_field=unifying_id_field,
+                    root_entity_filter_ids=None,
+                    selected_column_name_to_alias=None,
+                )
 
         raise ValueError(f"Query string does not match known query format: {query}")
 
@@ -355,13 +366,9 @@ class FakeReadFromBigQueryFactory:
         """Parses, validates, and replicates the behavior of the provided entity table
         query string, returning data out of the data_dict object.
         """
-        if match := re.match(ENTITY_TABLE_QUERY_REGEX, query):
-            dataset = match.group(2)
-        elif match := re.match(REFERENCE_VIEWS_QUERY_REGEX, query):
-            dataset = match.group(2)
-        else:
+        if not (match := re.match(ENTITY_TABLE_QUERY_REGEX, query)):
             raise ValueError(f"Query does not match regex: {query}")
-
+        dataset = match.group(2)
         table_name = match.group(3)
         if table_name not in data_dict:
             raise ValueError(f"Table {table_name} not in data dict")
@@ -372,11 +379,72 @@ class FakeReadFromBigQueryFactory:
                 f"dataset [{expected_entities_dataset}]"
             )
 
-        all_table_rows = data_dict[table_name]
-
         state_code_value = match.group(4)
         if not state_code_value:
             raise ValueError(f"Found no state_code in query [{query}]")
+
+        unifying_id_field = match.group(6)
+        unifying_id_field_filter_list_str = match.group(7)
+        if unifying_id_field and unifying_id_field_filter_list_str:
+            if unifying_id_field != expected_unifying_id_field:
+                raise ValueError(
+                    f"Expected value [{expected_unifying_id_field}] "
+                    f"for unifying_id_field does not match: [{unifying_id_field}"
+                )
+        elif unifying_id_field or unifying_id_field_filter_list_str:
+            raise ValueError(
+                "Found one of unifying_id_field, unifying_id_field_filter_list_str is"
+                " None, but not both."
+            )
+
+        root_entity_filter_ids = (
+            id_list_str_to_set(unifying_id_field_filter_list_str)
+            if unifying_id_field_filter_list_str
+            else None
+        )
+
+        selected_columns_str = match.group(1)
+
+        if selected_columns_str != "*":
+            # This query selected for certain columns from the entity table. Filter
+            # output to just those columns.
+            col_entity_name_to_query_name_pairs = [
+                (col, col)
+                if " as " not in col
+                else (col.split(" as ")[0], col.split(" as ")[1])
+                for col in selected_columns_str.split(",")
+            ]
+
+            selected_column_name_to_alias = {
+                col_name.strip(): query_name.strip()
+                for col_name, query_name in col_entity_name_to_query_name_pairs
+            }
+        else:
+            selected_column_name_to_alias = None
+
+        return FakeReadFromBigQueryFactory._get_data_from_table(
+            data_dict=data_dict,
+            table_name=table_name,
+            state_code_value=state_code_value,
+            root_entity_id_field=unifying_id_field,
+            root_entity_filter_ids=root_entity_filter_ids,
+            selected_column_name_to_alias=selected_column_name_to_alias,
+        )
+
+    @staticmethod
+    def _get_data_from_table(
+        *,
+        data_dict: DataTablesDict,
+        table_name: str,
+        state_code_value: str,
+        root_entity_id_field: str,
+        root_entity_filter_ids: Optional[Set[int]],
+        selected_column_name_to_alias: Optional[Dict[str, str]],
+    ) -> Iterable[NormalizedDatabaseDict]:
+        """Returns data from the provided |data_dict| that corresponds to the
+        |table_name| and other provided filters.
+        """
+        all_table_rows = data_dict[table_name]
 
         filtered_rows = filter_results(
             table_name,
@@ -386,51 +454,21 @@ class FakeReadFromBigQueryFactory:
             allow_none_values=False,
         )
 
-        unifying_id_field = match.group(6)
-        unifying_id_field_filter_list_str = match.group(7)
-
-        if unifying_id_field and unifying_id_field_filter_list_str:
-            if unifying_id_field != expected_unifying_id_field:
-                raise ValueError(
-                    f"Expected value [{expected_unifying_id_field}] "
-                    f"for unifying_id_field does not match: [{unifying_id_field}"
-                )
-
+        if root_entity_filter_ids:
             filtered_rows = filter_results(
                 table_name,
                 filtered_rows,
-                unifying_id_field,
-                id_list_str_to_set(unifying_id_field_filter_list_str),
+                root_entity_id_field,
+                root_entity_filter_ids,
                 allow_none_values=False,
             )
-        elif unifying_id_field or unifying_id_field_filter_list_str:
-            raise ValueError(
-                "Found one of unifying_id_field, unifying_id_field_filter_list_str is"
-                " None, but not both."
-            )
 
-        selected_columns = match.group(1)
-
-        if selected_columns != "*":
-            # This query selected for certain columns from the entity table. Filter
-            # output to just those columns.
-            col_entity_name_to_query_name_pairs = [
-                (col, col)
-                if " as " not in col
-                else (col.split(" as ")[0], col.split(" as ")[1])
-                for col in selected_columns.split(",")
-            ]
-
-            query_names_to_col_entity_names = {
-                query_name.strip(): col_name.strip()
-                for col_name, query_name in col_entity_name_to_query_name_pairs
-            }
-
+        if selected_column_name_to_alias:
             filtered_rows_limited_columns: List[NormalizedDatabaseDict] = []
             for row in filtered_rows:
                 limited_columns_row = {
-                    query_name: row[col_name]
-                    for query_name, col_name in query_names_to_col_entity_names.items()
+                    alias_name: row[col_name]
+                    for col_name, alias_name in selected_column_name_to_alias.items()
                 }
                 filtered_rows_limited_columns.append(limited_columns_row)
             filtered_rows = filtered_rows_limited_columns

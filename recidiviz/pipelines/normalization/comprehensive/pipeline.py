@@ -111,6 +111,9 @@ from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
     ExtractRootEntityDataForPipeline,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow, kwargs_for_entity_lists
+from recidiviz.pipelines.utils.reference_query_providers import (
+    view_builders_as_state_filtered_query_providers,
+)
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
 )
@@ -299,16 +302,17 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 p
                 | f"Load required data for {root_entity_type.__name__}"
                 >> ExtractRootEntityDataForPipeline(
-                    state_code=state_code.value,
+                    state_code=state_code,
                     project_id=self.pipeline_parameters.project,
                     entities_dataset=self.pipeline_parameters.state_data_input,
-                    reference_views_dataset=self.pipeline_parameters.reference_view_input,
                     required_entity_classes=self.required_entities().get(
                         root_entity_type
                     ),
-                    required_reference_view_ids=[
-                        vb.view_id for vb in reference_view_builders
-                    ],
+                    reference_data_queries_by_name=view_builders_as_state_filtered_query_providers(
+                        reference_view_builders,
+                        state_code=state_code,
+                        address_overrides=self.pipeline_parameters.input_dataset_overrides,
+                    ),
                     root_entity_cls=root_entity_type,
                     root_entity_id_filter_set=person_id_filter_set,
                 )

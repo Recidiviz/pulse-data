@@ -28,7 +28,9 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 from mock import patch
 
+from recidiviz.big_query.big_query_query_provider import SimpleBigQueryQueryProvider
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
+    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
 from recidiviz.common.constants.state.state_assessment import (
@@ -44,6 +46,7 @@ from recidiviz.common.constants.state.state_person import (
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateSchemaToEntityConverter,
@@ -182,10 +185,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=schema_person.state_code,
+                state_code=StateCode(schema_person.state_code),
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -194,7 +196,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -344,10 +346,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=entity_person.state_code,
+                state_code=StateCode(entity_person.state_code),
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionViolation,
@@ -356,7 +357,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StateSupervisionViolatedConditionEntry,
                     entities.StateSupervisionViolationResponseDecisionEntry,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -476,10 +477,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code="US_XX",
+                state_code=StateCode.US_XX,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePersonRace,
                     entities.StatePersonEthnicity,
@@ -487,7 +487,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -602,16 +602,15 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=entity_person.state_code,
+                state_code=StateCode(entity_person.state_code),
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateCharge,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -739,17 +738,16 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=entity_person.state_code,
+                state_code=StateCode(entity_person.state_code),
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateIncarcerationSentence,
                     entities.StateCharge,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -917,10 +915,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=schema_person.state_code,
+                state_code=StateCode(schema_person.state_code),
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -929,9 +926,13 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     entities.StateAssessment,
                 ],
-                required_reference_view_ids=[
-                    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
-                ],
+                reference_data_queries_by_name={
+                    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: SimpleBigQueryQueryProvider(
+                        PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER.build(
+                            address_overrides=None
+                        ).view_query
+                    )
+                },
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -1087,16 +1088,15 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=entity_person.state_code,
+                state_code=StateCode(entity_person.state_code),
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StateSupervisionSentence,
                     entities.StateCharge,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set={person_id_1},
             )
@@ -1149,14 +1149,17 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code="US_XX",
+                state_code=StateCode.US_XX,
                 project_id=project,
                 entities_dataset=dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=None,
-                required_reference_view_ids=[
-                    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
-                ],
+                reference_data_queries_by_name={
+                    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: SimpleBigQueryQueryProvider(
+                        PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER.build(
+                            address_overrides=None
+                        ).view_query
+                    )
+                },
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -1281,7 +1284,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_person.program_assignments = [entity_program]
 
         project = "project"
-        dataset = "state"
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
@@ -1293,10 +1295,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=schema_person.state_code,
+                state_code=StateCode(schema_person.state_code),
                 project_id=project,
                 entities_dataset=normalized_dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     entities.StatePersonRace,
@@ -1305,7 +1306,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StatePersonExternalId,
                     normalized_entities.NormalizedStateProgramAssignment,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
@@ -1417,7 +1418,6 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_violation.supervision_violation_responses = [entity_violation_response]
 
         project = "project"
-        dataset = "state"
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
@@ -1429,16 +1429,15 @@ class TestExtractDataForPipeline(unittest.TestCase):
             test_pipeline = TestPipeline()
 
             output = test_pipeline | extractor_utils.ExtractRootEntityDataForPipeline(
-                state_code=entity_person.state_code,
+                state_code=StateCode(entity_person.state_code),
                 project_id=project,
                 entities_dataset=normalized_dataset,
-                reference_views_dataset=dataset,
                 required_entity_classes=[
                     entities.StatePerson,
                     normalized_entities.NormalizedStateSupervisionViolation,
                     normalized_entities.NormalizedStateSupervisionViolationResponse,
                 ],
-                required_reference_view_ids=[],
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
             )
