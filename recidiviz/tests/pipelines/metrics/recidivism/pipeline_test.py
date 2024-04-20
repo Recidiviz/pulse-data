@@ -24,6 +24,7 @@ from datetime import date
 from enum import Enum
 from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple
 from unittest import mock
+from unittest.mock import patch
 
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -108,6 +109,10 @@ class TestRecidivismPipeline(unittest.TestCase):
     """Tests the entire recidivism pipeline."""
 
     def setUp(self) -> None:
+        self.project_id = "test-project"
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
             FakeWriteMetricsToBigQuery
@@ -134,6 +139,7 @@ class TestRecidivismPipeline(unittest.TestCase):
     def tearDown(self) -> None:
         self.state_specific_delegate_patcher.stop()
         self.state_specific_metrics_producer_delegate_patcher.stop()
+        self.project_id_patcher.stop()
 
     def build_data_dict(self, fake_person_id: int) -> Dict[str, Iterable]:
         """Builds a data_dict for a basic run of the pipeline."""
@@ -409,7 +415,6 @@ class TestRecidivismPipeline(unittest.TestCase):
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the recidivism pipeline."""
-        project = "recidiviz-staging"
         expected_metric_types: Set[MetricType] = {
             ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
         }
@@ -435,7 +440,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         run_test_pipeline(
             pipeline_cls=self.pipeline_class,
             state_code="US_XX",
-            project_id=project,
+            project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,

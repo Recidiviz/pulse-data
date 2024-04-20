@@ -73,7 +73,7 @@ def run_test_pipeline(
     pipeline_cls: Type[BasePipeline],
     state_code: str,
     project_id: str,
-    read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
+    read_from_bq_constructor: Callable[[str, bool, bool], FakeReadFromBigQuery],
     write_to_bq_constructor: Callable[
         [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
     ],
@@ -90,13 +90,6 @@ def run_test_pipeline(
         unifying_id_field_filter_set=unifying_id_field_filter_set,
         **additional_pipeline_args,
     )
-
-    if issubclass(pipeline_cls, StateIngestPipeline):
-        read_from_bq_class = "recidiviz.pipelines.ingest.state.generate_ingest_view_results.ReadFromBigQuery"
-    else:
-        read_from_bq_class = (
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery"
-        )
 
     if issubclass(pipeline_cls, MetricPipeline):
         write_to_bq_class = (
@@ -117,7 +110,7 @@ def run_test_pipeline(
         raise ValueError(f"Pipeline class not recognized: {pipeline_cls}")
 
     with patch(
-        read_from_bq_class,
+        "apache_beam.io.ReadFromBigQuery",
         read_from_bq_constructor,
     ):
         with patch(

@@ -17,6 +17,7 @@
 """Tests the us_ix case notes entity extraction supplemental dataset pipeline."""
 import unittest
 from typing import Any, Dict, Iterable, Optional, Set
+from unittest.mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
@@ -45,6 +46,10 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
     """Tests the us_ix case notes entity extraction supplemental dataset pipeline."""
 
     def setUp(self) -> None:
+        self.project_id = "test-project"
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
             FakeWriteExactOutputToBigQuery
@@ -116,14 +121,15 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         for final_data_point in self.final_data:
             final_data_point["NoteDate"] = "2022-01-01"
 
+    def tearDown(self) -> None:
+        self.project_id_patcher.stop()
+
     def run_test_pipeline(
         self,
         data_dict: Dict[str, Iterable[Dict]],
         unifying_id_field_filter_set: Optional[Set[int]] = None,
     ) -> None:
         """Runs a test version of the pipeline."""
-        project = "recidiviz-staging"
-
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=NORMALIZED_STATE_DATASET,
@@ -144,7 +150,7 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         run_test_pipeline(
             pipeline_cls=pipeline.UsIxCaseNoteExtractedEntitiesPipeline,
             state_code="US_IX",
-            project_id=project,
+            project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,

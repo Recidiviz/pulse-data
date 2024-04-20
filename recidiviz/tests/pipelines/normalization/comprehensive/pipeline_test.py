@@ -18,6 +18,7 @@
 import datetime
 import unittest
 from typing import Any, Dict, Iterable, List, Optional, Set, Type
+from unittest.mock import patch
 
 import mock
 
@@ -69,6 +70,10 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
     """Tests the comprehensive normalization pipeline."""
 
     def setUp(self) -> None:
+        self.project_id = "test-project"
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
 
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
@@ -88,6 +93,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.required_state_specific_delegates_patcher.stop()
+        self.project_id_patcher.stop()
 
     def run_test_pipeline(
         self,
@@ -96,8 +102,6 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         unifying_id_field_filter_set: Optional[Set[int]] = None,
     ) -> None:
         """Runs a test version of the normalization pipeline."""
-        project = "recidiviz-staging"
-
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=STATE_BASE_DATASET,
@@ -126,7 +130,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         run_test_pipeline(
             pipeline_cls=self.pipeline_class,
             state_code=state_code,
-            project_id=project,
+            project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,

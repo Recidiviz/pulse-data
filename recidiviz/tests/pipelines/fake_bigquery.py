@@ -285,12 +285,17 @@ class FakeReadFromBigQueryFactory:
         data_dict: DataTablesDict,
         expected_reference_views_dataset: str = "reference_views",
         unifying_id_field: str = "person_id",
-    ) -> Callable[[QueryStr], FakeReadFromBigQuery]:
+    ) -> Callable[[QueryStr, bool, bool], FakeReadFromBigQuery]:
         """Returns a constructors function that can mock the ReadFromBigQuery class and will return a
         FakeReadFromBigQuery instead.
         """
 
-        def _fake_bq_source_constructor(query: QueryStr) -> FakeReadFromBigQuery:
+        def _fake_bq_source_constructor(
+            query: QueryStr,
+            # pylint: disable=unused-argument
+            use_standard_sql: bool,
+            validate: bool,
+        ) -> FakeReadFromBigQuery:
             table_values = self._extractor_utils_data_dict_query_fn(
                 expected_entities_dataset=expected_entities_dataset,
                 expected_reference_views_dataset=expected_reference_views_dataset,
