@@ -35,7 +35,6 @@ from attr import Attribute
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
@@ -128,12 +127,6 @@ class PipelineParameters:
                 f"[{self.output_sandbox_prefix}] is set."
             )
         return overrides.get_dataset(default_dataset_id)
-
-    # TODO(#22528): Delete this property entirely once we read reference view queries
-    #  directly from queries.
-    @property
-    def reference_view_input(self) -> str:
-        return self.get_input_dataset(REFERENCE_VIEWS_DATASET)
 
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)

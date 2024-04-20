@@ -19,10 +19,7 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.calculator.query.state.dataset_config import (
-    REFERENCE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
 )
@@ -57,9 +54,6 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         self.assertEqual(pipeline_parameters.job_name, "test-job")
 
         self.assertEqual(STATE_BASE_DATASET, pipeline_parameters.state_data_input)
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
         self.assertEqual("us_oz_normalized_state", pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
@@ -92,9 +86,6 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         self.assertEqual(
             "some_completely_different_dataset", pipeline_parameters.state_data_input
         )
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
         # Output dataset has prefix added because there are input prefixes
         self.assertEqual("my_prefix_us_oz_normalized_state", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
@@ -121,8 +112,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_xx_state_primary\] in overrides which is not "
             r"a dataset this pipeline reads from. Datasets you can override: "
-            r"\['external_reference', 'reference_views', 'state', "
-            r"'us_mo_raw_data_up_to_date_views'\].",
+            r"\['external_reference', 'state', 'us_mo_raw_data_up_to_date_views'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(

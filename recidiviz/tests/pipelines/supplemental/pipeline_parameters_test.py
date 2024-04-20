@@ -19,7 +19,6 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
@@ -75,10 +74,6 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
         self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
-
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
         self.assertEqual("my_prefix_supplemental_data", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
@@ -103,8 +98,7 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_yy_raw_data\] in overrides which is not a "
             r"dataset this pipeline reads from. Datasets you can override: "
-            r"\['normalized_state', 'reference_views', "
-            r"'us_ix_raw_data_up_to_date_views'\].",
+            r"\['normalized_state', 'us_ix_raw_data_up_to_date_views'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(
