@@ -40,7 +40,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.read_from_bq_patcher = patch(
-            "recidiviz.pipelines.ingest.state.generate_ingest_view_results.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.create_fake_bq_read_source_constructor,
         )
         self.read_from_bq_patcher.start()

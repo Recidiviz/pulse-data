@@ -20,6 +20,7 @@ import datetime
 import unittest
 from datetime import date
 from typing import List
+from unittest.mock import MagicMock
 
 import apache_beam as beam
 import attr
@@ -173,7 +174,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -335,7 +336,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -467,7 +468,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -593,7 +594,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -730,7 +731,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -794,6 +795,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
     def testExtractDataForPipeline_withReferenceTables(self):
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""
@@ -905,7 +909,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -1075,7 +1079,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         dataset = "state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -1117,6 +1121,9 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
     def testExtractDataForPipeline_allows_for_empty_entities(self):
         person_id = 12345
         project = "project"
@@ -1134,7 +1141,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         }
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),
@@ -1278,7 +1285,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
@@ -1414,7 +1421,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
@@ -1601,7 +1608,7 @@ class TestExtractAssociationValues(unittest.TestCase):
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
@@ -1672,7 +1679,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=normalized_dataset, data_dict=data_dict
             ),
@@ -1727,7 +1734,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
         normalized_dataset = "us_xx_normalized_state"
 
         with patch(
-            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            "apache_beam.io.ReadFromBigQuery",
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=dataset, data_dict=data_dict
             ),

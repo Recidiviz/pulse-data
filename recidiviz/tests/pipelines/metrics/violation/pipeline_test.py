@@ -19,6 +19,7 @@ import unittest
 from datetime import date
 from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple
 from unittest import mock
+from unittest.mock import patch
 
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -84,6 +85,10 @@ class TestViolationPipeline(unittest.TestCase):
     """Tests the entire violation pipeline."""
 
     def setUp(self) -> None:
+        self.project_id = "test-project"
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
             FakeWriteMetricsToBigQuery
@@ -99,6 +104,7 @@ class TestViolationPipeline(unittest.TestCase):
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
+        self.project_id_patcher.stop()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.state_specific_delegate_patcher.stop()
@@ -206,8 +212,6 @@ class TestViolationPipeline(unittest.TestCase):
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the violation pipeline."""
-        project = "recidiviz-staging"
-
         read_from_bq_constructor = (
             self.fake_bq_source_factory.create_fake_bq_source_constructor(
                 expected_entities_dataset=NORMALIZED_STATE_DATASET,
@@ -228,7 +232,7 @@ class TestViolationPipeline(unittest.TestCase):
         run_test_pipeline(
             pipeline_cls=self.pipeline_class,
             state_code="US_XX",
-            project_id=project,
+            project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,

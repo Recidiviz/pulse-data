@@ -579,6 +579,9 @@ class StateIngestPipelineTestCase(
     def create_fake_bq_read_source_constructor(
         self,
         query: str,
+        # pylint: disable=unused-argument
+        use_standard_sql: bool,
+        validate: bool,
     ) -> FakeReadFromBigQueryWithEmulator:
         return FakeReadFromBigQueryWithEmulator(query=query, test_case=self)
 
