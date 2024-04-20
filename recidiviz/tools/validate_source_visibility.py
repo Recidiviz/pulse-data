@@ -204,6 +204,7 @@ def main() -> int:
             raise ValueError(f"No file associated with {pipeline}.")
         valid_prefixes = {
             "recidiviz.big_query.address_overrides",
+            "recidiviz.big_query.big_query_query_provider",
             "recidiviz.calculator",
             "recidiviz.pipelines",
             "recidiviz.cloud_storage",

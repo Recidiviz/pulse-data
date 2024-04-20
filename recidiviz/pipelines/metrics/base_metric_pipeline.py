@@ -65,6 +65,9 @@ from recidiviz.pipelines.utils.execution_utils import (
     person_and_kwargs_for_identifier,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
+from recidiviz.pipelines.utils.reference_query_providers import (
+    view_builders_as_state_filtered_query_providers,
+)
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
     get_required_state_specific_metrics_producer_delegates,
@@ -180,21 +183,18 @@ class MetricPipeline(
             + self.state_specific_input_reference_view_builders().get(state_code, [])
         )
 
-        pipeline_data = (
-            p
-            | "Load required person-level data"
-            >> ExtractRootEntityDataForPipeline(
-                state_code=state_code.value,
-                project_id=self.pipeline_parameters.project,
-                entities_dataset=self.pipeline_parameters.normalized_input,
-                reference_views_dataset=self.pipeline_parameters.reference_view_input,
-                required_entity_classes=self.required_entities(),
-                required_reference_view_ids=[
-                    vb.view_id for vb in reference_view_builders
-                ],
-                root_entity_cls=entities.StatePerson,
-                root_entity_id_filter_set=person_id_filter_set,
-            )
+        pipeline_data = p | "Load required person-level data" >> ExtractRootEntityDataForPipeline(
+            state_code=state_code,
+            project_id=self.pipeline_parameters.project,
+            entities_dataset=self.pipeline_parameters.normalized_input,
+            required_entity_classes=self.required_entities(),
+            reference_data_queries_by_name=view_builders_as_state_filtered_query_providers(
+                reference_view_builders,
+                state_code=state_code,
+                address_overrides=self.pipeline_parameters.input_dataset_overrides,
+            ),
+            root_entity_cls=entities.StatePerson,
+            root_entity_id_filter_set=person_id_filter_set,
         )
 
         person_events = pipeline_data | "Get Events" >> beam.ParDo(
