@@ -41,7 +41,7 @@ class SupplementalPipelineParameters(PipelineParameters):
 
     @classmethod
     def get_input_dataset_property_names(cls) -> List[str]:
-        return ["reference_view_input"]
+        return []
 
     @classmethod
     def get_output_dataset_property_names(cls) -> List[str]:

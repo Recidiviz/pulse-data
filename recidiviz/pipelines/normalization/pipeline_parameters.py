@@ -56,7 +56,7 @@ class NormalizationPipelineParameters(PipelineParameters):
 
     @classmethod
     def get_input_dataset_property_names(cls) -> List[str]:
-        return ["reference_view_input", "state_data_input"]
+        return ["state_data_input"]
 
     @classmethod
     def get_output_dataset_property_names(cls) -> List[str]:

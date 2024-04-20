@@ -22,7 +22,6 @@ from unittest.mock import MagicMock, patch
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     NORMALIZED_STATE_DATASET,
-    REFERENCE_VIEWS_DATASET,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.supervision.pipeline import SupervisionMetricsPipeline
@@ -58,9 +57,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(pipeline_parameters.job_name, "test-job")
 
         self.assertEqual(NORMALIZED_STATE_DATASET, pipeline_parameters.normalized_input)
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
         self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
@@ -87,9 +83,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(pipeline_parameters.job_name, "test-job")
 
         self.assertEqual(NORMALIZED_STATE_DATASET, pipeline_parameters.normalized_input)
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
         self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
 
@@ -142,10 +135,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(
             "some_completely_different_dataset", pipeline_parameters.normalized_input
         )
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET,
-            pipeline_parameters.reference_view_input,
-        )
 
         self.assertEqual("my_prefix_dataflow_metrics", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
@@ -175,8 +164,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_xx_normalized_state\] in overrides which is "
             r"not a dataset this pipeline reads from. Datasets you can override: "
-            r"\['normalized_state', 'reference_views', 'state', "
-            r"'us_mo_raw_data_up_to_date_views'\].",
+            r"\['normalized_state', 'state', 'us_mo_raw_data_up_to_date_views'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(

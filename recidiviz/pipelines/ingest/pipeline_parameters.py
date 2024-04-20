@@ -100,10 +100,7 @@ class IngestPipelineParameters(PipelineParameters):
 
     @classmethod
     def get_input_dataset_property_names(cls) -> List[str]:
-        return [
-            "raw_data_table_input",
-            "reference_view_input",
-        ]
+        return ["raw_data_table_input"]
 
     @classmethod
     def get_output_dataset_property_names(cls) -> List[str]:

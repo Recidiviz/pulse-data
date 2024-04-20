@@ -22,7 +22,6 @@ from unittest.mock import MagicMock, patch
 from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
@@ -66,9 +65,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
         self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
-        self.assertEqual(
             "us_oz_dataflow_ingest_view_results_primary",
             pipeline_parameters.ingest_view_results_output,
         )
@@ -105,9 +101,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual(
             "us_oz_raw_data_secondary", pipeline_parameters.raw_data_table_input
-        )
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
         )
         self.assertEqual(
             "us_oz_dataflow_ingest_view_results_secondary",
@@ -195,9 +188,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
         )
         self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
-        self.assertEqual(
             "my_prefix_us_oz_dataflow_ingest_view_results_primary",
             pipeline_parameters.ingest_view_results_output,
         )
@@ -237,9 +227,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
         )
         self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
-        self.assertEqual(
             "my_prefix_us_oz_dataflow_ingest_view_results_secondary",
             pipeline_parameters.ingest_view_results_output,
         )
@@ -270,9 +257,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
-        self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
         self.assertEqual(
             "my_prefix_us_oz_dataflow_ingest_view_results_primary",
             pipeline_parameters.ingest_view_results_output,
@@ -322,9 +306,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual("us_oz_raw_data", pipeline_parameters.raw_data_table_input)
         self.assertEqual(
-            REFERENCE_VIEWS_DATASET, pipeline_parameters.reference_view_input
-        )
-        self.assertEqual(
             "my_prefix_us_oz_dataflow_ingest_view_results_primary",
             pipeline_parameters.ingest_view_results_output,
         )
@@ -369,7 +350,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_yy_raw_data\] in overrides which is not a "
             r"dataset this pipeline reads from. Datasets you can override: "
-            r"\['reference_views', 'us_xx_raw_data'\].",
+            r"\['us_xx_raw_data'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(StateIngestPipeline)
