@@ -78,25 +78,25 @@ columns:
           - Parole violator whose parole has been revoked by the Parole Board, but is in county jail on other charges.  DOCR is not financially responsible.  The admission reason code for them is PV.
           - Escapee who has been recaptured by another jurisdiction and is awaiting disposition on outstanding charges in that jurisdiction.  DOCR is not financially responsible.  The admission reason code for them is REC.
       - value: "FD"
-        description: "TODO(#11833): Update with facility name."
+        description: Federal
       - value: "NC"
-        description: "TODO(#11833): Update with facility name."
+        description: North Central Judicial District (Court)
       - value: "NE"
-        description: "TODO(#11833): Update with facility name."
+        description: Northeast Judicial District (Court)
       - value: "NW"
-        description: "TODO(#11833): Update with facility name."
+        description: Northwest Judicial District (Court)
       - value: "OS"
-        description: "TODO(#11833): Update with facility name."
+        description: Out of State
       - value: "SC"
-        description: "TODO(#11833): Update with facility name."
+        description: South Central Judicial District (Court)
       - value: "SE"
-        description: "TODO(#11833): Update with facility name."
+        description: Southeast Judicial District (Court)
       - value: "SW"
-        description: "TODO(#11833): Update with facility name."
+        description: North East Central Judicial District (Court)
       - value: "NEC"
-        description: "TODO(#11833): Update with facility name."
+        description: South Central Judicial District (Court)
       - value: "EAST"
-        description: "TODO(#11833): Update with facility name."
+        description: East Central Judicial District (Court)
       - value: "INACT"
         description: "TODO(#11833): Update with facility name."
       - value: "HACTC"
@@ -106,25 +106,25 @@ columns:
       - value: "MTPMDN"
         description: (sp) Mandan - Male Transfer Program
       - value: "PREA"
-        description: "TODO(#11833): Update with facility name."
+        description: Prison Rape Elimination Act
       - value: "DOC"
-        description: "TODO(#11833): Update with facility name."
+        description: Alaska Department of Corrections
       - value: "MNCF"
-        description: "TODO(#11833): Update with facility name."
+        description: Minnesota Correctional Facility
       - value: "PROB"
         description: "TODO(#11833): Update with facility name."
       - value: "FC"
-        description: "TODO(#11833): Update with facility name."
+        description: Federal Correctional Institution
       - value: "BOP"
-        description: "TODO(#11833): Update with facility name."
+        description: Federal Bureau of Prisons
       - value: "YCC"
-        description: "TODO(#11833): Update with facility name."
+        description: Youth Correctional Center
       - value: "FCI"
-        description: "TODO(#11833): Update with facility name."
+        description: Federal Correctional Institution
       - value: "TRN"
-        description: "TODO(#11833): Update with facility name."
+        description: Transfer
       - value: "MON"
-        description: "TODO(#11833): Update with facility name."
+        description: Montana State Prison
       - value: "CONT"
         description: "TODO(#11833): Update with facility name."
   - name: MOVEMENT_SEQ

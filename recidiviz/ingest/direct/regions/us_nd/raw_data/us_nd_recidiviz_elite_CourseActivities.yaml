@@ -58,13 +58,13 @@ columns:
       - value: DWCRC1
         description: DAKOTA WOMEN'S CORR REHAB CENTER
       - value: JRMU
-        description: #TODO(#18645): Fill in with answer from ND
+        description: JAMES RIVER MINIMUM UNIT
       - value: TRC
-        description: #TODO(#18645): Fill in with answer from ND
+        description: TOMPKINS REHABILITATION CENTER
       - value: HRCC
-        description: #TODO(#18645): Fill in with answer from ND
+        description: HEART RIVER CORRECTIONAL CENTER
       - value: BTCWTR
-        description: #TODO(#18645): Fill in with answer from ND
+        description: BISMARCK TRANSITION CENTER - WOMEN'S TREATMENT & RECOVERY UNIT
   - name: ALLOW_DOUBLE_BOOK_FLAG
     description: |-
       Unknown, always blank.

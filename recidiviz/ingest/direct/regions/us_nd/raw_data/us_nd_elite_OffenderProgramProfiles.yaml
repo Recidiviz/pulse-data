@@ -49,7 +49,7 @@ columns:
       - value: CJ
         description: COUNTY JAIL
       - value: OOS
-        description: #TODO(#18645): Fill in with answer from ND
+        description: OUT OF STATE
       - value: NCCRC
         description: #TODO(#18645): Fill in with answer from ND
   - name: COMMENT_TEXT
