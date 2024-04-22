@@ -121,6 +121,7 @@ SELECT
     a.state_code,
     a.reasons,
     a.is_eligible,
+    a.ineligible_criteria,
     h.housing_unit_type AS metadata_solitary_confinement_type,
     DATE_DIFF(CURRENT_DATE('US/Eastern'), h.start_date, DAY) AS metadata_days_in_solitary
 FROM eligible_and_almost_eligible a
