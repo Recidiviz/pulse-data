@@ -30,6 +30,10 @@ def classes_cte() -> str:
         SELECT 
             se.OFNDR_CYCLE_REF_ID,
             se.EXIT_TYPE_CD,
+            -- The 'is_referral' flag is used to indicate whether or not a class entry
+            -- represents a pending referral. This is currently being used in MOSOP-related
+            -- logic to prevent people from being marked as completed if they have a pending referral.
+            se.ENROLLMENT_STATUS_CD = 'PND' AS is_referral,
             DOC_ID,
             CYCLE_NO,
             ACTUAL_START_DT,

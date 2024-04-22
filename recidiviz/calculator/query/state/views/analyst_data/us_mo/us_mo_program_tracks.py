@@ -58,8 +58,11 @@ mosop_completion_flags AS (
   */
   SELECT 
     DOC_ID,
-    (LOGICAL_OR(p1_completed_flag) and LOGICAL_OR(p2_completed_flag)) or 
-      (LOGICAL_OR(p1_completed_flag) and not LOGICAL_OR(p2_enrollment)) AS all_complete,
+    (
+      LOGICAL_OR(p1_completed_flag) AND 
+      LOGICAL_OR(p2_completed_flag) 
+      AND NOT LOGICAL_OR(is_referral)
+    ) AS all_complete,
     LOGICAL_OR(uns_flag) AS has_uns,  
     LOGICAL_OR(nof_flag) AS has_nof,
     LOGICAL_OR(any_exit_flag) AS has_any_exit,
@@ -77,6 +80,7 @@ mosop_completion_flags AS (
       CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' AND CLASS_TITLE = 'MOSOP PHASE I' THEN TRUE ELSE FALSE END AS p1_completed_flag,
       CASE WHEN CLASS_TITLE = 'MOSOP PHASE II' THEN TRUE ELSE FALSE END AS p2_enrollment,
       CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' AND CLASS_TITLE = 'MOSOP PHASE II' THEN TRUE ELSE FALSE END AS p2_completed_flag,
+      is_referral
     FROM (
       SELECT 
         DOC_ID,
@@ -211,6 +215,7 @@ latest_sentencing_dates AS (
          MAX(board_determined_release_date) AS board_determined_release_date,
          MAX(conditional_release) AS conditional_release,
          MAX(max_discharge) AS max_discharge,
+         MAX(rch_date) AS rch_date,
          -- If the person has a life sentence in their current cycle 
          -- (CV_AP = '99999999'), then we flag that here.
          LOGICAL_OR(life_flag) AS life_flag
@@ -296,6 +301,11 @@ SELECT p.*,
             latest_sentencing_dates.max_discharge,
             NULL
         ) AS max_discharge,
+        IF(
+            latest_sentencing_dates.rch_date >= start_date,
+            latest_sentencing_dates.rch_date,
+            NULL
+        ) AS rch_date,
         latest_sentencing_dates.life_flag,
        mosop.mosop_indicator,
        flag_120_required AS court_mandated_treatment,
@@ -390,7 +400,8 @@ LEFT JOIN
 "serving a Missouri sentence(s) concurrently with an out-of-state or federal facility.
 Both Missouri and the confining agency have jurisdiction over the offender." based on https://doc.mo.gov/glossary */
 WHERE p.facility NOT IN ('AIFED', 'EXTERNAL_UNKNOWN')
-)
+),
+pre_rch_override AS (
 SELECT 
   pt.*,
   COALESCE(
@@ -406,10 +417,44 @@ SELECT
   COALESCE(mosop.has_nof, FALSE) AS has_nof,
   mosop.most_recent_failure,
   COALESCE(mosop.uns_ct, 0) AS uns_ct,
-  COALESCE(mosop.completed_p1, FALSE) AS completed_p1
+  COALESCE(mosop.completed_p1, FALSE) AS completed_p1,
+  CURRENT_DATE('-05:00') >= GREATEST(
+      IFNULL(pt.minimum_eligibility_date,pt.minimum_mandatory_release_date), 
+      IFNULL(pt.minimum_mandatory_release_date,pt.minimum_eligibility_date)
+  ) AS past_me_mpt,
+  NULLIF(
+    LEAST(
+      COALESCE(pt.conditional_release,DATE(9999,1,1)),
+      COALESCE(pt.max_discharge,DATE(9999,1,1))
+    ),
+    DATE(9999,1,1)
+  ) AS cr_md
 FROM unprioritized_program_tracks pt
 LEFT JOIN mosop_completed_or_ongoing mosop
 USING (person_id)
+)
+
+SELECT 
+  * EXCEPT(prioritized_date),
+  CASE 
+    WHEN past_me_mpt AND cr_md IS NOT NULL AND meets_rch_conditions THEN rch_date
+    WHEN past_me_mpt AND cr_md IS NOT NULL AND NOT meets_rch_conditions THEN cr_md
+    ELSE prioritized_date
+    -- TODO(#29245): This currently will fall back to the standard prioritized date if 
+    -- someone's CR/MAX dates are null, regardless of their RCH date. We need to check if 
+    -- this is the desired behavior.
+  END AS prioritized_date
+FROM (
+SELECT 
+  *,
+  rch_date IS NOT NULL AND     
+  DATE_DIFF(
+    cr_md,
+    rch_date,
+    YEAR
+  ) <= 10 AS meets_rch_conditions
+FROM pre_rch_override
+)
 """
 
 US_MO_PROGRAM_TRACKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
