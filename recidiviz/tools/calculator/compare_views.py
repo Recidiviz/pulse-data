@@ -93,6 +93,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="A comma-separated list of columns to group final statistics by.",
     )
     parser.add_argument(
+        "--ignore_case",
+        action="store_true",
+        help="Compare all columns case-insensitively",
+        default=False,
+    )
+    parser.add_argument(
         "--project_id",
         type=str,
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
@@ -129,6 +135,7 @@ def main() -> None:
         ),
         primary_keys=known_args.primary_keys,
         grouping_columns=known_args.grouping_columns,
+        ignore_case=known_args.ignore_case,
     )
 
     print(

@@ -126,17 +126,21 @@ def format_lines_for_query(lines: List[str], join_str: str = ",\n      ") -> str
 
 
 def get_comparison_query(
-    column_names: List[str], table_name_orig: str, table_name_new: str
+    column_names: List[str],
+    table_name_orig: str,
+    table_name_new: str,
+    ignore_case: bool,
 ) -> str:
+    json_table = "TO_JSON_STRING(t)" if not ignore_case else "LOWER(TO_JSON_STRING(t))"
     return f"""
     WITH original_rows AS (
       SELECT 
-        FARM_FINGERPRINT(TO_JSON_STRING(t)) AS __comparison_key, *
+        FARM_FINGERPRINT({json_table}) AS __comparison_key, *
       FROM {table_name_orig} t
     ),
     new_rows AS (
       SELECT 
-        FARM_FINGERPRINT(TO_JSON_STRING(t)) AS __comparison_key, *
+        FARM_FINGERPRINT({json_table}) AS __comparison_key, *
       FROM {table_name_new} t
     )
 
@@ -161,7 +165,9 @@ def get_difference_query(
     columns_df: pd.DataFrame,
     full_comparison_table_address: ProjectSpecificBigQueryAddress,
     primary_keys: Optional[List[str]],
+    ignore_case: bool,
 ) -> str:
+    """Constructs a query that shows each difference between two tables or views."""
     all_column_names = columns_df["column_name"].tolist()
     directly_comparable_column_names = columns_df[columns_df.is_directly_comparable][
         "column_name"
@@ -173,12 +179,18 @@ def get_difference_query(
             return col
 
         if col in directly_comparable_column_names:
-            col_comparison_str = f"original_rows.{col} = new_rows.{col}"
+            col_comparison_str = (
+                f"original_rows.{col} = new_rows.{col}"
+                if not ignore_case
+                else f"LOWER(original_rows.{col}) = LOWER(new_rows.{col})"
+            )
         else:
             # If we can't compare the values directly (e.g. for ARRAY types),
             # we convert to JSON first.
             col_comparison_str = (
                 f"TO_JSON_STRING(original_rows.{col}) = TO_JSON_STRING(new_rows.{col})"
+                if not ignore_case
+                else f"LOWER(TO_JSON_STRING(original_rows.{col})) = LOWER(TO_JSON_STRING(new_rows.{col}))"
             )
 
         return f"IF({col_comparison_str}, NULL, STRUCT(original_rows.{col} AS o, new_rows.{col} AS n)) AS {col}"
@@ -255,6 +267,7 @@ def compare_table_or_view(
     comparison_output_dataset_id: str,
     primary_keys: Optional[List[str]],
     grouping_columns: Optional[List[str]],
+    ignore_case: bool = False,
 ) -> CompareTablesResult:
     """Compares the data at two different BigQuery addresses, emits a full comparison
     table and a differences table, and returns a result that includes statistics about
@@ -302,6 +315,7 @@ def compare_table_or_view(
         all_column_names,
         table_name_orig=address_original.format_address_for_query(),
         table_name_new=address_new.format_address_for_query(),
+        ignore_case=ignore_case,
     )
 
     # Create _full table to store results of the above query
@@ -327,6 +341,7 @@ def compare_table_or_view(
         columns_df=columns_df,
         full_comparison_table_address=full_comparison_address,
         primary_keys=primary_keys,
+        ignore_case=ignore_case,
     )
 
     # Create _differences table to store results of the above query
