@@ -6,6 +6,7 @@ input_columns:
   - BadgeNumber
   - LastName
   - FirstName
+  - EMAILADDRESS
 unused_columns: []
 output:
   StateStaff:
@@ -13,7 +14,15 @@ output:
       - StateStaffExternalId:
           external_id: BadgeNumber
           id_type: $literal("US_CA_BADGE_NO")
+      - $conditional:
+          - $if:
+              $not_null: EMAILADDRESS
+            $then:
+              StateStaffExternalId:
+                external_id: EMAILADDRESS
+                id_type: $literal("US_CA_STAFF_EMAIL")
     full_name:
       $person_name:
         $given_names: FirstName
         $surname: LastName
+    email: EMAILADDRESS

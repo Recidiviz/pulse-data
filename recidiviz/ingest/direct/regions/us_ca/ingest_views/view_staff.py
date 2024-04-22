@@ -31,6 +31,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH staff_from_AgentParole AS (
+  -- `staff_from_AgentParole` selects agents from AgentParole, prioritizing names from
+  -- the most recent transfers.
   SELECT
     DISTINCT BadgeNumber,
     UPPER(TRIM(SPLIT(ParoleAgentName, '|')[OFFSET(0)])) AS LastName,
@@ -40,16 +42,20 @@ WITH staff_from_AgentParole AS (
   QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY update_datetime DESC) = 1
 ),
 staff_from_PersonParole AS (
+  -- `staff_from_PersonParole` selects agents from PersonParole, prioritizing names from
+  -- the most recent transfers.
   SELECT
     DISTINCT BadgeNumber,
     UPPER(TRIM(SPLIT(ParoleAgentName, ',')[OFFSET(0)])) AS LastName,
     UPPER(TRIM(SPLIT(ParoleAgentName, ',')[OFFSET(1)])) AS FirstName,
   FROM {PersonParole@ALL}
   WHERE BadgeNumber IS NOT NULL
-  QUALIFY row_number() OVER (PARTITION BY BadgeNumber ORDER BY update_datetime DESC) = 1
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY update_datetime DESC) = 1
 ),
 unioned AS (
-  SELECT 
+  -- `unioned` Combines agents found in AgentParole and PersonParole. Later we'll
+  -- prioritize AgentParole if we see duplicates.
+  SELECT
     BadgeNumber,
     LastName,
     FirstName,
@@ -57,27 +63,39 @@ unioned AS (
   FROM staff_from_AgentParole
 
   UNION ALL
-  
-  SELECT 
+
+  SELECT
     BadgeNumber,
     LastName,
     FirstName,
-    1 as sourceTablePriority
+    1 AS sourceTablePriority
   FROM staff_from_PersonParole
-), final as (
-  SELECT 
+), prioritized AS (
+  -- `prioritized` ensures that we select information from AgentParole over PersonParole
+  -- if there is different information for the same BadgeNumber
+  SELECT
     BadgeNumber,
     LastName,
     FirstName
   FROM unioned
   WHERE True -- Required because of https://github.com/google/zetasql/issues/124
   QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY sourceTablePriority) = 1
+), add_emails AS (
+  -- `add_emails` joins back to AgentParole to get emails by BadgeNumber.
+  SELECT
+    BadgeNumber,
+    LastName,
+    FirstName,
+    ap.EMAILADDRESS
+  FROM prioritized
+  LEFT JOIN (
+    SELECT BadgeNumber, EMAILADDRESS 
+    FROM {AgentParole@ALL} 
+    WHERE TRUE -- Required because of https://github.com/google/zetasql/issues/124
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY update_datetime DESC) = 1
+  ) ap USING (BadgeNumber)
 )
-SELECT 
-  BadgeNumber,
-  LastName,
-  FirstName
-FROM final
+SELECT * FROM add_emails;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
