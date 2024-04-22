@@ -44,7 +44,6 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
-from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.dags.utils.config_utils import (
     get_ingest_instance,
     get_sandbox_prefix,
@@ -53,7 +52,6 @@ from recidiviz.airflow.dags.utils.config_utils import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
@@ -93,24 +91,14 @@ def _get_pipeline_config() -> YAMLDict:
     return YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
 
-def update_managed_views_operator(
-    view_update_type: ManagedViewUpdateType,
-) -> RecidivizKubernetesPodOperator:
-    task_id = f"update_managed_views_{view_update_type.value}"
-
-    additional_args = []
-
-    if view_update_type == ManagedViewUpdateType.REFERENCE_VIEWS_ONLY:
-        additional_args.append(f"--dataset_ids_to_load={REFERENCE_VIEWS_DATASET}")
-        additional_args.append("--clean_managed_datasets=False")
-
+def update_managed_views_operator() -> RecidivizKubernetesPodOperator:
+    task_id = "update_managed_views_all"
     return build_kubernetes_pod_task(
         task_id=task_id,
         container_name=task_id,
         arguments=[
             "--entrypoint=UpdateAllManagedViewsEntrypoint",
             SANDBOX_PREFIX_JINJA_ARG,
-            *additional_args,
         ],
         trigger_rule=TriggerRule.ALL_DONE,
     )
@@ -432,20 +420,17 @@ def create_calculation_dag() -> None:
         )
 
     initialize_dag = initialize_calculation_dag_group()
-    update_reference_views = update_managed_views_operator(
-        ManagedViewUpdateType.REFERENCE_VIEWS_ONLY
-    )  # TODO(#22528): Remove this once pipelines implicitly get the latest views.
     initialize_dag >> bq_refresh
     initialize_dag >> update_state_dataset >> manage_trigger_ingest_dag()
 
-    trigger_update_all_views = update_managed_views_operator(ManagedViewUpdateType.ALL)
+    update_all_views = update_managed_views_operator()
 
     (
         [
             operations_bq_refresh_completion,
             case_triage_bq_refresh_completion,
         ]
-        >> trigger_update_all_views
+        >> update_all_views
     )
 
     with TaskGroup(group_id="normalization") as normalization_task_group:
@@ -460,7 +445,6 @@ def create_calculation_dag() -> None:
     # complete before normalized_state dataset is refreshed.
     (
         update_state_dataset
-        >> update_reference_views
         >> normalization_task_group
         >> update_normalized_state_dataset
     )
@@ -481,7 +465,7 @@ def create_calculation_dag() -> None:
     update_normalized_state_dataset >> post_normalization_pipelines
 
     # Metric pipelines should complete before view update starts
-    post_normalization_pipelines >> trigger_update_all_views
+    post_normalization_pipelines >> update_all_views
 
     with TaskGroup(group_id="validations") as validations:
         create_branching_by_key(
@@ -493,7 +477,7 @@ def create_calculation_dag() -> None:
             get_state_code_filter,
         )
 
-    trigger_update_all_views >> validations
+    update_all_views >> validations
 
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id="state_specific_metric_exports"):
@@ -511,7 +495,7 @@ def create_calculation_dag() -> None:
             ):
                 create_metric_view_data_export_nodes([export_config])
 
-    trigger_update_all_views >> metric_exports
+    update_all_views >> metric_exports
 
 
 calculation_dag = create_calculation_dag()

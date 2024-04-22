@@ -20,7 +20,6 @@ import argparse
 
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.utils.params import str_to_bool, str_to_list
 
 
 class UpdateAllManagedViewsEntrypoint(EntrypointInterface):
@@ -37,30 +36,8 @@ class UpdateAllManagedViewsEntrypoint(EntrypointInterface):
             type=str,
         )
 
-        parser.add_argument(
-            "--dataset_ids_to_load",
-            dest="dataset_ids_to_load",
-            help="A list of dataset_ids to load separated by commas. If provided, only "
-            "loads datasets in this list plus ancestors.",
-            type=str_to_list,
-            required=False,
-        )
-
-        parser.add_argument(
-            "--clean_managed_datasets",
-            help="If true (default), will clean all historically managed datasets before updating.",
-            type=str_to_bool,
-            default=True,
-        )
-
         return parser
 
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
-        execute_update_all_managed_views(
-            sandbox_prefix=args.sandbox_prefix,
-            dataset_ids_to_load=args.dataset_ids_to_load,
-            clean_managed_datasets=args.clean_managed_datasets,
-            # Should allow slow views if not cleaning managed datasets and is updating is slow.
-            allow_slow_views=not args.clean_managed_datasets,
-        )
+        execute_update_all_managed_views(sandbox_prefix=args.sandbox_prefix)
