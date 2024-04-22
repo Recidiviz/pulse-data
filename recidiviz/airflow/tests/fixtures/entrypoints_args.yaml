@@ -7,11 +7,6 @@ test_update_all_managed_views_endpoint_sandbox_prefix:
   - --entrypoint=UpdateAllManagedViewsEntrypoint
   - --sandbox_prefix=test_prefix
 
-test_update_managed_views_endpoint_reference_views_only:
-  - --entrypoint=UpdateAllManagedViewsEntrypoint
-  - --dataset_ids_to_load=reference_views
-  - --clean_managed_datasets=False
-
 test_refresh_bq_dataset_task:
   - --entrypoint=BigQueryRefreshEntrypoint
   - --schema_type=STATE

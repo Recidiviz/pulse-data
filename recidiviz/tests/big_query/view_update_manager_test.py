@@ -924,7 +924,7 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         _mock_bq_client: MagicMock,
         _mock_view_builders: MagicMock,
     ) -> None:
-        execute_update_all_managed_views(None)
+        execute_update_all_managed_views(sandbox_prefix=None)
         mock_create.assert_called()
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
             deployed_view_builders=mock.ANY,
@@ -945,7 +945,7 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         _mock_bq_client: MagicMock,
         _mock_view_builders: MagicMock,
     ) -> None:
-        execute_update_all_managed_views("test_prefix")
+        execute_update_all_managed_views(sandbox_prefix="test_prefix")
         mock_create.assert_called()
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
             deployed_view_builders=mock.ANY,

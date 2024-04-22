@@ -36,7 +36,6 @@ from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
-from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import fake_operator_constructor
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -336,7 +335,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
     def test_update_managed_views_endpoint(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
 
-        task = update_managed_views_operator(ManagedViewUpdateType.ALL)
+        task = update_managed_views_operator()
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(task.task_id, "update_managed_views_all")
@@ -350,7 +349,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
     def test_update_managed_views_endpoint_sandbox_prefix(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
 
-        task = update_managed_views_operator(ManagedViewUpdateType.ALL)
+        task = update_managed_views_operator()
         task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
         self.assertEqual(task.task_id, "update_managed_views_all")
         self.assertEqual(task.trigger_rule, TriggerRule.ALL_DONE)
@@ -359,23 +358,6 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             task.arguments[4:],
             self.entrypoint_args_fixture[
                 "test_update_all_managed_views_endpoint_sandbox_prefix"
-            ],
-        )
-
-    def test_update_managed_views_endpoint_reference_views_only(
-        self,
-    ) -> None:
-        from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
-
-        task = update_managed_views_operator(ManagedViewUpdateType.REFERENCE_VIEWS_ONLY)
-        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
-        self.assertEqual(task.task_id, "update_managed_views_reference_views_only")
-        self.assertEqual(task.trigger_rule, TriggerRule.ALL_DONE)
-
-        self.assertEqual(
-            task.arguments[4:],
-            self.entrypoint_args_fixture[
-                "test_update_managed_views_endpoint_reference_views_only"
             ],
         )
 

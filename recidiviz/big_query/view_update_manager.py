@@ -34,9 +34,6 @@ from recidiviz.big_query.big_query_client import (
 from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.big_query_view_sub_dag_collector import (
-    BigQueryViewSubDagCollector,
-)
 from recidiviz.big_query.success_persister import AllViewsUpdateSuccessPersister
 from recidiviz.big_query.view_update_config import (
     get_deployed_view_dag_update_perf_config,
@@ -73,50 +70,25 @@ NUM_SLOW_VIEWS_TO_LOG = 25
 
 
 @gcp_only
-def execute_update_all_managed_views(
-    sandbox_prefix: Optional[str],
-    dataset_ids_to_load: Optional[List[str]] = None,
-    clean_managed_datasets: bool = True,
-    allow_slow_views: bool = False,
-) -> None:
+def execute_update_all_managed_views(sandbox_prefix: Optional[str]) -> None:
     """
     Updates all views in the view registry. If dataset_ids_to_load is provided, only views in those datasets and
     their ancestors will be updated. If sandbox_prefix is provided, all views will be deployed to a sandbox dataset.
     """
     start = datetime.datetime.now()
-
-    all_view_builders_in_dag: List[BigQueryViewBuilder] = deployed_view_builders()
-
-    if dataset_ids_to_load:
-        logging.info(
-            "Limiting view deploy to views in datasets %s and any view ancestors.",
-            dataset_ids_to_load,
-        )
-
-        view_builders = BigQueryViewSubDagCollector(
-            view_builders_in_full_dag=all_view_builders_in_dag,
-            view_addresses_in_sub_dag=None,
-            dataset_ids_in_sub_dag=set(dataset_ids_to_load),
-            include_ancestors=True,
-            include_descendants=False,
-            datasets_to_exclude=set(),
-        ).collect_view_builders()
-    else:
-        view_builders = all_view_builders_in_dag
+    view_builders = deployed_view_builders()
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         view_builders_to_update=view_builders,
-        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED
-        if clean_managed_datasets
-        else None,
+        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         address_overrides=address_overrides_for_view_builders(
             view_dataset_override_prefix=sandbox_prefix, view_builders=view_builders
         )
         if sandbox_prefix
         else None,
         force_materialize=True,
-        allow_slow_views=allow_slow_views,
+        allow_slow_views=False,
     )
     end = datetime.datetime.now()
     runtime_sec = int((end - start).total_seconds())
