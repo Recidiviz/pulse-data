@@ -32,7 +32,7 @@ function upload_deployment_log {
   CURRENT_TIME="$(date +"%s")"
 
   local LOG_FILE_NAME="${RELEASE_VERSION_TAG}-${GIT_HASH}-${CURRENT_TIME}.log"
-  local LOG_OBJECT_URI="gs://${PROJECT_ID}-deploy-logs/${LOG_FILE_NAME}"
+  local LOG_OBJECT_URI="gs://${PROJECT_ID}-deploy-logs/$(date '+%Y/%m/%d')/${LOG_FILE_NAME}"
 
   gsutil cp "${DEPLOYMENT_LOG_PATH}" "${LOG_OBJECT_URI}" > /dev/null 2>&1
 
