@@ -46,6 +46,54 @@ WITH ME_MM_dates AS (
     FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
     QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT64) DESC) = 1
 ), 
+cleaned_hearing_data AS (
+  SELECT BQ_DOC AS doc_id,
+        BQ_CYC AS cycle_num,
+        BQ_BSN AS seq_num,
+        BQ_PBA AS board_action,
+        BQ_PBN AS next_action_type,
+        BQ_RTC AS type_of_release,
+        BQ_SCN AS special_condition_needed,
+        -- Find the type of action in the next parole hearing
+        LEAD(BQ_PBA) OVER(PARTITION BY BQ_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) ASC) AS next_board_action,
+        LEAD(BQ_PBN) OVER(PARTITION BY BQ_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) ASC) AS next_next_action_type,
+        SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_NA,'0')) AS next_action_date,
+        SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) AS parole_hearing_date,
+        SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PR,'0')) AS parole_presumptive_date,
+      FROM ( 
+          SELECT * 
+                  EXCEPT(BQ_NA,BQ_PH,BQ_PR),
+                  /* Some dates have 00 in the day field. MO confirms that this happens on their end too,
+                  and is usually for "placeholder" dates that eventually get corrected. They similarly turn these
+                  into the first of the month */
+                  CASE WHEN BQ_NA LIKE '%00' THEN CONCAT(LEFT(BQ_NA,4),SUBSTR(BQ_NA,5,2),'01') ELSE BQ_NA END AS BQ_NA,
+                  CASE WHEN BQ_PH LIKE '%00' THEN CONCAT(LEFT(BQ_PH,4),SUBSTR(BQ_PH,5,2),'01') ELSE BQ_PH END AS BQ_PH,
+                  CASE WHEN BQ_PR LIKE '%00' THEN CONCAT(LEFT(BQ_PR,4),SUBSTR(BQ_PR,5,2),'01') ELSE BQ_PR END AS BQ_PR,
+          FROM 
+              `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK020_latest`
+        ) 
+),
+rch_cycles AS (
+  -- Reconsideration dates can, under certain conditions, be used for prioritized dates,
+  -- but only if the most recent parole hearing set a date for a reconsideration hearing 
+  -- and the person has already had a first parole hearing or a reconsideration hearing.
+  SELECT 
+    doc_id, 
+    cycle_num, 
+    FIRST_VALUE(next_action_date) OVER (
+      PARTITION BY doc_id, cycle_num
+      ORDER BY parole_hearing_date DESC
+    ) AS rch_date
+  FROM (
+    SELECT *
+    FROM cleaned_hearing_data
+    QUALIFY FIRST_VALUE(next_action_type) OVER (
+      PARTITION BY doc_id, cycle_num 
+      ORDER BY parole_hearing_date DESC
+    ) = 'RCH'
+  )
+  QUALIFY LOGICAL_OR(board_action IN ('FPH','RCH')) OVER (PARTITION BY doc_id,cycle_num)
+),
 -- TODO(#19222): Use ingested values when available
 PPR_date AS (
   WITH processed AS (
@@ -71,34 +119,7 @@ PPR_date AS (
                 END AS board_determined_release_date,
            type_of_release,
            special_condition_needed,
-      FROM (
-        -- This CTE cleans up some date columns
-        SELECT BQ_DOC AS doc_id,
-             BQ_CYC AS cycle_num,
-             BQ_BSN AS seq_num,
-             BQ_PBA AS board_action,
-             BQ_PBN AS next_action_type,
-             BQ_RTC AS type_of_release,
-             BQ_SCN AS special_condition_needed,
-             -- Find the type of action in the next parole hearing
-             LEAD(BQ_PBA) OVER(PARTITION BY BQ_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) ASC) AS next_board_action,
-             LEAD(BQ_PBN) OVER(PARTITION BY BQ_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) ASC) AS next_next_action_type,
-             SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_NA,'0')) AS next_action_date,
-             SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PH,'0')) AS parole_hearing_date,
-             SAFE.PARSE_DATE('%Y%m%d',NULLIF(BQ_PR,'0')) AS parole_presumptive_date,
-            FROM ( 
-                SELECT * 
-                        EXCEPT(BQ_NA,BQ_PH,BQ_PR),
-                        /* Some dates have 00 in the day field. MO confirms that this happens on their end too,
-                        and is usually for "placeholder" dates that eventually get corrected. They similarly turn these
-                        into the first of the month */
-                        CASE WHEN BQ_NA LIKE '%00' THEN CONCAT(LEFT(BQ_NA,4),SUBSTR(BQ_NA,5,2),'01') ELSE BQ_NA END AS BQ_NA,
-                        CASE WHEN BQ_PH LIKE '%00' THEN CONCAT(LEFT(BQ_PH,4),SUBSTR(BQ_PH,5,2),'01') ELSE BQ_PH END AS BQ_PH,
-                        CASE WHEN BQ_PR LIKE '%00' THEN CONCAT(LEFT(BQ_PR,4),SUBSTR(BQ_PR,5,2),'01') ELSE BQ_PR END AS BQ_PR,
-                FROM 
-                    `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK020_latest`
-              ) 
-        )
+      FROM cleaned_hearing_data
   )
     -- This final step only keeps the last available hearing per person-cycle where the next action was release.
     -- However if that was followed by a CAN or CRE hearing, the board_determined_release_date will be null
@@ -127,11 +148,14 @@ ME_MM_dates.minimum_mandatory_release_date,
       MAX_CR.max_discharge, 
       MAX_CR.conditional_release,
       MAX_CR.life_flag,
+      rch_cycles.rch_date,
       pei.person_id
 FROM ME_MM_dates
 FULL OUTER JOIN PPR_date 
   USING(doc_id, cycle_num)
 FULL OUTER JOIN MAX_CR 
+  USING(doc_id, cycle_num)
+LEFT JOIN rch_cycles 
   USING(doc_id, cycle_num)
 INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
   ON doc_id = pei.external_id
