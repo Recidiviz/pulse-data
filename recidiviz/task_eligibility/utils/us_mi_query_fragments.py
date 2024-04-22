@@ -292,6 +292,7 @@ SELECT
     tes.external_id AS external_id,
     tes.reasons,
     tes.is_eligible,
+    tes.ineligible_criteria,
     IF(tes.is_eligible,DATE_DIFF(CURRENT_DATE("US/Eastern"), tes.start_date, DAY)>=7, False) AS is_overdue,
     --form information
     tes.external_id AS form_information_prisoner_number,
