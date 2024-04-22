@@ -259,6 +259,38 @@ disciplinary_reports_cte AS (
       cte
     GROUP BY 1, 2
 ),
+escape_history_cte AS (
+    -- Escape sentences history in the past 10 years
+    SELECT 
+        state_code,
+        person_id,
+        STRING_AGG(CONCAT(
+            CAST(date_imposed AS STRING),
+            ' - ',
+            description
+        ), '@@@') form_information_escape_history_10_years
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
+    WHERE statute IS NOT NULL
+        -- Escape statutes
+        AND statute IN ('B_17-A_756', 'C_17-A_755', 'D_17-A_755', 'B_17-A_755', 'C_17-A_756')
+        AND date_imposed > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 10 YEAR)
+        AND state_code = 'US_ME'
+    GROUP BY 1,2
+),
+probation_term_cte AS (
+  -- Probation sentences that are pending and that follow the incarceration sentence
+  SELECT 
+      state_code,
+      person_id,
+      'YES' AS form_information_sentence_includes_probation
+  FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_sentence`
+  WHERE state_code = 'US_ME'
+      AND supervision_type = 'PROBATION'
+      AND effective_date > CURRENT_DATE('US/Eastern')
+      )
+      AND status = 'PENDING'
+  GROUP BY 1,2
+),
 eligible_clients AS (
 
     -- ELIGIBLE
@@ -295,6 +327,14 @@ USING
   (person_id, state_code)
 LEFT JOIN
   disciplinary_reports_cte
+USING
+  (person_id, state_code)
+LEFT JOIN
+  escape_history_cte
+USING
+  (person_id, state_code)
+LEFT JOIN
+  probation_term_cte ptc
 USING
   (person_id, state_code)
 """
