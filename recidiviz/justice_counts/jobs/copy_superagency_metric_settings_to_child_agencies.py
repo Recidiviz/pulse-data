@@ -115,7 +115,8 @@ in the metric name with the name of the subsystem (i.e SUPERVISION_FUNDING -> PA
 
 import argparse
 import logging
-from typing import List, Optional
+from collections import defaultdict
+from typing import List, Optional, Set, Tuple
 
 import sentry_sdk
 from sqlalchemy.orm import Session
@@ -128,6 +129,7 @@ from recidiviz.justice_counts.utils.constants import (
     UNSUBSCRIBE_GROUP_ID,
 )
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -142,10 +144,11 @@ logger = logging.getLogger(__name__)
 def copy_metric_settings(
     super_agency_id: int,
     dry_run: bool,
+    agency_name: str,
     metric_definition_key_subset: List[str],
     current_session: Session,
     child_agency_id_subset: Optional[List[int]] = None,
-) -> None:
+) -> str:
     """Copies all (or a subset of) metric settings from a super agency to
     all (or a subset of) its child agencies.
     """
@@ -170,6 +173,7 @@ def copy_metric_settings(
         agency=super_agency,
     )
 
+    copied_metric_system_and_display_name = set()
     for child_agency in child_agencies:
         logger.info("Child Agency: %s", child_agency.name)
 
@@ -206,9 +210,99 @@ def copy_metric_settings(
                 agency=child_agency,
                 agency_metric=metric_setting,
             )
-
+            copied_metric_system_and_display_name.add(
+                (
+                    metric_setting.metric_definition.system.value,
+                    metric_setting.metric_definition.display_name,
+                )
+            )
     if dry_run is False:
         current_session.commit()
+
+    return _get_email_content_from_metrics(
+        is_copying_subset=len(metric_definition_key_set)
+        < len(super_agency_metric_settings),
+        child_agencies=child_agencies,
+        child_agency_id_set=child_agency_id_set,
+        copied_metric_system_and_display_name=copied_metric_system_and_display_name,
+        super_agency_name=agency_name,
+        super_agency_id=super_agency_id,
+    )
+
+
+def _get_email_content_from_metrics(
+    is_copying_subset: bool,
+    super_agency_name: str,
+    super_agency_id: int,
+    child_agencies: List[schema.Agency],
+    copied_metric_system_and_display_name: Set[Tuple[str, str]],
+    child_agency_id_set: Optional[Set[int]] = None,
+) -> str:
+    """
+    Generate HTML email content based on metrics settings.
+
+    Args:
+        is_copying_subset (bool): Indicates whether we are copying all metric settings or a subset of metric settings.
+        child_agencies (List[schema.Agency]): List of child agencies.
+        metric_definition_key_set (Set[str]): Set of metric definition keys.
+        child_agency_id_set (Optional[Set[int]], optional): Set of child agency IDs. Defaults to None.
+
+    Returns:
+        str: HTML content for the email.
+    """
+
+    if (
+        is_copying_subset is False
+        and child_agency_id_set is not None
+        and len(child_agency_id_set) == len(child_agencies)
+    ):
+        return f"""<p>Success! All of the metric settings from {super_agency_name} (ID: {super_agency_id}) have been copied over to all of its child agencies.</p>"""
+
+    # If a subset of metrics or child agencies are affected, the email will be in the following format.
+
+    # Success! Your request to copy the following metrics from the ____ superagency to ____, ___, ___, was successful.
+
+    # From the ____ sector:
+    # A
+    # B
+    # C
+
+    # From the ____ sector:
+    # A
+    # B
+    # C
+
+    html_content = f"<p> Success! Your request to copy the following metrics from the {super_agency_name} superagency to "
+    if child_agency_id_set is not None and len(child_agency_id_set) < len(
+        child_agencies
+    ):
+        combined_names = ", ".join(
+            [
+                child_agency.name
+                for child_agency in child_agencies
+                if child_agency.id in child_agency_id_set
+            ]
+        )
+        html_content += combined_names + " was successful.</p>"
+    else:
+        html_content += "all of its child agencies was successful.</p>"
+
+    system_to_metric_display_names = defaultdict(list)
+
+    for system_str, metric_display_name in copied_metric_system_and_display_name:
+        system_to_metric_display_names[system_str.replace("_", " ").title()].append(
+            system_str
+        )
+
+    for system, metric_display_names in system_to_metric_display_names.items():
+        if len(system_to_metric_display_names) > 1:
+            html_content += f"From the {system} sector: <br>"
+        html_content += "<ul>"
+        for metric_display_name in metric_display_names:
+            html_content += f"<li>{metric_display_name}</li>"
+        html_content += "</ul>"
+
+    return html_content
 
 
 if __name__ == "__main__":
@@ -268,12 +362,13 @@ if __name__ == "__main__":
         else []
     )
     try:
-        copy_metric_settings(
+        success_html_content = copy_metric_settings(
             dry_run=False,
             super_agency_id=args.super_agency_id,
             metric_definition_key_subset=args.metric_definition_key_subset,
             child_agency_id_subset=_child_agency_id_subset,
             current_session=session,
+            agency_name=args.agency_name,
         )
     except Exception as e:
         logging.exception("Failed to copy metric settings: %s", e)
@@ -282,7 +377,7 @@ if __name__ == "__main__":
             from_email="no-reply@justice-counts.org",
             from_email_name="Justice Counts",
             subject=f"Unfortunately, your request to copy {args.agency_name}'s (ID: {args.super_agency_id}) metric settings to its child agencies could not be completed.",
-            html_content=f"""<p>Sorry, something went wrong while attempting to copy all of the metric settings from {args.agency_name} (ID: {args.super_agency_id}). Please reach out to a member of the Recidiviz team to help troubleshoot.</p>""",
+            html_content=f"""<p>Sorry, something went wrong while attempting to copy the metric settings from {args.agency_name} (ID: {args.super_agency_id}). Please reach out to a member of the Recidiviz team to help troubleshoot.</p>""",
             disable_link_click=True,
             unsubscribe_group_id=UNSUBSCRIBE_GROUP_ID,
         )
@@ -293,7 +388,7 @@ if __name__ == "__main__":
             from_email="no-reply@justice-counts.org",
             from_email_name="Justice Counts",
             subject=f"Your request to copy {args.agency_name}'s (ID: {args.super_agency_id}) metric settings to its child agencies has been completed.",
-            html_content=f"""<p>Success! All of the metric settings from {args.agency_name} (ID: {args.super_agency_id}) have been copied over to all of its child agencies.</p>""",
+            html_content=success_html_content,
             disable_link_click=True,
             unsubscribe_group_id=UNSUBSCRIBE_GROUP_ID,
         )
