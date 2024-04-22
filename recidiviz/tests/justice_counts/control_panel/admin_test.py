@@ -613,6 +613,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             dry_run=False,
             metric_definition_key_subset=[law_enforcement.expenses.key],
             current_session=self.session,
+            agency_name="Agency Alpha",
         )
         agency_datapoints = DatapointInterface.get_agency_datapoints(
             session=self.session, agency_id=child_agency_1_id
@@ -638,6 +639,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             dry_run=False,
             metric_definition_key_subset=["ALL"],
             current_session=self.session,
+            agency_name="Agency Alpha",
         )
         agency_datapoints = DatapointInterface.get_agency_datapoints(
             session=self.session, agency_id=child_agency_1_id
@@ -693,6 +695,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             metric_definition_key_subset=["ALL"],
             child_agency_id_subset=[child_agency_2_id],
             current_session=self.session,
+            agency_name="Agency Alpha",
         )
 
         agency_1_datapoints = DatapointInterface.get_agency_datapoints(
