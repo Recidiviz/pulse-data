@@ -34,6 +34,12 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     RAW_DATA_LATEST_VIEW_ID_SUFFIX,
 )
+from recidiviz.validation.views.state.raw_data.stable_historical_counts import (
+    collect_stable_historical_counts_view_builders,
+)
+from recidiviz.validation.views.state.raw_data.stale_critical_table_validation import (
+    collect_stale_critical_raw_data_view_builders,
+)
 
 
 def find_direct_raw_data_references(
@@ -67,7 +73,17 @@ def find_direct_raw_data_references(
     raw_data_references: Dict[StateCode, Dict[str, Set[BigQueryAddress]]] = defaultdict(
         lambda: defaultdict(set)
     )
-    views = [builder.build(address_overrides=None) for builder in view_builders]
+    # Exempt views that are used for raw data validation
+    raw_data_validation_views = set(
+        builder.address
+        for builder in collect_stale_critical_raw_data_view_builders()
+        + collect_stable_historical_counts_view_builders()
+    )
+    views = [
+        builder.build(address_overrides=None)
+        for builder in view_builders
+        if builder.address not in raw_data_validation_views
+    ]
     raw_datasets = _get_raw_datasets()
     for view in views:
         for parent_table in view.parent_tables:
