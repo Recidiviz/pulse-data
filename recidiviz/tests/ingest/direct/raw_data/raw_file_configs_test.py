@@ -20,6 +20,7 @@ from typing import Dict
 
 import attr
 
+from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     ColumnEnumValueInfo,
@@ -1489,3 +1490,15 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             raw_file_configs={},
         )
         assert region_with_none.get_configs_with_regularly_updated_data() == []
+
+    def test_line_terminator_default(self) -> None:
+        assert self.sparse_config.line_terminator == DEFAULT_CSV_LINE_TERMINATOR
+
+    def test_line_terminator_custom(self) -> None:
+        custom_terminator = attr.evolve(
+            self.sparse_config, custom_line_terminator="‡\n"
+        )
+        assert (
+            custom_terminator.line_terminator
+            == custom_terminator.custom_line_terminator
+        )

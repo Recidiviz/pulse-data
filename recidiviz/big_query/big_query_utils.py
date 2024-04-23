@@ -38,7 +38,14 @@ from recidiviz.common.attr_utils import (
     is_list,
     is_str,
 )
+from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
+from recidiviz.common.constants.encoding import (
+    BIG_QUERY_FIXED_LENGTH_ENCODINGS,
+    BIG_QUERY_VARIABLE_LENGTH_ENCODINGS,
+    PYTHON_STANDARD_ENCODINGS_TO_BIG_QUERY_ENCODING,
+)
 from recidiviz.persistence.database.reserved_words import BIGQUERY_RESERVED_WORDS
+from recidiviz.utils.encoding import to_python_standard
 
 # Maximum value of an integer stored in BigQuery
 MAX_BQ_INT = (2**63) - 1
@@ -240,3 +247,40 @@ def build_views_to_update(
 
         views_to_builders[view] = view_builder
     return views_to_builders
+
+
+def is_big_query_valid_encoding(encoding: str) -> bool:
+    """Given a string encoding, returns whether or not this encoding is supported
+    by BigQuery. Also standardizes the encoding to account for variations in naming
+    equivalent encodings, like `latin-1` -> `iso8859-1`, `windows-1252` -> `cp1252`
+    so we dont need to care about equivalent aliases, only the "standards" that
+    python has pre-deteremined
+    """
+    return (
+        to_python_standard(encoding) in PYTHON_STANDARD_ENCODINGS_TO_BIG_QUERY_ENCODING
+    )
+
+
+def to_big_query_valid_encoding(encoding: str) -> str:
+    """Given a string encoding, returns the BigQuery equivalent."""
+    return PYTHON_STANDARD_ENCODINGS_TO_BIG_QUERY_ENCODING[to_python_standard(encoding)]
+
+
+def is_big_query_valid_line_terminator(line_terminator: str) -> bool:
+    """Boolean return for if the provided |line_terminator| will be accepted by BigQuery"""
+    return line_terminator == DEFAULT_CSV_LINE_TERMINATOR
+
+
+def is_big_query_valid_delimiter(delimiter: str, encoding: str) -> bool:
+    """Boolean return for if the provided |delimiter| will be accepted by BigQuery. If
+    it uses a variable length encoding (utf-8) must be a single byte (code points 1-127)
+    otherwise, it is a valid delimiter if it is a single string char.
+    """
+    big_query_encoding = to_big_query_valid_encoding(encoding)
+    if big_query_encoding in BIG_QUERY_VARIABLE_LENGTH_ENCODINGS:
+        return len(delimiter.encode(encoding)) == 1
+
+    if big_query_encoding in BIG_QUERY_FIXED_LENGTH_ENCODINGS:
+        return len(delimiter) == 1
+
+    raise ValueError(f"Unrecognized encoding: {big_query_encoding}")

@@ -23,20 +23,26 @@ from annotated_types import Gt
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.csv import (
+    DEFAULT_CSV_ENCODING,
+    DEFAULT_CSV_LINE_TERMINATOR,
+)
 
 DEFAULT_CHUNK_SIZE = 100 * 1024 * 1024  # TODO(#28653) configure a sensible default
 DEFAULT_PEEK_SIZE = 300
-DEFAULT_LINE_TERMINATOR = "\n"
-DEFAULT_ENCODING = "UTF-8"
 
 
 @attr.define
 class CsvChunkBoundary:
-    """Start (inclusive) and end (exclusive) indicies of row-safe chunk boundaries for
-    a csv file."""
+    """Information about a given csv chunk boundary, where:
+    - start_inclusive is the first byte of the row-safe csv chunk (0 indexed)
+    - end_exclusive is the last byte (exclusive) of the row-safe csv chunk
+    - chunk_num is the 0-indexed chunk sequence number
+    """
 
     start_inclusive: int
     end_exclusive: int
+    chunk_num: int
 
 
 class GcsfsCsvChunkBoundaryFinder:
@@ -68,7 +74,8 @@ class GcsfsCsvChunkBoundaryFinder:
 
         # byte-encoded newline terminator
         self._line_terminator = bytes(
-            line_terminator or DEFAULT_LINE_TERMINATOR, encoding or DEFAULT_ENCODING
+            line_terminator or DEFAULT_CSV_LINE_TERMINATOR,
+            encoding or DEFAULT_CSV_ENCODING,
         )
 
     def get_chunks_for_gcs_path(self, path: GcsfsFilePath) -> List[CsvChunkBoundary]:
@@ -98,7 +105,7 @@ class GcsfsCsvChunkBoundaryFinder:
         with self._fs.open(path, mode="rb", verifiable=False) as f:
 
             at_eof = False
-            chunks = []
+            chunks: List[CsvChunkBoundary] = []
             cursor = 0  # file pointer, our current place in the file (more or less)
 
             while not (at_eof := cursor == _size):
@@ -129,7 +136,11 @@ class GcsfsCsvChunkBoundaryFinder:
                     else cursor + lineterm_index + len(self._line_terminator)
                 )
                 chunks.append(
-                    CsvChunkBoundary(start_inclusive=chunk_start, end_exclusive=cursor)
+                    CsvChunkBoundary(
+                        start_inclusive=chunk_start,
+                        end_exclusive=cursor,
+                        chunk_num=len(chunks),
+                    )
                 )
 
             return chunks

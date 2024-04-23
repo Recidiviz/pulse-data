@@ -19,8 +19,8 @@ import unittest
 from typing import List
 
 from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import (
-    DEFAULT_ENCODING,
-    DEFAULT_LINE_TERMINATOR,
+    DEFAULT_CSV_ENCODING,
+    DEFAULT_CSV_LINE_TERMINATOR,
     CsvChunkBoundary,
     GcsfsCsvChunkBoundaryFinder,
 )
@@ -61,8 +61,8 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
         expected_chunks: List[str],
         chunk_size: int = 20,
         peek_size: int = 5,
-        encoding: str = DEFAULT_ENCODING,
-        line_terminator: str = DEFAULT_LINE_TERMINATOR,
+        encoding: str = DEFAULT_CSV_ENCODING,
+        line_terminator: str = DEFAULT_CSV_LINE_TERMINATOR,
     ) -> None:
         fs = FakeGCSFileSystem()
         input_gcs_path = GcsfsFilePath.from_absolute_path("gs://my-bucket/input.csv")
@@ -87,10 +87,10 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_simple_file(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=22),
-            CsvChunkBoundary(start_inclusive=22, end_exclusive=45),
-            CsvChunkBoundary(start_inclusive=45, end_exclusive=67),
-            CsvChunkBoundary(start_inclusive=67, end_exclusive=90),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=22, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=22, end_exclusive=45, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=45, end_exclusive=67, chunk_num=2),
+            CsvChunkBoundary(start_inclusive=67, end_exclusive=90, chunk_num=3),
         ]
         expected_chunks = [
             '"col_1","col2","col3"\n',
@@ -102,10 +102,10 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_simple_file_no_ending_newline(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=22),
-            CsvChunkBoundary(start_inclusive=22, end_exclusive=45),
-            CsvChunkBoundary(start_inclusive=45, end_exclusive=67),
-            CsvChunkBoundary(start_inclusive=67, end_exclusive=89),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=22, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=22, end_exclusive=45, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=45, end_exclusive=67, chunk_num=2),
+            CsvChunkBoundary(start_inclusive=67, end_exclusive=89, chunk_num=3),
         ]
         expected_chunks = [
             '"col_1","col2","col3"\n',
@@ -119,9 +119,9 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_windows_encoded_file(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=28),
-            CsvChunkBoundary(start_inclusive=28, end_exclusive=81),
-            CsvChunkBoundary(start_inclusive=81, end_exclusive=93),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=28, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=28, end_exclusive=81, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=81, end_exclusive=93, chunk_num=2),
         ]
         expected_chunks = [
             "col1,col2,col3\nhello,its,me\n",
@@ -134,9 +134,9 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_windows_file_custom_newline(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=28),
-            CsvChunkBoundary(start_inclusive=28, end_exclusive=81),
-            CsvChunkBoundary(start_inclusive=81, end_exclusive=93),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=28, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=28, end_exclusive=81, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=81, end_exclusive=93, chunk_num=2),
         ]
         expected_chunks = [
             "col1,col2,col3‡hello,its,me‡",
@@ -153,9 +153,9 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_windows_file_custom_newline_custom_delim(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=40),
-            CsvChunkBoundary(start_inclusive=40, end_exclusive=96),
-            CsvChunkBoundary(start_inclusive=96, end_exclusive=108),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=40, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=40, end_exclusive=96, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=96, end_exclusive=108, chunk_num=2),
         ]
         expected_chunks = [
             "col1†col2†col3‡hello,,,†its,,,,†me,,,,,‡",
@@ -172,9 +172,9 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_windows_file_multibyte_newline(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=42),
-            CsvChunkBoundary(start_inclusive=42, end_exclusive=100),
-            CsvChunkBoundary(start_inclusive=100, end_exclusive=114),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=42, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=42, end_exclusive=100, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=100, end_exclusive=114, chunk_num=2),
         ]
         expected_chunks = [
             "col1†col2†col3‡\nhello,,,†its,,,,†me,,,,,‡\n",
@@ -196,7 +196,7 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_simple_file_chunk_larger_than_file(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=90),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=90, chunk_num=0),
         ]
         expected_chunks = [
             '"col_1","col2","col3"\n'
@@ -224,12 +224,12 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_chunk_size_one(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=16),
-            CsvChunkBoundary(start_inclusive=16, end_exclusive=42),
-            CsvChunkBoundary(start_inclusive=42, end_exclusive=62),
-            CsvChunkBoundary(start_inclusive=62, end_exclusive=100),
-            CsvChunkBoundary(start_inclusive=100, end_exclusive=107),
-            CsvChunkBoundary(start_inclusive=107, end_exclusive=114),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=16, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=16, end_exclusive=42, chunk_num=1),
+            CsvChunkBoundary(start_inclusive=42, end_exclusive=62, chunk_num=2),
+            CsvChunkBoundary(start_inclusive=62, end_exclusive=100, chunk_num=3),
+            CsvChunkBoundary(start_inclusive=100, end_exclusive=107, chunk_num=4),
+            CsvChunkBoundary(start_inclusive=107, end_exclusive=114, chunk_num=5),
         ]
         expected_chunks = [
             "col1†col2†col3‡\n",
@@ -250,7 +250,7 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
 
     def test_simple_no_newlines_at_all_no_not_at_all(self) -> None:
         expected_boundaries = [
-            CsvChunkBoundary(start_inclusive=0, end_exclusive=90),
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=90, chunk_num=0),
         ]
         expected_chunks = [
             '"col_1","col2","col3"\n'

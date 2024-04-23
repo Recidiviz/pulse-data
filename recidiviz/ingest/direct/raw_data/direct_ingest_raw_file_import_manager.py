@@ -46,7 +46,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import google_api_retry_predicate
-from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
@@ -756,9 +756,12 @@ _RAW_TABLE_CONFIGS_BY_STATE = {}
 
 
 def get_region_raw_file_config(
-    region_code: str, region_module: ModuleType = regions
+    region_code: str, region_module: Optional[ModuleType] = None
 ) -> DirectIngestRegionRawFileConfig:
     region_code_lower = region_code.lower()
+    if not region_module:
+        region_module = direct_ingest_regions_module
+
     if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
         _RAW_TABLE_CONFIGS_BY_STATE[
             region_code_lower
