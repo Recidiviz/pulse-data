@@ -447,6 +447,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
         SELECT
             state_code,
             person_id,
+            ss.start_date as start_date,
             {years_and_months_template('ss.start_date')}
         FROM supervision_cases
         INNER JOIN supervision_super_sessions ss USING(person_id)
@@ -456,6 +457,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
         SELECT
             state_code,
             person_id,
+            current_employers[OFFSET(0)].start_date as start_date,
             {years_and_months_template("current_employers[OFFSET(0)].start_date")}
         FROM employment_info
         LEFT JOIN supervision_super_sessions ss
@@ -463,18 +465,27 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
         WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employers[OFFSET(0)].start_date, MONTH) > 0
         AND current_employers[OFFSET(0)].start_date > ss.start_date
     ),
+    -- For each milestone, the milestone_date represents the earliest date in which the individual was
+    -- eligible for a given milestone. For example, if an individual is eligible for the milestone BIRTHDAY_THIS_MONTH, 
+    -- and their birthday is on 04/23/2024, the milestone date would be 04/01/2024.
     milestones AS (
         SELECT
             state_code,
             person_id,
-            ARRAY_AGG(STRUCT(milestone_type AS type, milestone_text AS text) IGNORE NULLS ORDER BY milestone_priority ASC) AS milestones
+            ARRAY_AGG(STRUCT(milestone_type AS type, milestone_text AS text, milestone_date AS miltestone_date) IGNORE NULLS ORDER BY milestone_priority ASC) AS milestones
         FROM (
             -- birthdays
+            -- milestone_date is the first day of the month for the individual's birthday month
             SELECT *
             FROM (
                 SELECT
                     sc.state_code,
                     person_id,
+                    IF(
+                        EXTRACT(MONTH from sp.birthdate) = EXTRACT(MONTH from CURRENT_DATE('US/Eastern')) AND EXTRACT(DAY from sp.birthdate) <= EXTRACT(DAY from CURRENT_DATE('US/Eastern')),
+                        DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH),
+                        NULL
+                    ) AS milestone_date,
                     IF(
                         EXTRACT(MONTH from sp.birthdate) = EXTRACT(MONTH from CURRENT_DATE('US/Eastern')) AND EXTRACT(DAY from sp.birthdate) <= EXTRACT(DAY from CURRENT_DATE('US/Eastern')),
                         "Birthday this month (" || FORMAT_DATE('%B %d', sp.birthdate) ||")",
@@ -488,9 +499,12 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
             )
             UNION ALL
             -- months without violation
+            -- milestone_date is the earliest date in which the individual was eligible for X MONTHS_WITHOUT_VIOLATION
+            -- where X is the number of months since their last violation
             SELECT
                 state_code,
                 person_id,
+                DATE_ADD(violation_date, INTERVAL(DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH)) MONTH) AS milestone_date,
                 {milestone_text_template(" since last violation")}                
                 "MONTHS_WITHOUT_VIOLATION" as milestone_type,
                 2 AS milestone_priority
@@ -499,9 +513,12 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
             UNION ALL
             
             -- months on supervision
+            -- milestone_date is the earliest date in which the individual was eligible for X MONTHS_ON_SUPERVISION
+            -- where X is the number of month they have been on supervision
             SELECT
                 state_code,
                 person_id,
+                DATE_ADD(start_date, INTERVAL (DATE_DIFF(CURRENT_DATE('US/Eastern'), start_date, MONTH)) MONTH) AS milestone_date,
                 {milestone_text_template(" on supervision")}  
                 "MONTHS_ON_SUPERVISION" as milestone_type,
                 3 AS milestone_priority
@@ -509,79 +526,95 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
             
             UNION ALL
             -- months with the same employer
+            -- milestone_date is the earliest date in which the individual was eligible for X MONTHS_WITH_CURRENT_EMPLOYER
+            -- where X is the number of month they have been with the same employer
 
                 SELECT
                     state_code,
                     person_id,
+                    DATE_ADD(start_date, INTERVAL (DATE_DIFF(CURRENT_DATE('US/Eastern'), start_date, MONTH)) MONTH) AS milestone_date,
                     {milestone_text_template(" with the same employer")}
                     "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
                     4 AS milestone_priority
                 FROM time_with_employer
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for NO_VIOLATION_WITHIN_6_MONTHS
                 SELECT
                     state_code,
                     person_id,
+                    kudos.start_date as milestone_date,
                     "6+ months violation-free" as milestone_text,
                     "NO_VIOLATION_WITHIN_6_MONTHS" as milestone_type,
                     10 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_6_to_8_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_6_to_8_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for NO_VIOLATION_WITHIN_12_MONTHS
                 SELECT
                     state_code,
                     person_id,
+                    kudos.start_date as milestone_date,
+
                     "1+ year violation-free" as milestone_text,
                     "NO_VIOLATION_WITHIN_12_MONTHS" as milestone_type,
                     11 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_12_to_14_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_12_to_14_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for HOUSING_TYPE_IS_NOT_TRANSIENT
                 SELECT
                     state_code,
                     person_id,
+                    kudos.start_date as milestone_date,
                     "Found housing" as milestone_text,
                     "HOUSING_TYPE_IS_NOT_TRANSIENT" as milestone_type,
                     21 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_0_to_2_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_0_to_2_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for SUSTAINABLE_HOUSING_6_MONTHS
                 SELECT
                     state_code,
                     person_id,
+                    kudos.start_date as milestone_date,
                     "Sustainable housing for 6+ months" as milestone_text,
                     "SUSTAINABLE_HOUSING_6_MONTHS" as milestone_type,
                     22 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_6_to_8_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_6_to_8_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for SUSTAINABLE_HOUSING_12_MONTHS
                 SELECT
                     state_code,
                     person_id,
+                    kudos.start_date as milestone_date,
                     "Sustainable housing for 1+ year" as milestone_text,
                     "SUSTAINABLE_HOUSING_12_MONTHS" as milestone_type,
                     23 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_12_to_14_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_12_to_14_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for GAINED_EMPLOYMENT
                 SELECT
                 state_code,
                 person_id,
+                kudos.start_date as milestone_date,
                 "Gained employment" || (
                     -- When there is only one employer during the period, surface that employer name in the milestone
                     -- text by concatenating the employer name. Otherwise, ignore employer name.
@@ -595,15 +628,17 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 ) as milestone_text,
                 "GAINED_EMPLOYMENT" as milestone_type,
                 31 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_0_to_2_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_0_to_2_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for EMPLOYED_6_MONTHS
                 SELECT
                 state_code,
                 person_id,
+                kudos.start_date as milestone_date,
                 "Employed for 6+ months" || (
                     -- When there is only one employer during the period, surface that employer name in the milestone
                     -- text by concatenating the employer name. Otherwise, ignore employer name.
@@ -617,15 +652,17 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 ) as milestone_text,
                 "EMPLOYED_6_MONTHS" as milestone_type,
                 32 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_6_to_8_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_6_to_8_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for EMPLOYED_12_MONTHS
                 SELECT
                 state_code,
                 person_id,
+                kudos.start_date as milestone_date,
                 "Employed for 1 year" || (
                     -- When there is only one employer during the period, surface that employer name in the milestone
                     -- text by concatenating the employer name. Otherwise, ignore employer name.
@@ -639,15 +676,17 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 ) as milestone_text,
                 "EMPLOYED_12_MONTHS" as milestone_type,
                 33 AS milestone_priority
-                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_12_to_14_months_materialized`
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_employment_12_to_14_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
             
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for PARTICIPATED_IN_PROGRAMMING_FOR_6_TO_8_MONTHS
                 SELECT
                 state_code,
                 person_id,
+                kudos.start_date as milestone_date,
                 CONCAT( 
                     -- Generates a string stating how many programs the client has been
                     -- participating in with slightly different phrasing for folks who
@@ -668,15 +707,17 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 as milestone_text,
                 "PARTICIPATED_IN_PROGRAMMING_FOR_6_TO_8_MONTHS" as milestone_type,
                 40 as milestone_priority,
-                from `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_program_participation_6_to_8_months_materialized`
+                from `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_program_participation_6_to_8_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
             UNION ALL
+                -- milestone_date is the earliest date in which the individual was eligible for PARTICIPATED_IN_PROGRAMMING_FOR_12_TO_14_MONTHS
                 SELECT
                 state_code,
                 person_id,
+                kudos.start_date as milestone_date,
                 CONCAT( 
                     -- Generates a string stating how many programs the client has been
                     -- participating in with slightly different phrasing for folks who
@@ -697,7 +738,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 as milestone_text,
                 "PARTICIPATED_IN_PROGRAMMING_FOR_12_TO_14_MONTHS" as milestone_type,
                 41 as milestone_priority,
-                from `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_program_participation_12_to_14_months_materialized`
+                from `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_program_participation_12_to_14_months_materialized` kudos
                 WHERE
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
