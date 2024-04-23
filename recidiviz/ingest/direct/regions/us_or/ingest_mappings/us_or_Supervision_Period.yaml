@@ -123,6 +123,7 @@ output:
                   - PARO # Parole - Parole Order Required
                   - INAC # Off Sentenced to out-of-State Facility
                   - PSRB # Psychiatric Review Board-Order Req.
+                  - OC # Out Count
                 StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                   - JDET # (only 14 instances)
           termination_reason:
@@ -216,6 +217,7 @@ output:
                   - RSNT # Resentenced (only 1 instance)
                   - PSRB # Psychiatric Review Board-Order Req.
                   - RVCM # TODO(#28038): Find correct mapping for this value
+                  - OC # Out Count
                 StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
                   - AUTO # unknown
                   - ADMB # unknown - old code (only 39 instances)
