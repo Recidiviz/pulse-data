@@ -127,3 +127,24 @@ class TestBigQueryAddress(unittest.TestCase):
         self.assertEqual(
             address_1, ProjectSpecificBigQueryAddress.from_list_item(list_item)
         )
+
+    def test_big_query_address_from_str(self) -> None:
+        self.assertEqual(
+            BigQueryAddress(dataset_id="my_dataset", table_id="my_table"),
+            BigQueryAddress.from_str("my_dataset.my_table"),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError, "Input must be in the format 'dataset.table'."
+        ):
+            BigQueryAddress.from_str("my_dataset")
+
+        with self.assertRaisesRegex(
+            ValueError, "Input must be in the format 'dataset.table'."
+        ):
+            BigQueryAddress.from_str("my_dataset.my_table.my_table_2")
+
+        with self.assertRaisesRegex(
+            ValueError, "Input must be in the format 'dataset.table'."
+        ):
+            BigQueryAddress.from_str(".my_table")
