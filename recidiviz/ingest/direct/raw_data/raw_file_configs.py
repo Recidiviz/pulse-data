@@ -26,6 +26,7 @@ from more_itertools import one
 
 from recidiviz.cloud_storage.gcsfs_csv_reader import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
@@ -517,6 +518,13 @@ class DirectIngestRawFileConfig:
         return not self.documented_columns or (
             len(self.primary_key_cols) == 0 and not self.no_valid_primary_keys
         )
+
+    @property
+    def line_terminator(self) -> str:
+        if self.custom_line_terminator:
+            return self.custom_line_terminator
+
+        return DEFAULT_CSV_LINE_TERMINATOR
 
     def caps_normalized_col(self, col_name: str) -> Optional[str]:
         """If the provided column name has a case-insensitive match in the columns list,

@@ -39,7 +39,11 @@ class ReadOnlyCsvNormalizingStream:
     """
 
     def __init__(
-        self, fp: IO, delimiter: str, line_terminator: str, quoting: int
+        self,
+        fp: IO,
+        delimiter: str,
+        line_terminator: str,
+        quoting: int,
     ) -> None:
         if quoting != csv.QUOTE_NONE:
             raise ValueError("No support for files with quoted values.")

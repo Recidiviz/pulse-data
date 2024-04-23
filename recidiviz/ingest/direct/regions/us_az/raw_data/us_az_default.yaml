@@ -1,4 +1,5 @@
 default_encoding: US-ASCII
+# TODO(#29058): Updated to UTF-8 since BQ doesn't support US-ASCII and UTF-8 is a superset of US-ASCII
 default_separator: ","
 default_ignore_quotes: False
 default_always_historical_export: False

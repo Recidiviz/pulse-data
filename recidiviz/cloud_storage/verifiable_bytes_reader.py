@@ -52,17 +52,20 @@ class VerifiableBytesReader(io.BufferedIOBase, BinaryIO):
         self._crc32c.update(chunk)
         return chunk
 
-    def verify_crc32c(self, expected_checksum: str) -> None:
-        if not self._eof:
-            # We can't verify the checksum if we don't download the whole file. That is
-            # fine so we can just return.
-            return
+    def get_crc32c(self) -> str:
         # GCS provides Base64 encoded string representation of the big-endian ordered
         # checksum. We match that here:
         # - Checksum.digest() ensures it is big-endian ordered
         # - b64encode returns base64 encoded bytes
         # - str.decode() on those bytes gives us the string
-        actual_checksum = base64.b64encode(self._crc32c.digest()).decode("utf-8")
+        return base64.b64encode(self._crc32c.digest()).decode("utf-8")
+
+    def verify_crc32c(self, expected_checksum: str) -> None:
+        if not self._eof:
+            # We can't verify the checksum if we don't download the whole file. That is
+            # fine so we can just return.
+            return
+        actual_checksum = self.get_crc32c()
         if actual_checksum != expected_checksum:
             raise CorruptDownloadError(
                 f"Downloaded file {self._name} had checksum {actual_checksum}, expected {expected_checksum}"
