@@ -287,7 +287,6 @@ probation_term_cte AS (
   WHERE state_code = 'US_ME'
       AND supervision_type = 'PROBATION'
       AND effective_date > CURRENT_DATE('US/Eastern')
-      )
       AND status = 'PENDING'
   GROUP BY 1,2
 ),
