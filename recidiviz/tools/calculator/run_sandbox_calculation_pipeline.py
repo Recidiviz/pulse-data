@@ -22,7 +22,6 @@ See http://go/run-dataflow/ for more information on running Dataflow pipelines.
 usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           --pipeline PIPELINE_NAME \
           --type PIPELINE_TYPE \
-          --job_name JOB_NAME \
           --project PROJECT \
           --state_code STATE_CODE \
           --output_sandbox_prefix OUTPUT_SANDBOX_PREFIX \
@@ -36,7 +35,6 @@ Examples:
         --pipeline recidivism_metrics \
         --type metrics \
         --project recidiviz-staging \
-        --job_name recidivism-metrics \
         --output_sandbox_prefix username \
         --input_dataset_overrides_json '{"normalized_state": "my_sandbox_normalized_state"}'
         --state_code US_XX \
@@ -48,7 +46,6 @@ Examples:
         --pipeline comprehensive_normalization \
         --type normalization \
         --project recidiviz-staging \
-        --job_name us-xx-normalization \
         --output_sandbox_prefix username \
         --input_dataset_overrides_json '{"us_xx_state_primary": "my_sandbox_us_xx_state_primary"}' \
         --state_code US_XX
@@ -57,7 +54,6 @@ Examples:
         --pipeline us_ix_case_note_extracted_entities_supplemental \
         --type supplemental \
         --project recidiviz-staging \
-        --job_name us-ix-supplemental \
         --output_sandbox_prefix username \
         --state_code US_IX
 

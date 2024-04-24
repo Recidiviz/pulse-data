@@ -37,16 +37,15 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         pipeline_parameters = MetricsPipelineParameters(
             project="recidiviz-456",
             state_code="US_OZ",
-            pipeline="test_pipeline_name",
+            pipeline="supervision_metrics",
             region="us-west1",
-            job_name="test-job",
             metric_types="TEST_METRIC",
             calculation_month_count=36,
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
+            "pipeline": "supervision_metrics",
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
         }
@@ -54,7 +53,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
+        self.assertEqual(pipeline_parameters.job_name, "us-oz-supervision-metrics-36")
 
         self.assertEqual(NORMALIZED_STATE_DATASET, pipeline_parameters.normalized_input)
         self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
@@ -64,15 +63,14 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         pipeline_parameters = MetricsPipelineParameters(
             project="recidiviz-456",
             state_code="US_OZ",
-            pipeline="test_pipeline_name",
+            pipeline="population_span_metrics",
             region="us-west1",
-            job_name="test-job",
             metric_types="TEST_METRIC",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
+            "pipeline": "population_span_metrics",
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "-1",
         }
@@ -80,7 +78,9 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
+        self.assertEqual(
+            pipeline_parameters.job_name, "full-us-oz-population-span-metrics"
+        )
 
         self.assertEqual(NORMALIZED_STATE_DATASET, pipeline_parameters.normalized_input)
         self.assertEqual(DATAFLOW_METRICS_DATASET, pipeline_parameters.output)
@@ -95,7 +95,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
                 state_code="US_OZ",
                 pipeline="test_pipeline_name",
                 region="us-west1",
-                job_name="test-job",
                 metric_types="TEST_METRIC",
                 calculation_month_count=36,
                 # Raises because this debug value is set
@@ -109,9 +108,8 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         pipeline_parameters = MetricsPipelineParameters(
             project="recidiviz-456",
             state_code="US_OZ",
-            pipeline="test_pipeline_name",
+            pipeline="incarceration_metrics",
             region="us-west1",
-            job_name="job-test",
             metric_types="TEST_METRIC",
             calculation_month_count=36,
             person_filter_ids="123 12323 324",
@@ -121,7 +119,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
 
         expected_parameters = {
             "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
+            "pipeline": "incarceration_metrics",
             "metric_types": "TEST_METRIC",
             "person_filter_ids": "123 12323 324",
             "calculation_month_count": "36",
@@ -130,7 +128,10 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(pipeline_parameters.job_name, "my-prefix-job-test")
+        self.assertEqual(
+            pipeline_parameters.job_name,
+            "my-prefix-us-oz-incarceration-metrics-36-test",
+        )
 
         self.assertEqual(
             "some_completely_different_dataset", pipeline_parameters.normalized_input
@@ -153,7 +154,6 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             state_code="US_XX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="job-test",
             metric_types="TEST_METRIC",
             calculation_month_count=36,
             person_filter_ids="123 12323 324",

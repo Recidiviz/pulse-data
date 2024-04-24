@@ -91,6 +91,11 @@ class IngestPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "ingest"
 
+    def _get_base_job_name(self) -> str:
+        return self._to_job_name_friendly(
+            f"{self.state_code}-ingest-{self.ingest_instance}"
+        )
+
     @classmethod
     def custom_sandbox_indicator_parameters(cls) -> Set[str]:
         return {

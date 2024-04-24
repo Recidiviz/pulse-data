@@ -103,7 +103,9 @@ from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_TABLES_TO_METRIC_TYPES,
     PIPELINE_CONFIG_YAML_PATH,
 )
+from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
@@ -209,9 +211,13 @@ def compare_dataflow_output_to_sandbox(
         "metric_pipelines"
     )
 
-    for pipeline in pipelines:
-        if pipeline.pop("job_name", str) == job_name_to_compare:
-            pipeline_metric_types = pipeline.peek_optional("metric_types", str)
+    for pipeline_args_dict in pipelines:
+        pipeline_args = MetricsPipelineParameters(
+            project=metadata.project_id(),
+            **pipeline_args_dict.get(),  # type: ignore
+        )
+        if pipeline_args.job_name == job_name_to_compare:
+            pipeline_metric_types = pipeline_args.metric_types
 
             if not pipeline_metric_types:
                 raise ValueError(

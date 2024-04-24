@@ -11,57 +11,44 @@
 normalization_pipelines:
   # Comprehensive normalization pipelines
   - pipeline: comprehensive_normalization
-    job_name: us-ar-normalization
     state_code: US_AR
     region: us-east1
     staging_only: True
   - pipeline: comprehensive_normalization
-    job_name: us-ca-normalization
     state_code: US_CA
     region: us-east1
   - pipeline: comprehensive_normalization
-    job_name: us-co-normalization
     state_code: US_CO
     region: us-west3
   - pipeline: comprehensive_normalization
-    job_name: us-ix-normalization
     state_code: US_IX
     region: us-west3
   - pipeline: comprehensive_normalization
-    job_name: us-me-normalization
     state_code: US_ME
     region: us-east1
   - pipeline: comprehensive_normalization
-    job_name: us-mo-normalization
     state_code: US_MO
     region: us-central1
   - pipeline: comprehensive_normalization
-    job_name: us-nd-normalization
     state_code: US_ND
     region: us-west1
   - pipeline: comprehensive_normalization
-    job_name: us-or-normalization
     state_code: US_OR
     region: us-west3
   - pipeline: comprehensive_normalization
-    job_name: us-oz-normalization
     state_code: US_OZ
     region: us-west3
     staging_only: True
   - pipeline: comprehensive_normalization
-    job_name: us-pa-normalization
     state_code: US_PA
     region: us-west3
   - pipeline: comprehensive_normalization
-    job_name: us-tn-normalization
     state_code: US_TN
     region: us-east1
   - pipeline: comprehensive_normalization
-    job_name: us-mi-normalization
     state_code: US_MI
     region: us-central1
   - pipeline: comprehensive_normalization
-    job_name: us-az-normalization
     state_code: US_AZ
     region: us-west1
     staging_only: True
@@ -69,19 +56,16 @@ normalization_pipelines:
 metric_pipelines:
   # Full US_AR calculations with no time limit
   - pipeline: supervision_metrics
-    job_name: full-us-ar-supervision-metrics
     state_code: US_AR
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east1
     staging_only: True
   - pipeline: population_span_metrics
-    job_name: full-us-ar-population-span-metrics
     state_code: US_AR
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
     staging_only: True
   - pipeline: incarceration_metrics
-    job_name: full-us-ar-incarceration-metrics
     state_code: US_AR
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
@@ -89,200 +73,164 @@ metric_pipelines:
 
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
-    job_name: full-us-nd-recidivism-metrics
     state_code: US_ND
     metric_types: REINCARCERATION_RATE
     region: us-west1
   - pipeline: population_span_metrics
-    job_name: full-us-nd-population-span-metrics
     state_code: US_ND
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
   - pipeline: supervision_metrics
-    job_name: full-us-nd-supervision-metrics
     state_code: US_ND
     metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
     region: us-central1
   - pipeline: incarceration_metrics
-    job_name: full-us-nd-incarceration-metrics
     state_code: US_ND
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
   - pipeline: program_metrics
-    job_name: full-us-nd-program-metrics
     state_code: US_ND
     metric_types: PROGRAM_PARTICIPATION
     region: us-west1
   - pipeline: violation_metrics
-    job_name: full-us-nd-violation-metrics
     state_code: US_ND
     metric_types: VIOLATION
     region: us-west1
 
   # Full US_CO calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-co-population-span-metrics
     state_code: US_CO
     metric_types: INCARCERATION_POPULATION_SPAN
     region: us-east1
   - pipeline: incarceration_metrics
-    job_name: full-us-co-incarceration-metrics
     state_code: US_CO
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
 
   # Full US_MO calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-mo-population-span-metrics
     state_code: US_MO
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
   - pipeline: supervision_metrics
-    job_name: full-us-mo-supervision-metrics
     state_code: US_MO
     metric_types: SUPERVISION_TERMINATION
     region: us-west1
   - pipeline: incarceration_metrics
-    job_name: full-us-mo-incarceration-metrics
     state_code: US_MO
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
   - pipeline: violation_metrics
-    job_name: full-us-mo-violation-metrics
     state_code: US_MO
     metric_types: VIOLATION
     region: us-central1
 
   # Full US_IX calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-ix-population-span-metrics
     state_code: US_IX
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
   - pipeline: supervision_metrics
-    job_name: full-us-ix-supervision-metrics
     state_code: US_IX
     metric_types: SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START
     region: us-central1
   - pipeline: incarceration_metrics
-    job_name: full-us-ix-incarceration-metrics
     state_code: US_IX
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-west1
   - pipeline: violation_metrics
-    job_name: full-us-ix-violation-metrics
     state_code: US_IX
     metric_types: VIOLATION
     region: us-west3
   - pipeline: program_metrics
-    job_name: full-us-ix-program-metrics
     state_code: US_IX
     metric_types: PROGRAM_PARTICIPATION
     region: us-west3
 
   # Full US_PA calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-pa-population-span-metrics
     state_code: US_PA
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west1
   - pipeline: supervision_metrics
-    job_name: full-us-pa-supervision-metrics
     state_code: US_PA
     metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_START
     region: us-west1
   - pipeline: incarceration_metrics
-    job_name: full-us-pa-incarceration-metrics
     state_code: US_PA
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
   - pipeline: violation_metrics
-    job_name: full-us-pa-violation-metrics
     state_code: US_PA
     metric_types: VIOLATION
     region: us-east1
 
   # Full US_TN calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-tn-population-span-metrics
     state_code: US_TN
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-central1
   - pipeline: supervision_metrics
-    job_name: full-us-tn-supervision-metrics
     state_code: US_TN
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west1
   - pipeline: incarceration_metrics
-    job_name: full-us-tn-incarceration-metrics
     state_code: US_TN
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
   - pipeline: violation_metrics
-    job_name: full-us-tn-violation-metrics
     state_code: US_TN
     metric_types: VIOLATION
     region: us-east1
 
   # Full US_ME calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-me-population-span-metrics
     state_code: US_ME
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
   - pipeline: incarceration_metrics
-    job_name: full-us-me-incarceration-metrics
     state_code: US_ME
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-west3
   - pipeline: supervision_metrics
-    job_name: full-us-me-supervision-metrics
     state_code: US_ME
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west3
   - pipeline: violation_metrics
-    job_name: full-us-me-violation-metrics
     state_code: US_ME
     metric_types: VIOLATION
     region: us-west3
 
   # Full US_MI calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-mi-population-span-metrics
     state_code: US_MI
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west1
   - pipeline: incarceration_metrics
-    job_name: full-us-mi-incarceration-metrics
     state_code: US_MI
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
   - pipeline: supervision_metrics
-    job_name: full-us-mi-supervision-metrics
     state_code: US_MI
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west3
   - pipeline: violation_metrics
-    job_name: full-us-mi-violation-metrics
     state_code: US_MI
     metric_types: VIOLATION
     region: us-west3
 
   # Full US_CA calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-ca-population-span-metrics
     state_code: US_CA
     metric_types: SUPERVISION_POPULATION_SPAN
     region: us-east1
   - pipeline: supervision_metrics
-    job_name: full-us-ca-supervision-metrics
     state_code: US_CA
     metric_types: SUPERVISION_START
     region: us-east1
 
   # Daily US_MO calculations -- Lantern v1
   - pipeline: supervision_metrics
-    job_name: us-mo-supervision-metrics-36
     state_code: US_MO
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION
@@ -290,7 +238,6 @@ metric_pipelines:
 
   # Daily US_PA calculations -- Lantern v1
   - pipeline: supervision_metrics
-    job_name: us-pa-supervision-metrics-36
     state_code: US_PA
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
@@ -298,24 +245,20 @@ metric_pipelines:
 
   # Full US_OR calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-or-population-span-metrics
     state_code: US_OR
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west3
   - pipeline: incarceration_metrics
-    job_name: full-us-or-incarceration-metrics
     state_code: US_OR
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-west3
   - pipeline: supervision_metrics
-    job_name: full-us-or-supervision-metrics
     state_code: US_OR
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west3
 
   # Full US_OZ calculations with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-oz-population-span-metrics
     state_code: US_OZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west3
@@ -323,7 +266,6 @@ metric_pipelines:
 
   # Full US_AZ population spans with no time limit
   - pipeline: population_span_metrics
-    job_name: full-us-az-population-span-metrics
     state_code: US_AZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west1
@@ -333,7 +275,6 @@ supplemental_dataset_pipelines:
   # TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the
   # new ATLAS pipeline to run for US_ID
   - pipeline: us_ix_case_note_extracted_entities_supplemental
-    job_name: us-ix-case-note-extracted-entities
     state_code: US_IX
     region: us-central1
     # TODO(#18319): Remove this once we group by entity.

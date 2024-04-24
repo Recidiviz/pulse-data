@@ -32,6 +32,8 @@ from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
+from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
@@ -77,13 +79,17 @@ class TestConfiguredPipelines(unittest.TestCase):
         metric_pipelines = pipeline_templates_yaml.pop_dicts("metric_pipelines")
         production_pipelines_by_state: Dict[StateCode, List[str]] = defaultdict(list)
         for pipeline in metric_pipelines:
-            state_code = StateCode(pipeline.peek("state_code", str))
+            pipeline_params = MetricsPipelineParameters(
+                project=GCP_PROJECT_PRODUCTION,
+                **pipeline.get(),  # type: ignore
+            )
+            state_code = StateCode(pipeline_params.state_code)
             if (
                 state_code not in states_launched_in_production
-                and not pipeline.peek_optional("staging_only", bool)
+                and not pipeline_params.staging_only
             ):
                 production_pipelines_by_state[state_code].append(
-                    pipeline.peek("job_name", str)
+                    pipeline_params.job_name
                 )
 
         self.assertDictEqual(

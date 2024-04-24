@@ -66,7 +66,6 @@ from recidiviz.pipelines.normalization.pipeline_parameters import (
 )
 from recidiviz.pipelines.pipeline_parameters import (
     PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME,
-    PIPELINE_JOB_NAME_ARG_NAME,
     PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME,
     PipelineParameters,
     PipelineParametersT,
@@ -247,8 +246,11 @@ def build_dataflow_pipeline_task_group(
     """Builds a task Group that handles creating the flex template operator for a given
     pipeline parameters.
     """
-    job_name = pipeline_config.peek("job_name", str)
-    with TaskGroup(group_id=job_name) as dataflow_pipeline_group:
+    params_no_overrides: PipelineParameters = parameter_cls(
+        project=get_project_id(),
+        **pipeline_config.get(),  # type: ignore
+    )
+    with TaskGroup(group_id=params_no_overrides.job_name) as dataflow_pipeline_group:
 
         @task(task_id="create_flex_template")
         def create_flex_template(
@@ -270,17 +272,12 @@ def build_dataflow_pipeline_task_group(
             config = pipeline_config.get()
             if parameter_cls is IngestPipelineParameters:
                 config["ingest_instance"] = ingest_instance
-            updated_job_name = job_name
-            if ingest_instance == "SECONDARY":
-                updated_job_name = f"{updated_job_name}-{ingest_instance.lower()}"
 
             if sandbox_prefix:
                 config[PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME] = sandbox_prefix
                 # TODO(#27373): Actually hydrate this based on which pipelines have
                 #  run earlier in the DAG.
                 config[PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME] = None
-
-            config[PIPELINE_JOB_NAME_ARG_NAME] = updated_job_name
 
             parameters: PipelineParameters = parameter_cls(
                 project=get_project_id(),

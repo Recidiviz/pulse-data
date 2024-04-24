@@ -38,20 +38,21 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
         pipeline_parameters = SupplementalPipelineParameters(
             project="recidiviz-456",
             state_code="US_OZ",
-            pipeline="test_pipeline_name",
+            pipeline="us_oz_case_note_extracted_entities_supplemental",
             region="us-west1",
-            job_name="test-job",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
+            "pipeline": "us_oz_case_note_extracted_entities_supplemental",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
+        self.assertEqual(
+            pipeline_parameters.job_name, "us-oz-case-note-extracted-entities"
+        )
 
         self.assertEqual(SUPPLEMENTAL_DATA_DATASET, pipeline_parameters.output)
         self.assertFalse(pipeline_parameters.is_sandbox_pipeline)
@@ -60,20 +61,22 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
         pipeline_parameters = SupplementalPipelineParameters(
             project="recidiviz-456",
             state_code="US_OZ",
-            pipeline="test_pipeline_name",
+            pipeline="us_oz_case_note_extracted_entities_supplemental",
             region="us-west1",
-            job_name="test-job",
             output_sandbox_prefix="my_prefix",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
-            "pipeline": "test_pipeline_name",
+            "pipeline": "us_oz_case_note_extracted_entities_supplemental",
             "output_sandbox_prefix": "my_prefix",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
+        self.assertEqual(
+            pipeline_parameters.job_name,
+            "my-prefix-us-oz-case-note-extracted-entities-test",
+        )
         self.assertEqual("my_prefix_supplemental_data", pipeline_parameters.output)
         self.assertTrue(pipeline_parameters.is_sandbox_pipeline)
 
@@ -90,7 +93,6 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             state_code="US_IX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             output_sandbox_prefix="my_prefix",
             input_dataset_overrides_json=input_overrides_json,
         )
@@ -115,7 +117,6 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             state_code="US_IX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             output_sandbox_prefix="my_prefix",
             input_dataset_overrides_json=input_overrides_json,
         )

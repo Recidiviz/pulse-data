@@ -50,6 +50,9 @@ class NormalizationPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "normalization"
 
+    def _get_base_job_name(self) -> str:
+        return self._to_job_name_friendly(f"{self.state_code}-normalization")
+
     @classmethod
     def custom_sandbox_indicator_parameters(cls) -> Set[str]:
         return {"person_filter_ids"}

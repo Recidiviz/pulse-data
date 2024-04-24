@@ -42,7 +42,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
         )
 
@@ -57,7 +56,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
+        self.assertEqual(pipeline_parameters.job_name, "us-oz-ingest-primary")
         self.assertEqual(
             pipeline_parameters.service_account_email,
             "direct-ingest-state-us-oz-df@recidiviz-456.iam.gserviceaccount.com",
@@ -77,7 +76,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             ingest_instance=DirectIngestInstance.SECONDARY.value,
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
         )
@@ -93,7 +91,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
+        self.assertEqual(pipeline_parameters.job_name, "us-oz-ingest-secondary")
         self.assertEqual(
             pipeline_parameters.service_account_email,
             "direct-ingest-state-us-oz-df@recidiviz-456.iam.gserviceaccount.com",
@@ -115,7 +113,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             service_account_email="some-test-account@recidiviz-staging.iam.gserviceaccount.com",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
@@ -131,7 +128,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             service_account_email="12345-compute@developer.gserviceaccount.com",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
@@ -151,7 +147,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 state_code="US_OZ",
                 pipeline="test_pipeline_name",
                 region="us-west1",
-                job_name="test-job",
                 service_account_email="some-test-account@somerandomwebsite.com",
                 raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             )
@@ -165,7 +160,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
@@ -182,7 +176,9 @@ class TestIngestPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
+        self.assertEqual(
+            pipeline_parameters.job_name, "my-prefix-us-oz-ingest-primary-test"
+        )
 
         self.assertEqual(
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
@@ -203,7 +199,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             ingest_instance="SECONDARY",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
@@ -221,7 +216,9 @@ class TestIngestPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
+        self.assertEqual(
+            pipeline_parameters.job_name, "my-prefix-us-oz-ingest-secondary-test"
+        )
 
         self.assertEqual(
             "some_other_raw_data_table", pipeline_parameters.raw_data_table_input
@@ -239,7 +236,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             output_sandbox_prefix="my_prefix",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             ingest_view_results_only="True",
@@ -275,7 +271,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 state_code="US_OZ",
                 pipeline="test_pipeline_name",
                 region="us-west1",
-                job_name="test-job",
                 raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
                 ingest_view_results_only="True",
             )
@@ -286,7 +281,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             output_sandbox_prefix="my_prefix",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             ingest_views_to_run="view1 view2",
@@ -323,7 +317,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 state_code="US_OZ",
                 pipeline="test_pipeline_name",
                 region="us-west1",
-                job_name="test-job",
                 raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
                 ingest_views_to_run="view1 view2",
             )
@@ -341,7 +334,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_XX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
@@ -365,7 +357,6 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_XX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
