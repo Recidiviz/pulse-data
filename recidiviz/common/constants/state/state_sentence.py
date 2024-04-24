@@ -167,3 +167,46 @@ _STATE_SENTENCE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateSentenceType.INTERNAL_UNKNOWN: "Used when the type of sentence is unknown to us, Recidiviz.",
     StateSentenceType.EXTERNAL_UNKNOWN: "Used when the type of sentence is unknown to the state.",
 }
+
+
+@unique
+class StateSentencingAuthority(StateEntityEnum):
+    """
+    This Enum indicates what level/locale imposed its parent sentence.
+    We allow sentence to be imposed by a county court, state court,
+    county or state court of a different state, or a federal court.
+
+    Note that the sentencing authority does not need to be the same
+    institution responsible for other aspects of a sentence, just the imposition.
+
+
+    Example: A value of COUNTY means a county court imposed this sentence.
+    This enum is only optional for parsing. We expect it to exist once entities
+    are merged up.
+    """
+
+    COUNTY = state_enum_strings.state_sentencing_authority_county
+    STATE = state_enum_strings.state_sentencing_authority_state
+    OTHER_STATE = state_enum_strings.state_sentencing_authority_other_state
+    FEDERAL = state_enum_strings.state_sentencing_authority_federal
+    PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return (
+            "The authority imposing a sentence. "
+            "For example, a state or federal court."
+        )
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_SENTENCING_AUTHORITY_VALUE_DESCRIPTIONS
+
+
+_STATE_SENTENCING_AUTHORITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSentencingAuthority.COUNTY: "A county court within the state.",
+    StateSentencingAuthority.STATE: "A state court within the state.",
+    StateSentencingAuthority.OTHER_STATE: "A state or county court of a different state.",
+    StateSentencingAuthority.FEDERAL: "A federal court.",
+}

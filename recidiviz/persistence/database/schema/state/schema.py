@@ -123,6 +123,16 @@ state_sentence_type = Enum(
     name="state_sentence_type",
 )
 
+state_sentencing_authority = Enum(
+    state_enum_strings.state_sentencing_authority_county,
+    state_enum_strings.state_sentencing_authority_state,
+    state_enum_strings.state_sentencing_authority_other_state,
+    state_enum_strings.state_sentencing_authority_federal,
+    state_enum_strings.present_without_info,
+    state_enum_strings.internal_unknown,
+    name="state_sentencing_authority",
+)
+
 state_assessment_class = Enum(
     state_enum_strings.state_assessment_class_risk,
     state_enum_strings.state_assessment_class_sex_offense,
@@ -3769,6 +3779,15 @@ class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
         state_sentence_type,
         nullable=False,
         comment="The type of sentence (INCARCERATION, PROBATION, etc.)",
+    )
+
+    # The class of authority imposing this sentence: COUNTY, STATE, etc.
+    # A value of COUNTY means a county court imposed this sentence.
+    # Only optional for parsing. We expect this to exist once entities are merged up.
+    sentencing_authority = Column(
+        state_sentencing_authority,
+        nullable=False,
+        comment="The class of authority imposing the sentence (COUNTY, STATE, etc.)",
     )
 
     sentence_type_raw_text = Column(

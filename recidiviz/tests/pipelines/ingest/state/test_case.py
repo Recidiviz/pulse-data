@@ -448,6 +448,8 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                         "Output dictionary does not have "
                         f"the expected keys. Expected: [{expected_column_names}], "
                         f"found: [{list(output_dict.keys())}]."
+                        # TODO(#24080) Transition to using entities.py to get the expected column names
+                        "Are BOTH entities.py and schema.py up to date?"
                     )
 
             if is_association_table(output_table):
