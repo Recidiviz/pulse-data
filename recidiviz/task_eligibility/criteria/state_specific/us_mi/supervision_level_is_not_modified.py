@@ -23,7 +23,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -47,7 +47,7 @@ WITH modifiers_preprocessed AS (
         DATE(m.start_date) AS start_date,
         DATE(m.end_date) AS end_date,
         m.Modifier,
-    FROM `{{project_id}}.{{raw_tables_dataset_for_region_dataset}}.COMS_Modifiers` m
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Modifiers_latest` m
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON LTRIM(m.Offender_Number, '0')= pei.external_id
         AND pei.state_code = 'US_MI'
@@ -98,7 +98,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_MI,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        raw_tables_dataset_for_region_dataset=raw_tables_dataset_for_region(
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_MI,
             instance=DirectIngestInstance.PRIMARY,
         ),
