@@ -317,6 +317,12 @@ state_sentence_type_split = "SPLIT"
 state_sentence_type_treatment = "TREATMENT"
 
 
+state_sentencing_authority_county = "COUNTY"
+state_sentencing_authority_state = "STATE"
+state_sentencing_authority_other_state = "OTHER_STATE"
+state_sentencing_authority_federal = "FEDERAL"
+
+
 # state_staff_role_period.py
 state_staff_role_type_supervision_officer = "SUPERVISION_OFFICER"
 state_staff_role_subtype_supervision_officer = "SUPERVISION_OFFICER"

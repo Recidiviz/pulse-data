@@ -84,6 +84,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
+    StateSentencingAuthority,
 )
 from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
@@ -2342,6 +2343,14 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     sentence_type: StateSentenceType = attr.ib(
         default=None,
         validator=pre_norm_opt(attr.validators.instance_of(StateSentenceType)),
+    )
+
+    # The class of authority imposing this sentence: COUNTY, STATE, etc.
+    # A value of COUNTY means a county court imposed this sentence.
+    # Only optional for parsing
+    sentencing_authority: Optional[StateSentencingAuthority] = attr.ib(
+        default=None,
+        validator=pre_norm_opt(attr.validators.instance_of(StateSentencingAuthority)),
     )
 
     # Raw text indicating whether a sentence is supervision/incarceration/etc

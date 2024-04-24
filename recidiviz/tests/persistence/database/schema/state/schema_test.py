@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state-specific SQLAlchemy enums."""
+# TODO(#29284) Test the Enums defined through recidiviz.common.constants.state without "state schema"
 import unittest
 from datetime import date
 
@@ -150,6 +151,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_sentence_type": state_sentence.StateSentenceType,
             "state_charge_v2_classification_type": state_charge.StateChargeV2ClassificationType,
             "state_charge_v2_status": state_charge.StateChargeV2Status,
+            "state_sentencing_authority": state_sentence.StateSentencingAuthority,
         }
 
         self.check_persistence_and_schema_enums_match(state_enums_mapping, schema)
@@ -159,9 +161,15 @@ class TestStateSchemaEnums(TestSchemaEnums):
             self.assertTrue(enum.name.startswith("state_"))
 
     def testAllEnumsHaveUnknownValues(self) -> None:
+        # These enums are allowed to not have the EXTERNAL_UNKNOWN value.
+        external_unknown_exceptions = {
+            # We expect the state to always know where a sentence originated.
+            "state_sentencing_authority",
+        }
         for enum in self._get_all_sqlalchemy_enums_in_module(schema):
             self.assertIn(enum_canonical_strings.internal_unknown, enum.enums)
-            self.assertIn(enum_canonical_strings.external_unknown, enum.enums)
+            if enum.name not in external_unknown_exceptions:
+                self.assertIn(enum_canonical_strings.external_unknown, enum.enums)
 
 
 class TestStateSchemaTableConsistency(unittest.TestCase):
