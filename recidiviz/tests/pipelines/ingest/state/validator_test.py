@@ -543,6 +543,48 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             ],
         )
 
+    def test_no_parole_possible_means_no_parole_projected_dates(
+        self,
+    ) -> None:
+        """
+        If a sentence has parole_possible=False, then there should be no parole related
+        projected dates on all sentence_length entities.
+        """
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=None,
+            sentence_lengths=[
+                state_entities.StateSentenceLength(
+                    state_code=self.state_code,
+                    length_update_datetime=datetime(2022, 1, 1),
+                    parole_eligibility_date_external=date(2025, 1, 1),
+                ),
+            ],
+        )
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(errors, [])
+
+        sentence.parole_possible = True
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(errors, [])
+
+        sentence.parole_possible = False
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(
+            errors[0],
+            (
+                "Sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) "
+                "has parole projected dates, despite denoting that parole is not possible."
+            ),
+        )
+
     def test_sentences_have_type_and_imposed_date_invalid(self) -> None:
         """Tests that sentences post root entity merge all have a sentence_type and imposed_date."""
         sentence = state_entities.StateSentence(
