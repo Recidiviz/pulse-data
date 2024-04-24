@@ -223,6 +223,7 @@ output:
                   - PV
                   - RPAR
                   - RPRB
+                  - PROL
                 StateIncarcerationPeriodReleaseReason.COURT_ORDER:
                   - CO
                   - CRT
