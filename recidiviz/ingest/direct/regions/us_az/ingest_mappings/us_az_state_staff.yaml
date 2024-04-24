@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `state_staff`
+# to the corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - PERSON_ID
+  - FIRST_NAME
+  - MIDDLE_NAME
+  - SURNAME
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: PERSON_ID
+          id_type: $literal("US_AZ_PERSON_ID")
+    full_name:
+      $person_name:
+        $given_names: FIRST_NAME
+        $middle_names: MIDDLE_NAME
+        $surname: SURNAME
