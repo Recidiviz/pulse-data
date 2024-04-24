@@ -14,25 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing sentence information.
-PADOC provides incarceration period information for two broad population subsets: those incarcerated in
-State Correctional Institutions (SCIs) and those incarcerated in Community Corrections Centers (CCCs). SCIs can be
-thought of as "state prisons" while CCCs can be thought of as more minimal security facilities that some incarcerated
-people can be transferred into near the end of their term to focus on reentry.
-
-The former is determined primarily via `dbo_Movrec`. Rows in `dbo_Movrec` can be used to model "edges" of continuous
-periods of incarceration, and multiple such rows can be used to model a continuous period of incarceration. This ingest
-view walks over rows for a single person in this table and stitches together "edges" to create continuous periods,
-pulling in a small amount of additional sentencing data from `dbo_Senrec`. 
-
-Specifically, we order rows based on the
-movement date and then by sequence number when the date is the same (sorting rows with death statuses to the end no
-matter what). We throw out rows that mov_rec_del_flag tells us are "bogus", and rows with person ids that are not found
-elsewhere. With those ordered and filtered rows, we look at sentence status code, movement code, and movement-to
-location fields to gather additional status information, look at this status information to identify if any pair of two
-edges indicates a critical movement has occurred (e.g. release to parole, convicted from a parole violation, release to
-liberty), and then join periods together where a critical movement has occurred.
-"""
+"""Query containing incarceration sentence information from the dbo_Senrec table."""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,

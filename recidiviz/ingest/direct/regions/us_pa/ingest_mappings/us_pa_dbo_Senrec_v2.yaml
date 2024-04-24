@@ -81,9 +81,7 @@ output:
                   - NF # Non-Return Furlough
                   - NR # [Unlisted]
                   - NW # Non-Return Work Release
-                  - P # Paroled
                   - PC # Program Completed - Seems to be used instead of SC for some State Drug Treatment Program sentences
-                  - RP # Re-paroled (extremely rare)
                   - SC # Sentence Complete
                   - SP # Serve Previous
                   - TC # Transfer to County
@@ -100,6 +98,9 @@ output:
                   - EC # Escape CSC
                   - EI # Escape Institution
                   - F # Furloughed
+                  # While they are paroled, they're still serving their incarceration sentence
+                  - P # Paroled
+                  - RP # Re-paroled (extremely rare)
                   # TODO(#10502): What does it mean when someone else is in custody elsewhere? Does this mean they are no
                   # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
                   # What does it mean when this code is used with a county code?
@@ -136,7 +137,32 @@ output:
                 - "'"
           date_imposed: sent_date
           effective_date: sent_start_date
-          completion_date: sent_stop_date
+          # if the sentence has any sort of serving status, leave NULL
+          # otherwise, use sent_stop_date to hydrate completion date
+          # (in cases where the sentence is still in progress but sent_stop_date is valued, it seems to represent the parole date)
+          completion_date:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: sent_status_code
+                    $options:
+                      - $literal("AS") # Actively Serving
+                      - $literal("CT") # In Court
+                      - $literal("DC") # Diag/Class (Diagnostics / Classification)
+                      - $literal("EC") # Escape CSC
+                      - $literal("EI") # Escape Institution
+                      - $literal("F") # Furloughed
+                      - $literal("P") # Paroled
+                      - $literal("RP") # Re-paroled (extremely rare)
+                      # TODO(#10502): What does it mean when someone else is in custody elsewhere? Does this mean they are no
+                      # longer the responsibility of the PA DOC? Should they also stop being counted towards population counts?
+                      # What does it mean when this code is used with a county code?
+                      - $literal("IC") # In Custody Elsewhere
+                      - $literal("MH") # Mental Health
+                      - $literal("SH") # State Hospital
+                      - $literal("W") # Waiting
+                      - $literal("WT") # WRIT/ATA
+                $then: sent_stop_date
           projected_min_release_date: min_expir_date
           parole_eligibility_date: min_expir_date
           projected_max_release_date: max_expir_date
