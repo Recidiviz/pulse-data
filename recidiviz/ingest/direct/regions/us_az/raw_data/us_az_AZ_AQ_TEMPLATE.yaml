@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_AQ_TEMPLATE
+file_description: |-
+  Unknown at this time. Related to Action Queue.
+data_classification: source
+primary_key_cols: [TEMPLATE_ID]
+columns:
+  - name: TEMPLATE_ID
+    description: |-
+      Primary Key
+  - name: REASON_ID
+    description: |-
+      References AZ_AQ_REASON Table
+  - name: APP_KEY_ID
+    description: |-
+      Template app key id referencing AZ_AQ_APP_SETTING table
+  - name: ROLE_ID
+    description: |-
+      References MEA_GROUPS table
+  - name: DUE_DAY_TYPE_ID
+    description: |-
+      References LOOKUPS table ( Working days or non working days)
+  - name: DUE_DAY_VALUE_ID
+    description: |-
+      References LOOKUPS table (Today, D+1, D+5 ...)
+  - name: SOURCE_TABLE_NAME
+    description: |-
+      Table Name of the main object related to this action queue
+  - name: CREATE_USERID
+    description: |-
+      User Id who created the record
+    is_pii: True
+  - name: CREATE_DTM
+    description: |-
+      Creation Date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: UPDT_USERID
+    description: |-
+      User Id who last updated the record
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Last Update Date
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: CHANGE_ID
+    description: |-
+      References CHANGE_HISTORY table
+  - name: ACTIVE_FLAG
+    description: |-
+      Is the Template deleted Y/N
+  - name: IS_COMMUNITY_CORRECTION
+    description: |-
+      Is the template a community correction template flag Y/N
+  - name: URL_PATH_TEMPLATE
+    description: |-
+      This will only be used by migration team to build AIMS1 migrated AQ record URL
+  - name: DELETE_ROLE_DESCRIPTION
+    description: |-
+      String of Role discription who can be able to Delete the AQ
