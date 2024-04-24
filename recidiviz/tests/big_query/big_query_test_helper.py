@@ -24,6 +24,8 @@ from typing import Dict, List, Type, Union
 import db_dtypes
 import numpy
 import pandas as pd
+import sqlglot
+import sqlglot.expressions
 from more_itertools import one
 from pandas._testing import assert_frame_equal
 
@@ -218,3 +220,39 @@ def query_view(
     # Log results to debug log level, to see them pass --log-level DEBUG to pytest
     logging.debug("Results for `%s`:\n%s", view_name, results.to_string())
     return results
+
+
+def check_for_ctes_with_no_comments(query: str, query_name: str) -> None:
+    """
+    Raises a ValueError with all CTEs that do not have a comment.
+
+    Args:
+        query: (str) is the actual text of the query.
+        query_name: (str) is a helpful identifier of the query if/when there
+                    is an error.
+
+    We expect to have queries documented like:
+        WITH
+        -- this explains table 1
+        table_1 AS (
+            SELECT * FROM A
+        ),
+        -- this explains table 2
+        table_2 AS (
+            SELECT * FROM B JOIN C USING(col)
+        )
+        SELECT * FROM table_1 UNION ALL SELECT * FROM table_2
+    """
+    tree = sqlglot.parse_one(query, dialect="bigquery")
+    if not isinstance(tree, sqlglot.expressions.Query):
+        raise ValueError("Non-Query SQL expression built from ViewBuilder")
+    undocumented_ctes = ", ".join(
+        cte.alias
+        for cte in tree.ctes
+        # TODO(#29272) Update DirectIngestViewQueryBuilder to self document generated views
+        if "generated_view" not in cte.alias and not cte.args["alias"].comments
+    )
+    if undocumented_ctes:
+        raise ValueError(
+            f"Query {query_name} has undocumented CTEs: {undocumented_ctes}"
+        )
