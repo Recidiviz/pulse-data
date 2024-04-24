@@ -63,7 +63,7 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     bq_schema_for_normalized_state_association_table,
     column_names_on_bq_schema_for_normalized_state_entity,
 )
-from recidiviz.pipelines.utils.beam_utils.extractor_utils import UNIFYING_ID_KEY
+from recidiviz.pipelines.utils.beam_utils.extractor_utils import ROOT_ENTITY_ID_KEY
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
@@ -93,9 +93,9 @@ REFERENCE_VIEWS_QUERY_REGEX = re.compile(
 )
 
 # Regex matching queries used by calc pipelines to hydrate association table rows
-# that include the unifying_id (usually person_id).
+# that include the root_entity_id (usually person_id).
 # Example query (with newlines added for readability):
-# SELECT state_incarceration_incident.person_id as unifying_id,
+# SELECT state_incarceration_incident.person_id as root_entity_id,
 #   state_incarceration_incident_outcome.incarceration_incident_outcome_id,
 #   state_incarceration_incident_outcome.incarceration_incident_id
 # FROM `recidiviz-123.state.state_incarceration_incident_outcome` state_incarceration_incident_outcome
@@ -104,7 +104,7 @@ REFERENCE_VIEWS_QUERY_REGEX = re.compile(
 # ON state_incarceration_incident.incarceration_incident_id
 #   = state_incarceration_incident_outcome.incarceration_incident_id
 ASSOCIATION_VALUES_QUERY_REGEX = re.compile(
-    r"SELECT ([a-z_]+\.[a-z_]+) as unifying_id, ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
+    r"SELECT ([a-z_]+\.[a-z_]+) as root_entity_id, ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
     r"FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` ([a-z_]+) "
     r"JOIN \(SELECT \* FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) "
@@ -288,7 +288,7 @@ class FakeReadFromBigQueryFactory:
         *,
         expected_entities_dataset: str,
         data_dict: DataTablesDict,
-        unifying_id_field: str = "person_id",
+        root_entity_id_field: str = "person_id",
         state_code: StateCode = StateCode.US_XX,
     ) -> Callable[[QueryStr, bool, bool], FakeReadFromBigQuery]:
         """Returns a constructors function that can mock the ReadFromBigQuery class and will return a
@@ -305,7 +305,7 @@ class FakeReadFromBigQueryFactory:
                 expected_entities_dataset=expected_entities_dataset,
                 query=query,
                 data_dict=data_dict,
-                unifying_id_field=unifying_id_field,
+                root_entity_id_field=root_entity_id_field,
                 state_code=state_code,
             )
             return FakeReadFromBigQuery(table_values=table_values)
@@ -318,7 +318,7 @@ class FakeReadFromBigQueryFactory:
         expected_entities_dataset: str,
         query: QueryStr,
         data_dict: DataTablesDict,
-        unifying_id_field: str,
+        root_entity_id_field: str,
         state_code: StateCode,
     ) -> Iterable[NormalizedDatabaseDict]:
         """Default implementation of the fake query function, which parses, validates,
@@ -329,7 +329,7 @@ class FakeReadFromBigQueryFactory:
                 data_dict,
                 query,
                 expected_entities_dataset,
-                unifying_id_field,
+                root_entity_id_field,
             )
 
         if re.match(ENTITY_TABLE_QUERY_REGEX, query):
@@ -337,7 +337,7 @@ class FakeReadFromBigQueryFactory:
                 data_dict,
                 query,
                 expected_entities_dataset,
-                unifying_id_field,
+                root_entity_id_field,
             )
 
         for builder in get_all_pipeline_input_view_builders().values():
@@ -349,7 +349,7 @@ class FakeReadFromBigQueryFactory:
                     data_dict=data_dict,
                     table_name=builder.view_id,
                     state_code_value=state_code.value,
-                    root_entity_id_field=unifying_id_field,
+                    root_entity_id_field=root_entity_id_field,
                     root_entity_filter_ids=None,
                     selected_column_name_to_alias=None,
                 )
@@ -361,7 +361,7 @@ class FakeReadFromBigQueryFactory:
         data_dict: DataTablesDict,
         query: str,
         expected_entities_dataset: str,
-        expected_unifying_id_field: str,
+        expected_root_entity_id_field: str,
     ) -> Iterable[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided entity table
         query string, returning data out of the data_dict object.
@@ -383,23 +383,23 @@ class FakeReadFromBigQueryFactory:
         if not state_code_value:
             raise ValueError(f"Found no state_code in query [{query}]")
 
-        unifying_id_field = match.group(6)
-        unifying_id_field_filter_list_str = match.group(7)
-        if unifying_id_field and unifying_id_field_filter_list_str:
-            if unifying_id_field != expected_unifying_id_field:
+        root_entity_id_field = match.group(6)
+        root_entity_id_field_filter_list_str = match.group(7)
+        if root_entity_id_field and root_entity_id_field_filter_list_str:
+            if root_entity_id_field != expected_root_entity_id_field:
                 raise ValueError(
-                    f"Expected value [{expected_unifying_id_field}] "
-                    f"for unifying_id_field does not match: [{unifying_id_field}"
+                    f"Expected value [{expected_root_entity_id_field}] "
+                    f"for root_entity_id_field does not match: [{root_entity_id_field}"
                 )
-        elif unifying_id_field or unifying_id_field_filter_list_str:
+        elif root_entity_id_field or root_entity_id_field_filter_list_str:
             raise ValueError(
-                "Found one of unifying_id_field, unifying_id_field_filter_list_str is"
+                "Found one of root_entity_id_field, root_entity_id_field_filter_list_str is"
                 " None, but not both."
             )
 
         root_entity_filter_ids = (
-            id_list_str_to_set(unifying_id_field_filter_list_str)
-            if unifying_id_field_filter_list_str
+            id_list_str_to_set(root_entity_id_field_filter_list_str)
+            if root_entity_id_field_filter_list_str
             else None
         )
 
@@ -426,7 +426,7 @@ class FakeReadFromBigQueryFactory:
             data_dict=data_dict,
             table_name=table_name,
             state_code_value=state_code_value,
-            root_entity_id_field=unifying_id_field,
+            root_entity_id_field=root_entity_id_field,
             root_entity_filter_ids=root_entity_filter_ids,
             selected_column_name_to_alias=selected_column_name_to_alias,
         )
@@ -480,7 +480,7 @@ class FakeReadFromBigQueryFactory:
         data_dict: DataTablesDict,
         query: str,
         expected_entities_dataset: str,
-        expected_unifying_id_field: str,
+        expected_root_entity_id_field: str,
     ) -> Iterable[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided association
         value query string, returning data out of the data_dict object.
@@ -489,7 +489,7 @@ class FakeReadFromBigQueryFactory:
         if not match:
             raise ValueError(f"Query does not match regex: {query}")
 
-        entity_table_alias_1, unifying_id_field = match.group(1).split(".")
+        entity_table_alias_1, root_entity_id_field = match.group(1).split(".")
         association_table_alias_1, root_id = match.group(2).split(".")
         association_table_alias_2, related_id = match.group(3).split(".")
 
@@ -534,12 +534,12 @@ class FakeReadFromBigQueryFactory:
         if association_table_name not in data_dict:
             raise ValueError(f"Table {association_table_name} not in data dict")
 
-        check_field_exists_in_table(association_table_name, root_id)
-        check_field_exists_in_table(association_table_name, related_id)
-        check_field_exists_in_table(
+        _check_field_exists_in_table(association_table_name, root_id)
+        _check_field_exists_in_table(association_table_name, related_id)
+        _check_field_exists_in_table(
             association_table_name, association_table_join_column
         )
-        check_field_exists_in_table(entity_table_name, entity_table_join_column)
+        _check_field_exists_in_table(entity_table_name, entity_table_join_column)
 
         all_entity_table_rows = data_dict[entity_table_name]
         state_code_value = match.group(9)
@@ -553,26 +553,27 @@ class FakeReadFromBigQueryFactory:
             {state_code_value},
             allow_none_values=False,
         )
-        unifying_id_field_for_filter = match.group(11)
-        unifying_id_field_filter_list_str = match.group(12)
+        root_entity_id_field_for_filter = match.group(11)
+        root_entity_id_field_filter_list_str = match.group(12)
 
-        if unifying_id_field_for_filter and unifying_id_field_filter_list_str:
-            if unifying_id_field_for_filter != expected_unifying_id_field:
+        if root_entity_id_field_for_filter and root_entity_id_field_filter_list_str:
+            if root_entity_id_field_for_filter != expected_root_entity_id_field:
                 raise ValueError(
-                    f"Expected value [{expected_unifying_id_field}] for unifying_id_field does not match: "
-                    f"[{unifying_id_field_for_filter}"
+                    f"Expected value [{expected_root_entity_id_field}] for root_entity_id_field does not match: "
+                    f"[{root_entity_id_field_for_filter}"
                 )
 
             filtered_entity_rows = filter_results(
                 entity_table_name,
                 filtered_entity_rows,
-                unifying_id_field_for_filter,
-                id_list_str_to_set(unifying_id_field_filter_list_str),
+                root_entity_id_field_for_filter,
+                id_list_str_to_set(root_entity_id_field_filter_list_str),
                 allow_none_values=False,
             )
-        elif unifying_id_field_for_filter or unifying_id_field_filter_list_str:
+        elif root_entity_id_field_for_filter or root_entity_id_field_filter_list_str:
             raise ValueError(
-                "Found one of unifying_id_field, unifying_id_field_filter_list_str is None, but not both."
+                "Found one of root_entity_id_field_for_filter, root_entity_id_field_filter_list_str is None, "
+                "but not both."
             )
 
         valid_entity_join_ids = {
@@ -583,7 +584,7 @@ class FakeReadFromBigQueryFactory:
 
         joined_filtered_rows = [
             {
-                UNIFYING_ID_KEY: entity_row[unifying_id_field],
+                ROOT_ENTITY_ID_KEY: entity_row[root_entity_id_field],
                 root_id: association_table_row[root_id],
                 related_id: association_table_row[related_id],
             }
@@ -817,7 +818,7 @@ def filter_results(
     filter_id_set: Union[Set[int], Set[str]],
     allow_none_values: bool,
 ) -> Iterable[NormalizedDatabaseDict]:
-    check_field_exists_in_table(table_name, filter_id_name)
+    _check_field_exists_in_table(table_name, filter_id_name)
 
     for row in unfiltered_table_rows:
         if filter_id_name not in row:
@@ -834,15 +835,22 @@ def filter_results(
     ]
 
 
-def check_field_exists_in_table(table_name: str, field_name: str) -> None:
+def _check_field_exists_in_table(table_name: str, field_name: str) -> None:
+    """Given the name of a table our fake BQ utilities might be reading from, throws if
+    that field does not exist in the table.
+    """
     if table_name in {
-        # These are tables read by pipelines that are not in the sqlalchemy schema - skip this check
-        # TODO(#22528): We should be able to remove these exemptions once dataflow pipelines run
-        #  these reference queries directly.
+        # These are the names of reference view queries read by pipelines
+        # TODO(#25244): Even though the dataflow pipelines now run ingest view queries
+        #  directly, our test setup is still very hacky and instead of setting up source
+        #  tables that feed into each reference query, we just seed the tests with query
+        #  results that we return when the query matches an expected query. We should
+        #  instead update our pipeline tests to actually read from the BQ emulator and
+        #  set up the necessary source table info there so we can avoid calling this
+        #  function at all.
         "us_mo_sentence_statuses",
         "persons_to_recent_county_of_residence",
         "state_race_ethnicity_population_counts",
-        "us_id_case_update_info",
         "us_ix_case_update_info",
         "state_charge_offense_description_to_labels",
         "state_person_to_state_staff",

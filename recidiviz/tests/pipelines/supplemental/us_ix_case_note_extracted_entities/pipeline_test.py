@@ -30,6 +30,7 @@ from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities import 
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
     UsIxNoteTitleTextEntity,
 )
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQueryFactory,
     FakeWriteExactOutputToBigQuery,
@@ -128,7 +129,7 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
     def run_test_pipeline(
         self,
         data_dict: Dict[str, Iterable[Dict]],
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
     ) -> None:
         """Runs a test version of the pipeline."""
         read_from_bq_constructor = (
@@ -155,7 +156,7 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
         )
 
     def testUsIxCaseNoteExtractedEntities(self) -> None:

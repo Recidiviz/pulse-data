@@ -371,7 +371,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
             pipeline=self.pipeline_class(),
             state_code=self.region_code().value,
             project_id=self.project_id,
-            unifying_id_field_filter_set=None,
+            root_entity_id_filter_set=None,
             ingest_view_results_only=ingest_view_results_only,
             ingest_views_to_run=ingest_views_to_run,
         )

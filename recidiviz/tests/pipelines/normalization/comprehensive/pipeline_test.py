@@ -44,6 +44,7 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.pipelines.normalization.comprehensive import pipeline
 from recidiviz.pipelines.normalization.utils import entity_normalization_manager_utils
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
@@ -99,7 +100,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         self,
         state_code: str,
         data_dict: Dict[str, Iterable[Dict]],
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
     ) -> None:
         """Runs a test version of the normalization pipeline."""
         read_from_bq_constructor = (
@@ -133,7 +134,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
         )
 
     def build_comprehensive_normalization_pipeline_data_dict(

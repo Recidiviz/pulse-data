@@ -36,8 +36,8 @@ EntityRelationshipKey = str
 # The name of a reference table, e.g. persons_to_recent_county_of_residence
 TableName = str
 
-# The unifying id that can be used to group related objects together (e.g. person_id)
-UnifyingId = int
+# The root entity id that can be used to group related objects together (e.g. person_id)
+RootEntityId = int
 
 # Primary keys of two entities that share a relationship. The first int is the parent
 # object primary key and the second int is the child object primary key.
@@ -220,12 +220,14 @@ def select_query(
     dataset: str,
     table: str,
     state_code_filter: str,
-    unifying_id_field: Optional[str],
-    unifying_id_field_filter_set: Optional[Set[int]],
+    root_entity_id_field: Optional[str],
+    root_entity_id_filter_set: Optional[Set[RootEntityId]],
     columns_to_include: Optional[List[str]] = None,
 ) -> str:
-    """Returns a query string formatted to select all contents of the table in the given dataset, filtering by the
-    provided state code and unifying id filter sets, if necessary."""
+    """Returns a query string formatted to select all contents of the table in the given
+    dataset, filtering by the provided state code and root entity id filter sets, if
+    necessary.
+    """
 
     if not state_code_filter:
         raise ValueError(f"State code filter unexpectedly empty for table [{table}]")
@@ -239,22 +241,22 @@ def select_query(
         f"state_code IN ('{state_code_filter}')"
     )
 
-    if unifying_id_field_filter_set:
-        if not unifying_id_field:
+    if root_entity_id_filter_set:
+        if not root_entity_id_field:
             raise ValueError(
-                f"Expected non-null unifying_id_field for nonnull unifying_id_field_filter_set when querying"
+                f"Expected non-null root_entity_id_field for nonnull root_entity_id_filter_set when querying"
                 f"dataset [{dataset}] and table [{table}]."
             )
 
         id_str_set = {
-            str(unifying_id)
-            for unifying_id in unifying_id_field_filter_set
-            if str(unifying_id)
+            str(root_entity_id)
+            for root_entity_id in root_entity_id_filter_set
+            if str(root_entity_id)
         }
 
         entity_query = (
             entity_query
-            + f" AND {unifying_id_field} IN ({', '.join(sorted(id_str_set))})"
+            + f" AND {root_entity_id_field} IN ({', '.join(sorted(id_str_set))})"
         )
 
     return entity_query

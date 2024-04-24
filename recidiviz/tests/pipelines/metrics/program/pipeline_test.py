@@ -65,6 +65,7 @@ from recidiviz.pipelines.metrics.program.metrics import (
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
@@ -253,14 +254,14 @@ class TestProgramPipeline(unittest.TestCase):
         self.run_test_pipeline(
             data_dict,
             expected_metric_types,
-            unifying_id_field_filter_set={fake_person_id},
+            root_entity_id_filter_set={fake_person_id},
         )
 
     def run_test_pipeline(
         self,
         data_dict: DataTablesDict,
         expected_metric_types: Set[ProgramMetricType],
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the program pipeline."""
@@ -287,7 +288,7 @@ class TestProgramPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
             metric_types_filter=metric_types_filter,
         )
 

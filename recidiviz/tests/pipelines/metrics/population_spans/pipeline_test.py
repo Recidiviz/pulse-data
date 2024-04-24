@@ -72,6 +72,7 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
     SupervisionPopulationSpan,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.identifier_models import Span
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
@@ -241,7 +242,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         self,
         data_dict: DataTablesDict,
         expected_metric_types: Set[PopulationSpanMetricType],
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the violation pipeline."""
@@ -268,7 +269,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
             metric_types_filter=metric_types_filter,
             include_calculation_limit_args=False,
         )
@@ -301,7 +302,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
                 PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
                 PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
             },
-            unifying_id_field_filter_set={12345},
+            root_entity_id_filter_set={12345},
         )
 
     def test_population_spans_pipeline_with_no_data(self) -> None:

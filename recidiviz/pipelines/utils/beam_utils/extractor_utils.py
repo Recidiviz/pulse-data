@@ -34,7 +34,7 @@ from typing import (
 )
 
 import apache_beam as beam
-from apache_beam import PCollection, Pipeline
+from apache_beam import PCollection
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
@@ -65,18 +65,16 @@ from recidiviz.pipelines.utils.execution_utils import (
     EntityAssociation,
     EntityClassName,
     EntityRelationshipKey,
+    RootEntityId,
     TableName,
     TableRow,
-    UnifyingId,
     select_query,
 )
 from recidiviz.pipelines.utils.reference_query_providers import (
     RootEntityIdFilteredQueryProvider,
 )
 
-UNIFYING_ID_KEY = "unifying_id"
-ROOT_ENTITY_ID_FIELD_KEY = "root_entity_id_field"
-RELATED_ENTITY_ID_FIELD_KEY = "related_entity_id_field"
+ROOT_ENTITY_ID_KEY = "root_entity_id"
 
 EntityRelationshipDetails = NamedTuple(
     "EntityRelationshipDetails",
@@ -109,7 +107,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         root_entity_cls: (
             Type[state_entities.StatePerson] | Type[state_entities.StateStaff]
         ),
-        root_entity_id_filter_set: Optional[Set[UnifyingId]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
     ):
         """Initializes the PTransform with the required arguments.
 
@@ -283,7 +281,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         pipeline: PBegin,
         root_entity_class: Type[Entity],
         hydrated_association_info: Dict[
-            EntityClassName, PCollection[Tuple[UnifyingId, EntityAssociation]]
+            EntityClassName, PCollection[Tuple[RootEntityId, EntityAssociation]]
         ],
         relationships_to_hydrate: List[EntityRelationshipDetails],
     ) -> None:
@@ -348,14 +346,12 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 >> _ExtractAssociationValues(
                     project_id=self._project_id,
                     entities_dataset=self._entities_dataset,
-                    root_entity_class=root_entity_class_being_hydrated,
+                    entity_class=root_entity_class_being_hydrated,
                     related_entity_class=related_entity_class_being_hydrated,
-                    # TODO(#22528): Update all naming in this file so that "unifying id"
-                    #  is now referred to as "root id".
-                    unifying_id_field=self._root_entity_id_field,
+                    root_entity_id_field=self._root_entity_id_field,
                     association_table=relationship_property.association_table,
                     related_id_field=relationship_property.association_table_entity_id_field,
-                    unifying_id_field_filter_set=self._root_entity_id_field_filter_set,
+                    root_entity_id_filter_set=self._root_entity_id_field_filter_set,
                     state_code=self._state_code.value,
                 )
             )
@@ -366,7 +362,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         self,
         pipeline: PBegin,
         entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
-    ) -> PCollection[Tuple[UnifyingId, Entity]]:
+    ) -> PCollection[Tuple[RootEntityId, Entity]]:
         """Returns the hydrated entities of type |entity_class| as a PCollection,
         where each element is a tuple in the format: (root_entity_id, entity).
         """
@@ -377,8 +373,8 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
                 project_id=self._project_id,
                 entities_dataset=self._entities_dataset,
                 entity_class=entity_class,
-                unifying_id_field=self._root_entity_id_field,
-                unifying_id_field_filter_set=self._root_entity_id_field_filter_set,
+                root_entity_id_field=self._root_entity_id_field,
+                root_entity_id_filter_set=self._root_entity_id_field_filter_set,
                 state_code=self._state_code.value,
             )
         )
@@ -387,11 +383,11 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         self,
         pipeline: PBegin,
         relationships_to_hydrate: Dict[str, List[EntityRelationshipDetails]],
-    ) -> Dict[EntityClassName, PCollection[Tuple[UnifyingId, EntityAssociation]]]:
+    ) -> Dict[EntityClassName, PCollection[Tuple[RootEntityId, EntityAssociation]]]:
         """Gets all information required to associate the required entities to each
         other."""
         hydrated_association_info: Dict[
-            EntityClassName, PCollection[Tuple[UnifyingId, EntityAssociation]]
+            EntityClassName, PCollection[Tuple[RootEntityId, EntityAssociation]]
         ] = {}
         for root_entity_class in self._entity_class_to_hydrated_entity_class:
             # Populate relationships_to_hydrate with the relationships between all
@@ -411,7 +407,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         self, input_or_inputs: PBegin
     ) -> PCollection[
         Tuple[
-            UnifyingId,
+            RootEntityId,
             Dict[
                 Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
             ],
@@ -420,7 +416,7 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         """Does the work of building all entities required for a pipeline
         and hydrating all existing relationships between the entities."""
         shallow_hydrated_entities: Dict[
-            EntityClassName, PCollection[Tuple[UnifyingId, Entity]]
+            EntityClassName, PCollection[Tuple[RootEntityId, Entity]]
         ] = {}
 
         for (
@@ -437,13 +433,13 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
         relationships_to_hydrate = self._get_relationships_to_hydrate()
 
         hydrated_association_info: Dict[
-            EntityClassName, PCollection[Tuple[UnifyingId, EntityAssociation]]
+            EntityClassName, PCollection[Tuple[RootEntityId, EntityAssociation]]
         ] = self.get_associations_info(
             pipeline=input_or_inputs,
             relationships_to_hydrate=relationships_to_hydrate,
         )
 
-        reference_data: Dict[TableName, PCollection[Tuple[UnifyingId, TableRow]]] = {}
+        reference_data: Dict[TableName, PCollection[Tuple[RootEntityId, TableRow]]] = {}
 
         for query_name, query_provider in self._reference_data_queries_by_name.items():
             reference_data[
@@ -456,13 +452,15 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
 
         entities_and_associations: Dict[
             Union[EntityClassName, EntityRelationshipKey, TableName],
-            PCollection[Tuple[UnifyingId, Union[EntityAssociation, Entity, TableRow]]],
+            PCollection[
+                Tuple[RootEntityId, Union[EntityAssociation, Entity, TableRow]]
+            ],
         ] = {**shallow_hydrated_entities, **hydrated_association_info, **reference_data}
 
         # Group all entities and association tuples by the root_entity_id
         entities_and_association_info_by_root_entity_id: PCollection[
             Tuple[
-                UnifyingId,
+                RootEntityId,
                 Dict[
                     Union[EntityClassName, EntityRelationshipKey, TableName],
                     Union[List[Entity], List[EntityAssociation], List[TableRow]],
@@ -478,9 +476,10 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
             entities_and_association_info_by_root_entity_id
             | "Connect all entity relationships"
             >> beam.ParDo(
-                _ConnectHydratedRelatedEntities(),
-                unifying_class=self._root_entity_cls,
-                relationships_to_hydrate=relationships_to_hydrate,
+                _ConnectHydratedRelatedEntities(
+                    root_entity_class=self._root_entity_cls,
+                    relationships_to_hydrate=relationships_to_hydrate,
+                ),
             )
         )
 
@@ -489,18 +488,16 @@ class ExtractRootEntityDataForPipeline(beam.PTransform):
 
 @with_input_types(
     beam.typehints.Tuple[
-        UnifyingId,
+        RootEntityId,
         Dict[
             Union[EntityClassName, EntityRelationshipKey, TableName],
             Union[Iterable[Entity], Iterable[EntityAssociation], Iterable[TableRow]],
         ],
     ],
-    beam.typehints.Optional[Type[Entity]],
-    beam.typehints.Dict[str, List[EntityRelationshipDetails]],
 )
 @with_output_types(
     beam.typehints.Tuple[
-        UnifyingId,
+        RootEntityId,
         Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
     ],
 )
@@ -511,6 +508,17 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
 
     # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
     # pylint: disable=W0223
+
+    def __init__(
+        self,
+        root_entity_class: Type[Entity],
+        relationships_to_hydrate: Dict[
+            EntityClassName, List[EntityRelationshipDetails]
+        ],
+    ) -> None:
+        super().__init__()
+        self._root_entity_class = root_entity_class
+        self._relationships_to_hydrate = relationships_to_hydrate
 
     @staticmethod
     def _get_associations(
@@ -547,7 +555,6 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
     def _get_fully_hydrated_entities_of_type(
         self,
         *,
-        unifying_class_name: EntityClassName,
         entity_class_name: EntityClassName,
         relationships_to_hydrate: List[EntityRelationshipDetails],
         entities: Dict[EntityClassName, List[Entity]],
@@ -555,6 +562,7 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
     ) -> List[Entity]:
         """Returns the list of entities with all relationships to related entities
         fully hydrated."""
+        root_entity_class_name = self._root_entity_class.__name__
         # Get root entities as a list
         entity_list: List[Entity] = entities[entity_class_name]
 
@@ -575,10 +583,10 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
                 e.get_id(): e for e in related_entity_candidates
             }
 
-            if unifying_class_name in (entity_class_name, related_entity_class_name):
-                # If either this entity or the related entity is the unifying class,
+            if root_entity_class_name in (entity_class_name, related_entity_class_name):
+                # If either this entity or the related entity is the root entity class,
                 # then we know there are direct relationships between this entity and
-                # all related entities of this this type.
+                # all related entities of this type.
                 for entity in entity_list:
                     entity.set_field_from_list(
                         relationship_property_name, related_entity_candidates
@@ -687,7 +695,7 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
     def process(
         self,
         element: Tuple[
-            UnifyingId,
+            RootEntityId,
             Dict[
                 Union[EntityClassName, EntityRelationshipKey, TableName],
                 Union[
@@ -695,13 +703,9 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
                 ],
             ],
         ],
-        unifying_class: Type[Entity],
-        relationships_to_hydrate: Dict[
-            EntityClassName, List[EntityRelationshipDetails]
-        ],
     ) -> Iterable[
         Tuple[
-            UnifyingId,
+            RootEntityId,
             Dict[
                 Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
             ],
@@ -710,20 +714,23 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
         """Runs the process for getting fully connected hydrated entities."""
         fully_connected_hydrated_entities: Dict[EntityClassName, List[Entity]] = {}
 
-        unifying_id, element_data = element
-        if unifying_id is None:
-            raise ValueError("Found unexpected null unifying_id.")
+        root_entity_id, element_data = element
+        if root_entity_id is None:
+            raise ValueError("Found unexpected null root_entity_id.")
 
         entities, associations, reference_table_data = self._split_element_data(
-            element_data=element_data, relationships_to_hydrate=relationships_to_hydrate
+            element_data=element_data,
+            relationships_to_hydrate=self._relationships_to_hydrate,
         )
 
-        for root_entity_class_name, relationships in relationships_to_hydrate.items():
+        for (
+            root_entity_class_name,
+            relationships,
+        ) in self._relationships_to_hydrate.items():
             fully_connected_hydrated_entities[
                 root_entity_class_name
             ] = self._get_fully_hydrated_entities_of_type(
                 entity_class_name=root_entity_class_name,
-                unifying_class_name=unifying_class.__name__,
                 relationships_to_hydrate=relationships,
                 entities=entities,
                 associations=associations,
@@ -733,39 +740,35 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
             Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
         ] = {**fully_connected_hydrated_entities, **reference_table_data}
 
-        yield unifying_id, all_pipeline_data
+        yield root_entity_id, all_pipeline_data
 
 
-@with_input_types(
-    beam.typehints.Dict[Any, Any],
-    **{
-        ROOT_ENTITY_ID_FIELD_KEY: str,
-        RELATED_ENTITY_ID_FIELD_KEY: str,
-    },
-)
-@with_output_types(beam.typehints.Tuple[UnifyingId, EntityAssociation])
+@with_input_types(beam.typehints.Dict[Any, Any])
+@with_output_types(beam.typehints.Tuple[RootEntityId, EntityAssociation])
 class _PackageAssociationIDValues(beam.DoFn):
     """Forms a tuple from the given element with the following format:
 
-    (unifying_id, (root_entity_id, related_entity_id))
+    (root_entity_id, (entity_id, related_entity_id))
     """
 
     # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
     # pylint: disable=W0223
 
+    def __init__(self, entity_id_field: str, related_entity_id_field: str) -> None:
+        super().__init__()
+        self._entity_id_field = entity_id_field
+        self._related_entity_id_field = related_entity_id_field
+
     # pylint: disable=arguments-differ
     def process(
-        self, element: Dict[Any, Any], **kwargs: str
-    ) -> Iterable[Tuple[UnifyingId, EntityAssociation]]:
-        root_entity_id_field = kwargs.get(ROOT_ENTITY_ID_FIELD_KEY)
-        related_entity_id_field = kwargs.get(RELATED_ENTITY_ID_FIELD_KEY)
+        self, element: Dict[Any, Any]
+    ) -> Iterable[Tuple[RootEntityId, EntityAssociation]]:
+        root_entity_id = element.get(ROOT_ENTITY_ID_KEY)
+        entity_id = element.get(self._entity_id_field)
+        related_entity_id = element.get(self._related_entity_id_field)
 
-        unifying_id = element.get(UNIFYING_ID_KEY)
-        root_entity_id = element.get(root_entity_id_field)
-        related_entity_id = element.get(related_entity_id_field)
-
-        if unifying_id and root_entity_id and related_entity_id:
-            yield unifying_id, (root_entity_id, related_entity_id)
+        if root_entity_id and entity_id and related_entity_id:
+            yield root_entity_id, (entity_id, related_entity_id)
 
 
 class _ExtractValuesFromEntityBase(beam.PTransform):
@@ -776,69 +779,75 @@ class _ExtractValuesFromEntityBase(beam.PTransform):
         project_id: str,
         entities_dataset: str,
         entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
-        unifying_id_field: str,
-        unifying_id_field_filter_set: Optional[Set[int]],
+        root_entity_id_field: str,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
     ):
         super().__init__()
         self._project_id = project_id
 
-        self._unifying_id_field = unifying_id_field
-        self._unifying_id_field_filter_set = unifying_id_field_filter_set
+        self._root_entity_id_field = root_entity_id_field
+        self._root_entity_id_filter_set = root_entity_id_filter_set
         self._dataset = entities_dataset
 
         if issubclass(entity_class, NormalizedStateEntity):
-            self._base_entity_class = state_base_entity_class_for_entity_class(
-                entity_class
+            self._base_entity_to_hydrate_class = (
+                state_base_entity_class_for_entity_class(entity_class)
             )
         elif issubclass(entity_class, Entity):
-            self._base_entity_class = entity_class
+            self._base_entity_to_hydrate_class = entity_class
         else:
             raise ValueError(f"Unexpected entity_class [{entity_class}]")
 
-        self._entity_class_to_hydrate = entity_class
-        self._base_schema_class: Type[
+        self._entity_to_hydrate_class = entity_class
+        self._base_entity_to_hydrate_schema_class: Type[
             StateBase
         ] = schema_utils.get_state_database_entity_with_name(
-            self._base_entity_class.__name__
+            self._base_entity_to_hydrate_class.__name__
         )
-        self._base_entity_table_name = self._base_schema_class.__tablename__
-        self._entity_id_field = self._base_entity_class.get_class_id_name()
+        self._base_entity_to_hydrate_table_name = (
+            self._base_entity_to_hydrate_schema_class.__tablename__
+        )
+        self._entity_to_hydrate_id_field = (
+            self._base_entity_to_hydrate_class.get_class_id_name()
+        )
         self._state_code = state_code
 
-    def _entity_has_unifying_id_field(self) -> bool:
-        return hasattr(self._base_schema_class, self._unifying_id_field)
+    def _entity_has_root_entity_id_field(self) -> bool:
+        return hasattr(
+            self._base_entity_to_hydrate_schema_class, self._root_entity_id_field
+        )
 
     def _get_entities_table_sql_query(
         self, columns_to_include: Optional[List[str]] = None
     ) -> str:
-        if not self._entity_has_unifying_id_field():
+        if not self._entity_has_root_entity_id_field():
             raise ValueError(
-                f"Shouldn't be querying table for entity {self._base_entity_class} that doesn't have field "
-                f"{self._unifying_id_field} - these values will never get grouped with results, so it's "
+                f"Shouldn't be querying table for entity {self._base_entity_to_hydrate_class} that doesn't have field "
+                f"{self._root_entity_id_field} - these values will never get grouped with results, so it's "
                 f"a waste to query for them."
             )
 
-        unifying_id_field_filter_set = (
-            self._unifying_id_field_filter_set
-            if self._entity_has_unifying_id_field()
+        root_entity_id_filter_set = (
+            self._root_entity_id_filter_set
+            if self._entity_has_root_entity_id_field()
             else None
         )
 
         entity_query = select_query(
             project_id=self._project_id,
             dataset=self._dataset,
-            table=self._base_entity_table_name,
+            table=self._base_entity_to_hydrate_table_name,
             state_code_filter=self._state_code,
-            unifying_id_field=self._unifying_id_field,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_field=self._root_entity_id_field,
+            root_entity_id_filter_set=root_entity_id_filter_set,
             columns_to_include=columns_to_include,
         )
 
         return entity_query
 
     @abc.abstractmethod
-    def expand(self, input_or_inputs: PBegin) -> PCollection[Tuple[UnifyingId, Any]]:
+    def expand(self, input_or_inputs: PBegin) -> PCollection[Tuple[RootEntityId, Any]]:
         pass
 
 
@@ -852,26 +861,26 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         project_id: str,
         entities_dataset: str,
         entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
-        unifying_id_field: str,
-        unifying_id_field_filter_set: Optional[Set[int]],
+        root_entity_id_field: str,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
     ) -> None:
         super().__init__(
             project_id,
             entities_dataset,
             entity_class,
-            unifying_id_field,
-            unifying_id_field_filter_set,
+            root_entity_id_field,
+            root_entity_id_filter_set,
             state_code,
         )
 
     def _get_entities_raw_pcollection(
         self, input_or_inputs: PBegin
     ) -> PCollection[Dict[str, Any]]:
-        if not self._entity_has_unifying_id_field():
+        if not self._entity_has_root_entity_id_field():
             empty_output = (
                 input_or_inputs
-                | f"{self._base_entity_class} does not have {self._unifying_id_field}."
+                | f"{self._base_entity_to_hydrate_class} does not have {self._root_entity_id_field}."
                 >> beam.Create([])
             )
             return empty_output
@@ -881,69 +890,26 @@ class _ExtractAllEntitiesOfType(_ExtractValuesFromEntityBase):
         # Read entities from BQ
         entities_raw = (
             input_or_inputs
-            | f"Read {self._base_entity_table_name} from BigQuery"
+            | f"Read {self._base_entity_to_hydrate_table_name} from BigQuery"
             >> ReadFromBigQuery(query=entity_query)
         )
 
         return entities_raw
 
-    def expand(self, input_or_inputs: PBegin) -> PCollection[Tuple[UnifyingId, Entity]]:
+    def expand(
+        self, input_or_inputs: PBegin
+    ) -> PCollection[Tuple[RootEntityId, Entity]]:
         entities_raw = self._get_entities_raw_pcollection(input_or_inputs)
-
-        hydrate_kwargs: Dict[str, Any] = {
-            "entity_class": self._entity_class_to_hydrate,
-            "unifying_id_field": self._unifying_id_field,
-        }
-
         return (
             entities_raw
-            | f"Hydrate flat fields of {self._base_entity_class.__name__} instances"
-            >> beam.ParDo(_ShallowHydrateEntity(), **hydrate_kwargs)
+            | f"Hydrate flat fields of {self._base_entity_to_hydrate_class.__name__} instances"
+            >> beam.ParDo(
+                _ShallowHydrateEntity(
+                    entity_class=self._entity_to_hydrate_class,
+                    root_entity_id_field=self._root_entity_id_field,
+                ),
+            )
         )
-
-
-@with_input_types(beam.typehints.Any)
-@with_output_types(beam.typehints.Dict[str, Any])
-class ImportTable(beam.PTransform):
-    """Reads in rows from the given dataset_id.table_id table in BigQuery. Returns each
-    row as a dict."""
-
-    def __init__(
-        self,
-        project_id: str,
-        dataset_id: str,
-        table_id: str,
-        state_code_filter: str,
-        unifying_id_field: Optional[str] = None,
-        unifying_id_filter_set: Optional[Set[int]] = None,
-    ):
-        super().__init__()
-        self.project_id = project_id
-        self.dataset_id = dataset_id
-        self.table_id = table_id
-        self.state_code_filter = state_code_filter
-        self.unifying_id_field = unifying_id_field
-        self.unifying_id_filter_set = unifying_id_filter_set
-
-    # pylint: disable=arguments-renamed
-    def expand(self, pipeline: Pipeline) -> PCollection[Dict[str, Any]]:
-        # Bring in the table from BigQuery
-        table_query = select_query(
-            project_id=self.project_id,
-            dataset=self.dataset_id,
-            table=self.table_id,
-            state_code_filter=self.state_code_filter,
-            unifying_id_field=self.unifying_id_field,
-            unifying_id_field_filter_set=self.unifying_id_filter_set,
-        )
-
-        table_contents = (
-            pipeline
-            | f"Read {self.dataset_id}.{self.table_id} table from BigQuery"
-            >> ReadFromBigQuery(query=table_query)
-        )
-
-        return table_contents
 
 
 class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
@@ -953,59 +919,62 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
         self,
         project_id: str,
         entities_dataset: str,
-        root_entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
+        entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         related_entity_class: Union[Type[Entity], Type[NormalizedStateEntity]],
         related_id_field: str,
         association_table: str,
-        unifying_id_field: str,
-        unifying_id_field_filter_set: Optional[Set[int]],
+        root_entity_id_field: str,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]],
         state_code: str,
     ):
-        self._root_entity_class = root_entity_class
-        self._root_entity_base_class = state_base_entity_class_for_entity_class(
-            root_entity_class
-        )
-        self._root_schema_class: Type[
+        self._entity_base_class = state_base_entity_class_for_entity_class(entity_class)
+        self._entity_schema_class: Type[
             StateBase
         ] = schema_utils.get_state_database_entity_with_name(
-            self._root_entity_base_class.__name__
+            self._entity_base_class.__name__
         )
 
         self._related_entity_class = related_entity_class
         self._related_entity_base_class = state_base_entity_class_for_entity_class(
             related_entity_class
         )
-        self._related_schema_class: Type[
+        self._related_entity_schema_class: Type[
             StateBase
         ] = schema_utils.get_state_database_entity_with_name(
             self._related_entity_base_class.__name__
         )
         self._association_table = association_table
 
-        if self._association_table == self._related_schema_class.__tablename__:
+        if self._association_table == self._related_entity_schema_class.__tablename__:
             # If the provided association_table is the table of the related entity,
             # then we should set that entity as the core entity to be queried from
             self._entity_class_for_query = self._related_entity_class
         else:
-            self._entity_class_for_query = self._root_entity_class
+            self._entity_class_for_query = entity_class
 
-        self._root_id_field = self._root_entity_base_class.get_class_id_name()
-        self._related_id_field = related_id_field
+        self._entity_id_field = self._entity_base_class.get_class_id_name()
+        self._related_entity_id_field = related_id_field
 
         super().__init__(
             project_id,
             entities_dataset,
             self._entity_class_for_query,
-            unifying_id_field,
-            unifying_id_field_filter_set,
+            root_entity_id_field,
+            root_entity_id_filter_set,
             state_code,
         )
 
     def _entity_has_all_fields_for_association(self) -> bool:
         return (
-            hasattr(self._base_schema_class, self._unifying_id_field)
-            and hasattr(self._base_schema_class, self._root_id_field)
-            and hasattr(self._base_schema_class, self._related_id_field)
+            hasattr(
+                self._base_entity_to_hydrate_schema_class, self._root_entity_id_field
+            )
+            and hasattr(
+                self._base_entity_to_hydrate_schema_class, self._entity_id_field
+            )
+            and hasattr(
+                self._base_entity_to_hydrate_schema_class, self._related_entity_id_field
+            )
         )
 
     def _get_association_values_raw_pcollection(
@@ -1013,15 +982,18 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
     ) -> PCollection[Tuple[int, EntityAssociation]]:
         """Returns the PCollection of association values from all relevant rows in the
         association table."""
-        if not self._entity_has_unifying_id_field():
+        if not self._entity_has_root_entity_id_field():
             raise ValueError(
                 "Should not be querying for the association between two "
-                "entities if one entity does not have the unifying "
-                f"field. No {self._unifying_id_field} found on schema "
-                f"class: {self._base_schema_class}."
+                "entities if one entity does not have the root entity id "
+                f"field. No {self._root_entity_id_field} found on schema "
+                f"class: {self._base_entity_to_hydrate_schema_class}."
             )
 
-        if self._association_table == self._base_schema_class.__tablename__:
+        if (
+            self._association_table
+            == self._base_entity_to_hydrate_schema_class.__tablename__
+        ):
             if not self._entity_has_all_fields_for_association():
                 raise ValueError(
                     "All three association fields must exist on the "
@@ -1030,9 +1002,9 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
                 )
 
             columns_to_include = [
-                f"{self._unifying_id_field} as {UNIFYING_ID_KEY}",
-                self._root_id_field,
-                self._related_id_field,
+                f"{self._root_entity_id_field} as {ROOT_ENTITY_ID_KEY}",
+                self._entity_id_field,
+                self._related_entity_id_field,
             ]
 
             # Query the three association values directly from the entity table
@@ -1040,13 +1012,13 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
                 columns_to_include=columns_to_include
             )
         else:
-            if self._root_id_field != self._entity_id_field:
+            if self._entity_id_field != self._entity_to_hydrate_id_field:
                 raise ValueError(
                     "If we're querying from an actual association table "
                     "then we expect the _root_id_field to be the same as "
                     "the _entity_id_field. Found: _root_id_field: "
-                    f"{self._root_id_field}, _entity_id_field: "
-                    f"{self._entity_id_field}."
+                    f"{self._entity_id_field}, _entity_id_field: "
+                    f"{self._entity_to_hydrate_id_field}."
                 )
 
             # The join is doing a filter - we need to know which entities this instance
@@ -1054,14 +1026,14 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
             # rows we will need.
             association_view_query = (
                 f"SELECT "
-                f"{self._base_entity_class.get_entity_name()}.{self._unifying_id_field} as {UNIFYING_ID_KEY}, "
-                f"{self._association_table}.{self._root_id_field}, "
-                f"{self._association_table}.{self._related_id_field} "
+                f"{self._base_entity_to_hydrate_class.get_entity_name()}.{self._root_entity_id_field} as {ROOT_ENTITY_ID_KEY}, "
+                f"{self._association_table}.{self._entity_id_field}, "
+                f"{self._association_table}.{self._related_entity_id_field} "
                 f"FROM `{self._project_id}.{self._dataset}.{self._association_table}`"
                 f" {self._association_table} "
-                f"JOIN ({self._get_entities_table_sql_query()}) {self._base_entity_class.get_entity_name()} "
-                f"ON {self._base_entity_class.get_entity_name()}.{self._entity_id_field} = "
-                f"{self._association_table}.{self._root_id_field}"
+                f"JOIN ({self._get_entities_table_sql_query()}) {self._base_entity_to_hydrate_class.get_entity_name()} "
+                f"ON {self._base_entity_to_hydrate_class.get_entity_name()}.{self._entity_to_hydrate_id_field} = "
+                f"{self._association_table}.{self._entity_id_field}"
             )
 
         # Read association view from BQ
@@ -1075,20 +1047,20 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
 
     def expand(
         self, input_or_inputs: PBegin
-    ) -> PCollection[Tuple[UnifyingId, EntityAssociation]]:
+    ) -> PCollection[Tuple[RootEntityId, EntityAssociation]]:
         association_values_raw = self._get_association_values_raw_pcollection(
             input_or_inputs
         )
 
-        id_values_kwargs = {
-            ROOT_ENTITY_ID_FIELD_KEY: self._root_id_field,
-            RELATED_ENTITY_ID_FIELD_KEY: self._related_id_field,
-        }
-
         association_values = (
             association_values_raw | f"Get id fields from"
             f" {self._association_table} in values"
-            >> beam.ParDo(_PackageAssociationIDValues(), **id_values_kwargs)
+            >> beam.ParDo(
+                _PackageAssociationIDValues(
+                    entity_id_field=self._entity_id_field,
+                    related_entity_id_field=self._related_entity_id_field,
+                ),
+            )
         )
 
         return association_values
@@ -1096,7 +1068,6 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
 
 @with_input_types(
     beam.typehints.Dict[str, Any],
-    **{"entity_class": Type[Entity], "unifying_id_field": str},
 )
 @with_output_types(beam.typehints.Tuple[int, Entity])
 class _ShallowHydrateEntity(beam.DoFn):
@@ -1105,45 +1076,47 @@ class _ShallowHydrateEntity(beam.DoFn):
     # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
     # pylint: disable=W0223
 
-    # pylint: disable=arguments-differ
-    def process(
+    def __init__(
         self,
-        element: TableRow,
-        *,
-        entity_class: Type[Entity],
-        unifying_id_field: str,
-    ) -> Generator[Tuple[int, Entity], None, None]:
+        root_entity_id_field: str,
+        entity_class: Type[Entity | NormalizedStateEntity],
+    ) -> None:
+        """
+        Args:
+            entity_class: The class of the Entity to hydrate
+            root_entity_id_field: The name of the root entity id field on |entity_class|
+        """
+        super().__init__()
+        self._root_entity_id_field = root_entity_id_field
+        self._entity_class = entity_class
+
+    # pylint: disable=arguments-differ
+    def process(self, element: TableRow) -> Generator[Tuple[int, Entity], None, None]:
         """Builds an entity from key-value pairs.
 
         Args:
             element: A dictionary containing Entity information.
-            **kwargs: This should be a dictionary with values for the
-                    following keys:
-                        - entity_class: Entity class to be built. Classes must also
-                          be subclasses of BuildableAttr.
-                        - unifying_id_field: Field in |element| corresponding
-                            to an id that is needed to unify this root entity
-                            with other related root entities.
-
         Yields:
             A tuple in the form of (int, Entity).
         """
         # Build the entity from the values in the element
-        if not issubclass(entity_class, BuildableAttr):
+        if not issubclass(self._entity_class, BuildableAttr):
             raise ValueError(
-                f"Expected entity class [{entity_class}] to be a subclass of "
+                f"Expected entity class [{self._entity_class}] to be a subclass of "
                 f"BuildableAttr."
             )
-        hydrated_entity = entity_class.build_from_dictionary(element)
+        hydrated_entity = self._entity_class.build_from_dictionary(element)
         if not isinstance(hydrated_entity, Entity):
             raise ValueError(f"Found unexpected entity type [{type(hydrated_entity)}]")
 
-        unifying_id = _get_value_from_table_row(element, unifying_id_field)
+        root_entity_id = _get_value_from_table_row(element, self._root_entity_id_field)
 
-        if not unifying_id:
-            raise ValueError(f"Invalid unifying_id_field: {unifying_id_field}")
+        if not root_entity_id:
+            raise ValueError(
+                f"Invalid root_entity_id_field: {self._root_entity_id_field}"
+            )
 
-        yield (unifying_id, hydrated_entity)
+        yield (root_entity_id, hydrated_entity)
 
 
 def _get_value_from_table_row(table_row: TableRow, field: str) -> Any:

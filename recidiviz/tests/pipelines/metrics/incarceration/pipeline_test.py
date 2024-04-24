@@ -83,6 +83,7 @@ from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -358,7 +359,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             state_code=_STATE_CODE,
             data_dict=data_dict,
             expected_metric_types=ALL_METRIC_TYPES_SET,
-            unifying_id_field_filter_set={fake_person_id},
+            root_entity_id_filter_set={fake_person_id},
         )
 
     def testIncarcerationPipelineUsMo(self) -> None:
@@ -380,7 +381,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         state_code: str,
         data_dict: Dict[str, Iterable[Dict]],
         expected_metric_types: Set[IncarcerationMetricType],
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the supervision pipeline."""
@@ -408,7 +409,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
             metric_types_filter=metric_types_filter,
         )
 
