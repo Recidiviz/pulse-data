@@ -140,6 +140,18 @@ def _sentencing_entities_checks(
     for sentence in state_person.sentences:
         if not sentence.imposed_date:
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
+        # TODO(#29316) Validate parole projected dates of StateSentenceGroup as well
+        if sentence.parole_possible is False:
+            if any(
+                length.parole_eligibility_date_external is not None
+                or length.projected_parole_release_date_external is not None
+                for length in sentence.sentence_lengths
+            ):
+                yield (
+                    f"Sentence {sentence.limited_pii_repr()} has parole projected dates, "
+                    "despite denoting that parole is not possible."
+                )
+
         if not sentence.sentence_type:
             yield f"Found sentence {sentence.limited_pii_repr()} with no StateSentenceType."
         elif sentence.sentence_type in {
