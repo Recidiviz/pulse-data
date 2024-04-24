@@ -73,6 +73,7 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
 from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
     StateSpecificRecidivismMetricsProducerDelegate,
 )
@@ -411,7 +412,7 @@ class TestRecidivismPipeline(unittest.TestCase):
     def run_test_pipeline(
         self,
         data_dict: DataTablesDict,
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the recidivism pipeline."""
@@ -443,7 +444,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
             metric_types_filter=metric_types_filter,
             include_calculation_limit_args=False,
         )

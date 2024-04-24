@@ -98,6 +98,7 @@ from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
@@ -502,7 +503,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             _STATE_CODE,
             data_dict,
             expected_metric_types,
-            unifying_id_field_filter_set={fake_person_id},
+            root_entity_id_filter_set={fake_person_id},
         )
 
     def run_test_pipeline(
@@ -511,7 +512,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         data_dict: DataTablesDict,
         expected_metric_types: Set[SupervisionMetricType],
         expected_violation_types: Optional[Set[ViolationType]] = None,
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the supervision pipeline."""
@@ -539,7 +540,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
             metric_types_filter=metric_types_filter,
         )
 

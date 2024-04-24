@@ -387,8 +387,8 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractDataForPipeline_UnifyingClassNotIncluded(self):
-        """Tests the extraction of multiple entities, where the unifying class is
+    def testExtractDataForPipeline_RootEntityClassNotIncluded(self):
+        """Tests the extraction of multiple entities, where the root entity class is
         not a class that's included in the list of required entities."""
 
         person_id = 12345
@@ -1557,9 +1557,10 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
             | beam.Create([element])
             | "Connect related entities"
             >> beam.ParDo(
-                extractor_utils._ConnectHydratedRelatedEntities(),
-                unifying_class=entities.StatePerson,
-                relationships_to_hydrate=relationships_to_hydrate,
+                extractor_utils._ConnectHydratedRelatedEntities(
+                    root_entity_class=entities.StatePerson,
+                    relationships_to_hydrate=relationships_to_hydrate,
+                ),
             )
         )
 
@@ -1620,12 +1621,12 @@ class TestExtractAssociationValues(unittest.TestCase):
                 >> extractor_utils._ExtractAssociationValues(
                     project_id=project,
                     entities_dataset=normalized_dataset,
-                    root_entity_class=entities.StateIncarcerationSentence,
+                    entity_class=entities.StateIncarcerationSentence,
                     related_entity_class=entities.StateCharge,
                     related_id_field=entities.StateCharge.get_class_id_name(),
-                    unifying_id_field=entities.StatePerson.get_class_id_name(),
+                    root_entity_id_field=entities.StatePerson.get_class_id_name(),
                     association_table=association_table_name,
-                    unifying_id_field_filter_set=None,
+                    root_entity_id_filter_set=None,
                     state_code=charge.state_code,
                 )
             )
@@ -1633,7 +1634,7 @@ class TestExtractAssociationValues(unittest.TestCase):
             assert_that(
                 output,
                 ExtractAssertMatchers.validate_extract_relationship_property_values(
-                    unifying_id=charge.person_id,
+                    root_entity_id=charge.person_id,
                     parent_id=incarceration_sentence.incarceration_sentence_id,
                     entity_id=charge.charge_id,
                 ),
@@ -1692,8 +1693,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                     project_id=project,
                     entities_dataset=normalized_dataset,
                     entity_class=entity_class,
-                    unifying_id_field=entity_class.get_class_id_name(),
-                    unifying_id_field_filter_set=None,
+                    root_entity_id_field=entity_class.get_class_id_name(),
+                    root_entity_id_filter_set=None,
                     state_code=person.state_code,
                 )
             )
@@ -1705,7 +1706,7 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
 
             test_pipeline.run()
 
-    def testExtractAllEntitiesOfType_InvalidUnifyingIdField(self):
+    def testExtractAllEntitiesOfType_InvalidRootEntityIdField(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
                 person_id=123,
@@ -1747,8 +1748,8 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
                     project_id=project,
                     entities_dataset=normalized_dataset,
                     entity_class=entity_class,
-                    unifying_id_field="XX",
-                    unifying_id_field_filter_set=None,
+                    root_entity_id_field="XX",
+                    root_entity_id_filter_set=None,
                     state_code="US_XX",
                 )
             )
@@ -1791,13 +1792,11 @@ class TestShallowHydrateEntity(unittest.TestCase):
             >> FakeReadFromBigQuery(table_values=supervision_violation_data)
         )
 
-        hydrate_kwargs = {
-            "entity_class": entity_class,
-            "unifying_id_field": entity_class.get_class_id_name(),
-        }
-
         output = entities_raw | f"Hydrate {entity_class} instances" >> beam.ParDo(
-            extractor_utils._ShallowHydrateEntity(), **hydrate_kwargs
+            extractor_utils._ShallowHydrateEntity(
+                root_entity_id_field=entity_class.get_class_id_name(),
+                entity_class=entity_class,
+            ),
         )
 
         assert_that(
@@ -1821,14 +1820,14 @@ class ExtractAssertMatchers:
 
     @staticmethod
     def validate_extract_relationship_property_values(
-        unifying_id: int,
+        root_entity_id: int,
         parent_id: int,
         entity_id: int,
     ):
         """Validates that the output of _ExtractAssociationValues
         matches the expected format:
 
-            (unifying_id, (parent_id, entity_id))
+            (root_entity_id, (parent_id, entity_id))
 
         where the Entity is of the given |class_type|.
         """
@@ -1838,7 +1837,7 @@ class ExtractAssertMatchers:
             for item in output:
                 empty = False
                 first_id, other_ids = item
-                assert first_id == unifying_id
+                assert first_id == root_entity_id
 
                 second_id, third_id = other_ids
                 assert second_id == parent_id

@@ -40,6 +40,7 @@ from recidiviz.pipelines.normalization.comprehensive.pipeline import (
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQuery,
     FakeWriteToBigQuery,
@@ -77,7 +78,7 @@ def run_test_pipeline(
     write_to_bq_constructor: Callable[
         [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
     ],
-    unifying_id_field_filter_set: Optional[Set[int]] = None,
+    root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
     read_all_from_bq_constructor: Optional[Callable[[], FakeReadFromBigQuery]] = None,
     **additional_pipeline_args: Any,
 ) -> None:
@@ -87,7 +88,7 @@ def run_test_pipeline(
         pipeline=pipeline_cls,
         state_code=state_code,
         project_id=project_id,
-        unifying_id_field_filter_set=unifying_id_field_filter_set,
+        root_entity_id_filter_set=root_entity_id_filter_set,
         **additional_pipeline_args,
     )
 
@@ -200,7 +201,7 @@ def default_arg_list_for_pipeline(
     pipeline: Type[BasePipeline],
     state_code: str,
     project_id: str,
-    unifying_id_field_filter_set: Optional[Set[int]] = None,
+    root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
     **additional_pipeline_args: Any,
 ) -> List[str]:
     """Constructs the list of default arguments that should be used for a test
@@ -218,15 +219,11 @@ def default_arg_list_for_pipeline(
         DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     ]
 
-    if unifying_id_field_filter_set:
+    if root_entity_id_filter_set:
         pipeline_args.extend(
             [
                 "--person_filter_ids",
-                (
-                    ", ".join(
-                        [str(id_value) for id_value in unifying_id_field_filter_set]
-                    )
-                ),
+                (", ".join([str(id_value) for id_value in root_entity_id_filter_set])),
             ]
         )
 

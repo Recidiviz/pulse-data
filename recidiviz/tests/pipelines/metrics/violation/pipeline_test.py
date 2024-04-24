@@ -59,6 +59,7 @@ from recidiviz.pipelines.metrics.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
+from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.pipelines.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
@@ -208,7 +209,7 @@ class TestViolationPipeline(unittest.TestCase):
         self,
         data_dict: DataTablesDict,
         expected_metric_types: Set[ViolationMetricType],
-        unifying_id_field_filter_set: Optional[Set[int]] = None,
+        root_entity_id_filter_set: Optional[Set[RootEntityId]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the violation pipeline."""
@@ -235,7 +236,7 @@ class TestViolationPipeline(unittest.TestCase):
             project_id=self.project_id,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
-            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            root_entity_id_filter_set=root_entity_id_filter_set,
             metric_types_filter=metric_types_filter,
         )
 
@@ -258,7 +259,7 @@ class TestViolationPipeline(unittest.TestCase):
         self.run_test_pipeline(
             data_dict,
             expected_metric_types={ViolationMetricType.VIOLATION},
-            unifying_id_field_filter_set={12345},
+            root_entity_id_filter_set={12345},
         )
 
     def testViolationPipelineWithNoViolations(self) -> None:

@@ -115,8 +115,8 @@ class TestSelectAllQuery(unittest.TestCase):
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
-                unifying_id_field="field_name",
-                unifying_id_field_filter_set=None,
+                root_entity_id_field="field_name",
+                root_entity_id_filter_set=None,
             ),
         )
 
@@ -148,8 +148,8 @@ class TestSelectAllQuery(unittest.TestCase):
                 self.dataset,
                 self.table_id,
                 state_code_filter="US_XX",
-                unifying_id_field="field_name",
-                unifying_id_field_filter_set={1234, 56},
+                root_entity_id_field="field_name",
+                root_entity_id_filter_set={1234, 56},
             ),
         )
 
