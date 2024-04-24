@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_TRANSITION_PRG_ELIG
+file_description: |-
+  Unknown at this time.
+data_classification: source
+primary_key_cols: [TRANSITION_PRG_ELIGIBILITY_ID]
+columns:
+  - name: TRANSITION_PRG_ELIGIBILITY_ID
+    description: |-
+      Primary key for table
+  - name: DOC_ID
+    description: |-
+      DOC_ID for inmate
+    is_pii: True
+  - name: RELEASE_TYPE_ID
+    description: |-
+      Inmates release type ID
+  - name: ELIGIBILITY_STATUS_ID
+    description: |-
+      Eligibility status ID
+  - name: ACTIVE
+    description: |-
+      Active flag
+  - name: CREATE_DTM
+    description: |-
+      Date record was created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+  - name: CREATE_USERID
+    description: |-
+      User_id of person who created the record
+    is_pii: True
