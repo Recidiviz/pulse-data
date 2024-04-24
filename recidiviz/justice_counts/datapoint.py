@@ -179,9 +179,11 @@ class DatapointInterface:
             "disaggregation_display_name": disaggregation_display_name,
             "dimension_display_name": dimension_display_name,
             "value": get_value(datapoint=datapoint),
-            "old_value": get_value(datapoint=datapoint, use_value=old_value)
-            if old_value is not None
-            else None,
+            "old_value": (
+                get_value(datapoint=datapoint, use_value=old_value)
+                if old_value is not None
+                else None
+            ),
             "is_published": is_published,
             "frequency": frequency.value,
         }
@@ -472,9 +474,11 @@ class DatapointInterface:
             report.source_id,
             metric_definition_key,
             context_key.value if context_key else None,
-            json.dumps({dimension.dimension_identifier(): dimension.dimension_name})
-            if dimension
-            else None,
+            (
+                json.dumps({dimension.dimension_identifier(): dimension.dimension_name})
+                if dimension
+                else None
+            ),
         )
         existing_datapoint = existing_datapoints_dict.get(datapoint_key)
         if uploaded_via_breakdown_sheet:
@@ -494,16 +498,18 @@ class DatapointInterface:
             value_type=value_type,
             start_date=report.date_range_start,
             end_date=report.date_range_end,
-            created_at=current_time
-            if existing_datapoint is None
-            else existing_datapoint.created_at,
+            created_at=(
+                current_time
+                if existing_datapoint is None
+                else existing_datapoint.created_at
+            ),
             last_updated=current_time,
             report=report,
-            dimension_identifier_to_member={
-                dimension.dimension_identifier(): dimension.dimension_name
-            }
-            if dimension
-            else None,
+            dimension_identifier_to_member=(
+                {dimension.dimension_identifier(): dimension.dimension_name}
+                if dimension
+                else None
+            ),
             source_id=report.source_id,
             is_report_datapoint=True,
             upload_method=upload_method.value,
@@ -532,9 +538,9 @@ class DatapointInterface:
                 updates.append(new_datapoint)
                 datapoint_history = schema.DatapointHistory(
                     datapoint_id=existing_datapoint.id,
-                    user_account_id=user_account.id
-                    if user_account is not None
-                    else None,
+                    user_account_id=(
+                        user_account.id if user_account is not None else None
+                    ),
                     timestamp=current_time,
                     old_value=existing_datapoint.value,
                     new_value=str(value) if value is not None else value,
@@ -554,9 +560,11 @@ class DatapointInterface:
                 datapoint=new_datapoint,
                 is_published=report.status == schema.ReportStatus.PUBLISHED,
                 frequency=schema.ReportingFrequency[report.type],
-                old_value=existing_datapoint.value
-                if not equal_to_existing and existing_datapoint is not None
-                else None,
+                old_value=(
+                    existing_datapoint.value
+                    if not equal_to_existing and existing_datapoint is not None
+                    else None
+                ),
                 agency_name=agency.name if agency is not None else None,
             )
             if new_datapoint is not None
@@ -688,10 +696,12 @@ class DatapointInterface:
                         metric_definition=metric_definition
                     ),
                     custom_reporting_frequency=datapoints.custom_reporting_frequency,
-                    disaggregated_by_supervision_subsystems=False
-                    if metric_definition.system == schema.System.SUPERVISION
-                    and datapoints.disaggregated_by_supervision_subsystems is None
-                    else datapoints.disaggregated_by_supervision_subsystems,
+                    disaggregated_by_supervision_subsystems=(
+                        False
+                        if metric_definition.system == schema.System.SUPERVISION
+                        and datapoints.disaggregated_by_supervision_subsystems is None
+                        else datapoints.disaggregated_by_supervision_subsystems
+                    ),
                 )
             )
         return agency_metrics
@@ -868,7 +878,13 @@ class DatapointInterface:
             )
 
         # 4. Add datapoints to record that metric is disaggregated_by_supervision_subsystems
-        if agency_metric.disaggregated_by_supervision_subsystems is not None:
+        # if the metric is disaggregated and the agency also reports for supervision subsystems,
+        systems_enums = {schema.System[s] for s in agency.systems}
+        if (
+            agency_metric.disaggregated_by_supervision_subsystems is not None
+            and len(schema.System.supervision_subsystems().intersection(systems_enums))
+            > 0
+        ):
             current_system = agency_metric.metric_definition.system.value
             for system in agency.systems:
                 if (
@@ -899,9 +915,8 @@ class DatapointInterface:
                     )
 
                     # Then, update the enabled/disabled statuses accordingly. If the metric
-                    # is Supervision and we are *not* disaggregating, the metric should be
-                    # enabled; otherwise, disabled. If the metric is a supervsion subsystem,
-                    # the logic is reversed.
+                    # is Supervision we are *not* disaggregating, the metric should be enabled; otherwise, disabled.
+                    # If the metric is a supervsion subsystem,the logic is reversed.
                     if schema.System[system] == schema.System.SUPERVISION:
                         DatapointInterface.add_agency_datapoint(
                             session=session,
