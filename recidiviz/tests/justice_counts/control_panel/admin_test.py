@@ -28,9 +28,6 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.jobs.copy_superagency_metric_settings_to_child_agencies import (
-    copy_metric_settings,
-)
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
@@ -56,6 +53,9 @@ from recidiviz.tests.auth.utils import get_test_auth0_config
 from recidiviz.tests.justice_counts.utils.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
+)
+from recidiviz.tools.justice_counts.copy_over_metric_settings_to_child_agencies import (
+    copy_metric_settings,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
