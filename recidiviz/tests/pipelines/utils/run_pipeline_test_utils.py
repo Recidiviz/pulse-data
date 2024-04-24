@@ -211,8 +211,6 @@ def default_arg_list_for_pipeline(
         project_id,
         "--state_code",
         state_code,
-        "--job_name",
-        "test-job",
         "--pipeline",
         "pipeline",
         "--output_sandbox_prefix",

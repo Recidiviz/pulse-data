@@ -4,25 +4,21 @@
 normalization_pipelines:
   # US_XX entity normalization pipeline
   - pipeline: normalization_pipeline
-    job_name: us-xx-normalization
     state_code: US_XX
     region: us-west1
   - pipeline: normalization_pipeline_2
-    job_name: us-yy-normalization
     state_code: US_YY
     region: us-east2
 
 metric_pipelines:
   # Full US_XX calculations with no time limit
   - pipeline: pipeline_no_limit
-    job_name: full-us-xx-pipeline_no_limit-calculations
     state_code: US_XX
     metric_types: METRIC_1
     region: us-west1
 
   # Daily US_XX calculations
   - pipeline: pipeline_with_limit
-    job_name: us-xx-pipeline_with_limit-calculations-36
     state_code: US_XX
     calculation_month_count: 36
     metric_types: METRIC_2 METRIC_3
@@ -30,7 +26,6 @@ metric_pipelines:
 
   # Daily US_YY calculations
   - pipeline: pipeline_with_limit
-    job_name: us-yy-pipeline_with_limit-calculations-24
     state_code: US_YY
     calculation_month_count: 24
     metric_types: METRIC_2 METRIC_3
@@ -38,7 +33,6 @@ metric_pipelines:
 
   # Daily US_YY calculations
   - pipeline: pipeline_staging_only
-    job_name: us-yy-pipeline_staging_only-calculations-36
     state_code: US_YY
     calculation_month_count: 36
     metric_types: METRIC_3
@@ -47,6 +41,5 @@ metric_pipelines:
 
 supplemental_dataset_pipelines:
   - pipeline: pipeline_to_run
-    job_name: us-yy-pipeline-to-run-daily
     state_code: US_YY
     region: us-east1

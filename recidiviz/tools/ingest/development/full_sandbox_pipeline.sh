@@ -198,7 +198,6 @@ function confirm_cmd {
 
 # Some more variables
 STATE_CODE_LOWERCASE=${STATE_CODE,,}                 # convert to lowercase
-STATE_CODE_FOR_JOB_NAME=${STATE_CODE_LOWERCASE//_/-} # replace underscores with dashes
 
 STANDARD_STATE_SPECIFIC_STATE_DATASET="${STATE_CODE_LOWERCASE}_state_primary"
 SANDBOX_STATE_DATASET="${SANDBOX_PREFIX}_${STANDARD_STATE_SPECIFIC_STATE_DATASET}"
@@ -242,7 +241,6 @@ confirm_cmd python -m recidiviz.tools.calculator.run_sandbox_calculation_pipelin
 	--pipeline comprehensive_normalization \
 	--type normalization \
 	--project "${PROJECT_ID}" \
-	--job_name "${STATE_CODE_FOR_JOB_NAME}-normalization" \
 	--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 	--state_code "${STATE_CODE}" \
 	--input_dataset_overrides_json "'{\"${STANDARD_STATE_SPECIFIC_STATE_DATASET}\": \"${SANDBOX_STATE_DATASET}\"}'"
@@ -260,14 +258,12 @@ confirm_cmd python -m recidiviz.tools.calculator.update_sandbox_normalized_state
 # Metric pipelines
 for pipeline in "${!PIPELINES[@]}"; do
 	pipeline_lowercase=${pipeline,,}
-	pipeline_for_job_name=${pipeline_lowercase//_/-}
 	echo "Ready to run sandbox metrics pipeline for ${STATE_CODE} for pipeline ${pipeline_lowercase}."
 	IFS=',' read -r -a metric_types <<<"${PIPELINES[$pipeline]}"
 	confirm_cmd python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
 		--pipeline "${pipeline_lowercase}" \
 		--type metrics \
 		--project "${PROJECT_ID}" \
-		--job_name "${STATE_CODE_FOR_JOB_NAME}-${pipeline_for_job_name}" \
 		--output_sandbox_prefix "${SANDBOX_PREFIX}" \
 		--state_code "${STATE_CODE}" \
 		--input_dataset_overrides_json "'{\"${STANDARD_NORMALIZED_STATE_DATASET}\": \"${SANDBOX_NORMALIZED_DATASET}\"}'" \

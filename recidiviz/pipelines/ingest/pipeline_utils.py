@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper functions related to ingest pipelines."""
-from typing import Dict, Optional
+from typing import Dict
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 # The compute region (e.g. "us-east1") ingest pipelines for a given state should be
 #  run in.
@@ -40,20 +39,3 @@ DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_AZ: "us-central1",
     StateCode.US_TN: "us-central1",
 }
-
-
-def ingest_pipeline_name(
-    *,
-    state_code: StateCode,
-    instance: DirectIngestInstance,
-    sandbox_prefix: Optional[str],
-) -> str:
-    """Ingest pipeline job_name to use for a given state/instance."""
-    prefix = f"{sandbox_prefix}-" if sandbox_prefix else ""
-    suffix = "-test" if sandbox_prefix else ""
-
-    return (
-        f"{prefix}{state_code.value}-ingest-{instance.value}{suffix}".lower().replace(
-            "_", "-"
-        )
-    )

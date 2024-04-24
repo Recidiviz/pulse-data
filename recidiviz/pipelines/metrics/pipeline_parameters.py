@@ -55,6 +55,18 @@ class MetricsPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "metrics"
 
+    def _get_base_job_name(self) -> str:
+        if self.calculation_month_count == -1:
+            prefix = "full-"
+            suffix = ""
+        else:
+            prefix = ""
+            suffix = f"-{self.calculation_month_count}"
+
+        return self._to_job_name_friendly(
+            f"{prefix}{self.state_code}-{self.pipeline}{suffix}"
+        )
+
     @classmethod
     def custom_sandbox_indicator_parameters(cls) -> Set[str]:
         return {"person_filter_ids"}

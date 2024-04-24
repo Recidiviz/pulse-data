@@ -61,7 +61,6 @@ from recidiviz.pipelines.ingest.pipeline_parameters import (
 )
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
-    ingest_pipeline_name,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -253,9 +252,6 @@ def _create_dataflow_pipeline(
                 project=get_project_id(),
                 ingest_instance=ingest_instance.value,
                 raw_data_upper_bound_dates_json=json.dumps(max_update_datetimes),
-                job_name=ingest_pipeline_name(
-                    state_code=state_code, instance=ingest_instance, sandbox_prefix=None
-                ),
                 pipeline=INGEST_PIPELINE_NAME,
                 state_code=state_code.value,
                 region=region,

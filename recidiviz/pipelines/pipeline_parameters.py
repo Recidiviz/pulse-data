@@ -41,8 +41,8 @@ from recidiviz.common.attr_converters import optional_json_str_to_dict
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import GCP_PROJECTS, in_test
 from recidiviz.utils.params import str_matches_regex_type
+from recidiviz.utils.types import assert_type
 
-PIPELINE_JOB_NAME_ARG_NAME = "job_name"
 PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME = "input_dataset_overrides_json"
 PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME = "output_sandbox_prefix"
 
@@ -130,7 +130,6 @@ class PipelineParameters:
 
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)
-    job_name: str = attr.ib(validator=attr_validators.is_str)
     machine_type: str = attr.ib(
         default="n1-standard-32", validator=attr_validators.is_str
     )
@@ -190,26 +189,43 @@ class PipelineParameters:
     def flex_template_name(self) -> str:
         pass
 
-    def __attrs_post_init__(self) -> None:
-        if self.is_sandbox_pipeline:
-            if not self.output_sandbox_prefix:
-                raise ValueError(
-                    f"This sandbox pipeline must define an output_sandbox_prefix. "
-                    f"Found non-default values for these fields: "
-                    f"{self._get_non_default_sandbox_indicator_parameters()}"
-                )
+    @abc.abstractmethod
+    def _get_base_job_name(self) -> str:
+        """Returns the job name that should be used for this pipeline if it were not a
+        sandbox run.
+        """
 
-            # Adjust sandbox job name so that it won't trigger alerting
-            self.job_name = self._get_job_name_for_sandbox_job(
-                self.job_name, self.output_sandbox_prefix
+    @property
+    def job_name(self) -> str:
+        base_job_name = self._get_base_job_name()
+
+        if not self.is_sandbox_pipeline:
+            return base_job_name
+
+        # Adjust sandbox job name so that it won't trigger alerting
+        return self._get_job_name_for_sandbox_job(
+            base_job_name, assert_type(self.output_sandbox_prefix, str)
+        )
+
+    def __attrs_post_init__(self) -> None:
+        if self.is_sandbox_pipeline and not self.output_sandbox_prefix:
+            raise ValueError(
+                f"This sandbox pipeline must define an output_sandbox_prefix. "
+                f"Found non-default values for these fields: "
+                f"{self._get_non_default_sandbox_indicator_parameters()}"
             )
 
     @staticmethod
+    def _to_job_name_friendly(s: str) -> str:
+        """Converts a string to a version that can be used as a Dataflow job name."""
+        return s.lower().replace("_", "-")
+
+    @classmethod
     def _get_job_name_for_sandbox_job(
-        original_job_name: str, output_sandbox_prefix: str
+        cls, original_job_name: str, output_sandbox_prefix: str
     ) -> str:
         job_name = original_job_name
-        job_name_friendly_prefix = output_sandbox_prefix.replace("_", "-")
+        job_name_friendly_prefix = cls._to_job_name_friendly(output_sandbox_prefix)
         if not job_name.startswith(job_name_friendly_prefix):
             job_name = f"{job_name_friendly_prefix}-{job_name}"
         if not job_name.endswith("-test"):
@@ -336,14 +352,6 @@ class PipelineParameters:
             type=str,
             help="ID of the GCP project.",
             choices=GCP_PROJECTS if not in_test() else None,
-            required=True,
-        )
-
-        parser.add_argument(
-            "--job_name",
-            dest="job_name",
-            type=str,
-            help="The name of the pipeline job to be run.",
             required=True,
         )
 

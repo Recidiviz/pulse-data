@@ -28,8 +28,8 @@ Usage:
 Examples:
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
         --project recidiviz-staging \
-        --state_code US_CA \
-        --output_sandbox_prefix ageiduschek
+        --state_code US_XX \
+        --output_sandbox_prefix my_prefix
 
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
         --project recidiviz-staging \
@@ -73,7 +73,6 @@ from recidiviz.pipelines.ingest.pipeline_parameters import (
     INGEST_PIPELINE_NAME,
     IngestPipelineParameters,
 )
-from recidiviz.pipelines.ingest.pipeline_utils import ingest_pipeline_name
 from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
     create_or_update_ingest_output_sandbox,
 )
@@ -115,13 +114,6 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
     )
 
     parser.add_argument(
-        "--output_sandbox_prefix",
-        required=True,
-        type=str,
-        help="The prefix to use for any sandbox output datasets as well as the pipeline job name.",
-    )
-
-    parser.add_argument(
         "--skip_build",
         dest="skip_build",
         help="If set to true, the image will not be rebuilt and submitted. "
@@ -139,19 +131,10 @@ def get_extra_pipeline_parameter_args(
     project: str,
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
-    output_sandbox_prefix: str,
 ) -> List[str]:
     """Returns additional pipeline command-line args that can be inferred from the
     state code, instance and sandbox prefix.
     """
-
-    job_name = ingest_pipeline_name(
-        state_code=state_code,
-        instance=ingest_instance,
-        # The prefix/test suffix is applied by the pipeline args
-        sandbox_prefix=None,
-    )
-
     right_now = datetime.now()
 
     region = direct_ingest_regions.get_direct_ingest_region(
@@ -211,10 +194,6 @@ def get_extra_pipeline_parameter_args(
         project,
         "--state_code",
         state_code.value,
-        "--job_name",
-        job_name,
-        "--output_sandbox_prefix",
-        output_sandbox_prefix,
         "--raw_data_upper_bound_dates_json",
         raw_data_upper_bound_dates_json,
     ]
@@ -229,7 +208,6 @@ def main() -> None:
         known_args.project,
         known_args.state_code,
         known_args.ingest_instance,
-        known_args.output_sandbox_prefix,
     )
 
     params = IngestPipelineParameters.parse_from_args(

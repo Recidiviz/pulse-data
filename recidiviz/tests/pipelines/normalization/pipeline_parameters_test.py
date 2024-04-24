@@ -40,7 +40,6 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
         )
 
         expected_parameters = {
@@ -51,7 +50,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test-job")
+        self.assertEqual(pipeline_parameters.job_name, "us-oz-normalization")
 
         self.assertEqual(STATE_BASE_DATASET, pipeline_parameters.state_data_input)
         self.assertEqual("us_oz_normalized_state", pipeline_parameters.output)
@@ -66,7 +65,6 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             person_filter_ids="123 12323 324",
             input_dataset_overrides_json=input_dataset_overrides_json,
             output_sandbox_prefix="my_prefix",
@@ -81,7 +79,9 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
-        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
+        self.assertEqual(
+            pipeline_parameters.job_name, "my-prefix-us-oz-normalization-test"
+        )
 
         self.assertEqual(
             "some_completely_different_dataset", pipeline_parameters.state_data_input
@@ -103,7 +103,6 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             state_code="US_XX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             person_filter_ids="123 12323 324",
             input_dataset_overrides_json=input_dataset_overrides_json,
             output_sandbox_prefix="my_prefix",
@@ -129,7 +128,6 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             state_code="US_XX",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test-job",
             person_filter_ids="123 12323 324",
             input_dataset_overrides_json=input_dataset_overrides_json,
             output_sandbox_prefix="my_prefix",

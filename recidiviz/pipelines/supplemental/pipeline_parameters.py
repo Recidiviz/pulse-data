@@ -35,6 +35,9 @@ class SupplementalPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "supplemental"
 
+    def _get_base_job_name(self) -> str:
+        return self._to_job_name_friendly(self.pipeline[: -len("_supplemental")])
+
     @classmethod
     def custom_sandbox_indicator_parameters(cls) -> Set[str]:
         return set()
