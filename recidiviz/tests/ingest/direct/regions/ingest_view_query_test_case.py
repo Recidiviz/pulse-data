@@ -56,11 +56,17 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.big_query.big_query_test_helper import query_view
+from recidiviz.tests.big_query.big_query_test_helper import (
+    check_for_ctes_with_no_comments,
+    query_view,
+)
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestTestFixturePath,
     load_dataframe_from_path,
     replace_empty_with_null,
+)
+from recidiviz.tests.ingest.direct.regions.ingest_view_cte_comment_exemptions import (
+    THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES,
 )
 from recidiviz.utils import csv, environment
 
@@ -87,6 +93,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        # TODO(#5508) Have region/state code be enum
         self.region_code: str
         # TODO(#19137): Get the view builder directly instead of requiring the test to
         # do that.
@@ -162,6 +169,9 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         pd.options.display.max_rows = 999
         pd.options.display.max_colwidth = 999
         self.compare_results_to_fixture(results, expected_output_fixture_path)
+        self.check_ingest_view_ctes_are_documented(
+            self.ingest_view, self.query_run_dt, self.region_code
+        )
 
     def load_mock_raw_table(
         self,
@@ -353,6 +363,27 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             )
         )
         return query_view(self, ingest_view.ingest_view_name, view_query)
+
+    def check_ingest_view_ctes_are_documented(
+        self,
+        ingest_view: DirectIngestViewQueryBuilder,
+        query_run_dt: datetime.datetime,
+        region_code: str,
+    ) -> None:
+        state_code = StateCode(region_code.upper())
+        if (
+            ingest_view.ingest_view_name
+            # TODO(#5508) Have region/state code be enum
+            in THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES.get(state_code, {})
+        ):
+            return None
+        query = ingest_view.build_query(
+            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_data_datetime_upper_bound=query_run_dt,
+            )
+        )
+        return check_for_ctes_with_no_comments(query, ingest_view.ingest_view_name)
 
     def compare_results_to_fixture(
         self, results: pd.DataFrame, expected_output_fixture_path: str

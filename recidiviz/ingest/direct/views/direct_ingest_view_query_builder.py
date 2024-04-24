@@ -466,6 +466,7 @@ class DirectIngestViewQueryBuilder:
 
         return query.strip()
 
+    # TODO(#29272) Self document generated CTEs
     def _get_table_subquery_str(
         self,
         config: "DirectIngestViewQueryBuilder.QueryStructureConfig",

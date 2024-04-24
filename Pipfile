@@ -108,6 +108,7 @@ ydata-profiling = "*"
 # end recidiviz-research dependencies
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
+sqlglot = "*"
 
 [packages]
 callee = "*"
@@ -253,7 +254,6 @@ docker-build-dev = "docker build . -f Dockerfile --target recidiviz-dev -t us.gc
 docker-build-base = "docker build . -f Dockerfile.recidiviz-base -t us.gcr.io/recidiviz-staging/recidiviz-base:latest --platform=linux/amd64"
 cloudsql = "./recidiviz/tools/postgres/access_cloudsql_instance.sh"
 docker-admin = "docker-compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up"
-
 # Specific to Justice Counts team
 # For `docker-build-jc` commands, append the build arg FRONTEND_URL at the end
 # e.g. `docker-build-jc --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz`
@@ -261,7 +261,6 @@ docker-build-jc = "docker build . -f Dockerfile.justice-counts -t us-central1-do
 docker-jc = "docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up"
 fixtures-jc = "docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures"
 migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --database JUSTICE_COUNTS --message "
-
 # Scripts for working with the BigQuery emulator
 # TODO(#20786): Migrate back to the goccy version by removing the comment about PAT and replacing recidiviz with goccy below.
 # Run this script once to download the emulator and again if you want to update the version.
