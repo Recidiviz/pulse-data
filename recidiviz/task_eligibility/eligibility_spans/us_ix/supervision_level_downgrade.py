@@ -21,15 +21,16 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population_08_2020_present,
 )
+from recidiviz.task_eligibility.completion_events.general import (
+    supervision_level_downgrade,
+)
 from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
     supervision_level_is_not_unassigned,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    supervision_level_downgrade,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    served_at_least_one_year_for_dui_if_lsir_level_low,
     supervision_level_higher_than_assessment_level,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -52,6 +53,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
         supervision_level_is_not_unassigned.VIEW_BUILDER,
+        served_at_least_one_year_for_dui_if_lsir_level_low.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
