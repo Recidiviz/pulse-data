@@ -44,7 +44,6 @@ input_columns:
   - Task_Dates
 unused_columns:
   - ChargeOffense
-  - ReleaseEligibilityDate
 variables:
   - is_incarceration_sentence:
       $or:
@@ -235,7 +234,7 @@ output:
                 conditions: Conditions
                 sentence_metadata: $variable(sentence_metadata)
                 initial_time_served_days: PretrialJailCredits
-                # parole_eligibility_date: ReleaseEligibilityDate - No longer hydrating this, see TODO(#22443)
+                parole_eligibility_date: ReleaseEligibilityDate
                 charges:
                   - $variable(charge)
 
