@@ -51,22 +51,34 @@ WITH parole_starts AS (
     AND compartment_level_2 IN ("PAROLE", "DUAL")
     AND inflow_from_level_2 NOT IN ("PAROLE", "DUAL")
 ),
-sentences AS (
+sentences_preprocessed AS (
   SELECT
       span.state_code,
       span.person_id,
       span.start_date,
       span.end_date,
-      ARRAY_AGG(DISTINCT statute IGNORE NULLS) AS statutes_being_served,
-      LOGICAL_OR(sent.life_sentence) AS any_life_sentence,
-      --checks for whether 750.110 and 750.110a are accompanied by a 15 year term 
-      LOGICAL_OR(IF(((statute LIKE "750.110" OR statute LIKE "750.110A%") AND CAST(DATE_DIFF(projected_completion_date_max,effective_date,YEAR) AS INT64) >= 15),
-                  true, false)) AS any_qualifying_statute_term
+      statute,
+      life_sentence,
+      GREATEST(DATE_DIFF(projected_completion_date_max,effective_date,DAY), 
+                        max_sentence_length_days_calculated)/365 AS term_length_years
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
   UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
   INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
     USING (state_code, person_id, sentences_preprocessed_id)
   WHERE state_code = "US_MI"
+),
+sentences AS (
+  SELECT
+      state_code,
+      person_id,
+      start_date,
+      end_date,
+      ARRAY_AGG(DISTINCT statute IGNORE NULLS) AS statutes_being_served,
+      LOGICAL_OR(life_sentence) AS any_life_sentence,
+      --checks for whether 750.110 and 750.110a are accompanied by a 15 year term 
+      LOGICAL_OR(IF((statute LIKE "750.110" OR statute LIKE "750.110A%") AND (term_length_years >= 15),
+                  true, false)) AS any_qualifying_statute_term
+  FROM sentences_preprocessed
   GROUP BY 1, 2, 3, 4
 ),
 sentence_statutes_preprocessed AS (
