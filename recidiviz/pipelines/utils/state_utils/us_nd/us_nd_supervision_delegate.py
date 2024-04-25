@@ -32,12 +32,15 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate i
     StateSpecificSupervisionDelegate,
 )
 
+# TODO(#29370): Consider changing this to refer to supervision_type enum values instead
+# of raw text.
 RELEASE_REASON_RAW_TEXT_TO_SUPERVISION_TYPE = {
     "PRB": StateSupervisionPeriodSupervisionType.PROBATION,
     "RPRB": StateSupervisionPeriodSupervisionType.PROBATION,
     "PARL": StateSupervisionPeriodSupervisionType.PAROLE,
     "PV": StateSupervisionPeriodSupervisionType.PAROLE,
     "RPAR": StateSupervisionPeriodSupervisionType.PAROLE,
+    "PROL": StateSupervisionPeriodSupervisionType.PAROLE,
 }
 
 
