@@ -16,10 +16,12 @@
 # =============================================================================
 """Tests for DirectIngestDocumentationGenerator."""
 import unittest
+from collections import defaultdict
 from typing import List
 
 from mock import MagicMock, patch
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import TEST_STATE_CODE_DOCS
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
@@ -94,8 +96,13 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
         ".get_referencing_views"
     )
+    @patch(
+        "recidiviz.ingest.direct.direct_ingest_documentation_generator.RawDataReferenceReasonsYamlLoader"
+        ".get_downstream_referencing_views"
+    )
     def test_generate_raw_file_docs_for_region(
         self,
+        mock_downstream_referencing_views: MagicMock,
         mock_referencing_views: MagicMock,
         _mock_region: MagicMock,
         mock_raw_config: MagicMock,
@@ -112,6 +119,16 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
             "tagNotHistorical": [],
             "tagPrimaryKeyColsMissing": [],
         }
+        mock_downstream_referencing_views.return_value = defaultdict(
+            set,
+            {
+                "multiLineDescription": {
+                    BigQueryAddress.from_str("dataset.view_three"),
+                    BigQueryAddress.from_str("dataset.view_four"),
+                },
+                "tagColumnsMissing": {BigQueryAddress.from_str("dataset.view_four")},
+            },
+        )
 
         documentation_generator = DirectIngestDocumentationGenerator()
         documentation = documentation_generator.generate_raw_file_docs_for_region(
@@ -126,12 +143,12 @@ found in `us_ww_raw_data_up_to_date_views`.
 
 ## Table of Contents
 
-|                           **Table**                            | **Referencing Views** |
-|----------------------------------------------------------------|-----------------------|
-|[multiLineDescription](raw_data/multiLineDescription.md)        |view_one,<br />view_two|
-|[tagColumnsMissing](raw_data/tagColumnsMissing.md)              |view_one               |
-|[tagNotHistorical](raw_data/tagNotHistorical.md)                |                       |
-|[tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md)|                       |
+|                           **Table**                            |**Referencing Ingest Views**|     **Referencing Downstream Views**     |
+|----------------------------------------------------------------|----------------------------|------------------------------------------|
+|[multiLineDescription](raw_data/multiLineDescription.md)        |view_one,<br />view_two     |dataset.view_four,<br />dataset.view_three|
+|[tagColumnsMissing](raw_data/tagColumnsMissing.md)              |view_one                    |dataset.view_four                         |
+|[tagNotHistorical](raw_data/tagNotHistorical.md)                |                            |                                          |
+|[tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md)|                            |                                          |
 """
 
         expected_multi_line = """## multiLineDescription

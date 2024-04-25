@@ -36,6 +36,9 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
+    RawDataReferenceReasonsYamlLoader,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """# {state_name} Raw Data Description
@@ -70,6 +73,10 @@ class DirectIngestDocumentationGenerator:
             state_code = StateCode(region_code.upper())
             state_name = state_code.get_state().name
 
+            downstream_views_by_raw_file = self.get_downstream_referencing_views(
+                state_code
+            )
+
             file_header = StrictStringFormatter().format(
                 STATE_RAW_DATA_FILE_HEADER_TEMPLATE,
                 state_name=state_name,
@@ -85,6 +92,7 @@ class DirectIngestDocumentationGenerator:
                 ),
             )
         else:
+            downstream_views_by_raw_file = defaultdict(list)
             file_header = ""
 
         raw_file_configs = [
@@ -109,6 +117,7 @@ class DirectIngestDocumentationGenerator:
             config_paths_by_file_tag,
             file_tags_with_raw_file_configs,
             views_by_raw_file,
+            downstream_views_by_raw_file,
         )
 
         docs_per_file: Dict[str, str] = {
@@ -205,6 +214,7 @@ class DirectIngestDocumentationGenerator:
         config_paths_by_file_tag: Dict[str, str],
         file_tags_with_raw_file_configs: List[str],
         views_by_raw_file: Dict[str, List[str]],
+        downstream_views_by_raw_file: Dict[str, List[str]],
     ) -> str:
         """Generates a Markdown-formatted table of contents to be included in a raw file specification."""
         table_matrix = [
@@ -215,11 +225,16 @@ class DirectIngestDocumentationGenerator:
                     else f"{file_tag}"
                 ),
                 ",<br />".join(sorted(views_by_raw_file[file_tag])),
+                ",<br />".join(sorted(downstream_views_by_raw_file[file_tag])),
             ]
             for file_tag in sorted(config_paths_by_file_tag)
         ]
         writer = MarkdownTableWriter(
-            headers=["**Table**", "**Referencing Views**"],
+            headers=[
+                "**Table**",
+                "**Referencing Ingest Views**",
+                "**Referencing Downstream Views**",
+            ],
             value_matrix=table_matrix,
             # Margin values other than 0 have nondeterministic spacing. Do not change.
             margin=0,
@@ -240,3 +255,19 @@ class DirectIngestDocumentationGenerator:
                 views_by_raw_file[config.file_tag].append(ingest_view.ingest_view_name)
 
         return views_by_raw_file
+
+    @staticmethod
+    def get_downstream_referencing_views(
+        state_code: StateCode,
+    ) -> Dict[str, List[str]]:
+        """Generates a dictionary mapping raw files to downstream views that reference them."""
+        raw_data_references = (
+            RawDataReferenceReasonsYamlLoader.get_downstream_referencing_views(
+                state_code
+            )
+        )
+        downstream_views_by_raw_file = defaultdict(list)
+        for file_tag, views in raw_data_references.items():
+            downstream_views_by_raw_file[file_tag] = [view.to_str() for view in views]
+
+        return downstream_views_by_raw_file

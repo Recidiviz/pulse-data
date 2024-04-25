@@ -15,26 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for enforcing documentation of views that reference raw data."""
-import os
 import unittest
 from typing import Any, Dict, List, Set, Tuple
 from unittest.mock import patch
 
-import yaml
-
-import recidiviz
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tools.find_direct_raw_data_references import (
     find_direct_raw_data_references,
 )
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
-
-RAW_DATA_REFERENCES_YAML = "view_registry/raw_data_reference_reasons.yaml"
-RAW_DATA_REFERENCES_YAML_PATH = os.path.join(
-    os.path.dirname(recidiviz.__file__),
+from recidiviz.tools.raw_data_reference_reasons_yaml_loader import (
     RAW_DATA_REFERENCES_YAML,
+    RawDataReferenceReasonsYamlLoader,
 )
+from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
 class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
@@ -50,13 +44,7 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         cls.project_id_patcher.start().return_value = "recidiviz-testing"
-        with open(RAW_DATA_REFERENCES_YAML_PATH, "r", encoding="utf-8") as yaml_file:
-            cls.yaml_raw_data = yaml.safe_load(yaml_file)
-            cls.yaml_data = (
-                TestEnforceRawDataReferenceDocumentation._convert_raw_yaml_data_to_objs(
-                    cls.yaml_raw_data
-                )
-            )
+        cls.yaml_data = RawDataReferenceReasonsYamlLoader.get_yaml_data()
         cls.deployed_views_references = find_direct_raw_data_references(
             all_deployed_view_builders()
         )
@@ -67,7 +55,9 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
 
     def test_verify_yaml_entries_in_alphabetical_order(self) -> None:
         self.assertTrue(
-            TestEnforceRawDataReferenceDocumentation._is_sorted(self.yaml_raw_data),
+            TestEnforceRawDataReferenceDocumentation._is_sorted(
+                RawDataReferenceReasonsYamlLoader.get_raw_yaml_data()
+            ),
             f"Entries in {RAW_DATA_REFERENCES_YAML} must be in alphabetical order.",
         )
 
@@ -130,15 +120,3 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
             for view in views
             if view not in actual.get(state, {}).get(file_tag, set())
         ]
-
-    @staticmethod
-    def _convert_raw_yaml_data_to_objs(
-        references: Dict[str, Dict[str, Set[str]]]
-    ) -> Dict[StateCode, Dict[str, Set[BigQueryAddress]]]:
-        return {
-            StateCode(state_code): {
-                file_tag: {BigQueryAddress.from_str(view) for view in views}
-                for file_tag, views in file_tags.items()
-            }
-            for state_code, file_tags in references.items()
-        }
