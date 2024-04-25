@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_CreditDetailType
+file_description: |-
+  Table that contains information on credit detail type.
+data_classification: source
+primary_key_cols:
+  - CreditDetailTypeId
+columns:
+  - name: CreditDetailTypeId
+    description: The ID assigned to the credit detail type
+  - name: CreditDetailTypeName
+    description: The string name of the credit detail type
+  - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Locking
+    description: Locking number for record
+  - name: InsertDate
+    description: Timestamp for record creation.
+    field_type: datetime
+  - name: InsertUserId
+    description: User who first inserted record
+    is_pii: True
+  - name: UpdateDate
+    description: Date record last updated
+    field_type: datetime
+  - name: UpdateUserId
+    description: User who last updated record
+    is_pii: True
+  - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
