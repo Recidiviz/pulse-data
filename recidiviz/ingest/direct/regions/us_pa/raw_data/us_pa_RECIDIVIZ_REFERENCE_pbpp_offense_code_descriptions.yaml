@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_pbpp_offense_code_descriptions
+file_description: Internally created table mapping pbpp offense codes to descriptions
+data_classification: source
+update_cadence: IRREGULAR
+primary_key_cols:
+  - PBPPOffenseCode
+columns:
+  - name: PBPPOffenseCode
+    description: PBPP offense code found in the dbo_ReleaseInfo table
+  - name: PBPPOffenseDescription
+    description: Description for this PBPP offense code according to the data dictionary
