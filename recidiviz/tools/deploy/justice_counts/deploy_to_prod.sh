@@ -69,11 +69,15 @@ STAGING_IMAGE_URL=${STAGING_IMAGE_BASE}:${TAG}
 PROD_IMAGE_URL="${PROD_IMAGE_BASE}:latest"
 PROD_IMAGE_TAG="${PROD_IMAGE_BASE}:${TAG}"
 
+set_vpn_status "Disable"
+
 echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROD_IMAGE_URL}..."
 run_cmd docker run -v ~/.config/gcloud:/.config/gcloud -e GOOGLE_APPLICATION_CREDENTIALS=/.config/gcloud/application_default_credentials.json --rm gcr.io/go-containerregistry/gcrane cp "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
 
 echo "Tagging Docker image with ${PROD_IMAGE_TAG}..."
 run_cmd gcloud artifacts docker tags add "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
+
+set_vpn_status "Enable"
 
 # Now we need to run migrations.
 # As long as this Docker image was built using our Cloud Build Trigger, the first tag will always be the commit hash.
@@ -85,12 +89,14 @@ echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
 run_cmd git checkout "${RECIDIVIZ_DATA_COMMIT_HASH}"
 
+set_vpn_status "Disable"
 echo "Running migrations to head on ${JUSTICE_COUNTS_PROJECT_ID}..."
 # note: don't use run_cmd here because it messes up confirmation prompts
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
     --project-id "${JUSTICE_COUNTS_PROJECT_ID}" \
     --skip-db-name-check \
+set_vpn_status "Enable"
 
 # Deploy both Publisher and Agency Dashboard
 # Note: we need to manually update traffic in case we previously deployed a revision 
