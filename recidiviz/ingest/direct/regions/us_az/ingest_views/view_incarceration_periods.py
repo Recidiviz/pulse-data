@@ -23,7 +23,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH base AS (
+WITH 
+-- This CTE results in one row per movement in the base movements table, with certain 
+-- relevant fields attached, as well as the person's overall PERSON_ID.
+base AS (
 SELECT DISTINCT
   traffic.INMATE_TRAFFIC_HISTORY_ID,
   traffic.DOC_ID, 
@@ -31,7 +34,6 @@ SELECT DISTINCT
   -- Do not include timestamp because same-day movements are often logged out of order.
   CAST(CAST(MOVEMENT_DATE AS DATETIME) AS DATE) AS MOVEMENT_DATE,
   traffic.MOVEMENT_CODE_ID, 
-  COALESCE(traffic.MOVEMENT_REASON_ID,  traffic.INTERNAL_MOVE_REASON_ID) AS MOVEMENT_REASON_ID,
   traffic.UNIT_ID, 
   traffic.PRISON_ID,
   traffic.LOCATOR_CODE_ID, 
@@ -41,7 +43,11 @@ FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
 LEFT JOIN {DOC_EPISODE} ep
 USING (DOC_ID)
 WHERE traffic.MOVEMENT_DATE IS NOT NULL
+AND MOVEMENT_CODE_ID IS NOT NULL
 ),
+-- This CTE results in one row per movement in the base movements table, with certain 
+-- fields decoded using relevant lookup tables. The movements are filtered so that 
+-- only those related to prison episodes are included.
 base_with_descriptions AS ( 
   SELECT DISTINCT
     base.*,
@@ -64,7 +70,14 @@ base_with_descriptions AS (
   -- This field establishes what the right course of action is regarding the period as a 
   -- result of this movement (close, open, or reopen)
   ON(PRSN_CMM_SUPV_EPSD_LOGIC_ID = action_lookup.LOOKUP_ID)
+  -- Only include rows related to prison episodes.
+  WHERE UPPER(action_lookup.DESCRIPTION) LIKE "%PRISON%" 
+  OR action_lookup.DESCRIPTION IS NULL 
+  OR UPPER(action_lookup.DESCRIPTION) = 'NOT APPLICABLE'
 ),
+-- This CTE results in one row per locator code from the AZ_DOC_LOCATOR_CODE reference file,
+-- preprocessed so joining using a date field will yield the location information that was
+-- accurate on that date.
 locations_preprocessed AS (
   SELECT DISTINCT
     LOCATOR_CODE_ID,
@@ -85,6 +98,8 @@ locations_preprocessed AS (
     CAST(UPDT_DTM AS DATETIME) AS UPDT_DTM,
     FROM {AZ_DOC_LOCATOR_CODE}
 ),
+-- This CTE joins the base CTE to the location CTE, resulting in one row per movement, 
+-- with relevant locations attached.
 base_with_locations AS (
   SELECT
     base_with_descriptions.*,
@@ -102,7 +117,10 @@ base_with_locations AS (
   -- Case when there's only one entry
   OR (PREV_CREATE_DTM IS NULL AND NEXT_CREATE_DTM IS NULL)))
   WHERE MOVEMENT_DATE IS NOT NULL
+  AND MOVEMENT_CODE_ID != 'NULL'
 ),
+-- This CTE joins the custody level of a given location to the results of the base with 
+-- locations CTE, resulting in one row per movement with location and custody level attached.
 custody_level AS (
   SELECT 
     base_with_locations.*,
@@ -121,12 +139,15 @@ custody_level AS (
   ON(CURRENT_USE_ID = current_use_lookup.LOOKUP_ID
   AND current_use_lookup.LOOKUP_CATEGORY = 'CURRENT_USE')
 ),
+-- This CTE is similar to base_with_descriptions in that it produces the same results as
+-- the previous CTE, but with key location information decoded using relevant lookup tables.
+
+-- Looking up the unit name based on the UNIT_ID provided in the TRAFFIC table, where 
+-- the LOCATOR_CODE_ID is also provided, sometimes yields a description that
+-- conflicts with the description of the unit based on the locator code ID.
+-- Default to using the LOCATOR_CODE_ID for location rather than UNIT_ID, since 
+-- custody level is based on the LOCATOR_CODE_ID. Use UNIT_ID when there is LOCATOR_CODE_ID.
 locations_decoded AS (
-  -- Looking up the unit name based on the UNIT_ID provided in the TRAFFIC table, where 
-  -- the LOCATOR_CODE_ID is also provided, sometimes yields a description that
-  -- conflicts with the description of the unit based on the locator code ID.
-  -- Default to using the LOCATOR_CODE_ID for location rather than UNIT_ID, since 
-  -- custody level is based on the LOCATOR_CODE_ID. Use UNIT_ID when there is LOCATOR_CODE_ID.
   SELECT 
     INMATE_TRAFFIC_HISTORY_ID,
     DOC_ID,
@@ -146,66 +167,74 @@ locations_decoded AS (
   LEFT JOIN {LOOKUPS} hospital_lookup
   ON(DESTINATION_HOSPITAL_ID = hospital_lookup.LOOKUP_ID)
 ),
+-- This CTE results in one row per person, incarceration stint, and set of key characteristics
+-- including location and custody level. Any time one of those characteristics changes, 
+-- the previous period is closed and a new one is opened, with the reasons for the change 
+-- documented in "admission_reason" and "release_reason" fields.
 periods AS (
-  SELECT 
-    DOC_ID,
-    PERSON_ID,
-    MOVEMENT_DATE AS admission_date,
-    MOVEMENT_DIRECTION AS admission_direction,
-    period_action AS adm_action,
-    COALESCE(MOVEMENT_DESCRIPTION, 'STATUS_CHANGE') AS admission_reason,
-    LEAD(MOVEMENT_DATE) OVER (person_period_window) AS release_date,
-    LEAD(MOVEMENT_DIRECTION) OVER(person_period_window) AS release_direction,
-    LEAD(COALESCE(MOVEMENT_DESCRIPTION, 'STATUS_CHANGE')) OVER (person_period_window) AS release_reason,
-    LEAD(period_action) OVER (person_period_window) AS rel_action,
-    custody_level,
-    facility,
-    ORIGIN_LOC_DESC AS housing_unit,
-    county_jail_location, 
-    hospital_location, 
-  FROM locations_decoded
-  WINDOW person_period_window AS (PARTITION BY DOC_ID, PERSON_ID ORDER BY MOVEMENT_DATE, MOVEMENT_DIRECTION DESC, 
-  -- deterministiscally sort redundant same-day movements
-  COALESCE(MOVEMENT_DESCRIPTION, 'STATUS_CHANGE'),
-  -- deterministically sort the 4 cases where someone appears to be in two locations at the exact same time
-  ORIGIN_LOC_DESC, 
-  -- a failsafe to sort deterministically when all specific test cases have been evaded 
-  INMATE_TRAFFIC_HISTORY_ID
-  )
-), 
-filter_periods AS (
-  SELECT * FROM (
-    SELECT 
-      *,
-      LAG(rel_action) OVER (person_period_window) AS prev_rel_action,
-    FROM periods
-    WHERE admission_direction != 'OUT'
-    -- this only applies to ~100 rows from before 2000, and is assumed to be a data entry error.
-    AND (DOC_ID IS NOT NULL AND PERSON_ID IS NOT NULL)
-    -- exclude zero-day periods
-    AND (CAST(admission_date AS DATE) != CAST(release_date AS DATE) 
-    -- include open periods
-    OR release_date IS NULL)
-    WINDOW person_period_window AS (PARTITION BY DOC_ID, PERSON_ID ORDER BY admission_date)) sub
-  -- exclude transitions that happen after one period is closed and before another period is open
-  WHERE NOT (UPPER(prev_rel_action) LIKE '%CLOSE%' AND UPPER(adm_action) NOT LIKE '%OPEN%') 
-  OR prev_rel_action IS NULL
+SELECT 
+  PERSON_ID,
+  DOC_ID,
+  MOVEMENT_DATE AS admission_date,
+  MOVEMENT_DESCRIPTION AS admission_reason,
+  LEAD(MOVEMENT_DATE) OVER person_window AS release_date,
+  LEAD(MOVEMENT_DESCRIPTION) OVER person_window AS release_reason,
+  PERIOD_ACTION AS adm_action,
+  LEAD(PERIOD_ACTION) OVER person_window AS rel_action,
+  MOVEMENT_DIRECTION,
+  LEAD(MOVEMENT_DIRECTION) OVER person_window AS next_mvmt_direction,
+  LAG(MOVEMENT_DIRECTION) OVER person_window AS prev_mvmt_direction,
+  facility,
+  ORIGIN_LOC_DESC AS housing_unit,
+  custody_level,
+  county_jail_location,
+  hospital_location,
+  action_ranking
+FROM (
+SELECT
+  *,
+  CASE WHEN 
+    UPPER(PERIOD_ACTION) LIKE "%OPEN%" OR UPPER(MOVEMENT_DESCRIPTION) LIKE "%CREATE%" THEN 1
+    WHEN UPPER(PERIOD_ACTION) LIKE "%NOT APPLICABLE%" OR MOVEMENT_DESCRIPTION IS NULL THEN 2
+    WHEN UPPER(PERIOD_ACTION) LIKE "%CLOSE PRISON%" THEN 3 
+  END AS action_ranking
+FROM locations_decoded 
+)
+WINDOW person_window AS (
+  PARTITION BY PERSON_ID, DOC_ID 
+  ORDER BY MOVEMENT_DATE, action_ranking, MOVEMENT_DIRECTION DESC, MOVEMENT_DESCRIPTION DESC, 
+  -- deterministically sort movements on days when people are logged as being in many
+  -- places at once.
+  ORIGIN_LOC_DESC, facility, hospital_location, county_jail_location)
+
 )
 
 SELECT 
-  DOC_ID,
   PERSON_ID,
+  DOC_ID,
   admission_date,
   admission_reason,
   release_date,
   release_reason,
-  custody_level,
+  facility,
   housing_unit,
+  custody_level,
   county_jail_location,
   hospital_location,
-  facility,
-  ROW_NUMBER() OVER(PARTITION BY DOC_ID, PERSON_ID ORDER BY admission_date) as period_seq
-FROM filter_periods
+   ROW_NUMBER() OVER (
+    PARTITION BY PERSON_ID, DOC_ID 
+    ORDER BY admission_date, action_ranking, MOVEMENT_DIRECTION DESC) AS period_seq
+FROM periods
+WHERE DOC_ID IS NOT NULL AND PERSON_ID IS NOT NULL
+-- only keep zero-day periods if they are overall period admissions or releases, to preserve
+-- admission and release reasons
+AND (admission_date != release_date 
+  OR (admission_date=release_date AND (UPPER(adm_action) LIKE "%CREATE%" OR UPPER(adm_action) LIKE "%OPEN%"))
+  OR (admission_date=release_date AND (UPPER(rel_action) LIKE "%CLOSE PRISON%"))
+  OR release_date IS NULL)
+AND (MOVEMENT_DIRECTION != 'OUT' 
+-- These are internal movements (transfers, out to hospital, etc)
+OR (MOVEMENT_DIRECTION = 'OUT' AND adm_action = 'Not Applicable'))
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
