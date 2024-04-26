@@ -53,6 +53,8 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
         SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
         UNION ALL 
         SELECT * FROM `{project_id}.{analyst_dataset}.us_ix_early_discharge_sessions_preprocessing`
+        UNION ALL 
+        SELECT * FROM `{project_id}.{analyst_dataset}.us_az_early_discharge_sessions_preprocessing`
     )
     SELECT
         sessions.person_id,

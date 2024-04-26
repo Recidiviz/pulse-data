@@ -4,6 +4,19 @@
 # or `sessions`. Please be as verbose as you can when filling out this document, including which columns
 # you need from the raw table and why. This will help infrastructure teams identify gaps in our schema
 # and areas for reducing tech debt.
+US_AZ:
+  AZ_DOC_SC_COMMITMENT:
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
+  AZ_DOC_SC_EPISODE:
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
+  AZ_DOC_SC_OFFENSE:
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
+  LOOKUPS:
+    analyst_data.us_az_early_discharge_sessions_preprocessing: |-
+      We don't ingest early discharge data.
 US_CA:
   AgentParole:
     workflows_views.supervision_staff_record: |-
