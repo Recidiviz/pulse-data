@@ -39,9 +39,11 @@ from recidiviz.justice_counts.utils.constants import (
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
+    Agency,
     AgencyUserAccountAssociation,
     Datapoint,
     DatapointHistory,
+    Report,
     Source,
     Spreadsheet,
     SpreadsheetStatus,
@@ -288,6 +290,251 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(len(response_json["agencies"]), 1)
         self.assertEqual(response_json["agencies"][0]["name"], "Agency Alpha")
 
+    def test_delete_agency(self) -> None:
+        self.load_users_and_agencies()
+        agency_A = (
+            self.session.query(Agency).filter(Agency.name == "Agency Alpha").one()
+        )
+
+        # Make agency A a superagency and create child agency of agency A. For a
+        # superagency, we nullify the super_agency_id field from all of its children.
+        # This causes the child agency to no longer be a child agency.
+        agency_A.is_superagency = True
+        child_agency_1 = Agency(
+            name="Agency Alpha Child Agency",
+            super_agency_id=agency_A.id,
+            systems=["LAW_ENFORCEMENT"],
+        )
+        self.session.add(child_agency_1)
+
+        # This agency setting will be deleted when agency A is deleted.
+        self.session.add(
+            schema.AgencySetting(
+                source_id=agency_A.id,
+                setting_type="HOMEPAGE_URL",
+            )
+        )
+        # This agency setting belongs to a different agency and will not be deleted.
+        self.session.add(
+            schema.AgencySetting(
+                source_id=self.agency_B_id,
+                setting_type="HOMEPAGE_URL",
+            )
+        )
+
+        # This agency jurisdiction will be deleted when agency A is deleted.
+        self.session.add(
+            schema.AgencyJurisdiction(
+                source_id=agency_A.id,
+                membership="INCLUDE",
+                jurisdiction_id="000000000",
+            )
+        )
+        # This agency jurisdiction belongs to a different agency and will not be deleted.
+        self.session.add(
+            schema.AgencyJurisdiction(
+                source_id=self.agency_B_id,
+                membership="INCLUDE",
+                jurisdiction_id="000000000",
+            )
+        )
+
+        # This spreadsheet will be deleted when agency A is deleted.
+        self.session.add(
+            Spreadsheet(
+                original_name="original_name",
+                standardized_name="standardized_name",
+                agency_id=agency_A.id,
+                system=System.LAW_ENFORCEMENT,
+                status=SpreadsheetStatus.UPLOADED,
+                uploaded_at=datetime.datetime.now(tz=datetime.timezone.utc),
+            )
+        )
+        # This spreadsheet belongs to a different agency and will not be deleted.
+        self.session.add(
+            Spreadsheet(
+                original_name="original_name",
+                standardized_name="standardized_name",
+                agency_id=self.agency_B_id,
+                system=System.LAW_ENFORCEMENT,
+                status=SpreadsheetStatus.UPLOADED,
+                uploaded_at=datetime.datetime.now(tz=datetime.timezone.utc),
+            )
+        )
+
+        # This report will be deleted when agency A is deleted.
+        self.session.add(
+            Report(
+                source_id=agency_A.id,
+                type="ANNUAL",
+                instance="2020 Annual Metrics",
+                acquisition_method="CONTROL_PANEL",
+                project="JUSTICE_COUNTS_CONTROL_PANEL",
+                status="NOT_STARTED",
+            )
+        )
+        # This report belongs to a different agency and will not be deleted.
+        self.session.add(
+            Report(
+                source_id=self.agency_B_id,
+                type="ANNUAL",
+                instance="2020 Annual Metrics",
+                acquisition_method="CONTROL_PANEL",
+                project="JUSTICE_COUNTS_CONTROL_PANEL",
+                status="NOT_STARTED",
+            )
+        )
+
+        # Datapoint and datapoint history entries for Agency A that will be deleted.
+        datapoint = Datapoint(
+            source_id=agency_A.id,
+            metric_definition_key=law_enforcement.funding.key,
+        )
+        self.session.add(datapoint)
+        self.session.commit()  # Committing to get the autoincremented datapoint id.
+
+        self.session.add(
+            DatapointHistory(
+                datapoint_id=datapoint.id,
+                timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+            )
+        )
+        self.session.commit()
+
+        # Datapoint and datapoint history entries for Agency B that will NOT be deleted.
+        datapoint = Datapoint(
+            source_id=self.agency_B_id,
+            metric_definition_key=law_enforcement.funding.key,
+        )
+        self.session.add(datapoint)
+        self.session.commit()  # Committing here is necessary to get the datapoint id.
+        self.session.add(
+            DatapointHistory(
+                datapoint_id=datapoint.id,
+                timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+            )
+        )
+        self.session.commit()
+
+        response = self.client.delete(f"/admin/agency/{agency_A.id}")
+        self.assertEqual(response.status_code, 200)
+
+        # There are three entries in Agency (Agency B, Agency C, and child agency A) and
+        # none are for the deleted agency.
+        self.assertEqual(3, len(self.session.query(Agency).all()))
+        self.assertEqual(
+            0,
+            len(list(self.session.query(Agency).filter(Agency.name == "Agency Alpha"))),
+        )
+
+        # Child agency A has a null value for super_agency_id.
+        self.assertEqual(
+            self.session.query(Agency)
+            .filter(Agency.name == "Agency Alpha Child Agency")
+            .one()
+            .super_agency_id,
+            None,
+        )
+
+        # There are still two entries in AgencyUserAccountAssociation but neither are
+        # for the deleted agency.
+        self.assertEqual(2, len(self.session.query(AgencyUserAccountAssociation).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(AgencyUserAccountAssociation).filter(
+                        AgencyUserAccountAssociation.agency_id == agency_A.id
+                    )
+                )
+            ),
+        )
+
+        # There is only one entry in the AgencySetting table and it does not correspond
+        # to the deleted agency.
+        self.assertEqual(1, len(self.session.query(schema.AgencySetting).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(schema.AgencySetting).filter(
+                        schema.AgencySetting.source_id == agency_A.id
+                    )
+                )
+            ),
+        )
+
+        # There is only one entry in the AgencySetting table and it does not correspond
+        # to the deleted agency.
+        self.assertEqual(1, len(self.session.query(schema.AgencyJurisdiction).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(schema.AgencyJurisdiction).filter(
+                        schema.AgencyJurisdiction.source_id == agency_A.id
+                    )
+                )
+            ),
+        )
+
+        # There is only one entry in the Datapoint table and it does not correspond to
+        # the deleted agency.
+        queried_datapoints = self.session.query(Datapoint).all()
+        self.assertEqual(1, len(queried_datapoints))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(Datapoint).filter(
+                        Datapoint.source_id == agency_A.id
+                    )
+                )
+            ),
+        )
+
+        # There is only one entry in DatapointHistory and it corresponds to Agency B.
+        agency_B_datapoint = queried_datapoints.pop()
+        self.assertEqual(1, len(self.session.query(DatapointHistory).all()))
+        self.assertEqual(
+            1,
+            len(
+                list(
+                    self.session.query(DatapointHistory).filter(
+                        DatapointHistory.datapoint_id == agency_B_datapoint.id
+                    )
+                )
+            ),
+        )
+
+        # There is only one entry in the Report table and it does not correspond to
+        # the deleted agency.
+        self.assertEqual(1, len(self.session.query(Report).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(self.session.query(Report).filter(Report.source_id == agency_A.id))
+            ),
+        )
+
+        # There is only one entry in Spreadsheet and it does not correspond to the
+        # deleted agency.
+        self.assertEqual(1, len(self.session.query(Spreadsheet).all()))
+        self.assertEqual(
+            0,
+            len(
+                list(
+                    self.session.query(Spreadsheet).filter(
+                        Spreadsheet.agency_id == agency_A.id
+                    )
+                )
+            ),
+        )
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["name"], agency_A.name)
+        self.assertEqual(response_json["id"], agency_A.id)
+        self.assertEqual(len(response_json["systems"]), 1)
+
     def test_create_or_update_user(
         self,
     ) -> None:
@@ -399,11 +646,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
 
     def test_get_agency(self) -> None:
         self.load_users_and_agencies()
-        agency = (
-            self.session.query(schema.Agency)
-            .filter(schema.Agency.name == "Agency Alpha")
-            .one()
-        )
+        agency = self.session.query(Agency).filter(Agency.name == "Agency Alpha").one()
         agency.is_superagency = True
         self.session.commit()
 
@@ -556,18 +799,16 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
     def test_copy_metric_settings_to_child_agencies(self) -> None:
         self.load_users_and_agencies()
         super_agency = (
-            self.session.query(schema.Agency)
-            .filter(schema.Agency.name == "Agency Alpha")
-            .one()
+            self.session.query(Agency).filter(Agency.name == "Agency Alpha").one()
         )
 
-        child_agency_1 = schema.Agency(
+        child_agency_1 = Agency(
             name="Agency Alpha Child Agency",
             super_agency_id=super_agency.id,
             systems=["LAW_ENFORCEMENT"],
         )
 
-        child_agency_2 = schema.Agency(
+        child_agency_2 = Agency(
             name="Agency Beta Child Agency",
             super_agency_id=super_agency.id,
             systems=["LAW_ENFORCEMENT"],
