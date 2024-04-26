@@ -138,6 +138,7 @@ SELECT
         start_date AS eligible_date
     )) AS reason,
 FROM sub_sessions_with_attributes
+WHERE start_date != end_date
 GROUP BY 1,2,3,4
 """
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
