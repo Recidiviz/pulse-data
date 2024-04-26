@@ -148,12 +148,12 @@ all_organizations AS (
                 a.COUNTY AS {LocationMetadataKey.COUNTY_ID.value},
                 rp.PARTYRELSTATUS = 'A' AS {LocationMetadataKey.IS_ACTIVE_LOCATION.value},
                 op.ORGCOMMONID AS {LocationMetadataKey.LOCATION_ACRONYM.value},
-                op3.PARTYID AS AS {LocationMetadataKey.FACILITY_GROUP_EXTERNAL_ID.value},
+                op3.PARTYID AS {LocationMetadataKey.FACILITY_GROUP_EXTERNAL_ID.value},
                 op3.UORGANIZATIONNAME AS {LocationMetadataKey.FACILITY_GROUP_NAME.value},
                 ha.facility_security_level AS {LocationMetadataKey.FACILITY_SECURITY_LEVEL.value},
-                rp2.supervision_district_id AS AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
-                op4.UORGANIZATIONNAME AS AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
-                rp2.supervision_region_id AS {LocationMetadataKey.SUPERVISION_REGION_ID.value}
+                rp2.supervision_district_id AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+                op4.UORGANIZATIONNAME AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+                rp2.supervision_region_id AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
                 rp2.supervision_region_id AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
             )
         ) AS location_metadata
