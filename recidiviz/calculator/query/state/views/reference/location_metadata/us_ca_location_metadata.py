@@ -36,6 +36,41 @@ locations in CA that can be associated with a person or staff member.
 
 
 US_CA_LOCATION_METADATA_QUERY_TEMPLATE = f"""
+WITH all_units AS (
+  -- `all_units` unions all units from AgentParole and PersonParole. For each unit, we
+  -- use whatever the most recently used ParoleDistrict and ParoleRegion are. If for the
+  -- same unit within the most recent transfer there entries with different
+  -- ParoleDistrict and ParoleRegion information, we prioritize non-null information.
+  -- This only occurs once in AgentParole in 2023, and never occurs in PersonParole.
+  SELECT * FROM (
+    SELECT DISTINCT
+      ParoleUnit,
+      ParoleDistrict,
+      ParoleRegion,
+      update_datetime
+    FROM `{{project_id}}.{{us_ca_raw_data}}.PersonParole`
+
+    UNION DISTINCT
+
+    SELECT DISTINCT
+      ParoleUnit,
+      ParoleDistrict,
+      ParoleRegion,
+      update_datetime
+    FROM `{{project_id}}.{{us_ca_raw_data}}.AgentParole`
+  )
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY ParoleUnit ORDER BY update_datetime DESC, ParoleDistrict NULLS LAST, ParoleRegion NULLS LAST) = 1
+),
+all_units_nulls_as_string AS (
+  -- `all_units_nulls_as_string` replaces nulls with the string "NULL". This avoids validation
+  -- errors down the line.
+  SELECT
+    IFNULL(ParoleUnit, 'NULL') AS ParoleUnit,
+    IFNULL(ParoleDistrict, 'NULL') AS ParoleDistrict,
+    IFNULL(ParoleRegion, 'NULL') AS ParoleRegion
+  FROM all_units
+)
+-- Finally, we build a JSON object for the location metadata out of the ParoleUnit, ParoleDistrict, and ParoleRegion.
 SELECT 
   'US_CA' AS state_code, 
   UPPER(ParoleUnit) as location_external_id,
@@ -50,21 +85,12 @@ SELECT
       CASE WHEN SAFE_CAST(ParoleDistrict AS INT64) IS NULL THEN UPPER(ParoleDistrict) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
       CASE WHEN SAFE_CAST(ParoleRegion AS INT64) IS NULL THEN UPPER(ParoleRegion) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value},
       UPPER(ParoleUnit) AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
-      UPPER(ParoleDistrict) AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
-      UPPER(ParoleRegion) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value}
+      UPPER(ParoleDistrict) AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+      UPPER(ParoleRegion) AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value} 
     )
   ) AS location_metadata,
-  'SUPERVISION_LOCATION' as location_type
-FROM (
-    SELECT DISTINCT
-      ifnull(ParoleUnit, 'NULL') AS ParoleUnit,
-      ifnull(ParoleDistrict, 'NULL') AS ParoleDistrict,
-      ifnull(ParoleRegion, 'NULL') AS ParoleRegion
-    FROM `{{project_id}}.{{us_ca_raw_data}}.PersonParole`
-    -- This qualify statement ensures we select the most recent ParoleDistrict and
-    -- ParoleRegion for a given ParoleUnit.
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY ParoleUnit ORDER BY update_datetime desc) = 1
-)
+  'SUPERVISION_LOCATION' AS location_type
+FROM all_units_nulls_as_string;
 """
 
 US_CA_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
