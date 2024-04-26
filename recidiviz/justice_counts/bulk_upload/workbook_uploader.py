@@ -201,9 +201,11 @@ class WorkbookUploader:
         for sheet_name in actual_sheet_names:
             logging.info("Uploading %s", sheet_name)
             df = sheet_name_to_df[sheet_name]
-            # Drop any rows that contain any NaN values
+            # Drop any rows that contain any NaN values and make all column names lowercase.
             try:
                 df = df.dropna(axis=0, how="any", subset=["value"])
+                a = df.columns
+                df.columns = [col.lower() for col in df.columns]
             except (KeyError, TypeError):
                 # We will be in this case if the value column is missing,
                 # and it's safe to ignore the error because we'll raise

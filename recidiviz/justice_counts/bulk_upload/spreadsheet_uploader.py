@@ -427,7 +427,7 @@ class SpreadsheetUploader:
         # we are filtering out 'Unnamed: 0' because this is the column name of the index column
         # the index column is produced when the excel file is converted to a pandas df
         column_names = pd.DataFrame(rows).dropna(axis=1).columns
-        actual_columns = {col.lower() for col in column_names if col != "Unnamed: 0"}
+        actual_columns = {col for col in column_names if col != "unnamed: 0"}
         metric_key_to_errors = self._check_expected_columns(
             metricfile=metricfile,
             actual_columns=actual_columns,
@@ -735,9 +735,7 @@ class SpreadsheetUploader:
                 system=system if system is not None else self.system,
             )
             if agency_name is None:
-                actual_columns = {
-                    col.lower() for col in row.keys() if col != "Unnamed: 0"
-                }
+                actual_columns = {col for col in row.keys() if col != "unnamed: 0"}
                 description = (
                     f'We expected to see a column named "agency". '
                     f"Only the following columns were found in the sheet: "
