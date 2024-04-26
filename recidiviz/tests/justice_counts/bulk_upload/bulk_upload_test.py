@@ -1054,7 +1054,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     def test_breakdown_sum_warning(
         self,
     ) -> None:
-        """Checks that we warn the user when a the sum of values in a breakdown sheet is uploaded
+        """Checks that we warn the user when the sum of values in a breakdown sheet is uploaded
         and does not equal the sum of values in the aggregate sheet.
         """
         with SessionFactory.using_database(self.database_key) as session:
