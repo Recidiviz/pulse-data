@@ -29,12 +29,14 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     not_in_treatment_in_prison,
     not_serving_for_sexual_offense,
+    not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     crc_resident_worker_time_based_criteria,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_detainers_for_xcrc_and_crc,
     not_in_crc_facility,
+    no_sex_offender_alert,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -60,6 +62,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_in_crc_facility.VIEW_BUILDER,
         crc_resident_worker_time_based_criteria.VIEW_BUILDER,
         not_in_treatment_in_prison.VIEW_BUILDER,
+        no_sex_offender_alert.VIEW_BUILDER,
+        not_serving_for_violent_offense.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
 )

@@ -219,6 +219,8 @@ US_IX:
   ind_Alert:
     task_eligibility_criteria_us_ix.no_active_nco: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_ix.no_sex_offender_alert: |-
+      Sex offender alerts are not ingested.
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
@@ -269,6 +271,8 @@ US_IX:
   ind_Offender_Alert:
     task_eligibility_criteria_us_ix.no_active_nco: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_ix.no_sex_offender_alert: |-
+      Sex offender alerts are not ingested.
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
