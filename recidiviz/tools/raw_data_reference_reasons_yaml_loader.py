@@ -33,6 +33,7 @@ RAW_DATA_REFERENCES_YAML_PATH = os.path.join(
     os.path.dirname(recidiviz.__file__),
     RAW_DATA_REFERENCES_YAML,
 )
+print(RAW_DATA_REFERENCES_YAML_PATH)
 
 
 class RawDataReferenceReasonsYamlLoader:

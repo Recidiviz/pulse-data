@@ -4,6 +4,19 @@
 # or `sessions`. Please be as verbose as you can when filling out this document, including which columns
 # you need from the raw table and why. This will help infrastructure teams identify gaps in our schema
 # and areas for reducing tech debt.
+US_AR:
+  ADDRESS:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  HOUSINGAREA:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  ORGANIZATIONPROF:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
+  RELATEDPARTY:
+    reference_views.us_ar_location_metadata: |-
+      Used to pull in location reference data.
 US_AZ:
   AZ_DOC_SC_COMMITMENT:
     analyst_data.us_az_early_discharge_sessions_preprocessing: |-
