@@ -200,13 +200,15 @@ periods AS (
     ON transfers.RECORD_KEY = releases.RECORD_KEY
     AND transfers.CUSTODY_NUMBER = releases.CUSTODY_NUMBER
     AND transfers.ADMISSION_NUMBER = releases.ADMISSION_NUMBER
-  WHERE LOCATION_TYPE IN ('L', 'I') # Institution or Jail 
-  AND high_level_transfers.RESPONSIBLE_DIVISION IN ('I', 'L') # Only counting as Incarceration Period if custodial authority is jail or prison facility
+  WHERE (LOCATION_TYPE IN ('L', 'I') # Institution or Jail 
+  AND high_level_transfers.RESPONSIBLE_DIVISION IN ('I', 'L')) # Only counting as Incarceration Period if custodial authority is jail or prison facility
+  OR CURRENT_STATUS IN ('IN', 'LC')
 ), merging_units1 AS (
   # Because schema has housing unit but not cell number, we want to squash cell transfers happening within same units.
   SELECT
     periods.RECORD_KEY,
     PERIOD_ID,
+    CURRENT_STATUS, 
     LOCATION_TYPE, 
     IF(FACILITY = LAST_FACILITY AND UNIT_NUMBER = LAST_UNIT, null, MOVE_IN_DATE) AS MOVE_IN_DATE,
     MOVE_OUT_DATE,
@@ -228,6 +230,7 @@ periods AS (
   SELECT
     RECORD_KEY,
     PERIOD_ID,
+    CURRENT_STATUS,
     LOCATION_TYPE, 
     LAST_VALUE(MOVE_IN_DATE ignore nulls) OVER (periods_for_units range between UNBOUNDED preceding and current row) AS MOVE_IN_DATE,
     MOVE_OUT_DATE,

@@ -59,8 +59,6 @@ output:
                   - SL # Second Look Juvenile (means they were let out at half of sentence generally) - closest to Post Prison sentence
                 StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
                   - LV # Leave - transition from DOC to Supervision (doesn't fit into our enums)
-                  - LC # Local Control #TODO(#26389): Remove post refactor - technically an incarceration sentence but has location type of community
-                  - IN # Adult in Custody (AIC) #TODO(#26389): Remove post refactor - technically an incarceration sentence but has location type of community
                   - DI # Discharge - these are primarily data errors from OR
                   - AP # Admission Pending (1 instance)
                   - PP # ParolePending - Not used (1 instance)

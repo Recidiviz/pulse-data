@@ -172,10 +172,10 @@ periods AS (
     AND transfers.CUSTODY_NUMBER = releases.CUSTODY_NUMBER
     AND transfers.ADMISSION_NUMBER = releases.ADMISSION_NUMBER
   WHERE LOCATION_TYPE NOT IN ('L', 'I') # Institution or Jail 
-  AND high_level_transfers.RESPONSIBLE_DIVISION NOT IN ('I', 'L') # Only counting as Incarceration Period if custodial authority is jail or prison facility
-), 
-adding_supervision_level AS (
-  # Joining in supervision level where the date is between MOVE_IN_DATE and MOVE_OUT_DATE.
+  AND high_level_transfers.RESPONSIBLE_DIVISION NOT IN ('I', 'L') -- Don't want Supervision Period where custodial authority is jail or prison facility
+  AND CURRENT_STATUS NOT IN ('IN', 'LC') -- Some CURRENT_STATUS of IN/LC (facility/jail) have LOCATION_TYPE type of community so we want to make sure to exclude those
+), adding_supervision_level AS (
+  # Joining in custody level where the date is between MOVE_IN_DATE and MOVE_OUT_DATE.
   SELECT 
     periods.RECORD_KEY,
     PERIOD_ID,
