@@ -65,3 +65,4 @@ columns:
         description: Level
       - value: 2
         description: Cell
+update_cadence: IRREGULAR
