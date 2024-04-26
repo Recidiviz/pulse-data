@@ -199,6 +199,36 @@ def get_extra_pipeline_parameter_args(
     ]
 
 
+def run_sandbox_ingest_pipeline(
+    params: IngestPipelineParameters, skip_build: bool
+) -> None:
+    output_sandbox_prefix = params.output_sandbox_prefix
+    if not output_sandbox_prefix:
+        raise ValueError("Must specify an --output_sandbox_prefix")
+
+    logging.info(
+        "Using raw data watermarks from latest run: %s",
+        params.raw_data_upper_bound_dates_json,
+    )
+
+    prompt_for_confirmation(
+        f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
+        f"[{params.project}] which will output to datasets "
+        f"[{params.ingest_view_results_output}] and [{params.output}] - continue?"
+    )
+
+    bq_client = BigQueryClientImpl()
+    create_or_update_ingest_output_sandbox(
+        bq_client,
+        StateCode(params.state_code),
+        DirectIngestInstance(params.ingest_instance),
+        output_sandbox_prefix,
+        allow_overwrite=True,
+    )
+
+    run_sandbox_dataflow_pipeline(params, skip_build)
+
+
 def main() -> None:
     """Creates sandbox datasets (as appropriate) and launches a sandbox ingest
     pipline as specified by the script args.
@@ -213,29 +243,8 @@ def main() -> None:
     params = IngestPipelineParameters.parse_from_args(
         remaining_args, sandbox_pipeline=True
     )
-
-    logging.info(
-        "Using raw data watermarks from latest run: %s",
-        params.raw_data_upper_bound_dates_json,
-    )
-
-    prompt_for_confirmation(
-        f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
-        f"[{params.project}] which will output to datasets "
-        f"[{params.ingest_view_results_output}] and [{params.output}] - continue?"
-    )
-
     with local_project_id_override(params.project):
-        bq_client = BigQueryClientImpl()
-        create_or_update_ingest_output_sandbox(
-            bq_client,
-            known_args.state_code,
-            known_args.ingest_instance,
-            known_args.output_sandbox_prefix,
-            allow_overwrite=True,
-        )
-
-        run_sandbox_dataflow_pipeline(params, known_args.skip_build)
+        run_sandbox_ingest_pipeline(params, skip_build=known_args.skip_build)
 
 
 if __name__ == "__main__":
