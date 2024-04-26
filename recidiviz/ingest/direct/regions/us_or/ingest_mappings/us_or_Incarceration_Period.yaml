@@ -51,8 +51,11 @@ output:
               $mappings:
                 StateIncarcerationType.COUNTY_JAIL:
                   - L # Local Control Jail
+                  - N # Non DOC Agency (jail)
                 StateIncarcerationType.STATE_PRISON:
                   - I # Institution
+                StateIncarcerationType.INTERNAL_UNKNOWN:
+                  - C # Community (OR has number of period where status is IN/LC (in facility or jail) but location is community - these should be incarceration periods)
           admission_date: MOVE_IN_DATE
           release_date: MOVE_OUT_DATE
           facility: FACILITY
@@ -97,6 +100,7 @@ output:
                   - CRTR # REVOKE/TERM MISD PROB SUPV - ORDER REQ'D - more in TBMOVE (only 2 instances)
                   - ABSC # Absconded Supervision
                   - VIOL #  VIOLATION
+                  - WRNT # Warrant - showing up in incarceration periods with community locations
                 StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE: # check these
                   - JAIL # House in jail
                   - INTX # Inpatient Alcohol and Drug Treatment
@@ -128,6 +132,8 @@ output:
                   - INBH # BHS Intake
                   - INMA # Intake Medical Move
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - ISP # waiting answer from OR, only coming in when periods with community location have incarceration (IN/LC) current_status
+                  - DAYR # waiting answer from OR, only coming in when periods with community location have incarceration (IN/LC) current_status
                   - PARO # Parole - Parole Order Required (only 2 instances and in 1989)
                   - POST # SGL Prison/LC Sentence Expired (only 3 instances from data errors)
                   - WARR # Warrant for Non-Compliance (1 instance)
@@ -242,6 +248,7 @@ output:
                   ## OR data does not have frequent admission/release reasons and they more often match to release reason, so the view does such
                   ## but results in some erroneous values for release reason I.E. ABSC, as a release vs admission reason.
                   - ABSC # Absconded Supervision   (31 instances)
+                  - WRNT # Warrant - showing up in incarceration periods with community locations
                   - VIOL # PA/PPS/PR/LV Viol. to DOC or Local Control OR being admitted to DOC/LC on additional sentences.
                   - PROB # Probation-Status Change Only (23 instances) ** look into why it's showing up
                   - DETA # Detainer
@@ -250,6 +257,7 @@ output:
                   - REVP # Offender Sentenced to Federal Prison (only 4 instances)
                   - LOCL # Released to Local Control
                   - JAIL # House in jail
+                  - REVO # PAROLE REVOKED BY BOARD- DOC REQUIRED (most instances before 2000 - showing up on periods marked community location with IN/LC current_status)
                   - CRTR # REVOKE/TERM MISD PROB SUPV - ORDER REQ'D (only 2 instances)
                   - BNPB # Conv. to Bench Prob. Court Order Req'd. (only 13)
                   - EDIS # EARNED DISCHARGE (only 2 instances)
