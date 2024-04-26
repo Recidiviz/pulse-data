@@ -57,6 +57,8 @@ SELECT
 FROM {source_table}
 WHERE state_code = '{state_code}'
 AND period = "YEAR"
+-- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
+AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
         """
         )
 
@@ -72,6 +74,8 @@ SELECT
 FROM {source_table}
 WHERE state_code = '{state_code}'
 AND period = "YEAR"
+-- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
+AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 """
 
             rate_subquery = f"""
@@ -85,6 +89,8 @@ SELECT
 FROM {source_table}
 WHERE state_code = '{state_code}'
 AND period = "YEAR"
+-- Limit the events lookback to only the necessary periods to minimize the size of the subqueries
+AND end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
 """
 
             subqueries.extend([rate_subquery, count_subquery])
