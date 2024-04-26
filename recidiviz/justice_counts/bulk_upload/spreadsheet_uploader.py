@@ -43,7 +43,11 @@ from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.constants import INVALID_CHILD_AGENCY, UploadMethod
+from recidiviz.justice_counts.utils.constants import (
+    INVALID_CHILD_AGENCY,
+    UNEXPECTED_ERROR,
+    UploadMethod,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -875,7 +879,7 @@ class SpreadsheetUploader:
                 description=(
                     e.message  # type: ignore[attr-defined]
                     if hasattr(e, "message")
-                    else INVALID_CHILD_AGENCY
+                    else UNEXPECTED_ERROR
                 ),
             )
         e.sheet_name = sheet_name
