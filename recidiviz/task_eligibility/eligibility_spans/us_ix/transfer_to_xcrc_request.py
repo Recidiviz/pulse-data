@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events.general import (
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
     not_serving_for_sexual_offense,
+    not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility_or_pwcc_unit_1,
@@ -36,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_class_a_or_b_dor_for_6_months,
     no_detainers_for_xcrc_and_crc,
+    no_sex_offender_alert,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -62,6 +64,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_detainers_for_xcrc_and_crc.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
+        no_sex_offender_alert.VIEW_BUILDER,
+        not_serving_for_violent_offense.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
 )
