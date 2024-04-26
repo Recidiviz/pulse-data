@@ -187,6 +187,7 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     )
     sidebar_components = fields.List(fields.Str())
     methodology_url = fields.Str()
+    is_alert = fields.Bool()
 
 
 class WorkflowsFullConfigSchema(WorkflowsConfigSchema):

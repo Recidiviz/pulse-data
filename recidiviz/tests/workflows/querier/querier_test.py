@@ -85,7 +85,6 @@ def make_add_config_arguments(
     opportunity_type: str, feature_variant: Optional[str] = None
 ) -> Dict[str, Any]:
     return {
-        "state_code": "US_ID",
         "opportunity_type": opportunity_type,
         "created_by": "Maria",
         "created_at": datetime.datetime(2024, 5, 12),

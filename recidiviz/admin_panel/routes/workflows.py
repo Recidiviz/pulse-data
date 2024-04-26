@@ -15,7 +15,8 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Admin panel routes for configuring workflows settings."""
-
+import datetime
+import logging
 from http import HTTPStatus
 from typing import Any, Dict, List
 
@@ -24,11 +25,13 @@ from flask_smorest import Blueprint, abort
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.line_staff_tools.workflows_api_schemas import (
-    OpportunityConfigurationSchema,
+    OpportunityConfigurationRequestSchema,
+    OpportunityConfigurationResponseSchema,
     OpportunityConfigurationsQueryArgs,
     OpportunitySchema,
     StateCodeSchema,
 )
+from recidiviz.auth.helpers import get_authenticated_user_email
 from recidiviz.calculator.query.state.views.outliers.workflows_enabled_states import (
     get_workflows_enabled_states,
 )
@@ -79,7 +82,7 @@ class OpportunitiesAPI(MethodView):
     "<state_code_str>/opportunities/<opportunity_type>/configurations"
 )
 class OpportunityConfigurationsAPI(MethodView):
-    """Endpoint to list configs for a given workflow type."""
+    """Implementation of <state_code_str>/opportunities/<opportunity_type>/configurations endpoints."""
 
     @workflows_blueprint.arguments(
         OpportunityConfigurationsQueryArgs,
@@ -87,7 +90,7 @@ class OpportunityConfigurationsAPI(MethodView):
         error_status_code=HTTPStatus.BAD_REQUEST,
     )
     @workflows_blueprint.response(
-        HTTPStatus.OK, OpportunityConfigurationSchema(many=True)
+        HTTPStatus.OK, OpportunityConfigurationResponseSchema(many=True)
     )
     def get(
         self,
@@ -95,6 +98,7 @@ class OpportunityConfigurationsAPI(MethodView):
         state_code_str: str,
         opportunity_type: str,
     ) -> List[FullOpportunityConfig]:
+        """Endpoint to list configs for a given workflow type."""
         offset = query_args.get("offset", 0)
         status = query_args.get("status", None)
 
@@ -104,6 +108,46 @@ class OpportunityConfigurationsAPI(MethodView):
         )
         return configs
 
+    @workflows_blueprint.arguments(
+        OpportunityConfigurationRequestSchema,
+        location="json",
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @workflows_blueprint.response(HTTPStatus.OK)
+    def post(
+        self,
+        body_args: Dict[str, Any],
+        state_code_str: str,
+        opportunity_type: str,
+    ) -> int:
+        """Endpoint to create a new config."""
+        state_code = refine_state_code(state_code_str)
+        user_email, error_str = get_authenticated_user_email()
+        if error_str:
+            logging.error("Error determining logged-in user: %s", error_str)
+            abort(HTTPStatus.BAD_REQUEST, message=error_str)
+
+        new_config_id = WorkflowsQuerier(state_code).add_config(
+            opportunity_type,
+            created_by=user_email,
+            created_at=datetime.datetime.now(),
+            description=body_args["description"],
+            feature_variant=body_args["feature_variant"],
+            display_name=body_args["display_name"],
+            methodology_url=body_args["methodology_url"],
+            is_alert=body_args["is_alert"],
+            initial_header=body_args["initial_header"],
+            denial_reasons=body_args["denial_reasons"],
+            eligible_criteria_copy=body_args["eligible_criteria_copy"],
+            ineligible_criteria_copy=body_args["ineligible_criteria_copy"],
+            dynamic_eligibility_text=body_args["dynamic_eligibility_text"],
+            call_to_action=body_args["call_to_action"],
+            denial_text=body_args["denial_text"],
+            snooze=body_args["snooze"],
+            sidebar_components=body_args["sidebar_components"],
+        )
+        return new_config_id
+
 
 @workflows_blueprint.route(
     "<state_code_str>/opportunities/<opportunity_type>/configurations/<int:config_id>"
@@ -111,7 +155,9 @@ class OpportunityConfigurationsAPI(MethodView):
 class OpportunitySingleConfigurationAPI(MethodView):
     """Endpoint to retrieve a config given an id."""
 
-    @workflows_blueprint.response(HTTPStatus.OK, OpportunityConfigurationSchema())
+    @workflows_blueprint.response(
+        HTTPStatus.OK, OpportunityConfigurationResponseSchema()
+    )
     def get(
         self,
         state_code_str: str,
