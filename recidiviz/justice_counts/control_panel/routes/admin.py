@@ -32,6 +32,7 @@ from recidiviz.justice_counts.agency_user_account_association import (
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.agency_utils import delete_agency
 from recidiviz.justice_counts.utils.constants import (
     COPY_SUPERAGENCY_METRIC_SETTINGS_TO_CHILD_AGENCIES_JOB_NAME,
     VALID_SYSTEMS,
@@ -301,6 +302,20 @@ def get_admin_blueprint(
                 "metrics": metrics,
             }
         )
+
+    @admin_blueprint.route("/agency/<agency_id>", methods=["DELETE"])
+    @auth_decorator
+    def delete_agency_endpoint(agency_id: int) -> Response:
+        """Deletes an individual agency."""
+        if auth0_client is None:
+            return make_response(
+                "auth0_client could not be initialized. Environment is not development or gcp.",
+                500,
+            )
+        agency_json = delete_agency(
+            session=current_session, agency_id=agency_id, dry_run=False
+        )
+        return jsonify(agency_json)
 
     @admin_blueprint.route("/agency", methods=["PUT"])
     @auth_decorator

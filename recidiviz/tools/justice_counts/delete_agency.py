@@ -26,9 +26,8 @@ python -m recidiviz.tools.justice_counts.delete_agency \
 import argparse
 import logging
 
-from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.utils.agency_utils import delete_agency
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
-from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -65,77 +64,24 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def delete_agency(agency_id: int, dry_run: bool) -> None:
-    """Delete the given agency and its data."""
+def setup_delete_agency(agency_id: int, dry_run: bool) -> None:
+    """Sets up the connection to the database and deletes the agency."""
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
     with cloudsql_proxy_control.connection(
-        schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+        schema_type=schema_type,
+        secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
     ):
         with SessionFactory.for_proxy(
             database_key,
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
             autocommit=False,
         ) as session:
-            agency = AgencyInterface.get_agency_by_id(
-                session=session, agency_id=agency_id
-            )
-
-            logger.info("DRY RUN: %s", dry_run)
-            logger.info("Will delete %s", agency.name)
-
-            objects_to_delete = []
-            associations = (
-                session.query(schema.AgencyUserAccountAssociation)
-                .filter_by(agency_id=agency_id)
-                .all()
-            )
-            objects_to_delete.extend(associations)
-            logger.info("Will delete %d UserAccountAssociations", len(associations))
-
-            reports = session.query(schema.Report).filter_by(source_id=agency_id).all()
-            objects_to_delete.extend(reports)
-            logger.info("Will delete %d reports", len(reports))
-
-            datapoints = (
-                session.query(schema.Datapoint).filter_by(source_id=agency_id).all()
-            )
-            objects_to_delete.extend(datapoints)
-            logger.info("Will delete %d datapoints", len(datapoints))
-
-            settings = (
-                session.query(schema.AgencySetting).filter_by(source_id=agency_id).all()
-            )
-            objects_to_delete.extend(settings)
-            logger.info("Will delete %d agency settings", len(settings))
-
-            jurisdictions = (
-                session.query(schema.AgencyJurisdiction)
-                .filter_by(source_id=agency_id)
-                .all()
-            )
-            objects_to_delete.extend(jurisdictions)
-            logger.info("Will delete %d jurisdictions", len(jurisdictions))
-
-            spreadsheets = (
-                session.query(schema.Spreadsheet).filter_by(agency_id=agency_id).all()
-            )
-            objects_to_delete.extend(spreadsheets)
-            logger.info("Will delete %d spreadsheets", len(spreadsheets))
-
-            agencies = session.query(schema.Agency).filter_by(id=agency_id).all()
-            objects_to_delete.extend(agencies)
-            logger.info("Will delete %d agencies", len(agencies))
-
-            if dry_run is False:
-                for obj in objects_to_delete:
-                    session.delete(obj)
-                session.commit()
-                logger.info("%s deleted", agency.name)
+            delete_agency(session=session, agency_id=agency_id, dry_run=dry_run)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        delete_agency(agency_id=args.agency_id, dry_run=args.dry_run)
+        setup_delete_agency(args.agency_id, args.dry_run)
