@@ -32,6 +32,8 @@ US_AZ:
       We don't ingest early discharge data.
 US_CA:
   AgentParole:
+    reference_views.us_ca_location_metadata: |-
+      Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.supervision_staff_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ParoleHousing:
