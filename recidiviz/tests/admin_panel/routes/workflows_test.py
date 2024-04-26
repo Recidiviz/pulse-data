@@ -24,6 +24,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from flask import Flask, url_for
 from flask_smorest import Api
+from freezegun import freeze_time
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.workflows import workflows_blueprint
@@ -51,7 +52,7 @@ def generate_config(
         ineligible_criteria_copy={},
         dynamic_eligibility_text="text",
         call_to_action="do something",
-        snooze={},
+        snooze={"default_snooze_days": 30, "max_snooze_days": 180},
         is_alert=False,
         sidebar_components=["someComponent"],
         denial_text="Deny",
@@ -174,7 +175,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         self.assertEqual(expected_response, response.json)
 
     ########
-    # GET /workflows/<state_code>/<opportunity_type>/configurations
+    # GET /workflows/<state_code>/opportunities/<opportunity_type>/configurations
     ########
     @patch(
         "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
@@ -223,6 +224,81 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             status=TEST_STATUS,
         )
 
+    ########
+    # POST /workflows/<state_code>/opportunities/<opportunity_type>/configurations
+    ########
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_authenticated_user_email",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
+    )
+    @patch(
+        "recidiviz.admin_panel.routes.workflows.get_workflows_enabled_states",
+    )
+    def test_post_new_config(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_querier: MagicMock,
+        mock_get_email: MagicMock,
+    ) -> None:
+        mock_enabled_states.return_value = ["US_ID"]
+        mock_get_email.return_value = ("e@mail.com", None)
+
+        config_fields = generate_config(-1, datetime.datetime(9, 9, 9))
+
+        req_body = {
+            "stateCode": "US_ID",
+            "description": config_fields.description,
+            "featureVariant": config_fields.feature_variant,
+            "displayName": config_fields.display_name,
+            "methodologyUrl": config_fields.methodology_url,
+            "isAlert": config_fields.is_alert,
+            "initialHeader": config_fields.initial_header,
+            "denialReasons": config_fields.denial_reasons,
+            "eligibleCriteriaCopy": config_fields.eligible_criteria_copy,
+            "ineligibleCriteriaCopy": config_fields.ineligible_criteria_copy,
+            "dynamicEligibilityText": config_fields.dynamic_eligibility_text,
+            "callToAction": config_fields.call_to_action,
+            "denialText": config_fields.denial_text,
+            "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
+            "sidebarComponents": config_fields.sidebar_components,
+            "status": "ACTIVE",
+        }
+
+        mock_querier.return_value.add_config.return_value = TEST_CONFIG_ID
+
+        with freeze_time(datetime.datetime(10, 10, 10)):
+            response = self.client.post(
+                self.opportunity_configuration_url,
+                json=req_body,
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(TEST_CONFIG_ID, response.json)
+            mock_querier.return_value.add_config.assert_called_with(
+                TEST_WORKFLOW_TYPE,
+                created_by="e@mail.com",
+                created_at=datetime.datetime.now(),
+                description=req_body["description"],
+                feature_variant=req_body["featureVariant"],
+                display_name=req_body["displayName"],
+                methodology_url=req_body["methodologyUrl"],
+                is_alert=req_body["isAlert"],
+                initial_header=req_body["initialHeader"],
+                denial_reasons=req_body["denialReasons"],
+                eligible_criteria_copy=req_body["eligibleCriteriaCopy"],
+                ineligible_criteria_copy=req_body["ineligibleCriteriaCopy"],
+                dynamic_eligibility_text=req_body["dynamicEligibilityText"],
+                call_to_action=req_body["callToAction"],
+                denial_text=req_body["denialText"],
+                snooze={"default_snooze_days": 30, "max_snooze_days": 180},
+                sidebar_components=req_body["sidebarComponents"],
+            )
+
+    ########
+    # GET /workflows/<state_code>/opportunities/<opportunity_type>/configurations/<id>
+    ########
     @patch(
         "recidiviz.admin_panel.routes.workflows.WorkflowsQuerier",
     )

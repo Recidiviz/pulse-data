@@ -15,6 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  ============================================================================
 """Querier class to encapsulate requests to the Workflows postgres DBs."""
+import datetime
 import logging
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Set, Union
@@ -245,9 +246,8 @@ class WorkflowsQuerier:
     def add_config(
         self,
         opportunity_type: str,
-        state_code: StateCode,
         created_by: str,
-        created_at: str,
+        created_at: datetime.datetime,
         description: str,
         feature_variant: Optional[str],
         display_name: str,
@@ -272,7 +272,7 @@ class WorkflowsQuerier:
             insert_statement = (
                 insert(OpportunityConfiguration)
                 .values(
-                    state_code=state_code,
+                    state_code=self.state_code.value,
                     opportunity_type=opportunity_type,
                     created_by=created_by,
                     created_at=created_at,

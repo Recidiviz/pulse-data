@@ -48,16 +48,24 @@ class OpportunitySchema(CamelCaseSchema):
     gating_feature_variant = fields.Str(required=False)
 
 
-class OpportunityConfigurationSchema(WorkflowsConfigSchema):
+class OpportunityConfigurationRequestSchema(WorkflowsConfigSchema):
     """
-    Schema representing and opportunity configuration with additional
-    information used in the admin panel.
+    Schema representing an opportunity configuration to add to the database.
+    Contains additional metadata not shown in the tool.
     """
 
     description = fields.Str(required=True)
+    status = fields.Enum(OpportunityStatus, required=True)
+
+
+class OpportunityConfigurationResponseSchema(OpportunityConfigurationRequestSchema):
+    """
+    Schema representing an opportunity configuration in the database with additional
+    metadata to be displayed in the admin panel.
+    """
+
     created_at = fields.Str(required=True)
     created_by = fields.Str(required=True)
-    status = fields.Enum(OpportunityStatus, required=True)
 
 
 class OpportunityConfigurationsQueryArgs(CamelOrSnakeCaseSchema):
