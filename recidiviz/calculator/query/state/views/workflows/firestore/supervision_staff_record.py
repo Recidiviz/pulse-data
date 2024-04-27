@@ -127,7 +127,7 @@ SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
                 attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)] AS supervisor_external_id,
                 attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
             FROM full_query
-            LEFT JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
+            LEFT JOIN `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs
                 ON full_query.id = attrs.officer_id
                 AND full_query.state_code = attrs.state_code
                 AND {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date_exclusive")}

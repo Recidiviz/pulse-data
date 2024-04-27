@@ -145,11 +145,12 @@ def _query_template_and_format_args(
         FROM
             `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` a
         INNER JOIN
-            `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` b
+            `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` b
         ON
             a.state_code = b.state_code
             AND a.officer_id = b.officer_id
-            AND a.end_date BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")},
+            AND a.end_date BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
+            AND "SUPERVISION_OFFICER" IN UNNEST(b.role_type_array),
         
         UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
     )

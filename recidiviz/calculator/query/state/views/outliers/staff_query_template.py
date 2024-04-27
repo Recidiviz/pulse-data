@@ -72,12 +72,13 @@ def staff_query_template(role: str) -> str:
         supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
     FROM ({source_tbl}) supervision_staff
-    INNER JOIN `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
+    INNER JOIN `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs
         ON attrs.state_code = supervision_staff.state_code AND attrs.officer_id = supervision_staff.external_id 
     LEFT JOIN UNNEST(attrs.supervisor_staff_external_id_array) AS supervisor_external_id
     INNER JOIN `{{project_id}}.normalized_state.state_staff` staff 
         ON attrs.staff_id = staff.staff_id AND attrs.state_code = staff.state_code
     WHERE staff.state_code = '{state}' 
+      AND "SUPERVISION_OFFICER" IN UNNEST(attrs.role_type_array)
       {f"AND {config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else ""}
     -- Get the staff's attributes from the most recent session
     QUALIFY ROW_NUMBER() OVER(PARTITION BY attrs.state_code, attrs.officer_id ORDER BY COALESCE(attrs.end_date_exclusive, "9999-01-01") DESC) = 1

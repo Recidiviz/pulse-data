@@ -30,17 +30,15 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_NAME = (
-    "supervision_officer_attribute_sessions"
-)
+SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_NAME = "supervision_staff_attribute_sessions"
 
-SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_DESCRIPTION = """
+SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_DESCRIPTION = """
 View that preprocesses state staff periods to extract relevant attributes and external id's.
 """
 
 # All dictionary values below should specify a list of values by which to sort rows for deduplication.
 # All columns referenced in a given list should be queryable within the `sub_sessions_dedup` cte below.
-_SUPERVISION_OFFICER_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
+_SUPERVISION_STAFF_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
     "supervision_district_id": [],
     "supervision_district_name": [],
     "supervision_office_id": [],
@@ -52,7 +50,7 @@ _SUPERVISION_OFFICER_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
     "supervision_office_id_inferred": [],
 }
 
-_SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
+_SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
     "role_subtype": ["COALESCE(role_subtype_priority, 99)"],
     "role_type": [],
     "specialized_caseload_type": [],
@@ -63,7 +61,7 @@ _SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
     "supervisor_staff_id": ["supervisor_staff_external_id", "supervisor_staff_id"],
 }
 
-SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
+SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
 WITH all_staff_attribute_periods AS (
     -- location periods
     SELECT
@@ -217,12 +215,12 @@ sub_sessions_dedup AS (
         end_date AS end_date_exclusive,
         -- Apply an arbitrary dedup to attributes that we don't expect to overlap, mostly as an added protection
         {generate_largest_value_query_fragment(
-            table_columns_with_priority_columns=_SUPERVISION_OFFICER_ATTRIBUTES_NO_OVERLAPS, 
+            table_columns_with_priority_columns=_SUPERVISION_STAFF_ATTRIBUTES_NO_OVERLAPS, 
             partition_columns=["state_code", "staff_id", "start_date"],
         )},
         -- For attributes that might have overlap, dedup via the configured priority order and suffix with "_primary"
         {generate_largest_value_query_fragment(
-            table_columns_with_priority_columns=_SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS, 
+            table_columns_with_priority_columns=_SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS, 
             partition_columns=["state_code", "staff_id", "start_date"],
             column_suffix="_primary"
         )},
@@ -247,7 +245,7 @@ attribute_arrays AS (
         {list_to_query_string(
             [
                 f"ARRAY_AGG(DISTINCT {attr} IGNORE NULLS) AS {attr}_array"
-                for attr in _SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS
+                for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS
             ]
         )}
     FROM
@@ -260,7 +258,7 @@ attribute_arrays AS (
 SELECT
     b.external_id AS officer_id,
     a.*,
-    {list_to_query_string([f"c.{attr}_array" for attr in _SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS])},
+    {list_to_query_string([f"c.{attr}_array" for attr in _SUPERVISION_STAFF_ATTRIBUTES_WITH_OVERLAPS])},
 FROM
     sub_sessions_dedup a
 LEFT JOIN
@@ -271,19 +269,17 @@ LEFT JOIN
     attribute_arrays c
 USING
     (state_code, staff_id, start_date)
-WHERE
-    "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
 """
 
-SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    view_id=SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_NAME,
-    view_query_template=SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE,
-    description=SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_DESCRIPTION,
+    view_id=SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_NAME,
+    view_query_template=SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE,
+    description=SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_DESCRIPTION,
     clustering_fields=["state_code", "staff_id"],
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER.build_and_print()
+        SUPERVISION_STAFF_ATTRIBUTE_SESSIONS_VIEW_BUILDER.build_and_print()
