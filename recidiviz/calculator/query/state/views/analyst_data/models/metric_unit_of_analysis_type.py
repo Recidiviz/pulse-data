@@ -243,7 +243,10 @@ WHERE
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-    ): """SELECT * FROM `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
+    ): """
+SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
+WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
+""",
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
@@ -252,14 +255,17 @@ WHERE
     supervision_office_id AS office,
     supervision_district_id AS district,
 FROM
-    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
+    `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
+WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
+""",
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
     *, supervision_district_id AS district,
 FROM
-    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`
+    `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
+WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
@@ -268,13 +274,17 @@ FROM
     *, 
     supervisor_staff_id AS unit_supervisor,
 FROM
-    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`,
+    `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`,
     UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
+WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.STATE_CODE,
-    ): """SELECT * FROM `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
+    ): """
+SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
+WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
+""",
 }
 
 UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[

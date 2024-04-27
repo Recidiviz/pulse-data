@@ -55,13 +55,14 @@ unit_supervisor_attributes AS (
         a.start_date,
         a.end_date_exclusive,
     FROM
-        `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` a,
+        `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` a,
     UNNEST(supervisor_staff_id_array) AS supervisor_staff_id
     INNER JOIN
         `{{project_id}}.normalized_state.state_staff` b
     ON
         a.state_code = b.state_code
         AND supervisor_staff_id = b.staff_id
+    WHERE "SUPERVISION_OFFICER" IN UNNEST(a.role_type_array)
 )
 ,
 overlapping_spans AS (
