@@ -169,4 +169,5 @@ if __name__ == "__main__":
         current_session=session,
         agency_name=args.agency_name,
         send_grid_client=send_grid_client,
+        user_email=args.user_email,
     )
