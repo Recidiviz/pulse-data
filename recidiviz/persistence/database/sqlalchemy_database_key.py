@@ -99,17 +99,14 @@ class SQLAlchemyDatabaseKey:
 
     @property
     def isolation_level(self) -> Optional[str]:
-        # Set isolation level to SERIALIZABLE for states. This ensures that data read
-        # during a transaction is still valid when the transaction is committed,
-        # avoiding any inconsistency issues such as #2989. See the following for details
-        # on transaction isolation guarantees within Postgres:
-        # https://www.postgresql.org/docs/9.1/transaction-iso.html
+        # TODO(#3734): Consider using SERIALIZABLE for all databases. This isolation
+        # level guarentees that all reads done throughout a transaction are still
+        # valid when the transaction is committed. See
+        # https://www.postgresql.org/docs/13/transaction-iso.html for more details.
         #
-        # We opt for this over explicit locking to simplify our application logic. If
-        # this causes performance issues we may reconsider. See
+        # In the past, we have opted for this over explicit locking to simplify our
+        # application logic. If this causes performance issues we may reconsider. See
         # https://www.postgresql.org/docs/9.1/applevel-consistency.html.
-        #
-        # TODO(#3734): Consider using SERIALIZABLE for all databases.
         return None
 
     @property

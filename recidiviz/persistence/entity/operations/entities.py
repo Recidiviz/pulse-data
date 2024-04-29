@@ -30,6 +30,10 @@ from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
+    DirectIngestRawDataLockActor,
+    DirectIngestRawDataResourceLockResource,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity
 
@@ -158,3 +162,26 @@ class DirectIngestDataflowRawTableUpperBounds(Entity, BuildableAttr, Defaultable
 
     # Cross-entity relationships
     job: DirectIngestDataflowJob = attr.ib()
+
+
+@attr.s(eq=False)
+class DirectIngestRawDataResourceLock(Entity, BuildableAttr, DefaultableAttr):
+    """Represents metatdata about locking (and therefore usage) of our direct ingest
+    resources over time.
+    """
+
+    lock_id: int = attr.ib()
+    # The actor who is acquiring the lock
+    lock_actor: DirectIngestRawDataLockActor = attr.ib()
+    # the resource that this lock is "locking"
+    lock_resource: DirectIngestRawDataResourceLockResource = attr.ib()
+    region_code: str = attr.ib()
+    raw_data_source_instance: DirectIngestInstance = attr.ib()
+    # Whether or not this lock has been released (defaults to False)
+    released: bool = attr.ib()
+    # The time this lock was acquired
+    lock_acquisition_time: datetime.datetime = attr.ib()
+    # The TTL for this lock. pg Interval is like a datetime.timedelta() object.
+    lock_ttl: datetime.timedelta = attr.ib()
+    # Descirption for why the lock was acquired
+    lock_description: str = attr.ib()

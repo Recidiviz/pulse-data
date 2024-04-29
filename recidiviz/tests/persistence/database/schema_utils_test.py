@@ -104,6 +104,7 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestInstanceStatus",
             "DirectIngestDataflowJob",
             "DirectIngestDataflowRawTableUpperBounds",
+            "DirectIngestRawDataResourceLock",
         ]
 
         expected_qualified_names = _prefix_module_name(
@@ -210,6 +211,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_instance_status",
             "direct_ingest_dataflow_job",
             "direct_ingest_dataflow_raw_table_upper_bounds",
+            "direct_ingest_raw_data_resource_lock",
         ]
         outliers_table_names = [
             "metric_benchmarks",

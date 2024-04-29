@@ -28,6 +28,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Interval,
     PrimaryKeyConstraint,
     String,
     UniqueConstraint,
@@ -58,6 +59,20 @@ direct_ingest_status = Enum(
     enum_canonical_strings.direct_ingest_status_raw_data_reimport_cancellation_in_progress,
     name="direct_ingest_status",
 )
+
+direct_ingest_lock_actor = Enum(
+    enum_canonical_strings.direct_ingest_lock_actor_adhoc,
+    enum_canonical_strings.direct_ingest_lock_actor_process,
+    name="direct_ingest_lock_actor",
+)
+
+direct_ingest_lock_resource = Enum(
+    enum_canonical_strings.direct_ingest_lock_resource_bucket,
+    enum_canonical_strings.direct_ingest_lock_resource_operations_databse,
+    enum_canonical_strings.direct_ingest_lock_resource_big_query_raw_data_dataset,
+    name="direct_ingest_lock_resource",
+)
+
 
 # Defines the base class for all table classes in the shared operations schema.
 OperationsBase: DeclarativeMeta = declarative_base(
@@ -286,3 +301,48 @@ class DirectIngestDataflowRawTableUpperBounds(OperationsBase):
 
     # The latest update_datetime of the raw data table
     watermark_datetime = Column(DateTime(timezone=True), nullable=False)
+
+
+class DirectIngestRawDataResourceLock(OperationsBase):
+    """A record of direct ingest raw data resource locks over time."""
+
+    __tablename__ = "direct_ingest_raw_data_resource_lock"
+
+    lock_id = Column(Integer, primary_key=True)
+
+    # The actor who is acquiring the lock
+    lock_actor = Column(direct_ingest_lock_actor, nullable=False)
+
+    # the resource that this lock is "locking"
+    lock_resource = Column(direct_ingest_lock_resource, nullable=False, index=True)
+
+    region_code = Column(String(255), nullable=False)
+
+    raw_data_source_instance = Column(direct_ingest_instance, nullable=False)
+
+    # Whether or not this lock has been released (defaults to False)
+    released = Column(Boolean, nullable=False)
+
+    # The time this lock was acquired
+    lock_acquisition_time = Column(DateTime(timezone=True))
+
+    # The TTL for this lock. pg Interval is like a datetime.timedelta() object.
+    lock_ttl = Column(Interval)
+
+    # Descirption for why the lock was acquired
+    lock_description = Column(String(255), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint(
+            "lock_actor = 'ADHOC' OR (lock_actor = 'PROCESS' and lock_ttl IS NOT NULL)",
+            name="all_process_actors_must_specify_ttl",
+        ),
+        Index(
+            "at_most_one_active_lock_per_resource_region_and_instance",
+            "lock_resource",
+            "region_code",
+            "raw_data_source_instance",
+            unique=True,
+            postgresql_where=(~released),
+        ),
+    )
