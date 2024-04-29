@@ -352,6 +352,10 @@ class Agency(Source):
     # The date in which the Agency was created in our platform
     created_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
+    # Custom name for the agency, which is a child agency, that
+    # will be used during Bulk Upload
+    custom_child_agency_name = Column(String(255), nullable=True)
+
     @validates("state_code")
     def validate_state_code(self, _: Any, state_code: str) -> str:
         if not StateCode.is_valid(state_code):
