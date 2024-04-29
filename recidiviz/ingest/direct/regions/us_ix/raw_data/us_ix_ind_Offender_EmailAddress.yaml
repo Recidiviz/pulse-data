@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ind_Offender_EmailAddress
+file_description: |-
+  This Atlas-generated table contains email addresses for each JII in the IDOC system
+data_classification: source
+primary_key_cols:
+  - Offender_EmailAddressId
+columns:
+  - name: Offender_EmailAddressId
+    description: Atlas-generated ID for this email - offender record
+  - name: EmailAddressId
+    description: Atlas-generated ID for the email record (links with ref_EmailAddress)
+  - name: OffenderId
+    description: IDOC number
+    is_pii: True
+  - name: PrimaryEmailAddress
+    description: Flag for whether this email is the primary email address for this person
+  - name: Locking
+    description: Locking number
+  - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
+    is_pii: True
+  - name: InsertDate
+    description: |-
+      Timestamp for record creation.
+    field_type: datetime
+  - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
+    is_pii: True
+  - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
+    field_type: datetime
