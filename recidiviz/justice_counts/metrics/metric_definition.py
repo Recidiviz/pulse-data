@@ -23,6 +23,7 @@ import attr
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
@@ -255,3 +256,9 @@ class MetricDefinition:
         if len(self.reporting_frequencies) > 1:
             raise ValueError("Multiple reporting frequencies are not yet supported.")
         return self.reporting_frequencies[0]
+
+    @property
+    def is_metric_for_supervision_or_subsystem(self) -> bool:
+        return self.system.value in (
+            {"SUPERVISION"} | {s.value for s in schema.System.supervision_subsystems()}
+        )

@@ -26,6 +26,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer
+from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import get_column_value
 from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
 from recidiviz.justice_counts.datapoint import DatapointUniqueKey
@@ -513,6 +514,7 @@ class SpreadsheetUploader:
         Additionally, this function adds Unexpected Columns warnings to the metric_key_to_errors
         dictionary if there are unexpected column names for a given metric in a given sheet.
         """
+
         # First, handle missing columns
         if "value" not in actual_columns:
             description = (
@@ -536,10 +538,16 @@ class SpreadsheetUploader:
                 description=description,
                 message_type=BulkUploadMessageType.ERROR,
             )
+        # The "system" column is expected for supervision agencies that have supervision subsystems,
+        # but not for a supervision agency that does not have supervision subsystems.
         if (
-            metric_definition.system.value == "SUPERVISION"
+            AgencyInterface.does_supervision_agency_report_for_subsystems(
+                agency=self.agency
+            )
+            and metric_definition.is_metric_for_supervision_or_subsystem
             and "system" not in actual_columns
         ):
+
             description = (
                 f'We expected to see a column named "system". '
                 f"Only the following columns were found in the sheet: "
@@ -586,7 +594,16 @@ class SpreadsheetUploader:
             expected_columns.add(
                 metricfile.disaggregation_column_name  # type: ignore[arg-type]
             )
-        if metric_definition.system.value == "SUPERVISION":
+
+        # Expect a system column if the agency has supervision subsystems AND
+        # we are uploading to a supervision system or subsystem. The "system" column
+        # is not expected for an agency that is ONLY a supervision agency and has no subsystems?
+        if (
+            AgencyInterface.does_supervision_agency_report_for_subsystems(
+                agency=self.agency
+            )
+            and metric_definition.is_metric_for_supervision_or_subsystem
+        ):
             expected_columns.add("system")
         if (
             len(self.child_agency_name_to_agency) > 0
