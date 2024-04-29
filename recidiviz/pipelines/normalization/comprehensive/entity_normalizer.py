@@ -60,7 +60,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.incarceratio
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
-    StateSpecificProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
@@ -134,9 +133,6 @@ class ComprehensiveEntityNormalizer:
             violation_response_normalization_delegate=normalizer_args[
                 StateSpecificViolationResponseNormalizationDelegate.__name__
             ],
-            program_assignment_normalization_delegate=normalizer_args[
-                StateSpecificProgramAssignmentNormalizationDelegate.__name__
-            ],
             assessment_normalization_delegate=normalizer_args[
                 StateSpecificAssessmentNormalizationDelegate.__name__
             ],
@@ -169,7 +165,6 @@ class ComprehensiveEntityNormalizer:
         ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
         sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
         violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
-        program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
         assessment_normalization_delegate: StateSpecificAssessmentNormalizationDelegate,
         sentence_normalization_delegate: StateSpecificSentenceNormalizationDelegate,
         incarceration_periods: List[StateIncarcerationPeriod],
@@ -193,7 +188,6 @@ class ComprehensiveEntityNormalizer:
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
-            program_assignment_normalization_delegate=program_assignment_normalization_delegate,
             assessment_normalization_delegate=assessment_normalization_delegate,
             sentence_normalization_delegate=sentence_normalization_delegate,
             incarceration_periods=incarceration_periods,
@@ -240,7 +234,6 @@ def all_normalized_person_entities(
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
     violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
-    program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
     assessment_normalization_delegate: StateSpecificAssessmentNormalizationDelegate,
     sentence_normalization_delegate: StateSpecificSentenceNormalizationDelegate,
     incarceration_periods: List[StateIncarcerationPeriod],
@@ -316,7 +309,6 @@ def all_normalized_person_entities(
 
     program_assignment_manager = ProgramAssignmentNormalizationManager(
         program_assignments,
-        program_assignment_normalization_delegate,
         staff_external_id_to_staff_id,
     )
 

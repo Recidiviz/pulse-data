@@ -31,22 +31,6 @@ from recidiviz.persistence.entity.state.entities import StateProgramAssignment
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
-
-
-class StateSpecificProgramAssignmentNormalizationDelegate(StateSpecificDelegate):
-    """Interface for state-specific decisions involved in normalization program assignments
-    for calculations."""
-
-    def merge_program_assignments(
-        self, program_assignments: List[StateProgramAssignment]
-    ) -> List[StateProgramAssignment]:
-        """Contains state-specific logic for merging program assignments together.
-
-        Default behavior is to return the |program_assignments| unchanged."""
-        return program_assignments
 
 
 class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
@@ -56,11 +40,9 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
     def __init__(
         self,
         program_assignments: List[StateProgramAssignment],
-        normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
         staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     ) -> None:
         self._program_assignments = deepcopy(program_assignments)
-        self.normalization_delegate = normalization_delegate
         self._normalized_program_assignments_and_additional_attributes: Optional[
             Tuple[List[StateProgramAssignment], AdditionalAttributesMap]
         ] = None
@@ -80,14 +62,11 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
                 assignments_for_normalization
             )
             sorted_assignments = self._sorted_program_assignments(filtered_assignments)
-            merged_assignments = self.normalization_delegate.merge_program_assignments(
-                sorted_assignments
-            )
 
             self._normalized_program_assignments_and_additional_attributes = (
-                merged_assignments,
+                sorted_assignments,
                 self.additional_attributes_map_for_normalized_pas(
-                    program_assignments=merged_assignments
+                    program_assignments=sorted_assignments
                 ),
             )
 

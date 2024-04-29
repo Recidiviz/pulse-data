@@ -30,9 +30,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.program_assi
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_program_assignment_normalization_delegate import (
-    UsXxProgramAssignmentNormalizationDelegate,
-)
 from recidiviz.tests.pipelines.normalization.utils.entity_normalization_manager_utils_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
 )
@@ -44,14 +41,12 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.state_code = "US_XX"
-        self.delegate = UsXxProgramAssignmentNormalizationDelegate()
 
     def _normalized_program_assignments_for_calculations(
         self, program_assignments: List[StateProgramAssignment]
     ) -> List[StateProgramAssignment]:
         entity_normalization_manager = ProgramAssignmentNormalizationManager(
             program_assignments=program_assignments,
-            normalization_delegate=self.delegate,
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -164,7 +159,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
 
         entity_normalization_manager = ProgramAssignmentNormalizationManager(
             program_assignments=program_assignments,
-            normalization_delegate=self.delegate,
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -202,7 +196,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
 
         entity_normalization_manager = ProgramAssignmentNormalizationManager(
             program_assignments=program_assignments,
-            normalization_delegate=self.delegate,
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),

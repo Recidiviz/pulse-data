@@ -66,9 +66,6 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_d
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
     UsXxIncarcerationNormalizationDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_program_assignment_normalization_delegate import (
-    UsXxProgramAssignmentNormalizationDelegate,
-)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_sentence_normalization_delegate import (
     UsXxSentenceNormalizationDelegate,
 )
@@ -104,7 +101,6 @@ DEFAULT_US_MO_SENTENCE_STATUSES = [
 STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificIncarcerationNormalizationDelegate": UsXxIncarcerationNormalizationDelegate(),
     "StateSpecificSupervisionNormalizationDelegate": UsXxSupervisionNormalizationDelegate(),
-    "StateSpecificProgramAssignmentNormalizationDelegate": UsXxProgramAssignmentNormalizationDelegate(),
     "StateSpecificViolationResponseNormalizationDelegate": UsXxViolationResponseNormalizationDelegate(),
     "StateSpecificCommitmentFromSupervisionDelegate": UsXxCommitmentFromSupervisionDelegate(),
     "StateSpecificViolationDelegate": UsXxViolationDelegate(),

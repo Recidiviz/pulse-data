@@ -81,7 +81,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.incarceratio
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
-    StateSpecificProgramAssignmentNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
@@ -193,7 +192,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 StateSpecificIncarcerationNormalizationDelegate,
                 StateSpecificSupervisionNormalizationDelegate,
                 StateSpecificViolationResponseNormalizationDelegate,
-                StateSpecificProgramAssignmentNormalizationDelegate,
                 StateSpecificAssessmentNormalizationDelegate,
                 StateSpecificSentenceNormalizationDelegate,
             ],
