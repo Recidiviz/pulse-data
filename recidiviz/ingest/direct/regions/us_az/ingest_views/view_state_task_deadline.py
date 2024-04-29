@@ -180,11 +180,7 @@ FROM (
 WHERE update_datetime_external IS NOT NULL)
 
 SELECT 
-  * EXCEPT(rn), 
-  ROW_NUMBER() OVER (
-      PARTITION BY PERSON_ID, DOC_ID
-      ORDER BY update_datetime_external, transition_release_eligibility_date, 
-      actual_or_expected_release_date) AS sequence_num 
+  * EXCEPT(rn)
 FROM final_dedup 
 WHERE rn = 1
 """

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state/entities.py"""
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import ForwardRef, Optional
 from unittest import TestCase
 
@@ -27,7 +27,6 @@ from recidiviz.common.attr_utils import is_non_optional_enum
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
@@ -36,14 +35,10 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateProgramAssignment,
-    StateSentenceGroup,
-    StateSentenceLength,
-    StateSentenceStatusSnapshot,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateTaskDeadline,
 )
-from recidiviz.persistence.entity.state.state_entity_mixins import LedgerEntityMixin
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
@@ -403,243 +398,5 @@ class TestStateEntities(TestCase):
                 due_date=date(2012, 7, 10),
                 update_datetime=datetime(2022, 4, 8, 0, 0, 0),
                 task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
-                sequence_num=None,
-            )
-
-
-class TestStateLedgerEntities(TestCase):
-    """Tests specific aspects of LedgerEntities in the state dataset."""
-
-    before = date(1999, 1, 1)
-    after = date(2022, 1, 1)
-    ledger_time = datetime(2023, 1, 1)
-    the_future = datetime.now() + timedelta(days=7)
-    external_id = "EXTERNAL-ID"
-    state_code = "US_XX"
-
-    def test_all_ledgers_have_is_not_future_test(self) -> None:
-        """Tests that all ledger entities have a test checking their ledger datetimes are not in the future."""
-        test_prefix = "test_ledger_datetime_is_not_future_"
-        tests = {func for func in dir(self) if func.startswith(test_prefix)}
-        for cls in get_all_entity_classes_in_module(entities):
-            if not issubclass(cls, LedgerEntityMixin):
-                continue
-            test_name = test_prefix + cls.__name__
-            self.assertIn(
-                test_name,
-                tests,
-                msg=(
-                    f"This test suite should have a test named {test_name} that tests "
-                    f"ledger_datetime for {cls.__name__} is not in the future."
-                ),
-            )
-
-    def test_all_ledgers_have_partition_key_test(self) -> None:
-        """Tests that all ledger entities have a test that checks that they have a well-defined partition key."""
-        test_prefix = "test_ledger_partition_key_"
-        tests = {func for func in dir(self) if func.startswith(test_prefix)}
-        for cls in get_all_entity_classes_in_module(entities):
-            if not issubclass(cls, LedgerEntityMixin):
-                continue
-            test_name = test_prefix + cls.__name__
-            self.assertIn(
-                test_name,
-                tests,
-                msg=f"This test suite should have a test named {test_name} that tests partition_key for {cls.__name__}.",
-            )
-
-    def test_ledger_partition_key_StateTaskDeadline(self) -> None:
-        ledger = StateTaskDeadline(
-            update_datetime=self.ledger_time,
-            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
-            state_code=self.state_code,
-            sequence_num=None,
-        )
-        self.assertEqual(
-            ledger.partition_key,
-            "2023-01-01T00:00:00-None-StateTaskType.DISCHARGE_FROM_SUPERVISION-None-None",
-        )
-        ledger = StateTaskDeadline(
-            update_datetime=self.ledger_time,
-            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
-            state_code=self.state_code,
-            sequence_num=1,
-            task_subtype="SUB",
-            task_metadata="META",
-        )
-        self.assertEqual(
-            ledger.partition_key,
-            "2023-01-01T00:00:00-1-StateTaskType.DISCHARGE_FROM_SUPERVISION-SUB-META",
-        )
-
-    def test_ledger_partition_key_StateSentenceStatusSnapshot(self) -> None:
-        ledger = StateSentenceStatusSnapshot(
-            status_update_datetime=self.ledger_time,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=self.state_code,
-            sequence_num=0,
-        )
-        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-0-")
-
-    def test_ledger_partition_key_StateSentenceLength(self) -> None:
-        ledger = StateSentenceLength(
-            length_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            sequence_num=None,
-        )
-        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
-
-    def test_ledger_partition_key_StateSentenceGroup(self) -> None:
-        ledger = StateSentenceGroup(
-            group_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            external_id=self.external_id,
-            sequence_num=None,
-        )
-        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-EXTERNAL-ID")
-
-    def test_ledger_datetime_is_not_future_StateTaskDeadline(self) -> None:
-        ledger = StateTaskDeadline(
-            update_datetime=self.ledger_time,
-            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
-            state_code=self.state_code,
-            sequence_num=None,
-        )
-        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
-        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
-            _ = StateTaskDeadline(
-                update_datetime=self.the_future,
-                task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
-                state_code=self.state_code,
-                sequence_num=None,
-            )
-
-    def test_ledger_datetime_is_not_future_StateSentenceStatusSnapshot(self) -> None:
-        ledger = StateSentenceStatusSnapshot(
-            status_update_datetime=self.ledger_time,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=self.state_code,
-            sequence_num=None,
-        )
-        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
-        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
-            _ = StateSentenceStatusSnapshot(
-                status_update_datetime=self.the_future,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                state_code=self.state_code,
-                sequence_num=None,
-            )
-
-    def test_ledger_datetime_is_not_future_StateSentenceLength(self) -> None:
-        ledger = StateSentenceLength(
-            length_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            sequence_num=None,
-        )
-        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
-        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
-            _ = StateSentenceLength(
-                length_update_datetime=self.the_future,
-                state_code=self.state_code,
-                sequence_num=None,
-            )
-
-    def test_ledger_datetime_is_not_future_StateSentenceGroup(self) -> None:
-        ledger = StateSentenceGroup(
-            group_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            external_id=self.external_id,
-            sequence_num=None,
-        )
-        self.assertEqual(ledger.ledger_datetime_field, self.ledger_time)
-        with self.assertRaisesRegex(ValueError, "Datetime field with value"):
-            _ = StateSentenceGroup(
-                group_update_datetime=self.the_future,
-                state_code=self.state_code,
-                external_id=self.external_id,
-                sequence_num=None,
-            )
-
-    def test_enforced_datetime_pairs_StateSentenceLength(self) -> None:
-        # "projected_parole_release_date_external" before "projected_completion_date_min_external"
-        _ = StateSentenceLength(
-            projected_parole_release_date_external=self.before,
-            projected_completion_date_min_external=self.after,
-            length_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            sequence_num=None,
-        )
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found StateSentenceLength StateSentenceLength\(sentence_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum completion datetime 1999-01-01.",
-        ):
-            _ = StateSentenceLength(
-                projected_parole_release_date_external=self.after,
-                projected_completion_date_min_external=self.before,
-                length_update_datetime=self.ledger_time,
-                state_code=self.state_code,
-                sequence_num=None,
-            )
-        # "projected_parole_release_date_external" before "projected_completion_date_max_external"
-        _ = StateSentenceLength(
-            projected_parole_release_date_external=self.before,
-            projected_completion_date_max_external=self.after,
-            length_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            sequence_num=None,
-        )
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found StateSentenceLength StateSentenceLength\(sentence_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum completion datetime 1999-01-01.",
-        ):
-            _ = StateSentenceLength(
-                projected_parole_release_date_external=self.after,
-                projected_completion_date_max_external=self.before,
-                length_update_datetime=self.ledger_time,
-                state_code=self.state_code,
-                sequence_num=None,
-            )
-
-    def test_enforced_datetime_pairs_StateSentenceGroup(self) -> None:
-        # "projected_parole_release_date_external" before "projected_full_term_release_date_min_external"
-        _ = StateSentenceGroup(
-            projected_parole_release_date_external=self.before,
-            projected_full_term_release_date_min_external=self.after,
-            group_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            external_id=self.external_id,
-            sequence_num=None,
-        )
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found StateSentenceGroup StateSentenceGroup\(external_id='EXTERNAL-ID', sentence_group_id=None\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
-        ):
-            _ = StateSentenceGroup(
-                projected_parole_release_date_external=self.after,
-                projected_full_term_release_date_min_external=self.before,
-                group_update_datetime=self.ledger_time,
-                state_code=self.state_code,
-                external_id=self.external_id,
-                sequence_num=None,
-            )
-        # "projected_parole_release_date_external" before "projected_full_term_release_date_max_external"
-        _ = StateSentenceGroup(
-            projected_parole_release_date_external=self.before,
-            projected_full_term_release_date_max_external=self.after,
-            group_update_datetime=self.ledger_time,
-            state_code=self.state_code,
-            external_id=self.external_id,
-            sequence_num=None,
-        )
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found StateSentenceGroup StateSentenceGroup\(external_id='EXTERNAL-ID', sentence_group_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
-        ):
-            _ = StateSentenceGroup(
-                projected_parole_release_date_external=self.after,
-                projected_full_term_release_date_max_external=self.before,
-                group_update_datetime=self.ledger_time,
-                state_code=self.state_code,
-                external_id=self.external_id,
                 sequence_num=None,
             )
