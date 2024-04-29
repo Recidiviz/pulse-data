@@ -290,3 +290,15 @@ class AgencyInterface:
             .filter(schema.Agency.super_agency_id.in_(agency_ids))
             .all()
         )
+
+    @staticmethod
+    def does_supervision_agency_report_for_subsystems(agency: schema.Agency) -> bool:
+        """This method is used to differentiate between Supervision agencies that do not
+        report for any subsystems and supervision agencies that report for subsystems.
+        """
+        systems_enums = {schema.System[s] for s in agency.systems}
+
+        return (
+            len(schema.System.supervision_subsystems().intersection(systems_enums)) > 0
+            and schema.System.SUPERVISION in agency.systems
+        )
