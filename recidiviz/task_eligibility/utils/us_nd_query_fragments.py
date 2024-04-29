@@ -37,6 +37,18 @@ from recidiviz.calculator.query.bq_utils import (
 MINIMUM_SECURITY_FACILITIES = [
     "JRCC",  # James River Correctional Center,
     "MRCC",  # Missouri River Correctional Center
+    "HRCC",  # Heart River Correctional Center
+]
+
+ATP_FACILITIES = [
+    "FTPFAR",  # Centre Fargo - Female (ATP)
+    "MTPFAR",  # Centre Fargo - Male (ATP)
+    "GFC",  # Centre Grand Forks (ATP)
+    "FTPMND",  # Centre Mandan - Female (ATP)
+    "MTPMND",  # Centre Mandan - Male (ATP)
+    "BTC",  # Bismarck Transition Center (ATP)
+    "SWMCCC",  # SW Multi-County Correctional Center - Work Release (ATP)
+    "WCJWRP",  # Ward County Jail - Work Release Program (ATP)
 ]
 
 

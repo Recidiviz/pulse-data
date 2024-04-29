@@ -21,6 +21,7 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
@@ -31,13 +32,24 @@ _DESCRIPTION = """Defines a view that shows transfers to minimum security
 facilities (JRCC or MRCC)."""
 
 _QUERY_TEMPLATE = f"""
+WITH housing_unit_sess AS (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
+    WHERE state_code = 'US_ND'
+        AND facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
+        -- Only folks on JRMU in JRCC are minimum security
+        AND NOT REGEXP_CONTAINS(housing_unit, r'JRMU')
+)
 SELECT 
   state_code,
   person_id,
   start_date AS completion_event_date,
-FROM `{{project_id}}.{{sessions_dataset}}.location_sessions_materialized`
-WHERE state_code = 'US_ND'
-  AND facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
+FROM ({aggregate_adjacent_spans(table_name='housing_unit_sess',
+                               end_date_field_name='end_date')})
 GROUP BY 1,2,3
 """
 
