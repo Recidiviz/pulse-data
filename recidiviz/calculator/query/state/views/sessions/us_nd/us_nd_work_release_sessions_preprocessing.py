@@ -26,30 +26,15 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
+    MINIMUM_SECURITY_FACILITIES,
+    ATP_FACILITIES,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-_WR_FACILITIES = (
-    "('"
-    + "', '".join(
-        [
-            "FTPFAR",  # Centre Fargo - Female (ATP)
-            "MTPFAR",  # Centre Fargo - Male (ATP)
-            "GFC",  # Centre Grand Forks (ATP)
-            "FTPMND",  # Centre Mandan - Female (ATP)
-            "MTPMND",  # Centre Mandan - Male (ATP)
-            "BTC",  # Bismarck Transition Center (ATP)
-            "SWMCCC",  # SW Multi-County Correctional Center - Work Release (ATP)
-            "WCJWRP",  # Ward County Jail - Work Release Program (ATP)
-            "MRCC",  # Missouri River Correctional Center
-            "JRCC",  # James River Correctional Center
-        ]
-    )
-    + "')"
-)
 
 US_ND_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_NAME = (
     "us_nd_work_release_sessions_preprocessing"
@@ -72,7 +57,7 @@ WITH wr_facilities AS (
       housing_unit,
     FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
     WHERE state_code = 'US_ND'
-      AND facility IN {_WR_FACILITIES}
+      AND facility IN {tuple(ATP_FACILITIES + MINIMUM_SECURITY_FACILITIES)}
 ),
 
 wr_as_program AS (
@@ -123,7 +108,7 @@ wr_sessions AS (
         AND f.state_code = p.state_code
         AND f.start_date < {nonnull_end_date_exclusive_clause('p.end_date_exclusive')}
         AND p.start_date < {nonnull_end_date_exclusive_clause('f.end_date_exclusive')}
-    WHERE f.facility IN ('MRCC', 'JRCC')
+    WHERE f.facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
 
     UNION ALL 
 

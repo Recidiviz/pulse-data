@@ -22,13 +22,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     MINIMUM_SECURITY_FACILITIES,
-)
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
 )
 
 _CRITERIA_NAME = "US_ND_NOT_IN_MINIMUM_SECURITY_FACILITY"
@@ -42,11 +42,17 @@ SELECT
     person_id,
     start_date,
     end_date,
+    facility,
     FALSE AS meets_criteria,
-    TO_JSON(STRUCT(start_date AS minimum_facility_start_date)) AS reason,
-FROM `{{project_id}}.{{sessions_dataset}}.location_sessions_materialized`
+    TO_JSON(STRUCT(start_date AS minimum_facility_start_date,
+                   facility AS minimum_facility)) AS reason,
+FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
 WHERE state_code = 'US_ND'
   AND facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
+  -- Only folks on JRMU in JRCC are minimum security
+  AND (facility != 'JRCC' OR REGEXP_CONTAINS(housing_unit, r'JRMU'))
+  -- Only folks on SMU in DWCRC are minimum security
+  AND (facility != 'DWCRC' OR REGEXP_CONTAINS(housing_unit, r'SMU'))
   AND start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
