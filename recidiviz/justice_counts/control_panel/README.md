@@ -250,6 +250,8 @@ The Github Action also raises Sentry alerts to the justice-counts project in cas
 If for some reason a manual staging deploy is required, use the deploy_to_staging.sh
 script described in the `Deployment Scripts` section below.
 
+For more documentation on our continuous deployment process, see [this page](https://www.notion.so/recidiviz/JC-Continuous-Staging-Deployment-ad9ea2a1c33d4d61b22280edb4843d02) or visit go/jc-staging-deployment-doc.
+
 ### Prod Deployment
 
 Prod deployment is intentially manual - to ensure that we verify our staging
