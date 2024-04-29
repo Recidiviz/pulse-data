@@ -48,18 +48,31 @@ The groups are categorized as follows.
 3c: People with 18 months or less until their ME date, have not completed Phase I"""
 
 US_MO_MOSOP_PRIO_GROUPS_QUERY_TEMPLATE = """
-WITH pt_mosop AS (
-  SELECT * FROM `{project_id}.{analyst_dataset}.us_mo_program_tracks_materialized`
-  WHERE mosop_indicator AND NOT completed_flag AND NOT ongoing_flag AND uns_ct < 2
+WITH 
+pt_all AS (
+    SELECT 
+        *,
+        completed_flag AS excluded_by_completion,
+        ongoing_flag AS excluded_by_ongoing,
+        uns_ct > 1 AS excluded_by_multiple_failures,
+        life_flag AS excluded_life
+    FROM `{project_id}.{analyst_dataset}.us_mo_program_tracks_materialized`
+    WHERE mosop_indicator
 ),
-
+pt_mosop_groups_only AS (
+    SELECT * 
+    FROM pt_all
+    WHERE NOT completed_flag AND 
+        NOT ongoing_flag AND 
+        uns_ct < 2
+),
 grp_1a AS (
     SELECT 
         *,
         "1a" AS eligibility_group,
         "CR/Board Date <18mo, no past MOSOP failures" AS group_desc,
         1 AS group_rank
-    FROM pt_mosop
+    FROM pt_mosop_groups_only
     WHERE
         (DATE_DIFF(conditional_release, CURRENT_DATE('US/Eastern'), MONTH) <= 18 OR 
         DATE_DIFF(board_determined_release_date, CURRENT_DATE('US/Eastern'), MONTH) <= 18 OR
@@ -72,7 +85,7 @@ grp_1b AS (
         "1b" AS eligibility_group,
         "CR/Board Date <18mo, 6 months since 1 MOSOP failure" AS group_desc,
         2 AS group_rank
-    FROM pt_mosop
+    FROM pt_mosop_groups_only
     WHERE
         (DATE_DIFF(conditional_release, CURRENT_DATE('US/Eastern'), MONTH) <= 18 OR 
         DATE_DIFF(board_determined_release_date, CURRENT_DATE('US/Eastern'), MONTH) <= 18 OR
@@ -86,7 +99,7 @@ grp_2 AS (
         "2" AS eligibility_group,
         "Past prioritized date" AS group_desc,
         0 AS group_rank
-    FROM pt_mosop
+    FROM pt_mosop_groups_only
     WHERE prioritized_date < CURRENT_DATE('US/Eastern')
 ),
 grp_3a AS (
@@ -95,7 +108,7 @@ grp_3a AS (
         "3a" AS eligibility_group,
         "CR date pulled, max discharge <18 mo." AS group_desc,
         3 AS group_rank
-    FROM pt_mosop
+    FROM pt_mosop_groups_only
     WHERE board_determined_release_date = max_discharge
         AND DATE_DIFF(max_discharge, CURRENT_DATE('US/Eastern'), MONTH) <= 18
 ),
@@ -105,7 +118,7 @@ grp_3b AS (
         "3b" AS eligibility_group,
         "ME/MPT date <18mo, no past MOSOP failures" AS group_desc,
         4 AS group_rank
-    FROM pt_mosop
+    FROM pt_mosop_groups_only
     WHERE DATE_DIFF(
         GREATEST(IFNULL(minimum_eligibility_date, minimum_mandatory_release_date), IFNULL(minimum_mandatory_release_date, minimum_eligibility_date)
         ), CURRENT_DATE('US/Eastern'), MONTH) <= 18 
@@ -118,27 +131,76 @@ grp_3c AS (
         "3c" AS eligibility_group,
         "ME/MPT date <18 mo, havent completed Phase 1" AS group_desc,
         5 AS group_rank
-    FROM pt_mosop
+    FROM pt_mosop_groups_only
     WHERE DATE_DIFF(
         GREATEST(IFNULL(minimum_eligibility_date, minimum_mandatory_release_date), IFNULL(minimum_mandatory_release_date, minimum_eligibility_date)
         ), CURRENT_DATE('US/Eastern'), MONTH) <= 18 
     AND NOT completed_p1
+),
+unioned_groups AS (
+    SELECT * FROM (
+        SELECT * FROM grp_1a
+        UNION ALL
+        SELECT * FROM grp_1b
+        UNION ALL (
+        SELECT * FROM grp_2)
+        UNION ALL (
+        SELECT * FROM grp_3a)
+        UNION ALL (
+        SELECT * FROM grp_3b)
+        UNION ALL (
+        SELECT * FROM grp_3c)
+    ) 
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY group_rank) = 1
+),
+pt_exclusion_flag AS (
+    SELECT 
+        *,
+        excluded_by_completion OR
+            excluded_by_ongoing OR 
+            excluded_by_multiple_failures OR
+            excluded_life OR
+            -- In addition to the generic exclusion criteria above, people are also
+            -- excluded if they don't fit into any of the groups defined above.
+            excluded_by_prioritization_criteria
+        AS excluded
+      FROM (
+        SELECT 
+            *,
+            external_id NOT IN (
+                SELECT external_id 
+                FROM unioned_groups
+            ) AS excluded_by_prioritization_criteria,
+        FROM pt_all
+    )
+),
+prio_distance AS (
+    SELECT 
+        * EXCEPT(months_to_min_elig_date),
+        CASE 
+            WHEN months_to_prio_date BETWEEN 18 AND 24 THEN "18 to 24 months"
+            WHEN months_to_prio_date BETWEEN 25 AND 35 THEN "25 to 35 months"
+            WHEN months_to_prio_date BETWEEN 36 AND 59 THEN "36 to 59 months"
+            WHEN months_to_prio_date >= 60 THEN "60+ months"
+            WHEN months_to_prio_date BETWEEN 12 AND 17 THEN "12 to 17 months"
+            WHEN months_to_prio_date BETWEEN 0 AND 11 THEN "0 to 11 months"
+            WHEN months_to_prio_date  < 0 THEN "past date"
+            ELSE NULL
+        END AS prio_distance_group
+    FROM (
+        SELECT 
+            *, 
+            DATE_DIFF(prioritized_date, CURRENT_DATE('US/Eastern'), MONTH) AS months_to_prio_date,
+            DATE_DIFF(minimum_eligibility_date, CURRENT_DATE('US/Eastern'), MONTH) AS months_to_min_elig_date
+        FROM pt_exclusion_flag
+    )
 )
 
-SELECT * FROM (
-    SELECT * FROM grp_1a
-    UNION ALL
-    SELECT * FROM grp_1b
-    UNION ALL (
-    SELECT * FROM grp_2)
-    UNION ALL (
-    SELECT * FROM grp_3a)
-    UNION ALL (
-    SELECT * FROM grp_3b)
-    UNION ALL (
-    SELECT * FROM grp_3c)
-) 
-QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY group_rank) = 1
+SELECT 
+    *,
+    months_to_prio_date IS NULL AS missing_prio_date 
+FROM prio_distance 
+ORDER BY months_to_prio_date NULLS LAST
 """
 
 US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
