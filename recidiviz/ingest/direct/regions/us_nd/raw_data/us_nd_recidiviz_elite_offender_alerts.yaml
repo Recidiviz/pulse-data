@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: recidiviz_elite_offender_alerts
+file_description: |-
+  Alerts sourced from the Elite system.
+data_classification: source
+primary_key_cols: [OFFENDER_BOOK_ID, ALERT_SEQ]
+columns:
+  - name: ALERT_CODE
+    description: The code for this particular alert
+  - name: ALERT_SEQ
+    description: The sequence of the alert with regard to others for this person
+  - name: ALERT_STATUS
+    description: The status of the alert
+  - name: ALERT_DATE
+    description: The date the alert was raised
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: ALERT_TYPE
+    description: The type of alert
+  - name: AUTHORIZE_PERSON_TEXT
+    description: Unknown
+    is_pii: True
+  - name: CASELOAD_TYPE
+    description: Unknown
+  - name: COMMENT_TEXT
+    description: Free text comment about alert
+    is_pii: True
+  - name: CREATE_DATE
+    description: The date the record was created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: CREATE_DATETIME
+    description: The date the record was created
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: CREATE_USER_ID
+    description: The user who created the record
+    is_pii: True
+  - name: EXPIRY_DATE
+    description: The date the alert expires
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: MODIFY_DATETIME
+    description: The date the record was last modified
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: MODIFY_USER_ID
+    description: The user who last modified the record
+    is_pii: True
+  - name: OFFENDER_BOOK_ID
+    description: The Elite booking ID of the person who the alert concerns.
+    is_pii: True
+  - name: ROOT_OFFENDER_ID
+    description: The Elite ID of the person who the alert concerns.
+    is_pii: True
+  - name: SEAL_FLAG
+    description: Unknown
+  - name: VERIFIED_FLAG
+    description: Unknown
