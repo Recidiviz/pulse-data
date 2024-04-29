@@ -36,3 +36,12 @@ direct_ingest_status_stale_raw_data = "STALE_RAW_DATA"
 direct_ingest_status_no_raw_data_reimport_in_progress = (
     "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
 )
+
+# DirectIngestLockActor
+direct_ingest_lock_actor_process = "PROCESS"
+direct_ingest_lock_actor_adhoc = "ADHOC"
+
+# DirectIngestLockResource
+direct_ingest_lock_resource_bucket = "BUCKET"
+direct_ingest_lock_resource_operations_databse = "OPERATIONS_DATABASE"
+direct_ingest_lock_resource_big_query_raw_data_dataset = "BIG_QUERY_RAW_DATA_DATASET"
