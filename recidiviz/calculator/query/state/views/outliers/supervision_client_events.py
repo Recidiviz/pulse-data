@@ -206,6 +206,31 @@ treatment_referrals AS (
             ) AS attributes
         FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.VantagePointRecommendations_latest` vpr
         INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid ON pid.external_id = vpr.OffenderID)
+)
+-- TREATMENT_STARTS events are treated differently than the other events, they represent when a client did NOT
+-- have a treatment start within the time period (US_CA only)
+, treatment_starts AS (
+    SELECT
+        "US_CA" AS state_code,
+        "treatment_starts" AS metric_id,
+        -- When there is not a treatment start, the event date is either the last day of the current time period
+        DATE_SUB(population_end_date, INTERVAL 1 DAY) AS event_date,
+        a.person_id,
+        TO_JSON_STRING( 
+            STRUCT(
+                NULL  as code,
+                "No treatment start within the past year"  as description
+            )) AS attributes
+    FROM `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` a
+    CROSS JOIN
+        latest_year_time_period period
+    LEFT JOIN `{{project_id}}.normalized_state.state_program_assignment` spa
+        USING(person_id)
+    WHERE a.state_code = "US_CA"
+        -- Find clients who do not have any treatment starts, or those who do not have a treatment start within the time period
+        AND (spa.person_id IS NULL OR spa.start_date NOT BETWEEN population_start_date AND population_end_date)
+        -- Find officer periods that fall within the current time period
+        AND a.assignment_date <= population_end_date AND IFNULL(a.end_date, population_end_date) >= population_start_date
 ),
 all_events AS (
     SELECT * FROM events_with_metric_id
@@ -215,6 +240,8 @@ all_events AS (
     SELECT * FROM sanctions
         UNION ALL
     SELECT * FROM treatment_referrals
+        UNION ALL
+    SELECT * FROM treatment_starts
 ),
 supervision_client_events AS (
     SELECT 
