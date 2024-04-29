@@ -25,7 +25,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH survey_template AS (
+WITH 
+-- The violation survey responses are coded in Atlas using a series of SectionIds, QuestionIds, and AnswerIds.
+-- This CTE compiles a mapping of all those Section, Question, and Answer Ids to their respective descriptions for easier readability later on
+survey_template AS (
   SELECT DISTINCT
     JSON_EXTRACT_SCALAR(sections, "$.questionnaireId") AS QuestionnaireTemplateId,
     JSON_EXTRACT_SCALAR(sections, "$.sectionId") AS sectionId,
@@ -39,6 +42,10 @@ WITH survey_template AS (
   UNNEST(JSON_EXTRACT_ARRAY(questions, "$.answers")) AS answers
   WHERE UPPER(QuestionnaireDefinition) LIKE '%VIOLATION SURVEY%'
 ),
+-- This CTE pulls together all the survey responses (with their QuestionnaireTemplateId, QuestionIds, AnswerIds, and answer values)
+-- for all survey templates that correspond with the violation survey.  We also pull in an external id for the 
+-- violation survey itself (OffenderQuestionnaireTemplateId), the JII associated with the survey, and the employee information
+-- for the employee that entered the survey.  The result of this CTE is one row per survey-section-question-answer combination.
 survey_responses AS (
   SELECT 
     OffenderQuestionnaireTemplateId,
@@ -59,6 +66,9 @@ survey_responses AS (
     "1030"
   )
 ),
+-- This CTE filters down to relevant sections/questions and then joins on the survey_template CTE
+-- to get the survey answers in a more readable format.  This CTE also filters out survey-section-question-answer rows where the
+-- question or answer was NULL.
 survey_answer_per_question AS (
 SELECT DISTINCT *
 FROM (
@@ -86,23 +96,35 @@ FROM (
 WHERE answer IS NOT NULL AND question_title IS NOT NULL
 ORDER BY OffenderQuestionnaireTemplateId, SectionId)
 
+-- This CTE aggregates all the results into one row pers survey.
+-- For violation type (which is a "check all that apply" question), we string agg
+-- all distinct violation type values.
+-- We also take the MIN of violation date across all survey-section-question-answer rows, 
+-- but we only expect one non-null value for violation date per survey anyways.
 SELECT
-CompletedByEmployeeId,
-CompletedDate,
-OffenderQuestionnaireTemplateId,
-OffenderId,
-MAX(
+  CompletedByEmployeeId,
+  CompletedDate,
+  OffenderQuestionnaireTemplateId,
+  OffenderId,
+  MIN(violation_date) as violation_date,
+  STRING_AGG(DISTINCT violation_type, "," ORDER BY violation_type) AS violation_types
+FROM (
+SELECT 
+  DISTINCT
+  CompletedByEmployeeId,
+  CompletedDate,
+  OffenderQuestionnaireTemplateId,
+  OffenderId,
   CASE
     WHEN question_title = "Report of Violation Date" 
     OR question_title = "Violation Date" 
-    THEN answer END) AS violation_date,
-MAX(
+    THEN answer END AS violation_date,
   CASE
-    WHEN question_title = "New Crime Type (check all that apply)" 
-    OR question_title = "Violation Type" 
+    WHEN question_title = "Violation Type" 
     OR question_title = "Violation Type (check all that apply)"
-    THEN answer END) AS violation_type,
-FROM survey_answer_per_question
+    THEN answer END AS violation_type,
+  FROM survey_answer_per_question
+)
 GROUP BY CompletedByEmployeeId,CompletedDate,OffenderQuestionnaireTemplateId,OffenderId
 
 """

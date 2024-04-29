@@ -8,7 +8,7 @@ input_columns:
   - CompletedDate
   - OffenderQuestionnaireTemplateId
   - violation_date
-  - violation_type
+  - violation_types
 unused_columns: []
 output:
   StatePerson:
@@ -26,26 +26,29 @@ output:
                 - $literal("SUPPLEMENTAL")
           violation_date: violation_date
           supervision_violation_types:
-            - StateSupervisionViolationTypeEntry:
-                violation_type:
-                  $enum_mapping:
-                    $raw_text: violation_type
-                    $mappings:
-                      StateSupervisionViolationType.ABSCONDED:
-                        - Absconding
-                      StateSupervisionViolationType.TECHNICAL:
-                        - Technical (enter details below)
-                      StateSupervisionViolationType.FELONY:
-                        - Non-Violent Felony
-                        - Violent Felony
-                        - New Felony
-                      StateSupervisionViolationType.MISDEMEANOR:
-                        - Violent Misdemeanor
-                        - Non-Violent Misdemeanor
-                        - New Misdemeanor
-                      StateSupervisionViolationType.LAW:
-                        - Violent Sex Offense
-                        - Non-Violent Sex Offense
+            - $foreach:
+                $iterable: violation_types
+                $result:
+                  StateSupervisionViolationTypeEntry:
+                    violation_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          StateSupervisionViolationType.ABSCONDED:
+                            - Absconding
+                          StateSupervisionViolationType.TECHNICAL:
+                            - Technical (enter details below)
+                          StateSupervisionViolationType.FELONY:
+                            - Non-Violent Felony
+                            - Violent Felony
+                            - New Felony
+                          StateSupervisionViolationType.MISDEMEANOR:
+                            - Violent Misdemeanor
+                            - Non-Violent Misdemeanor
+                            - New Misdemeanor
+                          StateSupervisionViolationType.LAW:
+                            - Violent Sex Offense
+                            - Non-Violent Sex Offense
           supervision_violation_responses:
             - StateSupervisionViolationResponse:
                 external_id:
