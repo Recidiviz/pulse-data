@@ -365,6 +365,7 @@ def copy_metric_settings_and_alert_user(
     agency_name: str,
     metric_definition_key_subset: List[str],
     current_session: Session,
+    user_email: str,
     send_grid_client: SendGridClientWrapper,
     child_agency_id_subset: Optional[List[int]] = None,
 ) -> None:
@@ -403,21 +404,21 @@ def copy_metric_settings_and_alert_user(
     except Exception as e:
         logging.exception("Failed to copy metric settings: %s", e)
         send_grid_client.send_message(
-            to_email=args.user_email,
+            to_email=user_email,
             from_email="no-reply@justice-counts.org",
             from_email_name="Justice Counts",
-            subject=f"Unfortunately, your request to copy {args.agency_name}'s (ID: {args.super_agency_id}) metric settings to its child agencies could not be completed.",
-            html_content=f"""<p>Sorry, something went wrong while attempting to copy the metric settings from {args.agency_name} (ID: {args.super_agency_id}). Please reach out to a member of the Recidiviz team to help troubleshoot.</p>""",
+            subject=f"Unfortunately, your request to copy {agency_name}'s (ID: {super_agency_id}) metric settings to its child agencies could not be completed.",
+            html_content=f"""<p>Sorry, something went wrong while attempting to copy the metric settings from {agency_name} (ID: {super_agency_id}). Please reach out to a member of the Recidiviz team to help troubleshoot.</p>""",
             disable_link_click=True,
             unsubscribe_group_id=UNSUBSCRIBE_GROUP_ID,
         )
     else:
         # Send confirmation email once metrics have been successfully copied over
         send_grid_client.send_message(
-            to_email=args.user_email,
+            to_email=user_email,
             from_email="no-reply@justice-counts.org",
             from_email_name="Justice Counts",
-            subject=f"Your request to copy {args.agency_name}'s (ID: {args.super_agency_id}) metric settings to its child agencies has been completed.",
+            subject=f"Your request to copy {agency_name}'s (ID: {super_agency_id}) metric settings to its child agencies has been completed.",
             html_content=success_html_content,
             disable_link_click=True,
             unsubscribe_group_id=UNSUBSCRIBE_GROUP_ID,
@@ -453,4 +454,5 @@ if __name__ == "__main__":
                     current_session=session,
                     agency_name=args.agency_name,
                     send_grid_client=email_client,
+                    user_email=args.user_email,
                 )
