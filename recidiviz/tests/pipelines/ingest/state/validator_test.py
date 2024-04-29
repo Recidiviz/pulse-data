@@ -307,16 +307,22 @@ class TestEntityValidations(unittest.TestCase):
         )
 
         error_messages = validate_root_entity(person, self.field_index)
-        expected_error_message = (
-            "Found [2] state_task_deadline entities with (state_code=US_XX, "
-            "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
-            "task_subtype=None, "
-            'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
-            "update_datetime=2023-02-01 11:19:00). First 2 entities found:\n"
-            "  * StateTaskDeadline(task_deadline_id=1)\n"
-            "  * StateTaskDeadline(task_deadline_id=2)"
+        self.assertEqual(
+            error_messages[0],
+            (
+                "Found [2] state_task_deadline entities with (state_code=US_XX, "
+                "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
+                "task_subtype=None, "
+                'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
+                "update_datetime=2023-02-01 11:19:00). First 2 entities found:\n"
+                "  * StateTaskDeadline(task_deadline_id=1)\n"
+                "  * StateTaskDeadline(task_deadline_id=2)"
+            ),
         )
-        self.assertEqual(expected_error_message, one(error_messages))
+        self.assertIn(
+            "If sequence_num is None, then the ledger's partition_key must be unique across hydrated entities.",
+            error_messages[1],
+        )
 
     def test_entity_tree_unique_constraints_invalid_all_nonnull(self) -> None:
         person = state_entities.StatePerson(
@@ -360,7 +366,7 @@ class TestEntityValidations(unittest.TestCase):
         )
 
         error_messages = validate_root_entity(person, self.field_index)
-        expected_error_message = (
+        expected_duplicate_error = (
             "Found [2] state_task_deadline entities with (state_code=US_XX, "
             "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
             "task_subtype=my_subtype, "
@@ -369,7 +375,9 @@ class TestEntityValidations(unittest.TestCase):
             "  * StateTaskDeadline(task_deadline_id=1)\n"
             "  * StateTaskDeadline(task_deadline_id=2)"
         )
-        self.assertEqual(expected_error_message, one(error_messages))
+        expected_sequence_num_error = "If sequence_num is None, then the ledger's partition_key must be unique across hydrated entities."
+        self.assertEqual(expected_duplicate_error, error_messages[0])
+        self.assertIn(expected_sequence_num_error, error_messages[1])
 
     def test_entity_tree_unique_constraints_task_deadline_valid_tree(self) -> None:
         person = state_entities.StatePerson(
@@ -458,13 +466,12 @@ class TestEntityValidations(unittest.TestCase):
         )
 
         error_messages = validate_root_entity(person, self.field_index)
-        self.assertEqual(2, len(error_messages))
+        self.assertEqual(3, len(error_messages))
         self.assertRegex(
             error_messages[0],
             r"^Found \[StatePerson\] with id \[3111\] missing an external_id:",
         )
-
-        expected_error_message = (
+        expected_duplicate_error = (
             "Found [2] state_task_deadline entities with (state_code=US_XX, "
             "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
             "task_subtype=None, "
@@ -473,7 +480,9 @@ class TestEntityValidations(unittest.TestCase):
             "  * StateTaskDeadline(task_deadline_id=1)\n"
             "  * StateTaskDeadline(task_deadline_id=2)"
         )
-        self.assertEqual(expected_error_message, error_messages[1])
+        self.assertEqual(expected_duplicate_error, error_messages[1])
+        expected_ledger_error = "If sequence_num is None, then the ledger's partition_key must be unique across hydrated entities."
+        self.assertIn(expected_ledger_error, error_messages[2])
 
 
 class TestUniqueConstraintValid(unittest.TestCase):
@@ -686,3 +695,51 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
                 "allowed on PROBATION and PAROLE type sentences."
             ),
         )
+
+    def test_sequence_num_are_unique_for_each_sentence(self) -> None:
+        probation_sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            sentence_type=StateSentenceType.PROBATION,
+            imposed_date=date(2022, 1, 1),
+            sentence_status_snapshots=[
+                state_entities.StateSentenceStatusSnapshot(
+                    sequence_num=1,
+                    state_code=self.state_code,
+                    status=StateSentenceStatus.SERVING,
+                    status_update_datetime=datetime(2022, 1, 1),
+                ),
+                state_entities.StateSentenceStatusSnapshot(
+                    sequence_num=2,
+                    state_code=self.state_code,
+                    status=StateSentenceStatus.REVOKED,
+                    status_update_datetime=datetime(2022, 4, 1),
+                ),
+            ],
+            person=self.state_person,
+        )
+        self.state_person.sentences.append(probation_sentence)
+        incarceration_sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-2",
+            sentence_type=StateSentenceType.PROBATION,
+            imposed_date=date(2022, 1, 1),
+            sentence_status_snapshots=[
+                state_entities.StateSentenceStatusSnapshot(
+                    sequence_num=1,
+                    state_code=self.state_code,
+                    status=StateSentenceStatus.SERVING,
+                    status_update_datetime=datetime(2022, 1, 1),
+                ),
+                state_entities.StateSentenceStatusSnapshot(
+                    sequence_num=2,
+                    state_code=self.state_code,
+                    status=StateSentenceStatus.REVOKED,
+                    status_update_datetime=datetime(2022, 4, 1),
+                ),
+            ],
+            person=self.state_person,
+        )
+        self.state_person.sentences.append(incarceration_sentence)
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(len(errors), 0)
