@@ -22,6 +22,7 @@ from http import HTTPStatus
 from typing import Tuple
 
 import google.cloud.pubsub_v1 as pubsub
+import pandas as pd
 from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
 from sqlalchemy import delete
@@ -226,14 +227,39 @@ def _import_trigger_outliers() -> Tuple[str, HTTPStatus]:
         return str(e), HTTPStatus.BAD_REQUEST
 
     try:
-        create_import_task_helper(
-            request_path=request.path,
-            message=message,
-            gcs_bucket=_outliers_bucket(),
-            import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
-            task_prefix="import-outliers",
-            task_url="/import/outliers",
+        request_path = request.path
+        gcs_bucket = _outliers_bucket()
+
+        _, object_id = _validate_bucket_and_object_id(
+            request_path=request_path, gcs_bucket=gcs_bucket, message=message
         )
+
+        _, file = object_id.split("/")
+        _, file_type = file.split(".")
+
+        if file_type == "csv":
+            create_import_task_helper(
+                request_path=request_path,
+                message=message,
+                gcs_bucket=gcs_bucket,
+                import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
+                task_prefix="import-outliers",
+                task_url="/import/outliers",
+            )
+        elif file_type == "json":
+            create_import_task_helper(
+                request_path=request_path,
+                message=message,
+                gcs_bucket=gcs_bucket,
+                import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
+                task_prefix="import-outliers-utils",
+                task_url="/import/outliers/utils",
+            )
+        else:
+            error_msg = f"Unexpected handling of file type .{file_type} for file {file}"
+            logging.error(error_msg)
+            return error_msg, HTTPStatus.BAD_REQUEST
+
     except ValueError as e:
         return str(e), HTTPStatus.BAD_REQUEST
 
@@ -258,6 +284,37 @@ def create_import_task_helper(
     :param task_url: The endpoint that will handle the task
     :rtype: None
     """
+
+    _, object_id = _validate_bucket_and_object_id(
+        request_path=request_path, gcs_bucket=gcs_bucket, message=message
+    )
+
+    cloud_task_manager = SingleCloudTaskQueueManager(
+        queue_info_cls=CloudTaskQueueInfo, queue_name=import_queue_name
+    )
+
+    task_id = re.sub(r"[^a-zA-Z0-9_-]", "-", f"{task_prefix}-{object_id}")
+
+    try:
+        cloud_task_manager.create_task(
+            absolute_uri=f"{cloud_run_metadata.url}{task_url}/{object_id}",
+            service_account_email=cloud_run_metadata.service_account_email,
+            task_id=task_id,  # deduplicate import requests for the same file
+        )
+        logging.info("Enqueued gcs_import task to %s", import_queue_name)
+    except AlreadyExists:
+        logging.info(
+            "Skipping enqueueing of %s because it is already being imported",
+            task_id,
+        )
+
+
+def _validate_bucket_and_object_id(
+    request_path: str, gcs_bucket: str, message: pubsub.types.PubsubMessage
+) -> Tuple[str, str]:
+    """
+    Validates the bucket id and object id from the request and returns both if valid.
+    """
     if not message.attributes:
         logging.error("Invalid Pub/Sub message")
         raise ValueError("Invalid Pub/Sub message")
@@ -266,6 +323,7 @@ def create_import_task_helper(
 
     bucket_id = attributes[BUCKET_ID]
     object_id = attributes[OBJECT_ID]
+
     if "gs://" + bucket_id != gcs_bucket:
         logging.error(
             "%s is only configured for the %s bucket, saw %s",
@@ -286,24 +344,7 @@ def create_import_task_helper(
             f"Invalid object ID {object_id}, must be of format <state_code>/<filename>"
         )
 
-    cloud_task_manager = SingleCloudTaskQueueManager(
-        queue_info_cls=CloudTaskQueueInfo, queue_name=import_queue_name
-    )
-
-    task_id = re.sub(r"[^a-zA-Z0-9_-]", "-", f"{task_prefix}-{object_id}")
-
-    try:
-        cloud_task_manager.create_task(
-            absolute_uri=f"{cloud_run_metadata.url}{task_url}/{object_id}",
-            service_account_email=cloud_run_metadata.service_account_email,
-            task_id=task_id,  # deduplicate import requests for the same file
-        )
-        logging.info("Enqueued gcs_import task to %s", import_queue_name)
-    except AlreadyExists:
-        logging.info(
-            "Skipping enqueueing of %s because it is already being imported",
-            task_id,
-        )
+    return bucket_id, object_id
 
 
 @app.route("/import/outliers/<state_code>/<filename>", methods=["POST"])
@@ -365,5 +406,85 @@ def _import_outliers(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         view_builder.columns,
     )
     logging.info("View (%s) successfully imported", view_builder.view_id)
+
+    return "", HTTPStatus.OK
+
+
+@app.route("/import/outliers/utils/<state_code>/<filename>", methods=["POST"])
+def _import_outliers_convert_json_to_csv(
+    state_code: str, filename: str
+) -> Tuple[str, HTTPStatus]:
+    """Exports a JSON file from the Outlies GCS bucket into a CSV file in the same bucket"""
+    # TODO(#20600): Create a helper for the shared logic between this endpoint and /import/outliers
+    if not StateCode.is_state_code(state_code.upper()):
+        return (
+            f"Unknown state_code [{state_code}] received, must be a valid state code.",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    file_name, _ = filename.split(".")
+
+    view_builder = None
+    for builder in OUTLIERS_VIEW_BUILDERS:
+        if f"{builder.view_id}.json" == filename:
+            view_builder = builder
+    if not view_builder:
+        return (
+            f"Invalid filename {filename}, must match a Outliers view",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    if view_builder in OUTLIERS_ARCHIVE_VIEW_BUILDERS:
+        return (
+            "",
+            HTTPStatus.OK,
+        )
+
+    if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
+        return (
+            f"Unexpected view builder delegate found when importing {filename}",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+    try:
+        db_entity = get_database_entity_by_table_name(
+            outliers_schema, view_builder.view_id
+        )
+
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    json_path = GcsfsFilePath.from_absolute_path(
+        os.path.join(
+            _outliers_bucket(),
+            state_code + "/" + filename,
+        )
+    )
+
+    gcsfs = GcsfsFactory.build()
+    with gcsfs.open(json_path) as fp:
+        df = pd.read_json(
+            fp,
+            # Read the file as a JSON object per line
+            lines=True,
+            orient="records",
+            # Read all columns as strings into the DataFrame
+            dtype={c.name: "object" for c in db_entity.__table__.columns},
+        )
+
+        destination_path = GcsfsFilePath.from_absolute_path(
+            f"gs://{_outliers_bucket()}/{state_code.upper()}/{file_name}.csv"
+        )
+
+        gcsfs.upload_from_string(
+            path=destination_path,
+            contents=df.to_csv(
+                # Don't include an index column
+                index=False
+            ),
+            content_type="application/octet-stream",
+        )
+
+    logging.info("JSON of view (%s) successfully written as CSV", view_builder.view_id)
 
     return "", HTTPStatus.OK
