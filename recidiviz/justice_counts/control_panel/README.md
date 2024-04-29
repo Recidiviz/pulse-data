@@ -245,7 +245,7 @@ Sites for investigating deployment logs:
 - [Github Action workflow logs](https://github.com/Recidiviz/pulse-data/actions/workflows/jc_continuous_staging_deploy.yml)
 - [Cloud Build Trigger logs](https://console.cloud.google.com/cloud-build/builds;region=global?query=trigger_id%3D%2201e362f0-c3f3-40ac-b13a-c6881b3a272f%22&project=justice-counts-staging)
 
-The Github Action also raises Sentry alerts to the justice-counts project in case of failure.
+The Github Action will send a Slack notification to jc-eng-only with the deployment status, and will also raise an alert to the justice-counts Sentry project in case of failure.
 
 If for some reason a manual staging deploy is required, use the deploy_to_staging.sh
 script described in the `Deployment Scripts` section below.
