@@ -18,6 +18,7 @@
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states_for_bigquery,
 )
+from recidiviz.outliers.constants import TREATMENT_STARTS
 from recidiviz.outliers.outliers_configs import get_outliers_backend_config
 from recidiviz.outliers.types import MetricOutcome
 
@@ -64,6 +65,8 @@ def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
         state_code = '{state_code}' 
         -- Limit the events lookback to minimize the size of the subqueries
         AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
+        -- TREATMENT_STARTS has custom logic and is handled in a separate cte
+        AND '{metric.name}' != '{TREATMENT_STARTS.name}'
         {f"AND ({metric.metric_event_conditions_string})" if metric.metric_event_conditions_string else ""}
 """
             )
