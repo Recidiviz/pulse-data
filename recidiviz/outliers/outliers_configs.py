@@ -39,6 +39,18 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
 )
 
+US_CA_EXCLUDED_UNITS = [
+    "PATTON STATE H",
+    "FRESNO CSH",
+    "ATASCADERO",
+    "VENTURA TRAINING CENTER",
+    "VENTURA TRAINING CEN",
+    "REENTRY SOUTH",
+    "REENTRY NORTH",
+    "INS SOUTH",
+    "INS NORTH",
+]
+
 _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
     StateCode.US_ID: OutliersBackendConfig(
         metrics=[
@@ -266,6 +278,8 @@ Denominator is the average daily caseload for the officer over the given time pe
         supervision_officer_metric_exclusions="""
     AND avg_daily_population BETWEEN 10 AND 175
     AND prop_period_with_critical_caseload >= 0.75""",
+        supervision_staff_exclusions=f"""
+    supervision_office_name NOT IN {tuple(US_CA_EXCLUDED_UNITS)}""",
     ),
 }
 
