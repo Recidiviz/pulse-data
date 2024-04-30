@@ -23,6 +23,7 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -135,6 +136,13 @@ def _sentencing_entities_checks(
     for sentence in state_person.sentences:
         if not sentence.imposed_date:
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
+        # TODO(#29457) Ensure test fixture data and ingest views allow this check to happen in AZ
+        # We can then remove the state code check from this statement.
+        if (
+            not any(sentence.charges)
+            and state_person.state_code != StateCode.US_AZ.value
+        ):
+            yield f"Found sentence {sentence.limited_pii_repr()} with no charges."
         # TODO(#29316) Validate parole projected dates of StateSentenceGroup as well
         if sentence.parole_possible is False:
             if any(
