@@ -49,6 +49,9 @@ from recidiviz.validation.views.state.admission_pfi_pop_pfi_mismatch import (
 from recidiviz.validation.views.state.dataflow_metrics.configured_validations import (
     get_all_dataflow_metrics_validations,
 )
+from recidiviz.validation.views.state.in_custody_sps_have_associated_ip import (
+    IN_CUSTODY_SPS_HAVE_ASSOCIATED_IP_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import (
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
 )
@@ -377,6 +380,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            IN_CUSTODY_SPS_HAVE_ASSOCIATED_IP_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
