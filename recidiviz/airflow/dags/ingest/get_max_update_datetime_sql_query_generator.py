@@ -25,9 +25,6 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestRawFileMetadata,
-)
 
 
 class GetMaxUpdateDateTimeSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
@@ -56,7 +53,7 @@ class GetMaxUpdateDateTimeSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str
     def sql_query(self) -> str:
         return f"""
             SELECT {FILE_TAG}, MAX(update_datetime) AS {MAX_UPDATE_DATETIME}
-            FROM {DirectIngestRawFileMetadata.__tablename__}
+            FROM direct_ingest_raw_file_metadata
             WHERE raw_data_instance = '{self.ingest_instance.upper()}' 
             AND is_invalidated = false 
             AND file_processed_time IS NOT NULL 

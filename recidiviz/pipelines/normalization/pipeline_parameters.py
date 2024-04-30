@@ -19,12 +19,12 @@ from typing import List, Optional, Set
 
 import attr
 
-from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
-    normalized_state_dataset_for_state_code,
-)
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 

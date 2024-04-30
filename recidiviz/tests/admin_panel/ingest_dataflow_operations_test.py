@@ -88,13 +88,6 @@ class IngestDataflowOperations(TestCase):
             ],
         )
         self.state_code_list_patcher.start()
-
-        self.pipeline_config_yaml_path_patcher = patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.PIPELINE_CONFIG_YAML_PATH",
-            FAKE_PIPELINE_CONFIG_YAML_PATH,
-        )
-        self.pipeline_config_yaml_path_patcher.start()
-
         self.watermark_manager = DirectIngestDataflowWatermarkManager()
         self.job_manager = DirectIngestDataflowJobManager()
         local_persistence_helpers.use_on_disk_postgresql_database(
@@ -107,7 +100,6 @@ class IngestDataflowOperations(TestCase):
 
     def tearDown(self) -> None:
         super().tearDown()
-        self.pipeline_config_yaml_path_patcher.stop()
         self.state_code_list_patcher.stop()
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.watermark_manager.database_key

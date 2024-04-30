@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config for Dataflow pipelines and BigQuery storage of metric output."""
-import os
 from typing import Dict, List, Type
 
 from recidiviz.pipelines.metrics.incarceration.metrics import (
@@ -53,11 +52,6 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
 from recidiviz.pipelines.metrics.violation.metrics import (
     ViolationMetricType,
     ViolationWithResponseMetric,
-)
-
-PIPELINE_CONFIG_YAML_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "calculation_pipeline_templates.yaml",
 )
 
 # Pipelines that are always run for all dates.

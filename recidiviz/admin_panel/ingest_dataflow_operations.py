@@ -17,7 +17,6 @@
 """Functions and classes for calling the dataflow API for ingest pipeline metadata."""
 import concurrent.futures
 import datetime
-import os
 from collections import defaultdict
 from concurrent import futures
 from typing import Dict, List, Optional, Union
@@ -25,9 +24,7 @@ from typing import Dict, List, Optional, Union
 import attr
 from google.cloud import dataflow_v1beta3
 
-import recidiviz
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataset,
@@ -45,6 +42,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
 )
@@ -81,11 +79,6 @@ class DataflowPipelineMetadataResponse:
             "location": self.location,
             "duration": self.duration,
         }
-
-
-PIPELINE_CONFIG_YAML_PATH = os.path.join(
-    os.path.dirname(recidiviz.__file__), "pipelines/calculation_pipeline_templates.yaml"
-)
 
 
 def get_latest_job_for_state_instance(

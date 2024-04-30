@@ -25,10 +25,6 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestDataflowJob,
-    DirectIngestDataflowRawTableUpperBounds,
-)
 
 
 class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
@@ -59,10 +55,10 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
     def sql_query(self) -> str:
         return f"""
             SELECT {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}
-            FROM {DirectIngestDataflowRawTableUpperBounds.__tablename__}
+            FROM direct_ingest_dataflow_raw_table_upper_bounds
             WHERE job_id IN (
                 SELECT MAX(job_id) 
-                FROM {DirectIngestDataflowJob.__tablename__}
+                FROM direct_ingest_dataflow_job
                 WHERE region_code = '{self.region_code.upper()}' AND ingest_instance = '{self.ingest_instance.upper()}'
                 AND is_invalidated = FALSE
             );

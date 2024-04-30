@@ -205,7 +205,6 @@ def main() -> int:
         valid_prefixes = {
             "recidiviz.big_query.address_overrides",
             "recidiviz.big_query.big_query_query_provider",
-            "recidiviz.calculator",
             "recidiviz.pipelines",
             "recidiviz.cloud_storage",
             "recidiviz.common",
@@ -218,6 +217,7 @@ def main() -> int:
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_utils",
                     "recidiviz.big_query.big_query_view",
+                    "recidiviz.calculator",
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.direct",
@@ -238,6 +238,7 @@ def main() -> int:
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_utils",
                     "recidiviz.big_query.big_query_view",
+                    "recidiviz.calculator",
                     "recidiviz.ingest.direct.types.direct_ingest_instance",
                     "recidiviz.ingest.direct.dataset_config",
                     "recidiviz.persistence",
@@ -260,15 +261,23 @@ def main() -> int:
     valid_calculation_dag_prefixes = {
         "recidiviz.airflow.dags",
         "recidiviz.calculator.query.state.dataset_config",
-        "recidiviz.big_query",
+        "recidiviz.big_query.address_overrides",
+        "recidiviz.big_query.big_query_address",
         "recidiviz.common",
-        "recidiviz.cloud_storage",
+        "recidiviz.cloud_storage.gcsfs_path",
         "recidiviz.ingest.direct.dataset_config",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.export.products",
-        "recidiviz.persistence.database.reserved_words",
         "recidiviz.persistence.database.schema_type",
-        "recidiviz.pipelines",
+        "recidiviz.pipelines.config_paths",
+        "recidiviz.pipelines.ingest.pipeline_parameters",
+        "recidiviz.pipelines.ingest.dataset_config",
+        "recidiviz.pipelines.metrics.pipeline_parameters",
+        "recidiviz.pipelines.normalization.pipeline_parameters",
+        "recidiviz.pipelines.normalization.dataset_config",
+        "recidiviz.pipelines.pipeline_parameters",
+        "recidiviz.pipelines.supplemental.pipeline_parameters",
+        "recidiviz.pipelines.supplemental.dataset_config",
         "recidiviz.utils",
     }
 
@@ -287,6 +296,42 @@ def main() -> int:
                 "recidiviz.tools.postgres.local_postgres_helpers",
                 "recidiviz.tools.utils.script_helpers",
                 *valid_calculation_dag_prefixes,
+            }
+        ),
+    )
+
+    valid_ingest_dag_prefixes = {
+        "recidiviz.airflow.dags",
+        "recidiviz.big_query.address_overrides",
+        "recidiviz.big_query.big_query_address",
+        "recidiviz.common",
+        "recidiviz.cloud_storage.gcsfs_path",
+        "recidiviz.ingest.direct.dataset_config",
+        "recidiviz.ingest.direct.direct_ingest_regions",
+        "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
+        "recidiviz.ingest.direct.types.direct_ingest_instance",
+        "recidiviz.persistence.database.schema_type",
+        "recidiviz.pipelines.ingest.dataset_config",
+        "recidiviz.pipelines.ingest.pipeline_parameters",
+        "recidiviz.pipelines.ingest.pipeline_utils",
+        "recidiviz.pipelines.pipeline_parameters",
+        "recidiviz.utils",
+    }
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.airflow.dags.ingest_dag",
+        valid_module_prefixes=make_module_matcher(valid_ingest_dag_prefixes),
+    )
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.airflow.tests.ingest_dag_test",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.airflow.tests",
+                "recidiviz.tests.test_setup_utils",
+                "recidiviz.tools.utils.script_helpers",
+                "recidiviz.tools.postgres.local_postgres_helpers",
+                *valid_ingest_dag_prefixes,
             }
         ),
     )
@@ -376,9 +421,6 @@ def main() -> int:
                 "recidiviz.calculator",
                 "recidiviz.big_query",
                 "recidiviz.task_eligibility",
-                "recidiviz.ingest",
-                # TODO(#6859): Get rid of this dependency
-                "recidiviz.pipelines",
                 "recidiviz.calculator.query.state.views.dashboard.pathways",
                 "recidiviz.calculator.query.state.views.outliers.outliers_enabled_states",
                 "recidiviz.case_triage",

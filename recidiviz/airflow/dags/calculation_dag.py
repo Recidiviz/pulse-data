@@ -58,7 +58,7 @@ from recidiviz.metrics.export.products.product_configs import (
     ProductExportConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
+from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (

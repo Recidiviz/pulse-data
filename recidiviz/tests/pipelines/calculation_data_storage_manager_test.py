@@ -178,12 +178,15 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_production_template_yaml = FAKE_PIPELINE_CONFIG_YAML_PATH
         self.mock_always_unbounded_date_metrics = [MockMetricEnum.METRIC_1]
 
-        self.mock_dataflow_config.PIPELINE_CONFIG_YAML_PATH = (
-            self.mock_production_template_yaml
-        )
         self.mock_dataflow_config.ALWAYS_UNBOUNDED_DATE_METRICS = (
             self.mock_always_unbounded_date_metrics
         )
+
+        self.pipeline_config_yaml_patcher = mock.patch(
+            "recidiviz.pipelines.calculation_data_storage_manager.PIPELINE_CONFIG_YAML_PATH",
+            self.mock_production_template_yaml,
+        )
+        self.pipeline_config_yaml_patcher.start()
 
         self.environment_patcher = mock.patch(
             "recidiviz.utils.environment.get_gcp_environment",
@@ -204,6 +207,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.project_number_patcher.stop()
         self.dataflow_config_patcher.stop()
         self.most_recent_dataflow_metrics_patcher.stop()
+        self.pipeline_config_yaml_patcher.stop()
 
     def test_move_old_dataflow_metrics_to_cold_storage(self) -> None:
         """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to

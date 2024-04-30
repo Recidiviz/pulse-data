@@ -17,7 +17,6 @@
 """Tests for raw_data/dataset_config.py."""
 import unittest
 
-from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataset,
@@ -25,6 +24,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 
 
 class TestDatasetConfig(unittest.TestCase):

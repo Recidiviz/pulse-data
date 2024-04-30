@@ -25,9 +25,6 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestDataflowRawTableUpperBounds,
-)
 
 
 class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
@@ -79,7 +76,7 @@ class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         )
 
         return f"""
-            INSERT INTO {DirectIngestDataflowRawTableUpperBounds.__tablename__}
+            INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds
                 (region_code, {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}, job_id)
             VALUES
                 {values};

@@ -20,7 +20,6 @@ from typing import Dict, List, Optional, Set
 
 import attr
 
-from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
@@ -28,6 +27,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 INGEST_PIPELINE_NAME = "ingest"

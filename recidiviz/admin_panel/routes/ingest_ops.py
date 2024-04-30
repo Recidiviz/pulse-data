@@ -39,7 +39,6 @@ from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     import_raw_files_to_bq_sandbox,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -74,6 +73,7 @@ from recidiviz.ingest.flash_database_tools import (
     delete_contents_of_raw_data_tables,
     delete_tables_in_pruning_datasets,
 )
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.utils.trigger_dag_helpers import trigger_ingest_dag_pubsub
 from recidiviz.utils.types import assert_type
 

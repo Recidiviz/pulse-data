@@ -15,11 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Various BigQuery datasets."""
-from typing import Optional
 
 # Where the actual, final dashboard views live
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 DASHBOARD_VIEWS_DATASET: str = "dashboard_views"
 
@@ -103,18 +100,3 @@ OUTLIERS_VIEWS_DATASET: str = "outliers_views"
 
 # Views that contain events logged from Auth0 actions via Segment
 AUTH0_PROD_ACTION_LOGS: str = "auth0_prod_action_logs"
-
-
-def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
-    """Where the output of state-specific entity normalization pipelines is stored."""
-    return f"{state_code.value.lower()}_{NORMALIZED_STATE_DATASET}"
-
-
-def state_dataset_for_state_code(
-    state_code: StateCode,
-    instance: DirectIngestInstance,
-    sandbox_dataset_prefix: Optional[str] = None,
-) -> str:
-    """Where the output of the state-specific ingest pipelines is stored."""
-    dataset_prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
-    return f"{dataset_prefix}{state_code.value.lower()}_state_{instance.value.lower()}"
