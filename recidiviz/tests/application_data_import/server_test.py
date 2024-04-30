@@ -491,9 +491,9 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
             mock_task_manager.return_value.create_task.assert_called_with(
-                absolute_uri=f"http://localhost:5000/import/outliers/utils/{self.state_code}/test-file.json",
+                absolute_uri=f"http://localhost:5000/import/outliers/json_to_csv/{self.state_code}/test-file.json",
                 service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
-                task_id=f"import-outliers-utils-{self.state_code}-test-file-json",
+                task_id=f"import-outliers-json-to-csv-{self.state_code}-test-file-json",
             )
 
     def test_import_trigger_outliers_bad_message(self) -> None:
@@ -645,7 +645,7 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
                 response.data,
             )
 
-    def test_import_outliers_utils_successful(
+    def test_import_outliers_json_to_csv_successful(
         self,
     ) -> None:
         with self.app.test_request_context():
@@ -667,8 +667,20 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
             )
             self.assertEqual(len(self.fs.files), 1)
             response = self.client.post(
-                f"/import/outliers/utils/{self.state_code}/{self.view}.json",
+                f"/import/outliers/json_to_csv/{self.state_code}/{filename}",
             )
 
+            csv_path = GcsfsFilePath.from_absolute_path(
+                os.path.join(
+                    self.bucket,
+                    self.state_code + "/" + f"{self.view}.csv",
+                )
+            )
+
+            self.assertEqual(
+                csv_path.uri(),
+                "gs://test-project-outliers-etl-data/US_XX/supervision_officers.csv",
+            )
+            self.assertTrue(self.fs.exists(csv_path))
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(len(self.fs.files), 2)
