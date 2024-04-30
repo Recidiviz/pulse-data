@@ -19,7 +19,7 @@ Logic for state and ingest instance specific dataflow pipelines.
 """
 import json
 import logging
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Tuple, Union
 
 from airflow.decorators import task
 from airflow.models import BaseOperator
@@ -54,7 +54,6 @@ from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.ingest.pipeline_parameters import (
     INGEST_PIPELINE_NAME,
     IngestPipelineParameters,
@@ -62,7 +61,6 @@ from recidiviz.pipelines.ingest.pipeline_parameters import (
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
 )
-from recidiviz.utils.yaml_dict import YAMLDict
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -226,10 +224,6 @@ def _release_lock(
             "--lock_id={{dag_run.run_id}}" + f"_{state_code.value}_{instance.value}",
         ],
     )
-
-
-def _get_ingest_pipeline_configs() -> List[YAMLDict]:
-    return YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts("ingest_pipelines")
 
 
 def _create_dataflow_pipeline(

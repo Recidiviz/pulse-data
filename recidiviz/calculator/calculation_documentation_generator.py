@@ -54,10 +54,10 @@ from recidiviz.metrics.export.products.product_configs import (
     ProductConfigs,
     ProductName,
 )
+from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
-    PIPELINE_CONFIG_YAML_PATH,
 )
 from recidiviz.pipelines.metrics.incarceration.metrics import IncarcerationMetric
 from recidiviz.pipelines.metrics.population_spans.metrics import PopulationSpanMetric

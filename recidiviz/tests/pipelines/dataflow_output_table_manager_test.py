@@ -48,6 +48,9 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
+from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -316,11 +319,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
     def test_get_all_state_specific_normalized_state_datasets(self) -> None:
         dataset_ids: List[str] = []
         for state_code in get_normalization_pipeline_enabled_states():
-            dataset_ids.append(
-                dataflow_output_table_manager.normalized_state_dataset_for_state_code(
-                    state_code
-                )
-            )
+            dataset_ids.append(normalized_state_dataset_for_state_code(state_code))
 
         expected_dataset_ids = ["us_xx_normalized_state", "us_yy_normalized_state"]
 

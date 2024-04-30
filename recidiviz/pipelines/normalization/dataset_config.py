@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Helpers for getting normalization pipeline output datasets."""
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.common.constants.states import StateCode
 
 
-"""The calculation portion of the Recidiviz data platform.
-
-This includes infrastructure, logic, and models for calculating various criminal
-justice metrics from ingested records and persisting those metrics.
-"""
+def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
+    """Where the output of state-specific entity normalization pipelines is stored."""
+    return f"{state_code.value.lower()}_{NORMALIZED_STATE_DATASET}"

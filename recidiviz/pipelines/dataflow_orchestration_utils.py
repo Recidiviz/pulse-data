@@ -18,7 +18,7 @@
 from typing import Set
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
+from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.utils.yaml_dict import YAMLDict
 
 

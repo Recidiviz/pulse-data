@@ -29,7 +29,6 @@ from mock import patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
-from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataset,
@@ -79,6 +78,7 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_associations_from_tree,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
 )

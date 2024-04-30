@@ -28,7 +28,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines import dataflow_config
+from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
@@ -43,9 +43,7 @@ class TestConfiguredPipelines(unittest.TestCase):
     def test_normalization_pipeline_completeness(self) -> None:
         state_codes_with_normalization_pipelines: Set[StateCode] = set()
 
-        pipeline_templates_yaml = YAMLDict.from_path(
-            dataflow_config.PIPELINE_CONFIG_YAML_PATH
-        )
+        pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
         normalization_pipelines = pipeline_templates_yaml.pop_dicts(
             "normalization_pipelines"
@@ -62,7 +60,7 @@ class TestConfiguredPipelines(unittest.TestCase):
                     f"Found state code: [{state_code.value}] with configured metric "
                     "pipelines that does not have a scheduled normalization pipeline. "
                     "Add a pipeline for this state to the normalization_pipelines in "
-                    f"{dataflow_config.PIPELINE_CONFIG_YAML_PATH}."
+                    f"{PIPELINE_CONFIG_YAML_PATH}."
                 )
 
     @patch(
@@ -72,9 +70,7 @@ class TestConfiguredPipelines(unittest.TestCase):
     def test_production_pipeline_parity(self) -> None:
         states_launched_in_production = get_direct_ingest_states_launched_in_env()
 
-        pipeline_templates_yaml = YAMLDict.from_path(
-            dataflow_config.PIPELINE_CONFIG_YAML_PATH
-        )
+        pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
         metric_pipelines = pipeline_templates_yaml.pop_dicts("metric_pipelines")
         production_pipelines_by_state: Dict[StateCode, List[str]] = defaultdict(list)

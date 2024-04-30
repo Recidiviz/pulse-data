@@ -35,7 +35,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     SPARK_OUTPUT_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
-    normalized_state_dataset_for_state_code,
 )
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -45,6 +44,9 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code,
+)
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.validation.views.dataset_config import (
     validation_oneoff_dataset_for_state,

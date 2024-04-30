@@ -24,9 +24,6 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestDataflowJob,
-)
 
 
 class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
@@ -62,7 +59,7 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         job_id: str,
     ) -> str:
         return f"""
-            INSERT INTO {DirectIngestDataflowJob.__tablename__}
+            INSERT INTO direct_ingest_dataflow_job
                 (job_id, region_code, ingest_instance, completion_time , is_invalidated)
             VALUES
                 ('{job_id}', '{self.region_code.upper()}', '{self.ingest_instance.upper()}', NOW(), FALSE);

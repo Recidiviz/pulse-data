@@ -35,7 +35,6 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     STATE_BASE_VIEWS_DATASET,
-    state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -46,6 +45,7 @@ from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
     bq_schema_for_sqlalchemy_table,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.utils import metadata
 
 

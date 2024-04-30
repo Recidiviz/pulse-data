@@ -32,10 +32,7 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    normalized_state_dataset_for_state_code,
-)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     make_most_recent_metric_view_builders,
 )
@@ -46,8 +43,12 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
 )
 from recidiviz.pipelines import dataflow_config
+from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_normalization_pipeline_enabled_states,
+)
+from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
@@ -221,7 +222,7 @@ def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
         for table, metric_type in dataflow_config.DATAFLOW_TABLES_TO_METRIC_TYPES.items()
     }
 
-    all_pipelines = YAMLDict.from_path(dataflow_config.PIPELINE_CONFIG_YAML_PATH)
+    all_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
     metric_pipelines = all_pipelines.pop_dicts("metric_pipelines")
 
     # Dict with the format: {metric_table: {state_code: int}}

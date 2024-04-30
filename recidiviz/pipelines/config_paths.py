@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Constants for accessing paths of pipeline config files."""
+import os
 
-
-"""The calculation portion of the Recidiviz data platform.
-
-This includes infrastructure, logic, and models for calculating various criminal
-justice metrics from ingested records and persisting those metrics.
-"""
+PIPELINE_CONFIG_YAML_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "calculation_pipeline_templates.yaml",
+)

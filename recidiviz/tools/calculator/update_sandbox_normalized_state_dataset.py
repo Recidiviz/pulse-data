@@ -53,11 +53,13 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
-    normalized_state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.calculation_data_storage_manager import (
     update_normalized_state_dataset,
+)
+from recidiviz.pipelines.normalization.dataset_config import (
+    normalized_state_dataset_for_state_code,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
