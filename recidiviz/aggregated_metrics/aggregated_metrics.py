@@ -140,7 +140,7 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
                     continue
 
             # Add table to the FROM clause
-            table_ref = f"`{{project_id}}.aggregated_metrics.{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics` {table_name}"
+            table_ref = f"`{{project_id}}.aggregated_metrics.{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics_materialized` {table_name}"
             if not from_clause:
                 join_type = "FROM"
                 join_condition = ""

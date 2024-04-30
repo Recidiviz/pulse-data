@@ -184,6 +184,6 @@ WITH time_periods AS (
         view_id=view_id,
         view_query_template=query_template,
         description=view_description,
-        should_materialize=False,
+        should_materialize=True,
         clustering_fields=unit_of_analysis.primary_key_columns,
     )

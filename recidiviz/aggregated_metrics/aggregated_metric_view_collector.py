@@ -465,6 +465,9 @@ def collect_aggregated_metrics_view_builders(
     Collects all aggregated metrics view builders at all available units of analysis and populations
     """
     view_builders = []
+    # TODO(#29291): Filter all_metrics list down to only metrics we use downstream in
+    #  products / Looker, then make it easier for DAs, etc to query configured metrics
+    #  in an ad-hoc way from notebooks, etc.
     for population_type, all_metrics in metrics_by_population_dict.items():
         if not all_metrics:
             continue
