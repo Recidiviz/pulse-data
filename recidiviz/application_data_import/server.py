@@ -482,7 +482,8 @@ def _import_outliers_convert_json_to_csv(
             path=destination_path,
             contents=df.to_csv(
                 # Don't include an index column
-                index=False
+                index=False,
+                header=False,
             ),
             content_type="application/octet-stream",
         )
