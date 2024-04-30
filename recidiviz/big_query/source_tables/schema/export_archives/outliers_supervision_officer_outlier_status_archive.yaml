@@ -35,13 +35,4 @@ schema:
   - name: status
     type: STRING
     mode: NULLABLE
-  - name: top_x_pct
-    type: INTEGER
-    mode: NULLABLE
-  - name: top_x_pct_percentile_value
-    type: FLOAT
-    mode: NULLABLE
-  - name: is_top_x_pct
-    type: BOOLEAN
-    mode: NULLABLE
 clustering_fields: null
