@@ -336,6 +336,30 @@ def main() -> int:
         ),
     )
 
+    valid_monitoring_dag_prefixes = {
+        "recidiviz.airflow.dags",
+        "recidiviz.persistence.database.schema_type",
+        "recidiviz.utils.environment",
+    }
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.airflow.dags.monitoring_dag",
+        valid_module_prefixes=make_module_matcher(valid_monitoring_dag_prefixes),
+    )
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.airflow.tests.monitoring_dag_test",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.airflow.tests",
+                "recidiviz.tests.test_setup_utils",
+                "recidiviz.tools.utils.script_helpers",
+                "recidiviz.tools.postgres.local_postgres_helpers",
+                *valid_monitoring_dag_prefixes,
+            }
+        ),
+    )
+
     valid_sftp_dag_prefixes = {
         "recidiviz.airflow.dags",
         "recidiviz.cloud_storage",

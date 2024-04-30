@@ -97,6 +97,18 @@ TEST_START_DATE_LOOKBACK = datetime.timedelta(days=20 * 365)
 class TestMonitoringDag(AirflowIntegrationTest):
     """Tests the dags defined in the /dags package."""
 
+    def test_import(self) -> None:
+        """Just tests that the monitoring_dag file can be imported."""
+        # Need to import monitoring_dag inside test suite so environment variables are
+        # set before importing, otherwise monitoring_dag will raise an Error and not
+        # import.
+
+        # pylint: disable=C0415 import-outside-toplevel
+        # pylint: disable=unused-import
+        from recidiviz.airflow.dags.monitoring_dag import monitoring_dag
+
+        # If nothing fails, this test passes
+
     def test_graph_map_index(self) -> None:
         """
         Given a DAG grid view that looks like this:
