@@ -217,17 +217,17 @@ If you need to update our DB schema (add a table or column, remove a column, cha
 docker exec -e SQLALCHEMY_DB_HOST=justice_counts_db -e SQLALCHEMY_DB_NAME=postgres -e SQLALCHEMY_USE_SSL=0 -e SQLALCHEMY_DB_USER=justice_counts_user -e SQLALCHEMY_DB_PASSWORD=example pulse-data-control_panel_backend-1  pipenv run alembic -c recidiviz/persistence/database/migrations/justice_counts_alembic.ini downgrade <revision>
 ```
 
-5. [staging] To run the migration against the staging database, you will need to manually run the script below (with the dry-run flag removed) before submitting your PR. We recommend only running the migration _after_ the PR is approved and no further changes will be made to the DB schema, but _before_ submitting the PR.
+5. [staging] To run the migration against the staging database, you will need to manually run the script below (with the dry-run flag set to False) after merging your PR to main. Make sure to run the script from an updated main branch that contains your db schema changes.
 
 ```
-pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head --dry-run --database JUSTICE_COUNTS --project-id recidiviz-staging
+pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head --dry-run=True --database JUSTICE_COUNTS --project-id justice-counts-staging
 ```
 
 > Please note: You should only ever run migrations that are backwards compatible (i.e. safe to apply without any corresponding code changes). The database migration should always happen before the code that relies on the migration is merged. Deploying the code without first migrating the database will break our staging application.
 > The best way to ensure a safe database migration is to follow these steps:
 >
 > - Separate out the schema change PR from the corresponding code changes (put them in separate PRs).
-> - Put up the migration file for review first, merge it and run the migration.
+> - Put up the migration file for review first, merge it to main first, and then run the migration on the up-to-date main branch.
 > - Only then should you merge the code changes that rely on that migration.
 
 6. [prod] The migration will be applied to the prod database automatically during the next prod deploy.
