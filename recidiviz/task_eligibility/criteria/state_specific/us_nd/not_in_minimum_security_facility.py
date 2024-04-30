@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,7 +41,7 @@ SELECT
     state_code,
     person_id,
     start_date,
-    end_date,
+    DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
     facility,
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(start_date AS minimum_facility_start_date,
@@ -53,8 +53,8 @@ WHERE state_code = 'US_ND'
   AND (facility != 'JRCC' OR REGEXP_CONTAINS(housing_unit, r'JRMU'))
   -- Only folks on SMU in DWCRC are minimum security
   AND (facility != 'DWCRC' OR REGEXP_CONTAINS(housing_unit, r'SMU'))
-  AND start_date < {nonnull_end_date_clause('end_date')}
-GROUP BY 1,2,3,4
+  AND start_date < {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+GROUP BY 1,2,3,4,5
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
