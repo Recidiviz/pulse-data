@@ -75,11 +75,15 @@ class DirectIngestRawDataResourceLockManager:
     def _is_lock_unreleased_but_expired(
         lock: schema.DirectIngestRawDataResourceLock,
     ) -> bool:
+
         return (
             not lock.released
-            and lock.lock_ttl is not None
-            and datetime.datetime.now(tz=datetime.UTC) - lock.lock_acquisition_time
-            > lock.lock_ttl
+            and lock.lock_ttl_seconds is not None
+            and (
+                time_delta := datetime.datetime.now(tz=datetime.UTC)
+                - lock.lock_acquisition_time
+            )
+            and time_delta.seconds > lock.lock_ttl_seconds
         )
 
     def _update_unreleased_but_expired_locks_for_resoures(
@@ -104,7 +108,7 @@ class DirectIngestRawDataResourceLockManager:
         resources: List[DirectIngestRawDataResourceLockResource],
         actor: DirectIngestRawDataLockActor,
         description: str,
-        ttl: Optional[datetime.timedelta],
+        ttl_seconds: Optional[int],
         session: Session,
     ) -> List[schema.DirectIngestRawDataResourceLock]:
         """Creates and returns new locks with the provided information."""
@@ -117,7 +121,7 @@ class DirectIngestRawDataResourceLockManager:
                 raw_data_source_instance=self.raw_data_source_instance.value,
                 released=False,
                 lock_acquisition_time=datetime.datetime.now(tz=datetime.UTC),
-                lock_ttl=ttl,
+                lock_ttl_seconds=ttl_seconds,
                 lock_description=description,
             )
 
@@ -160,7 +164,7 @@ class DirectIngestRawDataResourceLockManager:
                 raw_data_source_instance,
                 released,
                 lock_acquisition_time,
-                lock_ttl,
+                lock_ttl_seconds,
                 lock_description
               FROM (
                 SELECT
@@ -227,7 +231,7 @@ class DirectIngestRawDataResourceLockManager:
         resources: List[DirectIngestRawDataResourceLockResource],
         actor: DirectIngestRawDataLockActor,
         description: str,
-        ttl: Optional[datetime.timedelta] = None,
+        ttl_seconds: Optional[int] = None,
     ) -> List[entities.DirectIngestRawDataResourceLock]:
         """Attempts to acquire the resource locks for the provided |resources|.
         If successful, returns the newly created locks; otherwise raises
@@ -249,7 +253,7 @@ class DirectIngestRawDataResourceLockManager:
                 )
 
             new_locks = self._register_new_locks(
-                resources, actor, description, ttl, session
+                resources, actor, description, ttl_seconds, session
             )
             # commit here so that we can get the lock_id populated on the object
             try:

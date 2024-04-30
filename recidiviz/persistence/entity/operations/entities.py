@@ -181,7 +181,7 @@ class DirectIngestRawDataResourceLock(Entity, BuildableAttr, DefaultableAttr):
     released: bool = attr.ib()
     # The time this lock was acquired
     lock_acquisition_time: datetime.datetime = attr.ib()
-    # The TTL for this lock. pg Interval is like a datetime.timedelta() object.
-    lock_ttl: datetime.timedelta = attr.ib()
+    # The TTL for this lock in seconds
+    lock_ttl_seconds: Optional[int] = attr.ib()
     # Descirption for why the lock was acquired
     lock_description: str = attr.ib()

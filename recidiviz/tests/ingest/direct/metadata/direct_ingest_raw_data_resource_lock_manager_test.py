@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the DirectIngestRawDataResourceLockManager."""
 import datetime
-from datetime import timedelta
 from itertools import chain
 from typing import Any, Optional
 from unittest import TestCase
@@ -154,7 +153,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
             self.raw_data,
             DirectIngestRawDataLockActor.PROCESS,
             "testing-testing-123",
-            ttl=timedelta(days=10),
+            ttl_seconds=10 * 24 * 60 * 60,  # 10 days
         )
 
         assert len(active_lock) == 1
@@ -190,7 +189,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
                 self.raw_data,
                 DirectIngestRawDataLockActor.PROCESS,
                 "testing-testing-123",
-                ttl=timedelta(hours=1),
+                ttl_seconds=60 * 60,
             )
 
         active_lock = self.us_xx_manager.acquire_lock_for_resources(
@@ -205,7 +204,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
         with self.assertRaisesRegex(
             IntegrityError,
             r"\(.*CheckViolation\) new row for relation \"direct_ingest_raw_data_resource_lock\" "
-            r"violates check constraint \"all_process_actors_must_specify_ttl\".*",
+            r"violates check constraint \"all_process_actors_must_specify_ttl_seconds\".*",
         ):
             _ = self.us_xx_manager.acquire_lock_for_resources(
                 self.raw_data,
@@ -247,7 +246,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
                 self.raw_data,
                 DirectIngestRawDataLockActor.PROCESS,
                 "testing-testing-123",
-                ttl=timedelta(hours=1),
+                ttl_seconds=60 * 60,
             )
 
         assert len(expired_locks_in_jan) == 1
@@ -266,7 +265,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
                 self.all_resources,
                 DirectIngestRawDataLockActor.PROCESS,
                 "testing-testing-123",
-                ttl=timedelta(hours=1),
+                ttl_seconds=60 * 60,
             )
 
         current_locks = self.us_xx_manager.get_most_recent_locks_for_resources(
@@ -337,7 +336,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
                 self.raw_data,
                 DirectIngestRawDataLockActor.PROCESS,
                 "testing-testing-123",
-                ttl=timedelta(hours=1),
+                ttl_seconds=60 * 60,
             )
 
         persisted_lock = []
@@ -394,7 +393,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
                 self.raw_data,
                 DirectIngestRawDataLockActor.PROCESS,
                 "testing-testing-123",
-                ttl=timedelta(hours=1),
+                ttl_seconds=60 * 60,
             )
 
         persisted_lock = []

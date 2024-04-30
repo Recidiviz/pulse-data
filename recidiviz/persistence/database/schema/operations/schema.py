@@ -28,7 +28,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    Interval,
     PrimaryKeyConstraint,
     String,
     UniqueConstraint,
@@ -326,16 +325,18 @@ class DirectIngestRawDataResourceLock(OperationsBase):
     # The time this lock was acquired
     lock_acquisition_time = Column(DateTime(timezone=True))
 
-    # The TTL for this lock. pg Interval is like a datetime.timedelta() object.
-    lock_ttl = Column(Interval)
+    # The TTL for this lock in seconds. consider switching this to pg Interval which
+    # sqlalchemy converst to datetime.timedelta object if bq federated queries support
+    # the pg interval type in the future
+    lock_ttl_seconds = Column(Integer)
 
     # Descirption for why the lock was acquired
     lock_description = Column(String(255), nullable=False)
 
     __table_args__ = (
         CheckConstraint(
-            "lock_actor = 'ADHOC' OR (lock_actor = 'PROCESS' and lock_ttl IS NOT NULL)",
-            name="all_process_actors_must_specify_ttl",
+            "lock_actor = 'ADHOC' OR (lock_actor = 'PROCESS' and lock_ttl_seconds IS NOT NULL)",
+            name="all_process_actors_must_specify_ttl_seconds",
         ),
         Index(
             "at_most_one_active_lock_per_resource_region_and_instance",

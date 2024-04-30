@@ -92,8 +92,6 @@ def _bq_schema_column_type_for_type(field_type: Type) -> bigquery.enums.SqlTypeN
         return bigquery.enums.SqlTypeNames.DATETIME
     if field_type is bool:
         return bigquery.enums.SqlTypeNames.BOOLEAN
-    if field_type is datetime.timedelta:
-        return bigquery.enums.SqlTypeNames.INTERVAL
     # TODO(#7285): Add support for ARRAY types when we turn on the regular
     #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
     raise ValueError(f"Unhandled field type for field_type: {field_type}")
