@@ -252,8 +252,8 @@ def _import_trigger_outliers() -> Tuple[str, HTTPStatus]:
                 message=message,
                 gcs_bucket=gcs_bucket,
                 import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
-                task_prefix="import-outliers-utils",
-                task_url="/import/outliers/utils",
+                task_prefix="import-outliers-json-to-csv",
+                task_url="/import/outliers/json_to_csv",
             )
         else:
             error_msg = f"Unexpected handling of file type .{file_type} for file {file}"
@@ -410,7 +410,7 @@ def _import_outliers(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@app.route("/import/outliers/utils/<state_code>/<filename>", methods=["POST"])
+@app.route("/import/outliers/json_to_csv/<state_code>/<filename>", methods=["POST"])
 def _import_outliers_convert_json_to_csv(
     state_code: str, filename: str
 ) -> Tuple[str, HTTPStatus]:
@@ -473,8 +473,10 @@ def _import_outliers_convert_json_to_csv(
         )
 
         destination_path = GcsfsFilePath.from_absolute_path(
-            f"gs://{_outliers_bucket()}/{state_code.upper()}/{file_name}.csv"
+            f"{_outliers_bucket()}/{state_code.upper()}/{file_name}.csv"
         )
+
+        logging.info("Uploading DataFrame as CSV to %s", destination_path)
 
         gcsfs.upload_from_string(
             path=destination_path,
