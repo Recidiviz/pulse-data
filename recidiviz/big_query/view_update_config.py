@@ -38,27 +38,81 @@ _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     # TODO(#29291): Improve the performance of this view
     BigQueryAddress(
         dataset_id="aggregated_metrics",
-        table_id="supervision_district_aggregated_metrics",
+        table_id="supervision_officer_period_event_aggregated_metrics",
+    ): (60 * 20),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_office_period_event_aggregated_metrics",
+    ): (60 * 20),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_district_period_event_aggregated_metrics",
+    ): (60 * 20),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_state_period_event_aggregated_metrics",
+    ): (60 * 20),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_unit_period_event_aggregated_metrics",
+    ): (60 * 20),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="incarceration_facility_period_event_aggregated_metrics",
+    ): (60 * 15),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_district_period_span_aggregated_metrics",
+    ): (60 * 15),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_officer_period_span_aggregated_metrics",
+    ): (60 * 15),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_state_period_span_aggregated_metrics",
+    ): (60 * 15),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="incarceration_facility_period_span_aggregated_metrics",
+    ): (60 * 15),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_office_period_span_aggregated_metrics",
+    ): (60 * 15),
+    # TODO(#29291): Improve the performance of this view
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="justice_involved_state_period_span_aggregated_metrics",
+    ): (60 * 10),
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="incarceration_state_period_event_aggregated_metrics",
     ): (60 * 10),
     # TODO(#29291): Improve the performance of this view
     BigQueryAddress(
         dataset_id="aggregated_metrics",
-        table_id="supervision_office_aggregated_metrics",
+        table_id="incarceration_state_period_span_aggregated_metrics",
     ): (60 * 10),
     # TODO(#29291): Improve the performance of this view
     BigQueryAddress(
         dataset_id="aggregated_metrics",
-        table_id="supervision_officer_aggregated_metrics",
+        table_id="supervision_unit_period_span_aggregated_metrics",
     ): (60 * 10),
     # TODO(#29291): Improve the performance of this view
     BigQueryAddress(
         dataset_id="aggregated_metrics",
-        table_id="supervision_state_aggregated_metrics",
-    ): (60 * 10),
-    # TODO(#29291): Improve the performance of this view
-    BigQueryAddress(
-        dataset_id="aggregated_metrics",
-        table_id="supervision_unit_aggregated_metrics",
+        table_id="incarceration_facility_assignment_span_aggregated_metrics",
     ): (60 * 10),
     # TODO(#25452) Improve performance of supervision_remaining_sentences
     BigQueryAddress(
