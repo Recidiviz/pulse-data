@@ -114,6 +114,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             calculation_month_count=36,
             person_filter_ids="123 12323 324",
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             input_dataset_overrides_json=input_dataset_overrides_json,
         )
 
@@ -124,6 +125,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "person_filter_ids": "123 12323 324",
             "calculation_month_count": "36",
             "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
             "input_dataset_overrides_json": input_dataset_overrides_json,
         }
 
@@ -158,6 +160,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             calculation_month_count=36,
             person_filter_ids="123 12323 324",
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             input_dataset_overrides_json=input_dataset_overrides_json,
         )
         with self.assertRaisesRegex(

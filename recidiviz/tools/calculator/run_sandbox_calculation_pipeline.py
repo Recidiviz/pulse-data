@@ -78,6 +78,7 @@ from recidiviz.pipelines.supplemental.pipeline_parameters import (
 )
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
+    get_sandbox_pipeline_username,
     run_sandbox_dataflow_pipeline,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
@@ -129,8 +130,14 @@ def parse_pipeline_parameters(
     known_args: argparse.Namespace, remaining_args: List[str]
 ) -> PipelineParameters:
     parameter_cls = PIPELINE_PARAMETER_TYPES[known_args.pipeline_type]
+    additional_args = [
+        "--pipeline",
+        known_args.pipeline,
+        "--sandbox_username",
+        get_sandbox_pipeline_username(),
+    ]
     return parameter_cls.parse_from_args(
-        remaining_args + ["--pipeline", known_args.pipeline], sandbox_pipeline=True
+        remaining_args + additional_args, sandbox_pipeline=True
     )
 
 

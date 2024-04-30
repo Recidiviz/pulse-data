@@ -209,7 +209,6 @@ def main() -> int:
             "recidiviz.pipelines",
             "recidiviz.cloud_storage",
             "recidiviz.common",
-            "recidiviz.tools",
             "recidiviz.utils",
         }
         if "metrics" in pipeline.__name__ or "normalization" in pipeline.__name__:
@@ -270,7 +269,6 @@ def main() -> int:
         "recidiviz.persistence.database.reserved_words",
         "recidiviz.persistence.database.schema_type",
         "recidiviz.pipelines",
-        "recidiviz.tools.utils.script_helpers",
         "recidiviz.utils",
     }
 
@@ -287,6 +285,7 @@ def main() -> int:
                 "recidiviz.tests.pipelines",
                 "recidiviz.tests.test_setup_utils",
                 "recidiviz.tools.postgres.local_postgres_helpers",
+                "recidiviz.tools.utils.script_helpers",
                 *valid_calculation_dag_prefixes,
             }
         ),

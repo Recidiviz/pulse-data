@@ -50,6 +50,17 @@ def get_cloudbuild_path() -> str:
     return os.path.join(pipeline_root_path, cloudbuild_path)
 
 
+def get_sandbox_pipeline_username() -> str:
+    """Returns a normalized username that can be associated with a given sandbox
+    pipeline run.
+    """
+    username = run_command("git config user.name", timeout_sec=300)
+    username = username.replace(" ", "").strip().lower()
+    if not username:
+        raise ValueError("Found no configured git username")
+    return username
+
+
 def get_template_path(pipeline_type: str) -> str:
     pipeline_root_path = os.path.dirname(pipelines.__file__)
     template_path = f"{pipeline_type}/template_metadata.json"

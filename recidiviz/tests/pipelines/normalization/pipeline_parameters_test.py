@@ -68,6 +68,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             person_filter_ids="123 12323 324",
             input_dataset_overrides_json=input_dataset_overrides_json,
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
         )
 
         expected_parameters = {
@@ -75,6 +76,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             "pipeline": "test_pipeline_name",
             "person_filter_ids": "123 12323 324",
             "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
             "input_dataset_overrides_json": input_dataset_overrides_json,
         }
 
@@ -106,6 +108,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             person_filter_ids="123 12323 324",
             input_dataset_overrides_json=input_dataset_overrides_json,
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
         )
         with self.assertRaisesRegex(
             ValueError,
@@ -131,6 +134,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             person_filter_ids="123 12323 324",
             input_dataset_overrides_json=input_dataset_overrides_json,
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
         )
         pipeline_parameters.check_for_valid_input_dataset_overrides(
             get_all_reference_query_input_datasets_for_pipeline(
