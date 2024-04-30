@@ -21,6 +21,13 @@
       "isOptional": true
     },
     {
+      "name": "sandbox_username",
+      "label": "Sandbox username",
+      "helpText": "The git username for the user running this sandbox pipeline, if applicable.",
+      "regexes": ["[0-9a-z-]+"],
+      "isOptional": true
+    },
+    {
       "name": "input_dataset_overrides_json",
       "label": "A map of default dataset to overrides for that dataset",
       "helpText": "When specified, the datasets in the keys of this JSON dict will be replaced with the corresponding value when reading inputs for this pipeline.",

@@ -162,6 +162,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             region="us-west1",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
 
@@ -172,6 +173,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             "ingest_view_results_only": "False",
             "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
             "input_dataset_overrides_json": input_overrides_json,
         }
 
@@ -202,6 +204,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             ingest_instance="SECONDARY",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
 
@@ -212,6 +215,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             "ingest_view_results_only": "False",
             "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
             "input_dataset_overrides_json": input_overrides_json,
         }
 
@@ -237,6 +241,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             pipeline="test_pipeline_name",
             region="us-west1",
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             ingest_view_results_only="True",
         )
@@ -248,6 +253,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             "ingest_view_results_only": "True",
             "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -282,6 +288,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             pipeline="test_pipeline_name",
             region="us-west1",
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             ingest_views_to_run="view1 view2",
         )
@@ -294,6 +301,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_view_results_only": "False",
             "ingest_views_to_run": "view1 view2",
             "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -336,6 +344,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             region="us-west1",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
         with self.assertRaisesRegex(
@@ -359,6 +368,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             region="us-west1",
             input_dataset_overrides_json=input_overrides_json,
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
         pipeline_parameters.check_for_valid_input_dataset_overrides(

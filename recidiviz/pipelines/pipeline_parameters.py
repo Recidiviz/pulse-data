@@ -38,13 +38,13 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_converters import optional_json_str_to_dict
-from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import GCP_PROJECTS, in_test
 from recidiviz.utils.params import str_matches_regex_type
 from recidiviz.utils.types import assert_type
 
 PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME = "input_dataset_overrides_json"
 PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME = "output_sandbox_prefix"
+PIPELINE_SANDBOX_USERNAME_ARG_NAME = "sandbox_username"
 
 PipelineParametersT = TypeVar("PipelineParametersT", bound="PipelineParameters")
 
@@ -58,6 +58,11 @@ class PipelineParameters:
     state_code: str = attr.ib(validator=attr_validators.is_str)
     pipeline: str = attr.ib(validator=attr_validators.is_str)
     output_sandbox_prefix: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # The git username of the person running the sandbox pipeline.
+    sandbox_username: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
@@ -140,9 +145,12 @@ class PipelineParameters:
         default=False, validator=attr_validators.is_bool, converter=bool
     )
 
-    template_metadata_subdir: str = attr.ib(
-        default="template_metadata", validator=attr_validators.is_str
-    )
+    @property
+    def template_metadata_subdir(self) -> str:
+        """The template metadata subdirectory to store Flex template launchers."""
+        if self.sandbox_username:
+            return f"template_metadata_dev/{self.sandbox_username}"
+        return "template_metadata"
 
     service_account_email: str = attr.ib()
 
@@ -255,6 +263,7 @@ class PipelineParameters:
         return {
             PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME,
             PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME,
+            PIPELINE_SANDBOX_USERNAME_ARG_NAME,
         } | cls.custom_sandbox_indicator_parameters()
 
     def _get_non_default_sandbox_indicator_parameters(self) -> Set[str]:
@@ -369,22 +378,6 @@ class PipelineParameters:
             required=False,
         )
 
-        if sandbox_pipeline:
-            username = run_command("git config user.name", timeout_sec=300)
-            username = username.replace(" ", "").strip().lower()
-            if not username:
-                raise ValueError("Found no configured git username")
-
-            template_metadata_subdir = f"template_metadata_dev/{username}"
-            parser.add_argument(
-                "--template_metadata_subdir",
-                dest="template_metadata_subdir",
-                type=str,
-                help="The template metadata subdirectory to store Flex template launchers.",
-                required=False,
-                default=template_metadata_subdir,
-            )
-
         with open(
             os.path.join(
                 os.path.dirname(inspect.getabsfile(cls)), "template_metadata.json"
@@ -398,11 +391,13 @@ class PipelineParameters:
                 is_optional = (
                     parameter["isOptional"] if "isOptional" in parameter else False
                 )
-                if sandbox_pipeline and name == PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME:
-                    # If this pipeline is being run locally, the output sandbox arg
+                if sandbox_pipeline and name in (
+                    PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME,
+                    PIPELINE_SANDBOX_USERNAME_ARG_NAME,
+                ):
+                    # If this pipeline is being run locally, these args
                     # must be set.
                     is_optional = False
-
                 help_text = f"{parameter['label']}. {parameter['helpText']}"
 
                 arg_type: Union[Callable[[Any], str], Type] = (

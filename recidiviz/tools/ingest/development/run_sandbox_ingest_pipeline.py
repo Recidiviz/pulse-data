@@ -78,6 +78,7 @@ from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
+    get_sandbox_pipeline_username,
     run_sandbox_dataflow_pipeline,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
@@ -196,6 +197,8 @@ def get_extra_pipeline_parameter_args(
         state_code.value,
         "--raw_data_upper_bound_dates_json",
         raw_data_upper_bound_dates_json,
+        "--sandbox_username",
+        get_sandbox_pipeline_username(),
     ]
 
 

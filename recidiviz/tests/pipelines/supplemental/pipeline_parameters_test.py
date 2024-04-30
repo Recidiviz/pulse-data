@@ -64,12 +64,14 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             pipeline="us_oz_case_note_extracted_entities_supplemental",
             region="us-west1",
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
         )
 
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "us_oz_case_note_extracted_entities_supplemental",
             "output_sandbox_prefix": "my_prefix",
+            "sandbox_username": "annag",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -94,6 +96,7 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             pipeline="test_pipeline_name",
             region="us-west1",
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             input_dataset_overrides_json=input_overrides_json,
         )
         with self.assertRaisesRegex(
@@ -118,6 +121,7 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             pipeline="test_pipeline_name",
             region="us-west1",
             output_sandbox_prefix="my_prefix",
+            sandbox_username="annag",
             input_dataset_overrides_json=input_overrides_json,
         )
         pipeline_parameters.check_for_valid_input_dataset_overrides(
