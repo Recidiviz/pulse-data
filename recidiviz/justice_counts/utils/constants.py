@@ -43,6 +43,8 @@ CHILD_AGENCY_NAME_TO_UPLOAD_NAME = {
     "cleveland police department": "cleveland",
     "columbus police department (oh)": "columbus",
     "franklin county sheriff's office (oh)": "franklin county sheriff's office",
+    "amberley village police department": "amberley village",
+    "hamilton county sheriff’s office": "hamilton county sheriff's office",
 }
 
 
