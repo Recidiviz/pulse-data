@@ -223,7 +223,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_record_view_name="us_me_custody_reclassification_review_form_record_materialized",
         task_completion_event=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
         source_filename="us_me_custody_reclassification_review_form_record.json",
-        export_collection_name="US_ME-reclassificatinonReviewReferrals",
+        export_collection_name="US_ME-reclassificationReviewReferrals",
         opportunity_type_path_str="reclassificationReview",
         person_record_type=PersonRecordType.RESIDENT,
     ),
