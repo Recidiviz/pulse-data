@@ -19,9 +19,9 @@ from typing import Dict
 
 from recidiviz.common.constants.states import StateCode
 
-# The compute region (e.g. "us-east1") Dataflow pipelines for a given state should be
+# The compute region (e.g. "us-east1") ingest pipelines for a given state should be
 #  run in.
-DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
+DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_AR: "us-east1",
     StateCode.US_CA: "us-east1",
     StateCode.US_CO: "us-west3",

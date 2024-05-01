@@ -31,7 +31,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
-    get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
@@ -42,9 +41,18 @@ class TestConfiguredPipelines(unittest.TestCase):
     """Tests the configuration of pipelines."""
 
     def test_normalization_pipeline_completeness(self) -> None:
-        state_codes_with_normalization_pipelines: Set[
-            StateCode
-        ] = get_normalization_pipeline_enabled_states()
+        state_codes_with_normalization_pipelines: Set[StateCode] = set()
+
+        pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
+
+        normalization_pipelines = pipeline_templates_yaml.pop_dicts(
+            "normalization_pipelines"
+        )
+
+        for pipeline in normalization_pipelines:
+            state_codes_with_normalization_pipelines.add(
+                StateCode(pipeline.peek("state_code", str))
+            )
 
         for state_code in get_metric_pipeline_enabled_states():
             if state_code not in state_codes_with_normalization_pipelines:

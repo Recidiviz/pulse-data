@@ -44,7 +44,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
 from recidiviz.pipelines.ingest.pipeline_utils import (
-    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.utils import metadata
 
@@ -89,10 +89,10 @@ def get_latest_job_for_state_instance(
         return None
 
     # TODO(#209930): remove this check once dataflow is launched for all states
-    if state_code not in DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE:
+    if state_code not in DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE:
         return None
 
-    location = DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
+    location = DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
     client = dataflow_v1beta3.JobsV1Beta3Client()
 
     if job_id:

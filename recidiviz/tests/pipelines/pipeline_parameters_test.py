@@ -63,6 +63,15 @@ class TestValidPipelineParameters(unittest.TestCase):
             d: dict[str, Any] = pipeline.get()
             MetricsPipelineParameters(project=self.PROJECT_ID, **d)
 
+    def test_normalization_pipelines_for_valid_parameters(self) -> None:
+        normalization_pipelines = self.PIPELINE_CONFIG.pop_dicts(
+            "normalization_pipelines"
+        )
+
+        for pipeline in normalization_pipelines:
+            d: dict[str, Any] = pipeline.get()
+            NormalizationPipelineParameters(project=self.PROJECT_ID, **d)
+
     def test_supplemental_pipelines_for_valid_parameters(self) -> None:
         supplemental_pipelines = self.PIPELINE_CONFIG.pop_dicts(
             "supplemental_dataset_pipelines"
