@@ -95,7 +95,8 @@ echo "Running migrations to head on ${JUSTICE_COUNTS_PROJECT_ID}..."
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
     --project-id "${JUSTICE_COUNTS_PROJECT_ID}" \
-    --skip-db-name-check \
+    --skip-db-name-check
+
 set_vpn_status "Enable"
 
 # Deploy both Publisher and Agency Dashboard
