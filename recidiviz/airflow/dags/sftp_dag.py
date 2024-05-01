@@ -16,9 +16,8 @@
 # =============================================================================
 """The DAG configuration for downloading files from SFTP."""
 import logging
-import os
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from airflow.decorators import dag, task
 from airflow.models import DagRun
@@ -39,8 +38,8 @@ from airflow.utils.state import State
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
-from google.cloud import tasks_v2
 
+from recidiviz.airflow.dags.monitoring.dag_registry import get_sftp_dag_id
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
@@ -82,8 +81,13 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generato
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
+from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.gcsfs_utils import read_yaml_config
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.airflow.dags.utils.task_queue_helpers import (
+    get_running_queue_instances,
+    queues_were_unpaused,
+)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -95,19 +99,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 # as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
 
-# TODO(#23873): Remove loading of environment variables from at beginning of file.
-project_id = os.environ.get("GCP_PROJECT")
-
 retry: Retry = Retry(predicate=lambda _: False)
-
-GCS_CONFIG_BUCKET = f"{project_id}-configs"
-GCS_ENABLED_STATES_CONFIG_PATH = GcsfsFilePath(
-    bucket_name=GCS_CONFIG_BUCKET, blob_name="sftp_enabled_in_airflow_config.yaml"
-)
-GCS_EXCLUDED_REMOTE_FILES_CONFIG_PATH = GcsfsFilePath(
-    bucket_name=GCS_CONFIG_BUCKET, blob_name="sftp_excluded_remote_file_paths.yaml"
-)
-
 
 QUEUE_LOCATION = "us-east1"
 
@@ -116,7 +108,11 @@ QUEUE_LOCATION = "us-east1"
 MAX_TASKS_TO_RUN_IN_PARALLEL = 15
 
 
-def sftp_enabled_states() -> List[str]:
+def get_configs_bucket(project_id: str) -> GcsfsBucketPath:
+    return GcsfsBucketPath(f"{project_id}-configs")
+
+
+def sftp_enabled_states(project_id: str) -> List[str]:
     enabled_states = []
     for state_code in StateCode:
         try:
@@ -132,7 +128,12 @@ def sftp_enabled_states() -> List[str]:
 
 
 def is_enabled_in_config(state_code: str) -> bool:
-    config = read_yaml_config(GCS_ENABLED_STATES_CONFIG_PATH)
+    config = read_yaml_config(
+        GcsfsFilePath.from_directory_and_file_name(
+            dir_path=get_configs_bucket(get_project_id()),
+            file_name="sftp_enabled_in_airflow_config.yaml",
+        )
+    )
     return state_code in config.pop_list("states", str)
 
 
@@ -164,43 +165,6 @@ def discovered_files_lists_are_equal_and_non_empty(
     return task_id_if_equal
 
 
-def get_running_queue_instances(*queues: Optional[Dict[str, Any]]) -> List[str]:
-    """Returns the queues that are currently running and will need to be unpaused later."""
-    ingest_instances_to_unpause: List[str] = []
-    for queue in queues:
-        if queue is None:
-            raise ValueError("Found null queue in queues list")
-        if queue["state"] == tasks_v2.Queue.State.RUNNING:
-            if "secondary" in queue["name"]:
-                ingest_instances_to_unpause.append(
-                    DirectIngestInstance.SECONDARY.value.lower()
-                )
-            else:
-                ingest_instances_to_unpause.append(
-                    DirectIngestInstance.PRIMARY.value.lower()
-                )
-    return ingest_instances_to_unpause
-
-
-def queues_were_unpaused(
-    queues_to_resume: Optional[List[str]],
-    task_ids_for_queues_to_resume: List[str],
-    task_id_if_no_queues_to_resume: str,
-) -> Union[str, List[str]]:
-    if queues_to_resume is None:
-        raise ValueError("Found unexpectedly null queues_paused list")
-    tasks_to_return_if_unpaused: List[str] = []
-    for task_id in task_ids_for_queues_to_resume:
-        for queue in queues_to_resume:
-            if queue in task_id:
-                tasks_to_return_if_unpaused.append(task_id)
-    if tasks_to_return_if_unpaused:
-        # If any queues were paused and need to be unpaused, return those
-        return tasks_to_return_if_unpaused
-    # Otherwise, if no queues were paused and need to be unpaused, return this task
-    return task_id_if_no_queues_to_resume
-
-
 @task
 def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
     if not dag_run:
@@ -215,7 +179,7 @@ def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
 
 
 @dag(
-    dag_id=f"{project_id}_sftp_dag",
+    dag_id=get_sftp_dag_id(project=get_project_id()),
     # TODO(apache/airflow#29903) Remove this override and only override mapped task-level retries.
     default_args={
         **DEFAULT_ARGS,  # type: ignore
@@ -229,13 +193,15 @@ def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
 def sftp_dag() -> None:
     """This executes operations to handle files downloaded from SFTP servers."""
 
+    project_id = get_project_id()
+
     # TODO(#9641): We should add a task that handles locking of the operations database
     # when we move to a resource-based locking model.
     start_sftp = EmptyOperator(task_id="start_sftp")
     rm_dags = remove_queued_up_dags()
     start_sftp >> rm_dags
     end_sftp = EmptyOperator(task_id="end_sftp", trigger_rule=TriggerRule.ALL_DONE)
-    for state_code in sftp_enabled_states():
+    for state_code in sftp_enabled_states(project_id):
         with TaskGroup(group_id=state_code) as state_specific_task_group:
             # We want to make sure that SFTP is enabled for the state, otherwise we skip
             # everything for the state.
@@ -255,7 +221,12 @@ def sftp_dag() -> None:
                 find_sftp_files_from_server = FindSftpFilesOperator(
                     task_id="find_sftp_files_to_download",
                     state_code=state_code,
-                    excluded_remote_files_config_path=GCS_EXCLUDED_REMOTE_FILES_CONFIG_PATH,
+                    excluded_remote_files_config_path=(
+                        GcsfsFilePath.from_directory_and_file_name(
+                            dir_path=get_configs_bucket(project_id),
+                            file_name="sftp_excluded_remote_file_paths.yaml",
+                        )
+                    ),
                 )
                 filter_downloaded_files = CloudSqlQueryOperator(
                     task_id="filter_downloaded_files",

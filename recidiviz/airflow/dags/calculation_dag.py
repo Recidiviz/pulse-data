@@ -36,6 +36,7 @@ from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import 
     STATE_CODE_FILTER_JINJA_ARG,
     initialize_calculation_dag_group,
 )
+from recidiviz.airflow.dags.monitoring.dag_registry import get_calculation_dag_id
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
@@ -392,7 +393,7 @@ def metric_export_branches_by_state_code(
 # We set catchup to False, it ensures that extra DAG runs aren't enqueued if the DAG
 # is paused and re-enabled.
 @dag(
-    dag_id=f"{get_project_id()}_calculation_dag",
+    dag_id=get_calculation_dag_id(get_project_id()),
     default_args=DEFAULT_ARGS,
     schedule=None,
     catchup=False,

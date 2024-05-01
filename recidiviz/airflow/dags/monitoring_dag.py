@@ -19,7 +19,6 @@ The DAG configuration to run our monitoring tasks pipelines in Dataflow simultan
 This file is uploaded to GCS on deploy.
 """
 import logging
-import os
 from typing import Optional
 
 from airflow.decorators import dag
@@ -27,6 +26,7 @@ from airflow.exceptions import AirflowNotFoundException
 from airflow.operators.python import PythonOperator
 
 from recidiviz.airflow.dags.monitoring.cleanup_exited_pods import cleanup_exited_pods
+from recidiviz.airflow.dags.monitoring.dag_registry import get_monitoring_dag_id
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     get_configured_pagerduty_integrations,
     report_failed_tasks,
@@ -36,10 +36,9 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.email import can_send_mail
+from recidiviz.airflow.dags.utils.environment import get_project_id
 
-# TODO(#23873): Remove loading of environment variables from at beginning of file.
-project_id = os.environ.get("GCP_PROJECT")
-DAG_ID = f"{project_id}_hourly_monitoring_dag"
+DAG_ID = get_monitoring_dag_id(get_project_id())
 
 email: Optional[str]
 

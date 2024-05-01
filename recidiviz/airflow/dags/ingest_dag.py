@@ -31,6 +31,7 @@ from recidiviz.airflow.dags.ingest.initialize_ingest_dag_group import (
 from recidiviz.airflow.dags.ingest.single_ingest_pipeline_group import (
     create_single_ingest_pipeline_group,
 )
+from recidiviz.airflow.dags.monitoring.dag_registry import get_ingest_dag_id
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -44,7 +45,7 @@ from recidiviz.airflow.dags.utils.environment import get_project_id
 
 
 @dag(
-    dag_id=f"{get_project_id()}_ingest_dag",
+    dag_id=get_ingest_dag_id(get_project_id()),
     default_args=DEFAULT_ARGS,
     schedule=None,
     catchup=False,

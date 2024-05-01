@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """Predicates for whether an incident should be sent to PagerDuty"""
 import enum
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Callable, List, Optional, Tuple
 
@@ -24,7 +23,12 @@ import attr
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
+from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_calculation_dag_id,
+    get_sftp_dag_id,
+)
 from recidiviz.airflow.dags.utils.branching_by_key import BRANCH_END_TASK_NAME
+from recidiviz.airflow.dags.utils.environment import get_project_id
 
 
 class TriggerPredicateMethod(enum.Enum):
@@ -62,7 +66,7 @@ def incident_has_been_updated_recently(incident: AirflowAlertingIncident) -> boo
 
 
 def get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
-    project_id = os.environ["GCP_PROJECT"]
+    project_id = get_project_id()
     return [
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.PRECONDITION,
@@ -71,7 +75,7 @@ def get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.PRECONDITION,
-            dag_id=f"{project_id}_calculation_dag",
+            dag_id=get_calculation_dag_id(project_id),
             condition=lambda incident: (
                 "ingest_instance" in incident.conf_obj
                 and incident.conf_obj["ingest_instance"] == "PRIMARY"
@@ -85,7 +89,7 @@ def get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
         ),
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
-            dag_id=f"{project_id}_sftp_dag",
+            dag_id=get_sftp_dag_id(project_id),
             condition=lambda incident: (
                 incident.task_id == "US_IX.remote_file_download.download_sftp_files"
                 and len(incident.failed_execution_dates) == 1
