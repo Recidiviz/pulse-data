@@ -129,6 +129,9 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.clients_milestones_congratulated_another_way import (
+    CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_panel_opened import (
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
 )
@@ -333,6 +336,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     ),
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER.address: (
         "Will be used for Insights analytics (see #29096) (Jen Overgaag 4/17/24)"
+    ),
+    CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER.address: (
+        "Will be referenced to support Workflows milestones_funnel work (see #28875) (Michelle Orden 4/29/24)"
     ),
 }
 
