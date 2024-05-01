@@ -348,6 +348,49 @@ VIOLATIONS_FOUND_WHERE_CLAUSE = """
 """
 
 
+def num_events_within_time_interval_spans(
+    events_cte: str,
+    date_interval: int,
+    date_part: str,
+) -> str:
+    """
+    Creates a CTE with spans of time for the number of events within a given time interval.
+    Args:
+        events_cte (str): Specifies the events that should be counted towards
+            the spans.
+        date_interval (int): Number of <date_part> over which the events will be counted.
+        date_part (str): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR".
+    """
+    return f"""event_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            event_date AS start_date,
+            DATE_ADD(event_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            event_date,
+        FROM {events_cte}
+        WHERE event_date IS NOT NULL
+    )
+    ,
+    -- We create sub-sessions to find overlapping periods where an event happened during
+    -- some interval, allowing us to count the number of events that have recently occurred 
+    -- during that period
+    {create_sub_sessions_with_attributes('event_spans')}
+    ,
+    event_count_spans AS (
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            COUNT(event_date) AS event_count,
+        FROM sub_sessions_with_attributes
+        GROUP BY 1,2,3,4
+    )
+    """
+
+
 def violations_within_time_interval_criteria_builder(
     criteria_name: str,
     description: str,
