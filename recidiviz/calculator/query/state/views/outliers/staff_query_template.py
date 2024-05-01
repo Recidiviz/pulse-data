@@ -17,6 +17,7 @@
 """Helpers for querying normalized_state.state_staff and other staff-related tables"""
 from recidiviz.calculator.query.bq_utils import (
     get_pseudonymized_id_query_str,
+    list_to_query_string,
     today_between_start_date_and_nullable_end_date_clause,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
@@ -72,7 +73,7 @@ def staff_query_template(role: str) -> str:
         supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
     FROM ({source_tbl}) supervision_staff
-    INNER JOIN `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` attrs
+    INNER JOIN attrs
         ON attrs.state_code = supervision_staff.state_code AND attrs.officer_id = supervision_staff.external_id 
     LEFT JOIN UNNEST(attrs.supervisor_staff_external_id_array) AS supervisor_external_id
     INNER JOIN `{{project_id}}.normalized_state.state_staff` staff 
@@ -80,9 +81,19 @@ def staff_query_template(role: str) -> str:
     WHERE staff.state_code = '{state}' 
       AND "SUPERVISION_OFFICER" IN UNNEST(attrs.role_type_array)
       {f"AND {config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else ""}
-    -- Get the staff's attributes from the most recent session
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY attrs.state_code, attrs.officer_id ORDER BY COALESCE(attrs.end_date_exclusive, "9999-01-01") DESC) = 1
 """
         )
 
-    return "\n      UNION ALL\n".join(state_queries)
+    all_state_queries = "\n      UNION ALL\n".join(state_queries)
+
+    return f"""
+    WITH 
+    attrs AS (
+        -- Use the most recent session to get the staff's attributes from the most recent session
+        SELECT *
+        FROM `{{project_id}}.sessions.supervision_staff_attribute_sessions_materialized` 
+        WHERE state_code IN ({list_to_query_string(get_outliers_enabled_states_for_bigquery(), quoted=True)})
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, officer_id ORDER BY COALESCE(end_date_exclusive, "9999-01-01") DESC) = 1
+    )
+    {all_state_queries}
+"""
