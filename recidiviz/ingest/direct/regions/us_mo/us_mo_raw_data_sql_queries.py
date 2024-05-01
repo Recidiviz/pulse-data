@@ -87,6 +87,22 @@ ORAS_MO_ASSESSMENTS_DB2 = """
         ORAS.MO_ASSESSMENTS_DB2;
     """
 
+ORAS_MO_ASSESSMENT_SECTION_QUESTION_RESPONSES_DB2 = """
+    SELECT 
+        ASSESSMENT_ID,
+        ASSESSMENT_SECTION_ID,
+        ASSESSMENT_SECTION_QUESTION_ID,
+        ASSESSMENT_SECTION_RESPONSE_ID,
+        FOCLIST,
+        ASSESSMENT_SECTION_NAME,
+        ASSESSMENT_SECTION_QUESTION_NUMBER,
+        ASSESSMENT_SECTION_QUESTION_NAME,
+        ASSESSMENT_SECTION_RESPONSE_NAME,
+        ASSESSMENT_SECTION_RESPONSE_SCORE
+    FROM
+        ORAS.MO_ASSESSMENT_SECTION_QUESTION_RESPONSES_DB2;
+    """
+
 LANTERN_DA_RA_LIST = """
     SELECT 
         DISTRICT,
@@ -1595,7 +1611,7 @@ OFNDR_PDB_OFNDR_ASMNTS = f"""
     FROM
         OFNDR_PDB.OFNDR_ASMNTS
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1622,7 +1638,7 @@ OFNDR_PDB_OFNDR_ASMNT_SCORES = f"""
     FROM
         OFNDR_PDB.OFNDR_ASMNT_SCORES
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1641,7 +1657,7 @@ OFNDR_PDB_OFNDR_ASMNT_RESPONSES = f"""
     FROM
         OFNDR_PDB.OFNDR_ASMNT_RESPONSES
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1664,7 +1680,7 @@ OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF = f"""
     FROM
         OFNDR_PDB.OFNDR_CYCLE_REF_ID_XREF
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1713,7 +1729,7 @@ CODE_PDB_ASMNT_PRIMARY_TYPE_CODES = f"""
     FROM
         CODE_PDB.ASMNT_PRIMARY_TYPE_CODES
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1733,7 +1749,7 @@ CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES = f"""
     FROM
         CODE_PDB.ASMNT_EVAL_OVERRIDE_CODES
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1842,7 +1858,7 @@ MASTER_PDB_ASSESSMENT_EVALUATIONS = f"""
     FROM
         MASTER_PDB.ASSESSMENT_EVALUATIONS
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1865,7 +1881,7 @@ MASTER_PDB_ASSESSMENT_SECTIONS = f"""
     FROM
         MASTER_PDB.ASSESSMENT_SECTIONS
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1888,7 +1904,7 @@ MASTER_PDB_ASSESSMENT_QUESTIONS = f"""
     FROM
         MASTER_PDB.ASSESSMENT_QUESTIONS
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -1911,7 +1927,7 @@ MASTER_PDB_ASSESSMENT_RESPONSES = f"""
     FROM
         MASTER_PDB.ASSESSMENT_RESPONSES
     WHERE
-        UPDATE_TS < '7799-12-31' AND 
+        UPDATE_TS <= '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
@@ -2225,7 +2241,11 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("OFNDR_PDB_OFNDR_ASMNT_SCORES", OFNDR_PDB_OFNDR_ASMNT_SCORES),
         ("OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF", OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF),
         # ("OFNDR_PDB_RESIDENCES", OFNDR_PDB_RESIDENCES), # Only pulled ad-hoc as requested as of 3-20-2024
-        # ("ORAS_MO_ASSESSMENTS_DB2", ORAS_MO_ASSESSMENTS_DB2) # Only pulled ad-hoc as requested as of 3-20-2024
+        ("ORAS_MO_ASSESSMENTS_DB2", ORAS_MO_ASSESSMENTS_DB2),
+        (
+            "ORAS_MO_ASSESSMENT_SECTION_QUESTION_RESPONSES_DB2",
+            ORAS_MO_ASSESSMENT_SECTION_QUESTION_RESPONSES_DB2,
+        ),
         ("ORAS_WEEKLY_SUMMARY_UPDATE", ORAS_WEEKLY_SUMMARY_UPDATE),
         # These queries should only be run ad-hoc for now. See above for more details.
         # *("OFNDR_PDB_OFNDR_ASMNT_RESPONSES", OFNDR_PDB_OFNDR_ASMNT_RESPONSES),
