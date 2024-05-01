@@ -69,7 +69,7 @@ def parse_sentence_status(raw_text: str) -> StateSentenceStatus:
         return StateSentenceStatus.REVOKED
     if sentence_status in ("AC", "CC", "PB"):
         return StateSentenceStatus.SERVING
-    if sentence_status == "IN":
+    if sentence_status in ("DIVCOMP", "ISCCOMP", "IN"):
         return StateSentenceStatus.COMPLETED
 
     return StateSentenceStatus.EXTERNAL_UNKNOWN
