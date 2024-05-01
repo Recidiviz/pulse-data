@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the dataflow_output_table_manager."""
-import os
 import unittest
 from typing import List, cast
 from unittest import mock
@@ -50,11 +49,6 @@ from recidiviz.pipelines.metrics.recidivism.metrics import (
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code,
-)
-
-FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "fake_calculation_pipeline_templates.yaml",
 )
 
 
@@ -222,8 +216,8 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.project_number_patcher.stop()
 
     @mock.patch(
-        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
-        FAKE_PIPELINE_CONFIG_YAML_PATH,
+        "recidiviz.pipelines.dataflow_orchestration_utils.get_direct_ingest_states_launched_in_env",
+        MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
     )
     def test_update_state_specific_normalized_state_schemas(self) -> None:
         def mock_dataset_ref_for_id(
@@ -254,8 +248,8 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         )
 
     @mock.patch(
-        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
-        FAKE_PIPELINE_CONFIG_YAML_PATH,
+        "recidiviz.pipelines.dataflow_orchestration_utils.get_direct_ingest_states_launched_in_env",
+        MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
     )
     def test_update_state_specific_normalized_state_schemas_adds_dataset_prefix(
         self,
@@ -313,8 +307,8 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.mock_client.create_table_with_schema.assert_not_called()
 
     @mock.patch(
-        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
-        FAKE_PIPELINE_CONFIG_YAML_PATH,
+        "recidiviz.pipelines.dataflow_orchestration_utils.get_direct_ingest_states_launched_in_env",
+        MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
     )
     def test_get_all_state_specific_normalized_state_datasets(self) -> None:
         dataset_ids: List[str] = []
@@ -369,16 +363,6 @@ class SupplementalDatasetTableManagerTest(unittest.TestCase):
             self.project_id, self.mock_view_dataset_name
         )
 
-        self.dataflow_config_patcher = mock.patch(
-            "recidiviz.pipelines.dataflow_output_table_manager.dataflow_config"
-        )
-        self.mock_dataflow_config = self.dataflow_config_patcher.start()
-
-        self.mock_pipeline_template_path = FAKE_PIPELINE_CONFIG_YAML_PATH
-        self.mock_dataflow_config.PIPELINE_CONFIG_YAML_PATH = (
-            self.mock_pipeline_template_path
-        )
-
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
         self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
@@ -396,7 +380,6 @@ class SupplementalDatasetTableManagerTest(unittest.TestCase):
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
-        self.dataflow_config_patcher.stop()
 
     def test_update_supplemental_data_schemas_create_table(self) -> None:
         """Test that update_supplemental_dataset_schemas calls the client to create a
