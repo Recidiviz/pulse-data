@@ -37,7 +37,6 @@ import os
 import sys
 from typing import List, Tuple
 
-import pandas as pd
 from sqlalchemy.engine import Engine
 
 from recidiviz.big_query.selected_columns_big_query_view import (
@@ -66,11 +65,7 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.utils.fixture_helpers import (
-    _get_table_name,
-    create_dbs,
-    reset_fixtures,
-)
+from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
 from recidiviz.utils.environment import in_development
 
 
@@ -86,45 +81,6 @@ def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
         if isinstance(view_builder, SelectedColumnsBigQueryViewBuilder)
         else []
     )
-
-
-def export_json_to_csv(state: str, tables: List[SQLAlchemyModelType]) -> None:
-    """Export a JSON fixture file as CSV to a scratch bucket"""
-    fixture_directory = os.path.join(
-        os.path.dirname(__file__),
-        "../../..",
-        "recidiviz/tools/outliers/fixtures",
-    )
-
-    for table in tables:
-        table_name = _get_table_name(module=table)
-
-        fixture_path = os.path.realpath(
-            os.path.join(
-                fixture_directory,
-                f"{table_name}.json",
-            )
-        )
-
-        with open(fixture_path, "r", encoding="utf-8") as file:
-            df = pd.read_json(
-                file,
-                # Read the file as a JSON object per line
-                lines=True,
-                orient="records",
-                dtype={c.name: "object" for c in table.__table__.columns},
-            )
-
-            gcsfs = GcsfsFactory.build()
-            archive_path = GcsfsFilePath.from_absolute_path(
-                f"gs://alexa-scratch-1/{state}/{table_name}.csv"
-            )
-
-            gcsfs.upload_from_string(
-                path=archive_path,
-                contents=df.to_csv(index=False),
-                content_type="application/octet-stream",
-            )
 
 
 def import_outliers_from_gcs(

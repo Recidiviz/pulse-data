@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements tests for the Application Data Import Flask server."""
 import base64
-import json
 import os
 from datetime import date
 from http import HTTPStatus
@@ -447,7 +446,7 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
         )
 
     @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
-    def test_import_trigger_outliers_csv(self, mock_task_manager: MagicMock) -> None:
+    def test_import_trigger_outliers(self, mock_task_manager: MagicMock) -> None:
         with self.app.test_request_context():
             response = self.client.post(
                 "/import/trigger_outliers",
@@ -469,31 +468,6 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
                 absolute_uri=f"http://localhost:5000/import/outliers/{self.state_code}/test-file.csv",
                 service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
                 task_id=f"import-outliers-{self.state_code}-test-file-csv",
-            )
-
-    @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
-    def test_import_trigger_outliers_json(self, mock_task_manager: MagicMock) -> None:
-        with self.app.test_request_context():
-            response = self.client.post(
-                "/import/trigger_outliers",
-                json={
-                    "message": {
-                        "data": base64.b64encode(b"anything").decode(),
-                        "attributes": {
-                            "bucketId": self.bucket,
-                            "objectId": f"{self.state_code}/test-file.json",
-                        },
-                        "messageId": "12345",
-                    }
-                },
-            )
-            self.assertEqual(b"", response.data)
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-
-            mock_task_manager.return_value.create_task.assert_called_with(
-                absolute_uri=f"http://localhost:5000/import/outliers/json_to_csv/{self.state_code}/test-file.json",
-                service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
-                task_id=f"import-outliers-json-to-csv-{self.state_code}-test-file-json",
             )
 
     def test_import_trigger_outliers_bad_message(self) -> None:
@@ -543,27 +517,6 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
             )
             self.assertEqual(
                 b"Invalid object ID staging/US_XX/test-file.csv, must be of format <state_code>/<filename>",
-                response.data,
-            )
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-
-    def test_import_trigger_outliers_invalid_file_type(self) -> None:
-        with self.app.test_request_context():
-            response = self.client.post(
-                "/import/trigger_outliers",
-                json={
-                    "message": {
-                        "attributes": {
-                            "bucketId": self.bucket,
-                            "objectId": f"{self.state_code}/test-file.txt",
-                        },
-                        "messageId": "12345",
-                    },
-                    "subscription": "test-subscription",
-                },
-            )
-            self.assertEqual(
-                b"Unexpected handling of file type .txt for file test-file.txt",
                 response.data,
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -644,43 +597,3 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
                 error_message.encode("UTF-8"),
                 response.data,
             )
-
-    def test_import_outliers_json_to_csv_successful(
-        self,
-    ) -> None:
-        with self.app.test_request_context():
-            # upload dummy data
-            json_contents = {col: "test_value" for col in self.columns}
-
-            filename = f"{self.view}.json"
-            filepath = GcsfsFilePath.from_absolute_path(
-                os.path.join(
-                    self.bucket,
-                    self.state_code + "/" + filename,
-                )
-            )
-
-            self.fs.upload_from_string(
-                filepath,
-                f"{json.dumps(json_contents)}",
-                content_type="application/octet-stream",
-            )
-            self.assertEqual(len(self.fs.files), 1)
-            response = self.client.post(
-                f"/import/outliers/json_to_csv/{self.state_code}/{filename}",
-            )
-
-            csv_path = GcsfsFilePath.from_absolute_path(
-                os.path.join(
-                    self.bucket,
-                    self.state_code + "/" + f"{self.view}.csv",
-                )
-            )
-
-            self.assertEqual(
-                csv_path.uri(),
-                "gs://test-project-outliers-etl-data/US_XX/supervision_officers.csv",
-            )
-            self.assertTrue(self.fs.exists(csv_path))
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            self.assertEqual(len(self.fs.files), 2)
