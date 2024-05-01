@@ -20,8 +20,8 @@ from typing import List, Optional
 from airflow.decorators import task, task_group
 from airflow.models import DagRun
 
-from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
-    KNOWN_CONFIGURATION_PARAMETERS,
+from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_known_configuration_parameters,
 )
 from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
     WaitUntilCanContinueOrCancelDelegate,
@@ -33,6 +33,7 @@ from recidiviz.airflow.dags.utils.config_utils import (
     handle_params_check,
     handle_queueing_result,
 )
+from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
@@ -58,7 +59,10 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     unknown_parameters = {
         parameter
         for parameter in dag_run.conf.keys()
-        if parameter not in KNOWN_CONFIGURATION_PARAMETERS[dag_run.dag_id]
+        if parameter
+        not in get_known_configuration_parameters(
+            project_id=get_project_id(), dag_id=dag_run.dag_id
+        )
     }
 
     if unknown_parameters:

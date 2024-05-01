@@ -16,11 +16,10 @@
 """Functionality for reporting consecutive failures of tasks as incidents to PagerDuty"""
 import json
 import logging
-import os
 from datetime import timedelta
 from enum import Enum
 from pprint import pprint
-from typing import Dict, List, Set
+from typing import Dict, List
 
 import pandas
 from airflow.exceptions import AirflowNotFoundException
@@ -37,40 +36,15 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 from recidiviz.airflow.dags.monitoring.alerting_trigger_predicates import (
     should_trigger_airflow_alerting_incident,
 )
+from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_discrete_configuration_parameters,
+)
 from recidiviz.airflow.dags.utils.email import can_send_mail
 from recidiviz.airflow.dags.utils.environment import (
     get_composer_environment,
+    get_project_id,
     is_experiment_environment,
 )
-
-_project_id = os.getenv("GCP_PROJECT")
-
-# If a new parameter is being added, add it here and review the DISCRETE_CONFIGURATION_PARAMETERS list
-KNOWN_CONFIGURATION_PARAMETERS: Dict[str, Set[str]] = {
-    f"{_project_id}_calculation_dag": {
-        "ingest_instance",
-        "state_code_filter",
-        "sandbox_prefix",
-        "trigger_ingest_dag_post_bq_refresh",
-    },
-    f"{_project_id}_hourly_monitoring_dag": set(),
-    f"{_project_id}_sftp_dag": set(),
-    f"{_project_id}_ingest_dag": {
-        "ingest_instance",
-        "state_code_filter",
-    },
-}
-
-# The list of parameters that cause DAG Run history to partition into discrete sets of runs
-# For example, we track incidents for primary instance runs and secondary instance runs separately
-DISCRETE_CONFIGURATION_PARAMETERS: Dict[str, List[str]] = {
-    f"{_project_id}_calculation_dag": ["ingest_instance", "state_code_filter"],
-    f"{_project_id}_hourly_monitoring_dag": [],
-    f"{_project_id}_sftp_dag": [],
-    f"{_project_id}_ingest_dag": ["ingest_instance", "state_code_filter"],
-}
-
-DAGS_TO_IGNORE_IN_ALERTING = ["airflow_monitoring"]
 
 INCIDENT_START_DATE_LOOKBACK = timedelta(days=21)
 
@@ -255,7 +229,10 @@ def _build_task_instance_state_dataframe(
         lambda row: {
             key: value
             for key, value in row["conf"].items()
-            if key in DISCRETE_CONFIGURATION_PARAMETERS.get(row["dag_id"], [])
+            if key
+            in get_discrete_configuration_parameters(
+                project_id=get_project_id(), dag_id=row["dag_id"]
+            )
         },
         axis=1,
     )

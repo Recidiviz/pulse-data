@@ -38,6 +38,7 @@ from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_
 from recidiviz.airflow.dags.utils.environment import (
     COMPOSER_ENVIRONMENT,
     get_composer_environment,
+    get_project_id,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.environment import (
@@ -46,9 +47,6 @@ from recidiviz.utils.environment import (
     get_data_platform_version,
     get_environment_for_project,
 )
-
-# TODO(#23873): Remove loading of environment variables from at beginning of file.
-_project_id = os.environ.get("GCP_PROJECT")
 
 COMPOSER_USER_WORKLOADS = "composer-user-workloads"
 
@@ -105,6 +103,13 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
         self, cloud_sql_connections: Optional[List[SchemaType]] = None, **kwargs: Any
     ) -> None:
         env_vars = kwargs.pop("env_vars", [])
+        project_id = get_project_id()
+        recidiviz_env_value = (
+            get_environment_for_project(project_id).value
+            # TODO(#22516): Remove testing clause
+            if project_id and project_id != "recidiviz-testing"
+            else ""
+        )
         super().__init__(
             namespace=COMPOSER_USER_WORKLOADS,
             # Do not delete pods after running, its handled `recidiviz.airflow.dags.monitoring.cleanup_exited_pods`
@@ -129,12 +134,7 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
                 ),
                 k8s.V1EnvVar(
                     name=RECIDIVIZ_ENV,
-                    value=(
-                        get_environment_for_project(_project_id).value
-                        # TODO(#22516): Remove testing clause
-                        if _project_id and _project_id != "recidiviz-testing"
-                        else ""
-                    ),
+                    value=recidiviz_env_value,
                 ),
                 *env_vars,
             ],

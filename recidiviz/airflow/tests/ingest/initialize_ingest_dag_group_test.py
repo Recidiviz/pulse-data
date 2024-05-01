@@ -33,9 +33,7 @@ from recidiviz.airflow.dags.ingest.initialize_ingest_dag_group import (
     IngestDagWaitUntilCanContinueOrCancelDelegate,
     create_initialize_ingest_dag,
 )
-from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
-    KNOWN_CONFIGURATION_PARAMETERS,
-)
+from recidiviz.airflow.dags.monitoring.dag_registry import get_ingest_dag_id
 from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
     WaitUntilCanContinueOrCancelSensorAsync,
 )
@@ -49,7 +47,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 # Need a disable expression-not-assigned because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
 
-_TEST_DAG_ID = "test_initialize_ingest_dag"
+_PROJECT_ID = "recidiviz-testing"
+_TEST_DAG_ID = get_ingest_dag_id(_PROJECT_ID)
 _VERIFY_PARAMETERS_TASK_ID = "initialize_ingest_dag.verify_parameters"
 _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID = "initialize_ingest_dag.wait_to_continue_or_cancel"
 _HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_ingest_dag.handle_queueing_result"
@@ -66,9 +65,11 @@ def _create_test_initialize_ingest_dag() -> None:
     create_initialize_ingest_dag() >> EmptyOperator(task_id=_DOWNSTREAM_TASK_ID)
 
 
-@patch.dict(
-    KNOWN_CONFIGURATION_PARAMETERS,
-    {_TEST_DAG_ID: KNOWN_CONFIGURATION_PARAMETERS["None_ingest_dag"]},
+@patch(
+    "os.environ",
+    {
+        "GCP_PROJECT": _PROJECT_ID,
+    },
 )
 class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
     """

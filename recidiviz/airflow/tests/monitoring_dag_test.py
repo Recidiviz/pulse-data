@@ -21,6 +21,7 @@ Unit test for the monitoring DAG
 # pylint: disable=W0104 pointless-statement
 import datetime
 from typing import Any, Dict, List
+from unittest.mock import MagicMock, patch
 
 from airflow import DAG
 from airflow.models import DagRun, TaskInstance
@@ -81,8 +82,11 @@ def dummy_task(dag: DAG, name: str) -> PythonOperator:
     )
 
 
+_PROJECT_ID = "recidiviz-testing"
+_TEST_DAG_ID = "test_dag"
+
 test_dag = DAG(
-    dag_id="test_dag",
+    dag_id=_TEST_DAG_ID,
     start_date=datetime.datetime(year=2023, month=6, day=21),
     schedule=None,
 )
@@ -94,6 +98,12 @@ parent_task >> child_task
 TEST_START_DATE_LOOKBACK = datetime.timedelta(days=20 * 365)
 
 
+@patch(
+    "os.environ",
+    {
+        "GCP_PROJECT": _PROJECT_ID,
+    },
+)
 class TestMonitoringDag(AirflowIntegrationTest):
     """Tests the dags defined in the /dags package."""
 
@@ -257,7 +267,10 @@ class TestMonitoringDag(AirflowIntegrationTest):
                 [july_ninth.execution_date, july_eleventh.execution_date],
             )
 
-    def test_graph_config_idempotency(self) -> None:
+    @patch(f"{task_failure_alerts.__name__}.get_discrete_configuration_parameters")
+    def test_graph_config_idempotency(
+        self, mock_get_discrete_parameters: MagicMock
+    ) -> None:
         """
         Given a DAG which utilizes configuration parameters that should be treated as distinct sets of runs
         for example, a successful parent_task in PRIMARY instance won't resolve an open incident in SECONDARY
@@ -272,7 +285,12 @@ class TestMonitoringDag(AirflowIntegrationTest):
         Assert that the tertiary incident from 2023-07-07 is resolved
         """
 
-        task_failure_alerts.DISCRETE_CONFIGURATION_PARAMETERS["test_dag"] = ["instance"]
+        def _fake_get_discrete_params(project_id: str, dag_id: str) -> str:
+            if project_id == _PROJECT_ID and dag_id == _TEST_DAG_ID:
+                return "instance"
+            raise ValueError(f"Unexpected dag_id [{dag_id}]")
+
+        mock_get_discrete_parameters.side_effect = _fake_get_discrete_params
 
         with Session(bind=self.engine) as session:
             july_sixth_primary = dummy_dag_run(

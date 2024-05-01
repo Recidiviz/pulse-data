@@ -30,9 +30,6 @@ from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy.orm import Session
 
-from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
-    KNOWN_CONFIGURATION_PARAMETERS,
-)
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
@@ -678,12 +675,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
 
         self.dag = create_calculation_dag()
 
-        self.known_configuration_parameters_patcher = patch.dict(
-            KNOWN_CONFIGURATION_PARAMETERS,
-            {self.dag.dag_id: KNOWN_CONFIGURATION_PARAMETERS["None_calculation_dag"]},
-        )
-        self.known_configuration_parameters_patcher.start()
-
     def tearDown(self) -> None:
         super().tearDown()
         self.environment_patcher.stop()
@@ -692,7 +683,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.project_environment_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
-        self.known_configuration_parameters_patcher.stop()
         self.pubsub_publish_message_operator_patcher.stop()
 
     def test_calculation_dag(self) -> None:

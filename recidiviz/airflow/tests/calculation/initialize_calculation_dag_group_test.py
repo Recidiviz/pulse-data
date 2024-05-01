@@ -35,9 +35,7 @@ from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import 
     WaitUntilCanContinueOrCancelSensorAsync,
     initialize_calculation_dag_group,
 )
-from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
-    KNOWN_CONFIGURATION_PARAMETERS,
-)
+from recidiviz.airflow.dags.monitoring.dag_registry import get_calculation_dag_id
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -50,10 +48,11 @@ _VERIFY_PARAMETERS_TASK_ID = "initialize_dag.verify_parameters"
 _HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_dag.handle_queueing_result"
 _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID = "initialize_dag.wait_to_continue_or_cancel"
 _WAIT_SECONDS_TASK_ID = "wait_seconds"
+_PROJECT_ID = "recidiviz-testing"
 
 
 @dag(
-    dag_id="test_initialize_dag",
+    dag_id=get_calculation_dag_id(_PROJECT_ID),
     start_date=datetime(2022, 1, 1),
     schedule=None,
     catchup=False,
@@ -124,9 +123,11 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
         )
 
 
-@patch.dict(
-    KNOWN_CONFIGURATION_PARAMETERS,
-    {test_dag.dag_id: KNOWN_CONFIGURATION_PARAMETERS["None_calculation_dag"]},
+@patch(
+    "os.environ",
+    {
+        "GCP_PROJECT": _PROJECT_ID,
+    },
 )
 class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
     """

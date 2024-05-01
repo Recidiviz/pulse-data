@@ -17,7 +17,6 @@
 """
 Unit tests to test the ingest DAG.
 """
-import os
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -26,9 +25,6 @@ from airflow.operators.empty import EmptyOperator
 from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
-from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
-    KNOWN_CONFIGURATION_PARAMETERS,
-)
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failure_task,
@@ -52,14 +48,6 @@ def _fake_pod_operator(*args: Any, **kwargs: Any) -> BaseOperator:
     return fake_operator_constructor(*args, **kwargs)
 
 
-@patch.dict(
-    KNOWN_CONFIGURATION_PARAMETERS,
-    {
-        f"{_PROJECT_ID}_ingest_dag": KNOWN_CONFIGURATION_PARAMETERS[
-            f"{os.getenv('GCP_PROJECT')}_ingest_dag"
-        ]
-    },
-)
 class TestIngestDagIntegration(AirflowIntegrationTest):
     """
     Integration test to test the Ingest DAG logic.
