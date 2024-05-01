@@ -439,7 +439,7 @@ def get_admin_blueprint(
         child_agency_id_subset_raw = request_json.get("child_agency_id_subset")
         if child_agency_id_subset_raw is not None:
             child_agency_id_subset = assert_type(
-                request_json.get("metric_definition_key_subset"), list
+                request_json.get("child_agency_id_subset"), list
             )
             child_agency_id_subset_as_string = ",".join(child_agency_id_subset)
         else:
@@ -472,7 +472,7 @@ def get_admin_blueprint(
             str(user_email),
         ]
         if child_agency_id_subset_as_string is not None:
-            args.extend(["--child_agency_ids_subset", child_agency_id_subset_as_string])
+            args.extend(["--child_agency_id_subset", child_agency_id_subset_as_string])
 
         job_request = run_v2.RunJobRequest(
             name=StrictStringFormatter().format(
