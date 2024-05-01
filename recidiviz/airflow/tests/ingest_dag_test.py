@@ -33,9 +33,6 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.pipeline_utils import (
-    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
-)
 
 _PROJECT_ID = "recidiviz-testing"
 
@@ -98,13 +95,13 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         self.cloud_sql_query_operator_patcher.start()
 
         self.recidiviz_dataflow_operator_patcher = patch(
-            "recidiviz.airflow.dags.utils.dataflow_pipeline_group.RecidivizDataflowFlexTemplateOperator",
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.RecidivizDataflowFlexTemplateOperator",
             side_effect=fake_operator_constructor,
         )
         self.mock_dataflow_operator = self.recidiviz_dataflow_operator_patcher.start()
 
         self.default_ingest_pipeline_regions_by_state_code_patcher = patch.dict(
-            DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE",
             values={StateCode.US_XX: "us-east1-test", StateCode.US_YY: "us-east2-test"},
         )
         self.default_ingest_pipeline_regions_by_state_code_patcher.start()
@@ -234,7 +231,7 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 session=session,
                 expected_failure_ids=[
                     ".*us_xx_primary_dataflow.acquire_lock.*",
-                    ".*us_xx_primary_dataflow.us-xx-ingest-primary.*",
+                    ".*us_xx_primary_dataflow.dataflow_pipeline.*",
                     ".*us_xx_primary_dataflow.write_ingest_job_completion",
                     ".*us_xx_primary_dataflow.write_upper_bounds.*",
                     ".*ingest_branching.branch_end.*",
@@ -289,7 +286,7 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                     r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.should_run_based_on_watermarks",
                     r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.verify_raw_data_flashing_not_in_progress",
                     r".*us_xx_primary_dataflow.acquire_lock.*",
-                    r".*us_xx_primary_dataflow.us-xx-ingest-primary.*",
+                    r".*us_xx_primary_dataflow.dataflow_pipeline.*",
                     r".*us_xx_primary_dataflow.write_ingest_job_completion",
                     r".*us_xx_primary_dataflow.write_upper_bounds.*",
                     r".*us_xx_primary_dataflow.release_lock.*",
@@ -365,14 +362,14 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                     r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.should_run_based_on_watermarks",
                     r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.verify_raw_data_flashing_not_in_progress",
                     r".*us_xx_primary_dataflow.acquire_lock.*",
-                    r".*us_xx_primary_dataflow.us-xx-ingest-primary.*",
+                    r".*us_xx_primary_dataflow.dataflow_pipeline.*",
                     r".*us_xx_primary_dataflow.write_ingest_job_completion",
                     r".*us_xx_primary_dataflow.write_upper_bounds.*",
                     r".*us_xx_primary_dataflow.release_lock.*",
                 ],
                 expected_failure_ids=[
                     ".*us_yy_primary_dataflow.acquire_lock.*",
-                    ".*us_yy_primary_dataflow.us-yy-ingest-primary.*",
+                    ".*us_yy_primary_dataflow.dataflow_pipeline.*",
                     ".*us_yy_primary_dataflow.write_ingest_job_completion",
                     ".*us_yy_primary_dataflow.write_upper_bounds.*",
                     ".*ingest_branching.branch_end.*",

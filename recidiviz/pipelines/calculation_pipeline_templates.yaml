@@ -7,6 +7,52 @@
 # to determine which region has the most capacity for a new pipeline.
 
 # List of pipelines with their necessary details
+
+normalization_pipelines:
+  # Comprehensive normalization pipelines
+  - pipeline: comprehensive_normalization
+    state_code: US_AR
+    region: us-east1
+    staging_only: True
+  - pipeline: comprehensive_normalization
+    state_code: US_CA
+    region: us-east1
+  - pipeline: comprehensive_normalization
+    state_code: US_CO
+    region: us-west3
+  - pipeline: comprehensive_normalization
+    state_code: US_IX
+    region: us-west3
+  - pipeline: comprehensive_normalization
+    state_code: US_ME
+    region: us-east1
+  - pipeline: comprehensive_normalization
+    state_code: US_MO
+    region: us-central1
+  - pipeline: comprehensive_normalization
+    state_code: US_ND
+    region: us-west1
+  - pipeline: comprehensive_normalization
+    state_code: US_OR
+    region: us-west3
+  - pipeline: comprehensive_normalization
+    state_code: US_OZ
+    region: us-west3
+    staging_only: True
+  - pipeline: comprehensive_normalization
+    state_code: US_PA
+    region: us-west3
+  - pipeline: comprehensive_normalization
+    state_code: US_TN
+    region: us-east1
+  - pipeline: comprehensive_normalization
+    state_code: US_MI
+    region: us-central1
+  - pipeline: comprehensive_normalization
+    state_code: US_AZ
+    region: us-west1
+    staging_only: True
+
 metric_pipelines:
   # Full US_AR calculations with no time limit
   - pipeline: supervision_metrics
