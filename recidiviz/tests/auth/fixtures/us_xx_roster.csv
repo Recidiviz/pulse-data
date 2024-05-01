@@ -1,3 +1,4 @@
 district,email_address,external_id,role,first_name,last_name
 ,supervision_staff@domain.org,3706,supervision_staff,"supervision","user"
 ,leadership@domain.org,3975,leadership_role,"leadership","user"
+ABC,facilities_staff@domain.org,2834,facilities_staff,"facilities","user"

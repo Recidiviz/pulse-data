@@ -21,7 +21,7 @@ import json
 import logging
 import os
 from http import HTTPStatus
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
 import pandas as pd
 import sqlalchemy.orm.exc
@@ -111,10 +111,14 @@ def _lookup_user_attrs_from_hash(
     )
 
 
-def _upsert_roster_rows(
-    session: Session, state_code: str, rows: List[Dict[str, Any]]
+def _upsert_user_rows(
+    session: Session,
+    state_code: str,
+    rows: List[Dict[str, Any]],
+    table: Type[Roster] | Type[UserOverride],
 ) -> None:
-    """Upserts rows into the Roster table, along with some validation."""
+    """Upserts rows into a table that stores user attributes (Roster or UserOverride),
+    along with some validation."""
     for row in rows:
         if not row["email_address"]:
             raise ValueError(
@@ -146,9 +150,9 @@ def _upsert_roster_rows(
         row["role"] = row["role"].lower()
         row["user_hash"] = generate_user_hash(row["email_address"])
 
-        # update existing roster or create add new roster
+        # update existing row or add new row
         existing = (
-            session.query(Roster)
+            session.query(table)
             .filter_by(state_code=f"{state_code.upper()}", email_address=f"{email}")
             .first()
         )
@@ -156,8 +160,8 @@ def _upsert_roster_rows(
             for key, value in row.items():
                 setattr(existing, key, value)
         else:
-            roster = Roster(**row)
-            session.add(roster)
+            new_row = table(**row)
+            session.add(new_row)
 
     session.commit()
 
@@ -689,7 +693,7 @@ class ImportIngestedUsersGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
         df.columns = INGESTED_PRODUCT_USERS_VIEW_BUILDER.columns
         # df.to_dict exports missing values as 'nan', so export to json instead
         rows = json.loads(df.to_json(orient="records"))
-        _upsert_roster_rows(self.session, self.state_code, rows)
+        _upsert_user_rows(self.session, self.state_code, rows, Roster)
         self.emails.extend(r["email_address"] for r in rows)
         return True
 
