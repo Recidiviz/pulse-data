@@ -27,12 +27,14 @@ import flask
 import pytest
 from flask import Flask
 from flask_smorest import Api
-from flask_sqlalchemy_session import current_session
 from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import users_blueprint
-from recidiviz.persistence.database.schema.case_triage.schema import UserOverride
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
@@ -125,6 +127,14 @@ class AuthUsersEndpointTestCase(TestCase):
         self.mock_get_secret = self.get_secret_patcher.start()
         self.mock_get_secret.return_value = "123"
 
+        self.fs = FakeGCSFileSystem()
+        self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
+        self.fs_patcher.start()
+        self.ingested_users_bucket = "test-project-product-user-import"
+        self.ingested_users_gcs_csv_uri = GcsfsFilePath.from_absolute_path(
+            f"{self.ingested_users_bucket}/US_XX/ingested_product_users.csv"
+        )
+
         with self.app.test_request_context():
             self.users = lambda state_code=None: flask.url_for(
                 "users.UsersAPI", state_code=state_code
@@ -132,6 +142,9 @@ class AuthUsersEndpointTestCase(TestCase):
             self.user = flask.url_for(
                 "users.UsersByHashAPI",
                 user_hash=_PARAMETER_USER_HASH,
+            )
+            self.import_ingested_users = flask.url_for(
+                "auth_endpoint_blueprint.import_ingested_users"
             )
 
     def tearDown(self) -> None:
@@ -142,6 +155,7 @@ class AuthUsersEndpointTestCase(TestCase):
         self.generate_pseudonymized_ids_auth_endpoint_patcher.stop()
         self.generate_pseudonymized_ids_auth_users_endpoint_patcher.stop()
         self.get_secret_patcher.stop()
+        self.fs_patcher.stop()
 
     def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
         self.assertIn(
@@ -624,8 +638,18 @@ class AuthUsersEndpointTestCase(TestCase):
                 role="supervision_staff",
                 routes={"B": True},
             )
+            facilities_staff_default = generate_fake_default_permissions(
+                state="US_XX",
+                role="facilities_staff",
+                routes={"C": True},
+            )
             add_entity_to_database_session(
-                self.database_key, [leadership_default, supervision_staff_default]
+                self.database_key,
+                [
+                    leadership_default,
+                    supervision_staff_default,
+                    facilities_staff_default,
+                ],
             )
 
             resp = self.client.put(
@@ -809,50 +833,41 @@ class AuthUsersEndpointTestCase(TestCase):
             )
             self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_update_user")  # type: ignore[attr-defined]
 
-    def test_upload_roster_update_user_with_override(self) -> None:
-        roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
-            region_code="US_XX",
-            role="leadership_role",
-            external_id="0000",  # This should change with the new upload
-            district="",
-        )
-        # Create associated default permissions by role
+    def test_upload_roster_then_sync_roster(self) -> None:
+        # Create default permissions by role
         leadership_default = generate_fake_default_permissions(
             state="US_XX",
             role="leadership_role",
             routes={"A": True},
         )
-        # Create associated user_override - this should be deleted during the upload
-        override = generate_fake_user_overrides(
-            email="leadership@domain.org",
-            region_code="US_XX",
-            role="leadership_role",
-            external_id="xxxx",
-            district="XYZ",
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="supervision_staff",
+            routes={"B": True},
+        )
+        facilities_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="facilities_staff",
+            routes={"C": True},
         )
         add_entity_to_database_session(
             self.database_key,
             [
-                roster_leadership_user,
                 leadership_default,
-                override,
+                supervision_staff_default,
+                facilities_staff_default,
             ],
         )
-
         with open(
-            os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
+            os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb"
         ) as fixture, self.app.test_request_context(), self.assertLogs(
             level="INFO"
         ) as log:
             file = FileStorage(fixture)
             data = {"file": file, "reason": "test"}
 
-            response = self.client.get(
-                self.users(),
-                headers=self.headers,
-            )
-            self.client.put(
+            # upload user: should get put in overrides
+            response = self.client.put(
                 self.users("us_xx"),
                 headers=self.headers,
                 data=data,
@@ -863,17 +878,32 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output,
                 "uploading roster for state US_XX with reason: test",
             )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+
+            self.fs.upload_from_contents_handle_stream(
+                self.ingested_users_gcs_csv_uri,
+                contents_handle=LocalFileContentsHandle(
+                    local_file_path=os.path.join(
+                        _FIXTURE_PATH, "us_xx_ingested_users.csv"
+                    ),
+                    cleanup_file=False,
+                ),
+                content_type="text/csv",
+            )
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_XX",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
+
             response = self.client.get(
                 self.users(),
                 headers=self.headers,
             )
-            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_update_user_with_override")  # type: ignore[attr-defined]
-            existing_user_override = (
-                current_session.query(UserOverride)
-                .filter(UserOverride.email_address == "leadership@domain.org")
-                .first()
-            )
-            self.assertEqual(existing_user_override, None)
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_then_sync_roster")  # type: ignore[attr-defined]
 
     def test_upload_roster_missing_external_id(self) -> None:
         roster_leadership_user = generate_fake_rosters(

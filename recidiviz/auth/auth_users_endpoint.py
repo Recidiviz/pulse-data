@@ -42,10 +42,7 @@ from recidiviz.auth.auth_api_schemas import (
     UserRequestSchema,
     UserSchema,
 )
-from recidiviz.auth.auth_endpoint import (
-    _lookup_user_attrs_from_hash,
-    _upsert_roster_rows,
-)
+from recidiviz.auth.auth_endpoint import _lookup_user_attrs_from_hash, _upsert_user_rows
 from recidiviz.auth.helpers import (
     generate_pseudonymized_id,
     generate_user_hash,
@@ -239,9 +236,7 @@ class UsersAPI(MethodView):
         form: Dict[str, str],
         files: Dict[str, FileStorage],
     ) -> str:
-        """Adds records to the "roster" table if existing record is not found,
-        otherwise updates the existing record and returns the number of records updated.
-        Removes any existing overrides for uploaded rosters.
+        """Adds/updates records in the UserOverride table for uploaded users.
         It assumes that the caller has manually formatted the CSV appropriately.
         Returns an error message if there was an error creating the records.
         """
@@ -255,20 +250,13 @@ class UsersAPI(MethodView):
             files["file"].read().decode("utf-8-sig").splitlines()
         )
         rows = list(dict_reader)
+        # Convert "" to None for all values so missing values can still be filled in by data in Roster
+        for row in rows:
+            for k, v in row.items():
+                if v == "":
+                    row[k] = None
         try:
-            _upsert_roster_rows(current_session, state_code, rows)
-
-            for row in rows:
-                # If UserOverride exists, delete it
-                existing_user_override = (
-                    current_session.query(UserOverride)
-                    .filter(UserOverride.email_address == row["email_address"].lower())
-                    .first()
-                )
-                if existing_user_override:
-                    current_session.delete(existing_user_override)
-
-            current_session.commit()
+            _upsert_user_rows(current_session, state_code, rows, UserOverride)
 
             return f"{len(rows)} users added/updated to the roster"
         except IntegrityError as e:
