@@ -19,7 +19,7 @@ Unit test to test the calculation pipeline DAG logic.
 """
 import os
 from typing import Dict, List, Set
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import yaml
 from airflow.models import DagRun, import_all_models
@@ -35,7 +35,11 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import fake_operator_constructor
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -617,6 +621,10 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         )
 
 
+@patch.dict(
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+    values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
+)
 class TestCalculationDagIntegration(AirflowIntegrationTest):
     """
     Integration tests for the calculation DAG.
@@ -634,6 +642,17 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             },
         )
         self.environment_patcher.start()
+
+        self.ingest_states_patcher = patch(
+            "recidiviz.pipelines.dataflow_orchestration_utils.get_direct_ingest_states_launched_in_env",
+            MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
+        )
+        self.ingest_states_patcher.start()
+        self.ingest_regions_patcher = patch.dict(
+            DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
+            values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
+        )
+        self.ingest_regions_patcher.start()
 
         from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
 
@@ -662,7 +681,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.kubernetes_pod_operator_patcher.start()
 
         self.recidiviz_dataflow_operator_patcher = patch(
-            "recidiviz.airflow.dags.calculation_dag.RecidivizDataflowFlexTemplateOperator",
+            "recidiviz.airflow.dags.utils.dataflow_pipeline_group.RecidivizDataflowFlexTemplateOperator",
             side_effect=fake_operator_constructor,
         )
         self.recidiviz_dataflow_operator_patcher.start()
@@ -678,6 +697,8 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
     def tearDown(self) -> None:
         super().tearDown()
         self.environment_patcher.stop()
+        self.ingest_states_patcher.stop()
+        self.ingest_regions_patcher.stop()
         self.project_patcher.stop()
         self.pipeline_config_yaml_path_patcher.stop()
         self.project_environment_patcher.stop()

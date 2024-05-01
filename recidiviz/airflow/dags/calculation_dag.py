@@ -19,7 +19,7 @@ The DAG configuration to run the calculation pipelines in Dataflow simultaneousl
 This file is uploaded to GCS on deploy.
 """
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional, Type, Union
+from typing import Dict, Iterable, List, Optional
 
 from airflow.decorators import dag, task, task_group
 from airflow.models import DagRun
@@ -27,9 +27,17 @@ from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessage
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
-from more_itertools import one
 from requests import Response
 
+from recidiviz.airflow.dags.calculation.dataflow.metrics_pipeline_task_group_delegate import (
+    MetricsDataflowPipelineTaskGroupDelegate,
+)
+from recidiviz.airflow.dags.calculation.dataflow.normalization_pipeline_task_group_delegate import (
+    NormalizationDataflowPipelineTaskGroupDelegate,
+)
+from recidiviz.airflow.dags.calculation.dataflow.supplemental_pipeline_task_group_delegate import (
+    SupplementalDataflowPipelineTaskGroupDelegate,
+)
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
     INGEST_INSTANCE_JINJA_ARG,
     SANDBOX_PREFIX_JINJA_ARG,
@@ -37,19 +45,17 @@ from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import 
     initialize_calculation_dag_group,
 )
 from recidiviz.airflow.dags.monitoring.dag_registry import get_calculation_dag_id
-from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
-    RecidivizDataflowFlexTemplateOperator,
-)
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     RecidivizKubernetesPodOperator,
     build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.dags.utils.config_utils import (
-    get_ingest_instance,
-    get_sandbox_prefix,
     get_state_code_filter,
     get_trigger_ingest_dag_post_bq_refresh,
+)
+from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
+    build_dataflow_pipeline_task_group,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -60,19 +66,8 @@ from recidiviz.metrics.export.products.product_configs import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
-from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
-from recidiviz.pipelines.normalization.pipeline_parameters import (
-    NormalizationPipelineParameters,
-)
-from recidiviz.pipelines.pipeline_parameters import (
-    PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME,
-    PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME,
-    PipelineParameters,
-    PipelineParametersT,
-)
-from recidiviz.pipelines.supplemental.pipeline_parameters import (
-    SupplementalPipelineParameters,
+from recidiviz.pipelines.dataflow_orchestration_utils import (
+    get_normalization_pipeline_enabled_states,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -240,79 +235,16 @@ def create_pipeline_configs_by_state(
     return pipeline_params_by_state
 
 
-def build_dataflow_pipeline_task_group(
-    pipeline_config: YAMLDict,
-    parameter_cls: Type[PipelineParametersT],
-) -> TaskGroup:
-    """Builds a task Group that handles creating the flex template operator for a given
-    pipeline parameters.
-    """
-    params_no_overrides: PipelineParameters = parameter_cls(
-        project=get_project_id(),
-        **pipeline_config.get(),  # type: ignore
-    )
-    with TaskGroup(group_id=params_no_overrides.job_name) as dataflow_pipeline_group:
-
-        @task(task_id="create_flex_template")
-        def create_flex_template(
-            dag_run: Optional[DagRun] = None,
-        ) -> Dict[str, Union[str, int, bool]]:
-            if not dag_run:
-                raise ValueError(
-                    "dag_run not provided. This should be automatically set by Airflow."
-                )
-
-            ingest_instance = get_ingest_instance(dag_run)
-            if not ingest_instance:
-                raise ValueError(
-                    "[ingest_instance] must be set in dag_run configuration"
-                )
-
-            sandbox_prefix = get_sandbox_prefix(dag_run)
-
-            config = pipeline_config.get()
-            if parameter_cls is IngestPipelineParameters:
-                config["ingest_instance"] = ingest_instance
-
-            if sandbox_prefix:
-                config[PIPELINE_OUTPUT_SANDBOX_PREFIX_ARG_NAME] = sandbox_prefix
-                # TODO(#27373): Actually hydrate this based on which pipelines have
-                #  run earlier in the DAG.
-                config[PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME] = None
-
-            parameters: PipelineParameters = parameter_cls(
-                project=get_project_id(),
-                **config,  # type: ignore
-            )
-
-            return parameters.flex_template_launch_body()
-
-        _ = RecidivizDataflowFlexTemplateOperator(
-            task_id="run_pipeline",
-            location=pipeline_config.peek("region", str),
-            body=create_flex_template(),
-            project_id=get_project_id(),
-        )
-
-    return dataflow_pipeline_group
-
-
 def normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
-    normalization_pipelines = _get_pipeline_config().pop_dicts(
-        "normalization_pipelines"
-    )
-    normalization_pipeline_params_by_state: Dict[
-        str, List[YAMLDict]
-    ] = create_pipeline_configs_by_state(normalization_pipelines)
-
-    return {
-        state_code: build_dataflow_pipeline_task_group(
-            # There should only be one normalization pipeline per state
-            pipeline_config=one(parameters_list),
-            parameter_cls=NormalizationPipelineParameters,
+    branches_by_state_code = {}
+    for state_code in get_normalization_pipeline_enabled_states():
+        group, _pipeline_task = build_dataflow_pipeline_task_group(
+            delegate=NormalizationDataflowPipelineTaskGroupDelegate(
+                state_code=state_code
+            ),
         )
-        for state_code, parameters_list in normalization_pipeline_params_by_state.items()
-    }
+        branches_by_state_code[state_code.value] = group
+    return branches_by_state_code
 
 
 def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
@@ -338,16 +270,16 @@ def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]
         ) as state_code_dataflow_pipelines:
             for pipeline_config in metric_pipeline_params_by_state[state_code]:
                 build_dataflow_pipeline_task_group(
-                    pipeline_config=pipeline_config,
-                    parameter_cls=MetricsPipelineParameters,
+                    delegate=MetricsDataflowPipelineTaskGroupDelegate(pipeline_config),
                 )
 
             for pipeline_config in supplemental_pipeline_parameters_by_state[
                 state_code
             ]:
                 build_dataflow_pipeline_task_group(
-                    pipeline_config=pipeline_config,
-                    parameter_cls=SupplementalPipelineParameters,
+                    delegate=SupplementalDataflowPipelineTaskGroupDelegate(
+                        pipeline_config
+                    ),
                 )
 
         branches_by_state_code[state_code] = state_code_dataflow_pipelines

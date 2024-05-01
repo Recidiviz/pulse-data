@@ -18,21 +18,16 @@
 from typing import Set
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_launched_in_env,
+)
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
 def get_normalization_pipeline_enabled_states() -> Set[StateCode]:
     """Returns all states that have scheduled normalization pipelines that run."""
-    pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
-
-    normalization_pipelines = pipeline_templates_yaml.pop_dicts(
-        "normalization_pipelines"
-    )
-    return {
-        StateCode(pipeline.peek("state_code", str))
-        for pipeline in normalization_pipelines
-    }
+    return set(get_direct_ingest_states_launched_in_env())
 
 
 def get_metric_pipeline_enabled_states() -> Set[StateCode]:
