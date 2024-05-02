@@ -105,7 +105,10 @@ EVENTS: List[EventQueryBuilder] = [
         event_type=EventType.ABSCONSION_BENCH_WARRANT,
         description="Transition to absconsion or bench warrant status",
         sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
-        attribute_cols=[],
+        attribute_cols=[
+            "inflow_from_level_1",
+            "inflow_from_level_2",
+        ],
         event_date_col="start_date",
     ),
     EventQueryBuilder(

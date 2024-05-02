@@ -34,6 +34,8 @@ ABSCONSION_BENCH_WARRANT_SESSIONS_QUERY_TEMPLATE = f"""
             person_id,
             start_date,
             end_date_exclusive,
+            inflow_from_level_1,
+            inflow_from_level_2,
         FROM
             `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` a
         WHERE
@@ -46,6 +48,7 @@ ABSCONSION_BENCH_WARRANT_SESSIONS_QUERY_TEMPLATE = f"""
     FROM (
         {aggregate_adjacent_spans(
             table_name="absconsion_periods",
+            attribute=["inflow_from_level_1","inflow_from_level_2"],
             session_id_output_name='absconsion_bench_warrant_session_id',
             end_date_field_name='end_date_exclusive'
         )}
