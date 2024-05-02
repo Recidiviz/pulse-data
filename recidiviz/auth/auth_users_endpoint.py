@@ -44,6 +44,8 @@ from recidiviz.auth.auth_api_schemas import (
 )
 from recidiviz.auth.auth_endpoint import _lookup_user_attrs_from_hash, _upsert_user_rows
 from recidiviz.auth.helpers import (
+    convert_to_dict_multiple_results,
+    convert_to_dict_single_result,
     generate_pseudonymized_id,
     generate_user_hash,
     log_reason,
@@ -60,6 +62,67 @@ users_blueprint = Blueprint("users", "users")
 
 
 def get_users_query(session: Session) -> Query:
+    """Creates a query that selects all users from Roster and UserOverride tables
+    and joins to StateRolePermissions and PermissionsOverride data. If a user has
+    multiple roles, permissions are aggregated before being joined to user data."""
+
+    roles_cte = (
+        session.query(
+            func.coalesce(UserOverride.email_address, Roster.email_address).label(
+                "email_address"
+            ),
+            func.unnest(func.coalesce(UserOverride.roles, Roster.roles)).label("role"),
+        )
+        .select_from(Roster)
+        .join(
+            UserOverride,
+            UserOverride.email_address == Roster.email_address,
+            full=True,
+        )
+        .cte("roles_cte")
+    )
+
+    aggregated_permissions_cte = (
+        session.query(
+            func.coalesce(UserOverride.email_address, Roster.email_address).label(
+                "email_address"
+            ),
+            func.coalesce(UserOverride.state_code, Roster.state_code).label(
+                "state_code"
+            ),
+            func.jsonb_agg(
+                func.coalesce(StateRolePermissions.routes, cast({}, JSONB))
+            ).label("routes"),
+            func.jsonb_agg(
+                func.coalesce(StateRolePermissions.feature_variants, cast({}, JSONB))
+            ).label("feature_variants"),
+        )
+        .select_from(Roster)
+        .join(
+            UserOverride,
+            UserOverride.email_address == Roster.email_address,
+            full=True,
+        )
+        .outerjoin(
+            roles_cte,
+            func.coalesce(UserOverride.email_address, Roster.email_address)
+            == roles_cte.c.email_address,
+        )
+        .outerjoin(
+            StateRolePermissions,
+            (StateRolePermissions.role == roles_cte.c.role)
+            & (
+                StateRolePermissions.state_code
+                == func.coalesce(UserOverride.state_code, Roster.state_code)
+            ),
+        )
+        .group_by(
+            func.coalesce(UserOverride.email_address, Roster.email_address),
+            func.coalesce(UserOverride.state_code, Roster.state_code),
+        )
+        .cte("aggregated_permissions")
+    )
+
     return (
         session.query(
             func.coalesce(UserOverride.state_code, Roster.state_code).label(
@@ -72,9 +135,7 @@ def get_users_query(session: Session) -> Query:
                 "external_id"
             ),
             func.coalesce(UserOverride.role, Roster.role).label("role"),
-            func.string_to_array(
-                func.coalesce(UserOverride.role, Roster.role), " "
-            ).label("roles"),
+            func.coalesce(UserOverride.roles, Roster.roles).label("roles"),
             func.coalesce(UserOverride.district, Roster.district).label("district"),
             func.coalesce(UserOverride.first_name, Roster.first_name).label(
                 "first_name"
@@ -82,11 +143,11 @@ def get_users_query(session: Session) -> Query:
             func.coalesce(UserOverride.last_name, Roster.last_name).label("last_name"),
             func.coalesce(UserOverride.blocked, False).label("blocked"),
             (
-                func.coalesce(StateRolePermissions.routes, cast({}, JSONB))
+                aggregated_permissions_cte.c.routes
                 + func.coalesce(PermissionsOverride.routes, cast({}, JSONB))
             ).label("routes"),
             (
-                func.coalesce(StateRolePermissions.feature_variants, cast({}, JSONB))
+                aggregated_permissions_cte.c.feature_variants
                 + func.coalesce(PermissionsOverride.feature_variants, cast({}, JSONB))
             ).label("feature_variants"),
             func.coalesce(
@@ -105,14 +166,10 @@ def get_users_query(session: Session) -> Query:
             full=True,
         )
         .outerjoin(
-            StateRolePermissions,
+            aggregated_permissions_cte,
             (
-                func.coalesce(UserOverride.state_code, Roster.state_code)
-                == StateRolePermissions.state_code
-            )
-            & (
-                func.coalesce(UserOverride.role, Roster.role)
-                == StateRolePermissions.role
+                func.coalesce(UserOverride.email_address, Roster.email_address)
+                == aggregated_permissions_cte.c.email_address
             ),
         )
         .outerjoin(
@@ -163,14 +220,15 @@ class UsersAPI(MethodView):
     """CRUD endpoints for /users."""
 
     @users_blueprint.response(HTTPStatus.OK, FullUserSchema(many=True))
-    def get(self) -> List[Row]:
+    def get(self) -> List[Dict]:
         """
         This endpoint is accessed via the admin panel and our auth0 actions. It queries data from four
         Case Triage CloudSQL instance tables (roster, user_override, state_role_permissions, and
         permissions_overrides) in order to account for overrides to a user's roster data or permissions.
         Returns: JSON string with accurate information about state users and their permissions
         """
-        return get_users_query(current_session).all()
+        results = get_users_query(current_session).all()
+        return convert_to_dict_multiple_results(results)
 
     @users_blueprint.arguments(
         UserRequestSchema,
@@ -292,7 +350,7 @@ class UsersByHashAPI(MethodView):
     """CRUD endpoints for /users/<user_hash>"""
 
     @users_blueprint.response(HTTPStatus.OK, FullUserSchema)
-    def get(self, user_hash: str) -> Row:
+    def get(self, user_hash: str) -> Dict:
         """
         This endpoint is accessed via the admin panel and our auth0 actions. It queries data from four
         Case Triage CloudSQL instance tables (roster, user_override, state_role_permissions, and
@@ -300,7 +358,7 @@ class UsersByHashAPI(MethodView):
         Returns: JSON string with accurate information about a state user and their permissions
         """
         try:
-            return (
+            user = (
                 get_users_query(current_session)
                 .where(
                     func.coalesce(UserOverride.user_hash, Roster.user_hash)
@@ -308,6 +366,7 @@ class UsersByHashAPI(MethodView):
                 )
                 .one()
             )
+            return convert_to_dict_single_result(user)
         except NoResultFound:
             abort(
                 HTTPStatus.NOT_FOUND,

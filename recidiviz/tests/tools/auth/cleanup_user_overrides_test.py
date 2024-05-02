@@ -69,6 +69,7 @@ class CleanupUserOverridesTest(TestCase):
             region_code="US_XX",
             external_id="123",
             role="supervision_officer",
+            roles=["supervision_officer"],
             district="D1",
             first_name="Test",
             last_name="User",
@@ -198,6 +199,7 @@ class CleanupUserOverridesTest(TestCase):
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
                 role=self.roster_user.role,
+                roles=self.roster_user.roles,
                 # add one different attribute so it doesn't get deleted
                 district="different",
             )
@@ -216,6 +218,7 @@ class CleanupUserOverridesTest(TestCase):
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
                 role="supervision_staff",
+                roles=["supervision_staff"],
                 # add one different attribute so it doesn't get deleted
                 district="different",
             )
@@ -235,6 +238,7 @@ class CleanupUserOverridesTest(TestCase):
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
                 role="leadership_role",
+                roles=["leadership_role"],
                 # add one different attribute so it doesn't get deleted
                 district="different",
             )
@@ -253,6 +257,7 @@ class CleanupUserOverridesTest(TestCase):
                 email=self.roster_user.email_address,
                 region_code=self.roster_user.state_code,
                 role="leadership_role",
+                roles=["leadership_role"],
                 # add one different attribute so it doesn't get deleted
                 district="different",
             )
@@ -287,6 +292,7 @@ class CleanupUserOverridesTest(TestCase):
                 region_code=self.roster_user.state_code,
                 district=self.roster_user.district,
                 role="supervision_staff",
+                roles=["supervision_staff"],
             )
         )
         cleanup_user_overrides(self.session, dry_run=False)

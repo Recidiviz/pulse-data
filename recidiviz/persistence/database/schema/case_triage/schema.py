@@ -20,7 +20,7 @@ application; now only defines tables for roster management of the dashboard appl
 """
 
 from sqlalchemy import Boolean, Column, DateTime, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql import func
 
@@ -48,6 +48,7 @@ class Roster(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     email_address = Column(String(255), nullable=False, primary_key=True)
     external_id = Column(String(255), nullable=True)
     role = Column(String(255), nullable=False)
+    roles = Column(ARRAY(String(255)), nullable=False)
     district = Column(String(255), nullable=True)
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
@@ -63,6 +64,7 @@ class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     email_address = Column(String(255), nullable=False, primary_key=True)
     external_id = Column(String(255), nullable=True)
     role = Column(String(255), nullable=True)
+    roles = Column(ARRAY(String(255)), nullable=True)
     district = Column(String(255), nullable=True)
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
