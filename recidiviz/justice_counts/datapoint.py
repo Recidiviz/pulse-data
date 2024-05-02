@@ -242,7 +242,7 @@ class DatapointInterface:
                         "aggregate value."
                     ),
                 )
-            dimension_in_metric_interface = list(
+            dimension_in_metric_interface: list[MetricAggregatedDimensionData] = list(
                 filter(
                     lambda x, dim=get_dimension_id(datapoint=datapoint): dim  # type: ignore[arg-type]
                     == x.dimension_identifier(),

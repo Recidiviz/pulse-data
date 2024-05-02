@@ -108,7 +108,7 @@ ydata-profiling = "*"
 # end recidiviz-research dependencies
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-sqlglot = "*"
+sqlglot = "==23.11.2"
 
 [packages]
 callee = "*"

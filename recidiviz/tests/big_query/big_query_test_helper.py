@@ -24,6 +24,7 @@ from typing import Dict, List, Type, Union
 import db_dtypes
 import numpy
 import pandas as pd
+import pytest
 import sqlglot
 import sqlglot.expressions
 from more_itertools import one
@@ -256,3 +257,26 @@ def check_for_ctes_with_no_comments(query: str, query_name: str) -> None:
         raise ValueError(
             f"Query {query_name} has undocumented CTEs: {undocumented_ctes}"
         )
+
+
+def test_check_for_ctes_with_no_comments() -> None:
+    query = """
+    WITH
+        -- This is a good comment in the right place
+        cte_1 AS (SELECT * FROM a),
+        -- This is another good comment,
+        -- it's even on two lines!
+        cte_2 AS (SELECT * FROM b),
+        SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
+    """
+    check_for_ctes_with_no_comments(query, "valid_query")
+
+    with pytest.raises(ValueError, match="cte_2"):
+        query = """
+        WITH
+            -- This is a good comment in the right place
+            cte_1 AS (SELECT * FROM a),
+            cte_2 AS (SELECT * FROM b),
+            SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
+        """
+        check_for_ctes_with_no_comments(query, "valid_query")
