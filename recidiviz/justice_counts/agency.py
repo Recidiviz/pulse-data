@@ -302,3 +302,31 @@ class AgencyInterface:
             len(schema.System.supervision_subsystems().intersection(systems_enums)) > 0
             and schema.System.SUPERVISION in agency.systems
         )
+
+    @staticmethod
+    def update_custom_child_agency_name(
+        agency: schema.Agency, custom_name: str
+    ) -> Optional[schema.Agency]:
+        """
+        Updates the custom name for a child agency within.
+
+        Parameters:
+        ----------
+        agency : schema.Agency
+            The agency instance to update.
+
+        custom_name : str
+            The new custom name to assign to the child agency.
+
+        Returns:
+        -------
+        Optional[schema.Agency]
+            The updated `agency` instance with the new `custom_child_agency_name`,
+            or `None` if the `agency` is not a child agency.
+        """
+        if agency.super_agency_id is None:
+            # Agency is not a child agency, do nothing
+            return None
+
+        agency.custom_child_agency_name = custom_name
+        return agency
