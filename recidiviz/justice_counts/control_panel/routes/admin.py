@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements api routes for the Justice Counts Publisher Admin Panel."""
+import logging
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
@@ -487,5 +488,55 @@ def get_admin_blueprint(
 
         current_session.commit()
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @admin_blueprint.route("/agency/<child_agency_id>/custom-name", methods=["PUT"])
+    @auth_decorator
+    def update_custom_child_agency_name(child_agency_id: int) -> Response:
+        """
+        Update the custom name for a child agency.
+
+        This endpoint allows authorized users to update the custom name
+        of a specified child agency based on its ID.
+
+        Parameters:
+        - child_agency_id (int): The ID of the child agency whose custom  name is to be updated.
+
+        The request body must be a JSON object with the following key:
+        - "custom_child_agency_name": (str) The new custom name for the child agency.
+
+        Returns:
+        - Response: A JSON response containing the updated agency details. If the update fails,
+        it returns the original agency details.
+
+        Raises:
+        - HTTPException: If the agency with the given ID does not exist or if the agency is
+        not a child agency.
+        - AssertionError: If the input data is not in the expected format.
+        """
+        request_json = assert_type(request.json, dict)
+        custom_child_agency_name = assert_type(
+            request_json.get("custom_child_agency_name"), str
+        )
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=child_agency_id
+        )
+
+        updated_agency = AgencyInterface.update_custom_child_agency_name(
+            agency=agency,
+            custom_name=custom_child_agency_name,
+        )
+
+        if updated_agency is None:
+            logging.exception(
+                JusticeCountsServerError(
+                    code="justice_counts_non_child_agency_custom",
+                    description="`custom_child_agency_name` cannot be set for an agency that is not a child agency.",
+                )
+            )
+            return jsonify(agency.to_json_simple())
+
+        current_session.commit()
+        return jsonify(updated_agency.to_json_simple())
 
     return admin_blueprint
