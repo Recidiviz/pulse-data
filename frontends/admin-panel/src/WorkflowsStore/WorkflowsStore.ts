@@ -15,16 +15,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { flowResult, makeAutoObservable } from "mobx";
+import { autorun, flowResult, makeAutoObservable } from "mobx";
 
 import {
   getOpportunities,
+  getOpportunityConfigurations,
   getWorkflowsStateCodeInfo,
 } from "../AdminPanelAPI/WorkflowsAPI";
 import { StateCodeInfo } from "../components/general/constants";
 import { gcpEnvironment } from "../components/Utilities/EnvironmentUtilities";
 import { Hydratable, HydrationState } from "../InsightsStore/types";
 import { Opportunity } from "./models/Opportunity";
+import { OpportunityConfiguration } from "./models/OpportunityConfiguration";
+import OpportunityConfigurationPresenter from "./presenters/OpportunityConfigurationPresenter";
+import OpportunityPresenter from "./presenters/OpportunityPresenter";
 
 export class WorkflowsStore implements Hydratable {
   hydrationState: HydrationState;
@@ -34,6 +38,16 @@ export class WorkflowsStore implements Hydratable {
   stateCodeInfo?: StateCodeInfo[];
 
   opportunities?: Opportunity[];
+
+  selectedOpportunityType?: string;
+
+  selectedConfigurationId?: number;
+
+  opportunityConfigurations?: OpportunityConfiguration[];
+
+  opportunityPresenter?: OpportunityPresenter;
+
+  opportunityConfigurationPresenter?: OpportunityConfigurationPresenter;
 
   envIsStaging: boolean;
 
@@ -45,16 +59,55 @@ export class WorkflowsStore implements Hydratable {
 
     this.envIsStaging = gcpEnvironment.isStaging;
     this.envIsDevelopment = gcpEnvironment.isDevelopment;
+
+    autorun(() => {
+      if (this.stateCode) {
+        this.initializeOpportunityPresenter();
+      }
+    });
+    autorun(() => {
+      if (this.selectedOpportunityType) {
+        this.initializeOpportunityConfigurationPresenter();
+      }
+    });
   }
 
   setStateCode(stateCode: string): void {
-    this.resetStateData();
+    this.opportunities = undefined;
+    this.opportunityConfigurations = undefined;
     this.stateCode = stateCode;
-    this.populateOpportunities();
   }
 
-  resetStateData() {
-    this.opportunities = undefined;
+  setSelectedOpportunityType(opportunityType?: string): void {
+    this.opportunityConfigurations = undefined;
+    this.selectedOpportunityType = opportunityType;
+  }
+
+  setSelectedOpportunityConfigurationId(id?: number): void {
+    this.selectedConfigurationId = id;
+  }
+
+  initializeOpportunityPresenter() {
+    if (!this.stateCode) return;
+    this.opportunityPresenter = new OpportunityPresenter(this, this.stateCode);
+  }
+
+  initializeOpportunityConfigurationPresenter() {
+    if (!this.stateCode || !this.selectedOpportunityType) return;
+    this.opportunityConfigurationPresenter =
+      new OpportunityConfigurationPresenter(
+        this,
+        this.stateCode,
+        this.selectedOpportunityType
+      );
+  }
+
+  *populateStateCodeInfo(): Generator<
+    Promise<StateCodeInfo[]>,
+    void,
+    StateCodeInfo[]
+  > {
+    this.stateCodeInfo = yield getWorkflowsStateCodeInfo();
   }
 
   *populateOpportunities(): Generator<
@@ -66,12 +119,18 @@ export class WorkflowsStore implements Hydratable {
     this.opportunities = yield getOpportunities(this.stateCode);
   }
 
-  *populateStateCodeInfo(): Generator<
-    Promise<StateCodeInfo[]>,
+  *populateOpportunityConfigurations(): Generator<
+    Promise<OpportunityConfiguration[]>,
     void,
-    StateCodeInfo[]
+    OpportunityConfiguration[]
   > {
-    this.stateCodeInfo = yield getWorkflowsStateCodeInfo();
+    if (!this.stateCode) throw new Error("missing state code");
+    if (!this.selectedOpportunityType)
+      throw new Error("missing selectedOpportunity");
+    this.opportunityConfigurations = yield getOpportunityConfigurations(
+      this.stateCode,
+      this.selectedOpportunityType
+    );
   }
 
   async hydrate(): Promise<void> {

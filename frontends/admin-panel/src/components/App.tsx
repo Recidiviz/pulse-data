@@ -50,7 +50,10 @@ import StoreProvider from "./StoreProvider";
 import { EnvironmentType } from "./types";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
-import WorkflowsOpportunitiesView from "./Workflows/WorkflowsOpportunitiesView";
+import OpportunitiesHeader from "./Workflows/OpportunitiesHeader";
+import OpportunitiesView from "./Workflows/OpportunitiesView";
+import OpportunityConfigurationView from "./Workflows/OpportunityConfigurationView";
+import OpportunityView from "./Workflows/OpportunityView";
 
 type MenuItem = Required<MenuProps>["items"][number];
 type QueryString = {
@@ -148,7 +151,7 @@ const items: MenuProps["items"] = [
     ),
     getItem(
       "Workflows Configuration",
-      LineStaffTools.WORKFLOWS_CONFIGURATION_ROUTE
+      LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE
     ),
   ]),
   getItem("On-Call", OnCall.ON_CALL_BASE_ROUTE),
@@ -293,9 +296,30 @@ const App = (): JSX.Element => {
               component={InsightsConfigurationsView}
             />
             <Route
-              path={LineStaffTools.WORKFLOWS_CONFIGURATION_ROUTE}
-              component={WorkflowsOpportunitiesView}
+              path={[
+                `${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType?/configurations/:configId?`,
+                `${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType?`,
+              ]}
+              component={OpportunitiesHeader}
             />
+            <Switch>
+              <Route
+                path={`${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType/configurations/new`}
+                render={() => "newConfig"}
+              />
+              <Route
+                path={`${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType/configurations/:configId`}
+                component={OpportunityConfigurationView}
+              />
+              <Route
+                path={`${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType`}
+                component={OpportunityView}
+              />
+              <Route
+                path={LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}
+                component={OpportunitiesView}
+              />
+            </Switch>
           </StoreProvider>
           <Redirect from="/" to={IngestOperations.INGEST_DATAFLOW_ROUTE} />
         </Switch>
