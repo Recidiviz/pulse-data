@@ -146,11 +146,11 @@ def contact_method_from_contact_methods_list(
     return StateSupervisionContactMethod.INTERNAL_UNKNOWN
 
 
-def bw_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionType:
-    """Maps supervision type to BENCH_WARRANT for cases where we've already identified via the supervising officer as being bench warrant;
+def ws_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionType:
+    """Maps supervision type to WARRANT_STATUS for cases where we've already identified via the supervising officer as being bench warrant;
     used instead of a literal enum so that raw text can be preserved."""
     if raw_text:
-        return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
+        return StateSupervisionPeriodSupervisionType.WARRANT_STATUS
     raise ValueError("This parser should never be called on missing raw text.")
 
 
@@ -206,3 +206,11 @@ def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
             return StateStaffCaseloadType.GENERAL
         return StateStaffCaseloadType.INTERNAL_UNKNOWN
     return StateStaffCaseloadType.INTERNAL_UNKNOWN
+
+
+def county_jail_supervision_level(raw_text: str) -> StateSupervisionLevel:
+    """Maps supervision level to IN_CUSTODY for cases where we've already identified supervision site as county jail;
+    used instead of a literal enum so that raw text of the county jail name can be preserved."""
+    if raw_text:
+        return StateSupervisionLevel.IN_CUSTODY
+    raise ValueError("This parser should never be called on missing raw text.")

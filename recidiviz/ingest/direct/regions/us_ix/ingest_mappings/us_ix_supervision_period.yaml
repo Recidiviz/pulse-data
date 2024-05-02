@@ -60,14 +60,9 @@ output:
                 $then: $literal_enum(StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT)
               - $else_if:
                   $equal:
-                    - PhysicalLocationTypeDesc
-                    - $literal("Absconded")
-                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
-              - $else_if:
-                  $equal:
                     - bw_status
                     - $literal("BW")
-                $then: $literal_enum(StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.WARRANT_STATUS)
               - $else_if:
                   $equal:
                     - RequestedSupervisionAssignmentLevel
@@ -90,13 +85,13 @@ output:
                         - District 4 - PSI Unit
               - $else_if:
                   $custom:
-                    $function: us_ix_custom_parsers.is_bw
+                    $function: us_ix_custom_parsers.is_ws
                     $args:
                       supervising_officer_external_id: StaffId
                 $then:
                   $enum_mapping:
                     $raw_text: StaffId
-                    $custom_parser: us_ix_custom_enum_parsers.bw_supervision_type
+                    $custom_parser: us_ix_custom_enum_parsers.ws_supervision_type
               - $else_if:
                   $not_null: LegalStatusDesc
                 $then:
@@ -105,13 +100,15 @@ output:
                     $mappings:
                       StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
                         - Non Idaho Commitment
-                        - Parole Violator
                       StateSupervisionPeriodSupervisionType.INVESTIGATION:
                         - Investigation
                       StateSupervisionPeriodSupervisionType.PAROLE:
                         - Parole
                       StateSupervisionPeriodSupervisionType.PROBATION:
                         - Probation
+                      StateSupervisionPeriodSupervisionType.WARRANT_STATUS:
+                        - Parole Violator
+                        - Probation Violator
               - $else: $literal_enum(StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
           admission_reason:
             $conditional:
@@ -264,6 +261,16 @@ output:
               - $else_if:
                   $equal:
                     - RequestedSupervisionAssignmentLevel
+                    - $literal("Out ST Custody")
+                $then:
+                  $enum_mapping:
+                    $raw_text: RequestedSupervisionAssignmentLevel
+                    $mappings:
+                      StateCustodialAuthority.OTHER_STATE:
+                        - Out ST Custody
+              - $else_if:
+                  $equal:
+                    - RequestedSupervisionAssignmentLevel
                     - $literal("Deported")
                 $then:
                   $enum_mapping:
@@ -317,6 +324,20 @@ output:
                     $mappings:
                       StateSupervisionLevel.INTERSTATE_COMPACT:
                         - Non Idaho Commitment
+              - $else_if:
+                  $custom:
+                    $function: us_ix_custom_parsers.is_county_jail
+                    $args:
+                      supervision_site: DOCLocationToName
+                $then:
+                  $enum_mapping:
+                    $raw_text: DOCLocationToName
+                    $custom_parser: us_ix_custom_enum_parsers.county_jail_supervision_level
+              - $else_if:
+                  $equal:
+                    - PhysicalLocationTypeDesc
+                    - $literal("Absconded")
+                $then: $literal_enum(StateSupervisionLevel.ABSCONSION)
               - $else:
                   $enum_mapping:
                     $raw_text: RequestedSupervisionAssignmentLevel
