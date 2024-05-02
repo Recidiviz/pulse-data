@@ -182,7 +182,7 @@ def is_district(location_name: str, district_num: str) -> bool:
     return district_of_interest is not None
 
 
-def is_bw(supervising_officer_external_id: str) -> bool:
+def is_ws(supervising_officer_external_id: str) -> bool:
     officer_id_includes_bw = re.match(
         r"D[0-9]+BENCH", supervising_officer_external_id.upper()
     )
@@ -270,3 +270,7 @@ def parse_charge_is_sex_offense(statute: str) -> bool:
     if statute.upper() in US_IX_SEX_OFFENSE_STATUTE_CODES:
         return True
     return False
+
+
+def is_county_jail(supervision_site: str) -> bool:
+    return "COUNTY JAIL" in supervision_site.upper()
