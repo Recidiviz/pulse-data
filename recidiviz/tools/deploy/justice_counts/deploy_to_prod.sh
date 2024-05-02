@@ -52,7 +52,7 @@ run_cmd check_running_in_pipenv_shell
 echo "Checking for clean git status..."
 run_cmd verify_clean_git_status
 
-TAG=jc.${VERSION} 
+TAG=jc.${VERSION}
 STAGING_IMAGE_BASE=us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/main
 PROD_IMAGE_BASE=us-central1-docker.pkg.dev/justice-counts-production/publisher-and-dashboard-images/main
 
@@ -69,15 +69,11 @@ STAGING_IMAGE_URL=${STAGING_IMAGE_BASE}:${TAG}
 PROD_IMAGE_URL="${PROD_IMAGE_BASE}:latest"
 PROD_IMAGE_TAG="${PROD_IMAGE_BASE}:${TAG}"
 
-set_vpn_status "Disable"
-
 echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROD_IMAGE_URL}..."
 run_cmd docker run -v ~/.config/gcloud:/.config/gcloud -e GOOGLE_APPLICATION_CREDENTIALS=/.config/gcloud/application_default_credentials.json --rm gcr.io/go-containerregistry/gcrane cp "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
 
 echo "Tagging Docker image with ${PROD_IMAGE_TAG}..."
 run_cmd gcloud artifacts docker tags add "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
-
-set_vpn_status "Enable"
 
 # Now we need to run migrations.
 # As long as this Docker image was built using our Cloud Build Trigger, the first tag will always be the commit hash.
@@ -89,25 +85,22 @@ echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
 run_cmd git checkout "${RECIDIVIZ_DATA_COMMIT_HASH}"
 
-set_vpn_status "Disable"
 echo "Running migrations to head on ${JUSTICE_COUNTS_PROJECT_ID}..."
 # note: don't use run_cmd here because it messes up confirmation prompts
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
     --project-id "${JUSTICE_COUNTS_PROJECT_ID}" \
-    --skip-db-name-check
-
-set_vpn_status "Enable"
+    --skip-db-name-check \
 
 # Deploy both Publisher and Agency Dashboard
-# Note: we need to manually update traffic in case we previously deployed a revision 
-# with no traffic (which we might do during playtesting deploys), in which case subsequent 
+# Note: we need to manually update traffic in case we previously deployed a revision
+# with no traffic (which we might do during playtesting deploys), in which case subsequent
 # deploys also won't start sending traffic until traffic is manually updated via `update-traffic`.
 echo "Deploying new Publisher Cloud Run revision with image ${PROD_IMAGE_URL}..."
 run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
     --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
-    --region "us-central1" 
+    --region "us-central1"
 
 echo "Directing 100% of traffic to new revision..."
 run_cmd gcloud -q run services update-traffic "${PUBLISHER_CLOUD_RUN_SERVICE}" \
@@ -119,7 +112,7 @@ echo "Deploying new Agency Dashboard Cloud Run revision with image ${PROD_IMAGE_
 run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
     --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
-    --region "us-central1" 
+    --region "us-central1"
 
 echo "Directing 100% of traffic to new revision..."
 run_cmd gcloud -q run services update-traffic "${DASHBOARD_CLOUD_RUN_SERVICE}" \
