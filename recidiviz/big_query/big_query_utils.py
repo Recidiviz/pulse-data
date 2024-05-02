@@ -19,7 +19,7 @@ import datetime
 import logging
 import string
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Type
 
 import attr
 import sqlalchemy
@@ -77,12 +77,10 @@ def schema_field_for_attribute(
     )
 
 
-def _bq_schema_column_type_for_type(
-    field_type: Type,
-) -> Union[bigquery.enums.SqlTypeNames, bigquery.enums.StandardSqlTypeNames]:
+def _bq_schema_column_type_for_type(field_type: Type) -> bigquery.enums.SqlTypeNames:
     """Returns the schema column type that should be used to store the value of the
     provided |field_type| in a BigQuery table."""
-    if field_type is Enum or field_type is str:
+    if field_type is Enum or field_type is str or field_type is List:
         return bigquery.enums.SqlTypeNames.STRING
     if field_type is int:
         return bigquery.enums.SqlTypeNames.INTEGER
@@ -94,8 +92,8 @@ def _bq_schema_column_type_for_type(
         return bigquery.enums.SqlTypeNames.DATETIME
     if field_type is bool:
         return bigquery.enums.SqlTypeNames.BOOLEAN
-    if field_type is list:
-        return bigquery.enums.StandardSqlTypeNames.ARRAY
+    # TODO(#7285): Add support for ARRAY types when we turn on the regular
+    #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
     raise ValueError(f"Unhandled field type for field_type: {field_type}")
 
 
@@ -109,7 +107,7 @@ def schema_field_for_type(field_name: str, field_type: Type) -> bigquery.SchemaF
 
 def bq_schema_column_type_for_sqlalchemy_column(
     column: Column,
-) -> Union[bigquery.enums.SqlTypeNames, bigquery.enums.StandardSqlTypeNames]:
+) -> bigquery.enums.SqlTypeNames:
     """Returns the schema column type that should be used to store the value of the
     provided |column| in a BigQuery table."""
     col_postgres_type = column.type
@@ -145,7 +143,7 @@ def schema_for_sqlalchemy_table(
         bigquery.SchemaField(
             col.name,
             bq_schema_column_type_for_sqlalchemy_column(col).value,
-            mode="REPEATED" if isinstance(col.type, postgresql.ARRAY) else "NULLABLE",
+            mode="NULLABLE",
         )
         for col in table.columns
     ]

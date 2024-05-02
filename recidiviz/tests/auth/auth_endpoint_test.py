@@ -189,7 +189,6 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_CO",
             role="supervision_staff",
-            roles=["supervision_staff"],
         )
         default_co = generate_fake_default_permissions(
             state="US_CO",
@@ -262,7 +261,6 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_TN",
             role="leadership_role",
-            roles=["leadership_role"],
         )
         default_tn = generate_fake_default_permissions(
             state="US_TN",
@@ -328,7 +326,6 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_CO",
             role="leadership_role",
-            roles=["leadership_role"],
         )
         override_permissions = generate_fake_permissions_overrides(
             email="user@domain.org",
@@ -364,7 +361,6 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_MO",
             role="leadership_role",
-            roles=["leadership_role"],
             district="D1",
         )
         default = generate_fake_default_permissions(
@@ -424,7 +420,6 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_CO",
             role="leadership_role",
-            roles=["leadership_role"],
         )
         default = generate_fake_default_permissions(
             state="US_CO",
@@ -499,7 +494,6 @@ class AuthEndpointTests(TestCase):
             email="parameter@domain.org",
             region_code="US_ID",
             role="leadership_role",
-            roles=["leadership_role"],
         )
         add_entity_to_database_session(self.database_key, [user])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -548,7 +542,6 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_TN",
                     "emailAddress": "parameter@domain.org",
                     "role": "supervision_staff",
-                    "roles": ["supervision_staff"],
                     "reason": "test",
                 },
             )
@@ -850,7 +843,6 @@ class AuthEndpointTests(TestCase):
             email="parameter@domain.org",
             region_code="US_MO",
             role="leadership_role",
-            roles=["leadership_role"],
         )
         add_entity_to_database_session(self.database_key, [state_role, user])
         with self.app.test_request_context():
@@ -895,13 +887,11 @@ class AuthEndpointTests(TestCase):
             email="parameter@domain.org",
             region_code="US_MO",
             role="leadership_role",
-            roles=["leadership_role"],
         )
         user_keep = generate_fake_rosters(
             email="supervision_staff@domain.org",
             region_code="US_MO",
             role="supervision_staff_role",
-            roles=["supervision_staff_role"],
         )
         override_user_delete = generate_fake_user_overrides(
             email="parameter@domain.org",
@@ -912,14 +902,12 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_MO",
             role="leadership_role",
-            roles=["leadership_role"],
             blocked=True,
         )
         override_keep = generate_fake_user_overrides(
             email="supervision_staff_2@domain.org",
             region_code="US_MO",
             role="supervision_staff_role",
-            roles=["supervision_staff_role"],
         )
         add_entity_to_database_session(
             self.database_key,
@@ -1086,7 +1074,6 @@ class AuthEndpointTests(TestCase):
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
-            roles=["leadership_role"],
             external_id="0000",  # This should change with the new upload
             district="",
         )
@@ -1100,7 +1087,6 @@ class AuthEndpointTests(TestCase):
             email="parameter@domain.org",
             region_code="US_XX",
             role="supervision_staff",
-            roles=["supervision_staff"],
             district="",
         )
         # Create associated default permissions by role
