@@ -14,16 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { parseISO } from "date-fns";
 import { z } from "zod";
+
+function unEnum(raw: string) {
+  const splat = raw.split(".");
+  return splat[splat.length - 1];
+}
 
 export const opportunitySchema = z.object({
   stateCode: z.string(),
   opportunityType: z.string(),
-  systemType: z.string(),
+  systemType: z.string().transform(unEnum),
   urlSection: z.string(),
-  completionEvent: z.string(),
+  completionEvent: z.string().transform(unEnum),
   experimentId: z.string(),
-  lastUpdatedAt: z.string(),
+  lastUpdatedAt: z.string().transform((r) => parseISO(r)),
   lastUpdatedBy: z.string(),
   gatingFeatureVariant: z.string().nullish(),
 });

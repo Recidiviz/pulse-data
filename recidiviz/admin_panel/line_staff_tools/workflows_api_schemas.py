@@ -54,6 +54,7 @@ class OpportunityConfigurationRequestSchema(WorkflowsConfigSchema):
     Contains additional metadata not shown in the tool.
     """
 
+    id = fields.Int(required=True)
     description = fields.Str(required=True)
     status = fields.Enum(OpportunityStatus, required=True)
 

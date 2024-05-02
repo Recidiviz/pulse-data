@@ -15,38 +15,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { PageHeader, Space } from "antd";
 import { observer } from "mobx-react-lite";
-import { useEffect } from "react";
 
 import { useWorkflowsStore } from "../StoreProvider";
-import StateSelect from "../Utilities/StateSelect";
+import HydrationWaiter from "./HydrationWrapper";
+import OpportunitiesTable from "./OpportunitiesTable";
 
 const WorkflowsOpportunitiesView = (): JSX.Element => {
   const store = useWorkflowsStore();
-
-  useEffect(() => {
-    if (store.hydrationState.status === "needs hydration") store.hydrate();
-  }, [store]);
-
-  const { stateCodeInfo, setStateCode, opportunities } = store;
+  const { opportunityPresenter } = store;
 
   return (
-    <>
-      <PageHeader title="Workflows Configurations" />
-      <Space>
-        <StateSelect
-          states={stateCodeInfo}
-          onChange={(state) => {
-            setStateCode(state.code);
-          }}
-        />
-      </Space>
-      <div>
-        {opportunities &&
-          `This state has ${opportunities.length} opportunities.`}
-      </div>
-    </>
+    <HydrationWaiter
+      presenter={opportunityPresenter}
+      component={OpportunitiesTable}
+    />
   );
 };
 

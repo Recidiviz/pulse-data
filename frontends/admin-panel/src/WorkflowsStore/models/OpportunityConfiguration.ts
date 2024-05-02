@@ -16,10 +16,10 @@
 // =============================================================================
 import { z } from "zod";
 
-const snoozeConfigurationSchema = z.object({
-  defaultSnoozeDays: z.number(),
-  maxSnoozeDays: z.number(),
-});
+// const snoozeConfigurationSchema = z.object({
+//   defaultSnoozeDays: z.number(),
+//   maxSnoozeDays: z.number(),
+// });
 
 const criteriaCopySchema = z.record(
   z.object({
@@ -29,14 +29,15 @@ const criteriaCopySchema = z.record(
 );
 
 export const opportunityConfigurationSchema = z.object({
+  id: z.number(),
   stateCode: z.string(),
   displayName: z.string(),
-  featureVariant: z.string().optional(),
+  featureVariant: z.string().nullish(),
   dynamicEligibilityText: z.string(),
   callToAction: z.string(),
-  snooze: snoozeConfigurationSchema.nullish(),
+  // snooze: snoozeConfigurationSchema.nullish(),
   denialReasons: z.record(z.string()),
-  denialText: z.string(),
+  denialText: z.string().nullish(),
   eligibleCriteriaCopy: criteriaCopySchema,
   ineligibleCriteriaCopy: criteriaCopySchema,
   sidebarComponents: z.array(z.string()),

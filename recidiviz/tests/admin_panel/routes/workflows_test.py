@@ -248,6 +248,7 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         config_fields = generate_config(-1, datetime.datetime(9, 9, 9))
 
         req_body = {
+            "id": 1,
             "stateCode": "US_ID",
             "description": config_fields.description,
             "featureVariant": config_fields.feature_variant,
