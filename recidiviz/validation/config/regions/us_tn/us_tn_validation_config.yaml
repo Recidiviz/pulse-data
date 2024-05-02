@@ -6,6 +6,9 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: TODO(#28869) Hydrate new sentencing entities
 max_allowed_error_overrides:
+  - validation_name: outliers_staff_count_percent_change_intermonth
+    hard_max_allowed_error_override: 0.05
+    override_reason: Given how TN assigns supervision levels on the 1st of the month, this validation needs to be slightly higher to account for changes that occur throughout the month that are reflected on the 1st.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
     hard_max_allowed_error_override: 0.01
     override_reason: TODO(#17260) Needs investigation.
