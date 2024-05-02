@@ -19,11 +19,9 @@
 import base64
 import hashlib
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from flask import request
-from sqlalchemy.engine.row import Row
 
 from recidiviz.admin_panel.constants import LOAD_BALANCER_SERVICE_ID_SECRET_NAME
 from recidiviz.utils import metadata, validate_jwt
@@ -122,48 +120,3 @@ def log_reason(request_dict: dict[str, Any], action: str) -> None:
         action,
         reason,
     )
-
-
-def merge_permissions(permissions_list: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Reconciles/prioritizes permissions if user has multiple roles. For routes, if any
-    of a user's roles grant permission to a route, ignore/override when any of their
-    other roles don't grant that permission. For feature variants, when comparing
-    different permissions for the same variant, order of priority is:
-        1) always on (value of variant will not have an activeDate attribute)
-        2) earliest active date
-        3) false
-    """
-    new_permissions: Dict[str, Any] = {}
-    for permission in permissions_list:
-        for k, v in permission.items():
-            if k not in new_permissions or new_permissions[k] is False:
-                new_permissions[k] = v
-            elif (
-                isinstance(new_permissions[k], dict)
-                and "activeDate" in new_permissions[k]
-            ):
-                if isinstance(v, dict) and "activeDate" in v:
-                    new_permissions[k]["activeDate"] = (
-                        min(
-                            datetime.fromisoformat(new_permissions[k]["activeDate"]),
-                            datetime.fromisoformat(v["activeDate"]),
-                        )
-                        .isoformat(timespec="milliseconds")
-                        .replace("+00:00", "Z")
-                    )
-                elif v is not False:
-                    new_permissions[k] = v
-
-    return new_permissions
-
-
-def convert_to_dict_single_result(row: Row) -> Dict[str, Any]:
-    row_dict = dict(row)
-    row_dict["routes"] = merge_permissions(row_dict["routes"])
-    row_dict["feature_variants"] = merge_permissions(row_dict["feature_variants"])
-    return row_dict
-
-
-def convert_to_dict_multiple_results(rows: List[Row]) -> List[Dict[str, Any]]:
-    return [convert_to_dict_single_result(row) for row in rows]

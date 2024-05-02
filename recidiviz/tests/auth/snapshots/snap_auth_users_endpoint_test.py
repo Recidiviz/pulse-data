@@ -37,52 +37,13 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user"] =
         "district": "1, 2",
         "emailAddress": "parameter@domain.org",
         "externalId": None,
-        "featureVariants": {"D": {}},
+        "featureVariants": {"D": "E"},
         "firstName": None,
         "lastName": None,
         "pseudonymizedId": None,
         "role": "leadership_role",
         "roles": ["leadership_role"],
         "routes": {"A": True, "B": False},
-        "stateCode": "US_MO",
-        "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
-    },
-]
-
-snapshots[
-    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_add_user_multiple_roles"
-] = [
-    {
-        "allowedSupervisionLocationIds": "",
-        "allowedSupervisionLocationLevel": "",
-        "blocked": False,
-        "district": "District",
-        "emailAddress": "add_user@domain.org",
-        "externalId": "ABC",
-        "featureVariants": {},
-        "firstName": None,
-        "lastName": None,
-        "pseudonymizedId": None,
-        "role": "leadership_role",
-        "roles": ["leadership_role"],
-        "routes": {},
-        "stateCode": "US_CO",
-        "userHash": "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE=",
-    },
-    {
-        "allowedSupervisionLocationIds": "1, 2",
-        "allowedSupervisionLocationLevel": "level_1_supervision_location",
-        "blocked": False,
-        "district": "1, 2",
-        "emailAddress": "parameter@domain.org",
-        "externalId": None,
-        "featureVariants": {"feature1": {}},
-        "firstName": None,
-        "lastName": None,
-        "pseudonymizedId": None,
-        "role": "leadership_role",
-        "roles": ["leadership_role", "supervision_staff"],
-        "routes": {"A": True, "B": True},
         "stateCode": "US_MO",
         "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
     },
@@ -99,7 +60,6 @@ snapshots[
     "lastName": "User",
     "pseudonymizedId": "pseudo-XYZ",
     "role": "leadership_role",
-    "roles": ["leadership_role"],
     "stateCode": "US_ID",
     "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
 }
@@ -111,7 +71,7 @@ snapshots["AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_user"] =
     "district": "District",
     "emailAddress": "parameter@domain.org",
     "externalId": "ABC",
-    "featureVariants": {"D": {}},
+    "featureVariants": {"D": "E"},
     "firstName": None,
     "lastName": None,
     "pseudonymizedId": "pseudo-ABC",
@@ -154,7 +114,7 @@ snapshots[
         "district": "D1",
         "emailAddress": "leadership@domain.org",
         "externalId": "user_1_override.external_id",
-        "featureVariants": {"C": {}, "new variant": False},
+        "featureVariants": {"C": True, "new variant": False},
         "firstName": "Fake",
         "lastName": "User",
         "pseudonymizedId": "hashed-user_1_override",
@@ -206,54 +166,6 @@ snapshots[
 ]
 
 snapshots[
-    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_with_multiple_roles_no_conflicts"
-] = [
-    {
-        "allowedSupervisionLocationIds": "",
-        "allowedSupervisionLocationLevel": "",
-        "blocked": False,
-        "district": None,
-        "emailAddress": "leadership@domain.org",
-        "externalId": None,
-        "featureVariants": {"feature1": {}},
-        "firstName": None,
-        "lastName": None,
-        "pseudonymizedId": None,
-        "role": "leadership_role",
-        "roles": ["leadership_role", "supervision_staff"],
-        "routes": {"A": True, "B": True},
-        "stateCode": "US_CO",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
-    }
-]
-
-snapshots[
-    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_with_multiple_roles_with_conflicts"
-] = [
-    {
-        "allowedSupervisionLocationIds": "",
-        "allowedSupervisionLocationLevel": "",
-        "blocked": False,
-        "district": None,
-        "emailAddress": "leadership@domain.org",
-        "externalId": None,
-        "featureVariants": {
-            "feature1": {"activeDate": "2024-04-30T14:45:09.865Z"},
-            "feature2": {},
-            "feature3": {"activeDate": "2024-04-30T14:45:09.865Z"},
-        },
-        "firstName": None,
-        "lastName": None,
-        "pseudonymizedId": None,
-        "role": "leadership_role",
-        "roles": ["leadership_role", "supervision_staff"],
-        "routes": {"A": True, "B": True},
-        "stateCode": "US_CO",
-        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
-    }
-]
-
-snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_get_users_with_null_values"
 ] = [
     {
@@ -263,7 +175,7 @@ snapshots[
         "district": None,
         "emailAddress": "leadership@domain.org",
         "externalId": "A1B2",
-        "featureVariants": {"C": {}},
+        "featureVariants": {"C": True},
         "firstName": None,
         "lastName": None,
         "pseudonymizedId": None,
@@ -274,26 +186,6 @@ snapshots[
         "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
     }
 ]
-
-snapshots[
-    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_add_role"
-] = {
-    "allowedSupervisionLocationIds": "",
-    "allowedSupervisionLocationLevel": "",
-    "blocked": False,
-    "district": None,
-    "emailAddress": "parameter@domain.org",
-    "externalId": None,
-    "featureVariants": {"feature1": {}, "feature2": {}},
-    "firstName": None,
-    "lastName": None,
-    "pseudonymizedId": None,
-    "role": "supervision_staff",
-    "roles": ["supervision_staff", "leadership_role"],
-    "routes": {"A": True, "B": True},
-    "stateCode": "US_CO",
-    "userHash": "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0=",
-}
 
 snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_update_user_in_roster"
