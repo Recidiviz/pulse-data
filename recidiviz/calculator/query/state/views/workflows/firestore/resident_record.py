@@ -84,9 +84,6 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
-    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
-    ),
     us_me_task_eligibility_criteria_dataset=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_ME
     ),

@@ -47,7 +47,7 @@ US_TN_PRIOR_RECORD_PREPROCESSED_QUERY_TEMPLATE = """
         pei.person_id,
         pei.state_code,
         ofs.description,
-        DispositionDate AS disposition_date,
+        CAST(CAST(DispositionDate AS DATETIME) AS DATE) AS disposition_date,
         CAST(CAST(ArrestDate AS DATETIME) AS DATE) AS sentence_effective_date,
         CAST(CAST(OffenseDate AS DATETIME) AS DATE) AS offense_date,
         CourtName AS conviction_county,

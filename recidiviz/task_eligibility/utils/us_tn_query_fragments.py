@@ -23,9 +23,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    get_sentences_current_span,
-)
 
 DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 
@@ -266,15 +263,7 @@ def us_tn_classification_forms(
     disciplinary_history_month_lookback: str = DISCIPLINARY_HISTORY_MONTH_LOOKBACK,
 ) -> str:
     return f"""
-    WITH current_offenses AS (
-        SELECT
-            person_id,
-            ARRAY_AGG(offense IGNORE NULLS) AS form_information_current_offenses,
-         FROM 
-            ({get_sentences_current_span(in_projected_completion_array=True)})
-        GROUP BY 1
-    ),
-    latest_classification AS (
+    WITH latest_classification AS (
         SELECT person_id,
               external_id,
               DATE(ClassificationDate) AS form_information_latest_classification_date,
@@ -332,22 +321,55 @@ def us_tn_classification_forms(
             `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
         WHERE
             state_code = "US_TN"
-    ),
-    -- This CTE only keeps disciplinaries with an assault, for Q1 and Q2 info
-    assaultive_disciplinary_history AS (
+    ),    
+    -- Union case notes
+    case_notes_cte AS (
+        -- This only keeps disciplinaries with an assault, for Q1 and Q2 info
         SELECT
             person_id,
-            TO_JSON(
-                ARRAY_AGG(
-                    STRUCT(note_title, note_body, event_date, "ASSAULTIVE DISCIPLINARIES" AS criteria)
-                ORDER BY event_date DESC)
-            ) AS case_notes
-        FROM
+            "ASSAULTIVE DISCIPLINARIES" AS criteria,
+            event_date,
+            note_title,
+            note_body, 
+            FROM
             disciplinaries
         WHERE
             assault_score IS NOT NULL
             AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {disciplinary_history_month_lookback} MONTH)
-        GROUP BY 1                
+    
+        UNION ALL
+        
+        SELECT 
+            person_id,
+            "PRIOR RECORD OFFENSES" AS criteria,
+            disposition_date AS event_date,
+            description AS note_title,
+            CAST(NULL AS STRING) AS note_body,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_tn_prior_record_preprocessed_materialized`
+        
+        UNION ALL
+        
+        SELECT 
+            person_id,
+            "TN, ISC, DIVERSION SENTENCES" AS criteria,
+            date_imposed AS event_date,
+            description AS note_title,
+            CAST(projected_completion_date_max AS STRING) AS note_body,
+        FROM `{{project_id}}.sessions.sentences_preprocessed_materialized`
+        WHERE state_code = "US_TN"
+    ),
+    case_notes_array AS (
+        SELECT
+            person_id,
+            -- Group all notes into an array within a JSON
+            TO_JSON(
+                ARRAY_AGG(
+                    STRUCT(note_title, note_body, event_date, criteria)
+                    )
+            ) AS case_notes,
+        FROM
+            case_notes_cte
+        GROUP BY 1
     ),
     -- This CTE only keeps guilty disciplinaries, for Q6 and Q7 info
     guilty_disciplinaries AS (
@@ -356,76 +378,14 @@ def us_tn_classification_forms(
             person_id,
             event_date,
             incident_class,
-            MAX(event_date) OVER(PARTITION BY person_id) AS latest_disciplinary,
             note_body,
         FROM
             disciplinaries
-        -- For q7, we only want to consider guilty disciplinaries with non-missing disciplinary class
+        -- For q6 and q7, we only want to consider guilty disciplinaries with non-missing disciplinary class
         WHERE disposition = 'GU'
              AND note_body != ""
              AND incident_details NOT LIKE "%VERBAL WARNING%"
-    ),
-    guilty_disciplinary_history AS (
-        SELECT
-            person_id,
-            TO_JSON(
-                ARRAY_AGG(
-                    CASE WHEN event_date = latest_disciplinary
-                    THEN STRUCT(note_body, event_date) 
-                    END
-                IGNORE NULLS) 
-            ) AS latest_disciplinary,
-            TO_JSON(
-                ARRAY_AGG(
-                    CASE WHEN event_date > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH) 
-                    THEN STRUCT(note_body, event_date)
-                    END
-                IGNORE NULLS
-                ORDER BY event_date DESC)
-            ) AS case_notes_guilty_disciplinaries_last_6_month,
-        FROM
-            guilty_disciplinaries
-        GROUP BY 1
     ), 
-    most_serious_disciplinaries AS (
-        SELECT
-            person_id,
-            TO_JSON(
-                ARRAY_AGG(
-                    STRUCT(event_date, note_body)
-                    ORDER BY event_date DESC
-                )
-            
-            ) AS form_information_q7_notes
-        FROM 
-            ( 
-            SELECT *
-            FROM guilty_disciplinaries
-            WHERE event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 18 MONTH)
-            QUALIFY RANK() OVER(PARTITION BY person_id ORDER BY CASE WHEN incident_class = 'A' THEN 1
-                                                                      WHEN incident_class = 'B' THEN 2
-                                                                      WHEN incident_class = 'C' THEN 3
-                                                                      END ASC) = 1
-            )
-        GROUP BY 1
-    ),
-    detainers_cte AS (
-        SELECT person_id,
-               TO_JSON(
-                ARRAY_AGG(
-                    STRUCT(start_date AS detainer_received_date, 
-                           detainer_felony_flag AS detainer_felony_flag, 
-                           detainer_misdemeanor_flag AS detainer_misdemeanor_flag,
-                           jurisdiction AS jurisdiction,
-                           description AS description,
-                           charge_pending AS charge_pending
-                           )
-                )
-            ) AS form_information_q8_notes
-        FROM ({detainers_cte()})
-        WHERE end_date IS NULL
-        GROUP BY 1
-    ),
     recommended_scores AS (
       -- Schedule B is only scored if Schedule A is 9 or less, so this CTE "re scores" schedule B scores if needed
       SELECT * 
@@ -456,15 +416,35 @@ def us_tn_classification_forms(
       )
     ),
     q6_score_info AS (
-        SELECT *,
-            CASE WHEN form_information_q6_score IN (-4, -2, -1) THEN latest_disciplinary
-                 WHEN form_information_q6_score IN (1,4) THEN case_notes_guilty_disciplinaries_last_6_month
-                 END AS form_information_q6_notes
-        FROM
-            recommended_scores
-        LEFT JOIN
-            guilty_disciplinary_history
-        USING(person_id)
+        SELECT person_id, 
+                TO_JSON(
+                    ARRAY_AGG(
+                        STRUCT(note_body, event_date)
+                    IGNORE NULLS
+                    ORDER BY event_date DESC)
+                ) AS form_information_q6_notes
+        FROM (
+            SELECT *
+            FROM guilty_disciplinaries
+            WHERE event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY event_date DESC) <= 2
+        )
+        GROUP BY 1
+    ),
+    q7_score_info AS (
+        SELECT
+            person_id,
+            TO_JSON(STRUCT(event_date, note_body)) AS form_information_q7_notes
+        FROM guilty_disciplinaries
+        WHERE event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 18 MONTH)
+        -- Keep most serious incident. If there are duplicates, keep latest incident within that class
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id 
+                                  ORDER BY CASE WHEN incident_class = 'A' THEN 1
+                                                  WHEN incident_class = 'B' THEN 2
+                                                  WHEN incident_class = 'C' THEN 3
+                                                  END ASC,
+                                                  event_date DESC
+                                                  ) = 1
     ),
     level_care AS (
         SELECT
@@ -494,7 +474,9 @@ def us_tn_classification_forms(
             r.TreatmentGoal,
             DATE(r.RecommendationDate) AS RecommendationDate,
             DATE(r.RecommendedEndDate) AS RecommendedEndDate,
-            pr.VantagePointTitle
+            pr.VantagePointTitle,
+            c.latest_refusal_date,
+            c.latest_refusal_contact
         FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointAssessments_latest` a
         LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointRecommendations_latest` r
           ON a.OffenderID = r.OffenderID
@@ -504,6 +486,17 @@ def us_tn_classification_forms(
           USING(Recommendation, Pathway)
         LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointProgram_latest` pr
           ON pr.VantageProgramID = r.VantagePointProgamID
+        LEFT JOIN (
+            SELECT
+                OffenderID,
+                CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS latest_refusal_date,
+                ContactNoteType AS latest_refusal_contact
+            FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteType_latest`
+            WHERE ContactNoteType IN ("IRAR", "XRIS", "CCMC")
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) DESC) = 1
+            ) c
+          ON a.OffenderID = c.OffenderID
+          AND latest_refusal_date >= DATE(a.CompletedDate)
     ),
     active_vantage_recommendations AS (
         SELECT
@@ -520,7 +513,23 @@ def us_tn_classification_forms(
         FROM vantage
         WHERE Recommendation IS NOT NULL
         GROUP BY 1
-    
+    ),
+    detainers_cte AS (
+        SELECT person_id,
+               TO_JSON(
+                ARRAY_AGG(
+                    STRUCT(start_date AS detainer_received_date, 
+                           detainer_felony_flag AS detainer_felony_flag, 
+                           detainer_misdemeanor_flag AS detainer_misdemeanor_flag,
+                           jurisdiction AS jurisdiction,
+                           description AS description,
+                           charge_pending AS charge_pending
+                           )
+                )
+            ) AS form_information_q8_notes
+        FROM ({detainers_cte()})
+        WHERE end_date IS NULL
+        GROUP BY 1
     )
     SELECT tes.state_code,
            tes.reasons,
@@ -531,10 +540,9 @@ def us_tn_classification_forms(
            latest_classification.form_information_latest_override_reason,
            latest_CAF.form_information_last_CAF_date,
            latest_CAF.form_information_last_CAF_total,
-           current_offenses.form_information_current_offenses,
-           assaultive_disciplinary_history.case_notes,
+           case_notes_array.case_notes,
            q6_score_info.form_information_q6_notes,
-           most_serious_disciplinaries.form_information_q7_notes,
+           q7_score_info.form_information_q7_notes,
            detainers_cte.form_information_q8_notes,
            recommended_scores.* EXCEPT(person_id),
            stg.STGID AS form_information_gang_affiliation_id,
@@ -549,7 +557,11 @@ def us_tn_classification_forms(
             ELSE 'GEN' 
             END AS form_information_status_at_hearing_seg,
            CASE WHEN tes.task_name = 'ANNUAL_RECLASSIFICATION_REVIEW' THEN 'ANNUAL' ELSE 'SPECIAL' END AS form_information_classification_type,
-           latest_vantage.RiskLevel AS form_information_latest_vantage_risk_level,
+           -- if there has been a refusal more recently than the latest assessment completion date, then we want to show
+           -- the contact note / date rather than the risk level
+           IF(latest_vantage.latest_refusal_date IS NULL,
+                  latest_vantage.RiskLevel,
+                  CONCAT(latest_vantage.latest_refusal_contact, ', ', latest_vantage.latest_refusal_date)) AS form_information_latest_vantage_risk_level,
            latest_vantage.CompletedDate AS form_information_latest_vantage_completed_date,
            active_vantage_recommendations.active_recommendations AS form_information_active_recommendations,
            incompatible.incompatible_array AS form_information_incompatible_array,
@@ -561,9 +573,6 @@ def us_tn_classification_forms(
         `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     USING(person_id)
     LEFT JOIN
-        current_offenses
-    USING(person_id)
-    LEFT JOIN
         latest_classification
     USING(person_id)
     LEFT JOIN
@@ -573,13 +582,10 @@ def us_tn_classification_forms(
         recommended_scores
     USING(person_id)
     LEFT JOIN
-        assaultive_disciplinary_history
+        case_notes_array
     USING(person_id)
     LEFT JOIN
-        guilty_disciplinary_history
-    USING(person_id)
-    LEFT JOIN
-        most_serious_disciplinaries
+        q7_score_info
     USING(person_id)
     LEFT JOIN
         detainers_cte
@@ -608,10 +614,18 @@ def us_tn_classification_forms(
             SELECT DISTINCT
                     OffenderID,
                     CASE WHEN IncompatibleType = 'S' THEN 'STAFF'
-                         ELSE IncompatibleOffenderID
+                         ELSE facility_id
                          END AS incompatible_ids,
                     IncompatibleType,
-            FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.IncompatiblePair_latest`
+            FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.IncompatiblePair_latest` i
+            INNER JOIN 
+                `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+            ON
+                i.IncompatibleOffenderID = pei.external_id
+            AND
+                pei.state_code = 'US_TN'
+            INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+                USING(person_id, state_code)
             WHERE IncompatibleRemovedDate IS NULL
             )
         GROUP BY 1

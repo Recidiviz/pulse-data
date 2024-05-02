@@ -54,32 +54,15 @@ US_TN_SEGREGATION_STAYS_QUERY_TEMPLATE = f"""
             s.SegragationReason AS segregation_reason,
             s.SegregationStatus AS segregation_status,
             s.SegregationType AS segregation_type,
-            c.current_facility_id,
-            c.current_unit_id
+            c.facility_id AS current_facility_id, 
+            c.unit_id AS current_unit_id,
         FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.Segregation_latest` s
         INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON s.OffenderID = pei.external_id
             AND pei.state_code = 'US_TN'
         -- TODO(#27428): Remove this join when custody level information aligns with location information
-        LEFT JOIN (
-            SELECT
-                OffenderID AS external_id,
-                /* From TN: "The ‘Requested’ location columns contain the new housing assignment 
-                (where the person is being moved to). The ‘Assigned’ columns show the person’s assigned bed 
-                when the new cell bed assignment was entered. Same for the ‘Actual’ columns – this is where he 
-                ‘actually’ was when the request was made (this is only different from Assigned when the person 
-                has been moved to another institution temporarily)." Our interpretation of this is that Requested and
-                Actual work sometimes together and sometimes on a "lag"; Actual should be updated to show the same
-                thing as Requested, but sometimes it isnt, so we rely on Requested most, then Actual. 
-                For current population, Requested is always hydrated, so the COALESCE is not strictly
-                needed but is a catch all if Requested is ever missing */
-                COALESCE(RequestedSiteID, ActualSiteID, AssignedSiteID) AS current_facility_id,
-                COALESCE(RequestedUnitID, ActualUnitID, AssignedUnitID) AS current_unit_id,
-              FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.CellBedAssignment_latest`
-              WHERE EndDate IS NULL
-              QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(AssignmentDateTime AS DATETIME) DESC) = 1
-        ) c
-        USING(external_id)
+        LEFT JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized` c
+            USING(person_id, state_code)
         -- There are a very small number of duplicates on person id and start date in the segregation table
         QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.person_id, start_date ORDER BY end_date DESC) = 1
     ),
