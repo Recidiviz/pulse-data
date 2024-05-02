@@ -19,7 +19,7 @@ import datetime
 import logging
 import string
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Set, Type
+from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
 
 import attr
 import sqlalchemy
@@ -77,10 +77,12 @@ def schema_field_for_attribute(
     )
 
 
-def _bq_schema_column_type_for_type(field_type: Type) -> bigquery.enums.SqlTypeNames:
+def _bq_schema_column_type_for_type(
+    field_type: Type,
+) -> Union[bigquery.enums.SqlTypeNames, bigquery.enums.StandardSqlTypeNames]:
     """Returns the schema column type that should be used to store the value of the
     provided |field_type| in a BigQuery table."""
-    if field_type is Enum or field_type is str or field_type is List:
+    if field_type is Enum or field_type is str:
         return bigquery.enums.SqlTypeNames.STRING
     if field_type is int:
         return bigquery.enums.SqlTypeNames.INTEGER
@@ -92,8 +94,8 @@ def _bq_schema_column_type_for_type(field_type: Type) -> bigquery.enums.SqlTypeN
         return bigquery.enums.SqlTypeNames.DATETIME
     if field_type is bool:
         return bigquery.enums.SqlTypeNames.BOOLEAN
-    # TODO(#7285): Add support for ARRAY types when we turn on the regular
-    #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
+    if field_type is list:
+        return bigquery.enums.StandardSqlTypeNames.ARRAY
     raise ValueError(f"Unhandled field type for field_type: {field_type}")
 
 
@@ -107,7 +109,7 @@ def schema_field_for_type(field_name: str, field_type: Type) -> bigquery.SchemaF
 
 def bq_schema_column_type_for_sqlalchemy_column(
     column: Column,
-) -> bigquery.enums.SqlTypeNames:
+) -> Union[bigquery.enums.SqlTypeNames, bigquery.enums.StandardSqlTypeNames]:
     """Returns the schema column type that should be used to store the value of the
     provided |column| in a BigQuery table."""
     col_postgres_type = column.type
@@ -143,7 +145,7 @@ def schema_for_sqlalchemy_table(
         bigquery.SchemaField(
             col.name,
             bq_schema_column_type_for_sqlalchemy_column(col).value,
-            mode="NULLABLE",
+            mode="REPEATED" if isinstance(col.type, postgresql.ARRAY) else "NULLABLE",
         )
         for col in table.columns
     ]

@@ -17,7 +17,10 @@
 """Tests for auth/helpers.py"""
 
 
-from recidiviz.auth.helpers import generate_pseudonymized_id
+from typing import Any, Dict, List
+from unittest import TestCase
+
+from recidiviz.auth.helpers import generate_pseudonymized_id, merge_permissions
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
@@ -26,8 +29,8 @@ from recidiviz.tests.big_query.big_query_emulator_test_case import (
 )
 
 
-class HelpersTest(BigQueryEmulatorTestCase):
-    """Tests for auth/helpers.py"""
+class BQHelpersTest(BigQueryEmulatorTestCase):
+    """BQ tests for auth/helpers.py"""
 
     pseudonymized_id_test_data = [
         {"state_code": "US_XX", "external_id": "12345"},
@@ -111,3 +114,98 @@ class HelpersTest(BigQueryEmulatorTestCase):
 
         query = f"SELECT {get_pseudonymized_id_query_str('state_code || external_id')} AS pseudo_id FROM `{address.to_str()}`"
         self.run_query_test(query_str=query, expected_result=generated)
+
+
+class HelpersTest(TestCase):
+    """Tests for auth/helpers.py"""
+
+    def setUp(self) -> None:
+        self.active_date1 = "2024-04-30T14:45:09.865Z"
+        self.active_date2 = "2024-05-03T15:37:07.119Z"
+
+    def test_merge_permissions_permissions_single_role(self) -> None:
+        permissions: Dict[str, List[Dict[str, Any]]] = {
+            "routes": [{"A": True, "B": False}],
+            "feature_variants": [
+                {"feature1": {}, "feature2": {"activeDate": f"{self.active_date1}"}}
+            ],
+        }
+
+        processed_permissions = {}
+        processed_permissions["routes"] = merge_permissions(permissions["routes"])
+        processed_permissions["feature_variants"] = merge_permissions(
+            permissions["feature_variants"]
+        )
+
+        expected = {
+            "routes": {"A": True, "B": False},
+            "feature_variants": {
+                "feature1": {},
+                "feature2": {"activeDate": f"{self.active_date1}"},
+            },
+        }
+
+        self.assertEqual(expected, processed_permissions)
+
+    def test_merge_permissions_multiple_roles_no_conflict(self) -> None:
+        permissions: Dict[str, List[Dict[str, Any]]] = {
+            "routes": [{"A": True, "B": False}, {"C": True}],
+            "feature_variants": [{"feature1": False}, {"feature2": {}}],
+        }
+
+        processed_permissions = {}
+        processed_permissions["routes"] = merge_permissions(permissions["routes"])
+        processed_permissions["feature_variants"] = merge_permissions(
+            permissions["feature_variants"]
+        )
+
+        expected = {
+            "routes": {"A": True, "B": False, "C": True},
+            "feature_variants": {"feature1": False, "feature2": {}},
+        }
+
+        self.assertEqual(expected, processed_permissions)
+
+    def test_merge_permissions_multiple_roles_with_conflicts(self) -> None:
+
+        permissions: Dict[str, List[Dict[str, Any]]] = {
+            "routes": [{"A": True, "B": False}, {"A": False, "C": True}],
+            "feature_variants": [
+                {
+                    "feature1": False,
+                    "feature2": {"activeDate": f"{self.active_date1}"},
+                    "feature3": False,
+                    "feature4": {"activeDate": f"{self.active_date2}"},
+                    "feature5": {},
+                    "feature6": {"activeDate": f"{self.active_date1}"},
+                },
+                {
+                    "feature1": {},
+                    "feature2": {},
+                    "feature3": {"activeDate": f"{self.active_date2}"},
+                    "feature4": {"activeDate": f"{self.active_date1}"},
+                    "feature5": {"activeDate": f"{self.active_date2}"},
+                    "feature6": False,
+                },
+            ],
+        }
+
+        processed_permissions = {}
+        processed_permissions["routes"] = merge_permissions(permissions["routes"])
+        processed_permissions["feature_variants"] = merge_permissions(
+            permissions["feature_variants"]
+        )
+
+        expected = {
+            "routes": {"A": True, "B": False, "C": True},
+            "feature_variants": {
+                "feature1": {},
+                "feature2": {},
+                "feature3": {"activeDate": f"{self.active_date2}"},
+                "feature4": {"activeDate": f"{self.active_date1}"},
+                "feature5": {},
+                "feature6": {"activeDate": f"{self.active_date1}"},
+            },
+        }
+
+        self.assertEqual(expected, processed_permissions)
