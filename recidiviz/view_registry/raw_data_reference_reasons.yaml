@@ -1144,12 +1144,8 @@ US_TN:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   CellBedAssignment:
-    analyst_data.us_tn_max_stays: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    analyst_data.us_tn_segregation_stays: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.resident_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+    analyst_data.us_tn_cellbed_assignment_raw: |-
+      Raw data used while ingest issues are being resolved (TODO(#24959) and TODO(#27428)).
   Classification:
     analyst_data.us_tn_classification_raw: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1197,6 +1193,10 @@ US_TN:
       Usage reason unknown. Grandfathered in 04/18/2024.
     task_eligibility_criteria_us_tn.special_conditions_are_current: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Needed to pull risk assessment refusal codes and we don't ingest contact information.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Needed to pull risk assessment refusal codes and we don't ingest contact information.
     workflows_views.us_tn_transfer_to_compliant_reporting_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   DailyCommunitySupervisionForRecidiviz:

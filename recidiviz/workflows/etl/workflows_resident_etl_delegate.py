@@ -52,6 +52,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "releaseDate": data.get("release_date"),
             "portionServedNeeded": data.get("portion_served_needed"),
             "sccpEligibilityDate": data.get("sccp_eligibility_date"),
+            "usTnFacilityAdmissionDate": data.get("us_tn_facility_admission_date"),
         }
 
         if "all_eligible_opportunities" in data:

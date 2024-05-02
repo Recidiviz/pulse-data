@@ -57,12 +57,46 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
 
 _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
     incarceration_dates AS (
+        -- Adding a TN specific admission date that is admission to TDOC facility, in addition to overall incarceration
+        -- admission date
+        SELECT 
+            ic.*,
+            MAX(t.projected_completion_date_max) 
+                    OVER(w) AS release_date,
+            MAX(c.start_date) 
+                    OVER(w) AS us_tn_facility_admission_date,
+        FROM
+            incarceration_cases ic
+        LEFT JOIN (
+            SELECT cs.person_id, cs.state_code, cs.start_date
+            FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` cs
+            INNER JOIN `{{project_id}}.reference_views.location_metadata_materialized`
+                    ON facility = location_external_id
+                  WHERE cs.state_code = 'US_TN'
+                    AND compartment_level_1 = 'INCARCERATION'  
+                    AND compartment_level_2 = 'GENERAL'
+                    AND location_type = 'STATE_PRISON'
+                    AND CURRENT_DATE('US/Eastern') BETWEEN cs.start_date
+                        AND {nonnull_end_date_clause('cs.end_date_exclusive')}
+        ) c
+            USING(person_id, state_code)
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_projected_completion_date_spans_materialized` t
+          ON ic.person_id = t.person_id
+              AND ic.state_code = t.state_code
+              AND CURRENT_DATE('US/Eastern') 
+                BETWEEN t.start_date AND {nonnull_end_date_clause('t.end_date_exclusive')} 
+        WHERE ic.state_code IN ("US_TN")
+        WINDOW w as (PARTITION BY ic.person_id)
+        
+        UNION ALL
+        
         SELECT 
             ic.* EXCEPT(admission_date),
             MAX(t.start_date) 
                     OVER(w) AS admission_date,
             MAX({nonnull_end_date_clause('t.end_date')}) 
-                    OVER(w) AS release_date
+                    OVER(w) AS release_date,
+            CAST(NULL AS DATE) AS us_tn_facility_admission_date,
             --TODO(#16175) ingest intake and release dates
         FROM
             incarceration_cases ic
@@ -83,7 +117,8 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
         SELECT
             ic.* EXCEPT(admission_date),
             NULL AS admission_date,
-            NULL AS release_date
+            NULL AS release_date,
+            CAST(NULL AS DATE) AS us_tn_facility_admission_date,
         FROM incarceration_cases ic
         WHERE state_code="US_MO"
         
@@ -92,7 +127,8 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
         SELECT 
             ic.*,
             MAX(t.projected_completion_date_max) 
-                    OVER(w) AS release_date
+                    OVER(w) AS release_date,
+            CAST(NULL AS DATE) AS us_tn_facility_admission_date,
         FROM
             incarceration_cases ic
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_projected_completion_date_spans_materialized` t
@@ -100,7 +136,7 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
               AND ic.state_code = t.state_code
               AND CURRENT_DATE('US/Eastern') 
                 BETWEEN t.start_date AND {nonnull_end_date_clause('t.end_date_exclusive')} 
-        WHERE ic.state_code NOT IN ("US_ME", "US_MO")
+        WHERE ic.state_code NOT IN ("US_ME", "US_MO", "US_TN")
         WINDOW w as (PARTITION BY ic.person_id)
     ),
 """
@@ -112,7 +148,7 @@ _RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_CTE = f"""
             {revert_nonnull_start_date_clause('admission_date')} AS admission_date, 
             {revert_nonnull_end_date_clause('release_date')} AS release_date
         FROM incarceration_dates
-        GROUP BY 1,2,3,4,5,6,7,8
+        GROUP BY 1,2,3,4,5,6,7,8,9
     ),
 """
 
@@ -167,7 +203,6 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
     housing_unit AS (
       SELECT
         person_id,
-        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
         CAST(NULL AS STRING) AS facility_id,
         housing_unit AS unit_id
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
@@ -180,28 +215,19 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
 
       SELECT
         person_id,
-        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
         CAST(NULL AS STRING) AS facility_id,
         IF(complex_number=building_number, complex_number, complex_number || " " || building_number) AS unit_id
       FROM current_bed_stay
       
       UNION ALL
       
-      --TODO(#24959): Deprecate usage when re-run is over
+      -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
       SELECT
         person_id,
-        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
-        COALESCE(RequestedSiteID, ActualSiteID, AssignedSiteID) AS facility_id,
-        COALESCE(RequestedUnitID, ActualUnitID, AssignedUnitID) AS unit_id,
-      FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CellBedAssignment_latest` c
-      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON c.OffenderID = pei.external_id
-        AND pei.state_code = "US_TN"
-      -- The latest assignment is not always the one with an open assignment. This can occur when someone is assigned to a facility 
-      -- but temporarily sent to another facility (e.g. Special needs facility). Most people only have 1 open assignment, unless
-      -- they are currently temporarily sent elsewhere (~11 people out of 18k) so we further deduplicate by choosing the latest assignment
-      WHERE EndDate IS NULL
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(AssignmentDateTime AS DATETIME) DESC) = 1
+        facility_id,
+        unit_id
+      FROM `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+      
     ),
 """
 
@@ -279,6 +305,7 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
             custody_level.custody_level,
             ic.admission_date,
             ic.release_date,
+            ic.us_tn_facility_admission_date,
         FROM
             incarceration_cases_wdates ic
         LEFT JOIN custody_level
@@ -306,6 +333,7 @@ _RESIDENTS_CTE = """
             custody_level,
             admission_date,
             release_date,
+            us_tn_facility_admission_date,
             opportunities_aggregated.all_eligible_opportunities,
             portion_served_needed,
             GREATEST(portion_needed_eligible_date, months_remaining_eligible_date) AS sccp_eligibility_date,

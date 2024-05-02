@@ -94,6 +94,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "releaseDate": "2027-03-28",
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": ["usMoRestrictiveHousingStatusHearing"],
+                    "usTnFacilityAdmissionDate": None,
                 },
                 row,
             )
@@ -131,6 +132,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                         "usMeWorkRelease",
                         "usMeFurloughRelease",
                     ],
+                    "usTnFacilityAdmissionDate": None,
                 },
                 row,
             )
@@ -167,6 +169,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                         "usMeWorkRelease",
                         "usMeFurloughRelease",
                     ],
+                    "usTnFacilityAdmissionDate": None,
                 },
                 row,
             )
@@ -200,6 +203,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "releaseDate": "2024-05-01",
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": ["usTnCustodyLevelDowngrade"],
+                    "usTnFacilityAdmissionDate": None,
                 },
                 row,
             )

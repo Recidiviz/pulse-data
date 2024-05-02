@@ -45,17 +45,8 @@ US_TN_MAX_STAYS_QUERY_TEMPLATE = """
      INNER JOIN `{project_id}.normalized_state.state_person`
         USING(person_id, state_code)
      -- TODO(#27428): Remove this join when custody level information aligns with location information
-     INNER JOIN (
-        SELECT
-            OffenderID AS external_id,
-            COALESCE(RequestedSiteID, ActualSiteID, AssignedSiteID) AS facility_id,
-            COALESCE(RequestedUnitID, ActualUnitID, AssignedUnitID) AS unit_id,
-          FROM `{project_id}.us_tn_raw_data_up_to_date_views.CellBedAssignment_latest`
-          -- Ensures that someone is actively assigned to a TDOC bed at the moment
-          WHERE EndDate IS NULL
-          QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(AssignmentDateTime AS DATETIME) DESC) = 1
-     )
-     USING(external_id)
+     INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+        USING(person_id, state_code)
      WHERE c.state_code = 'US_TN'
        AND c.custody_level = 'MAXIMUM'
        AND c.end_date_exclusive is null
