@@ -397,6 +397,7 @@ class Agency(Source):
         return {
             "id": self.id,
             "name": self.name,
+            "custom_child_agency_name": self.custom_child_agency_name,
             "systems": [
                 system_enum.value
                 for system_enum in System.sort(
