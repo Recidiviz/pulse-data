@@ -112,7 +112,6 @@ function control_quit {
     docker kill "${DOCKER_CONTAINER_ID}" > /dev/null 2>&1
   fi
 
-  set_vpn_status "Enable"
   exit 0
 }
 
@@ -169,7 +168,6 @@ function control_start {
     exit 0
   fi
 
-  set_vpn_status "Disable"
   echo "Starting Cloud SQL Proxy container for ${DATABASE_CONNECTION_STRING}..."
 
   # The docker container runs with ~/.config/gcloud mounted as a volume to /config
