@@ -73,7 +73,12 @@ VIEW_QUERY_TEMPLATE = f"""
             UPPER(EmployeeTypeName) like '%P&P%' OR
             UPPER(EmployeeTypeName) like '%PROBATION%' OR
             UPPER(EmployeeTypeName) like '%PAROLE%' OR
-            UPPER(EmployeeTypeName) like '%SUPERVISION%'
+            UPPER(EmployeeTypeName) like '%SUPERVISION%' OR
+            -- Include other specialists that are assigned to clients
+            UPPER(EmployeeTypeName) in ('BUSINESS OPERATIONS MANAGER - PSI', 
+                                        'INTERSTATE COMPACT', 
+                                        'BUSINESS OPERATIONS MANAGER',
+                                        'REENTRY MANAGER')
         )
         AND 
         (   

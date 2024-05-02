@@ -41,6 +41,11 @@ output:
                   - "P&P DISTRICT MANAGER"
                 StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
                   - "P&P SECTION SUPERVISOR"
+                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
+                  - "BUSINESS OPERATIONS MANAGER - PSI"
+                  - "INTERSTATE COMPACT"
+                  - "BUSINESS OPERATIONS MANAGER"
+                  - "REENTRY MANAGER"
     location_periods:
       - StateStaffLocationPeriod:
           external_id:
