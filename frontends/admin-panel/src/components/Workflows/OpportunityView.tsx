@@ -15,13 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Form } from "antd";
+import { Button, Form } from "antd";
 import { observer } from "mobx-react-lite";
+import { useHistory } from "react-router";
 
 import OpportunityPresenter from "../../WorkflowsStore/presenters/OpportunityPresenter";
 import { useWorkflowsStore } from "../StoreProvider";
 import HydrationWrapper from "./HydrationWrapper";
 import OpportunityConfigurationsTable from "./OpportunityConfigurationsTable";
+import { buildRoute } from "./utils";
 
 const OpportunitySettings = ({
   presenter,
@@ -61,8 +63,14 @@ const OpportunitySettings = ({
 };
 
 const OpportunityView = (): JSX.Element => {
-  const { opportunityPresenter, opportunityConfigurationPresenter } =
-    useWorkflowsStore();
+  const {
+    opportunityPresenter,
+    opportunityConfigurationPresenter,
+    stateCode,
+    selectedOpportunityType,
+  } = useWorkflowsStore();
+
+  const history = useHistory();
 
   return (
     <>
@@ -72,6 +80,15 @@ const OpportunityView = (): JSX.Element => {
         component={OpportunitySettings}
       />
       <h2>Configurations</h2>
+      <Button
+        onClick={() =>
+          history.push(
+            buildRoute(stateCode ?? "", selectedOpportunityType, "new")
+          )
+        }
+      >
+        New Configuration
+      </Button>
       <HydrationWrapper
         presenter={opportunityConfigurationPresenter}
         component={OpportunityConfigurationsTable}

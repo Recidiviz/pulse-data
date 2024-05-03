@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Alert, Spin, Table } from "antd";
+import { compareAsc } from "date-fns";
 import { observer } from "mobx-react-lite";
 import { Link } from "react-router-dom";
 import styled from "styled-components/macro";
@@ -55,6 +56,12 @@ const OpportunityConfigurationsTable = ({
     },
     status: {
       title: "Status",
+    },
+    createdAt: {
+      title: "Created",
+      dataIndex: undefined,
+      sorter: (a, b) => compareAsc(a.createdAt, b.createdAt),
+      render: (opp) => `${opp.createdAt.toLocaleString()} by ${opp.createdBy}`,
     },
   });
 

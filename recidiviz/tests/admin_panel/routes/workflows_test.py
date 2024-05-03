@@ -248,7 +248,6 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
         config_fields = generate_config(-1, datetime.datetime(9, 9, 9))
 
         req_body = {
-            "id": 1,
             "stateCode": "US_ID",
             "description": config_fields.description,
             "featureVariant": config_fields.feature_variant,
@@ -264,7 +263,6 @@ class WorkflowsAdminPanelEndpointTests(TestCase):
             "denialText": config_fields.denial_text,
             "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 180},
             "sidebarComponents": config_fields.sidebar_components,
-            "status": "ACTIVE",
         }
 
         mock_querier.return_value.add_config.return_value = TEST_CONFIG_ID

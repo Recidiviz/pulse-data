@@ -38,10 +38,12 @@ export const opportunityConfigurationSchema = z.object({
   // snooze: snoozeConfigurationSchema.nullish(),
   denialReasons: z.record(z.string()),
   denialText: z.string().nullish(),
+  initialHeader: z.string(),
   eligibleCriteriaCopy: criteriaCopySchema,
   ineligibleCriteriaCopy: criteriaCopySchema,
   sidebarComponents: z.array(z.string()),
   methodologyUrl: z.string(),
+  isAlert: z.boolean(),
 
   description: z.string(),
   createdAt: z.string(),

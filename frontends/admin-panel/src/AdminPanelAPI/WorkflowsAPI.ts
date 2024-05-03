@@ -23,7 +23,7 @@ import {
   OpportunityConfiguration,
   opportunityConfigurationSchema,
 } from "../WorkflowsStore/models/OpportunityConfiguration";
-import { get } from "./utils";
+import { get, post } from "./utils";
 
 // Get enabled states for Workflows
 export const getWorkflowsStateCodeInfo = async (): Promise<StateCodeInfo[]> => {
@@ -56,4 +56,15 @@ export const getOpportunityConfiguration = async (
     `/admin/workflows/${stateCode}/opportunities/${opportunityType}/configurations/${configId}`
   );
   return opportunityConfigurationSchema.array().parse(response);
+};
+
+export const postOpportunityConfiguration = async (
+  stateCode: string,
+  opportunityType: string,
+  config: OpportunityConfiguration
+): Promise<Response> => {
+  return post(
+    `/admin/workflows/${stateCode}/opportunities/${opportunityType}/configurations`,
+    config
+  );
 };

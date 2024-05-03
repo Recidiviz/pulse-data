@@ -15,9 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { message } from "antd";
 import { autorun, flowResult, makeAutoObservable } from "mobx";
 
+import { postOpportunityConfiguration } from "../../AdminPanelAPI/WorkflowsAPI";
 import { Hydratable, HydrationState } from "../../InsightsStore/types";
+import { OpportunityConfiguration } from "../models/OpportunityConfiguration";
 import { WorkflowsStore } from "../WorkflowsStore";
 
 export default class OpportunityConfigurationPresenter implements Hydratable {
@@ -61,6 +64,28 @@ export default class OpportunityConfigurationPresenter implements Hydratable {
     return this.opportunityConfigurations?.find(
       (c) => c.id === this.workflowsStore.selectedConfigurationId
     );
+  }
+
+  async createOpportunityConfiguration(
+    config: OpportunityConfiguration
+  ): Promise<boolean> {
+    try {
+      await postOpportunityConfiguration(
+        this.stateCode,
+        this.opportunityType,
+        config
+      );
+      message.success("Configuration added!");
+      this.hydrationState.status = "needs hydration";
+      return true;
+    } catch (e) {
+      message.error(
+        `Error adding configuration:
+        \n${e}`,
+        10
+      );
+      return false;
+    }
   }
 
   async hydrate(): Promise<void> {

@@ -76,9 +76,15 @@ const OpportunitiesHeaderView = (): JSX.Element => {
   }, [setSelectedOpportunityType, opportunityType]);
 
   useEffect(() => {
-    setSelectedOpportunityConfigurationId(
-      configId ? parseInt(configId) : undefined
-    );
+    let configNum;
+    const fromId = new URLSearchParams(document.location.search).get("from");
+    if (configId === "new" && fromId) {
+      configNum = parseInt(fromId);
+    } else if (configId) {
+      configNum = parseInt(configId);
+    }
+    if (Number.isNaN(configNum)) configNum = undefined;
+    setSelectedOpportunityConfigurationId(configNum);
   }, [setSelectedOpportunityConfigurationId, configId]);
 
   const breadcrumbs = [];
@@ -91,9 +97,13 @@ const OpportunitiesHeaderView = (): JSX.Element => {
 
   if (configId) {
     breadcrumbs.push(title);
-    title =
-      store.opportunityConfigurationPresenter?.selectedOpportunityConfiguration
-        ?.displayName ?? "";
+    if (configId === "new") {
+      title = "New Configuration";
+    } else {
+      title =
+        store.opportunityConfigurationPresenter
+          ?.selectedOpportunityConfiguration?.displayName ?? "";
+    }
   }
 
   return (
