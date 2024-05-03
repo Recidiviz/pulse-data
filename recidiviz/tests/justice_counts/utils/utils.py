@@ -190,14 +190,14 @@ class JusticeCountsSchemaTestObjects:
             systems=[schema.System.PRISONS.value, schema.System.SUPERAGENCY.value],
             is_superagency=True,
         )
-        self.test_prison_affiliate_A = schema.Agency(
-            name="Affiliate Agency Prison A",
+        self.test_prison_child_agency_A = schema.Agency(
+            name="Child Agency Prison A",
             state_code="US_PA",
             fips_county_code="us_ca_san_francisco",
             systems=[schema.System.PRISONS.value],
         )
-        self.test_prison_affiliate_B = schema.Agency(
-            name="Affiliate Agency Prison B",
+        self.test_prison_child_agency_B = schema.Agency(
+            name="Child Agency Prison B",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
             systems=[schema.System.PRISONS.value],
