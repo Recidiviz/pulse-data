@@ -45,7 +45,7 @@ US_TN_MAX_STAYS_QUERY_TEMPLATE = """
      INNER JOIN `{project_id}.normalized_state.state_person`
         USING(person_id, state_code)
      -- TODO(#27428): Remove this join when custody level information aligns with location information
-     INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+     INNER JOIN `{project_id}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
         USING(person_id, state_code)
      WHERE c.state_code = 'US_TN'
        AND c.custody_level = 'MAXIMUM'
