@@ -34,6 +34,10 @@ max_allowed_error_overrides:
   - validation_name: state_supervision_violation_response_by_response_date_stable_counts
     hard_max_allowed_error_override: .28
     override_reason: This is standard deviation for this validation.
+  - validation_name: person_caseload_location_sessions_caseload
+    hard_max_allowed_error_override: 0.03
+    soft_max_allowed_error_override: 0.03
+    override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28365)
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 200

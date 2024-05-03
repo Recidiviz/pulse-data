@@ -215,6 +215,9 @@ from recidiviz.validation.views.state.sentences.session_new_admissions_with_no_s
 from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentence_imposed_group import (
     SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sessions_validation.person_caseload_location_sessions import (
+    PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
     SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
 )
@@ -945,6 +948,28 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "charge_v2_external_id",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
+            validation_name_suffix="caseload",
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                "caseload_id",
+                "officer_id",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=PERSON_CASELOAD_LOCATION_SESSIONS_VIEW_BUILDER,
+            validation_name_suffix="location",
+            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+            comparison_columns=[
+                "location_id",
+                "location",
+            ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
         ),
     ]
 

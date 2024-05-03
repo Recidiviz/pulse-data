@@ -40,6 +40,14 @@ max_allowed_error_overrides:
       There have been some changes in this error rate recently most likely due to all the ingest
       changes we've made for outliers, where IN_CUSTODY supervision periods are no longer counted
       in the supervision population because we now infer an IP during those periods.
+  - validation_name: person_caseload_location_sessions_caseload
+    hard_max_allowed_error_override: .25
+    soft_max_allowed_error_override: .25
+    override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28363)
+  - validation_name: person_caseload_location_sessions_location
+    hard_max_allowed_error_override: .5
+    soft_max_allowed_error_override: .5
+    override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28363)
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 200000
