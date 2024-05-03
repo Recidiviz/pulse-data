@@ -17,7 +17,7 @@
 """Util functions to support constructing LookML fields and view fragments using AggregatedMetric objects"""
 
 import itertools
-from typing import Callable, List, Optional
+from typing import Callable, Optional, Sequence
 
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     METRICS_BY_POPULATION_TYPE,
@@ -178,7 +178,7 @@ def measure_for_metric(
 
 
 def get_metric_explore_parameter(
-    metrics: List[AggregatedMetric],
+    metrics: Sequence[AggregatedMetric],
     field_name: str = "metric_filter",
     unit_of_analysis: Optional[MetricUnitOfAnalysis] = None,
     default_metric: Optional[AggregatedMetric] = None,

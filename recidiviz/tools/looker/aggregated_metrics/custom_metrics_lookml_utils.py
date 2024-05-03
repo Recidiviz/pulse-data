@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION,
 )
 from recidiviz.calculator.query.bq_utils import (
+    join_on_columns_fragment,
+    list_to_query_string,
     nonnull_current_date_clause,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
@@ -44,7 +46,10 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfAnalysisType,
+    MetricUnitOfObservation,
+    MetricUnitOfObservationType,
     get_static_attributes_query_for_unit_of_analysis,
 )
 from recidiviz.common.str_field_utils import snake_to_title
@@ -53,6 +58,7 @@ from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,
     LookMLFieldParameter,
     LookMLViewField,
+    MeasureLookMLViewField,
     ParameterLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import (
@@ -96,7 +102,9 @@ def liquid_wrap(query_fragment: str, metric: AggregatedMetric, view_name: str) -
 
 
 def generate_period_span_metric_view(
-    metrics: List[PeriodSpanAggregatedMetric], view_name: str
+    metrics: List[PeriodSpanAggregatedMetric],
+    view_name: str,
+    unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of PeriodSpanAggregatedMetric objects"""
     analyst_dataset = ANALYST_VIEWS_DATASET
@@ -133,13 +141,19 @@ def generate_period_span_metric_view(
         )
         for metric in metrics
     ]
+    unit_of_observation_query_fragment = list_to_query_string(
+        sorted(
+            {x for x in unit_of_observation.primary_key_columns if x != "state_code"}
+        ),
+        table_prefix="assignments",
+    )
     derived_table_query = f"""
     WITH eligible_spans AS (
         SELECT
             assignments.state_code,
             assignments.unit_of_analysis,
             assignments.all_attributes,
-            assignments.person_id,
+            {unit_of_observation_query_fragment},
             GREATEST(assignments.assignment_date, spans.start_date) AS start_date,
             {revert_nonnull_end_date_clause(
                 f"LEAST({nonnull_end_date_clause('spans.end_date')}, {nonnull_end_date_clause('assignments.assignment_end_date')})"
@@ -147,11 +161,11 @@ def generate_period_span_metric_view(
             span,
             span_attributes,
         FROM
-            `{analyst_dataset}.person_spans_materialized` AS spans
+            `{analyst_dataset}.{unit_of_observation.type.short_name}_spans_materialized` AS spans
         INNER JOIN
-            ${{assignments_with_attributes_{view_name}.SQL_TABLE_NAME}} assignments
+            ${{{unit_of_observation.type.short_name}_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}} assignments
         ON
-            assignments.person_id = spans.person_id
+            {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="spans")}
             AND (
               assignments.assignment_date
                 BETWEEN spans.start_date AND {nonnull_end_date_exclusive_clause("spans.end_date")}
@@ -175,23 +189,25 @@ def generate_period_span_metric_view(
     FROM
         eligible_spans ses
     INNER JOIN
-        ${{assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} time_period
+        ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} time_period
     ON
         ses.start_date < time_period.span_end_date
         AND time_period.span_start_date < {nonnull_current_date_clause("ses.end_date")}
-        AND ses.person_id = time_period.person_id
+        AND {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="ses", table2="time_period")}
     GROUP BY
         1, 2, 3, 4, 5, 6
     """
     return LookMLView(
-        view_name=f"period_span_aggregated_metrics_{view_name}",
+        view_name=f"{unit_of_observation.type.short_name}_period_span_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[*metric_measures],
     )
 
 
 def generate_period_event_metric_view(
-    metrics: List[PeriodEventAggregatedMetric], view_name: str
+    metrics: List[PeriodEventAggregatedMetric],
+    view_name: str,
+    unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of PeriodEventAggregatedMetric objects"""
     analyst_dataset = ANALYST_VIEWS_DATASET
@@ -228,11 +244,11 @@ def generate_period_event_metric_view(
         -- period_event metrics
         {metric_aggregation_fragment}
     FROM
-        ${{assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
+        ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
     LEFT JOIN
-        `{analyst_dataset}.person_events_materialized` AS events
+        `{analyst_dataset}.{unit_of_observation.type.short_name}_events_materialized` AS events
     ON
-        events.person_id = assignments.person_id
+        {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assignments")}
         AND events.event_date BETWEEN GREATEST(assignments.assignment_date, assignments.start_date)
           AND LEAST(
             {nonnull_end_date_clause("assignments.assignment_end_date")},
@@ -243,17 +259,25 @@ def generate_period_event_metric_view(
     1, 2, 3, 4, 5, 6
     """
     return LookMLView(
-        view_name=f"period_event_aggregated_metrics_{view_name}",
+        view_name=f"{unit_of_observation.type.short_name}_period_event_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[*metric_measures],
     )
 
 
 def generate_assignment_span_metric_view(
-    metrics: List[AssignmentSpanAggregatedMetric], view_name: str
+    metrics: List[AssignmentSpanAggregatedMetric],
+    view_name: str,
+    unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of AssignmentSpanAggregatedMetric objects"""
     analyst_dataset = ANALYST_VIEWS_DATASET
+    unit_of_observation_query_fragment = list_to_query_string(
+        sorted(
+            {x for x in unit_of_observation.primary_key_columns if x != "state_code"}
+        ),
+        table_prefix="assignments",
+    )
     metric_aggregation_fragment = "\n".join(
         [
             liquid_wrap(
@@ -286,14 +310,14 @@ def generate_assignment_span_metric_view(
         assignments.start_date,
         assignments.end_date,
 
-        COUNT(DISTINCT CONCAT(assignments.person_id, assignments.assignment_date)) AS assignments,
+        COUNT(DISTINCT CONCAT({unit_of_observation_query_fragment}, assignments.assignment_date)) AS assignments,
         {metric_aggregation_fragment}
     FROM
-        ${{assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
+        ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
     LEFT JOIN
-        `{analyst_dataset}.person_spans_materialized` spans
+        `{analyst_dataset}.{unit_of_observation.type.short_name}_spans_materialized` spans
     ON
-        assignments.person_id = spans.person_id
+        {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="spans")}
         AND (
             spans.start_date > assignments.assignment_date
             OR assignments.assignment_date BETWEEN spans.start_date
@@ -303,14 +327,16 @@ def generate_assignment_span_metric_view(
         1, 2, 3, 4, 5, 6
     """
     return LookMLView(
-        view_name=f"assignment_span_aggregated_metrics_{view_name}",
+        view_name=f"{unit_of_observation.type.short_name}_assignment_span_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[*metric_measures],
     )
 
 
 def generate_assignment_event_metric_view(
-    metrics: List[AssignmentEventAggregatedMetric], view_name: str
+    metrics: List[AssignmentEventAggregatedMetric],
+    view_name: str,
+    unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of AssignmentEventAggregatedMetric objects"""
     analyst_dataset = ANALYST_VIEWS_DATASET
@@ -339,6 +365,13 @@ def generate_assignment_event_metric_view(
         )
         for metric in metrics
     ]
+
+    unit_of_observation_query_fragment = list_to_query_string(
+        sorted(
+            {x for x in unit_of_observation.primary_key_columns if x != "state_code"}
+        ),
+        table_prefix="assignments",
+    )
     derived_table_query = f"""
     SELECT
         -- assignments
@@ -358,25 +391,32 @@ def generate_assignment_event_metric_view(
             assignments.start_date,
             assignments.end_date,
             period,
-            assignments.person_id,
+            {unit_of_observation_query_fragment},
             assignments.assignment_date,
             assignments.all_attributes,
             {metric_aggregation_fragment_inner}
         FROM
-            ${{assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
+            ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
         LEFT JOIN
-            `{analyst_dataset}.person_events_materialized` events
+            `{analyst_dataset}.{unit_of_observation.type.short_name}_events_materialized` events
         ON
-            assignments.person_id = events.person_id
+            {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="events")}
             AND events.event_date >= assignments.assignment_date
         GROUP BY
-            1, 2, 3, 4, 5, 6, 7, 8
+            assignments.state_code,
+            unit_of_analysis,
+            assignments.start_date,
+            assignments.end_date,
+            period,
+            {unit_of_observation_query_fragment},
+            assignments.assignment_date,
+            assignments.all_attributes
     )
     GROUP BY
         1, 2, 3, 4, 5, 6
     """
     return LookMLView(
-        view_name=f"assignment_event_aggregated_metrics_{view_name}",
+        view_name=f"{unit_of_observation.type.short_name}_assignment_event_aggregated_metrics_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[*metric_measures],
     )
@@ -387,6 +427,7 @@ def generate_assignments_view(
     assignment_types_dict: Dict[
         str, Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
     ],
+    unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView for all possible assignment types (combinations of population & unit of analysis types)"""
 
@@ -398,13 +439,20 @@ def generate_assignments_view(
         # generate a query fragment that combines the assignment session view with the static attributes query.
         if assignment_type != "PERSON":
             _, unit_of_analysis_type = assignment_types_dict[assignment_type]
-            source_table = f"aggregated_metrics.{assignment_type.lower()}_metrics_person_assignment_sessions_materialized"
+            source_table = f"aggregated_metrics.{assignment_type.lower()}_metrics_{unit_of_observation.type.short_name}_assignment_sessions_materialized"
 
             unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
             primary_columns_str = (
                 unit_of_analysis.get_primary_key_columns_query_string()
             )
-            index_columns_str = unit_of_analysis.get_index_columns_query_string()
+            shared_columns_string = list_to_query_string(
+                sorted(
+                    {
+                        *unit_of_observation.primary_key_columns,
+                        *unit_of_analysis.index_columns,
+                    }
+                ),
+            )
             static_attributes_source_table = (
                 get_static_attributes_query_for_unit_of_analysis(
                     unit_of_analysis_type, bq_view=False
@@ -424,8 +472,7 @@ def generate_assignments_view(
             return f"""
         {{% elsif {view_name}.assignment_type._parameter_value == "{assignment_type}" %}}
             SELECT
-                {index_columns_str},
-                person_id,
+                {shared_columns_string},
                 assignment_date,
                 end_date_exclusive AS end_date,
                 CONCAT({primary_columns_str}) AS unit_of_analysis,
@@ -552,7 +599,7 @@ def generate_assignments_view(
     ]
 
     return LookMLView(
-        view_name=f"assignments_{view_name}",
+        view_name=f"{unit_of_observation.type.short_name}_assignments_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[
             assignment_type_parameter,
@@ -562,7 +609,7 @@ def generate_assignments_view(
     )
 
 
-def generate_assignments_with_attributes_view(
+def generate_person_assignments_with_attributes_view(
     view_name: str,
     time_dependent_person_attribute_query: str,
     time_dependent_person_attribute_fields: List[str],
@@ -629,7 +676,7 @@ def generate_assignments_with_attributes_view(
                 f'LEAST({nonnull_end_date_clause("assignment_sessions.assignment_end_date")}, {nonnull_end_date_clause("time_dependent_attributes.end_date_exclusive")})'
             )} AS assignment_end_date,
         FROM
-            ${{assignments_{view_name}.SQL_TABLE_NAME}} assignment_sessions
+            ${{person_assignments_{view_name}.SQL_TABLE_NAME}} assignment_sessions
         LEFT JOIN
             ({time_dependent_person_attribute_query}) time_dependent_attributes
         ON
@@ -856,7 +903,7 @@ def generate_assignments_with_attributes_view(
         ),
     ]
     return LookMLView(
-        view_name=f"assignments_with_attributes_{view_name}",
+        view_name=f"person_assignments_with_attributes_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[
             *static_person_attribute_dimensions,
@@ -867,10 +914,18 @@ def generate_assignments_with_attributes_view(
 
 
 def generate_assignments_with_attributes_and_time_periods_view(
-    view_name: str,
+    view_name: str, unit_of_observation: MetricUnitOfObservation
 ) -> LookMLView:
     """Generates LookMLView that joins assignment + attributes views to customizable time periods"""
-
+    assignments_view_for_unit_of_observation = (
+        f"${{person_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
+        if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
+        else f"${{{unit_of_observation.type.short_name}_assignments_{view_name}.SQL_TABLE_NAME}}"
+    )
+    unit_of_observation_query_fragment = list_to_query_string(
+        sorted({*unit_of_observation.primary_key_columns, "state_code"}),
+        table_prefix="assignments",
+    )
     derived_table_query = f"""
     /*
     Goal: support either calendar time or event time.
@@ -925,8 +980,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
         ) AS span_end_date,
     FROM (
         SELECT
-            state_code,
-            person_id,
+            {unit_of_observation_query_fragment},
             unit_of_analysis,
             all_attributes,
             assignment_date,
@@ -946,7 +1000,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
             "{{% parameter {view_name}.period_param %}}" AS period,
             periods_since_assignment,
         FROM
-            ${{assignments_with_attributes_{view_name}.SQL_TABLE_NAME}} assignments
+            {assignments_view_for_unit_of_observation} assignments
         CROSS JOIN
             period_cte
     )
@@ -973,8 +1027,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
     {{% else %}}
     -- calendar time
     SELECT
-        assignments.state_code,
-        assignments.person_id,
+        {unit_of_observation_query_fragment},
         assignments.unit_of_analysis,
         assignments.all_attributes,
         assignments.assignment_date,
@@ -1021,7 +1074,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
     
     -- join assignments/attributes
     LEFT JOIN
-        ${{assignments_with_attributes_{view_name}.SQL_TABLE_NAME}} assignments
+        {assignments_view_for_unit_of_observation} assignments
     ON
         assignments.assignment_date BETWEEN time_period.start_date AND DATE_SUB(time_period.end_date, INTERVAL 1 DAY)
         OR time_period.start_date BETWEEN assignments.assignment_date AND
@@ -1184,7 +1237,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
     ]
 
     return LookMLView(
-        view_name=f"assignments_with_attributes_and_time_periods_{view_name}",
+        view_name=f"{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}",
         table=LookMLViewSourceTable.derived_table(derived_table_query),
         fields=[
             *time_period_dimensions,
@@ -1193,42 +1246,41 @@ def generate_assignments_with_attributes_and_time_periods_view(
     )
 
 
-def custom_metrics_view_query_template(view_name: str) -> str:
+def custom_metrics_view_query_template(
+    view_name: str, unit_of_observation: MetricUnitOfObservation
+) -> str:
     """Returns query template that unions together all LookML view dependencies to generate a custom metrics table"""
 
-    liquid_assignment_type_check = (
-        "{{" + f'% if {view_name}.assignment_type._parameter_value != "PERSON" %' + "}}"
+    assignments_and_attributes_view = (
+        f"${{person_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
+        if MetricUnitOfObservationType.PERSON_ID
+        else f"${{{unit_of_observation.type.short_name}_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
     )
+
     derived_table_query = f"""
     WITH time_period_cte AS (
         SELECT
             *
         FROM
-            ${{assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}}
+            ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}}
     )
-    /* This cte is embedded in `assignments_and_attributes_cte`
-    , assignments_cte AS (
-        SELECT
-          *
-        FROM
-          ${{assignments_{view_name}.SQL_TABLE_NAME}}
-    )
-    */
     , assignments_and_attributes_cte AS (
         SELECT
           *
         FROM
-          ${{assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}
+          {assignments_and_attributes_view}
     )
 
     -- map all_attributes to original columns
     , column_mapping AS (
         SELECT DISTINCT
             * EXCEPT (
-            {liquid_assignment_type_check}
-            person_id,
-            {{% endif %}}
-            assignment_date, assignment_end_date)
+                assignment_date, assignment_end_date, event_time_base_date
+                {{% if {view_name}.assignment_type._parameter_value != "PERSON"
+                 and {view_name}.person_id._in_query == false %}}
+                , person_id
+                {{% endif %}}
+            )
         FROM
             assignments_and_attributes_cte
     )
@@ -1238,7 +1290,7 @@ def custom_metrics_view_query_template(view_name: str) -> str:
         SELECT
             *
         FROM
-            ${{period_span_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
+            ${{{unit_of_observation.type.short_name}_period_span_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
     )
 
     -- period_event metrics
@@ -1246,7 +1298,7 @@ def custom_metrics_view_query_template(view_name: str) -> str:
         SELECT
             *
         FROM
-            ${{period_event_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
+            ${{{unit_of_observation.type.short_name}_period_event_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
     )
 
     -- assignment_span metrics
@@ -1254,7 +1306,7 @@ def custom_metrics_view_query_template(view_name: str) -> str:
         SELECT
             *
         FROM
-            ${{assignment_span_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
+            ${{{unit_of_observation.type.short_name}_assignment_span_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
     )
 
     -- assignment_event metrics
@@ -1262,13 +1314,27 @@ def custom_metrics_view_query_template(view_name: str) -> str:
         SELECT
             *
         FROM
-            ${{assignment_event_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
+            ${{{unit_of_observation.type.short_name}_assignment_event_aggregated_metrics_{view_name}.SQL_TABLE_NAME}}
     )
 
     -- join all metrics on unit-of-analysis and attribute struct to return original columns
     SELECT
-        * EXCEPT(unit_of_analysis, all_attributes),
+        * EXCEPT(start_date, end_date),
+        {{% parameter {view_name}.period_duration %}} AS period_duration,
+
+        -- if event_time, put back periods_since_assignment, otherwise add dates
+        {{% if {view_name}.event_time_toggle._parameter_value == "true" %}}
+        start_date AS periods_since_assignment,
+        DATE_DIFF(
+        DATE_ADD("2000-01-01", INTERVAL {{% parameter {view_name}.period_duration %}} {{% parameter {view_name}.period_param %}}),
+        "2000-01-01",
+        DAY
+        ) AS days_in_period,
+        {{% else %}}
+        start_date,
+        end_date,
         DATE_DIFF(end_date, start_date, DAY) AS days_in_period,
+        {{% endif %}}
     FROM
         column_mapping
     INNER JOIN
@@ -1299,7 +1365,51 @@ def generate_custom_metrics_view(
     """Generates LookMLView with derived table that joins together metric view
     builders, analysis periods, and assignments to dynamically calculate metrics,
     referencing the provided view name."""
-    derived_table_query = custom_metrics_view_query_template(view_name=view_name)
+    unit_of_observation_types = list(
+        set(
+            metric.unit_of_observation_type
+            for metric in metrics
+            if hasattr(metric, "unit_of_observation_type")
+        )
+    )
+    derived_table_subqueries: List[str] = []
+    for unit_of_observation in unit_of_observation_types:
+        derived_table_subqueries = derived_table_subqueries + [
+            custom_metrics_view_query_template(
+                view_name=view_name,
+                unit_of_observation=METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
+                    unit_of_observation
+                ],
+            )
+        ]
+
+    derived_table_query = f"""
+SELECT *
+FROM ({derived_table_subqueries[0]})
+"""
+    if len(derived_table_subqueries) > 0:
+        derived_table_query = derived_table_query + "\nFULL OUTER JOIN\n".join(
+            [
+                f"""({subquery})
+USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date)
+"""
+                for subquery in derived_table_subqueries[1:]
+            ]
+        )
+
+    extended_views = []
+    for unit_of_observation_type in unit_of_observation_types:
+        if unit_of_observation_type == MetricUnitOfObservationType.PERSON_ID:
+            extended_views.append(f"person_assignments_with_attributes_{view_name}")
+        extended_views = extended_views + [
+            f"{unit_of_observation_type.short_name}_assignments_{view_name}",
+            f"{unit_of_observation_type.short_name}_assignments_with_attributes_and_time_periods_{view_name}",
+            f"{unit_of_observation_type.short_name}_period_span_aggregated_metrics_{view_name}",
+            f"{unit_of_observation_type.short_name}_period_event_aggregated_metrics_{view_name}",
+            f"{unit_of_observation_type.short_name}_assignment_span_aggregated_metrics_{view_name}",
+            f"{unit_of_observation_type.short_name}_assignment_event_aggregated_metrics_{view_name}",
+        ]
+
     metric_filter_parameter = get_metric_explore_parameter(
         metrics, "metric_filter"
     ).extend(
@@ -1322,6 +1432,30 @@ def generate_custom_metrics_view(
             LookMLFieldParameter.default_value("value"),
         ],
     )
+    all_attributes_dimension = DimensionLookMLViewField(
+        field_name="all_attributes",
+        parameters=[
+            LookMLFieldParameter.description("Collection of all custom attributes"),
+            LookMLFieldParameter.type(LookMLFieldType.STRING),
+            LookMLFieldParameter.view_label("Person Attributes"),
+            LookMLFieldParameter.sql("${TABLE}.all_attributes"),
+            LookMLFieldParameter.hidden(is_hidden=True),
+        ],
+    )
+    count_units_measure = MeasureLookMLViewField(
+        field_name="count_units_of_analysis",
+        parameters=[
+            LookMLFieldParameter.label("Count Units"),
+            LookMLFieldParameter.description(
+                "Counts distinct units of analysis and included attributes"
+            ),
+            LookMLFieldParameter.type(LookMLFieldType.NUMBER),
+            LookMLFieldParameter.view_label("Metric Menu"),
+            LookMLFieldParameter.sql(
+                "CONCAT(${assignment_unit_of_analysis}, ${all_attributes})"
+            ),
+        ],
+    )
     return LookMLView(
         view_name=view_name,
         table=LookMLViewSourceTable.derived_table(derived_table_query),
@@ -1330,17 +1464,11 @@ def generate_custom_metrics_view(
             metric_filter_parameter,
             metric_value_measure,
             *additional_view_fields,
+            all_attributes_dimension,
+            count_units_measure,
         ],
         included_paths=[
             f"/views/aggregated_metrics/generated/{view_name}/subqueries/*",
         ],
-        extended_views=[
-            f"assignments_{view_name}",
-            f"assignments_with_attributes_{view_name}",
-            f"assignments_with_attributes_and_time_periods_{view_name}",
-            f"period_span_aggregated_metrics_{view_name}",
-            f"period_event_aggregated_metrics_{view_name}",
-            f"assignment_span_aggregated_metrics_{view_name}",
-            f"assignment_event_aggregated_metrics_{view_name}",
-        ],
+        extended_views=extended_views,
     )

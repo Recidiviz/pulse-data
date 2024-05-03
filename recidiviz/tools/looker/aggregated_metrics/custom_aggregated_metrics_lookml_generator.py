@@ -31,12 +31,17 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
-    MiscAggregatedMetric,
+    EventMetricConditionsMixin,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
+    SpanMetricConditionsMixin,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
+    MetricUnitOfObservationType,
 )
 from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils import (
     ASSIGNMENT_NAME_TO_TYPES,
@@ -44,10 +49,10 @@ from recidiviz.tools.looker.aggregated_metrics.custom_metrics_lookml_utils impor
     generate_assignment_span_metric_view,
     generate_assignments_view,
     generate_assignments_with_attributes_and_time_periods_view,
-    generate_assignments_with_attributes_view,
     generate_custom_metrics_view,
     generate_period_event_metric_view,
     generate_period_span_metric_view,
+    generate_person_assignments_with_attributes_view,
 )
 
 
@@ -78,76 +83,92 @@ def main(output_directory: str, view_name: str) -> None:
             [
                 metric
                 for metric in metrics
-                if not isinstance(metric, MiscAggregatedMetric)
+                if hasattr(metric, "unit_of_observation_type")
             ],
             view_name,
             additional_view_fields=[],
         ).write(output_directory, source_script_path=__file__)
 
-        generate_assignments_view(
-            view_name,
-            ASSIGNMENT_NAME_TO_TYPES,
-        ).write(output_subdirectory, source_script_path=__file__)
+        for unit_of_observation_type in set(
+            metric.unit_of_observation_type
+            for metric in metrics
+            if isinstance(
+                metric, (EventMetricConditionsMixin, SpanMetricConditionsMixin)
+            )
+        ):
+            unit_of_observation = METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
+                unit_of_observation_type
+            ]
+            generate_assignments_view(
+                view_name,
+                ASSIGNMENT_NAME_TO_TYPES,
+                unit_of_observation=unit_of_observation,
+            ).write(output_subdirectory, source_script_path=__file__)
 
-        generate_assignments_with_attributes_view(
-            view_name,
-            time_dependent_person_attribute_query="SELECT * FROM sessions.compartment_sub_sessions_materialized",
-            time_dependent_person_attribute_fields=[
-                "age",
-                "assessment_score",
-                "case_type",
-                "compartment_level_1",
-                "compartment_level_2",
-                "correctional_level",
-                "correctional_level_raw_text",
-                "housing_unit",
-                "housing_unit_type",
-                "supervision_district",
-                "supervision_district_name",
-                "supervision_office",
-                "supervision_office_name",
-            ],
-        ).write(output_subdirectory, source_script_path=__file__)
+            if unit_of_observation_type == MetricUnitOfObservationType.PERSON_ID:
+                generate_person_assignments_with_attributes_view(
+                    view_name=view_name,
+                    time_dependent_person_attribute_query="SELECT * FROM sessions.compartment_sub_sessions_materialized",
+                    time_dependent_person_attribute_fields=[
+                        "age",
+                        "assessment_score",
+                        "case_type",
+                        "compartment_level_1",
+                        "compartment_level_2",
+                        "correctional_level",
+                        "correctional_level_raw_text",
+                        "housing_unit",
+                        "housing_unit_type",
+                        "supervision_district",
+                        "supervision_district_name",
+                        "supervision_office",
+                        "supervision_office_name",
+                    ],
+                ).write(output_subdirectory, source_script_path=__file__)
 
-        generate_assignments_with_attributes_and_time_periods_view(
-            view_name,
-        ).write(output_subdirectory, source_script_path=__file__)
+            generate_assignments_with_attributes_and_time_periods_view(
+                view_name, unit_of_observation=unit_of_observation
+            ).write(output_subdirectory, source_script_path=__file__)
 
-        generate_period_span_metric_view(
-            [
-                metric
-                for metric in metrics
-                if isinstance(metric, PeriodSpanAggregatedMetric)
-            ],
-            view_name,
-        ).write(output_subdirectory, source_script_path=__file__)
+            generate_period_span_metric_view(
+                [
+                    metric
+                    for metric in metrics
+                    if isinstance(metric, PeriodSpanAggregatedMetric)
+                ],
+                view_name,
+                unit_of_observation=unit_of_observation,
+            ).write(output_subdirectory, source_script_path=__file__)
 
-        generate_period_event_metric_view(
-            [
-                metric
-                for metric in metrics
-                if isinstance(metric, PeriodEventAggregatedMetric)
-            ],
-            view_name,
-        ).write(output_subdirectory, source_script_path=__file__)
+            generate_period_event_metric_view(
+                [
+                    metric
+                    for metric in metrics
+                    if isinstance(metric, PeriodEventAggregatedMetric)
+                ],
+                view_name,
+                unit_of_observation=unit_of_observation,
+            ).write(output_subdirectory, source_script_path=__file__)
 
-        generate_assignment_span_metric_view(
-            [
-                metric
-                for metric in metrics
-                if isinstance(metric, AssignmentSpanAggregatedMetric)
-            ],
-            view_name,
-        ).write(output_subdirectory, source_script_path=__file__)
+            generate_assignment_span_metric_view(
+                [
+                    metric
+                    for metric in metrics
+                    if isinstance(metric, AssignmentSpanAggregatedMetric)
+                ],
+                view_name,
+                unit_of_observation=unit_of_observation,
+            ).write(output_subdirectory, source_script_path=__file__)
 
-        generate_assignment_event_metric_view(
-            [
-                metric
-                for metric in metrics
-                if isinstance(metric, AssignmentEventAggregatedMetric)
-            ],
-            view_name,
-        ).write(output_subdirectory, source_script_path=__file__)
+            generate_assignment_event_metric_view(
+                [
+                    metric
+                    for metric in metrics
+                    if isinstance(metric, AssignmentEventAggregatedMetric)
+                ],
+                view_name,
+                unit_of_observation=unit_of_observation,
+            ).write(output_subdirectory, source_script_path=__file__)
 
 
 if __name__ == "__main__":
