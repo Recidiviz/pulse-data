@@ -79,7 +79,14 @@ def _get_dimension_columns(
             ]  # [Person, Property, .. Unknown, Other] -> [Person, Person, Property, Property...]
 
     if child_agencies is not None:
-        agency_names = [a.name for a in child_agencies]
+        agency_names = [
+            (
+                a.name
+                if a.custom_child_agency_name is None
+                else a.custom_child_agency_name
+            )
+            for a in child_agencies
+        ]
         month_col = [
             mon for mon in month_col for _ in range(len(agency_names))
         ]  # [January, February] -> [January, January, February, February]
