@@ -398,13 +398,16 @@ def generate_largest_value_single_column_query_fragment(
     provided list of partition columns.
     If column_suffix provided, add suffix to output column name.
     """
+    priority_columns_with_order = [f"{col} DESC" for col in priority_columns]
     order_columns_str = (
-        list_to_query_string(priority_columns) + ", " if priority_columns else ""
+        list_to_query_string(priority_columns_with_order) + ", "
+        if priority_columns_with_order
+        else ""
     )
     return f"""
     FIRST_VALUE({table_column} IGNORE NULLS) OVER (
         PARTITION BY {list_to_query_string(partition_columns)}
-        ORDER BY {order_columns_str}{table_column} DESC
+        ORDER BY {order_columns_str}{table_column}
     ) AS {table_column}{column_suffix}"""
 
 
