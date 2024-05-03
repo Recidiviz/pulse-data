@@ -408,6 +408,7 @@ def generate_largest_value_single_column_query_fragment(
     FIRST_VALUE({table_column} IGNORE NULLS) OVER (
         PARTITION BY {list_to_query_string(partition_columns)}
         ORDER BY {order_columns_str}{table_column}
+        RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
     ) AS {table_column}{column_suffix}"""
 
 
