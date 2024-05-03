@@ -256,13 +256,6 @@ output:
                 effective_date: SentenceEffectiveDate
                 date_imposed: SentenceImposeDate
                 projected_completion_date: ExpirationDate
-                completion_date:
-                  $conditional:
-                    - $if:
-                        $or:
-                          - $equal: [sentence_source, $literal("ISC")]
-                          - $equal: [sentence_source, $literal("DIVERSION")]
-                      $then: ExpirationDate
                 # TODO(#20707): completion_date mapping (formerly ExpirationDate) has been removed but should be revisited.
                 county_code: ConvictionCounty
                 min_length_days: CalculatedMinimumSentenceDays

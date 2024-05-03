@@ -29,9 +29,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
-WITH 
--- This CTE orders all actions related by sentence from TN sentence source and groups by date
-order_sentence_actions_by_date_per_sentence AS (
+WITH order_sentence_actions_by_date_per_sentence AS (
     SELECT 
         OrderedSentenceAction.OffenderID, 
         OrderedSentenceAction.ConvictionCounty, 
@@ -50,7 +48,6 @@ order_sentence_actions_by_date_per_sentence AS (
     ) OrderedSentenceAction
     WHERE SentenceActionNumber = 1
 ),
--- This CTE joins all special conditions by day related to a single sentence 
 special_conditions_date_grouping AS (
     SELECT 
         OffenderID,
@@ -64,7 +61,6 @@ special_conditions_date_grouping AS (
     FROM {{JOSpecialConditions}}
     GROUP BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber, NoteUpdateDate
 ),
--- This CTE then creates a JSON array that includes all special conditions for a given sentence over all time
 special_conditions_aggregation AS (
     SELECT
         OffenderID,
@@ -80,7 +76,6 @@ special_conditions_aggregation AS (
     WHERE ConditionsOnDate is not NULL
     GROUP BY OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber
 ),
--- This CTE aggregates all key information for sentences coming from TN's main sentence source
 cleaned_Sentence_view AS (
     SELECT 
         Sentence.OffenderID AS OffenderID,
@@ -122,7 +117,6 @@ cleaned_Sentence_view AS (
     LEFT JOIN  {{SentenceMiscellaneous}} SentenceMisc
     USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 ),
--- This CTE uses a parallel structure from above, but adds all information for Diversion sentences documented in TN's system 
 cleaned_Diversion_view AS (
     SELECT 
         Diversion.OffenderID AS OffenderID,
@@ -134,12 +128,12 @@ cleaned_Diversion_view AS (
         DiversionGrantedDate AS OffenseDate,
         Offense AS ConvictionOffense, 
         OffenseDescription as OffenseDescription,
-        CASE WHEN DiversionStatus = 'C' THEN 'DIVCOMP' ELSE 'AC' END AS SentenceStatus,
+        CASE WHEN DiversionStatus = 'C' THEN 'IN' ELSE 'AC' END AS SentenceStatus,
         DiversionGrantedDate as SentenceEffectiveDate,
         DiversionGrantedDate as SentenceImposeDate,
         ExpirationDate as EarliestPossibleReleaseDate,
         ExpirationDate as FullExpirationDate,
-        Diversion.LastUpdateDate as ExpirationDate, #The actual date someone completes Diversion sentence 
+        ExpirationDate as ExpirationDate,
         Diversion.LastUpdateDate,
         OffenderStatute.AssaultiveOffenseFlag as AssaultiveOffenseFlag,
         OffenderStatute.SexOffenderFlag as SexOffenderFlag,
@@ -147,9 +141,9 @@ cleaned_Diversion_view AS (
         CAST(NULL as STRING) AS ConsecutiveCaseYear,
         CAST(NULL as STRING) AS ConsecutiveCaseNumber,
         CAST(NULL as STRING) AS ConsecutiveCountNumber,
-        CAST(NULL as STRING) AS ISCSentencyType,
-        CAST(NULL as STRING) AS lifetime_flag,
-        CAST(NULL as STRING) AS ReleaseEligibilityDate,
+        CAST(NULL as STRING) as ISCSentencyType,
+        CAST(NULL as STRING) as lifetime_flag,
+        CAST(NULL as STRING) as ReleaseEligibilityDate,
         'DIVERSION' AS sentence_source
     FROM {{Diversion@ALL}} Diversion
     LEFT JOIN {{OffenderStatute}} OffenderStatute USING (Offense)
@@ -172,13 +166,11 @@ ISCRelated_sentence_selection AS (
     FROM ISCRelated_sentence_count_selection
     WHERE count_rank = 1
 ),
--- This CTE selects only the relevant consecutive ISC sentences to join into the overall ISC sentence information below 
 consecutive_ISCRelated_sentences AS (
     SELECT *
     FROM ISCRelated_sentence_selection
     WHERE  sentence_rank = 1
 ),
--- This CTE uses a parallel structure from Sentence and Diversion above, but adds all information for ISC sentences documented in TN's system 
 cleaned_ISCSentence_view AS (
     SELECT 
         ISC.OffenderID,
@@ -190,12 +182,12 @@ cleaned_ISCSentence_view AS (
         ISC.OffenseDate,
         'SEE OffenseDescription' as ConvictedOffense,
         ISC.ConvictedOffense as OffenseDescription, 
-        CASE WHEN CAST(ISC.ExpirationDate AS DATETIME) < @{UPDATE_DATETIME_PARAM_NAME} THEN 'ISCCOMP' ELSE 'AC' END AS SentenceStatus,
+        CASE WHEN CAST(ISC.ExpirationDate AS DATETIME) < @{UPDATE_DATETIME_PARAM_NAME} THEN 'IN' ELSE 'AC' END AS SentenceStatus,
         CAST(NULL as STRING) as SentenceEffectiveDate,
         ISC.SentenceImposedDate as SentenceImposeDate,
         ISC.ExpirationDate as EarliestPossibleReleaseDate,
         ISC.ExpirationDate as FullExpirationDate,
-        ISC.ActualReleaseDate as ExpirationDate, # The actual day that someone completes their ISC Sentence
+        ISC.ExpirationDate as ExpirationDate,
         ISC.LastUpdateDate as LastUpdateDate,
         CASE WHEN ISC.ConvictedOffense LIKE '%MURDER%' 
                         OR ConvictedOffense LIKE '%HOMICIDE%'
@@ -224,7 +216,6 @@ cleaned_ISCSentence_view AS (
         ISC.CaseNumber = ISCR.CaseNumber AND
         ISC.CountNumber = ISCR.CountNumber
 ),
--- Then, we join all of the sentences sources together to create one CTE that contains all info for all sentences from Sentence, Diversion, and ISC
 all_sentence_sources_joined AS (
     SELECT *
     FROM cleaned_Sentence_view 
@@ -239,7 +230,6 @@ all_sentence_sources_joined AS (
     SELECT * 
     FROM cleaned_ISCSentence_view
 ),
--- Then, we join all of the sentences that still exist in latest views together to be able to join back at the end so we only ingest sentences that are still in the TN system today.
 all_latest_sentences_joined AS (
     SELECT 
         OffenderID,
@@ -269,7 +259,6 @@ all_latest_sentences_joined AS (
         CountNumber
     FROM {{ISCSentence}}
 ),
--- This CTE calculates the most recent sentence information for any sentence that has changed information over time by selecting the information from the LastUpdateDate
 most_recent_sentence_information AS (
     SELECT t.* 
     FROM (
@@ -333,7 +322,6 @@ most_recent_sentence_information AS (
     ) t 
     WHERE seq = 1
  ), 
- -- This CTE finds all of the various discharge dates that a sentences has had over time and put them into an array to be used for task deadline hydration
  discharge_task_deadline_array AS (
   SELECT 
     OffenderID,
@@ -358,7 +346,6 @@ most_recent_sentence_information AS (
     FROM all_sentence_sources_joined) Sentences
   GROUP BY 1,2,3,4,5
  )
- -- The final query pulls all information for TN sentences from Sentence, Diversion, and ISCSentence sources and makes sure to only include sentences that are currently in the TN system today
 SELECT DISTINCT
     a1.OffenderID,
     a1.ConvictionCounty,
