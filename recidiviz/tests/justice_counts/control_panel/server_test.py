@@ -1280,7 +1280,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             user_id=auth0_user.get("user_id"),
             name=new_name,
             email=new_email_address,
-            email_verified=None,
+            email_verified=False,
         )
         self.test_auth0_client.send_verification_email.assert_called_once_with(
             user_id=auth0_user.get("user_id")

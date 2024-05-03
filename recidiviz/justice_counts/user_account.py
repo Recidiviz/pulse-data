@@ -101,7 +101,7 @@ class UserAccountInterface:
                     # set `email_verified` to False. As a result, only pass in email if
                     # it has been changed
                     email_verified=(
-                        is_email_verified if is_email_verified is not None else None
+                        is_email_verified if is_email_verified is not None else False
                     ),
                 )
 
