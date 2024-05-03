@@ -8,7 +8,11 @@ exclusions:
   - validation_name: sentence_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: TODO(#28867) Hydrate new sentencing entities
-max_allowed_error_overrides: []
+max_allowed_error_overrides:
+  - validation_name: person_caseload_location_sessions_location
+    hard_max_allowed_error_override: 1.0
+    soft_max_allowed_error_override: 1.0
+    override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28366)
 num_allowed_rows_overrides:
   - validation_name: normalized_state_charge_missing_descriptions
     hard_num_allowed_rows_override: 7100

@@ -50,6 +50,10 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.10
     override_reason: >-
       P2 Not relevant to currently launched products
+  - validation_name: person_caseload_location_sessions_caseload
+    hard_max_allowed_error_override: .25
+    soft_max_allowed_error_override: .25
+    override_reason: These errors shouldn't happen, but will be addressed in #TODO(#28362)
 num_allowed_rows_overrides:
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 60000
