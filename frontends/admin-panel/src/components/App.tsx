@@ -52,6 +52,7 @@ import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
 import OpportunitiesHeader from "./Workflows/OpportunitiesHeader";
 import OpportunitiesView from "./Workflows/OpportunitiesView";
+import OpportunityConfigurationForm from "./Workflows/OpportunityConfigurationForm";
 import OpportunityConfigurationView from "./Workflows/OpportunityConfigurationView";
 import OpportunityView from "./Workflows/OpportunityView";
 
@@ -305,7 +306,7 @@ const App = (): JSX.Element => {
             <Switch>
               <Route
                 path={`${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType/configurations/new`}
-                render={() => "newConfig"}
+                component={OpportunityConfigurationForm}
               />
               <Route
                 path={`${LineStaffTools.WORKFLOWS_OPPORTUNITIES_ROUTE}/:opportunityType/configurations/:configId`}

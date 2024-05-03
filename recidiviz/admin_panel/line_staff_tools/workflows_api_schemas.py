@@ -54,9 +54,7 @@ class OpportunityConfigurationRequestSchema(WorkflowsConfigSchema):
     Contains additional metadata not shown in the tool.
     """
 
-    id = fields.Int(required=True)
     description = fields.Str(required=True)
-    status = fields.Enum(OpportunityStatus, required=True)
 
 
 class OpportunityConfigurationResponseSchema(OpportunityConfigurationRequestSchema):
@@ -65,6 +63,8 @@ class OpportunityConfigurationResponseSchema(OpportunityConfigurationRequestSche
     metadata to be displayed in the admin panel.
     """
 
+    id = fields.Int(required=True)
+    status = fields.Enum(OpportunityStatus, required=True)
     created_at = fields.Str(required=True)
     created_by = fields.Str(required=True)
 
