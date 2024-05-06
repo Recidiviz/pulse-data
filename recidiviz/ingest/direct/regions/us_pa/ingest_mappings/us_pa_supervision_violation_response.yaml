@@ -72,6 +72,7 @@ output:
                                   # TODO(#10502): Ask what this new sanction code value means.
                                   - GMED # Unknown, new as of 2023-01-10
                                   - GPSL # Unknown, new as of 2023-01-18
+                                  - SPB5 # Unknown, new as of 2024-05-06
                                 StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
                                   - IRPT # Increased Reporting Requirements
                                   - CURF # Imposition of Curfew
