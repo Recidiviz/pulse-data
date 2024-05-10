@@ -228,7 +228,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_get_superagency_home_metadata(self) -> None:
         user = self.test_schema_objects.test_user_A
         super_agency = self.test_schema_objects.test_prison_super_agency
-        child_agency = self.test_schema_objects.test_prison_child_agency_A
+        child_agency = self.test_schema_objects.test_prison_affiliate_A
         self.session.add_all(
             [
                 user,
@@ -3185,20 +3185,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.add_all(
             [
                 self.test_schema_objects.test_prison_super_agency,
-                self.test_schema_objects.test_prison_child_agency_A,
+                self.test_schema_objects.test_prison_affiliate_A,
                 AgencyUserAccountAssociation(
                     user_account=self.test_schema_objects.test_user_A,
                     agency=self.test_schema_objects.test_prison_super_agency,
                 ),
                 AgencyUserAccountAssociation(
                     user_account=self.test_schema_objects.test_user_A,
-                    agency=self.test_schema_objects.test_prison_child_agency_A,
+                    agency=self.test_schema_objects.test_prison_affiliate_A,
                 ),
             ]
         )
         self.session.commit()
         super_agency = self.test_schema_objects.test_prison_super_agency
-        child_agency = self.test_schema_objects.test_prison_child_agency_A
+        child_agency = self.test_schema_objects.test_prison_affiliate_A
         child_agency.super_agency_id = super_agency.id
 
         # Set superagency to have the following metric config
@@ -3330,7 +3330,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_get_child_agencies_for_superagency(self) -> None:
         user = self.test_schema_objects.test_user_A
         super_agency = self.test_schema_objects.test_prison_super_agency
-        child_agency = self.test_schema_objects.test_prison_child_agency_A
+        child_agency = self.test_schema_objects.test_prison_affiliate_A
         self.session.add_all(
             [
                 user,

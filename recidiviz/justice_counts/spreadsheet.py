@@ -55,6 +55,7 @@ from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.types import BulkUploadFileType, DatapointJson
 from recidiviz.justice_counts.utils.constants import (
+    CHILD_AGENCY_NAME_TO_UPLOAD_NAME,
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
     UploadMethod,
@@ -274,19 +275,20 @@ class SpreadsheetInterface:
             session=session, agency=agency
         )
 
-        child_agency_name_to_agency = {}
-        for child_agency in child_agencies:
-            child_agency_name_to_agency[
-                child_agency.name.strip().lower()
-            ] = child_agency
-            if child_agency.custom_child_agency_name is not None:
-                # Add the custom_child_agency_name of the agency as a key in
-                # child_agency_name_to_agency. That way, Bulk Upload will
-                # be successful if the user uploads with EITHER the name
-                # or the original name of the agency
-                child_agency_name_to_agency[
-                    child_agency.custom_child_agency_name.strip().lower()
-                ] = child_agency
+        if agency.id == 110:
+            # This is a special case. Ohio Office of Criminal Justice Services (OCJS)
+            # uploads shorthand names rather than full names of child agencies. This mapping
+            # should not be used for any other agency
+            child_agency_name_to_agency = {
+                CHILD_AGENCY_NAME_TO_UPLOAD_NAME.get(
+                    a.name.strip().lower(), a.name.strip().lower()
+                ): a
+                for a in child_agencies
+            }
+        else:
+            child_agency_name_to_agency = {
+                a.name.strip().lower(): a for a in child_agencies
+            }
 
         uploader = WorkbookUploader(
             agency=agency,

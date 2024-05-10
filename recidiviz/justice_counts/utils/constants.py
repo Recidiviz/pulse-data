@@ -33,6 +33,20 @@ AUTOMATIC_UPLOAD_ID = -1
 # Unsubscribe group ID number for SendGrid for Justice Counts
 UNSUBSCRIBE_GROUP_ID = 26272
 
+# Maps the actual name of the child agency to
+# a shorthand used in a the spreadsheet during
+# Bulk Upload. We need this because some agencies
+# only want to provide shorthands in their spreadsheets.
+CHILD_AGENCY_NAME_TO_UPLOAD_NAME = {
+    "toledo police department": "toledo",
+    "newark division of police": "newark",
+    "cleveland police department": "cleveland",
+    "columbus police department (oh)": "columbus",
+    "franklin county sheriff's office (oh)": "franklin county sheriff's office",
+    "amberley village police department": "amberley village",
+    "hamilton county sheriff’s office": "hamilton county sheriff's office",
+}
+
 
 class DatapointGetRequestEntryPoint(enum.Enum):
     REPORT_PAGE = "REPORT_PAGE"
