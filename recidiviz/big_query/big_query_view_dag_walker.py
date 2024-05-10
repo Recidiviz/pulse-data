@@ -60,9 +60,22 @@ class TraversalDirection(Enum):
 
 @attr.s(auto_attribs=True, kw_only=True)
 class ViewProcessingMetadata:
-    node_processing_runtime_seconds: float
-    total_time_in_queue_seconds: float
+    # The time it took to actually run the view_process_fn for this view.
+    view_processing_runtime_sec: float
+    # The total time between when this view was added to the queue for processing and
+    # when it finishes processing. May include wait time, during which the job for this
+    # view wasn't actually started yet.
+    total_node_processing_time_sec: float
     graph_depth: int
+    longest_path: List[BigQueryView]
+    longest_path_runtime_seconds: float
+
+    @property
+    def queue_wait_time_sec(self) -> float:
+        """The number of seconds between when a node is queued and when it actually
+        starts view processing.
+        """
+        return self.total_node_processing_time_sec - self.view_processing_runtime_sec
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -98,6 +111,8 @@ class ProcessDagResult(Generic[ViewResultT]):
     view_results: Dict[BigQueryView, ViewResultT]
     view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata]
     total_runtime: float
+    # The set of nodes that were processed last
+    edge_nodes: Set["BigQueryViewDagNode"]
 
     def log_processing_stats(self, n_slowest: int) -> None:
         """Logs various stats about a DAG processing run.
@@ -112,10 +127,10 @@ class ProcessDagResult(Generic[ViewResultT]):
         processing_runtimes = []
         queued_wait_times = []
         for view, metadata in self.view_processing_stats.items():
-            processing_time = metadata.node_processing_runtime_seconds
-            total_queue_time = metadata.total_time_in_queue_seconds
-            processing_runtimes.append((processing_time, view.address))
-            queued_wait_times.append(total_queue_time - processing_time)
+            processing_runtimes.append(
+                (metadata.view_processing_runtime_sec, view.address)
+            )
+            queued_wait_times.append(metadata.queue_wait_time_sec)
 
         avg_wait_time = max(
             0.0, round(sum(queued_wait_times) / len(queued_wait_times), 2)
@@ -130,19 +145,44 @@ class ProcessDagResult(Generic[ViewResultT]):
             ]
         )
 
+        longest_path_runtime_seconds, longest_path = self._get_longest_path()
+
+        path_strs = []
+        for v in longest_path:
+            runtime_seconds = self.view_processing_stats[v].view_processing_runtime_sec
+            path_strs.append(f"  * {runtime_seconds:.2f} sec: {v.address.to_str()}")
+
+        longest_path_str = "\n".join(path_strs)
+
         logging.info(
             "### BQ DAG PROCESSING STATS ###\n"
             "Total processing time: %s sec\n"
             "Nodes processed: %s\n"
             "Average queue wait time: %s seconds\n"
             "Max queue wait time: %s seconds\n"
-            "Top [%s] most expensive nodes in DAG: \n%s",
+            "Top [%s] most expensive nodes in DAG: \n%s\n"
+            "Most expensive path [%s seconds total]: \n%s",
             round(self.total_runtime, 2),
             nodes_processed,
             avg_wait_time,
             max_wait_time,
             n_slowest,
             slowest_list,
+            round(longest_path_runtime_seconds, 2),
+            longest_path_str,
+        )
+
+    def _get_longest_path(self) -> Tuple[float, List[BigQueryView]]:
+        edge_node_stats = [
+            self.view_processing_stats[node.view] for node in self.edge_nodes
+        ]
+
+        end_of_longest_path_stats = sorted(
+            edge_node_stats, key=lambda stats: stats.longest_path_runtime_seconds
+        )[-1]
+        return (
+            end_of_longest_path_stats.longest_path_runtime_seconds,
+            end_of_longest_path_stats.longest_path,
         )
 
 
@@ -590,6 +630,7 @@ class BigQueryViewDagWalker:
     @staticmethod
     def _view_processing_statistics(
         view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata],
+        view: BigQueryView,
         parent_results: Dict[BigQueryView, ViewResultT],
         processing_time: float,
         queue_time: float,
@@ -599,10 +640,28 @@ class BigQueryViewDagWalker:
             if not parent_results
             else max({view_processing_stats[p].graph_depth for p in parent_results}) + 1
         )
+
+        if parent_results:
+            parent_with_longest_path = max(
+                (view_processing_stats[parent_view] for parent_view in parent_results),
+                key=lambda parent_metadata: parent_metadata.longest_path_runtime_seconds,
+            )
+            parent_longest_path = parent_with_longest_path.longest_path
+            parent_longest_path_runtime_seconds = (
+                parent_with_longest_path.longest_path_runtime_seconds
+            )
+        else:
+            parent_longest_path = []
+            parent_longest_path_runtime_seconds = 0
+
         return ViewProcessingMetadata(
-            node_processing_runtime_seconds=processing_time,
-            total_time_in_queue_seconds=queue_time,
+            view_processing_runtime_sec=processing_time,
+            total_node_processing_time_sec=queue_time,
             graph_depth=graph_depth,
+            longest_path=[*parent_longest_path, view],
+            longest_path_runtime_seconds=(
+                parent_longest_path_runtime_seconds + processing_time
+            ),
         )
 
     def process_dag(
@@ -629,6 +688,7 @@ class BigQueryViewDagWalker:
         """
 
         top_level_set = set(self.leaves) if reverse else set(self.roots)
+        bottom_level_set = set(self.roots) if reverse else set(self.leaves)
         processed: Set[BigQueryAddress] = set()
         view_results: Dict[BigQueryView, ViewResultT] = {}
         view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
@@ -667,6 +727,7 @@ class BigQueryViewDagWalker:
                     )
                 view_stats = self._view_processing_statistics(
                     view_processing_stats=view_processing_stats,
+                    view=node.view,
                     parent_results=parent_results,
                     processing_time=execution_sec,
                     queue_time=end - entered_queue_time,
@@ -696,6 +757,7 @@ class BigQueryViewDagWalker:
             view_results=view_results,
             view_processing_stats=view_processing_stats,
             total_runtime=(time.perf_counter() - dag_processing_start),
+            edge_nodes=bottom_level_set,
         )
 
     def _check_sub_dag_input_views(self, *, input_views: List[BigQueryView]) -> None:
