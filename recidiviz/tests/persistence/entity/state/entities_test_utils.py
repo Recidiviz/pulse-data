@@ -633,7 +633,7 @@ def generate_full_graph_state_person(
     )
     sentence.sentence_lengths = [sentence_length]
 
-    sentence_group = entities.StateSentenceGroup(
+    sentence_group = entities.StateSentenceGroupLength(
         external_id="SENTENCE-GROUP-LEDGER-ID",
         state_code="US_XX",
         group_update_datetime=datetime.datetime(2023, 1, 1),

@@ -435,29 +435,29 @@ class StateSentenceLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
             )
 
 
-class StateSentenceGroupTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
-    """Ensures StateSentenceGroup is tested against the LedgerEntityTestCaseProtocol"""
+class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
+    """Ensures StateSentenceGroupLength is tested against the LedgerEntityTestCaseProtocol"""
 
     @classmethod
     def ledger_entity(cls) -> Type[LedgerEntityMixin]:
-        return entities.StateSentenceGroup
+        return entities.StateSentenceGroupLength
 
     def test_ledger_datetime_is_not_future(self) -> None:
-        ok = entities.StateSentenceGroup(
+        ok = entities.StateSentenceGroupLength(
             external_id="GROUP-00",
             state_code=self.state_code,
             group_update_datetime=self.the_past,
         )
         self.assertEqual(ok.ledger_datetime_field, self.the_past)
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
-            _ = entities.StateSentenceGroup(
+            _ = entities.StateSentenceGroupLength(
                 external_id="GROUP-00",
                 state_code=self.state_code,
                 group_update_datetime=self.the_future,
             )
 
     def test_ledger_partition_key(self) -> None:
-        ledger = entities.StateSentenceGroup(
+        ledger = entities.StateSentenceGroupLength(
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
             external_id="EXTERNAL-ID",
@@ -471,7 +471,7 @@ class StateSentenceGroupTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
     ) -> None:
         """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
         person = self.new_state_person()
-        group = entities.StateSentenceGroup(
+        group = entities.StateSentenceGroupLength(
             external_id="sentence-group",
             state_code=self.state_code,
             group_update_datetime=datetime.datetime(2022, 1, 1),
@@ -484,7 +484,7 @@ class StateSentenceGroupTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
 
     def test_enforced_datetime_pairs(self) -> None:
         # "projected_parole_release_date_external" before "projected_full_term_release_date_min_external"
-        _ = entities.StateSentenceGroup(
+        _ = entities.StateSentenceGroupLength(
             projected_parole_release_date_external=self.before,
             projected_full_term_release_date_min_external=self.after,
             group_update_datetime=self.ledger_time,
@@ -494,9 +494,9 @@ class StateSentenceGroupTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceGroup StateSentenceGroup\(external_id='EXTERNAL-ID', sentence_group_id=None\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
+            r"Found StateSentenceGroupLength StateSentenceGroupLength\(external_id='EXTERNAL-ID', sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
         ):
-            _ = entities.StateSentenceGroup(
+            _ = entities.StateSentenceGroupLength(
                 projected_parole_release_date_external=self.after,
                 projected_full_term_release_date_min_external=self.before,
                 group_update_datetime=self.ledger_time,
@@ -505,7 +505,7 @@ class StateSentenceGroupTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
                 sequence_num=None,
             )
         # "projected_parole_release_date_external" before "projected_full_term_release_date_max_external"
-        _ = entities.StateSentenceGroup(
+        _ = entities.StateSentenceGroupLength(
             projected_parole_release_date_external=self.before,
             projected_full_term_release_date_max_external=self.after,
             group_update_datetime=self.ledger_time,
@@ -515,9 +515,9 @@ class StateSentenceGroupTest(unittest.TestCase, LedgerEntityTestCaseProtocol):
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceGroup StateSentenceGroup\(external_id='EXTERNAL-ID', sentence_group_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
+            r"Found StateSentenceGroupLength StateSentenceGroupLength\(external_id='EXTERNAL-ID', sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
         ):
-            _ = entities.StateSentenceGroup(
+            _ = entities.StateSentenceGroupLength(
                 projected_parole_release_date_external=self.after,
                 projected_full_term_release_date_max_external=self.before,
                 group_update_datetime=self.ledger_time,

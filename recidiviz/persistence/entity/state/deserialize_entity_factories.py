@@ -555,13 +555,13 @@ class StateSentenceLengthFactory(EntityFactory):
         )
 
 
-class StateSentenceGroupFactory(EntityFactory):
+class StateSentenceGroupLengthFactory(EntityFactory):
     @staticmethod
     def deserialize(
         **kwargs: DeserializableEntityFieldValue,
-    ) -> entities.StateSentenceGroup:
+    ) -> entities.StateSentenceGroupLength:
         return entity_deserialize(
-            cls=entities.StateSentenceGroup,
+            cls=entities.StateSentenceGroupLength,
             converter_overrides={},
             defaults={},
             **kwargs,

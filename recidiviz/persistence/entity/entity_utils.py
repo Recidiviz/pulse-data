@@ -102,7 +102,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateChargeV2.__name__,
     state_entities.StateSentenceStatusSnapshot.__name__,
     state_entities.StateSentenceLength.__name__,
-    state_entities.StateSentenceGroup.__name__,
+    state_entities.StateSentenceGroupLength.__name__,
     # StateStaff hierarchy
     state_entities.StateStaff.__name__,
     state_entities.StateStaffExternalId.__name__,

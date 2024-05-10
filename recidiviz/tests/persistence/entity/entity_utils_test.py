@@ -497,8 +497,8 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
 # Instead, they only identify the entity for referencing.
 # Concretely, this means the object has an external_id but no other set fields.
 REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateSentenceGroup: [
-        schema.StateSentenceGroup(
+    schema.StateSentenceGroupLength: [
+        schema.StateSentenceGroupLength(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
         )
@@ -687,8 +687,8 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
 }
 
 HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateSentenceGroup: [
-        schema.StateSentenceGroup(
+    schema.StateSentenceGroupLength: [
+        schema.StateSentenceGroupLength(
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             group_update_datetime=datetime.datetime(2022, 1, 1),

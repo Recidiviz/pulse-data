@@ -483,7 +483,7 @@ class StatePerson(
     housing_status_periods: List["StatePersonHousingStatusPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    sentence_groups: List["StateSentenceGroup"] = attr.ib(
+    sentence_groups: List["StateSentenceGroupLength"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
 
@@ -2708,7 +2708,7 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSentenceGroup(
+class StateSentenceGroupLength(
     LedgerEntityMixin, BuildableAttr, DefaultableAttr, HasExternalIdEntity
 ):
     """Represents a historical ledger of attributes relating to a state designated group of sentences."""
@@ -2718,7 +2718,7 @@ class StateSentenceGroup(
     # Primary key - Only optional when parsing, before we have written this entity to the persistence layer.
     # A unique identifier for the collection of sentences defining a continuous period of time served
     # in the criminal justice system.
-    sentence_group_id: Optional[int] = attr.ib(
+    sentence_group_length_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 

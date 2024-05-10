@@ -1344,7 +1344,7 @@ class StatePerson(StateBase):
         "StatePersonHousingStatusPeriod", backref="person", lazy="selectin"
     )
     sentence_groups = relationship(
-        "StateSentenceGroup", backref="person", lazy="selectin"
+        "StateSentenceGroupLength", backref="person", lazy="selectin"
     )
 
 
@@ -4236,16 +4236,16 @@ class StateSentenceLength(StateBase, _ReferencesStatePersonSharedColumns):
     person = relationship("StatePerson", uselist=False)
 
 
-class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
+class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a historical ledger of attributes relating to a state designated group of sentences."""
 
-    __tablename__ = "state_sentence_group"
+    __tablename__ = "state_sentence_group_length"
     __table_args__ = (
         {
             "comment": "Represents a historical ledger of attributes relating to a state designated group of sentences."
         },
     )
-    sentence_group_id = Column(
+    sentence_group_length_id = Column(
         Integer,
         primary_key=True,
         comment=StrictStringFormatter().format(
@@ -4263,7 +4263,7 @@ class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
         nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSentenceGroup"
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSentenceGroupLength"
         ),
     )
     group_update_datetime = Column(
@@ -4306,6 +4306,6 @@ class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
         nullable=True,
         comment=(
             "The ordinal position of this observation in the sequence of "
-            "StateSentenceGroup observations for this observation's StateSentence"
+            "StateSentenceGroupLength observations for this observation's StateSentenceGroup"
         ),
     )

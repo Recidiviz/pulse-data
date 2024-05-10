@@ -18,7 +18,7 @@ output:
           external_id: person_id
           id_type: $literal("US_AZ_PERSON_ID")
     sentence_groups:
-      - StateSentenceGroup:
+      - StateSentenceGroupLength:
           external_id:
             $concat:
               $values:
