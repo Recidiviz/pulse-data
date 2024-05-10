@@ -1171,14 +1171,16 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
         self.assertEqual(expected_result, result)
 
-    def test_deserialize_StateSentenceGroup(self) -> None:
-        result = deserialize_entity_factories.StateSentenceGroupFactory.deserialize(
-            external_id="SENTENCE-GROUP-LEDGER-ID",
-            state_code="US_XX",
-            group_update_datetime="2023-01-01",
-            sequence_num=None,
+    def test_deserialize_StateSentenceGroupLength(self) -> None:
+        result = (
+            deserialize_entity_factories.StateSentenceGroupLengthFactory.deserialize(
+                external_id="SENTENCE-GROUP-LEDGER-ID",
+                state_code="US_XX",
+                group_update_datetime="2023-01-01",
+                sequence_num=None,
+            )
         )
-        expected_result = entities.StateSentenceGroup(
+        expected_result = entities.StateSentenceGroupLength(
             external_id="SENTENCE-GROUP-LEDGER-ID",
             state_code="US_XX",
             group_update_datetime=datetime.datetime(2023, 1, 1),
