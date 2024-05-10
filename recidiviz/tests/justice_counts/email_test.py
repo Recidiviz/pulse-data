@@ -702,8 +702,8 @@ class TestEmails(JusticeCountsDatabaseTestCase):
         frozen_today = datetime.date.today()
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_prison_super_agency
-            child_agency_A = self.test_schema_objects.test_prison_child_agency_A
-            child_agency_B = self.test_schema_objects.test_prison_child_agency_B
+            child_agency_A = self.test_schema_objects.test_prison_affiliate_A
+            child_agency_B = self.test_schema_objects.test_prison_affiliate_B
 
             agency.systems = [
                 schema.System.SUPERAGENCY.value,

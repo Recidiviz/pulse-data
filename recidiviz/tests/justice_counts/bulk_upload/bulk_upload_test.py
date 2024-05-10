@@ -82,8 +82,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         prosecution_agency = self.test_schema_objects.test_agency_F
         supervision_agency = self.test_schema_objects.test_agency_E
         prison_super_agency = self.test_schema_objects.test_prison_super_agency
-        prison_child_agency_A = self.test_schema_objects.test_prison_child_agency_A
-        prison_child_agency_B = self.test_schema_objects.test_prison_child_agency_B
+        prison_affiliate_A = self.test_schema_objects.test_prison_affiliate_A
+        prison_affiliate_B = self.test_schema_objects.test_prison_affiliate_B
 
         with SessionFactory.using_database(self.database_key) as session:
             session.add_all(
@@ -94,8 +94,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     supervision_agency,
                     law_enforcement_agency,
                     prison_super_agency,
-                    prison_child_agency_A,
-                    prison_child_agency_B,
+                    prison_affiliate_A,
+                    prison_affiliate_B,
                 ]
             )
             session.commit()
@@ -106,8 +106,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.law_enforcement_agency_id = law_enforcement_agency.id
             self.supervision_agency_id = supervision_agency.id
             self.user_account_id = user_account.id
-            prison_child_agency_A.super_agency_id = self.prison_super_agency_id
-            prison_child_agency_B.super_agency_id = self.prison_super_agency_id
+            prison_affiliate_A.super_agency_id = self.prison_super_agency_id
+            prison_affiliate_B.super_agency_id = self.prison_super_agency_id
 
     def test_validation(self) -> None:
         """Test that errors are thrown on invalid inputs."""
