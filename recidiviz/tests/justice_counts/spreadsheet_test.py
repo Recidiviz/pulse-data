@@ -408,9 +408,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 agency_id=agency.id,
             )
             session.add(spreadsheet)
-            # Excel workbook will not have any warnings or errors.
-            # create_excel_file is populating the agency name with the custom_child_agency_name.
-
+            # Excel workbook will have an invalid sheet.
             file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 file_name="test_custom_child_agency_name.xlsx",
@@ -437,17 +435,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()
+            spreadsheet = session.query(schema.Spreadsheet).one()
             self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)
             self.assertEqual(spreadsheet.ingested_by, user.auth0_user_id)
-
             # Confirm that datapoints were ingested for the child agency
-            child_agency_datapoints = []
-            for datapoint_json_list in metric_key_to_datapoint_jsons.values():
-                child_agency_datapoints += [
-                    datapoint_json
-                    for datapoint_json in datapoint_json_list
-                    if datapoint_json["agency_name"] == child_agency.name
-                ]
 
             self.assertTrue(
                 len(list(itertools.chain(*metric_key_to_datapoint_jsons.values()))) > 0
