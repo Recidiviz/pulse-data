@@ -395,11 +395,11 @@ def parse_supervision_level(
     if re.search(r"MEDIUM", supervision_level_value):
         return StateSupervisionLevel.MEDIUM
 
-    if re.search(r"MINIMUM IN-PERSON|MINIMUM LOW", supervision_level_value):
-        return StateSupervisionLevel.MINIMUM
-
     if re.search(r"MINIMUM TRS", supervision_level_value):
         return StateSupervisionLevel.LIMITED
+
+    if re.search(r"MINIMUM IN-PERSON|MINIMUM LOW", supervision_level_value):
+        return StateSupervisionLevel.MINIMUM
 
     # If values fall into none of these categories
     if supervision_level_value:
