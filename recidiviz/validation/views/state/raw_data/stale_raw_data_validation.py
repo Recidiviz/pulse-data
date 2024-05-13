@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""State configurations and views for historical stable row counts"""
-
+"""State configurations and views for stale raw data validations."""
 from typing import List
 
 import attr
@@ -27,11 +26,7 @@ from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_regi
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     get_region_raw_file_config,
 )
-from recidiviz.ingest.direct.raw_data.raw_file_config_utils import (
-    raw_file_tags_referenced_downstream,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -43,43 +38,27 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views import dataset_config
 
-_VIEW_ID_TEMPLATE = "_stable_historical_raw_data_counts"
+_VIEW_ID_TEMPLATE = "_stale_raw_data_tables"
 _DESCRIPTION_TEMPLATE = (
-    "Validation view that compares historical counts of raw data in "
+    "Validation view that shows one row per stale raw data table in "
 )
 
-_DATE_FILTER_TEMPLATE = "WHERE update_datetime > DATETIME_SUB(CURRENT_DATETIME('US/Eastern'), INTERVAL {interval} DAY)"
-
-# TODO(#28417) update to use * query that filter by file tag, will be simpler
+# TODO(#28417) update to use simplified query outlined in #26015
 # TODO(#28239) replace this query (expensive, full db scan) with one that just looks
 # at the import sessions table as we will be recording the number of rows imported there
-# and maybe (??) make this query look back over all time so we have better coverage
 _SUB_QUERY_TEMPLATE = """
-  SELECT
-    "{file_tag}" AS file_tag,
-    file_id,
-    row_count,
-    update_datetime,
-    LAG(row_count) OVER prev_row AS prev_row_count,
-    LAG(file_id) OVER prev_row AS prev_file_id,
-    LAG(update_datetime) OVER prev_row AS prev_update_datetime,
-  FROM (
-    SELECT
-      file_id,
-      update_datetime,
-      count(file_id) AS row_count
-    FROM `{{project_id}}.{us_xx_raw_data_dataset}.{file_tag}`
-    {date_filter}
-    GROUP BY file_id, update_datetime
-  )
-  --- the prev_row_count will always be null for the oldest value in the window,
-  --- so let's filter it out
-  QUALIFY prev_row_count IS NOT NULL
-  WINDOW prev_row AS (ORDER BY update_datetime ASC)
+SELECT file_tag, most_recent_rows_datetime, days_stale FROM (
+  SELECT 
+    "{file_tag}" as file_tag, 
+    MAX(update_datetime) as most_recent_rows_datetime, 
+    DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(MAX(update_datetime) AS DATE), DAY) AS days_stale
+  FROM `{{project_id}}.{us_xx_raw_data_dataset}.{file_tag}`
+)
+WHERE days_stale > {max_days_stale}
 """
 
 _QUERY_TEMPLATE = """
-SELECT *, "{region_code}" AS region_code
+SELECT file_tag, most_recent_rows_datetime, days_stale, "{region_code}" as region_code
 FROM (
     {all_sub_queries}
 )
@@ -87,50 +66,20 @@ FROM (
 
 
 @attr.define
-class StableHistoricalRawDataCountsQueryBuilder:
-    """Query builder for stable historical raw data count validations.
+class StaleRawDataQueryBuilder:
+    """Query builder for stale raw data validations. Given a region config, this
+    class will build stale data queries for each raw data config that is "regularly
+    updated" (i.e. has a non-irregular cadence and is not a code file)
 
-    Given a region config, this class will build stable historical raw data count
-    queries for each raw data config that is receives historical exports and is
-    used downstream.
+    If you want to build queries for files that are not "regularly updated" or exclude
+    files that are non-irregular and not a code a code file, please consider adding a
+    new candence type or creating a declarative way (e.g. in the raw yamls) to define
+    how often we would expect to see each file.
     """
 
     region_config: DirectIngestRegionRawFileConfig
 
-    def has_used_historical_files(self) -> bool:
-        return any(self._get_used_historical_files())
-
-    def _get_used_historical_files(self) -> List[DirectIngestRawFileConfig]:
-        """Collects all raw data files that are:
-        - always_historical_export: True
-        - used downstream
-        """
-        file_tags_with_downstream_reference = raw_file_tags_referenced_downstream(
-            self.region_config.region_code,
-            region_module_override=self.region_config.region_module,
-        )
-        return [
-            file_config
-            for file_tag, file_config in self.region_config.raw_file_configs.items()
-            if file_config.always_historical_export
-            and file_tag in file_tags_with_downstream_reference
-        ]
-
-    @staticmethod
-    def _build_date_filter_for_config(config: DirectIngestRawFileConfig) -> str:
-        """Builds a lookback date filter for the raw file. If there is no update
-        cadence, let's look back to all time; if there is one, let's just look at
-        all files
-        """
-        if not config.has_regularly_updated_data():
-            return ""
-
-        return StrictStringFormatter().format(
-            _DATE_FILTER_TEMPLATE,
-            interval=config.get_update_interval() * 7,  # look back to the past 7 files
-        )
-
-    def _generate_stable_historical_counts_for_files(self) -> str:
+    def _generate_stale_data_sub_queries_for_files(self) -> str:
         return "\n UNION ALL \n".join(
             [
                 StrictStringFormatter().format(
@@ -140,9 +89,11 @@ class StableHistoricalRawDataCountsQueryBuilder:
                         StateCode[self.region_config.region_code.upper()],
                         DirectIngestInstance.PRIMARY,
                     ),
-                    date_filter=self._build_date_filter_for_config(config),
+                    # we add an extra day here to allow for a extra leniency before
+                    # a validation to fail to *hopefully* reduce false positives
+                    max_days_stale=str(config.max_days_before_stale() + 1),
                 )
-                for config in self._get_used_historical_files()
+                for config in self.region_config.get_configs_with_regularly_updated_data()
             ]
         )
 
@@ -150,11 +101,11 @@ class StableHistoricalRawDataCountsQueryBuilder:
         return StrictStringFormatter().format(
             _QUERY_TEMPLATE,
             region_code=self.region_config.region_code.upper(),
-            all_sub_queries=self._generate_stable_historical_counts_for_files(),
+            all_sub_queries=self._generate_stale_data_sub_queries_for_files(),
         )
 
 
-def collect_stable_historical_counts_view_builders() -> List[SimpleBigQueryViewBuilder]:
+def collect_stale_raw_data_view_builders() -> List[SimpleBigQueryViewBuilder]:
     view_builders = []
     # TODO(#28896) deprecate this pattern
     for state_code in get_direct_ingest_states_existing_in_env():
@@ -164,14 +115,15 @@ def collect_stable_historical_counts_view_builders() -> List[SimpleBigQueryViewB
             continue
 
         region_config = get_region_raw_file_config(state_code.value)
-        query_builder = StableHistoricalRawDataCountsQueryBuilder(region_config)
 
-        if query_builder.has_used_historical_files():
+        if any(region_config.get_configs_with_regularly_updated_data()):
             view_builder = SimpleBigQueryViewBuilder(
                 dataset_id=dataset_config.VIEWS_DATASET,
                 view_id=f"{state_code.value.lower()}{_VIEW_ID_TEMPLATE}",
                 description=f"{_DESCRIPTION_TEMPLATE}{state_code.value}",
-                view_query_template=query_builder.generate_query_template(),
+                view_query_template=StaleRawDataQueryBuilder(
+                    region_config
+                ).generate_query_template(),
                 should_materialize=True,
                 projects_to_deploy={GCP_PROJECT_PRODUCTION},
             )
@@ -182,5 +134,5 @@ def collect_stable_historical_counts_view_builders() -> List[SimpleBigQueryViewB
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        for builder in collect_stable_historical_counts_view_builders():
+        for builder in collect_stale_raw_data_view_builders():
             builder.build_and_print()
