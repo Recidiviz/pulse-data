@@ -71,11 +71,11 @@ resource "google_composer_environment" "default_v2" {
       }
       pypi_packages = {
         "us"                            = "==2.0.2"
-        "apache-airflow-providers-sftp" = "==4.2.4"
-        "python-levenshtein"            = "==0.21.0"
-        "dateparser"                    = "==1.1.8"
+        "apache-airflow-providers-sftp" = "==4.9.0"
+        "python-levenshtein"            = "==0.25.0"
+        "dateparser"                    = "==1.2.0"
       }
-      image_version = "composer-2.5.2-airflow-2.6.3"
+      image_version = "composer-2.6.2-airflow-2.6.3"
     }
 
     private_environment_config {
