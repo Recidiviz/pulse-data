@@ -1,0 +1,58 @@
+{
+    "title": "stable_historical_raw_data_counts_validation",
+    "type": "object",
+    "properties": {
+        "PERMANENT": {
+            "type": "object",
+            "properties": {},
+            "patternProperties": {
+                "^US_[A-Z]{2}$": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "file_tag": {
+                                "type": "string"
+                            },
+                            "exclusion_reason": {
+                                "type": "string"
+                            }
+                        },
+                        "required": ["file_tag", "exclusion_reason"]
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "DATE_RANGE": {
+            "type": "object",
+            "properties": {},
+            "patternProperties": {
+                "^US_[A-Z]{2}$": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "file_tag": {
+                                "type": "string"
+                            },
+                            "exclusion_reason": {
+                                "type": "string"
+                            },
+                            "datetime_start_inclusive": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\dZ$"
+                            },
+                            "datetime_end_exclusive": {
+                                "type": "string",
+                                "pattern": "^\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\dZ$"
+                            }
+                        },
+                        "required": ["file_tag", "exclusion_reason", "datetime_start_inclusive"]
+                    }
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+} 

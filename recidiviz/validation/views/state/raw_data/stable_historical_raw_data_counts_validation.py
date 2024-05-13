@@ -14,14 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""State configurations and views for historical stable row counts"""
-
-from typing import List
+"""Views builders and configurations for stable historical raw data counts"""
+import datetime
+import json
+from collections import defaultdict
+from functools import cache
+from typing import Dict, List, Set
 
 import attr
+import yaml
+from jsonschema.validators import validate
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -40,14 +46,30 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views import dataset_config
 
+_STABLE_HISTORICAL_RAW_DATA_COUNTS_VALIDATION_CONFIG_YAML = (
+    "stable_historical_raw_data_counts_validation_config.yaml"
+)
+_STABLE_HISTORICAL_RAW_DATA_COUNTS_VALIDATION_CONFIG_SPEC = (
+    "stable_historical_raw_data_counts_validation_config_spec.json"
+)
 _VIEW_ID_TEMPLATE = "_stable_historical_raw_data_counts"
 _DESCRIPTION_TEMPLATE = (
-    "Validation view that compares historical counts of raw data in "
+    f"Validation view that compares historical counts of raw data in {{state_code}}. All "
+    f"raw data tables that are (1) marked as always_historical_export=True and (2) not "
+    f"excluded in {_STABLE_HISTORICAL_RAW_DATA_COUNTS_VALIDATION_CONFIG_YAML} are "
+    f"included in this validation."
 )
 
-_DATE_FILTER_TEMPLATE = "WHERE update_datetime > DATETIME_SUB(CURRENT_DATETIME('US/Eastern'), INTERVAL {interval} DAY)"
+_DATE_FILTER_TEMPLATE = "update_datetime > DATETIME_SUB(CURRENT_DATETIME('US/Eastern'), INTERVAL {interval} DAY)"
+_DATE_EXCLUSION_TEMPLATE = """
+      NOT RANGE_CONTAINS(
+        RANGE(SAFE.PARSE_DATETIME('%FT%T%Ez', '{datetime_start_inclusive}'), SAFE.PARSE_DATETIME('%FT%T%Ez', '{datetime_end_exclusive}')),
+        update_datetime
+      )"""
+_PERMANENT_EXCLUSION_KEY = "PERMANENT"
+_DATE_RANGE_EXCLUSION_KEY = "DATE_RANGE"
 
-# TODO(#28417) update to use * query that filter by file tag, will be simpler
+
 # TODO(#28239) replace this query (expensive, full db scan) with one that just looks
 # at the import sessions table as we will be recording the number of rows imported there
 # and maybe (??) make this query look back over all time so we have better coverage
@@ -84,6 +106,48 @@ FROM (
 
 
 @attr.define
+class StableCountsDateRangeExclusion:
+    file_tag: str
+    datetime_start_inclusive: datetime.datetime
+    datetime_end_exclusive: datetime.datetime
+
+    @classmethod
+    def from_exclusion(
+        cls, exclusion: Dict[str, str]
+    ) -> "StableCountsDateRangeExclusion":
+        return StableCountsDateRangeExclusion(
+            file_tag=exclusion["file_tag"],
+            datetime_start_inclusive=datetime.datetime.fromisoformat(
+                exclusion["datetime_start_inclusive"]
+            ),
+            datetime_end_exclusive=datetime.datetime.fromisoformat(
+                exclusion["datetime_start_inclusive"]
+            )
+            if exclusion.get("datetime_start_inclusive")
+            else datetime.datetime.now(tz=datetime.UTC),
+        )
+
+
+@cache
+def _load_stable_historical_raw_data_counts_validation_config() -> Dict:
+    """Loads and validates a config yaml using the provided |config_name| and |spec_name|"""
+    config_path = filepath_relative_to_caller(
+        _STABLE_HISTORICAL_RAW_DATA_COUNTS_VALIDATION_CONFIG_YAML, "configs"
+    )
+    spec_path = filepath_relative_to_caller(
+        _STABLE_HISTORICAL_RAW_DATA_COUNTS_VALIDATION_CONFIG_SPEC, "configs"
+    )
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        loaded_config = yaml.safe_load(f)
+    with open(spec_path, "r", encoding="utf-8") as f:
+        loaded_spec = json.load(f)
+
+    validate(loaded_config, loaded_spec)
+    return loaded_config
+
+
+@attr.define
 class StableHistoricalRawDataCountsQueryBuilder:
     """Query builder for stable historical raw data count validations.
 
@@ -94,32 +158,88 @@ class StableHistoricalRawDataCountsQueryBuilder:
 
     region_config: DirectIngestRegionRawFileConfig
 
+    def _get_date_range_exclusions(
+        self,
+    ) -> Dict[str, List[StableCountsDateRangeExclusion]]:
+        exclusions_for_region = (
+            _load_stable_historical_raw_data_counts_validation_config()[
+                _DATE_RANGE_EXCLUSION_KEY
+            ].get(self.region_config.region_code.upper(), [])
+        )
+
+        exclusions_by_file_tag = defaultdict(list)
+
+        for exclusion in exclusions_for_region:
+            exclusions_by_file_tag[exclusion["file_tag"]].append(
+                StableCountsDateRangeExclusion.from_exclusion(exclusion)
+            )
+
+        return exclusions_by_file_tag
+
+    def _get_permanent_exclusions(self) -> Set[str]:
+        exclusions_for_region = (
+            _load_stable_historical_raw_data_counts_validation_config()[
+                _PERMANENT_EXCLUSION_KEY
+            ].get(self.region_config.region_code.upper(), [])
+        )
+        return {exclusion["file_tag"] for exclusion in exclusions_for_region}
+
     def has_historical_files(self) -> bool:
+        """Indicates whether or not this region has any historical raw data configs
+        that would be included in the validation view.
+        """
         return any(self._get_historical_files())
 
     def _get_historical_files(self) -> List[DirectIngestRawFileConfig]:
-        """Collects all raw data files that are `always_historical_export: True`"""
+        """Collects all raw data files that are `always_historical_export: True` and
+        not excluded by a PERMANENT validation exclusion
+        """
+        excluded_file_tags = self._get_permanent_exclusions()
+
         return [
             file_config
-            for file_config in self.region_config.raw_file_configs.values()
+            for file_tag, file_config in self.region_config.raw_file_configs.items()
             if file_config.always_historical_export
+            and file_tag not in excluded_file_tags
         ]
 
     @staticmethod
-    def _build_date_filter_for_config(config: DirectIngestRawFileConfig) -> str:
-        """Builds a lookback date filter for the raw file. If there is no update
-        cadence, let's look back to all time; if there is one, let's just look at
-        all files
+    def _build_date_filter_for_config(
+        config: DirectIngestRawFileConfig,
+        date_range_exclusions: List[StableCountsDateRangeExclusion],
+    ) -> str:
+        """Builds a lookback date filter for the raw file. If there is regularly updated
+        data, will only look back for a max of 7 windows. If there are any date range
+        exlcusions, will exclude all file_ids within those date ranges from
+        consideration.
         """
-        if not config.has_regularly_updated_data():
+        date_filter_clauses = []
+
+        if config.has_regularly_updated_data():
+            date_filter_clauses.append(
+                StrictStringFormatter().format(
+                    _DATE_FILTER_TEMPLATE,
+                    interval=config.get_update_interval() * 7,  # past 7 files
+                )
+            )
+
+        if date_range_exclusions:
+            for exclusion in date_range_exclusions:
+                date_filter_clauses.append(
+                    StrictStringFormatter().format(
+                        _DATE_EXCLUSION_TEMPLATE,
+                        datetime_start_inclusive=exclusion.datetime_start_inclusive.isoformat(),
+                        datetime_end_exclusive=exclusion.datetime_end_exclusive.isoformat(),
+                    )
+                )
+
+        if not date_filter_clauses:
             return ""
 
-        return StrictStringFormatter().format(
-            _DATE_FILTER_TEMPLATE,
-            interval=config.get_update_interval() * 7,  # look back to the past 7 files
-        )
+        return "WHERE " + " AND \n".join(date_filter_clauses)
 
     def _generate_stable_historical_counts_for_files(self) -> str:
+        exclusions_by_file_tag = self._get_date_range_exclusions()
         return "\n UNION ALL \n".join(
             [
                 StrictStringFormatter().format(
@@ -129,7 +249,9 @@ class StableHistoricalRawDataCountsQueryBuilder:
                         StateCode[self.region_config.region_code.upper()],
                         DirectIngestInstance.PRIMARY,
                     ),
-                    date_filter=self._build_date_filter_for_config(config),
+                    date_filter=self._build_date_filter_for_config(
+                        config, exclusions_by_file_tag.get(config.file_tag, [])
+                    ),
                 )
                 for config in self._get_historical_files()
             ]
@@ -161,7 +283,9 @@ def collect_stable_historical_raw_data_counts_view_builders() -> List[
             view_builder = SimpleBigQueryViewBuilder(
                 dataset_id=dataset_config.VIEWS_DATASET,
                 view_id=f"{state_code.value.lower()}{_VIEW_ID_TEMPLATE}",
-                description=f"{_DESCRIPTION_TEMPLATE}{state_code.value}",
+                description=StrictStringFormatter().format(
+                    _DESCRIPTION_TEMPLATE, state_code=state_code.value
+                ),
                 view_query_template=query_builder.generate_query_template(),
                 should_materialize=True,
                 projects_to_deploy={GCP_PROJECT_PRODUCTION},
