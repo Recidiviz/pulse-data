@@ -19,6 +19,7 @@ IngestRawFileImportControllers.
 """
 import abc
 import datetime
+import json
 from collections import defaultdict
 from copy import deepcopy
 from functools import cmp_to_key
@@ -26,6 +27,7 @@ from types import ModuleType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 import apache_beam as beam
+import pytz
 from apache_beam.pvalue import PBegin
 from apache_beam.testing.util import BeamAssertException, assert_that
 from mock import patch
@@ -35,6 +37,9 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     MATERIALIZATION_TIME_COL_NAME,
@@ -85,7 +90,7 @@ class FakeGenerateIngestViewResults(GenerateIngestViewResults):
         project_id: str,
         state_code: StateCode,
         ingest_view_name: str,
-        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
+        raw_data_tables_to_upperbound_dates: Dict[str, str],
         ingest_instance: DirectIngestInstance,
         fake_ingest_view_results: Iterable[Dict[str, Any]],
     ) -> None:
@@ -270,7 +275,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         project_id: str,
         state_code: StateCode,
         ingest_view_name: str,
-        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
+        raw_data_tables_to_upperbound_dates: Dict[str, str],
         ingest_instance: DirectIngestInstance,
     ) -> FakeGenerateIngestViewResults:
         """Returns a constructor that generates ingest view results for a given ingest view assuming a single date."""
@@ -367,6 +372,9 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
                     association_table
                 ].update(associations)
 
+        all_raw_file_tags = DirectIngestRegionRawFileConfig(
+            self.region_code().value.lower(), self.region().region_module
+        ).raw_file_tags
         pipeline_args = default_arg_list_for_pipeline(
             pipeline=self.pipeline_class(),
             state_code=self.region_code().value,
@@ -374,6 +382,14 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
             root_entity_id_filter_set=None,
             ingest_view_results_only=ingest_view_results_only,
             ingest_views_to_run=ingest_views_to_run,
+            raw_data_upper_bound_dates_json=json.dumps(
+                # Make fake upper bounds with current time as the bound (i.e. include
+                # all data).
+                {
+                    file_tag: datetime.datetime.now(tz=pytz.UTC).isoformat()
+                    for file_tag in all_raw_file_tags
+                }
+            ),
         )
 
         with patch(

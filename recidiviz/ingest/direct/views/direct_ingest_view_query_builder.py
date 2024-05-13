@@ -20,7 +20,7 @@ import re
 import string
 from enum import Enum, auto
 from types import ModuleType
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import attr
 import pytz
@@ -307,6 +307,14 @@ class DirectIngestViewQueryBuilder:
             )
 
         return self._raw_table_dependency_configs
+
+    @property
+    def raw_data_table_dependency_file_tags(self) -> Set[str]:
+        """Returns the file tags of all the raw data tables this view query depends on."""
+        return {
+            raw_file_dependency.raw_file_config.file_tag
+            for raw_file_dependency in self.raw_table_dependency_configs
+        }
 
     def build_query(
         self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"

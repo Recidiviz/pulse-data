@@ -16,7 +16,7 @@
 # =============================================================================
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Set, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -29,6 +29,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
@@ -125,6 +128,18 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=state_code.value
         )
+
+        all_raw_file_tags = DirectIngestRegionRawFileConfig(
+            state_code.value, region_module=region.region_module
+        ).raw_file_tags
+
+        if unexpected_file_tags := set(raw_data_upper_bound_dates) - all_raw_file_tags:
+            raise ValueError(
+                f"Found unexpected file tags in raw_data_upper_bound_dates. These are "
+                f"not valid raw file tags for [{state_code.value}]: "
+                f"[{unexpected_file_tags}]. "
+            )
+
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
             delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
@@ -163,16 +178,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 raise ValueError(
                     f"Found invalid ingest view for {state_code}: {ingest_view}"
                 )
-            raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]] = {}
-            for raw_data_dependency in view_collector.get_query_builder_by_view_name(
-                ingest_view
-            ).raw_table_dependency_configs:
-                file_tag = raw_data_dependency.raw_file_config.file_tag
-                raw_data_tables_to_upperbound_dates[file_tag] = (
-                    raw_data_upper_bound_dates[file_tag]
-                    if file_tag in raw_data_upper_bound_dates
-                    else None
-                )
+
+            query_builder = view_collector.get_query_builder_by_view_name(ingest_view)
 
             ingest_view_results: beam.PCollection[
                 Dict[str, Any]
@@ -180,7 +187,11 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 project_id=self.pipeline_parameters.project,
                 state_code=state_code,
                 ingest_view_name=ingest_view,
-                raw_data_tables_to_upperbound_dates=raw_data_tables_to_upperbound_dates,
+                raw_data_tables_to_upperbound_dates={
+                    # Filter down to only the tags referenced by this view.
+                    file_tag: raw_data_upper_bound_dates[file_tag]
+                    for file_tag in query_builder.raw_data_table_dependency_file_tags
+                },
                 ingest_instance=ingest_instance,
             )
 

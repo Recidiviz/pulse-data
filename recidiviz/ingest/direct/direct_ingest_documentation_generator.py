@@ -250,9 +250,11 @@ class DirectIngestDocumentationGenerator:
         views_by_raw_file = defaultdict(list)
 
         for ingest_view in view_collector.collect_query_builders():
-            dependency_configs = ingest_view.raw_table_dependency_configs
-            for config in dependency_configs:
-                views_by_raw_file[config.file_tag].append(ingest_view.ingest_view_name)
+            dependency_file_tags = ingest_view.raw_data_table_dependency_file_tags
+            for dependency_file_tag in dependency_file_tags:
+                views_by_raw_file[dependency_file_tag].append(
+                    ingest_view.ingest_view_name
+                )
 
         return views_by_raw_file
 

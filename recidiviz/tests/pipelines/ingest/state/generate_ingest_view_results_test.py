@@ -19,7 +19,7 @@ import unittest
 from datetime import datetime
 
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+from apache_beam.pipeline_test import TestPipeline, assert_that
 from mock import patch
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -77,22 +77,6 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
             output,
             self.validate_ingest_view_results(expected_ingest_view_output, "ingest12"),
         )
-        self.test_pipeline.run()
-
-    def test_materialize_ingest_view_results_for_empty_view(self) -> None:
-        self.setup_single_ingest_view_raw_data_bq_tables(
-            ingest_view_name="ingestCompletelyEmpty", test_name="ingestCompletelyEmpty"
-        )
-        output = self.test_pipeline | pipeline.GenerateIngestViewResults(
-            project_id=BQ_EMULATOR_PROJECT_ID,
-            state_code=self.region_code(),
-            ingest_view_name="ingestCompletelyEmpty",
-            raw_data_tables_to_upperbound_dates={
-                "table6": None,
-            },
-            ingest_instance=DirectIngestInstance.SECONDARY,
-        )
-        assert_that(output, equal_to([]))
         self.test_pipeline.run()
 
 

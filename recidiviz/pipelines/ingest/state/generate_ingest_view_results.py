@@ -17,7 +17,7 @@
 """A PTransform that generates ingest view results for a given ingest view."""
 import datetime
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
@@ -91,10 +91,16 @@ class GenerateIngestViewResults(beam.PTransform):
         project_id: str,
         state_code: StateCode,
         ingest_view_name: str,
-        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
+        raw_data_tables_to_upperbound_dates: Dict[str, str],
         ingest_instance: DirectIngestInstance,
     ) -> None:
         super().__init__()
+
+        if not raw_data_tables_to_upperbound_dates:
+            raise ValueError(
+                f"Must define raw_data_tables_to_upperbound_dates for view "
+                f"[{ingest_view_name}]"
+            )
 
         self.project_id = project_id
         self.state_code = state_code
@@ -108,12 +114,11 @@ class GenerateIngestViewResults(beam.PTransform):
             ).get_query_builder_by_view_name(ingest_view_name=ingest_view_name)
         )
         parsed_upperbound_dates = {
-            parser.isoparse(upper_bound_date_str_opt)
-            for upper_bound_date_str_opt in raw_data_tables_to_upperbound_dates.values()
-            if upper_bound_date_str_opt
+            parser.isoparse(upper_bound_date_str)
+            for upper_bound_date_str in raw_data_tables_to_upperbound_dates.values()
         }
-        self.upper_bound_datetime_inclusive: Optional[datetime.datetime] = (
-            max(parsed_upperbound_dates) if parsed_upperbound_dates else None
+        self.upper_bound_datetime_inclusive: datetime.datetime = max(
+            parsed_upperbound_dates
         )
         self.ingest_instance = ingest_instance
 

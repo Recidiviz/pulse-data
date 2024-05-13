@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A class that represents a test case to be used for testing the ingest pipeline."""
+import json
 import unittest
 from collections import defaultdict
 from copy import deepcopy
@@ -650,4 +651,16 @@ class StateIngestPipelineTestCase(
             read_all_from_bq_constructor=self.create_fake_bq_read_all_source_constructor,
             ingest_view_results_only=ingest_view_results_only,
             ingest_views_to_run=ingest_views_to_run,
+            raw_data_upper_bound_dates_json=json.dumps(
+                {
+                    # Fake upper bound dates for US_DD region
+                    "table1": "2022-07-04T00:00:00.000000",
+                    "table2": "2022-07-04T00:00:00.000000",
+                    "table3": "2022-07-04T00:00:00.000000",
+                    "table4": "2022-07-04T00:00:00.000000",
+                    "table5": "2023-07-05T00:00:00.000000",
+                    "table6": None,
+                    "table7": "2023-07-04T00:00:00.000000",
+                }
+            ),
         )

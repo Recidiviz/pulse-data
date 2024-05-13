@@ -63,7 +63,6 @@ class CloudSqlQueryOperator(BaseOperator, Generic[Output]):
         cloud_sql_hook.validate_ssl_certs()
         cloud_sql_hook.validate_socket_path_length()
 
-        results = None
         with self.cloud_sql_proxy(cloud_sql_hook) as connection:
             postgres_hook = assert_type(
                 cloud_sql_hook.get_database_hook(connection),

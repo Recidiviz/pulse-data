@@ -243,14 +243,6 @@ def default_arg_list_for_pipeline(
             [
                 "--ingest_instance",
                 "SECONDARY",
-                "--raw_data_upper_bound_dates_json",
-                '{"table1":"2022-07-04T00:00:00.000000",'
-                '"table2":"2022-07-04T00:00:00.000000",'
-                '"table3":"2022-07-04T00:00:00.000000",'
-                '"table4":"2022-07-04T00:00:00.000000",'
-                '"table5":"2023-07-05T00:00:00.000000",'
-                '"table6": null, '
-                '"table7":"2023-07-04T00:00:00.000000"}',
             ]
         )
         if ingest_view_results_only := additional_pipeline_args.get(
@@ -264,6 +256,17 @@ def default_arg_list_for_pipeline(
             )
         if ingest_views_to_run := additional_pipeline_args.get("ingest_views_to_run"):
             pipeline_args.extend(["--ingest_views_to_run", ingest_views_to_run])
+        if not (
+            raw_data_upper_bound_dates_json := additional_pipeline_args.get(
+                "raw_data_upper_bound_dates_json"
+            )
+        ):
+            raw_data_upper_bound_dates_json = "{}"
+
+        pipeline_args.extend(
+            ["--raw_data_upper_bound_dates_json", raw_data_upper_bound_dates_json]
+        )
+
     else:
         raise ValueError(f"Unexpected Pipeline type: {type(pipeline)}.")
 
