@@ -1,0 +1,31 @@
+# This file tracks exclusions for each state's stable_historical_raw_data_counts
+# validation. This file has two types of exclusions:
+#   - PERMANENT
+#     for this type of exclusion, never run a validation for this file. this is a good
+#     exclusion type if you don't care if this file changes in size
+#   - DATE_RANGE
+#     for this type of exclusion, exclude this date range when building the validation.
+#     this is a good exclusion type if a jump in file size that is above the threshold
+#     is a false positive and the failure won't cycle out soon. the same file tag in the
+#     same region can have multiple entries if you want to exclude two distinct datetime
+#     ranges
+PERMANENT:
+  US_IX:
+    - file_tag: RECIDIVIZ_REFERENCE_supervisor_roster
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cauase large % numbers
+DATE_RANGE:
+  US_MO:
+    - file_tag: LBAKRDTA_TAK237
+      datetime_start_inclusive: "2022-11-17T00:00:00Z"
+      datetime_end_exclusive: "2023-08-30T00:00:00Z"
+      exclusion_reason:
+        We inconsistently import sub-sections of the file based on what is needed
+        because the file itself is so big
+    - file_tag: LBAKRDTA_TAK238
+      datetime_start_inclusive: "2022-11-17T00:00:00Z"
+      datetime_end_exclusive: "2023-04-10T00:00:00Z"
+      exclusion_reason:
+        We inconsistently import sub-sections of the file based on what is needed
+        because the file itself is so big
