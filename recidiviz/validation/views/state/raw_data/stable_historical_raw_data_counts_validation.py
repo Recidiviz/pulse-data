@@ -219,7 +219,7 @@ class StableHistoricalRawDataCountsQueryBuilder:
             date_filter_clauses.append(
                 StrictStringFormatter().format(
                     _DATE_FILTER_TEMPLATE,
-                    interval=config.get_update_interval() * 7,  # past 7 files
+                    interval=config.get_update_interval_in_days() * 7,  # past 7 files
                 )
             )
 

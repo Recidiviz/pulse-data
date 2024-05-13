@@ -43,25 +43,26 @@ _DESCRIPTION_TEMPLATE = (
     "Validation view that shows one row per stale raw data table in "
 )
 
-# TODO(#28417) update to use simplified query outlined in #26015
 # TODO(#28239) replace this query (expensive, full db scan) with one that just looks
 # at the import sessions table as we will be recording the number of rows imported there
 _SUB_QUERY_TEMPLATE = """
-SELECT file_tag, most_recent_rows_datetime, days_stale FROM (
-  SELECT 
-    "{file_tag}" as file_tag, 
-    MAX(update_datetime) as most_recent_rows_datetime, 
-    DATE_DIFF(CURRENT_DATE('US/Eastern'), CAST(MAX(update_datetime) AS DATE), DAY) AS days_stale
-  FROM `{{project_id}}.{us_xx_raw_data_dataset}.{file_tag}`
-)
-WHERE days_stale > {max_days_stale}
+  SELECT file_tag, most_recent_rows_datetime, hours_stale FROM (
+    SELECT 
+      "{file_tag}" as file_tag, 
+      MAX(update_datetime) as most_recent_rows_datetime, 
+      DATETIME_DIFF(CURRENT_DATETIME('US/Eastern'), MAX(update_datetime), HOUR) AS hours_stale
+    FROM `{{project_id}}.{us_xx_raw_data_dataset}.{file_tag}`
+  )
+  WHERE hours_stale > {max_hours_stale}
 """
 
 _QUERY_TEMPLATE = """
-SELECT file_tag, most_recent_rows_datetime, days_stale, "{region_code}" as region_code
-FROM (
-    {all_sub_queries}
-)
+SELECT
+  file_tag,
+  most_recent_rows_datetime,
+  ROUND(SAFE_DIVIDE(hours_stale, 24), 1) as days_stale,
+  "{region_code}" as region_code
+FROM ({all_sub_queries})
 """
 
 
@@ -80,7 +81,7 @@ class StaleRawDataQueryBuilder:
     region_config: DirectIngestRegionRawFileConfig
 
     def _generate_stale_data_sub_queries_for_files(self) -> str:
-        return "\n UNION ALL \n".join(
+        return "\n  UNION ALL \n".join(
             [
                 StrictStringFormatter().format(
                     _SUB_QUERY_TEMPLATE,
@@ -89,9 +90,7 @@ class StaleRawDataQueryBuilder:
                         StateCode[self.region_config.region_code.upper()],
                         DirectIngestInstance.PRIMARY,
                     ),
-                    # we add an extra day here to allow for a extra leniency before
-                    # a validation to fail to *hopefully* reduce false positives
-                    max_days_stale=str(config.max_days_before_stale() + 1),
+                    max_hours_stale=str(config.max_hours_before_stale()),
                 )
                 for config in self.region_config.get_configs_with_regularly_updated_data()
             ]
