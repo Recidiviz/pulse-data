@@ -43,10 +43,10 @@ SELECT DISTINCT
   IS_HOMELESS_REQUEST, 
   lookups.DESCRIPTION AS APPROVAL_STATUS, 
   det.CREATE_DTM,
-FROM {project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_latest hp
-LEFT JOIN {project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_DETAIL_latest det
+FROM `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_latest` hp
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_DETAIL_latest` det
 USING(HOME_PLAN_ID)
-LEFT JOIN {project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest lookups
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.LOOKUPS_latest` lookups
 ON(det.APPROVAL_STATUS_ID = lookups.LOOKUP_ID)
 AND hp.active_flag = 'Y'
 ), 
@@ -59,7 +59,7 @@ SELECT DISTINCT
     ELSE base.CREATE_DTM
   END AS UPDATE_DATE
 FROM base 
-LEFT JOIN {project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_APPROVAL_latest app
+LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.AZ_DOC_HOME_PLAN_APPROVAL_latest` app
 USING(HOME_PLAN_DETAIL_ID)
 ),
 dates_with_status AS (
@@ -83,7 +83,7 @@ SELECT
     ip.admission_date AS ip_adm_date, 
     ip.person_id
 FROM dates_with_status
-LEFT JOIN {project_id}.{normalized_state_dataset}.state_incarceration_period ip
+LEFT JOIN `{project_id}.{normalized_state_dataset}.state_incarceration_period` ip
 ON(SPLIT(ip.external_id, '-')[SAFE_OFFSET(1)] = dates_with_status.DOC_ID)
 ),
 status_joined_to_sessions AS (
@@ -97,7 +97,7 @@ SELECT
     cs.start_date, 
     cs.end_date_exclusive
 FROM status_joined_to_IP sjip
-INNER JOIN {project_id}.{sessions_dataset}.compartment_sessions cs
+INNER JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` cs
 ON (cs.person_id = sjip.person_id 
 AND cs.start_date = sjip.ip_adm_date)
 )

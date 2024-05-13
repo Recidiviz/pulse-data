@@ -60,6 +60,12 @@ from recidiviz.calculator.query.state.views.analyst_data.projected_discharges im
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_action_queue import (
+    US_AZ_ACTION_QUEUE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_az.us_az_home_plan_preprocessed import (
+    US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_eligibility import (
     PRIORITIZED_ELIGIBILITY,
 )
@@ -250,6 +256,12 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     ),
     CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER.address: (
         "Pulled into a google sheet that is being used for impact tracking (Dana Hoffman 12/21/23)"
+    ),
+    US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address: (
+        "Used in ongoing AZ reentry planning analysis. (EG)"
+    ),
+    US_AZ_ACTION_QUEUE_VIEW_BUILDER.address: (
+        "Used in ongoing AZ reentry planning analysis. (EG)"
     ),
     BigQueryAddress(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
