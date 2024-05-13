@@ -239,7 +239,9 @@ def _build_task_instance_state_dataframe(
     # Convert the conf to a string for use in the dataframe index
     df.conf = df.conf.apply(json.dumps)
     df.state = df.state.apply(TaskInstanceState)
-    df.execution_date = df.execution_date.dt.to_pydatetime()
+    # change this back to to df.execution_date.dt.to_pydatetime() when pandas no longer
+    # raises a warning that we would have to catch
+    df.execution_date = df.execution_date.apply(lambda x: x.to_pydatetime())
     df = df.set_index(["dag_id", "conf", "task_id"]).sort_index()
 
     return df
