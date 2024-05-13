@@ -17,7 +17,40 @@ US_AR:
   RELATEDPARTY:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+
 US_AZ:
+  AZ_AQ_CATEGORY:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_REASON:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_RECORD:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_TEMPLATE:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_AQ_TYPE:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
+  AZ_DOC_HOME_PLAN:
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
+  AZ_DOC_HOME_PLAN_APPROVAL:
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
+  AZ_DOC_HOME_PLAN_DETAIL:
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
   AZ_DOC_SC_COMMITMENT:
     analyst_data.us_az_early_discharge_sessions_preprocessing: |-
       We don't ingest early discharge data.
@@ -28,8 +61,14 @@ US_AZ:
     analyst_data.us_az_early_discharge_sessions_preprocessing: |-
       We don't ingest early discharge data.
   LOOKUPS:
+    analyst_data.us_az_action_queue: |-
+      Needed a way to cleanly view raw data from a specific screen in ACIS. No place
+      for this exists in our schema, and there isn't a good reason to make one.
     analyst_data.us_az_early_discharge_sessions_preprocessing: |-
       We don't ingest early discharge data.
+    analyst_data.us_az_home_plan_preprocessed: |-
+      There is no place to store "Home Plan" reentry planning information in our schema,
+      and this info is relevant to a reentry analysis in AZ.
 US_CA:
   AgentParole:
     reference_views.us_ca_location_metadata: |-
