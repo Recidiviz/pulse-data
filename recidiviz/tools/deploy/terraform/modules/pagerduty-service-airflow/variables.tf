@@ -42,3 +42,8 @@ variable "escalation_policy_id" {
 variable "integration_email_username" {
   type = string
 }
+
+// Either "discard" or "open_new_incident". Describes behavior when an incoming email doesn't match filters.
+variable "email_parsing_fallback" {
+  type = string
+}
