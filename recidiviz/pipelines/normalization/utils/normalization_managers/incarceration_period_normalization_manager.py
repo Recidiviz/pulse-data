@@ -350,6 +350,11 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             supervision_period_index=self._normalized_supervision_period_index,
         )
 
+        # Sorting periods after inference of additional periods
+        mid_processing_periods = standard_date_sort_for_incarceration_periods(
+            mid_processing_periods
+        )
+
         original_sorted_periods = deepcopy(mid_processing_periods)
 
         # Handle any periods that may have been erroneously set to have a
