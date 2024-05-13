@@ -75,15 +75,13 @@ class DirectIngestRawDataResourceLockManager:
     def _is_lock_unreleased_but_expired(
         lock: schema.DirectIngestRawDataResourceLock,
     ) -> bool:
-
         return (
             not lock.released
             and lock.lock_ttl_seconds is not None
             and (
-                time_delta := datetime.datetime.now(tz=datetime.UTC)
-                - lock.lock_acquisition_time
-            )
-            and time_delta.seconds > lock.lock_ttl_seconds
+                datetime.datetime.now(tz=datetime.UTC) - lock.lock_acquisition_time
+            ).total_seconds()
+            > lock.lock_ttl_seconds
         )
 
     def _update_unreleased_but_expired_locks_for_resoures(

@@ -189,7 +189,7 @@ class DirectIngestRawDataResourceLockManagerTest(TestCase):
                 self.raw_data,
                 DirectIngestRawDataLockActor.PROCESS,
                 "testing-testing-123",
-                ttl_seconds=60 * 60,
+                ttl_seconds=10 * 24 * 60 * 60,  # 10 days
             )
 
         active_lock = self.us_xx_manager.acquire_lock_for_resources(
