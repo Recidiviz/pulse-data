@@ -78,7 +78,7 @@ resource "pagerduty_service_integration" "email_integration" {
     body_regex       = null
     from_email_mode  = "match"
     from_email_regex = var.project_id == "recidiviz-123" ? "alerts+airflow-production@recidiviz.org" : "alerts+airflow-staging@recidiviz.org"
-    subject_mode     = "match"
+    subject_mode     = "always"
     subject_regex    = null
   }
 
