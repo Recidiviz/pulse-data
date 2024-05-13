@@ -480,5 +480,5 @@ class IngestOperationsStore(AdminPanelStore):
             return False
 
         return latest_discovery_time < datetime.now(pytz.utc) - timedelta(
-            days=config.max_days_before_stale()
+            hours=config.max_hours_before_stale()
         )
