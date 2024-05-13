@@ -67,3 +67,6 @@ columns:
     field_type: datetime
     description: |-
       Row modify date.
+  - name: MIN_MAN_FLAG
+    description: |-
+      Whether this charge has a related mandatory minimum sentence.
