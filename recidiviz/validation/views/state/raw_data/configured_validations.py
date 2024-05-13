@@ -25,11 +25,11 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
-from recidiviz.validation.views.state.raw_data.stable_historical_counts import (
-    collect_stable_historical_counts_view_builders,
+from recidiviz.validation.views.state.raw_data.stable_historical_raw_data_counts_validation import (
+    collect_stable_historical_raw_data_counts_view_builders,
 )
-from recidiviz.validation.views.state.raw_data.stale_critical_table_validation import (
-    collect_stale_critical_raw_data_view_builders,
+from recidiviz.validation.views.state.raw_data.stale_raw_data_validation import (
+    collect_stale_raw_data_view_builders,
 )
 
 
@@ -43,7 +43,7 @@ def get_all_raw_data_validations(
                 validation_category=ValidationCategory.FRESHNESS,
                 projects_to_deploy={GCP_PROJECT_PRODUCTION},
             )
-            for builder in collect_stale_critical_raw_data_view_builders()
+            for builder in collect_stale_raw_data_view_builders()
         ],
         *[
             SamenessDataValidationCheck(
@@ -53,6 +53,6 @@ def get_all_raw_data_validations(
                 validation_category=ValidationCategory.CONSISTENCY,
                 projects_to_deploy={GCP_PROJECT_PRODUCTION},
             )
-            for builder in collect_stable_historical_counts_view_builders()
+            for builder in collect_stable_historical_raw_data_counts_view_builders()
         ],
     ]
