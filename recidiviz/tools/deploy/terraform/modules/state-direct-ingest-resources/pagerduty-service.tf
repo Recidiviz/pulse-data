@@ -28,4 +28,5 @@ module "pagerduty-service-airflow" {
   service_description         = "Airflow tasks that do data processing specific to ${var.state_code}."
   escalation_policy_id        = local.implementation_engineer_escalation_policy_id
   integration_email_username  = "${local.lower_state_code}-airflow-${var.project_id}"
+  email_parsing_fallback      = "discard"
 }

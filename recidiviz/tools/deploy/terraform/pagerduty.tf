@@ -65,6 +65,7 @@ module "data-platform-airflow-pagerduty-service" {
   # TODO(#28642): Change this to "data-platform-airflow" when the routing code is updated
   #  to use the email defined in RecidivizPagerDutyService
   integration_email_username = var.project_id == "recidiviz-123" ? "data-platform-airflow-${var.project_id}" : "calculation-dag-email.b1cp4to2"
+  email_parsing_fallback     = "discard"
 }
 
 module "monitoring-airflow-pagerduty-service" {
@@ -80,4 +81,5 @@ module "monitoring-airflow-pagerduty-service" {
   # TODO(#28642): Change this to "monitoring-airflow" when the routing code is updated
   #  to use the email defined in RecidivizPagerDutyService
   integration_email_username = var.project_id == "recidiviz-123" ? "data-platform-airflow-${var.project_id}" : "airflow-dag--monitoring-email.6ai6cy3n"
+  email_parsing_fallback     = "open_new_incident"
 }

@@ -72,16 +72,21 @@ resource "pagerduty_service_integration" "email_integration" {
   integration_email = "${var.integration_email_username}@recidiviz.pagerduty.com"
   service           = pagerduty_service.service.id
   email_incident_creation = "use_rules"
-  email_filter_mode       = "and-rules-email"
+  # TODO(#28642): Change this back to `and-rules-email` once we figure out how to make filtering work
+  email_filter_mode       = "all-email"
   email_filter {
     body_mode        = "always"
     body_regex       = null
-    from_email_mode  = "match"
-    from_email_regex = var.project_id == "recidiviz-123" ? "alerts+airflow-production@recidiviz.org" : "alerts+airflow-staging@recidiviz.org"
+    from_email_mode = "always"
+    from_email_regex = null
+    # TODO(#28642): Reintroduce email filtering separately once service deploy succeeds
+    # from_email_mode  = "match"
+    # from_email_regex = var.project_id == "recidiviz-123" ? "alerts+airflow-production@recidiviz.org" : "alerts+airflow-staging@recidiviz.org"
     subject_mode     = "always"
     subject_regex    = null
   }
 
+  email_parsing_fallback  = var.email_parsing_fallback
   email_parser {
     action = "trigger"
     match_predicate {
