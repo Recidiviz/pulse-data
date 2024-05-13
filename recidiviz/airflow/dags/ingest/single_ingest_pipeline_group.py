@@ -17,16 +17,17 @@
 """
 Logic for state and ingest instance specific dataflow pipelines.
 """
-import json
 import logging
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 from airflow.decorators import task
-from airflow.models import BaseOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
+from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_delegate import (
+    IngestDataflowPipelineTaskGroupDelegate,
+)
 from recidiviz.airflow.dags.ingest.add_ingest_job_completion_sql_query_generator import (
     AddIngestJobCompletionSqlQueryGenerator,
 )
@@ -43,24 +44,16 @@ from recidiviz.airflow.dags.ingest.set_watermark_sql_query_generator import (
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
-    RecidivizDataflowFlexTemplateOperator,
-)
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
-from recidiviz.airflow.dags.utils.environment import get_project_id
+from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
+    build_dataflow_pipeline_task_group,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.ingest.pipeline_parameters import (
-    INGEST_PIPELINE_NAME,
-    IngestPipelineParameters,
-)
-from recidiviz.pipelines.ingest.pipeline_utils import (
-    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
-)
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -226,43 +219,6 @@ def _release_lock(
     )
 
 
-def _create_dataflow_pipeline(
-    state_code: StateCode,
-    ingest_instance: DirectIngestInstance,
-    max_update_datetimes_operator: BaseOperator,
-) -> Tuple[TaskGroup, BaseOperator]:
-    """Builds a task Group that handles creating the flex template operator for a given
-    pipeline parameters.
-    """
-
-    with TaskGroup(group_id="dataflow_pipeline") as dataflow_pipeline_group:
-        region = DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
-
-        @task(task_id="create_flex_template")
-        def create_flex_template(
-            max_update_datetimes: Dict[str, str]
-        ) -> Dict[str, Union[str, int, bool]]:
-            parameters = IngestPipelineParameters(
-                project=get_project_id(),
-                ingest_instance=ingest_instance.value,
-                raw_data_upper_bound_dates_json=json.dumps(max_update_datetimes),
-                pipeline=INGEST_PIPELINE_NAME,
-                state_code=state_code.value,
-                region=region,
-            )
-
-            return parameters.flex_template_launch_body()
-
-        run_pipeline = RecidivizDataflowFlexTemplateOperator(
-            task_id="run_pipeline",
-            location=region,
-            body=create_flex_template(max_update_datetimes_operator.output),  # type: ignore[arg-type]
-            project_id=get_project_id(),
-        )
-
-    return dataflow_pipeline_group, run_pipeline
-
-
 def create_single_ingest_pipeline_group(
     state_code: StateCode,
     instance: DirectIngestInstance,
@@ -285,10 +241,12 @@ def create_single_ingest_pipeline_group(
 
         acquire_lock = _acquire_lock(state_code, instance)
 
-        dataflow_pipeline_group, run_pipeline = _create_dataflow_pipeline(
-            state_code=state_code,
-            ingest_instance=instance,
-            max_update_datetimes_operator=get_max_update_datetimes,
+        dataflow_pipeline_group, run_pipeline = build_dataflow_pipeline_task_group(
+            delegate=IngestDataflowPipelineTaskGroupDelegate(
+                state_code=state_code,
+                default_ingest_instance=instance,
+                max_update_datetimes_operator=get_max_update_datetimes,
+            )
         )
 
         release_lock = _release_lock(state_code, instance)

@@ -25,7 +25,7 @@ from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
-    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
@@ -381,7 +381,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             for state_code, _instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
         }
 
-        states_with_regions = set(DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE.keys())
+        states_with_regions = set(DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE.keys())
         states_missing_regions = pipeline_enabled_states - states_with_regions
         if states_missing_regions:
             self.fail(

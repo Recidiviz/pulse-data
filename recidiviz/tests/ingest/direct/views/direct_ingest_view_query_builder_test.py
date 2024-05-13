@@ -66,8 +66,8 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
+            {"file_tag_first", "file_tag_second"},
+            view.raw_data_table_dependency_file_tags,
         )
 
         expected_view_query = """WITH
@@ -167,7 +167,8 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first"], [c.file_tag for c in view.raw_table_dependency_configs]
+            {"file_tag_first"},
+            view.raw_data_table_dependency_file_tags,
         )
 
         expected_view_query = """WITH
@@ -226,7 +227,8 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first"], [c.file_tag for c in view.raw_table_dependency_configs]
+            {"file_tag_first"},
+            view.raw_data_table_dependency_file_tags,
         )
 
         expected_view_query = """WITH
@@ -257,8 +259,8 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
+            {"file_tag_first", "file_tag_second"},
+            view.raw_data_table_dependency_file_tags,
         )
 
         expected_view_query = """WITH
@@ -340,8 +342,8 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
+            {"file_tag_first", "file_tag_second"},
+            view.raw_data_table_dependency_file_tags,
         )
 
         self.assertEqual(
@@ -405,8 +407,8 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
+            {"file_tag_first", "file_tag_second"},
+            view.raw_data_table_dependency_file_tags,
         )
 
         expected_view_query = """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
@@ -665,8 +667,8 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first", "file_tag_second"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
+            {"file_tag_first", "file_tag_second"},
+            view.raw_data_table_dependency_file_tags,
         )
 
         expected_view_query = """WITH
@@ -743,9 +745,10 @@ USING (col1);"""
         )
 
         self.assertEqual(
-            ["file_tag_first", "file_tag_first"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
+            {"file_tag_first"},
+            view.raw_data_table_dependency_file_tags,
         )
+
         self.assertEqual(
             ["file_tag_first", "file_tag_first@ALL"],
             [

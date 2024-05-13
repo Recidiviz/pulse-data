@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager im
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_utils import (
-    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
 )
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -59,7 +59,7 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 
 
 @patch.dict(
-    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
     values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
 )
 @pytest.mark.uses_db
