@@ -386,6 +386,16 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "name": "FEE_Note_Due",
         "type": "DATE",
     },
+    "Last Fee Payment": {
+        "mode": "NULLABLE",
+        "name": "Last_Fee_Payment",
+        "type": "DATE",
+    },
+    "Current Fee Balance": {
+        "mode": "NULLABLE",
+        "name": "Current_Fee_Balance",
+        "type": "FLOAT",
+    },
     "Last ARR Note": {
         "mode": "NULLABLE",
         "name": "Last_ARR_Note",
