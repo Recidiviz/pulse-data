@@ -249,4 +249,4 @@ class DirectIngestRawGCSFileMetadata(Entity, BuildableAttr, DefaultableAttr):
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
     # Conecptual Big Query file associated with this GCS file
-    bq_file: Optional[DirectIngestRawBigQueryFileMetadata] = attr.ib(default=None)
+    bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)

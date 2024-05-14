@@ -54,6 +54,7 @@ class DirectIngestRawFileMetadataSummary:
     latest_update_datetime: Optional[datetime.datetime]
 
 
+# TODO(#28239) remove this manager once raw data import dag is fully rolled out
 class DirectIngestRawFileMetadataManager:
     """An implementation for a class that handles writing metadata about each raw data
     direct ingest file to the operations Postgres table.

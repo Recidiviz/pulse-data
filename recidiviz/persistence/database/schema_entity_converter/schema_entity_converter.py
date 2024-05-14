@@ -21,6 +21,8 @@ corresponding schema Base objects and vice versa.
 from types import ModuleType
 from typing import Any, List, Sequence, Type, TypeVar
 
+from more_itertools import one
+
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -33,6 +35,11 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    EntityFieldType,
+    SchemaEdgeDirectionChecker,
+)
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 
@@ -106,19 +113,56 @@ def convert_entity_to_schema_object(entity: Entity) -> DatabaseEntity:
 EntityT = TypeVar("EntityT", bound=Entity)
 
 
+_core_entity_field_index_by_entity_type = {}
+
+
+def _get_field_index_for_db_entity(db_entity: DatabaseEntity) -> CoreEntityFieldIndex:
+    if _is_obj_in_module(db_entity, state_schema):
+        if state_entities.__name__ not in _core_entity_field_index_by_entity_type:
+            _core_entity_field_index_by_entity_type[
+                state_entities.__name__
+            ] = CoreEntityFieldIndex(
+                direction_checker=SchemaEdgeDirectionChecker.state_direction_checker()
+            )
+        return _core_entity_field_index_by_entity_type[state_entities.__name__]
+    if _is_obj_in_module(db_entity, operations_schema):
+        if operations_entities.__name__ not in _core_entity_field_index_by_entity_type:
+            _core_entity_field_index_by_entity_type[
+                operations_entities.__name__
+            ] = CoreEntityFieldIndex(
+                direction_checker=SchemaEdgeDirectionChecker.operations_direction_checker()
+            )
+        return _core_entity_field_index_by_entity_type[operations_entities.__name__]
+
+    raise ValueError(
+        f"Expected {type(db_entity)} to belong to either [{state_schema.__name__}] or "
+        f"[{operations_schema.__name__}]"
+    )
+
+
 def convert_schema_object_to_entity(
     schema_object: DatabaseEntity,
     entity_type: Type[EntityT],
     populate_back_edges: bool = True,
 ) -> EntityT:
-    result_list = convert_schema_objects_to_entity([schema_object], populate_back_edges)
-    if len(result_list) != 1:
+    conncted_schema_objects = [schema_object]
+
+    if populate_back_edges:
+        field_index = _get_field_index_for_db_entity(schema_object)
+        for backedge_key in field_index.get_all_core_entity_fields(
+            entity_type, EntityFieldType.BACK_EDGE
+        ):
+            if attribute := getattr(schema_object, backedge_key):
+                conncted_schema_objects.append(attribute)
+
+    result_list = convert_schema_objects_to_entity(
+        conncted_schema_objects, populate_back_edges
+    )
+
+    if len(result_list) != len(conncted_schema_objects):
         raise AssertionError(
-            "Call to convert object should have only returned one result."
+            f"Call to convert {len(conncted_schema_objects)} objects returned "
+            f"{len(result_list)} objects"
         )
 
-    entity = result_list[0]
-    if not isinstance(entity, entity_type):
-        raise ValueError(f"Unexpected type: {type(entity)}")
-
-    return entity
+    return one(entity for entity in result_list if isinstance(entity, entity_type))
