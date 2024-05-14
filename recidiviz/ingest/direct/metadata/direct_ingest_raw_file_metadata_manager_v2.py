@@ -433,6 +433,7 @@ class DirectIngestRawFileMetadataManagerV2:
     def transfer_metadata_to_new_instance(
         self,
         new_instance_manager: "DirectIngestRawFileMetadataManagerV2",
+        session: Session,
     ) -> None:
         """Take all rows where `is_invalidated=False` and transfer to the instance
         associated with the new_instance_manager
@@ -445,62 +446,67 @@ class DirectIngestRawFileMetadataManagerV2:
                 "Either state codes are not the same or new instance is same as origin."
             )
 
-        with SessionFactory.using_database(
-            self.database_key,
-        ) as session:
-            bq_table_cls = schema.DirectIngestRawBigQueryFileMetadata
-            gcs_table_cls = schema.DirectIngestRawGCSFileMetadata
-            # check destination instance does not have any valid metadata rows
-            check_query = (
-                session.query(bq_table_cls)
-                .filter_by(
-                    region_code=self.region_code.upper(),
-                    raw_data_instance=new_instance_manager.raw_data_instance.value,
-                    is_invalidated=False,
-                )
-                .all()
+        bq_table_cls = schema.DirectIngestRawBigQueryFileMetadata
+        gcs_table_cls = schema.DirectIngestRawGCSFileMetadata
+        # check destination instance does not have any valid metadata rows
+        check_query = (
+            session.query(bq_table_cls)
+            .filter_by(
+                region_code=self.region_code.upper(),
+                raw_data_instance=new_instance_manager.raw_data_instance.value,
+                is_invalidated=False,
             )
-            if check_query:
-                raise ValueError(
-                    "Destination instance should not have any valid raw file metadata rows."
-                )
-
-            gcs_update_query = (
-                gcs_table_cls.__table__.update()
-                .where(
-                    and_(
-                        gcs_table_cls.region_code == self.region_code.upper(),
-                        gcs_table_cls.raw_data_instance == self.raw_data_instance.value,
-                        gcs_table_cls.file_id is not None,
-                        # pylint: disable=singleton-comparison
-                        gcs_table_cls.file_id
-                        == select([bq_table_cls.file_id])
-                        .where(bq_table_cls.is_invalidated == False)
-                        .scalar_subquery(),
-                    )
-                )
-                .values(
-                    raw_data_instance=new_instance_manager.raw_data_instance.value,
-                )
+            .all()
+        )
+        if check_query:
+            raise ValueError(
+                "Destination instance should not have any valid raw file metadata rows."
             )
 
-            bq_update_query = (
-                bq_table_cls.__table__.update()
-                .where(
-                    and_(
-                        bq_table_cls.region_code == self.region_code.upper(),
-                        bq_table_cls.raw_data_instance == self.raw_data_instance.value,
-                        # pylint: disable=singleton-comparison
-                        bq_table_cls.is_invalidated == False,
-                    )
-                )
-                .values(
-                    raw_data_instance=new_instance_manager.raw_data_instance.value,
+        file_id_subquery = (
+            select([bq_table_cls.file_id])
+            .where(
+                bq_table_cls.region_code == self.region_code.upper(),
+                bq_table_cls.raw_data_instance == self.raw_data_instance.value,
+                # pylint: disable=singleton-comparison
+                bq_table_cls.is_invalidated == False,
+            )
+            .scalar_subquery()
+        )
+
+        gcs_update_query = (
+            gcs_table_cls.__table__.update()
+            .where(
+                and_(
+                    gcs_table_cls.region_code == self.region_code.upper(),
+                    gcs_table_cls.raw_data_instance == self.raw_data_instance.value,
+                    gcs_table_cls.file_id is not None,
+                    # pylint: disable=singleton-comparison
+                    gcs_table_cls.file_id.in_(file_id_subquery),
                 )
             )
+            .values(
+                raw_data_instance=new_instance_manager.raw_data_instance.value,
+            )
+        )
 
-            session.execute(gcs_update_query)
-            session.execute(bq_update_query)
+        bq_update_query = (
+            bq_table_cls.__table__.update()
+            .where(
+                and_(
+                    bq_table_cls.region_code == self.region_code.upper(),
+                    bq_table_cls.raw_data_instance == self.raw_data_instance.value,
+                    # pylint: disable=singleton-comparison
+                    bq_table_cls.is_invalidated == False,
+                )
+            )
+            .values(
+                raw_data_instance=new_instance_manager.raw_data_instance.value,
+            )
+        )
+
+        session.execute(gcs_update_query)
+        session.execute(bq_update_query)
 
     def mark_instance_data_invalidated(self) -> None:
         """Sets the is_invalidated on all rows for the state/instance"""

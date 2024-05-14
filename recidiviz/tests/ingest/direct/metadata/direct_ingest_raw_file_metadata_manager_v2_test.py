@@ -76,6 +76,8 @@ def _make_processed_raw_data_path(path_str: str) -> GcsfsFilePath:
 class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
     """Tests for DirectIngestRawFileMetadataV2Manager."""
 
+    maxDiff = None
+
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
 
@@ -627,9 +629,10 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
         )
 
         # Act
-        self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
-            self.raw_metadata_manager
-        )
+        with SessionFactory.using_database(self.database_key) as session:
+            self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                self.raw_metadata_manager, session
+            )
 
         # Assert
         with SessionFactory.using_database(
@@ -696,40 +699,54 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_primary_to_secondary(self) -> None:
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
-            "bucket/file_tag.csv",
-            dt=datetime.datetime.now(tz=datetime.UTC),
-        )
-        self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
-            raw_unprocessed_path_1
-        )
+        expected_gcs: List[DirectIngestRawGCSFileMetadata] = []
+        expected_bq: List[DirectIngestRawBigQueryFileMetadata] = []
+        for i in range(0, 3):
+            raw_unprocessed_path = _make_unprocessed_raw_data_path(
+                "bucket/file_tag.csv",
+                dt=datetime.datetime.now(tz=datetime.UTC) + timedelta(hours=i),
+            )
+            self.raw_metadata_manager.mark_raw_gcs_file_as_discovered(
+                raw_unprocessed_path
+            )
 
-        expected_gcs_metadata = DirectIngestRawGCSFileMetadata.new_with_defaults(
-            gcs_file_id=1,
-            region_code="US_XX",
-            file_tag="file_tag",
-            file_discovery_time=datetime.datetime(
-                2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC
-            ),
-            normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
-            update_datetime=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC),
-            raw_data_instance=DirectIngestInstance.SECONDARY,
-        )
+            expected_gcs.append(
+                DirectIngestRawGCSFileMetadata.new_with_defaults(
+                    gcs_file_id=1,
+                    region_code="US_XX",
+                    file_tag="file_tag",
+                    file_discovery_time=datetime.datetime(
+                        2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC
+                    ),
+                    normalized_file_name=raw_unprocessed_path.file_name,
+                    update_datetime=datetime.datetime(
+                        2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC
+                    )
+                    + timedelta(hours=i),
+                    raw_data_instance=DirectIngestInstance.SECONDARY,
+                )
+            )
 
-        expected_bq_metadata = DirectIngestRawBigQueryFileMetadata.new_with_defaults(
-            file_id=1,
-            region_code="US_XX",
-            file_tag="file_tag",
-            file_processed_time=None,
-            is_invalidated=False,
-            update_datetime=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC),
-            raw_data_instance=DirectIngestInstance.SECONDARY,
-        )
+            expected_bq.append(
+                DirectIngestRawBigQueryFileMetadata.new_with_defaults(
+                    file_id=1,
+                    region_code="US_XX",
+                    file_tag="file_tag",
+                    file_processed_time=None,
+                    is_invalidated=False,
+                    update_datetime=datetime.datetime(
+                        2015, 1, 2, 3, 4, 6, tzinfo=datetime.UTC
+                    )
+                    + timedelta(hours=i),
+                    raw_data_instance=DirectIngestInstance.SECONDARY,
+                )
+            )
 
         # Act
-        self.raw_metadata_manager.transfer_metadata_to_new_instance(
-            self.raw_metadata_manager_secondary
-        )
+        with SessionFactory.using_database(self.database_key) as session:
+            self.raw_metadata_manager.transfer_metadata_to_new_instance(
+                self.raw_metadata_manager_secondary, session
+            )
 
         # Assert
         with SessionFactory.using_database(
@@ -741,14 +758,17 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                     region_code=self.raw_metadata_manager_secondary.region_code.upper(),
                     raw_data_instance=self.raw_metadata_manager_secondary.raw_data_instance.value,
                 )
-                .one()
+                .all()
             )
             # Check here that found_metadata has expected items and all instances are marked primary
             self.assertEqual(
-                expected_gcs_metadata,
-                convert_schema_object_to_entity(
-                    metadata, DirectIngestRawGCSFileMetadata
-                ),
+                expected_gcs,
+                [
+                    convert_schema_object_to_entity(
+                        file, DirectIngestRawGCSFileMetadata
+                    )
+                    for file in metadata
+                ],
             )
 
             metadata = (
@@ -757,14 +777,17 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
                     region_code=self.raw_metadata_manager_secondary.region_code.upper(),
                     raw_data_instance=self.raw_metadata_manager_secondary.raw_data_instance.value,
                 )
-                .one()
+                .all()
             )
             # Check here that found_metadata has expected items and all instances are marked primary
             self.assertEqual(
-                expected_bq_metadata,
-                convert_schema_object_to_entity(
-                    metadata, DirectIngestRawBigQueryFileMetadata
-                ),
+                expected_bq,
+                [
+                    convert_schema_object_to_entity(
+                        file, DirectIngestRawBigQueryFileMetadata
+                    )
+                    for file in metadata
+                ],
             )
 
             # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
@@ -808,9 +831,10 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             r"Either state codes are not the same or new instance is same as origin"
         )
         with self.assertRaisesRegex(ValueError, same_instance):
-            self.raw_metadata_manager.transfer_metadata_to_new_instance(
-                self.raw_metadata_manager
-            )
+            with SessionFactory.using_database(self.database_key) as session:
+                self.raw_metadata_manager.transfer_metadata_to_new_instance(
+                    self.raw_metadata_manager, session
+                )
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_secondary_to_secondary(self) -> None:
@@ -826,9 +850,10 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             r"Either state codes are not the same or new instance is same as origin"
         )
         with self.assertRaisesRegex(ValueError, same_instance):
-            self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
-                self.raw_metadata_manager_secondary
-            )
+            with SessionFactory.using_database(self.database_key) as session:
+                self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                    self.raw_metadata_manager_secondary, session
+                )
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_different_states(self) -> None:
@@ -849,9 +874,10 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             r"Either state codes are not the same or new instance is same as origin"
         )
         with self.assertRaisesRegex(ValueError, dif_state):
-            self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
-                self.raw_metadata_manager_dif_state
-            )
+            with SessionFactory.using_database(self.database_key) as session:
+                self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                    self.raw_metadata_manager_dif_state, session
+                )
 
     @freeze_time("2015-01-02T03:04:06")
     def test_transfer_metadata_to_new_instance_existing_raw_data(self) -> None:
@@ -867,9 +893,10 @@ class DirectIngestRawFileMetadataV2ManagerTest(unittest.TestCase):
             r"Destination instance should not have any valid raw file metadata rows."
         )
         with self.assertRaisesRegex(ValueError, dif_state):
-            self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
-                self.raw_metadata_manager
-            )
+            with SessionFactory.using_database(self.database_key) as session:
+                self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                    self.raw_metadata_manager, session
+                )
 
     def test_mark_instance_as_invalidated(self) -> None:
         raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(

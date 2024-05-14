@@ -30,6 +30,9 @@ from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
+from recidiviz.common.constants.operations.direct_ingest_raw_data_import_session import (
+    DirectIngestRawDataImportSessionStatus,
+)
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataLockActor,
     DirectIngestRawDataResourceLockResource,
@@ -215,6 +218,10 @@ class DirectIngestRawBigQueryFileMetadata(Entity, BuildableAttr, DefaultableAttr
     gcs_files: List["DirectIngestRawGCSFileMetadata"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    # Import sessions associated with this bq file
+    import_sessions: List["DirectIngestRawDataImportSession"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
 
 @attr.s(eq=False)
@@ -249,4 +256,32 @@ class DirectIngestRawGCSFileMetadata(Entity, BuildableAttr, DefaultableAttr):
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
     # Conecptual Big Query file associated with this GCS file
+    bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)
+
+
+@attr.s(eq=False)
+class DirectIngestRawDataImportSession(Entity, BuildableAttr, DefaultableAttr):
+
+    import_session_id: int = attr.ib()
+    # The file_id from the direct_ingest_raw_big_query_file_metadata table
+    file_id: int = attr.ib()
+    # Status of this import session
+    import_status: DirectIngestRawDataImportSessionStatus = attr.ib()
+    # Time when the import started
+    import_start: datetime.datetime = attr.ib()
+    # Time when the import ended
+    import_end: datetime.datetime = attr.ib()
+    region_code: str = attr.ib()
+    # The instance that this raw data was imported to.
+    raw_data_instance: DirectIngestInstance = attr.ib()
+    # Denotes if, during this import, we performed historical diffs for this file_id
+    historical_diffs_active: bool = attr.ib()
+    # The number of rows included in the raw data file. If historical_diffs_active,
+    # this number will not be equal to the number of rows added to the raw data table.
+    raw_rows: int = attr.ib()
+    # Number of net new or updated rows added during the diffing process
+    net_new_or_updated_rows: int = attr.ib()
+    # Number of rows added with is_deleted as True during the diffing process
+    deleted_rows: int = attr.ib()
+    # File object from direct_ingest_raw_big_query_file_metadata table
     bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)

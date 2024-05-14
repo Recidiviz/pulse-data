@@ -117,6 +117,7 @@ _OPERATIONS_CLASS_HIERARCHY = [
     # RawFileMetadata Hierarchy
     operations_entities.DirectIngestRawBigQueryFileMetadata.__name__,
     operations_entities.DirectIngestRawGCSFileMetadata.__name__,
+    operations_entities.DirectIngestRawDataImportSession.__name__,
     # DataflowMetadata Hierarchy
     operations_entities.DirectIngestDataflowJob.__name__,
     operations_entities.DirectIngestDataflowRawTableUpperBounds.__name__,

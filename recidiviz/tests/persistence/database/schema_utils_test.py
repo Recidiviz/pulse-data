@@ -107,6 +107,7 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestRawDataResourceLock",
             "DirectIngestRawBigQueryFileMetadata",
             "DirectIngestRawGCSFileMetadata",
+            "DirectIngestRawDataImportSession",
         ]
 
         expected_qualified_names = _prefix_module_name(
@@ -216,6 +217,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_data_resource_lock",
             "direct_ingest_raw_big_query_file_metadata",
             "direct_ingest_raw_gcs_file_metadata",
+            "direct_ingest_raw_data_import_session",
         ]
         outliers_table_names = [
             "metric_benchmarks",
