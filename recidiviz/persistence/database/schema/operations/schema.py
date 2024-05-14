@@ -72,6 +72,15 @@ direct_ingest_lock_resource = Enum(
     name="direct_ingest_lock_resource",
 )
 
+direct_ingest_import_session_status = Enum(
+    enum_canonical_strings.direct_ingest_import_session_status_started,
+    enum_canonical_strings.direct_ingest_import_session_status_succeeded,
+    enum_canonical_strings.direct_ingest_import_session_status_failed_unknown,
+    enum_canonical_strings.direct_ingest_import_session_status_failed_load_step,
+    enum_canonical_strings.direct_ingest_import_session_status_failed_pre_import_normalization_step,
+    name="direct_ingest_import_session_status",
+)
+
 
 # Defines the base class for all table classes in the shared operations schema.
 OperationsBase: DeclarativeMeta = declarative_base(
@@ -385,6 +394,11 @@ class DirectIngestRawBigQueryFileMetadata(OperationsBase):
         "DirectIngestRawGCSFileMetadata", backref="bq_file", lazy="selectin"
     )
 
+    # The import sessions associated with this bq_file
+    import_sessions = relationship(
+        "DirectIngestRawDataImportSession", backref="bq_file", lazy="selectin"
+    )
+
 
 class DirectIngestRawGCSFileMetadata(OperationsBase):
     """Metadata known about a raw data csv file that exists in Google Cloud Storage."""
@@ -431,3 +445,65 @@ class DirectIngestRawGCSFileMetadata(OperationsBase):
 
     # Time when the file is actually discovered by the raw data DAG
     file_discovery_time = Column(DateTime(timezone=True), nullable=False)
+
+
+class DirectIngestRawDataImportSession(OperationsBase):
+    """Each rows corresponds to an attempt to import an entry in the DirectIngestRawBigQueryFileMetadata
+    table into BigQuery.
+    """
+
+    __tablename__ = "direct_ingest_raw_data_import_session"
+
+    import_session_id = Column(Integer, primary_key=True)
+
+    # The file_id from the direct_ingest_raw_big_query_file_metadata table
+    file_id = Column(
+        Integer,
+        ForeignKey(
+            "direct_ingest_raw_big_query_file_metadata.file_id",
+            deferrable=True,
+            initially="DEFERRED",
+            name="direct_ingest_raw_big_query_file_metadata_file_id_fkey",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    # Status of this import session
+    import_status = Column(direct_ingest_import_session_status, nullable=False)
+
+    # Time when the import started
+    import_start = Column(DateTime(timezone=True), nullable=False)
+
+    # Time when the import ended
+    import_end = Column(DateTime(timezone=True))
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The instance that this raw data was imported to.
+    raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
+
+    # Denotes if, during this import, we performed historical diffs for this file_id
+    historical_diffs_active = Column(Boolean, nullable=False)
+
+    # The number of rows included in the raw data file. If historical_diffs_active,
+    # this number will not be equal to the number of rows added to the raw data table.
+    raw_rows = Column(Integer, nullable=True)
+
+    # Number of rows added with is_deleted as True during the diffing process
+    net_new_or_updated_rows = Column(Integer, nullable=True)
+
+    # Number of rows added with is_deleted as True during the diffing process
+    deleted_rows = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "import_status != 'SUCCEEDED' OR (import_status = 'SUCCEEDED' AND raw_rows IS NOT NULL)",
+            name="all_succeeded_import_sessions_must_have_non_null_rows",
+        ),
+        CheckConstraint(
+            "(historical_diffs_active IS FALSE OR import_status != 'SUCCEEDED')"
+            "OR (historical_diffs_active IS TRUE AND import_status = 'SUCCEEDED' AND net_new_or_updated_rows IS NOT NULL AND deleted_rows IS NOT NULL)",
+            name="historical_diffs_must_have_non_null_updated_and_deleted",
+        ),
+    )

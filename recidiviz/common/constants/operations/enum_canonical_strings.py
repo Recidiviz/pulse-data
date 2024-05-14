@@ -45,3 +45,12 @@ direct_ingest_lock_actor_adhoc = "ADHOC"
 direct_ingest_lock_resource_bucket = "BUCKET"
 direct_ingest_lock_resource_operations_databse = "OPERATIONS_DATABASE"
 direct_ingest_lock_resource_big_query_raw_data_dataset = "BIG_QUERY_RAW_DATA_DATASET"
+
+# DirectIngestImportSessionStatus
+direct_ingest_import_session_status_started = "STARTED"
+direct_ingest_import_session_status_succeeded = "SUCCEEDED"
+direct_ingest_import_session_status_failed_unknown = "FAILED_UNKNOWN"
+direct_ingest_import_session_status_failed_pre_import_normalization_step = (
+    "FAILED_PRE_IMPORT_NORMALIZATION_STEP"
+)
+direct_ingest_import_session_status_failed_load_step = "FAILED_LOAD_STEP"
