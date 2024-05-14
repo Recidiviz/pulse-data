@@ -44,7 +44,6 @@ fi
 
 GIT_HASH=$(git rev-list -n 1 tags/"${DOCKER_IMAGE_TAG}") || exit_on_fail
 STATE_BUCKET="${PROJECT_ID}-tf-state"
-PAGERDUTY_TOKEN=$(get_secret "$PROJECT_ID" pagerduty_terraform_key) || exit_on_fail
 
 
 TERRAFORM_ROOT_PATH='recidiviz/tools/deploy/terraform'
@@ -65,7 +64,6 @@ echo "##### Planning Terraform ########"
 terraform_with_debug -chdir=$TERRAFORM_ROOT_PATH plan \
   -var="project_id=${PROJECT_ID}" \
   -var="git_hash=${GIT_HASH}" \
-  -var="pagerduty_token=${PAGERDUTY_TOKEN}" \
   -var="docker_image_tag=${DOCKER_IMAGE_TAG}" || exit_on_fail
 
 echo "##### Done with plan ########"

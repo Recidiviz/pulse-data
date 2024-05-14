@@ -25,10 +25,6 @@ terraform {
       source  = "hashicorp/google-beta"
       version = "4.84.0"
     }
-    pagerduty = {
-      source  = "PagerDuty/pagerduty"
-      version = "3.11.4"
-    }
   }
 }
 
@@ -40,9 +36,4 @@ provider "google" {
 provider "google-beta" {
   project = var.project_id
   region  = var.region
-}
-
-provider "pagerduty" {
-  # https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs#token
-  token = var.pagerduty_token
 }

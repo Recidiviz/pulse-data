@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# The state code associated with the buckets and service accounts (ex: "US_TN").
+# The state code associated with the buckets and service accounts (ex: "TN").
 variable "state_code" {
   type = string
 }
