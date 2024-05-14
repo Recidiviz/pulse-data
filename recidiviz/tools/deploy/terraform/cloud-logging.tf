@@ -18,8 +18,7 @@
 # On-Call Error Logs
 
 locals {
-  on_call_dataset_id    = "on_call_logs"
-  user_admin_dataset_id = "user_admin_logs"
+  on_call_dataset_id = "on_call_logs"
 }
 
 resource "google_logging_project_sink" "oncall-logs-sink" {
@@ -35,29 +34,6 @@ resource "google_logging_project_sink" "oncall-logs-sink" {
     OR (log_id("app") AND severity >= "WARNING")
     OR log_id("run.googleapis.com/requests")
     OR (log_id("python") AND severity >= "WARNING")
-  EOT
-
-  # Use a unique writer (creates a unique service account used for writing)
-  unique_writer_identity = true
-
-  bigquery_options {
-    use_partitioned_tables = true
-  }
-}
-
-resource "google_logging_project_sink" "user-admin-logs-sink" {
-  name        = "user-admin-logs"
-  description = "Sink to send user management logs to BigQuery"
-
-  # Can export to pubsub, cloud storage, bigquery, log bucket, or another project
-  destination = google_bigquery_dataset.user_admin_logs_dataset.self_link
-
-  # Include reasons logs from the user permissions admin panel page
-  filter = <<EOT
-    resource.type="cloud_run_revision"
-    resource.labels.service_name="admin-panel"
-    "State User Permissions"
-    severity>=INFO
   EOT
 
   # Use a unique writer (creates a unique service account used for writing)
@@ -95,18 +71,4 @@ resource "google_bigquery_dataset" "oncall_logs_dataset" {
     role          = "WRITER"
     special_group = "projectWriters"
   }
-}
-
-resource "google_bigquery_dataset" "user_admin_logs_dataset" {
-  dataset_id = local.user_admin_dataset_id
-  labels     = {}
-}
-
-resource "google_bigquery_dataset_access" "user_admin_logs_dataset_log_writer_access" {
-  dataset_id = google_bigquery_dataset.user_admin_logs_dataset.dataset_id
-  role       = "OWNER"
-  user_by_email = trimprefix(
-    google_logging_project_sink.user-admin-logs-sink.writer_identity,
-    "serviceAccount:"
-  )
 }
