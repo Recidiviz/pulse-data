@@ -88,6 +88,13 @@ _VIOLATION_CATEGORY_TO_TYPES_DICT: Dict[str, List[str]] = {
     ],
 }
 
+_NON_ABSCONSION_VIOLATION_TYPES = [
+    violation_type
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+    if category != "ABSCONSION"
+    for violation_type in types
+]
+
 ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
     name="absconsions_bench_warrants",
     display_name="Absconsions/Bench Warrants",
@@ -1345,6 +1352,22 @@ INCARCERATION_STARTS = EventCountMetric(
         EventSelector(
             event_type=EventType.INCARCERATION_START,
             event_conditions_dict={"is_discretionary": ["true"]},
+        )
+    ],
+)
+
+INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION = EventCountMetric(
+    name="incarceration_starts_most_severe_violation_type_not_absconsion",
+    display_name="Incarceration Starts, Most Severe Violation Type Is Not Absconsion",
+    description="Number of observed discretionary incarceration starts where the most severe violation type"
+    "is not absconsion",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.INCARCERATION_START,
+            event_conditions_dict={
+                "is_discretionary": ["true"],
+                "most_severe_violation_type": _NON_ABSCONSION_VIOLATION_TYPES,
+            },
         )
     ],
 )
