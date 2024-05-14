@@ -47,6 +47,11 @@ INCARCERATION_STARTS = OutliersMetric(
     outcome_type=MetricOutcome.ADVERSE,
 )
 
+INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION = OutliersMetric(
+    aggregated_metric=metric_config.INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
+    outcome_type=MetricOutcome.ADVERSE,
+)
+
 INCARCERATION_STARTS_AND_INFERRED = OutliersMetric(
     aggregated_metric=metric_config.INCARCERATION_STARTS_AND_INFERRED,
     outcome_type=MetricOutcome.ADVERSE,
@@ -87,6 +92,15 @@ TASK_COMPLETIONS_FULL_TERM_DISCHARGE = OutliersMetric(
 TREATMENT_STARTS = OutliersMetric(
     aggregated_metric=metric_config.TREATMENT_STARTS,
     outcome_type=MetricOutcome.FAVORABLE,
+)
+
+VIOLATIONS_ABSCONSION = OutliersMetric(
+    aggregated_metric=next(
+        metric
+        for metric in metric_config.VIOLATIONS_BY_TYPE_METRICS
+        if metric.name == "violations_absconsion"
+    ),
+    outcome_type=MetricOutcome.ADVERSE,
 )
 
 # Lantern Events

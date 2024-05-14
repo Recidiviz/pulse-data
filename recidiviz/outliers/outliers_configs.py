@@ -25,12 +25,14 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_AND_INFERRED,
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
+    INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
     TREATMENT_STARTS,
     VIOLATION_RESPONSES,
     VIOLATIONS,
+    VIOLATIONS_ABSCONSION,
 )
 from recidiviz.outliers.types import (
     MetricOutcome,
@@ -55,7 +57,7 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
     StateCode.US_ID: OutliersBackendConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
-                metric=INCARCERATION_STARTS,
+                metric=INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
                 title_display_name="Incarceration Rate",
                 body_display_name="incarceration rate",
                 event_name="incarcerations",
@@ -63,12 +65,12 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 event_name_past_tense="were incarcerated",
             ),
             OutliersMetricConfig.build_from_metric(
-                metric=ABSCONSIONS_BENCH_WARRANTS,
-                title_display_name="Absconsion & Bench Warrant Rate",
-                body_display_name="absconsion & bench warrant rate",
-                event_name="absconsions & bench warrants",
-                event_name_singular="absconsion/bench warrant",
-                event_name_past_tense="absconded or had a bench warrant",
+                metric=VIOLATIONS_ABSCONSION,
+                title_display_name="Absconsion Violation Rate",
+                body_display_name="absconsion violation rate",
+                event_name="absconsion violations",
+                event_name_singular="absconsion violation",
+                event_name_past_tense="had an absconsion related violation",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
