@@ -108,6 +108,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(
                             2024, 3, 1
                         ),  # We received another large dump of data in Feb, and nightly transfers after that.
+                        date(
+                            2024, 4, 1
+                        ),  # The refactor in PR #28313 caused a significant but expected change.
                     ],
                 },
             ),
@@ -148,6 +151,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(
                             2024, 3, 1
                         ),  # We received another large dump of data in Feb, and nightly transfers after that.
+                        date(
+                            2024, 4, 1
+                        ),  # The refactor in PR #28313 caused a significant but expected change.
                     ],
                 },
             ),
