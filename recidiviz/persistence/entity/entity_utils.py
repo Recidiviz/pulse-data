@@ -58,6 +58,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
+from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
@@ -112,7 +113,23 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateStaffCaseloadTypePeriod.__name__,
 ]
 
+_OPERATIONS_CLASS_HIERARCHY = [
+    # RawFileMetadata Hierarchy
+    operations_entities.DirectIngestRawBigQueryFileMetadata.__name__,
+    operations_entities.DirectIngestRawGCSFileMetadata.__name__,
+    # DataflowMetadata Hierarchy
+    operations_entities.DirectIngestDataflowJob.__name__,
+    operations_entities.DirectIngestDataflowRawTableUpperBounds.__name__,
+    # Classes w/o Relationships here to satifsy includes all classes
+    operations_entities.DirectIngestRawFileMetadata.__name__,
+    operations_entities.DirectIngestInstanceStatus.__name__,
+    operations_entities.DirectIngestRawDataResourceLock.__name__,
+    operations_entities.DirectIngestSftpIngestReadyFileMetadata.__name__,
+    operations_entities.DirectIngestSftpRemoteFileMetadata.__name__,
+]
+
 _state_direction_checker = None
+_operations_direction_checker = None
 
 
 class SchemaEdgeDirectionChecker:
@@ -130,6 +147,15 @@ class SchemaEdgeDirectionChecker:
         if not _state_direction_checker:
             _state_direction_checker = cls(_STATE_CLASS_HIERARCHY, state_entities)
         return _state_direction_checker
+
+    @classmethod
+    def operations_direction_checker(cls) -> "SchemaEdgeDirectionChecker":
+        global _operations_direction_checker
+        if not _operations_direction_checker:
+            _operations_direction_checker = cls(
+                _OPERATIONS_CLASS_HIERARCHY, operations_entities
+            )
+        return _operations_direction_checker
 
     def is_back_edge(self, from_cls: Type[CoreEntity], to_field_name: str) -> bool:
         """Given an entity type and a field name on that entity type, returns whether

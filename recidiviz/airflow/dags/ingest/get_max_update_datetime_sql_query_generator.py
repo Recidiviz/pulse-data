@@ -27,6 +27,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 )
 
 
+# TODO(#29058) update to use new raw data metadata tables
 class GetMaxUpdateDateTimeSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
     """Custom query generator for getting the max update datetime from direct_ingest_raw_file_metadata."""
 
