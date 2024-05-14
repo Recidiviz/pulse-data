@@ -70,12 +70,12 @@ resource "google_composer_environment" "default_v2" {
         "SENDGRID_MAIL_SENDER"       = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
       }
       pypi_packages = {
-        "us"                            = "==2.0.2"
-        "apache-airflow-providers-sftp" = "==4.2.4"
-        "python-levenshtein"            = "==0.21.0"
-        "dateparser"                    = "==1.1.8"
+        "us"                            = "==3.1.1"
+        "apache-airflow-providers-sftp" = "==4.9.1"
+        "python-levenshtein"            = "==0.25.1"
+        "dateparser"                    = "==1.2.0"
       }
-      image_version = "composer-2.5.2-airflow-2.6.3"
+      image_version = "composer-2.7.1-airflow-2.7.3"
     }
 
     private_environment_config {

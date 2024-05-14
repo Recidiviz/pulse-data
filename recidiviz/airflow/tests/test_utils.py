@@ -28,16 +28,10 @@ import attr
 from airflow import DAG, settings
 from airflow.models import BaseOperator, DagRun, TaskInstance
 from airflow.utils import timezone
+from airflow.utils.context import Context
 from airflow.utils.db import initdb, resetdb
 from airflow.utils.state import DagRunState, State, TaskInstanceState
 from airflow.utils.types import DagRunType
-from airflow.www.fab_security.sqla.models import (
-    RegisterUser,
-    User,
-    add_index_on_ab_register_user_username_postgres,
-    add_index_on_ab_user_username_postgres,
-)
-from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 from recidiviz import airflow as recidiviz_airflow_module
@@ -52,29 +46,18 @@ _FAKE_RUN_ID = "abc123"
 def execute_task(dag: DAG, task: BaseOperator) -> Any:
     """Executes a task in a given DAG, passing the appropriate context dictionary."""
     execution_date = datetime.now()
-    context = {
-        "task": task,
-        "dag_run": DagRun(
-            dag_id=dag.dag_id, execution_date=execution_date, run_id=_FAKE_RUN_ID
-        ),
-        "ti": TaskInstance(
-            task=task, execution_date=execution_date, run_id=_FAKE_RUN_ID
-        ),
-    }
+    context = Context(
+        {
+            "task": task,
+            "dag_run": DagRun(
+                dag_id=dag.dag_id, execution_date=execution_date, run_id=_FAKE_RUN_ID
+            ),
+            "ti": TaskInstance(
+                task=task, execution_date=execution_date, run_id=_FAKE_RUN_ID
+            ),
+        }
+    )
     return task.execute(context)
-
-
-# These events are implemented in Airflow source code such that every time we call create_all()
-# an additional duplicate index is added to the schema
-# See: https://github.com/apache/airflow/pull/32731
-BUGGY_AIRFLOW_SQLALCHEMY_EVENTS = [
-    (User.__table__, "before_create", add_index_on_ab_user_username_postgres),
-    (
-        RegisterUser.__table__,
-        "before_create",
-        add_index_on_ab_register_user_username_postgres,
-    ),
-]
 
 
 @attr.s(auto_attribs=True)
@@ -117,11 +100,6 @@ class AirflowIntegrationTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.engine = settings.engine
-        for invalid_event in BUGGY_AIRFLOW_SQLALCHEMY_EVENTS:
-            table, event_name, fn = invalid_event
-            if event.contains(table, event_name, fn):
-                event.remove(table, event_name, fn)
-
         initdb(load_connections=False)
 
     def tearDown(self) -> None:
