@@ -183,6 +183,7 @@ class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
     file_upload_time = Column(DateTime(timezone=True))
 
 
+# TODO(#28239) remove this table once raw data import dag is fully rolled out
 class DirectIngestRawFileMetadata(OperationsBase):
     """Represents the metadata known about a raw data file that we processed through direct ingest."""
 
@@ -347,3 +348,86 @@ class DirectIngestRawDataResourceLock(OperationsBase):
             postgresql_where=(~released),
         ),
     )
+
+
+class DirectIngestRawBigQueryFileMetadata(OperationsBase):
+    """Metadata known about a "conceptual" file_id that exists in BigQuery."""
+
+    __tablename__ = "direct_ingest_raw_big_query_file_metadata"
+
+    # "Conceptual" file id that corresponds to a single, conceptual file sent to us by
+    # the state. For raw files states send us in chunks (such as ContactNoteComment),
+    # each literal CSV that makes up the whole file will have a different gcs_file_id,
+    # but all of those entries will have the same file_id.
+    file_id = Column(Integer, primary_key=True)
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The instance that this raw data was/will be imported to.
+    raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
+
+    # Shortened name for the raw file that corresponds to its YAML schema definition
+    file_tag = Column(String(255), nullable=False, index=True)
+
+    # The date we received the raw data. This is the field you should use when looking
+    # for data current through date X. This is the latest date of the normalized file
+    # names associated with this file_id
+    update_datetime = Column(DateTime(timezone=True), nullable=False)
+
+    # Whether or not this row is still valid.
+    is_invalidated = Column(Boolean, nullable=False)
+
+    # Time when all parts of this conceptual file finished uploading to BigQuery
+    file_processed_time = Column(DateTime(timezone=True), nullable=True)
+
+    # References to the literal CSV files associated with this "conceptual" file
+    gcs_files = relationship(
+        "DirectIngestRawGCSFileMetadata", backref="bq_file", lazy="selectin"
+    )
+
+
+class DirectIngestRawGCSFileMetadata(OperationsBase):
+    """Metadata known about a raw data csv file that exists in Google Cloud Storage."""
+
+    __tablename__ = "direct_ingest_raw_gcs_file_metadata"
+
+    # An id that corresponds to the literal file in Google Cloud Storage. a single file
+    # will always have a single gcs_file_id.
+    gcs_file_id = Column(Integer, primary_key=True)
+
+    # "Conceptual" file id that corresponds to a single, conceptual file sent to us by
+    # the state. For raw files states send us in chunks (such as ContactNoteComment),
+    # each literal CSV that makes up the whole file will have a different gcs_file_id,
+    # but all of those entries will have the same file_id.
+    # If file_id is null, that likely means that while this CSV file has been discovered,
+    # we might still be waiting for the other chunks of the "conceptual" file to arrive
+    # to create a single, conceptual DirectIngestRawBigQueryFileMetadata.
+    file_id = Column(
+        Integer,
+        ForeignKey(
+            "direct_ingest_raw_big_query_file_metadata.file_id",
+            deferrable=True,
+            initially="DEFERRED",
+            name="direct_ingest_raw_big_query_file_metadata_file_id_fkey",
+        ),
+        nullable=True,
+        index=True,
+    )
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The instance of the bucket that this raw data file was discovered in.
+    raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)
+
+    # Shortened name for the raw file that corresponds to its YAML schema definition
+    file_tag = Column(String(255), nullable=False, index=True)
+
+    # Unprocessed normalized file name for this file, set at time of file discovery.
+    normalized_file_name = Column(String(255), index=True, nullable=False)
+
+    # Time that this file was uploaded into our ingest bucket. This is the date in the
+    # normalized file name.
+    update_datetime = Column(DateTime(timezone=True), nullable=False)
+
+    # Time when the file is actually discovered by the raw data DAG
+    file_discovery_time = Column(DateTime(timezone=True), nullable=False)

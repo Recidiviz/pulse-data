@@ -166,9 +166,7 @@ class DirectIngestDataflowRawTableUpperBounds(Entity, BuildableAttr, Defaultable
 
 @attr.s(eq=False)
 class DirectIngestRawDataResourceLock(Entity, BuildableAttr, DefaultableAttr):
-    """Represents metatdata about locking (and therefore usage) of our direct ingest
-    resources over time.
-    """
+    """A record of direct ingest raw data resource locks over time."""
 
     lock_id: int = attr.ib()
     # The actor who is acquiring the lock
@@ -185,3 +183,70 @@ class DirectIngestRawDataResourceLock(Entity, BuildableAttr, DefaultableAttr):
     lock_ttl_seconds: Optional[int] = attr.ib()
     # Descirption for why the lock was acquired
     lock_description: str = attr.ib()
+
+
+@attr.s(eq=False)
+class DirectIngestRawBigQueryFileMetadata(Entity, BuildableAttr, DefaultableAttr):
+    """Metadata known about a "conceptual" file_id that exists in BigQuery."""
+
+    # "Conceptual" file id that corresponds to a single, conceptual file sent to us by
+    # the state. For raw files states send us in chunks (such as ContactNoteComment),
+    # each literal CSV that makes up the whole file will have a different gcs_file_id,
+    # but all of those entries will have the same file_id.
+    file_id: int = attr.ib(validator=attr_validators.is_int)
+    region_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The instance that this raw data was/will be imported to.
+    raw_data_instance: DirectIngestInstance = attr.ib()
+    # Shortened name for the raw file that corresponds to its YAML schema definition
+    file_tag: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The date we received the raw data. This is the field you should use when looking
+    # for data current through date X. This is the maximum date of the normalized file
+    # names associated with this file_id
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # Whether or not this row is still valid.
+    is_invalidated: bool = attr.ib(validator=attr_validators.is_bool)
+    # Time when all parts of this conceptual file finished uploading to BigQuery
+    file_processed_time: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # The literal CSV files associated with this "conceptual" file
+    gcs_files: List["DirectIngestRawGCSFileMetadata"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+
+
+@attr.s(eq=False)
+class DirectIngestRawGCSFileMetadata(Entity, BuildableAttr, DefaultableAttr):
+    """Metadata known about a raw data csv file that exists in Google Cloud Storage."""
+
+    # An id that corresponds to the literal file in Google Cloud Storage. a single file
+    # will always have a single gcs_file_id.
+    gcs_file_id: int = attr.ib(validator=attr_validators.is_int)
+    # "Conceptual" file id that corresponds to a single, conceptual file sent to us by
+    # the state. For raw files states send us in chunks (such as ContactNoteComment),
+    # each literal CSV that makes up the whole file will have a different gcs_file_id,
+    # but all of those entries will have the same file_id.
+    # If file_id is null, that likely means that while this CSV file has been discovered,
+    # we might still be waiting for the other chunks of the "conceptual" file to arrive
+    # to create a single, conceptual DirectIngestRawBigQueryFileMetadata.
+    file_id: Optional[int] = attr.ib(validator=attr_validators.is_opt_int)
+    region_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The instance of the bucket that this raw data file was discovered in.
+    raw_data_instance: DirectIngestInstance = attr.ib()
+    # Shortened name for the raw file that corresponds to its YAML schema definition
+    file_tag: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Unprocessed normalized file name for this file, set at time of file discovery.
+    normalized_file_name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Time that this file was uploaded into our ingest bucket. This is the date in the
+    # normalized file name.
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # Time when the file is actually discovered by the raw data DAG
+    file_discovery_time: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # Conecptual Big Query file associated with this GCS file
+    bq_file: Optional[DirectIngestRawBigQueryFileMetadata] = attr.ib(default=None)

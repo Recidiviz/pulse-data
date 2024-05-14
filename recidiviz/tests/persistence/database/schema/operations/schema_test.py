@@ -325,3 +325,24 @@ class OperationsSchemaTest(unittest.TestCase):
                 "Attempting to commit a DirectIngestInstanceStatus",
             ):
                 session.commit()
+
+    def test_gcs_file_metadata_file_id_fk(self) -> None:
+        # check fk
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            new_gcs_tag_1 = schema.DirectIngestRawGCSFileMetadata(
+                file_id=1,
+                region_code=StateCode.US_XX.value,
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                file_tag="tag_1",
+                normalized_file_name="test.txt",
+                update_datetime=datetime.datetime(2011, 11, 11, tzinfo=pytz.UTC),
+                file_discovery_time=datetime.datetime(2011, 11, 11, tzinfo=pytz.UTC),
+            )
+            session.add(new_gcs_tag_1)
+
+            with self.assertRaisesRegex(
+                IntegrityError, r"\(psycopg2\.errors\.ForeignKeyViolation\).*"
+            ):
+                session.commit()
