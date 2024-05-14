@@ -1,0 +1,38 @@
+address:
+  dataset_id: export_archives
+  table_id: workflows_compliant_reporting_referral_record_archive
+description:
+  This table contains daily archives of the compliant_reporting_referral_record
+  export for Workflows, which are read directly from Cloud Storage.
+schema:
+  - name: tdoc_id
+    type: STRING
+    mode: NULLABLE
+  - name: remaining_criteria_needed
+    type: STRING
+    mode: NULLABLE
+  - name: compliant_reporting_eligible
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_time_on_supervision_level
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_drug_screen
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_fines_fees
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_recent_rejection
+    type: STRING
+    mode: NULLABLE
+  - name: almost_eligible_serious_sanctions
+    type: STRING
+    mode: NULLABLE
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://recidiviz-123-practices-etl-data-archive/*/compliant_reporting_referral_record.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE

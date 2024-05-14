@@ -421,7 +421,7 @@ def update_state_specific_ingest_state_schemas(
             f.result()
 
 
-def _get_ingest_view_builders(
+def get_ingest_view_builders(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> List[DirectIngestViewQueryBuilder]:
     region = direct_ingest_regions.get_direct_ingest_region(
@@ -455,7 +455,7 @@ def update_state_specific_ingest_view_result_schema(
         ingest_view_dataset_ref, default_table_expiration_ms
     )
 
-    ingest_view_builders = _get_ingest_view_builders(state_code, ingest_instance)
+    ingest_view_builders = get_ingest_view_builders(state_code, ingest_instance)
 
     ingest_view_name_to_query_job: Dict[str, bigquery.QueryJob] = {}
     for ingest_view_builder in ingest_view_builders:

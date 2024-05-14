@@ -16,10 +16,15 @@
 # =============================================================================
 """Query joining the supervision section of all CB 971 reports from MI that report population numbers
 for Michigan."""
+import os
 from datetime import date
 
+import attr
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
+from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -44,8 +49,31 @@ DATES_WITH_AVAILABLE_DATA = [
 ]
 
 
+def build_cb_971_supervision_report_schemas() -> list[SourceTableConfig]:
+    dataset_id = dataset_config.validation_oneoff_dataset_for_state(StateCode.US_MI)
+    schema = SourceTableConfig.from_file(
+        os.path.join(os.path.dirname(__file__), "schema/cb_971_supervision.yaml")
+    )
+
+    return [
+        attr.evolve(
+            schema,
+            address=BigQueryAddress(
+                dataset_id=dataset_id,
+                table_id=build_cb_971_supervision_report_table_name(date_of_data),
+            ),
+        )
+        for date_of_data in DATES_WITH_AVAILABLE_DATA
+    ]
+
+
+def build_cb_971_supervision_report_table_name(date_of_data: date) -> str:
+    return f"cb_971_supervision_{date_of_data.strftime('%Y%m%d')}"
+
+
 def query_template(date_of_data: date) -> str:
-    return f"SELECT *, DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_supervision FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.cb_971_supervision_{date_of_data.strftime('%Y%m%d')}`\n"
+    table_name = build_cb_971_supervision_report_table_name(date_of_data=date_of_data)
+    return f"SELECT *, DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_supervision FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.{table_name}`\n"
 
 
 VIEW_QUERY_TEMPLATE = "UNION ALL\n".join(

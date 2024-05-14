@@ -1,0 +1,562 @@
+address:
+  dataset_id: us_mi_validation_oneoffs
+  table_id: orc_report_v1
+schema:
+  - mode: NULLABLE
+    name: Unique
+    type: STRING
+  - mode: NULLABLE
+    name: Prefix
+    type: STRING
+  - mode: NULLABLE
+    name: Offender_Number
+    type: STRING
+  - mode: NULLABLE
+    name: Offender
+    type: STRING
+  - mode: NULLABLE
+    name: Age
+    type: STRING
+  - mode: NULLABLE
+    name: birth_date
+    type: STRING
+  - mode: NULLABLE
+    name: Location
+    type: STRING
+  - mode: NULLABLE
+    name: Cell_Designator
+    type: STRING
+  - mode: NULLABLE
+    name: Mast_Rec_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Master_Record_Type
+    type: STRING
+  - mode: NULLABLE
+    name: CFA_Finalized_Master
+    type: STRING
+  - mode: NULLABLE
+    name: CFA_Final_Date
+    type: STRING
+  - mode: NULLABLE
+    name: PB_Finalized_Master
+    type: STRING
+  - mode: NULLABLE
+    name: PB_Final_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Recommendation
+    type: STRING
+  - mode: NULLABLE
+    name: Origin
+    type: STRING
+  - mode: NULLABLE
+    name: Rec_Created_Date
+    type: STRING
+  - mode: NULLABLE
+    name: PB_Review
+    type: STRING
+  - mode: NULLABLE
+    name: Status
+    type: STRING
+  - mode: NULLABLE
+    name: Status_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Termination_Reason
+    type: STRING
+  - mode: NULLABLE
+    name: Termination_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Tracking_Location
+    type: STRING
+  - mode: NULLABLE
+    name: Referral_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Start_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Rec_Created_by
+    type: STRING
+  - mode: NULLABLE
+    name: Rec_Rationale_Code
+    type: STRING
+  - mode: NULLABLE
+    name: Rec_Program_Detail
+    type: STRING
+  - mode: NULLABLE
+    name: Authorized_by
+    type: STRING
+  - mode: NULLABLE
+    name: notes
+    type: STRING
+  - mode: NULLABLE
+    name: Screening_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Confinement_Level
+    type: STRING
+  - mode: NULLABLE
+    name: Management_Level
+    type: STRING
+  - mode: NULLABLE
+    name: True_Sec_Level
+    type: STRING
+  - mode: NULLABLE
+    name: Actual_Sec_Level
+    type: STRING
+  - mode: NULLABLE
+    name: Departure_Reason
+    type: STRING
+  - mode: NULLABLE
+    name: Waiver_Reason
+    type: STRING
+  - mode: NULLABLE
+    name: PMI_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Life_Flag
+    type: STRING
+  - mode: NULLABLE
+    name: PMX_Date
+    type: STRING
+  - mode: NULLABLE
+    name: STG
+    type: STRING
+  - mode: NULLABLE
+    name: Cell_Security
+    type: STRING
+  - mode: NULLABLE
+    name: Time
+    type: STRING
+  - mode: NULLABLE
+    name: Program
+    type: STRING
+  - mode: NULLABLE
+    name: Exclude
+    type: STRING
+  - mode: NULLABLE
+    name: Waiting
+    type: STRING
+  - mode: NULLABLE
+    name: Priority
+    type: STRING
+  - mode: NULLABLE
+    name: Selected
+    type: STRING
+  - mode: NULLABLE
+    name: MSOP
+    type: STRING
+  - mode: NULLABLE
+    name: VOP
+    type: STRING
+  - mode: NULLABLE
+    name: AOP
+    type: STRING
+  - mode: NULLABLE
+    name: T4C
+    type: STRING
+  - mode: NULLABLE
+    name: SAT
+    type: STRING
+  - mode: NULLABLE
+    name: DV
+    type: STRING
+  - mode: NULLABLE
+    name: Acad
+    type: STRING
+  - mode: NULLABLE
+    name: ER
+    type: STRING
+  - mode: NULLABLE
+    name: CTE
+    type: STRING
+  - mode: NULLABLE
+    name: CTC
+    type: STRING
+  - mode: NULLABLE
+    name: RW
+    type: STRING
+  - mode: NULLABLE
+    name: Oth
+    type: STRING
+  - mode: NULLABLE
+    name: Violent_Recidivism_Risk
+    type: STRING
+  - mode: NULLABLE
+    name: General_Recidivism_Risk
+    type: STRING
+  - mode: NULLABLE
+    name: VFO_Risk
+    type: STRING
+  - mode: NULLABLE
+    name: NonVFO_Risk
+    type: STRING
+  - mode: NULLABLE
+    name: Current_Violence
+    type: STRING
+  - mode: NULLABLE
+    name: STATIC99R_date
+    type: STRING
+  - mode: NULLABLE
+    name: Test
+    type: STRING
+  - mode: NULLABLE
+    name: STATIC99R_level
+    type: STRING
+  - mode: NULLABLE
+    name: STATIC99R_score
+    type: STRING
+  - mode: NULLABLE
+    name: STATIC99R_notes
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE_date
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE_notes
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE_Screened
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE_computed_date
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE_Score
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE_Risk
+    type: STRING
+  - mode: NULLABLE
+    name: STABLE_comments
+    type: STRING
+  - mode: NULLABLE
+    name: Overall_SO_Priority
+    type: STRING
+  - mode: NULLABLE
+    name: SexAssault_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Last_Exposure_Date
+    type: STRING
+  - mode: NULLABLE
+    name: Exposures
+    type: STRING
+  - mode: NULLABLE
+    name: Reoffense_Risk_Level
+    type: STRING
+  - mode: NULLABLE
+    name: ReasonforVASORNonScore
+    type: STRING
+  - mode: NULLABLE
+    name: MH_Unit
+    type: STRING
+  - mode: NULLABLE
+    name: MH_Admit
+    type: STRING
+  - mode: NULLABLE
+    name: MH_Dschrg
+    type: STRING
+  - mode: NULLABLE
+    name: MH_Record
+    type: STRING
+  - mode: NULLABLE
+    name: SMI
+    type: STRING
+  - mode: NULLABLE
+    name: SASSI_Score
+    type: STRING
+  - mode: NULLABLE
+    name: Final_Assessment
+    type: STRING
+  - mode: NULLABLE
+    name: PG
+    type: STRING
+  - mode: NULLABLE
+    name: PG_date
+    type: STRING
+  - mode: NULLABLE
+    name: PBIS_trip_week
+    type: STRING
+  - mode: NULLABLE
+    name: PB_Action_date
+    type: STRING
+  - mode: NULLABLE
+    name: PB_Decision
+    type: STRING
+  - mode: NULLABLE
+    name: PB_Official_date
+    type: STRING
+  - mode: NULLABLE
+    name: ParoleDate
+    type: STRING
+  - mode: NULLABLE
+    name: Continuance_Term
+    type: STRING
+  - mode: NULLABLE
+    name: TypeofReport
+    type: STRING
+  - mode: NULLABLE
+    name: PB_Req_dt
+    type: STRING
+  - mode: NULLABLE
+    name: Psych_Received_dt
+    type: STRING
+  - mode: NULLABLE
+    name: MinDate
+    type: STRING
+  - mode: NULLABLE
+    name: MaxDate
+    type: STRING
+  - mode: NULLABLE
+    name: PBJ_date
+    type: STRING
+  - mode: NULLABLE
+    name: Commitment_date
+    type: STRING
+  - mode: NULLABLE
+    name: Commitment_Type
+    type: STRING
+  - mode: NULLABLE
+    name: PVTech_date
+    type: STRING
+  - mode: NULLABLE
+    name: AddSentence_date
+    type: STRING
+  - mode: NULLABLE
+    name: Program_Time
+    type: STRING
+  - mode: NULLABLE
+    name: Habitual
+    type: STRING
+  - mode: NULLABLE
+    name: Hayes
+    type: STRING
+  - mode: NULLABLE
+    name: report
+    type: STRING
+  - mode: NULLABLE
+    name: closing_date
+    type: STRING
+  - mode: NULLABLE
+    name: city
+    type: STRING
+  - mode: NULLABLE
+    name: postal_code
+    type: STRING
+  - mode: NULLABLE
+    name: County
+    type: STRING
+  - mode: NULLABLE
+    name: proposed_address_flag
+    type: STRING
+  - mode: NULLABLE
+    name: move_in_date
+    type: STRING
+  - mode: NULLABLE
+    name: move_out_date
+    type: STRING
+  - mode: NULLABLE
+    name: Detainer_5018
+    type: STRING
+  - mode: NULLABLE
+    name: offense_code
+    type: STRING
+  - mode: NULLABLE
+    name: Offense
+    type: STRING
+  - mode: NULLABLE
+    name: offense_date
+    type: STRING
+  - mode: NULLABLE
+    name: sentenced_date
+    type: STRING
+  - mode: NULLABLE
+    name: cat5
+    type: STRING
+  - mode: NULLABLE
+    name: offgrp
+    type: STRING
+  - mode: NULLABLE
+    name: Involving_Death
+    type: STRING
+  - mode: NULLABLE
+    name: Sexual_Offense
+    type: STRING
+  - mode: NULLABLE
+    name: Other_Assaultive
+    type: STRING
+  - mode: NULLABLE
+    name: Other_Nonassaultive
+    type: STRING
+  - mode: NULLABLE
+    name: Drug
+    type: STRING
+  - mode: NULLABLE
+    name: Prior_Involving_Death
+    type: STRING
+  - mode: NULLABLE
+    name: Prior_Sexual_Offense
+    type: STRING
+  - mode: NULLABLE
+    name: Prior_Other_Assaultive
+    type: STRING
+  - mode: NULLABLE
+    name: Prior_Other_Nonassaultive
+    type: STRING
+  - mode: NULLABLE
+    name: Prior_Drug
+    type: STRING
+  - mode: NULLABLE
+    name: SSN
+    type: STRING
+  - mode: NULLABLE
+    name: SSN_verified
+    type: STRING
+  - mode: NULLABLE
+    name: DLN
+    type: STRING
+  - mode: NULLABLE
+    name: DLN_verified
+    type: STRING
+  - mode: NULLABLE
+    name: Veteran
+    type: STRING
+  - mode: NULLABLE
+    name: GED_HSD
+    type: STRING
+  - mode: NULLABLE
+    name: Graduation_date
+    type: STRING
+  - mode: NULLABLE
+    name: Verification_date
+    type: STRING
+  - mode: NULLABLE
+    name: Academic_Problems
+    type: STRING
+  - mode: NULLABLE
+    name: Cognitive_Behavioral
+    type: STRING
+  - mode: NULLABLE
+    name: Criminal_AssociatesPeers
+    type: STRING
+  - mode: NULLABLE
+    name: Criminal_Opportunity
+    type: STRING
+  - mode: NULLABLE
+    name: Criminal_Personality
+    type: STRING
+  - mode: NULLABLE
+    name: Criminal_Thinking_Self_Report
+    type: STRING
+  - mode: NULLABLE
+    name: Experiences_of_Abuse_as_a_Child
+    type: STRING
+  - mode: NULLABLE
+    name: Experiences_of_Abuse_as_an_Adult
+    type: STRING
+  - mode: NULLABLE
+    name: Family_Criminality
+    type: STRING
+  - mode: NULLABLE
+    name: Impulsivity
+    type: STRING
+  - mode: NULLABLE
+    name: Leisure_and_Recreation
+    type: STRING
+  - mode: NULLABLE
+    name: Manipulative
+    type: STRING
+  - mode: NULLABLE
+    name: Parental_Stress
+    type: STRING
+  - mode: NULLABLE
+    name: Relationship_Dysfunction
+    type: STRING
+  - mode: NULLABLE
+    name: Residential_Instability
+    type: STRING
+  - mode: NULLABLE
+    name: SelfEfficacy
+    type: STRING
+  - mode: NULLABLE
+    name: Social_Adjustment_Problems
+    type: STRING
+  - mode: NULLABLE
+    name: Social_Isolation
+    type: STRING
+  - mode: NULLABLE
+    name: Unsafe_Neighborhood
+    type: STRING
+  - mode: NULLABLE
+    name: Violence_Tolerance
+    type: STRING
+  - mode: NULLABLE
+    name: Youth_Rebellion
+    type: STRING
+  - mode: NULLABLE
+    name: ApMth_dt
+    type: STRING
+  - mode: NULLABLE
+    name: Applied_Math
+    type: STRING
+  - mode: NULLABLE
+    name: Lang_dt
+    type: STRING
+  - mode: NULLABLE
+    name: Language
+    type: STRING
+  - mode: NULLABLE
+    name: Math_dt
+    type: STRING
+  - mode: NULLABLE
+    name: Math
+    type: STRING
+  - mode: NULLABLE
+    name: MthComp_dt
+    type: STRING
+  - mode: NULLABLE
+    name: Math_Computation
+    type: STRING
+  - mode: NULLABLE
+    name: Reading_dt
+    type: STRING
+  - mode: NULLABLE
+    name: Reading
+    type: STRING
+  - mode: NULLABLE
+    name: Spelling_dt
+    type: STRING
+  - mode: NULLABLE
+    name: Spelling
+    type: STRING
+  - mode: NULLABLE
+    name: Ed_Date_Range
+    type: STRING
+  - mode: NULLABLE
+    name: MSI_End_Date
+    type: STRING
+  - mode: NULLABLE
+    name: MSI
+    type: STRING
+  - mode: NULLABLE
+    name: Unscorable
+    type: STRING
+  - mode: NULLABLE
+    name: Static_scored
+    type: STRING
+  - mode: NULLABLE
+    name: Static_Score
+    type: STRING
+  - mode: NULLABLE
+    name: Static_Level
+    type: STRING
+  - mode: NULLABLE
+    name: Reason_Nonscore
+    type: STRING

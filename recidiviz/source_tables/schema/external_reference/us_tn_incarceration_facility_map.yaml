@@ -1,0 +1,24 @@
+address:
+  dataset_id: external_reference
+  table_id: us_tn_incarceration_facility_map
+description:
+  "TODO(#29155): Add a description as to what this is used for and why
+  it isn't managed in code"
+schema:
+  - name: level_1_incarceration_location_external_id
+    type: STRING
+    mode: REQUIRED
+  - name: level_2_incarceration_location_external_id
+    type: STRING
+    mode: REQUIRED
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://recidiviz-123-external-reference-data/us_tn_incarceration_facility_map.csv
+  sourceFormat: CSV
+  compression: NONE
+  csvOptions:
+    fieldDelimiter: ","
+    skipLeadingRows: "1"
+    quote: '"'
+    encoding: UTF-8

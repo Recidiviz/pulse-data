@@ -1,0 +1,32 @@
+address:
+  dataset_id: export_archives
+  table_id: workflows_resident_record_archive
+description:
+  This table contains daily archives of the resident_record export for
+  Workflows, which are read directly from Cloud Storage.
+schema:
+  - name: person_external_id
+    type: STRING
+    mode: NULLABLE
+  - name: pseudonymized_id
+    type: STRING
+    mode: NULLABLE
+  - name: person_id
+    type: INTEGER
+    mode: NULLABLE
+  - name: officer_id
+    type: STRING
+    mode: NULLABLE
+  - name: facility_id
+    type: STRING
+    mode: NULLABLE
+  - name: all_eligible_opportunities
+    type: STRING
+    mode: REPEATED
+clustering_fields: null
+external_data_configuration:
+  sourceUris:
+    - gs://recidiviz-123-practices-etl-data-archive/*/resident_record.json
+  sourceFormat: NEWLINE_DELIMITED_JSON
+  ignoreUnknownValues: true
+  compression: NONE
