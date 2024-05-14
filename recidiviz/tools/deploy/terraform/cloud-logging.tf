@@ -110,15 +110,3 @@ resource "google_bigquery_dataset_access" "user_admin_logs_dataset_log_writer_ac
     "serviceAccount:"
   )
 }
-
-resource "google_bigquery_dataset_access" "user_admin_logs_dataset_special_group_access" {
-  dataset_id = google_bigquery_dataset.user_admin_logs_dataset.dataset_id
-  for_each = tomap({
-    projectOwners  = "OWNER"
-    projectReaders = "READER"
-    projectWriters = "WRITER"
-  })
-
-  special_group = each.key
-  role          = each.value
-}
