@@ -523,6 +523,7 @@ VIEW_QUERY_TEMPLATE = f"""
             next_movement_type,
             transfer_type,
             transfer_reason,
+            CAST(ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date, end_date NULLS LAST) AS STRING) AS incarceration_period_id,
         FROM get_next_and_prev_statuses
         
         -- Filter to incarceration statuses
@@ -547,26 +548,72 @@ VIEW_QUERY_TEMPLATE = f"""
             -- Filter out time periods after discharges and releases
             AND movement_type NOT IN ('Discharge', 'Release')
         )
+    ),
+    county_jail_periods AS (
+      -- `county_jail_periods` creates very simple incarceration periods for when
+      -- someone was in county jail. We detect this by using
+      -- Cis_4009_Cust_Override_Rsn_Cd. This doesn't capture all county_jail periods,
+      -- but at least should get past or already completed periods which are entered
+      -- correctly by staff. 
+      SELECT Cis_400_Cis_100_Client_Id AS Client_Id,
+             DATE(Est_Sent_Start_Date) AS start_date,
+             IF(DATE(Curr_Cust_Rel_Date) < @{UPDATE_DATETIME_PARAM_NAME}, DATE(Curr_Cust_Rel_Date), NULL) AS end_date,
+             STRING(NULL) AS previous_status,
+             STRING(NULL) AS current_status,
+             STRING(NULL) AS next_status,
+             STRING(NULL) AS current_status_location,
+             '9' AS location_type, -- This maps to County Jail in the custom enum parser
+             STRING(NULL) AS previous_location_type,
+             STRING(NULL) AS next_location_type,
+             STRING(NULL) AS jurisdiction_location_type,
+             STRING(NULL) AS housing_unit,
+             STRING(NULL) AS movement_type,
+             STRING(NULL) AS next_movement_type,
+             STRING(NULL) AS transfer_type,
+             STRING(NULL) AS transfer_reason
+      FROM
+        {{CIS_401_CRT_ORDER_HDR}} co
+        LEFT JOIN {{CIS_4009_SENT_CALC_SYS}} scs
+          ON co.Cis_4009_Cust_Override_Rsn_Cd = scs.Sent_Calc_Sys_Cd
+      -- TODO(#29764) Consider if we want this filter. Removes around 400 rows of 37k.
+      -- This is how we identify incarceration sentences. All rows either have all 3 of
+      -- these values or none.
+      WHERE Early_Cust_Rel_Date IS NOT NULL
+        AND Curr_Cust_Rel_Date IS NOT NULL
+        AND Max_Cust_Rel_Date IS NOT NULL
+        -- 121 maps to 'County Jail'. This ensures we're only capturing periods where
+        -- we know someone was in County Jail.
+        AND co.Cis_4009_Cust_Override_Rsn_Cd = '121'
+    ), additive_cjp_periods_only as (
+        -- `additive_cjp_periods_only` drops any periods that overlap with periods which
+        -- already exist.
+        select cjp.*
+        from county_jail_periods cjp
+        where not exists (
+            select *
+            from incarceration_periods ip
+            where ip.client_id = cjp.Client_Id and (
+                -- A CJP overlaps with an IP if the IP period starts before or during
+                -- the CJP, and then ends during or after the CJP.
+                (ip.start_date <= cjp.start_date OR (ip.start_date BETWEEN cjp.start_date AND cjp.end_date)) AND
+                ((ip.end_date BETWEEN cjp.start_date AND cjp.end_date) OR COALESCE(ip.end_date, '9999-12-31') >= coalesce(cjp.end_date, '9999-12-31'))
+            )
+        )
+    ),
+    unioned AS (
+        -- `unioned` simply unions our IPs and our county jail IPs together. When county
+        -- jail IPs were added, we chose to retain all original period logic and only
+        -- add additional IPs for county jails -- this unions the original IPs and the
+        -- county jail IPs together.
+        SELECT *
+        FROM incarceration_periods
+        UNION DISTINCT
+        SELECT *, null as incarceration_period_id
+        FROM additive_cjp_periods_only
     )
-    SELECT
-        client_id,
-        start_date,
-        end_date,
-        previous_status,
-        current_status,
-        next_status,
-        current_status_location,
-        location_type,
-        previous_location_type,
-        next_location_type,
-        jurisdiction_location_type,
-        housing_unit,
-        movement_type,
-        next_movement_type,
-        transfer_type,
-        transfer_reason,
-        CAST(ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date ASC, end_date NULLS LAST) AS STRING) AS incarceration_period_id,
-    FROM incarceration_periods
+    SELECT * except (incarceration_period_id),
+        CAST(ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY start_date, end_date NULLS LAST, incarceration_period_id) AS STRING) AS new_incarceration_period_id,
+    FROM unioned
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
