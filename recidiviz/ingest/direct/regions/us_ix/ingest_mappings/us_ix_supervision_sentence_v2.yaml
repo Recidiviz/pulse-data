@@ -43,7 +43,10 @@ output:
           effective_date: # UPDATED: now uses this date from scl_SentenceDetail when available, but nearly always the same as EffectiveDate on the SentenceOrder anyways
             $conditional:
               - $if:
-                  $not_null: SegmentStartDate
+                  $custom:
+                    $function: us_ix_custom_parsers.is_valid_year
+                    $args:
+                      segment_start_date: SegmentStartDate
                 $then: SegmentStartDate
               - $else: EffectiveDate
           status:
