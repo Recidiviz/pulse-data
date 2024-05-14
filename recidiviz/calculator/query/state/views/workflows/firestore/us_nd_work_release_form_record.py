@@ -66,6 +66,29 @@ case_notes_cte AS (
         AND sic.incident_type = 'POSITIVE'
         AND sic.incident_date > DATE_SUB(CURRENT_DATE, INTERVAL 1 YEAR)
 
+    UNION ALL
+
+    -- Assignments (this includes programming, career readiness and jobs)
+    SELECT 
+        peid.external_id,
+        "Assignments" AS criteria,
+        spa.participation_status AS note_title,
+        CONCAT(
+            spa.program_location_id,
+            " - Service: ",
+            SPLIT(spa.program_id, '@@')[SAFE_OFFSET(0)],
+            " - Activity Description: ",
+            SPLIT(spa.program_id, '@@')[SAFE_OFFSET(1)]
+        ) AS note_body,
+        COALESCE(spa.discharge_date, spa.start_date, spa.referral_date) AS event_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` spa
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        USING (person_id)
+    WHERE spa.state_code = 'US_ND'
+        AND spa.program_id IS NOT NULL
+        AND spa.participation_status = 'IN_PROGRESS'
+    GROUP BY 1,2,3,4,5
+    HAVING note_body IS NOT NULL
 ), 
 json_to_array_cte AS (
     {json_to_array_cte('current_incarceration_pop_cte')}
