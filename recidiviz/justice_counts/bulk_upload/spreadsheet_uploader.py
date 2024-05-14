@@ -725,6 +725,16 @@ class SpreadsheetUploader:
                     custom_starting_month or 1
                 )  # if no custom starting month specified, assume calendar year
                 assumed_frequency = ReportingFrequency.ANNUAL
+            else:
+                raise JusticeCountsBulkUploadException(
+                    title="Reporting Frequency Not Recognized",
+                    description=(
+                        f"Unexpected reporting frequency: {reporting_frequency} and "
+                        f'month {row.get("month")}'
+                    ),
+                    message_type=BulkUploadMessageType.ERROR,
+                    time_range=None,
+                )
 
             date_range_start, date_range_end = ReportInterface.get_date_range(
                 year=year, month=month, frequency=assumed_frequency.value

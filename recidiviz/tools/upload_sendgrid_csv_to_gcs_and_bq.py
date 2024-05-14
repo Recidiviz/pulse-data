@@ -205,7 +205,6 @@ def load_from_gcs_to_temp_table(
 
     if not table_load_success:
         logging.info("Copy from cloud storage to temporary table failed")
-        return
 
 
 def load_from_temp_to_permanent_table(

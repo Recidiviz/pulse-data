@@ -110,6 +110,8 @@ def calculate_id_lsu_text_analytics(
     initial_batch_date = convert_batch_id_to_utc(initial_batch_id)
     if eligibility_batch_id is not None:
         eligibility_batch_date = convert_batch_id_to_utc(eligibility_batch_id)
+    else:
+        eligibility_batch_date = None
 
     # Get a list of all opted out individuals
     # We use this to intersect it with the individuals whom we sent texts to in order to
@@ -134,6 +136,8 @@ def calculate_id_lsu_text_analytics(
             firestore_client=firestore_client,
             opt_out_document_ids=opt_out_document_ids,
         )
+    else:
+        eligibility_text_document_ids = None
 
     ### Replies ###
     _print_reply_analytics(
@@ -142,12 +146,8 @@ def calculate_id_lsu_text_analytics(
         initial_batch_date=initial_batch_date,
         initial_text_document_ids=initial_text_document_ids,
         eligibility_batch_id=eligibility_batch_id,
-        eligibility_batch_date=eligibility_batch_date
-        if eligibility_batch_id is not None
-        else None,
-        eligibility_text_document_ids=eligibility_text_document_ids
-        if eligibility_batch_id is not None
-        else None,
+        eligibility_batch_date=eligibility_batch_date,
+        eligibility_text_document_ids=eligibility_text_document_ids,
     )
 
 

@@ -159,7 +159,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             blob.metadata = None
             blob.patch()
         except GCSBlobDoesNotExistError:
-            return
+            pass
 
     @retry.Retry(predicate=google_api_retry_predicate)
     def update_metadata(
@@ -174,7 +174,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             blob.metadata = new_metadata
             blob.patch()
         except GCSBlobDoesNotExistError:
-            return
+            pass
 
     @retry.Retry(predicate=google_api_retry_predicate)
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:

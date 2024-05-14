@@ -225,6 +225,8 @@ def cis_408_violations_notes_cte(
         vtype = " '65' "
     elif violation_type.upper() == "ANY":
         vtype = " '65','64','63' "
+    else:
+        raise ValueError(f"Unexpected violation_type [{violation_type}]")
 
     return f"""
     SELECT 

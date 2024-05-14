@@ -236,6 +236,10 @@ def custody_or_supervision_level_criteria_builder(
         level_type = "custody"
     elif compartment_level_1_filter.upper() == "SUPERVISION":
         level_type = "supervision"
+    else:
+        raise ValueError(
+            f"Unexpected compartment_level_1_filter [{compartment_level_1_filter}]"
+        )
 
     # Transform list of levels to a string to be used in the query
     levels_str = "('" + "', '".join(levels_lst) + "')"
@@ -258,6 +262,8 @@ def custody_or_supervision_level_criteria_builder(
         meets_criteria_default_view_builder = False
     elif level_meets_criteria.upper() == "FALSE":
         meets_criteria_default_view_builder = True
+    else:
+        raise ValueError(f"Unexpected level_meets_criteria [{level_meets_criteria}]")
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,

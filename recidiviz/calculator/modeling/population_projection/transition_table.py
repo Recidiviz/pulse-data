@@ -716,6 +716,10 @@ class TransitionTable:
 
         elif affected_fraction is not None:
             affected_ratio = affected_fraction
+        else:
+            raise ValueError(
+                "Expected either current_mm or affected_ratio to be nonnull."
+            )
 
         # calculate standard deviation
         average_duration = np.average(
