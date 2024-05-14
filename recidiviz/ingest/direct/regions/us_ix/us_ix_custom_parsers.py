@@ -274,3 +274,7 @@ def parse_charge_is_sex_offense(statute: str) -> bool:
 
 def is_county_jail(supervision_site: str) -> bool:
     return "COUNTY JAIL" in supervision_site.upper()
+
+
+def is_valid_year(segment_start_date: str) -> bool:
+    return segment_start_date != "" and segment_start_date[0:4] != "9999"
