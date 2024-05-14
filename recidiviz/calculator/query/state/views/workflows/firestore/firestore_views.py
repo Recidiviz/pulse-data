@@ -39,15 +39,6 @@ from recidiviz.calculator.query.state.views.workflows.firestore.supervision_staf
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ca_supervision_level_downgrade_form_record import (
     US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_id_complete_discharge_early_from_supervision_request_record import (
-    US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_id_complete_full_term_early_from_supervision_request_record import (
-    US_ID_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.workflows.firestore.us_id_complete_transfer_to_limited_supervision_form_record import (
-    US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ix_complete_discharge_early_from_supervision_request_record import (
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
@@ -171,9 +162,6 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     LOCATION_RECORD_VIEW_BUILDER,
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
     US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
-    US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-    US_ID_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
-    US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
     US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
     US_IX_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
     US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,

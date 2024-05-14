@@ -101,59 +101,23 @@ US_ID:
   DoPro_Participant:
     experiments.person_assignments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-  agnt_case_updt:
-    task_eligibility_criteria_us_id.income_verified_within_3_months: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_id_complete_discharge_early_from_supervision_request_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   assess_qstn_choice:
     sessions.us_id_raw_lsir_assessments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   cis_codephonenumbertype:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_employer:
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_employment:
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   cis_offender:
     workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   cis_offenderphonenumber:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_personemailaddress:
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   cis_personphonenumber:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   cis_phonenumber:
     workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.us_id_complete_transfer_to_limited_supervision_form_record:
-      |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   geo_cis_participants:
     experiments.person_assignments: |-
@@ -162,11 +126,6 @@ US_ID:
     dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     population_projection_data.us_id_monthly_paid_incarceration_population: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-    task_eligibility_criteria_us_id.not_at_liberty: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  ofndr_caution:
-    task_eligibility_criteria_us_id.no_active_nco: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ofndr_loc_hist:
     population_projection_data.us_id_monthly_paid_incarceration_population: |-
