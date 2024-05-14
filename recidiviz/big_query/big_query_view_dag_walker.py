@@ -932,6 +932,22 @@ class BigQueryViewDagWalker:
             populate_node_descendants_sub_dag, synchronous=True, reverse=True
         )
 
+    def get_referenced_source_tables(self) -> set[BigQueryAddress]:
+        referenced_source_tables: set[BigQueryAddress] = set()
+
+        def add_child_nodes_to_referenced_source_tables(
+            view: BigQueryView,
+            _previous_level_results: dict[BigQueryView, None],
+        ) -> None:
+            node = self.node_for_view(view)
+            referenced_source_tables.update(set(node.source_addresses))
+
+        self.process_dag(
+            view_process_fn=add_child_nodes_to_referenced_source_tables,
+            synchronous=True,
+        )
+        return referenced_source_tables
+
     def ancestors_dfs_tree_str(
         self,
         view: BigQueryView,

@@ -16,10 +16,15 @@
 # =============================================================================
 """Query joining all OOR reports from MI that report incarceration per-person numbers
 for Michigan."""
+import os
 from datetime import date
 
+import attr
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
+from recidiviz.source_tables.source_table_config import SourceTableConfig
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -238,16 +243,75 @@ DATES_WITH_AVAILABLE_DATA = [
 ]
 
 
-def query_template(date_of_data: date) -> str:
+def build_orc_report_schemas() -> list[SourceTableConfig]:
+    """Returns list of SourceTableConfig objects representing all the oneoffs reports"""
+    dataset_id = dataset_config.validation_oneoff_dataset_for_state(StateCode.US_MI)
+    v1_schema = SourceTableConfig.from_file(
+        os.path.join(os.path.dirname(__file__), "schema/orc_report_v1.yaml")
+    )
+    v2_schema = SourceTableConfig.from_file(
+        os.path.join(os.path.dirname(__file__), "schema/orc_report_v2.yaml")
+    )
 
-    if date_of_data < date(2023, 7, 5):
-        return f"SELECT Offender_Number AS person_external_id,DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, Location AS facility, Confinement_Level, Management_Level, True_Sec_Level, Actual_Sec_Level, STG, NULL AS MH_Treatment FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.orc_report_{date_of_data.strftime('%Y%m%d')}` WHERE Unique = 'Yes'\n"
+    return [
+        attr.evolve(
+            v1_schema if _is_v1_schema(date_of_data) else v2_schema,
+            address=BigQueryAddress(
+                dataset_id=dataset_id,
+                table_id=_build_orc_report_table_name(date_of_data),
+            ),
+        )
+        for date_of_data in DATES_WITH_AVAILABLE_DATA
+    ]
 
-    return f"SELECT Offender_Number AS person_external_id,DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, Location AS facility, Confinement_Level, Management_Level, True_Sec_Level, Actual_Sec_Level, STG, MH_Treatment FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.orc_report_{date_of_data.strftime('%Y%m%d')}` WHERE Unique = 'Yes'\n"
+
+def _build_orc_report_table_name(date_of_data: date) -> str:
+    return f"orc_report_{date_of_data.strftime('%Y%m%d')}"
+
+
+def _is_v1_schema(date_of_data: date) -> bool:
+    return date_of_data < date(2023, 7, 5)
+
+
+def _query_template(date_of_data: date) -> str:
+    """Returns a query that selects needed data from the oneoffs"""
+    table_name = _build_orc_report_table_name(date_of_data)
+
+    if _is_v1_schema(date_of_data):
+        query = f"""SELECT
+            Offender_Number AS person_external_id,
+            DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, 
+            Location AS facility,
+            Confinement_Level,
+            Management_Level,
+            True_Sec_Level,
+            Actual_Sec_Level,
+            STG,
+            NULL AS MH_Treatment
+            FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.{table_name}`
+            WHERE Unique = 'Yes'
+        """
+    else:
+        query = f"""SELECT
+            Offender_Number AS person_external_id,
+            DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay,
+            Location AS facility,
+            Confinement_Level,
+            Management_Level,
+            True_Sec_Level,
+            Actual_Sec_Level,
+            STG,
+            MH_Treatment
+            FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.{table_name}`
+            WHERE Unique = 'Yes'
+        """
+
+    # Convert back into single-line
+    return query.replace("\n", "") + "\n"
 
 
 _SUBQUERY_TEMPLATE = "UNION ALL\n".join(
-    [query_template(d) for d in DATES_WITH_AVAILABLE_DATA]
+    [_query_template(d) for d in DATES_WITH_AVAILABLE_DATA]
 )
 
 VIEW_QUERY_TEMPLATE = f"""

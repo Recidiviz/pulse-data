@@ -449,7 +449,7 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
         self.mock_query_builder.ingest_view_name.return_value = "us_xx_view"
 
         self.get_view_builder_patcher = mock.patch(
-            "recidiviz.pipelines.dataflow_output_table_manager._get_ingest_view_builders"
+            "recidiviz.pipelines.dataflow_output_table_manager.get_ingest_view_builders"
         )
         self.mock_get_view_builder = self.get_view_builder_patcher.start()
 

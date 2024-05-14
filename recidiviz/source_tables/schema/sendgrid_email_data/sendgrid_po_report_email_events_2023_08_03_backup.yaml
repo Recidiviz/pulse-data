@@ -1,0 +1,26 @@
+address:
+  dataset_id: sendgrid_email_data
+  table_id: sendgrid_po_report_email_events_2023_08_03_backup
+description:
+  "2023-08-03 backup of the following view query on raw sendgrid email\
+  \ data:\n\n    WITH monthly_report_message_ids AS (\n        SELECT message_id\n\
+  \        FROM `{project_id}.{sendgrid_email_dataset}.raw_sendgrid_email_data`\n\
+  \        WHERE ENDS_WITH(email, \".gov\")\n        AND subject = \"Your monthly\
+  \ Recidiviz report\"\n    )\n    SELECT \n        message_id,\n        email,\n\
+  \        event,\n        processed AS event_datetime\n    FROM `{project_id}.{sendgrid_email_dataset}.raw_sendgrid_email_data`\n\
+  \    JOIN monthly_report_message_ids USING (message_id)\n    ORDER BY message_id,\
+  \ processed"
+schema:
+  - name: message_id
+    type: STRING
+    mode: NULLABLE
+  - name: email
+    type: STRING
+    mode: NULLABLE
+  - name: event
+    type: STRING
+    mode: NULLABLE
+  - name: event_datetime
+    type: TIMESTAMP
+    mode: NULLABLE
+clustering_fields: null
