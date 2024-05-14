@@ -269,6 +269,6 @@ migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --data
 #   1. Create a new PAT at https://github.com/settings/tokens, ensure it has read:packages set.
 #   2. Run this command with your PAT and github username as filled in: 
 #      `echo $PAT | docker login ghcr.io -u $USERNAME --password-stdin`
-pull-bq-emulator = "docker pull ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.8 --platform=linux/amd64"
+pull-bq-emulator = "docker pull ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.9 --platform=linux/amd64"
 # Run this script to launch the BQ emulator locally
-start-bq-emulator = "docker run -p 9050:9050 --rm ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.8 /bin/bigquery-emulator --project=recidiviz-bq-emulator-project --log-level=info"
+start-bq-emulator = "docker run -p 9050:9050 --rm ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.9 /bin/bigquery-emulator --project=recidiviz-bq-emulator-project --log-level=info"
