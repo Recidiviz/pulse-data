@@ -33,7 +33,6 @@ reconfigure_terraform_backend "$PROJECT_ID" "$TF_STATE_PREFIX"
 # (not /oneoffs), because it gets overwritten when we source deploy_helpers.sh
 DOCKER_TAG=$(terraform -chdir="${BASH_SOURCE_DIR}/terraform" output -raw docker_image_tag)
 GIT_HASH=$(terraform -chdir="${BASH_SOURCE_DIR}/terraform" output -raw git_hash)
-PAGERDUTY_TOKEN=$(get_secret "$PROJECT_ID" pagerduty_terraform_key) || exit_on_fail
 
 function terraform_import {
     RESOURCE_ADDR=$1
@@ -43,7 +42,6 @@ function terraform_import {
     -var=project_id="$PROJECT_ID" \
     -var=docker_image_tag="$DOCKER_TAG" \
     -var=git_hash="$GIT_HASH" \
-    -var=pagerduty_token="$PAGERDUTY_TOKEN" \
     "$RESOURCE_ADDR" "$RESOURCE_ID"
 }
 
