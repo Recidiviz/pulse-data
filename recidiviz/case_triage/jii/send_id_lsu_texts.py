@@ -278,6 +278,8 @@ def send_id_lsu_texts(
         )
         message_type = MessageType.ELIGIBILITY_TEXT.value
         logging.info("message_type: %s", message_type)
+    else:
+        raise ValueError(f"Unexpected message_type [{message_type}]")
 
     state_code = StateCode.US_ID.value.lower()
 
@@ -287,6 +289,8 @@ def send_id_lsu_texts(
             firestore_client=firestore_client,
             previous_batch_id=previous_batch_id,
         )
+    else:
+        external_ids_to_retry = set()
 
     logging.info("Iterate through dictionary construction from bigquery")
     # Iterate through the dictionary that maps external ids to phone numbers to text strings

@@ -81,20 +81,20 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
                 matches_COMS_content_path = re.match(
                     r"COMS\_[A-Za-z_]+.txt", content_filename
                 )
-                if not matches_OMNI_content_path and not matches_COMS_content_path:
-                    raise ValueError(
-                        f"Unexpected content file name in zip file: {content_filename}"
-                    )
                 if matches_OMNI_content_path is not None:
                     date_portion = matches_OMNI_content_path.group(2)
                     _ = datetime.strptime(date_portion, "%m%d%Y")
                     # For files from OMNI, the date is attached to the end of the zip file name, so
                     # we will strip out the date when uploading the file to GCS
                     new_file_name = re.sub(r"\_\d{8}", "", content_filename)
-                if matches_COMS_content_path is not None:
+                elif matches_COMS_content_path is not None:
                     # For files from COMS, the date will not be attached to the end of the file name,
                     # so no need to strip anything off and we can use the file name directly
                     new_file_name = content_filename
+                else:
+                    raise ValueError(
+                        f"Unexpected content file name in zip file: {content_filename}"
+                    )
 
                 new_path = GcsfsFilePath.from_directory_and_file_name(
                     directory, new_file_name

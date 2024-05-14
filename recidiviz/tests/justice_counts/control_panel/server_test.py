@@ -1785,13 +1785,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             # Check that GET request suceeded
             self.assertEqual(response.status_code, 200)
             # Check that the we can get the previoulsy stored additional context
-            if response.json is not None:
-                other_context = response.json[2]["disaggregations"][0]["dimensions"][4][
-                    "contexts"
-                ]
-                unknown_context = response.json[2]["disaggregations"][0]["dimensions"][
-                    5
-                ]["contexts"]
+            if response.json is None:
+                raise ValueError("Expected nonnull response.json")
+            other_context = response.json[2]["disaggregations"][0]["dimensions"][4][
+                "contexts"
+            ]
+            unknown_context = response.json[2]["disaggregations"][0]["dimensions"][5][
+                "contexts"
+            ]
             self.assertEqual(
                 other_context,
                 [
