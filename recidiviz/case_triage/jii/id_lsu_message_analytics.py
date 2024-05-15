@@ -119,14 +119,26 @@ def calculate_id_lsu_text_analytics(
     twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
     doc_query = twilio_ref.where(
         filter=FieldFilter("opt_out_type", "in", OPT_OUT_KEY_WORDS)
-    )
-    opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
+    ).where(filter=FieldFilter("last_opt_out_update", ">=", initial_batch_date))
+    initial_opt_out_document_ids = set()
+    eligibility_opt_out_document_ids = set()
+    if eligibility_batch_date is not None:
+        for jii_doc in doc_query.stream():
+            if jii_doc.to_dict() is None:
+                continue
+            jii_last_opt_out_update = jii_doc.to_dict()["last_opt_out_update"]  # type: ignore[index]
+            if jii_last_opt_out_update < eligibility_batch_date:
+                initial_opt_out_document_ids.add(jii_doc.id)
+            elif jii_last_opt_out_update >= eligibility_batch_date:
+                eligibility_opt_out_document_ids.add(jii_doc.id)
+    else:
+        initial_opt_out_document_ids = {jii_doc.id for jii_doc in doc_query.stream()}
 
     ### Initial Texts ###
     initial_text_document_ids = _print_initial_analytics(
         initial_batch_id=initial_batch_id,
         firestore_client=firestore_client,
-        opt_out_document_ids=opt_out_document_ids,
+        opt_out_document_ids=initial_opt_out_document_ids,
     )
 
     ### Eligibility Texts ###
@@ -134,7 +146,7 @@ def calculate_id_lsu_text_analytics(
         eligibility_text_document_ids = _print_eligibility_analytics(
             eligibility_batch_id=eligibility_batch_id,
             firestore_client=firestore_client,
-            opt_out_document_ids=opt_out_document_ids,
+            opt_out_document_ids=eligibility_opt_out_document_ids,
         )
     else:
         eligibility_text_document_ids = None
