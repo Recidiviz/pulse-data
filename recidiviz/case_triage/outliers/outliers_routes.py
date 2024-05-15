@@ -552,7 +552,9 @@ def create_outliers_api_blueprint() -> Blueprint:
                     "givenNames": PersonName(**event.client_name).given_names,
                     "middleNames": PersonName(**event.client_name).middle_names,
                     "surname": PersonName(**event.client_name).surname,
-                },
+                }
+                if event.client_name
+                else None,
                 "officerId": event.officer_id,
                 "pseudonymizedClientId": event.pseudonymized_client_id,
                 "attributes": convert_nested_dictionary_keys(
