@@ -100,6 +100,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.state_code = state_code
         self.criteria_name = criteria_name
         self.meets_criteria_default = meets_criteria_default
+        self.reasons_fields = reasons_fields
 
 
 class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -137,6 +138,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
         self.criteria_name = criteria_name
         self.meets_criteria_default = meets_criteria_default
+        self.reasons_fields = reasons_fields
 
 
 TaskCriteriaBigQueryViewBuilder = Union[
