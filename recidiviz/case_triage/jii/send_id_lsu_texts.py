@@ -133,8 +133,7 @@ from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.utils import ExternalSystemRequestStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, get_gcp_environment
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.environment import get_gcp_environment
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.secrets import get_secret
 
@@ -480,12 +479,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
 
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        send_id_lsu_texts(
-            bigquery_view=args.bigquery_view,
-            dry_run=args.dry_run,
-            callback_url=args.callback_url,
-            message_type=args.message_type,
-            previous_batch_id=args.previous_batch_id_to_update_status_for,
-            redeliver_failed_messages=args.redeliver_failed_messages,
-        )
+    send_id_lsu_texts(
+        bigquery_view=args.bigquery_view,
+        dry_run=args.dry_run,
+        callback_url=args.callback_url,
+        message_type=args.message_type,
+        previous_batch_id=args.previous_batch_id_to_update_status_for,
+        redeliver_failed_messages=args.redeliver_failed_messages,
+    )

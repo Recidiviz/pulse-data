@@ -482,13 +482,30 @@ def _print_reply_analytics(
 
 
 def convert_batch_id_to_utc(batch_id: str) -> datetime.datetime:
-    """This helper function converts a string batch_id from EST to a datetime.datetime object in UTC.
-    initial_batch_id and eligibility_batch_id strings are in EST while Firestore dates are in UTC.
+    """This helper function converts a string batch_id from the current (machine) timezone
+    to a string adjusted_batch_id in UTC. initial_batch_id and eligibility_batch_id strings
+    are generated using the local/machine timezone while Firestore dates are in UTC.
     We need this conversion for comparison.
     """
-    return datetime.datetime.strptime(batch_id, "%m_%d_%Y_%H_%M_%S").replace(
-        tzinfo=datetime.timezone.utc
-    ) + datetime.timedelta(hours=5)
+    print("batch_id:", batch_id)
+    # Default hour_delta to 5. We assume that this will get overwritten in the logic below
+    hour_delta = 5
+
+    # local_time gives us the local (machine) datetime including the local timezone
+    local_time = datetime.datetime.now().astimezone()
+    print("local_time:", local_time)
+    # hour_delta is the number of hours that the local_time is behind UTC
+    if local_time.tzinfo is not None:
+        utc_offset = local_time.tzinfo.utcoffset(local_time)
+        if utc_offset is not None:
+            hour_delta = int(24 - (utc_offset.seconds / 60 / 60))
+
+    # adjusted_batch_id represents the batch_id in UTC
+    adjusted_batch_id = datetime.datetime.strptime(
+        batch_id, "%m_%d_%Y_%H_%M_%S"
+    ).replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(hours=hour_delta)
+    print("adjusted_batch_id:", adjusted_batch_id)
+    return adjusted_batch_id
 
 
 def _get_doc_id_from_doc(doc: DocumentSnapshot) -> str:
