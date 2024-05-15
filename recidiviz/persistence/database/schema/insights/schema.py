@@ -30,7 +30,7 @@ from sqlalchemy import (
     Integer,
     String,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -57,11 +57,14 @@ class PersonBase:
 
 
 class SupervisionOfficer(PersonBase, InsightsBase):
-    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_officers`"""
+    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.insights_supervision_officers`"""
 
-    __tablename__ = "supervision_officers"
+    # TODO(#29763): Rename to supervision_officers when OUTLIERS/INSIGHTS divergence is resolved
+    __tablename__ = "insights_supervision_officers"
 
     supervisor_external_id = Column(String, nullable=True)
+    # List of supervisors for this officer
+    supervisor_external_ids = Column(ARRAY(String), nullable=True)
     # Id of the supervision district the officer is assigned to
     supervision_district = Column(String, nullable=True)
     # specialized caseload type, if applicable
