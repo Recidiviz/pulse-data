@@ -56,15 +56,15 @@ SELECT
         END AS metadata_interstate_flag,
     tes_all.start_date AS metadata_eligible_date,
     reasons,
-FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
+FROM (
+    SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_discharge_early_from_probation_supervision_request_materialized` 
+    UNION ALL
+    SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_discharge_early_from_parole_dual_supervision_request_materialized` 
+) tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.state_code = pei.state_code 
         AND tes.person_id = pei.person_id
         AND pei.id_type = "US_MI_DOC"
-        AND task_name IN ( 
-                    "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
-                    "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
-                    )
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` ssp
     ON ssp.state_code = tes.state_code
     AND ssp.person_id = tes.person_id 

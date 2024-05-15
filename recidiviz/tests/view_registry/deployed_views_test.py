@@ -30,6 +30,16 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
+    ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
+    WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
+    CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import (
     raw_data_pruning_enabled_in_state_and_instance,
@@ -45,6 +55,12 @@ from recidiviz.utils.environment import (
     GCP_PROJECTS,
 )
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.validation.views.dataset_config import (
+    METADATA_DATASET as VALIDATION_METADATA_DATASET,
+)
+from recidiviz.validation.views.dataset_config import (
+    VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
+)
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
@@ -284,6 +300,57 @@ class ViewDagInvariantTests(unittest.TestCase):
 
             # All view builders deployed to any project.
             cls.all_deployed_view_builders = all_deployed_view_builders()
+
+    def test_no_expensive_union_all_view_queries(self) -> None:
+        """Test that fails when a view is doing an overly expensive query of a UNION ALL
+        view when it could instead be querying one of the component parent views.
+        """
+        union_all_view_addresses = {
+            vb.address
+            for vb in self.all_deployed_view_builders
+            if isinstance(vb, UnionAllBigQueryViewBuilder)
+        }
+
+        allowed_union_all_view_children = {
+            # These views produce generic analysis based on all TES spans.
+            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_events"),
+            BigQueryAddress(dataset_id=ANALYST_VIEWS_DATASET, table_id="person_spans"),
+            CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
+            WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER.address,
+            # TODO(#29650): Generate opportunity-specific eligibility sessions views,
+            #  then convert all_task_eligibility_spans (renamed to
+            #  all_task_eligibility_sessions) to a UnionAllBigQueryViewBuilder view and
+            #  remove all downstream direct usages.
+            ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER.address,
+        }
+
+        for parent_address, node in self.dag_walker.nodes_by_address.items():
+            for child_address in node.child_node_addresses:
+                if parent_address not in union_all_view_addresses:
+                    continue
+                if child_address in union_all_view_addresses:
+                    # Views that further union the results of a UNION ALL view are
+                    # allowed.
+                    continue
+                if child_address.dataset_id in {
+                    VALIDATION_VIEWS_DATASET,
+                    VALIDATION_METADATA_DATASET,
+                }:
+                    # Validation views may look for generic issues in, for example,
+                    # all TES spans at once.
+                    continue
+                if child_address in allowed_union_all_view_children:
+                    continue
+
+                raise ValueError(
+                    f"Found view [{child_address.to_str()}] referencing "
+                    f"UnionAllBigQueryViewBuilder view [{parent_address.to_str()}]."
+                    f"Generally, you should only query the specific component"
+                    f"view you need, not the view that unions all sub-views together. "
+                    f"If [{child_address.to_str()}] is doing generic, state-agnostic "
+                    f"analysis of all data in [{parent_address.to_str()}], you may add "
+                    f"it to the allowed_union_all_view_children list above."
+                )
 
     @parameterized.expand(
         [
