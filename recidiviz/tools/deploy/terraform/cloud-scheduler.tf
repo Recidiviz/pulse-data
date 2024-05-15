@@ -65,6 +65,21 @@ resource "google_cloud_scheduler_job" "schedule_ingest_dag_run_topic" {
   }
 }
 
+# TODO(#27378): consider moving this later in the evening when calc & ingest have been combined
+resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_run_topic" {
+  # TODO(#29135) enable this cloud scheduler job during launch phase!
+  paused      = true
+  name        = "schedule_raw_data_import_dag_run_cloud_function"
+  schedule    = "0 21 * * *" # Every day at 9 pm Pacific
+  description = "Triggers the raw data import DAG via pubsub"
+  time_zone   = "America/Los_Angeles"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.raw_data_import_dag_pubsub_topic.id
+    data       = base64encode("{}") # Run raw data import DAG with no filters.
+  }
+}
+
 resource "google_cloud_scheduler_job" "prune_old_dataflow_data" {
   name        = "prune-old-dataflow-data"
   schedule    = "0 0 * * *" # Every day at 00:00

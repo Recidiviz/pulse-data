@@ -26,3 +26,7 @@ resource "google_pubsub_topic" "sftp_pubsub_topic" {
 resource "google_pubsub_topic" "ingest_dag_pubsub_topic" {
   name = "v1.ingest.trigger_ingest_dag"
 }
+
+resource "google_pubsub_topic" "raw_data_import_dag_pubsub_topic" {
+  name = "v1.ingest.trigger_raw_data_import_dag"
+}
