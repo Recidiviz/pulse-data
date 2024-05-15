@@ -84,9 +84,9 @@ SELECT
       CASE WHEN SAFE_CAST(ParoleUnit AS INT64) IS NULL THEN UPPER(ParoleUnit) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
       CASE WHEN SAFE_CAST(ParoleDistrict AS INT64) IS NULL THEN UPPER(ParoleDistrict) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
       CASE WHEN SAFE_CAST(ParoleRegion AS INT64) IS NULL THEN UPPER(ParoleRegion) ELSE NULL END AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value},
-      UPPER(ParoleUnit) {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
-      UPPER(ParoleDistrict) {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
-      UPPER(ParoleRegion) {LocationMetadataKey.SUPERVISION_REGION_ID.value},
+      UPPER(ParoleUnit) AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
+      UPPER(ParoleDistrict) AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+      UPPER(ParoleRegion) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value}
     )
   ) AS location_metadata,
   'SUPERVISION_LOCATION' AS location_type
