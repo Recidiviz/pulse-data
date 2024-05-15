@@ -50,7 +50,7 @@ resource "google_logging_project_sink" "user-mgmt-logs-sink" {
   description = "Sink to send user management logs to BigQuery"
 
   # Can export to pubsub, cloud storage, bigquery, log bucket, or another project
-  destination = format("bigquery.googleapis.com/projects/%s/datasets/%s", var.project_id, google_bigquery_dataset.user_mgmt_logs_dataset.dataset_id)
+  destination = format("bigquery.googleapis.com/projects/%s/datasets/%s", var.project_id, module.user_mgmt_logs_dataset.dataset_id)
 
   # Include reasons logs from the user permissions admin panel page
   filter = <<EOT
@@ -97,13 +97,14 @@ resource "google_bigquery_dataset" "oncall_logs_dataset" {
   }
 }
 
-resource "google_bigquery_dataset" "user_mgmt_logs_dataset" {
-  dataset_id = local.user_mgmt_dataset_id
-  labels     = {}
+module "user_mgmt_logs_dataset" {
+  source      = "./modules/big_query_dataset"
+  dataset_id  = local.user_mgmt_dataset_id
+  description = "This dataset contains logs of user actions from the user/permissions management admin panel pages."
 }
 
 resource "google_bigquery_dataset_access" "user_mgmt_logs_dataset_log_writer_access" {
-  dataset_id = google_bigquery_dataset.user_mgmt_logs_dataset.dataset_id
+  dataset_id = module.user_mgmt_logs_dataset.dataset_id
   role       = "OWNER"
   user_by_email = trimprefix(
     google_logging_project_sink.user-mgmt-logs-sink.writer_identity,
