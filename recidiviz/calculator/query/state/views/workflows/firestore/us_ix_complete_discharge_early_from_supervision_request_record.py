@@ -365,7 +365,6 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             ON tes.state_code = ses.state_code
             AND tes.person_id = ses.person_id
             AND tes.start_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
-        )
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` cses
             ON tes.state_code = cses.state_code
             AND tes.person_id = cses.person_id 
