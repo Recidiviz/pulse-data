@@ -1108,6 +1108,9 @@ class StateSupervisionPeriod(
     supervision_level_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    supervision_period_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # The type of government entity directly responsible for the person on this period
     # of supervision. Not necessarily the decision making authority.

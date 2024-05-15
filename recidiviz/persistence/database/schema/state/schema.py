@@ -2085,6 +2085,11 @@ class StateSupervisionPeriod(StateBase, _ReferencesStatePersonSharedColumns):
         String(255),
         comment="The raw text value of the supervision period's " "supervision level.",
     )
+    supervision_period_metadata = Column(
+        String(255),
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "a particular supervision period.",
+    )
 
     # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
     # we do for most other String fields.
