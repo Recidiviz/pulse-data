@@ -191,3 +191,45 @@ def trigger_ingest_dag(
         message=f"The monitoring Airflow response is {monitor_response}",
     )
     return "", HTTPStatus(monitor_response.status_code)
+
+
+def trigger_raw_data_import_dag(
+    event: Dict[str, Any], _context: ContextType
+) -> Tuple[str, HTTPStatus]:
+    """This function is triggered by a Pub/Sub event and in turn triggers the raw data
+    import DAG.
+    """
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
+    if not project_id:
+        error_str = (
+            "No project id set for call to run the raw data import dag, returning."
+        )
+        cloud_functions_log(severity="ERROR", message=error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
+    airflow_uri = os.environ.get("AIRFLOW_URI")
+    if not airflow_uri:
+        error_str = "The environment variable 'AIRFLOW_URI' is not set"
+        cloud_functions_log(severity="ERROR", message=error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
+    if "data" in event:
+        json_body = json.loads(base64.b64decode(event["data"]).decode("utf-8"))
+    else:
+        error_str = f"Could not find data needs in event parameter: {event}"
+        cloud_functions_log(severity="ERROR", message=error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
+    monitor_response = trigger_dag(
+        airflow_uri,
+        dag_id=f"{project_id}_raw_data_import_dag",
+        data={
+            "state_code_filter": json_body.get("state_code_filter"),
+            "ingest_instance": json_body.get("ingest_instance"),
+        },
+    )
+    cloud_functions_log(
+        severity="INFO",
+        message=f"The monitoring Airflow response is {monitor_response}",
+    )
+    return "", HTTPStatus(monitor_response.status_code)
