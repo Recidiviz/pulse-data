@@ -29,6 +29,7 @@ To run the app locally, you need to spin up both the backend and frontend simult
 - Auth0 [[staging](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts-staging/)], [[prod](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts/)], [[configuration doc](https://paper.dropbox.com/doc/Justice-Counts-Auth0-Configuration--CDvUbVT17QfK99NI4HZCs3xBAg-qr7WeNZU8ISE8Ffta8oQi)]
 - [Sentry](https://recidiviz-inc.sentry.io/issues/?project=4504532096516096&referrer=sidebar)
 - [Oncall doc](go/jc-oncall)
+- [Testing playbook](https://docs.google.com/document/d/1893HOIq1X6rvcxI3UJfpmL7feub7ivgqaytI-Jyp7bE/edit)
 
 ## Setting up your environment
 
@@ -68,7 +69,7 @@ See the [[scripts] section of our Pipfile](https://github.com/Recidiviz/pulse-da
 
 ### Build our Docker image
 
-1. Pull the Recidiviz base Docker image:
+1. Build the Recidiviz base Docker image:
 
 ```bash
 docker build . -f Dockerfile.recidiviz-base -t us-central1-docker.pkg.dev/justice-counts-staging/recidiviz-base-images/recidiviz-base:latest --platform=linux/amd64 --build-arg DEV_MODE=True
@@ -309,23 +310,51 @@ To get the version number of the latest docker image that was deployed to stagin
 
 Deploying to playtesting is available for both the backend `pulse-data` repository and the frontend `justice-counts` repository. If deploying from a `pulse-data` PR, the deployment uses the version of `justice-counts` stored on main. And if deploying from a `justice-counts` PR, the deployment uses the version of `pulse-data` stored on main.
 
-## Creating Users and Agencies
+## Common Issues and Solutions
 
-1. Visit the Admin Panel at [go/admin](https://publisher-staging.justice-counts.org/admin-panel) (staging) or [go/admin-prod](https://publisher.justice-counts.org/admin-panel) (production)
-2. To create a new Agency, navigate to the Agency Provisioning tab and the click "Create Agency" in the upper right-hand corner
-   1. Enter the Agency Name, Sector(s), State, and (optional) County (You may be able to infer the agency's sector / state / county from its name + a Google search; if not, ask CSG)
-   2. Click Save
-   3. The Agency should now appear on the Agency Provisioning page (this page is searchable)
-3. To create a new User, navigate to the User Provisioning tab and scroll to "Create User"
-   1. Enter the User's Name and Email (You may be able to infer the user's name from their email; if not, ask CSG)
-   2. Click Save
-   3. The User should now appear in the User Provisioning page (this page is searchable)
-4. You can add/remove a user to an agency either from the User Provisioning page (by clicking the user and then clicking the "Add Agencies" button) or the Agency Provisioning page (by clicking the agency, selecting the "Team Members & Roles" tab, and then clicking the "Add Users" button).
-5. To update a user's role for a given agency, navigate to the Agency Provisioning tab
-   1. Find the given agency in the Agency Provisioning page
-   2. Click the "Team Members & Roles" tab
-   3. Find the given user in the Agency Team Members page
-   4. Within the user's box, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)
+#### _When running tests, I see the following pg_ctl error:_
+
+```
+E no data was returned by command ""/opt/homebrew/Cellar/postgresql@13/13.13/bin/postgres" -V"
+E initdb: error: The program "postgres" is needed by initdb but was not found in the
+E same directory as "/opt/homebrew/Cellar/postgresql@13/13.13/bin/initdb".
+E Check your installation.
+E pg_ctl: database system initialization failed
+```
+
+Try `brew reinstall postgresql@13`.
+
+#### _I'm getting a GCP-related permissions error._
+
+Try `gcloud auth application-default login`.
+
+#### _When I try to run the backend locally, I see a ModuleNotFound error._
+
+First, run `pipenv sync --dev` if you haven't already.
+
+If that doesn't work, try rebuilding our Docker image following the steps [above](https://github.com/Recidiviz/pulse-data/tree/main/recidiviz/justice_counts/control_panel#build-our-docker-image).
+
+#### _I tried to add a new package to our Pipfile, and now I see a ModuleNotFound error._
+
+The issue might be that you added the package to the `[dev-packages]` section of the Pipfile, which means it won't get pulled into our production Docker images. If the package is needed in production, move it to the `[packages]` section. If the package is only needed when running locally, then make sure that the Docker image you're using was built with the flag `--build-arg DEV_MODE=True`.
+
+#### _When I try to run the backend locally, I see an error on the `pulse-data-justice_counts_migrations-1` job_.
+
+It's possible your migrations are out of sync. Try manually resetting via `update alembic_version set version_num = '<latest version>'.` You can find the latest migration version by looking in `recidiviz/persistence/database/migrations/justice_counts/versions/`.
+
+If setting to the latest version doesn't work, try setting to the _second_ most recent version. This way the latest migration will be applied.
+
+#### _When I try to run the frontend locally, I'm getting a `Failed to compile / Module not found` error._
+
+Try `yarn` or `yarn install`.
+
+#### _My frontend lint error isn't going away even though I ran yarn lint --fix._
+
+`yarn lint --fix` will only apply to the current app folder you’re in. If you `cd ../common` and then run `yarn lint --fix` in there, it should take care of all of the lint errors!
+
+#### _I deployed to playtesting but see an "Oops!, something went wrong" page._
+
+You have to add your URL to Auth0 config. Log into Auth0, use the top left dropdown to switch to the recidiviz-justice-counts-staging tenant > click on Applications (left menu) > Applications > Publisher Single Page Application > then add the playtesting URL link to the following fields: Allowed Callback URLs, Allowed Logout URLs, Allowed Web Origins, and Allowed Origins (CORS).
 
 ## Using Jupyter Notebooks
 
