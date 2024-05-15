@@ -56,6 +56,21 @@ snapshots[
     }
 }
 
+snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_no_name"] = {
+    "events": [
+        {
+            "attributes": None,
+            "clientId": "555",
+            "clientName": None,
+            "eventDate": "2023-04-01",
+            "metricId": "violations",
+            "officerId": "03",
+            "pseudonymizedClientId": "clienthash5",
+            "stateCode": "US_PA",
+        }
+    ]
+}
+
 snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_success"] = {
     "events": [
         {

@@ -73,7 +73,7 @@ def load_model_fixture(
             for k, v in row.items():
                 if k == "full_name":
                     row["full_name"] = json.loads(row["full_name"])
-                if k == "client_name":
+                if k == "client_name" and v != "":
                     row["client_name"] = json.loads(row["client_name"])
                 if k == "attributes" and v != "":
                     row["attributes"] = json.loads(row["attributes"])

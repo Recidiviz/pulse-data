@@ -1867,6 +1867,54 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
     )
+    def test_get_events_by_client_no_name(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        client_hash = "clienthash5"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="103", pseudonymized_id="hash"
+        )
+        mock_enabled_states.return_value = ["US_PA"]
+
+        mock_config.return_value = OutliersBackendConfig(
+            metrics=[TEST_METRIC_3],
+            client_events=[TEST_CLIENT_EVENT_1],
+        )
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="3",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="hashhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=True,
+        )
+
+        response = self.test_client.get(
+            f"/outliers/US_PA/client/{client_hash}/events?metric_id=violations&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.snapshot.assert_match(response.json, name="test_get_events_by_client_no_name")  # type: ignore[attr-defined]
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_backend_config",
+    )
     def test_get_events_by_client_success_default_metrics(
         self,
         mock_config: MagicMock,
