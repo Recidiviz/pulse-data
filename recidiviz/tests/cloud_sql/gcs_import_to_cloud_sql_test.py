@@ -34,8 +34,10 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     import_gcs_csv_to_cloud_sql,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.schema.case_triage.schema import Roster
-from recidiviz.persistence.database.schema.outliers.schema import SupervisionClientEvent
+from recidiviz.persistence.database.schema.outliers.schema import (
+    SupervisionClientEvent,
+    SupervisionOfficer,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -43,10 +45,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tests.auth.helpers import (
-    add_entity_to_database_session,
-    generate_fake_rosters,
-)
+from recidiviz.tests.auth.helpers import add_entity_to_database_session
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
@@ -106,7 +105,7 @@ class TestGCSImportToCloudSQL(TestCase):
         )
 
     def setUp(self) -> None:
-        self.user_1_email = "user-1@test.gov"
+        self.officer_1_id = "45678"
         self.mock_instance_id = "mock_instance_id"
         self.cloud_sql_client_patcher = patch(
             "recidiviz.cloud_sql.gcs_import_to_cloud_sql.CloudSQLClientImpl"
@@ -120,13 +119,15 @@ class TestGCSImportToCloudSQL(TestCase):
             "get_stripped_cloudsql_instance_id",
             Mock(return_value=self.mock_instance_id),
         )
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_mo")
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.table_name = Roster.__tablename__
-        self.model = Roster
-        self.columns = [col.name for col in Roster.__table__.columns]
-        self.roster_uri = GcsfsFilePath.from_absolute_path("US_MO/roster.csv")
+        self.table_name = SupervisionOfficer.__tablename__
+        self.model = SupervisionOfficer
+        self.columns = [col.name for col in SupervisionOfficer.__table__.columns]
+        self.export_uri = GcsfsFilePath.from_absolute_path(
+            "US_MO/supervision_officers.csv"
+        )
         self.now = "2023-08-30T13:33:09.109433"
 
     def tearDown(self) -> None:
@@ -140,7 +141,7 @@ class TestGCSImportToCloudSQL(TestCase):
     ) -> str:
         with SessionFactory.using_database(self.database_key) as session:
             csv_values = [
-                f"('{self.now}', '{self.now}', 'US_MO', '{self.user_1_email}', '12345', 'supervision_staff', 'ABCDE', 'fname', 'lname', '{self.user_1_email}::hashed', 'pseudo-12345')",
+                "('US_MO', '45678', 2190437865, '{\"first\": \"fname\", \"last\": \"lname\"}', '45678::hashed', NULL, NULL, NULL)",
             ]
             if values:
                 csv_values = csv_values + values
@@ -192,42 +193,48 @@ class TestGCSImportToCloudSQL(TestCase):
         import_gcs_csv_to_cloud_sql(
             database_key=self.database_key,
             model=self.model,
-            gcs_uri=self.roster_uri,
+            gcs_uri=self.export_uri,
             columns=self.columns,
         )
         self.mock_cloud_sql_client.import_gcs_csv.assert_called_with(
             instance_name=self.mock_instance_id,
-            db_name="postgres",
+            db_name="us_mo",
             table_name=f"tmp__{self.table_name}",
-            gcs_uri=self.roster_uri,
+            gcs_uri=self.export_uri,
             columns=self.columns,
         )
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            destination_table_rows = session.query(Roster).all()
+            destination_table_rows = session.query(SupervisionOfficer).all()
 
         self.assertEqual(len(destination_table_rows), 1)
-        self.assertEqual(destination_table_rows[0].email_address, self.user_1_email)
+        self.assertEqual(destination_table_rows[0].external_id, self.officer_1_id)
 
     def test_import_gcs_csv_to_cloud_sql_with_region_code(self) -> None:
         """Assert that rows are copied to the temp table for every region code before being swapped to
         the destination table."""
-        user_1 = generate_fake_rosters(
-            email="user-4@test.gov",
-            region_code="US_PA",
-            role="supervision_staff",
+        officer_1 = SupervisionOfficer(
+            state_code="US_PA",
+            external_id="0001",
+            staff_id=123456789,
+            full_name={"first": "fname", "last": "lname"},
+            pseudonymized_id="0001::hashed",
         )
-        user_2 = generate_fake_rosters(
-            email="user-5@test.gov", region_code="US_PA", role="leadership_user"
+        officer_2 = SupervisionOfficer(
+            state_code="US_PA",
+            external_id="0002",
+            staff_id=987654321,
+            full_name={"first": "fname2", "last": "lname2"},
+            pseudonymized_id="0002::hashed",
         )
-        add_entity_to_database_session(self.database_key, [user_1, user_2])
+        add_entity_to_database_session(self.database_key, [officer_1, officer_2])
 
         def _mock_side_effect(**_kwargs: Any) -> str:
             return self._mock_load_data_from_csv(
                 values=[
-                    f"('{self.now}', '{self.now}', 'US_MO', 'user-2@test.gov', '23456', 'supervision_staff', 'ABCDE', 'fname2', 'lname2', 'user-2@test.gov::hashed', NULL)",
-                    f"('{self.now}', '{self.now}', 'US_MO', 'user-3@test.gov', '34567', 'leadership_user', 'BCDEF', 'fname3', 'lname3', 'user-3@test.gov::hashed', NULL)",
+                    "('US_MO', '23456', 6745892301, '{\"first\": \"fname2\", \"last\": \"lname2\"}', '23456::hashed', NULL, NULL, NULL)",
+                    "('US_MO', '34567', 7654983210, '{\"first\": \"fname3\", \"last\": \"lname3\"}', '34567::hashed', NULL, NULL, NULL)",
                 ]
             )
 
@@ -237,14 +244,14 @@ class TestGCSImportToCloudSQL(TestCase):
         import_gcs_csv_to_cloud_sql(
             database_key=self.database_key,
             model=self.model,
-            gcs_uri=self.roster_uri,
+            gcs_uri=self.export_uri,
             columns=self.columns,
             region_code="US_MO",
         )
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            destination_table_rows = session.query(Roster).all()
+            destination_table_rows = session.query(SupervisionOfficer).all()
             state_codes = [row.state_code for row in destination_table_rows]
             self.assertEqual(len(destination_table_rows), 5)
             self.assertEqual(set(state_codes), {"US_MO", "US_PA"})
@@ -254,12 +261,14 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            user_1 = generate_fake_rosters(
-                region_code="US_PA",
-                email="user-3@test.gov",
-                role="supervision_staff",
+            officer_1 = SupervisionOfficer(
+                state_code="US_MI",
+                external_id="0001",
+                staff_id=123456789,
+                full_name={"first": "fname", "last": "lname"},
+                pseudonymized_id="0001::hashed",
             )
-            add_entity_to_database_session(self.database_key, [user_1])
+            add_entity_to_database_session(self.database_key, [officer_1])
             self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
                 "Error while importing CSV to temp table"
             )
@@ -267,14 +276,12 @@ class TestGCSImportToCloudSQL(TestCase):
                 Exception, "^Error while importing CSV to temp table$"
             ):
                 import_gcs_csv_to_cloud_sql(
-                    database_key=SQLAlchemyDatabaseKey.for_schema(
-                        SchemaType.CASE_TRIAGE
-                    ),
+                    database_key=self.database_key,
                     model=self.model,
-                    gcs_uri=self.roster_uri,
+                    gcs_uri=self.export_uri,
                     columns=self.columns,
                 )
-            destination_table_rows = session.query(Roster).all()
+            destination_table_rows = session.query(SupervisionOfficer).all()
             self.assertEqual(len(destination_table_rows), 1)
 
     def test_import_gcs_csv_to_cloud_sql_session_error(self) -> None:
@@ -282,12 +289,14 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            user_1 = generate_fake_rosters(
-                region_code="US_PA",
-                email="user-3@test.gov",
-                role="supervision_staff",
+            officer_1 = SupervisionOfficer(
+                state_code="US_MI",
+                external_id="0001",
+                staff_id=123456789,
+                full_name={"first": "fname", "last": "lname"},
+                pseudonymized_id="0001::hashed",
             )
-            add_entity_to_database_session(self.database_key, [user_1])
+            add_entity_to_database_session(self.database_key, [officer_1])
 
             def _mock_side_effect(**_kwargs: Any) -> str:
                 raise ValueError("An error occurred!")
@@ -296,15 +305,13 @@ class TestGCSImportToCloudSQL(TestCase):
 
             with self.assertRaisesRegex(Exception, "An error occurred!"):
                 import_gcs_csv_to_cloud_sql(
-                    database_key=SQLAlchemyDatabaseKey.for_schema(
-                        SchemaType.CASE_TRIAGE
-                    ),
-                    model=Roster,
-                    gcs_uri=self.roster_uri,
+                    database_key=self.database_key,
+                    model=self.model,
+                    gcs_uri=self.export_uri,
                     columns=self.columns,
                 )
 
-            destination_table_rows = session.query(Roster).all()
+            destination_table_rows = session.query(SupervisionOfficer).all()
             self.assertEqual(len(destination_table_rows), 1)
 
     def test_retry(self) -> None:

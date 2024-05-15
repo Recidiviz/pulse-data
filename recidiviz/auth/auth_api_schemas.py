@@ -19,7 +19,8 @@
 from typing import Any, Dict
 
 from flask_smorest.fields import Upload
-from marshmallow import fields, post_load
+from marshmallow import fields, post_load, pre_dump
+from sqlalchemy.engine.row import Row
 
 from recidiviz.case_triage.api_schemas_utils import (
     CamelCaseSchema,
@@ -76,13 +77,24 @@ class UserRequestSchema(UserSchema, ReasonSchema):
 
 
 class FullUserSchema(UserSchema, CamelCaseSchema):
+    @pre_dump
+    def process_input(
+        self, data: dict | Row, **kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Process input before serialization to convert to dict if not already so
+        that we can access the attributes with the .get() method below.
+        """
+        if isinstance(data, dict):
+            return data
+        return dict(data.__dict__)
+
     allowed_supervision_location_ids = fields.Function(
-        (lambda user: user.district if user.state_code == "US_MO" else "")
+        (lambda user: user.get("district") if user.get("state_code") == "US_MO" else "")
     )
     allowed_supervision_location_level = fields.Function(
         lambda user: (
             "level_1_supervision_location"
-            if user.state_code == "US_MO" and user.district is not None
+            if user.get("state_code") == "US_MO" and user.get("district") is not None
             else ""
         )
     )

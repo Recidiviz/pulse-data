@@ -135,6 +135,8 @@ class AuthUsersEndpointTestCase(TestCase):
             f"{self.ingested_users_bucket}/US_XX/ingested_product_users.csv"
         )
 
+        self.active_date1 = "2024-04-30T14:45:09.865Z"
+
         with self.app.test_request_context():
             self.users = lambda state_code=None: flask.url_for(
                 "users.UsersAPI", state_code=state_code
@@ -172,6 +174,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_ND",
             role="leadership_role",
+            roles=["leadership_role"],
             district="D1",
             first_name="Fake",
             last_name="User",
@@ -181,6 +184,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_ID",
             external_id="abc",
             role="supervision_staff",
+            roles=["supervision_staff"],
             district="D3",
             first_name="John",
             last_name="Doe",
@@ -191,6 +195,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_ND",
             external_id="user_1_override.external_id",
             role="user_1_override.role",
+            roles=["user_1_override.role"],
             blocked=True,
             pseudonymized_id="hashed-user_1_override",
         )
@@ -212,7 +217,7 @@ class AuthUsersEndpointTestCase(TestCase):
         new_permissions = generate_fake_permissions_overrides(
             email="leadership@domain.org",
             routes={"overridden route": True},
-            feature_variants={"C": True, "new variant": False},
+            feature_variants={"C": {}, "new variant": False},
         )
         add_entity_to_database_session(
             self.database_key,
@@ -239,6 +244,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_MO",
             external_id="12345",
             role="leadership_role",
+            roles=["leadership_role"],
             district="4, 10A",
             first_name="Test A.",
             last_name="User",
@@ -261,6 +267,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_ME",
             role="leadership_role",
+            roles=["leadership_role"],
         )
         applicable_override = generate_fake_user_overrides(
             email="leadership@domain.org",
@@ -276,7 +283,7 @@ class AuthUsersEndpointTestCase(TestCase):
         new_permissions = generate_fake_permissions_overrides(
             email="leadership@domain.org",
             routes={"A": True, "C": False},
-            feature_variants={"C": True},
+            feature_variants={"C": {}},
         )
         add_entity_to_database_session(
             self.database_key, [user_1, applicable_override, default_1, new_permissions]
@@ -303,6 +310,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_CO",
             external_id="12345",
             role="leadership_role",
+            roles=["leadership_role"],
             district="District 4",
             first_name="Test A.",
             last_name="User",
@@ -315,6 +323,71 @@ class AuthUsersEndpointTestCase(TestCase):
             )
         self.snapshot.assert_match(json.loads(response.data), name="test_get_users_no_permissions")  # type: ignore[attr-defined]
 
+    def test_get_users_with_multiple_roles_no_conflicts(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_CO",
+            role="leadership_role",
+            roles=["leadership_role", "supervision_staff"],
+        )
+        leadership_permissions = generate_fake_default_permissions(
+            state="US_CO",
+            role="leadership_role",
+            routes={"B": True},
+        )
+        supervision_permissions = generate_fake_default_permissions(
+            state="US_CO",
+            role="supervision_staff",
+            routes={"A": True},
+            feature_variants={"feature1": {}},
+        )
+        add_entity_to_database_session(
+            self.database_key, [user_1, leadership_permissions, supervision_permissions]
+        )
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_users_with_multiple_roles_no_conflicts")  # type: ignore[attr-defined]
+
+    def test_get_users_with_multiple_roles_with_conflicts(self) -> None:
+
+        user_1 = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_CO",
+            role="leadership_role",
+            roles=["leadership_role", "supervision_staff"],
+        )
+        leadership_permissions = generate_fake_default_permissions(
+            state="US_CO",
+            role="leadership_role",
+            routes={"A": False, "B": True},
+            feature_variants={
+                "feature1": {"activeDate": f"{self.active_date1}"},
+                "feature2": {"activeDate": f"{self.active_date1}"},
+            },
+        )
+        supervision_permissions = generate_fake_default_permissions(
+            state="US_CO",
+            role="supervision_staff",
+            routes={"A": True},
+            feature_variants={
+                "feature1": False,
+                "feature2": {},
+                "feature3": {"activeDate": f"{self.active_date1}"},
+            },
+        )
+        add_entity_to_database_session(
+            self.database_key, [user_1, leadership_permissions, supervision_permissions]
+        )
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+        self.snapshot.assert_match(json.loads(response.data), name="test_get_users_with_multiple_roles_with_conflicts")  # type: ignore[attr-defined]
+
     ########
     # GET /user/...
     ########
@@ -325,6 +398,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_CO",
             external_id="ABC",
             role="leadership_role",
+            roles=["leadership_role"],
             district="District",
             pseudonymized_id="pseudo-ABC",
         )
@@ -333,13 +407,14 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_CO",
             external_id="XXXX",
             role="supervision_staff",
+            roles=["supervision_staff"],
             district="District",
         )
         default = generate_fake_default_permissions(
             state="US_CO",
             role="leadership_role",
             routes={"A": True, "B": False},
-            feature_variants={"D": "E"},
+            feature_variants={"D": {}},
         )
         add_entity_to_database_session(self.database_key, [user_1, user_2, default])
 
@@ -355,6 +430,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_CO",
             external_id="XXXX",
             role="supervision_staff",
+            roles=["supervision_staff"],
             district="District",
         )
 
@@ -378,6 +454,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_CO",
             external_id="123",
             role="supervision_staff",
+            roles=["supervision_staff"],
             district="D1",
             first_name="Test",
             last_name="User",
@@ -392,6 +469,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "stateCode": "US_CO",
                     "emailAddress": "parameter@domain.org",
                     "role": "leadership_role",
+                    "roles": ["leadership_role"],
                     "reason": "test",
                 },
             )
@@ -411,6 +489,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_TN",
             external_id="Original",
             role="leadership_role",
+            roles=["leadership_role"],
             first_name="Original",
             last_name="Name",
             pseudonymized_id="hashed-Original",
@@ -444,6 +523,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_TN",
             external_id="Original",
             role="leadership_role",
+            roles=["leadership_role"],
             first_name="Original",
             last_name="Name",
         )
@@ -466,6 +546,44 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output, "updating user parameter@domain.org with reason: test"
             )
 
+    def test_update_user_add_role(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_CO",
+            role="supervision_staff",
+            roles=["supervision_staff"],
+        )
+        leadership_permissions = generate_fake_default_permissions(
+            state="US_CO",
+            role="leadership_role",
+            routes={"A": False, "B": True},
+            feature_variants={"feature2": {}},
+        )
+        supervision_permissions = generate_fake_default_permissions(
+            state="US_CO",
+            role="supervision_staff",
+            routes={"A": True},
+            feature_variants={"feature1": {}, "feature2": False},
+        )
+        add_entity_to_database_session(
+            self.database_key, [user_1, leadership_permissions, supervision_permissions]
+        )
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            response = self.client.patch(
+                self.user,
+                headers=self.headers,
+                json={
+                    "emailAddress": "parameter@domain.org",
+                    "roles": ["supervision_staff", "leadership_role"],
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.snapshot.assert_match(json.loads(response.data), name="test_update_user_add_role")  # type: ignore[attr-defined]
+            self.assertReasonLog(
+                log.output, "updating user parameter@domain.org with reason: test"
+            )
+
     ########
     # POST /users
     ########
@@ -476,13 +594,14 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_CO",
             external_id="ABC",
             role="leadership_role",
+            roles=["leadership_role"],
             district="District",
         )
         default = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
             routes={"A": True, "B": False},
-            feature_variants={"D": "E"},
+            feature_variants={"D": {}},
         )
         add_entity_to_database_session(self.database_key, [user_1, default])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -494,6 +613,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
                     "role": "leadership_role",
+                    "roles": ["leadership_role"],
                     "district": "1, 2",
                     "firstName": None,
                     "lastName": None,
@@ -553,6 +673,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "emailAddress": "parameter@domain.org",
                     "externalId": "XYZ",
                     "role": "leadership_role",
+                    "roles": ["leadership_role"],
                     "district": "D1",
                     "firstName": "Test",
                     "lastName": "User",
@@ -574,6 +695,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
                     "role": "leadership_role",
+                    "roles": ["leadership_role"],
                     "district": None,
                     "firstName": None,
                     "lastName": None,
@@ -591,6 +713,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="parameter@domain.org",
             region_code="US_TN",
             role="leadership_role",
+            roles=["leadership_role"],
             district="40",
         )
         add_entity_to_database_session(self.database_key, [roster_user])
@@ -603,6 +726,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
                     "role": "leadership_role",
+                    "roles": ["leadership_role"],
                     "district": "40",
                     "firstName": None,
                     "lastName": None,
@@ -613,6 +737,55 @@ class AuthUsersEndpointTestCase(TestCase):
             repeat_roster_user.status_code,
             repeat_roster_user.data,
         )
+
+    def test_add_user_multiple_roles(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="add_user@domain.org",
+            region_code="US_CO",
+            external_id="ABC",
+            role="leadership_role",
+            roles=["leadership_role"],
+            district="District",
+        )
+        leadership_permissions = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            routes={"B": True},
+        )
+        supervision_permissions = generate_fake_default_permissions(
+            state="US_MO",
+            role="supervision_staff",
+            routes={"A": True},
+            feature_variants={"feature1": {}},
+        )
+        add_entity_to_database_session(
+            self.database_key, [user_1, leadership_permissions, supervision_permissions]
+        )
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            self.client.post(
+                self.users(),
+                headers=self.headers,
+                json={
+                    "stateCode": "US_MO",
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": None,
+                    "role": "leadership_role",
+                    "roles": ["leadership_role", "supervision_staff"],
+                    "district": "1, 2",
+                    "firstName": None,
+                    "lastName": None,
+                    "reason": "test",
+                },
+            )
+            self.assertReasonLog(
+                log.output, "adding user parameter@domain.org with reason: test"
+            )
+
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.snapshot.assert_match(json.loads(response.data), name="test_add_user_multiple_roles")  # type: ignore[attr-defined]
 
     ########
     # PUT /users
@@ -675,6 +848,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
+            roles=["leadership_role"],
             external_id="0000",
             district="",
         )
@@ -710,6 +884,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
+            roles=["leadership_role"],
             external_id="0000",
             district="",
         )
@@ -743,6 +918,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
+            roles=["leadership_role"],
             external_id="0000",  # This should not change because user is not updated
             district="",
         )
@@ -777,6 +953,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
+            roles=["leadership_role"],
             external_id="0000",  # This should change with the new upload
             district="",
         )
@@ -785,6 +962,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="supervision_staff@domain.org",
             region_code="US_XX",
             role="supervision_staff",
+            roles=["supervision_staff"],
             district="",
         )
         # Create associated default permissions by role
@@ -910,6 +1088,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
+            roles=["leadership_role"],
             external_id="1234",  # This should NOT change with the new upload
             district="OLD DISTRICT",  # This should change with the new upload
         )
@@ -962,6 +1141,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_CO",
             external_id="123",
             role="line_staff_user",
+            roles=["line_staff_user"],
             district="D1",
             first_name="Test",
             last_name="User",
@@ -972,6 +1152,7 @@ class AuthUsersEndpointTestCase(TestCase):
             region_code="US_TN",
             external_id="456",
             role="leadership_role",
+            roles=["leadership_role"],
             first_name="Original",
             last_name="Name",
         )
@@ -986,12 +1167,14 @@ class AuthUsersEndpointTestCase(TestCase):
                         "stateCode": "US_CO",
                         "userHash": _PARAMETER_USER_HASH,
                         "role": "supervision_staff",
+                        "roles": ["supervision_staff"],
                         "reason": "test",
                     },
                     {
                         "stateCode": "US_TN",
                         "userHash": _USER_HASH,
                         "role": "supervision_staff",
+                        "roles": ["supervision_staff"],
                         "reason": "test",
                     },
                 ],

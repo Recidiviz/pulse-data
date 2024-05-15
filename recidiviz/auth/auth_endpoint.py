@@ -125,9 +125,9 @@ def _upsert_user_rows(
                 "Roster contains a row that is missing an email address (required)"
             )
         validate_email_address(row["email_address"])
-
-        role = row["role"].lower()
         email = row["email_address"].lower()
+        role = row["role"].lower()
+
         associated_state_role = (
             session.query(StateRolePermissions)
             .filter_by(state_code=f"{state_code.upper()}", role=f"{role}")
@@ -148,6 +148,7 @@ def _upsert_user_rows(
                     row["state_code"], row["external_id"]
                 )
         row["role"] = row["role"].lower()
+        row["roles"] = [row["role"]]
         row["user_hash"] = generate_user_hash(row["email_address"])
 
         # update existing row or add new row
