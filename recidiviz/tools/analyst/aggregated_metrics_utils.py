@@ -261,9 +261,13 @@ def get_event_attrs(ea: str, e: str) -> str:
     "Returns the value for the relevant event attribute"
 
     try:
-        return json.loads(ea)[e]
+        event_attrs = json.loads(ea)
+        if e in event_attrs:
+            return event_attrs[e]
     except ValueError:
-        return ""
+        pass  # If an error occurs, just continue to the default return statement
+
+    return ""
 
 
 def get_person_events(
@@ -276,6 +280,7 @@ def get_person_events(
     output_file_path: str = "",
     supervisor_id: str = "",
     officer_ids: Optional[list[str]] = None,
+    print_query: bool = False,
 ) -> pd.DataFrame:
     """
     Returns a dataframe for all the person_events that contribute to a given metric in aggregated metrics, along with
@@ -287,8 +292,6 @@ def get_person_events(
     min_date: start of time range we want to pull events for
     max_date: end of time range we want to pull events for (inclusive)
     parse_attributes: boolean specifying whether the output df should parse `event_attributes`
-    output_excel: boolean for whether an excel output is desired (note this will contain person level information and
-        should only be run in recidiviz-research, uploaded to Google drive, and then shredded)
     output_file_path: File path for output
     supervisor_id: If the events are being pulled for a set of officers associated with a supervisor, the ID can be
         included in the output name
@@ -351,11 +354,14 @@ def get_person_events(
                     LEFT JOIN `normalized_state.state_person_external_id` pei
                         ON e.person_id = pei.person_id
                         AND e.state_code = pei.state_code
-                    WHERE {' AND '.join(metric.get_metric_conditions())}
+                    WHERE ({' OR '.join(metric.get_metric_conditions())})
                     {officer_ids_filter}
                     AND e.event_date BETWEEN {min_date_str} AND {max_date_str}
 
                 """
+
+            if print_query:
+                print(query)
 
             metric_df = pd.read_gbq(
                 query,
