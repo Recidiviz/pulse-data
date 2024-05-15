@@ -28,47 +28,43 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
+COMMON_VESTIGES = [
+    # Validation results are referenced outside the view graph via the Admin Panel
+    "validation_results.validation_results",
+    # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used
+    "export_archives.workflows_snooze_status_archive",
+    # These Justice Counts V1 reference tables are managed by Terraform so must have schema definitions.
+    # TODO(#29814): Determine whether we can delete these tables
+    "external_reference.county_fips",
+    "external_reference.county_resident_adult_populations",
+    "external_reference.county_resident_populations",
+    "external_reference.us_tn_incarceration_facility_names",
+    "external_reference.us_tn_supervision_facility_names",
+]
+
 # these are source tables which are in use, but not necessarily used by the main view graph
 ALLOWED_VESTIGIAL_CONFIGURATIONS = {
     GCP_PROJECT_STAGING: {
-        # Validation results are referenced outside the view graph
-        BigQueryAddress(dataset_id="validation_results", table_id="validation_results"),
-        # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used
-        BigQueryAddress(
-            dataset_id="export_archives",
-            table_id="workflows_snooze_status_archive",
-        ),
-        # This source table is only in-use in production
-        BigQueryAddress(
-            dataset_id="pulse_dashboard_segment_metrics",
-            table_id="frontend_opportunity_snoozed",
-        ),
+        BigQueryAddress.from_str(address_str=address_str)
+        for address_str in [
+            # This source table is only in-use in production
+            "pulse_dashboard_segment_metrics.frontend_opportunity_snoozed",
+            *COMMON_VESTIGES,
+        ]
     },
     GCP_PROJECT_PRODUCTION: {
-        # Validation results are referenced outside the view graph
-        BigQueryAddress(dataset_id="validation_results", table_id="validation_results"),
-        # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used
-        BigQueryAddress(
-            dataset_id="export_archives", table_id="workflows_snooze_status_archive"
-        ),
-        # This table is only referenced in staging
-        BigQueryAddress(
-            dataset_id="spark_public_output_data",
-            table_id="cost_avoidance_estimate_raw",
-        ),
-        # This table is only referenced in staging
-        BigQueryAddress(
-            dataset_id="spark_public_output_data",
-            table_id="cost_avoidance_non_cumulative_estimate_raw",
-        ),
-        # This table is only referenced in staging
-        BigQueryAddress(
-            dataset_id="spark_public_output_data", table_id="life_years_estimate_raw"
-        ),
-        # This table is only referenced in staging
-        BigQueryAddress(
-            dataset_id="spark_public_output_data", table_id="population_estimate_raw"
-        ),
+        BigQueryAddress.from_str(address_str=address_str)
+        for address_str in [
+            # This table is only referenced in staging
+            "spark_public_output_data.cost_avoidance_estimate_raw",
+            # This table is only referenced in staging
+            "spark_public_output_data.cost_avoidance_non_cumulative_estimate_raw",
+            # This table is only referenced in staging
+            "spark_public_output_data.life_years_estimate_raw",
+            # This table is only referenced in staging
+            "spark_public_output_data.population_estimate_raw",
+            *COMMON_VESTIGES,
+        ]
     },
 }
 
