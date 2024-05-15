@@ -69,12 +69,15 @@ eligible_clients AS (
             WHEN cses.correctional_level = 'MINIMUM' THEN 'TELEPHONE REPORTING' 
         ELSE NULL
         END AS metadata_recommended_supervision_level, 
-    FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
+    FROM (
+        SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_initial_classification_review_form_materialized` 
+        UNION ALL
+        SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_subsequent_classification_review_form_materialized` 
+    ) tes
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON tes.state_code = pei.state_code 
         AND tes.person_id = pei.person_id
         AND pei.id_type = "{ID_TYPE}"
-        AND task_name IN ("COMPLETE_INITIAL_CLASSIFICATION_REVIEW_FORM", "COMPLETE_SUBSEQUENT_CLASSIFICATION_REVIEW_FORM")
     LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
         ON sai.person_id = tes.person_id 
         AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause("sai.end_date")}

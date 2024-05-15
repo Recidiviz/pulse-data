@@ -356,14 +356,15 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             n.case_notes AS case_notes,
             -- Almost eligible if there is only 1 ineligible_criteria present
             IF(ARRAY_LENGTH(tes.ineligible_criteria) = 1, tes.ineligible_criteria, []) AS ineligible_criteria,
-        FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
+        FROM (
+            SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_discharge_early_from_probation_supervision_request_materialized` 
+            UNION ALL
+            SELECT * FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_discharge_early_from_parole_dual_supervision_request_materialized` 
+        ) tes
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
             ON tes.state_code = ses.state_code
             AND tes.person_id = ses.person_id
             AND tes.start_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
-            AND task_name IN ( 
-            "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
-            "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
         )
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` cses
             ON tes.state_code = cses.state_code
