@@ -95,6 +95,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": ["usMoRestrictiveHousingStatusHearing"],
                     "usTnFacilityAdmissionDate": None,
+                    "usMePortionNeededEligibleDate": None,
                 },
                 row,
             )
@@ -127,6 +128,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "admissionDate": "2023-01-01",
                     "releaseDate": "2024-03-28",
                     "sccpEligibilityDate": "2023-08-14",
+                    "usMePortionNeededEligibleDate": "2023-08-14",
                     "allEligibleOpportunities": [
                         "usMeSCCP",
                         "usMeWorkRelease",
@@ -165,6 +167,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "admissionDate": "2020-07-11",
                     "releaseDate": "2026-01-23",
                     "sccpEligibilityDate": "2023-03-17",
+                    "usMePortionNeededEligibleDate": "2024-03-20",
                     "allEligibleOpportunities": [
                         "usMeWorkRelease",
                         "usMeFurloughRelease",
@@ -204,6 +207,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": ["usTnCustodyLevelDowngrade"],
                     "usTnFacilityAdmissionDate": None,
+                    "usMePortionNeededEligibleDate": None,
                 },
                 row,
             )
