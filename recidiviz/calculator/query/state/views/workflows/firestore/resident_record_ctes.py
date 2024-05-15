@@ -336,6 +336,7 @@ _RESIDENTS_CTE = """
             us_tn_facility_admission_date,
             opportunities_aggregated.all_eligible_opportunities,
             portion_served_needed,
+            portion_needed_eligible_date AS us_me_portion_needed_eligible_date,
             GREATEST(portion_needed_eligible_date, months_remaining_eligible_date) AS sccp_eligibility_date,
         FROM join_residents
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)

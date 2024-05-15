@@ -51,6 +51,9 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "admissionDate": data.get("admission_date"),
             "releaseDate": data.get("release_date"),
             "portionServedNeeded": data.get("portion_served_needed"),
+            "usMePortionNeededEligibleDate": data.get(
+                "us_me_portion_needed_eligible_date"
+            ),
             "sccpEligibilityDate": data.get("sccp_eligibility_date"),
             "usTnFacilityAdmissionDate": data.get("us_tn_facility_admission_date"),
         }
