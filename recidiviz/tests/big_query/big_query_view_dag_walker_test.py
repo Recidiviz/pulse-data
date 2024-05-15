@@ -1072,6 +1072,20 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
 
         self.assertEqual(set(walker.views), set(result.view_results))
 
+    def test_log_processing_stats(self) -> None:
+        walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        def process_simple(
+            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
+        ) -> BigQueryAddress:
+            time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
+            return view.address
+
+        result = walker.process_dag(process_simple, synchronous=self.synchronous)
+
+        # Logging stats shouldn't crash
+        result.log_processing_stats(n_slowest=3)
+
     def assertIsValidEmptyParentsView(self, node: BigQueryViewDagNode) -> None:
         """Fails the test if a view that has no parents is an expected view with no
         parents. Failures could be indicative of poorly formed view queries.
