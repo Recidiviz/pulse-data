@@ -35,6 +35,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitType,
 )
 from recidiviz.common.constants.state.state_person import StateEthnicity
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 
 
 def parse_ethnicity(
@@ -281,3 +284,28 @@ def parse_penalty_type(
     # If there is no penalty listed and no verbal reprimand documented in the free text
     # field, assume the report was filed and dismissed without any other outcome.
     return StateIncarcerationIncidentOutcomeType.DISMISSED
+
+
+def parse_staff_caseload_type(raw_text: str) -> Optional[StateStaffCaseloadType]:
+    """Parses StateStaffCaseloadType enum values based on a staff member's location,
+    since many specialized caseloads are denoted in location fields. We currently assume
+    that that is the only place that specialized caseloads are denoted, so any officers
+    who do not have a specialized value in their location have a general caseload."""
+    if raw_text:
+        if raw_text.upper() in (
+            "ELECTRONIC MONITORING UNIT",
+            "TUCSON ELECTRONIC MONITORING UNIT",
+        ):
+            return StateStaffCaseloadType.ELECTRONIC_MONITORING
+        if raw_text.upper() == "SEX OFFENDER COORDINATION UNIT":
+            return StateStaffCaseloadType.SEX_OFFENSE
+        if raw_text.upper() == "WARRANT SERVICE AND HEARINGS UNIT":
+            return StateStaffCaseloadType.OTHER_COURT
+        if raw_text.upper() in (
+            "SPECIAL SUPERVISION UNIT",
+            "INTERSTATE COMPACT UNIT",
+            "ADULT ADMINISTRATOR OFFICE",
+        ):
+            return StateStaffCaseloadType.INTERNAL_UNKNOWN
+        return StateStaffCaseloadType.GENERAL
+    return StateStaffCaseloadType.INTERNAL_UNKNOWN
