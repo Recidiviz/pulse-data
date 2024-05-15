@@ -78,6 +78,15 @@ def database_keys_for_schema_type(
                 for state_code in get_workflows_enabled_states()
             ]
 
+        case SchemaType.INSIGHTS:
+            insights_db_manager = StateSegmentedDatabaseManager(
+                get_outliers_enabled_states(), SchemaType.INSIGHTS
+            )
+            return [
+                insights_db_manager.database_key_for_state(state_code)
+                for state_code in get_outliers_enabled_states()
+            ]
+
     raise ValueError(f"Unexpected schema_type: [{schema_type}]")
 
 

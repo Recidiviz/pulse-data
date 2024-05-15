@@ -64,6 +64,8 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_ww"),
             SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_oz"),
             SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_yy"),
+            SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_xx"),
+            SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_ww"),
         ]
 
         self.assertCountEqual(expected_all_keys, all_keys)

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for gcs_import_to_cloud_sql.py"""
+import json
+import os
 from datetime import date
 from http import HTTPStatus
 from typing import Any, List, Optional
@@ -28,12 +30,20 @@ from sqlalchemy import Column, Index, Integer, String, Table, Text
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.ddl import CreateIndex, CreateTable, DDLElement, SetColumnComment
 
+from recidiviz.application_data_import.server import _insights_bucket
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     ModelSQL,
     build_temporary_sqlalchemy_table,
     import_gcs_csv_to_cloud_sql,
+    import_gcs_file_to_cloud_sql,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.persistence.database.schema.insights.schema import (
+    SupervisionOfficer as InsightsSupervisionOfficer,
+)
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionClientEvent,
     SupervisionOfficer,
@@ -46,6 +56,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tests.auth.helpers import add_entity_to_database_session
+from recidiviz.tools.insights import fixtures as insights_fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
@@ -523,3 +534,131 @@ class TestModelSQL(TestCase):
             model_sql = ModelSQL(table=build_temporary_sqlalchemy_table(table))
             rename_queries = model_sql.build_rename_ddl_queries("new_base_name")
             self.assertGreater(len(rename_queries), 0)
+
+
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789"))
+@pytest.mark.uses_db
+class TestGCSImportFileToCloudSQL(TestCase):
+    """Tests for gcs_import_to_cloud_sql.py."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def setUp(self) -> None:
+        self.officer_1_id = "45678"
+        self.mock_instance_id = "mock_instance_id"
+        self.cloud_sql_client_patcher = patch(
+            "recidiviz.cloud_sql.gcs_import_to_cloud_sql.CloudSQLClientImpl"
+        )
+        self.mock_cloud_sql_client = MagicMock()
+        self.cloud_sql_client_patcher.start().return_value = self.mock_cloud_sql_client
+
+        self.mock_sqlalchemy_engine_manager = SQLAlchemyEngineManager
+        setattr(
+            self.mock_sqlalchemy_engine_manager,
+            "get_stripped_cloudsql_instance_id",
+            Mock(return_value=self.mock_instance_id),
+        )
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_ca")
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+
+        self.table_name = InsightsSupervisionOfficer.__tablename__
+        self.model = InsightsSupervisionOfficer
+        self.columns = [
+            col.name for col in InsightsSupervisionOfficer.__table__.columns
+        ]
+        self.state_code = StateCode.US_CA.value
+        self.now = "2023-08-30T13:33:09.109433"
+
+        self.fs = FakeGCSFileSystem()
+        self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
+        self.fs_patcher.start()
+
+    def tearDown(self) -> None:
+        self.fs_patcher.stop()
+        self.cloud_sql_client_patcher.stop()
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @patch(f"{import_gcs_file_to_cloud_sql.__module__}.SessionFactory.using_database")
+    def test_import_gcs_file_queries(self, session_mock: MagicMock) -> None:
+        """Smoke test of queries issued to a database"""
+        execute_mock = session_mock.return_value.__enter__.return_value.execute
+
+        filename = "fake_model.json"
+        filepath = GcsfsFilePath.from_absolute_path(
+            os.path.join(
+                _insights_bucket(),
+                self.state_code + "/" + filename,
+            )
+        )
+        self.fs.upload_from_string(
+            filepath, json.dumps({"id": 1, "comment": 2}), content_type="text/json"
+        )
+
+        import_gcs_file_to_cloud_sql(
+            database_key=self.database_key,
+            model=FakeModel,
+            gcs_uri=filepath,
+            columns=["id", "comment"],
+        )
+
+        issued_ddl_statements = [
+            str(call.args[0]).strip()
+            for call in execute_mock.mock_calls
+            if len(call.args) and isinstance(call.args[0], (str, DDLElement))
+        ]
+
+        self.assertEqual(
+            [
+                "DROP TABLE IF EXISTS tmp__fake_model",
+                "CREATE TABLE tmp__fake_model (\n\tid INTEGER NOT NULL, \n\tcomment TEXT, \n\tPRIMARY KEY (id)\n)",
+                "CREATE UNIQUE INDEX tmp__fake_model_pk ON tmp__fake_model (id)",
+                "DROP TABLE IF EXISTS fake_model",
+                "ALTER TABLE tmp__fake_model RENAME TO fake_model",
+                "ALTER INDEX tmp__fake_model_pk RENAME TO fake_model_pk",
+            ],
+            issued_ddl_statements,
+        )
+
+    def test_import_gcs_file_success(self) -> None:
+        """Test that a JSON file is correctly imported to the DB"""
+        filename = f"{self.table_name}.json"
+        fixture_path = os.path.join(
+            os.path.dirname(insights_fixtures.__file__), filename
+        )
+
+        filename = f"{self.table_name}.json"
+        filepath = GcsfsFilePath.from_absolute_path(
+            os.path.join(
+                _insights_bucket(),
+                self.state_code + "/" + filename,
+            )
+        )
+        with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
+            for row in fixture_file:
+                self.fs.upload_from_string(filepath, row, content_type="text/json")
+                break
+
+        import_gcs_file_to_cloud_sql(
+            database_key=self.database_key,
+            model=self.model,
+            gcs_uri=filepath,
+            columns=self.columns,
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            results = session.query(self.model).all()
+            self.assertEqual(len(results), 1)

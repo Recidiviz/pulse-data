@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements admin panel route for importing GCS to Cloud SQL."""
+import json
 import logging
 from collections import defaultdict
 from http import HTTPStatus
@@ -24,6 +25,7 @@ import attr
 from google.api_core import retry
 from googleapiclient import errors
 from sqlalchemy import Table, create_mock_engine
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.ddl import (
     CreateIndex,
@@ -34,6 +36,7 @@ from sqlalchemy.sql.ddl import (
 )
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -239,6 +242,7 @@ def import_gcs_csv_to_cloud_sql(
 
     If a region_code is provided, selects all rows in the destination_table that do not equal the region_code and
     inserts them into the temp table before swapping.
+    TODO(#29762): Deprecate in favor of import_gcs_file_to_cloud_sql
     """
     destination_table = model.__table__
     destination_table_name = model.__tablename__
@@ -264,6 +268,145 @@ def import_gcs_csv_to_cloud_sql(
         columns=columns,
         seconds_to_wait=seconds_to_wait,
     )
+
+    with SessionFactory.using_database(database_key=database_key) as session:
+        if region_code is not None:
+            # Import the rest of the regions into temp table
+            session.execute(
+                f"INSERT INTO {temporary_table.name} SELECT * FROM {destination_table_name} "
+                f"WHERE state_code != '{region_code}'"
+            )
+
+        # Drop the destination table
+        session.execute(DropTable(destination_table, if_exists=True))
+
+        rename_queries = temporary_table_model_sql.build_rename_ddl_queries(
+            destination_table_name
+        )
+
+        # Rename temporary table and all indexes / constraint on the temporary table
+        for query in rename_queries:
+            session.execute(query)
+
+
+def parse_exported_json_row_from_bigquery(
+    data: Any, model: SQLAlchemyModelType
+) -> Dict[str, Any]:
+    result: Dict[str, Any] = {}
+    for key, value in data.items():
+        if isinstance(model.__table__.c[key].type, JSONB):
+            result[key] = json.loads(value)
+        elif value == "true":
+            result[key] = True
+        elif value == "false":
+            result[key] = False
+        else:
+            result[key] = value
+    return result
+
+
+def _import_gcs_json_to_cloud_sql(
+    database_key: SQLAlchemyDatabaseKey,
+    gcs_uri: GcsfsFilePath,
+    destination_table: Table,
+    model: SQLAlchemyModelType,
+) -> None:
+    """
+    Expects a newline delimited JSON file at the specified GCS URI path and
+    reads each line to add new entities to the specified destination table.
+    """
+    gcsfs = GcsfsFactory.build()
+    added_entities = 0
+    with gcsfs.open(gcs_uri) as f, SessionFactory.using_database(
+        database_key=database_key
+    ) as session:
+        for line in f:
+            try:
+                json_entity = json.loads(line)
+                flattened_json_entity = parse_exported_json_row_from_bigquery(
+                    json_entity, model
+                )
+                session.execute(
+                    destination_table.insert().values(**flattened_json_entity)
+                )
+                added_entities += 1
+            except Exception as e:
+                # TODO(#29761): Consider counting number of failed rows and alerting based on threshold of failed row
+                logging.error(
+                    "Added %s entities before encountering exception: %s",
+                    added_entities,
+                    str(e),
+                )
+                raise e
+
+            session.commit()
+
+            logging.info(
+                "Added %s entities in import to %s",
+                added_entities,
+                destination_table.name,
+            )
+
+
+def import_gcs_file_to_cloud_sql(
+    database_key: SQLAlchemyDatabaseKey,
+    model: SQLAlchemyModelType,
+    gcs_uri: GcsfsFilePath,
+    columns: List[str],
+    region_code: Optional[str] = None,
+    seconds_to_wait: int = 60 * 5,  # 5 minutes
+) -> None:
+    """
+    Implements the import of GCS file to Cloud SQL by creating a temporary table, uploading the
+    results to the temporary table, and then swapping the contents of the table.
+
+    If a region_code is provided, selects all rows in the destination_table that do not equal the region_code and
+    inserts them into the temp table before swapping.
+    """
+
+    destination_table = model.__table__
+    destination_table_name = model.__tablename__
+
+    # Generate DDL statements for the temporary table
+    temporary_table = build_temporary_sqlalchemy_table(destination_table)
+    temporary_table_model_sql = ModelSQL(table=temporary_table)
+
+    with SessionFactory.using_database(database_key=database_key) as session:
+        # Drop (if it exists) and create temporary table for the given model
+        _recreate_table(database_key, temporary_table_model_sql)
+
+        additional_ddl_queries = ADDITIONAL_DDL_QUERIES_BY_TABLE_NAME.get(
+            temporary_table.name, []
+        )
+
+        for query in additional_ddl_queries:
+            session.execute(query)
+
+    _, file_type = gcs_uri.blob_name.split(".")
+
+    # Import file to destination table table
+    logging.info("Starting import from GCS URI: %s", gcs_uri)
+    logging.info("Starting import to destination table: %s", destination_table.name)
+    logging.info("Starting import using columns: %s", destination_table.columns)
+
+    if file_type == "csv":
+        _import_csv_to_temp_table(
+            database_key=database_key,
+            tmp_table_name=temporary_table.name,
+            gcs_uri=gcs_uri,
+            columns=columns,
+            seconds_to_wait=seconds_to_wait,
+        )
+    elif file_type == "json":
+        # Imports JSON data to the temporary table
+        _import_gcs_json_to_cloud_sql(
+            database_key=database_key,
+            gcs_uri=gcs_uri,
+            destination_table=temporary_table,
+            model=model,
+        )
+    else:
+        raise ValueError(f"Unexpected file type ({file_type}): {gcs_uri.abs_path()}")
 
     with SessionFactory.using_database(database_key=database_key) as session:
         if region_code is not None:

@@ -73,6 +73,18 @@ module "handle_outliers_etl" {
   message_retention_duration = "86400s"
 }
 
+module "handle_insights_etl" {
+  source = "./modules/cloud-storage-notification"
+
+  bucket_name                = module.insights-etl-data.name
+  push_endpoint              = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_insights"
+  service_account_email      = google_service_account.application_data_import_cloud_run.email
+  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\") AND NOT hasPrefix(attributes.objectId, \"sandbox/\")"
+  minimum_backoff            = "180s"
+  maximum_backoff            = "600s"
+  message_retention_duration = "86400s"
+}
+
 module "archive_outliers_file" {
   source = "./modules/cloud-storage-notification"
 

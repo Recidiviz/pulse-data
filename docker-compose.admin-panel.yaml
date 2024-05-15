@@ -14,12 +14,14 @@ services:
       - operations_db_socket:/cloudsql/operations
       - outliers_db_socket:/cloudsql/outliers
       - workflows_db_socket:/cloudsql/workflows
+      - insights_db_socket:/cloudsql/insights
     depends_on:
       - case_triage_db
       - justice_counts_db
       - operations_db
       - outliers_db
       - workflows_db
+      - insights_db
       - redis
     ports:
       - "5050:5000"
@@ -44,11 +46,13 @@ services:
       - justice_counts_db_socket:/cloudsql/justice_counts
       - operations_db_socket:/cloudsql/operations
       - outliers_db_socket:/cloudsql/outliers
+      - insights_db_socket:/cloudsql/insights
     depends_on:
       - case_triage_db
       - justice_counts_db
       - operations_db
       - outliers_db
+      - insights_db
       - redis
       # Allow backend to boot prior to cache hydration which takes some time
       - admin_panel_backend

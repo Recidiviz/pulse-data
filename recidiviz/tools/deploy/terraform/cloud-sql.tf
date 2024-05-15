@@ -112,6 +112,30 @@ module "outliers_database" {
   }
 }
 
+module "insights_database" {
+  source = "./modules/cloud-sql-instance"
+
+  project_id        = var.project_id
+  instance_key      = "insights"
+  base_secret_name  = "insights"
+  region            = var.region
+  zone              = var.zone
+  secondary_zone    = "us-central1-b"
+  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
+  has_readonly_user = true
+
+  additional_databases = [
+    for value in local.outliers_enabled_states :
+    lower(value)
+  ]
+  insights_config = {
+    query_insights_enabled  = true
+    query_string_length     = 1024
+    record_application_tags = false
+    record_client_address   = false
+  }
+}
+
 module "workflows_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -170,6 +194,7 @@ locals {
       module.outliers_database.connection_name,
       module.workflows_database.connection_name,
       module.sentencing_database.connection_name,
+      module.insights_database.connection_name,
       # v2 modules
       module.operations_database_v2.connection_name,
       # TODO(Recidiviz/justice-counts#1019): Remove this when the admin panel no longer needs to access the JC database
@@ -185,6 +210,7 @@ locals {
       module.pathways_database.connection_name,
       module.outliers_database.connection_name,
       module.sentencing_database.connection_name,
+      module.insights_database.connection_name,
     ]
   )
 }

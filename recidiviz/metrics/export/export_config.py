@@ -180,6 +180,7 @@ PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboar
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
 WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-outliers-etl-data"
+INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-insights-etl-data"
 PRODUCT_FAILED_LOGINS_MONTHLY_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-product-failed-logins-monthly"
 )
@@ -310,6 +311,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         },
     ),
     # Outliers views
+    # TODO(#29763): Deprecate OUTLIERS export in favor of INSIGHTS
     ExportViewCollectionConfig(
         view_builders_to_export=OUTLIERS_VIEW_BUILDERS_TO_EXPORT,
         output_directory_uri_template=OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
@@ -318,6 +320,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
         },
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+    ),
+    # Insights views
+    ExportViewCollectionConfig(
+        view_builders_to_export=OUTLIERS_VIEW_BUILDERS_TO_EXPORT,
+        output_directory_uri_template=INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="INSIGHTS",
+        allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Impact Views
