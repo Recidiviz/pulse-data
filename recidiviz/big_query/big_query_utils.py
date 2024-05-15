@@ -77,10 +77,12 @@ def schema_field_for_attribute(
     )
 
 
-def _bq_schema_column_type_for_type(field_type: Type) -> bigquery.enums.SqlTypeNames:
+def _bq_schema_column_type_for_type(
+    field_type: Type,
+) -> bigquery.enums.SqlTypeNames:
     """Returns the schema column type that should be used to store the value of the
     provided |field_type| in a BigQuery table."""
-    if field_type is Enum or field_type is str or field_type is List:
+    if field_type is Enum or field_type is str:
         return bigquery.enums.SqlTypeNames.STRING
     if field_type is int:
         return bigquery.enums.SqlTypeNames.INTEGER
@@ -92,8 +94,6 @@ def _bq_schema_column_type_for_type(field_type: Type) -> bigquery.enums.SqlTypeN
         return bigquery.enums.SqlTypeNames.DATETIME
     if field_type is bool:
         return bigquery.enums.SqlTypeNames.BOOLEAN
-    # TODO(#7285): Add support for ARRAY types when we turn on the regular
-    #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
     raise ValueError(f"Unhandled field type for field_type: {field_type}")
 
 
@@ -128,6 +128,14 @@ def bq_schema_column_type_for_sqlalchemy_column(
         col_postgres_type, (postgresql.JSON, postgresql.JSONB)
     ):
         return bigquery.enums.SqlTypeNames.STRING
+    if col_python_type == list:
+        if isinstance(col_postgres_type.item_type, sqlalchemy.sql.sqltypes.String):
+            return bigquery.enums.SqlTypeNames.STRING
+        if isinstance(col_postgres_type.item_type, sqlalchemy.sql.sqltypes.Numeric):
+            return bigquery.enums.SqlTypeNames.NUMERIC
+        raise ValueError(
+            "Syncing non-string/numeric array item types has not yet been implemented"
+        )
 
     return _bq_schema_column_type_for_type(col_python_type)
 
@@ -143,7 +151,7 @@ def schema_for_sqlalchemy_table(
         bigquery.SchemaField(
             col.name,
             bq_schema_column_type_for_sqlalchemy_column(col).value,
-            mode="NULLABLE",
+            mode="REPEATED" if isinstance(col.type, postgresql.ARRAY) else "NULLABLE",
         )
         for col in table.columns
     ]
