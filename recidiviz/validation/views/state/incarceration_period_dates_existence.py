@@ -42,7 +42,7 @@ INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=INCARCERATION_PERIOD_DATES_EXISTENCE_VIEW_NAME,
     view_query_template=INCARCERATION_PERIOD_DATES_EXISTENCE_QUERY_TEMPLATE,
     description=INCARCERATION_PERIOD_DATES_EXISTENCE_DESCRIPTION,
-    state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

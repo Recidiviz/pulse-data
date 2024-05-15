@@ -43,7 +43,7 @@ SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATION_REASON_NO_DATE_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATION_REASON_NO_DATE_DESCRIPTION,
-    state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

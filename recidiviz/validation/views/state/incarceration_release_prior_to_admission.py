@@ -48,7 +48,7 @@ INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_id=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_NAME,
     view_query_template=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY_TEMPLATE,
     description=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_DESCRIPTION,
-    state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

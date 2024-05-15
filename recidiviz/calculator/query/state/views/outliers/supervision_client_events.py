@@ -81,6 +81,7 @@ violations AS (
             ) AS description
         )
     ) AS attributes
+    -- TODO(#29820): Query from `normalized_state` instead of `state` here
     FROM `{{project_id}}.state.state_supervision_violation` sv
     LEFT JOIN `{{project_id}}.state.state_supervision_violated_condition_entry` cond
         ON sv.supervision_violation_id = cond.supervision_violation_id
