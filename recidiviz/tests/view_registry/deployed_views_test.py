@@ -18,6 +18,7 @@
 import datetime
 import re
 import unittest
+from collections import defaultdict
 from typing import Dict, List, Set, Tuple
 from unittest.mock import MagicMock, patch
 
@@ -30,12 +31,28 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.calculator.query.state.views.analyst_data.all_task_eligibility_spans import (
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
+    SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
+    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
+    STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
+    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
@@ -60,6 +77,9 @@ from recidiviz.validation.views.dataset_config import (
 )
 from recidiviz.validation.views.dataset_config import (
     VIEWS_DATASET as VALIDATION_VIEWS_DATASET,
+)
+from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
+    PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
@@ -520,3 +540,49 @@ The following views have less restrictive projects_to_deploy than their parents:
 {error_message_rows_str}
 """
             raise ValueError(error_message)
+
+    def test_views_only_query_from_allowed_datasets(self) -> None:
+        """Test that ensures that views in our view graph only reference valid datasets."""
+        disallowed_view_parent_datasets_with_exemptions = {
+            # The `state` dataset is a data pipeline intermediate output and should only
+            # be used for debugging purposes with the following exemptions. Views should
+            # use the `normalized_state` dataset instead.
+            STATE_BASE_DATASET: {
+                # Reference views that feed into the normalization pipelines
+                STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER.address,
+                STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER.address,
+                US_MO_SENTENCE_STATUSES_VIEW_BUILDER.address,
+                # This validation checks both state and normalized_state
+                PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER.address,
+                # TODO(#29820): This view should be updated to reference `normalized_state`
+                SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER.address,
+            },
+            # The `operations` dataset shows a potentially stale view of data platform
+            # operations data and should only be used for debugging / one-off analysis
+            # purposes.
+            OPERATIONS_BASE_DATASET: {},
+        }
+        views_with_issues = defaultdict(set)
+        for view in self.dag_walker.views:
+            for parent_address in view.parent_tables:
+                parent_dataset = parent_address.dataset_id
+                if (
+                    parent_dataset
+                    not in disallowed_view_parent_datasets_with_exemptions
+                ):
+                    continue
+                exemptions = disallowed_view_parent_datasets_with_exemptions[
+                    parent_dataset
+                ]
+                if view.address in exemptions:
+                    continue
+                views_with_issues[parent_dataset].add(view.address)
+
+        for dataset_id, views_referencing_dataset in views_with_issues.items():
+            address_strs = [a.to_str() for a in views_referencing_dataset]
+            raise ValueError(
+                f"Views in our primary view graph cannot reference dataset "
+                f"[{dataset_id}], which is present for non-production use cases only ("
+                f"e.g. debugging). Found views referencing [{dataset_id}]: "
+                f"{address_strs}"
+            )

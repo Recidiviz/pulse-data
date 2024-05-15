@@ -42,7 +42,7 @@ INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=INCARCERATION_ADMISSION_NULLS_VIEW_NAME,
     view_query_template=INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE,
     description=INCARCERATION_ADMISSION_NULLS_DESCRIPTION,
-    state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

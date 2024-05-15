@@ -21,8 +21,8 @@ that do not have corresponding rows in the location_metadata view.
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     REFERENCE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -55,7 +55,7 @@ LOCATION_METADATA_MISSING_LOCATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=LOCATION_METADATA_MISSING_LOCATIONS_VIEW_NAME,
     view_query_template=LOCATION_METADATA_MISSING_LOCATIONS_QUERY_TEMPLATE,
     description=LOCATION_METADATA_MISSING_LOCATIONS_DESCRIPTION,
-    state_dataset=STATE_BASE_DATASET,
+    state_dataset=NORMALIZED_STATE_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     should_materialize=True,
 )

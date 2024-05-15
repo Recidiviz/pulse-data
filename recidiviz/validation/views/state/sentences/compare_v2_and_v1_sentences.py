@@ -23,7 +23,7 @@ by joining external IDs.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -111,7 +111,7 @@ SENTENCE_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id="sentence_comparison",
     view_query_template=QUERY,
     description=__doc__.strip(),
-    state_dataset=STATE_BASE_DATASET,
+    state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 
