@@ -66,6 +66,7 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
+from recidiviz.persistence.database.schema.insights import schema as insights_schema
 from recidiviz.persistence.database.schema.outliers import schema as outliers_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
@@ -438,7 +439,7 @@ def _import_insights(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
 
     try:
         db_entity = get_database_entity_by_table_name(
-            outliers_schema, view_builder.view_id
+            insights_schema, view_builder.view_id
         )
 
     except ValueError as e:

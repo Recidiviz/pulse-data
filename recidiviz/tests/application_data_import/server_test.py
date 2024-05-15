@@ -43,6 +43,9 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
+from recidiviz.persistence.database.schema.insights.schema import (
+    SupervisionOfficer as InsightsSupervisionOfficer,
+)
 from recidiviz.persistence.database.schema.outliers.schema import SupervisionOfficer
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
@@ -621,9 +624,11 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
         self.app = app
         self.client = self.app.test_client()
         self.bucket = "test-project-insights-etl-data"
-        self.view = "supervision_officers"
+        self.view = "insights_supervision_officers"
         self.state_code = "US_XX"
-        self.columns = [col.name for col in SupervisionOfficer.__table__.columns]
+        self.columns = [
+            col.name for col in InsightsSupervisionOfficer.__table__.columns
+        ]
         self.fs = FakeGCSFileSystem()
         self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
         self.fs_patcher.start()
@@ -733,7 +738,7 @@ class TestApplicationDataImportInsightsRoutes(TestCase):
                 database_key=SQLAlchemyDatabaseKey(
                     schema_type=SchemaType.INSIGHTS, db_name="us_xx"
                 ),
-                model=SupervisionOfficer,
+                model=InsightsSupervisionOfficer,
                 gcs_uri=GcsfsFilePath.from_bucket_and_blob_name(
                     self.bucket, f"{self.state_code}/{self.view}.json"
                 ),

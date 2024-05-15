@@ -43,6 +43,7 @@ from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import
     IMPACT_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
+    INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
     OUTLIERS_VIEW_BUILDERS_TO_EXPORT,
 )
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
@@ -324,7 +325,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # Insights views
     ExportViewCollectionConfig(
-        view_builders_to_export=OUTLIERS_VIEW_BUILDERS_TO_EXPORT,
+        view_builders_to_export=INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
         output_directory_uri_template=INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="INSIGHTS",
         allow_empty=True,
