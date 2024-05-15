@@ -114,9 +114,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.location_metadata.us_ar_location_metadata import (
-    US_AR_LOCATION_METADATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -185,11 +182,6 @@ LOOKER_REFERENCED_ADDRESSES = {
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
 UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
-    US_AR_LOCATION_METADATA_VIEW_BUILDER.address: (
-        "Adds location metadata for AR to start hydrating locations downstream; there "
-        "are currently no downstream views for AR, but this reference view will support "
-        "their ongoing development. (n-damiani 04/18/24)"
-    ),
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER.address: (
         "This view aggregates early discharge stats at the officer-level. It is used "
         "to generate reports that can be used by supervisors to identify officers who "
