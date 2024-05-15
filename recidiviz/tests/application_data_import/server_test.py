@@ -597,3 +597,199 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
                 error_message.encode("UTF-8"),
                 response.data,
             )
+
+
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
+@pytest.mark.uses_db
+class TestApplicationDataImportInsightsRoutes(TestCase):
+    """Implements tests for the Insights routes in the Application Data Import Flask server."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def setUp(self) -> None:
+        self.app = app
+        self.client = self.app.test_client()
+        self.bucket = "test-project-insights-etl-data"
+        self.view = "supervision_officers"
+        self.state_code = "US_XX"
+        self.columns = [col.name for col in SupervisionOfficer.__table__.columns]
+        self.fs = FakeGCSFileSystem()
+        self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
+        self.fs_patcher.start()
+        self.database_manager = StateSegmentedDatabaseManager(
+            get_outliers_enabled_states(), SchemaType.INSIGHTS
+        )
+        self.database_key = self.database_manager.database_key_for_state(
+            self.state_code
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+
+    def tearDown(self) -> None:
+        self.fs_patcher.stop()
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
+    def test_import_trigger_insights(self, mock_task_manager: MagicMock) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_insights",
+                json={
+                    "message": {
+                        "data": base64.b64encode(b"anything").decode(),
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"{self.state_code}/test-file.json",
+                        },
+                        "messageId": "12345",
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_called_with(
+                absolute_uri=f"http://localhost:5000/import/insights/{self.state_code}/test-file.json",
+                service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
+                task_id=f"import-insights-{self.state_code}-test-file-json",
+            )
+
+    def test_import_trigger_insights_bad_message(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_insights",
+                json={"message": {}},
+            )
+            self.assertEqual(b"Invalid Pub/Sub message", response.data)
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_import_trigger_insights_invalid_bucket(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_insights",
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": "invalid-bucket",
+                            "objectId": f"{self.state_code}/test-file.json",
+                        },
+                        "messageId": "12345",
+                    },
+                    "subscription": "test-subscription",
+                },
+            )
+            self.assertEqual(
+                b"/import/trigger_insights is only configured for the gs://test-project-insights-etl-data bucket, saw invalid-bucket",
+                response.data,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_import_trigger_insights_invalid_object(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_insights",
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"staging/{self.state_code}/test-file.json",
+                        },
+                        "messageId": "12345",
+                    },
+                    "subscription": "test-subscription",
+                },
+            )
+            self.assertEqual(
+                b"Invalid object ID staging/US_XX/test-file.json, must be of format <state_code>/<filename>",
+                response.data,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_file_to_cloud_sql",
+        autospec=True,
+    )
+    def test_import_insights_successful(
+        self,
+        mock_import_csv: MagicMock,
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/insights/{self.state_code}/{self.view}.json",
+            )
+            mock_import_csv.assert_called_with(
+                database_key=SQLAlchemyDatabaseKey(
+                    schema_type=SchemaType.INSIGHTS, db_name="us_xx"
+                ),
+                model=SupervisionOfficer,
+                gcs_uri=GcsfsFilePath.from_bucket_and_blob_name(
+                    self.bucket, f"{self.state_code}/{self.view}.json"
+                ),
+                columns=self.columns,
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    def test_import_insights_successful_skip(
+        self,
+        mock_import_csv: MagicMock,
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/insights/{self.state_code}/supervision_officers_archive.json",
+            )
+            mock_import_csv.assert_not_called()
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    def test_import_insights_invalid_state(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/insights/US_ABC/{self.view}.json",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Unknown state_code [US_ABC] received, must be a valid state code.",
+                response.data,
+            )
+
+    def test_import_insights_invalid_file(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/insights/{self.state_code}/unknown_file.json",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Invalid filename unknown_file.json, must match a Outliers view",
+                response.data,
+            )
+
+    @patch("recidiviz.application_data_import.server.get_database_entity_by_table_name")
+    def test_import_insights_invalid_table(self, mock_get_database: MagicMock) -> None:
+        error_message = f"Could not find model with table named {self.view}"
+        with self.app.test_request_context():
+            mock_get_database.side_effect = ValueError(error_message)
+            response = self.client.post(
+                f"/import/insights/{self.state_code}/{self.view}.json",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                error_message.encode("UTF-8"),
+                response.data,
+            )

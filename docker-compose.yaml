@@ -120,6 +120,17 @@ services:
     ports:
       - "6379:6379"
 
+  insights_db:
+    image: postgres:13.1-alpine
+    environment:
+      POSTGRES_USER: insights_user
+      POSTGRES_PASSWORD: example
+    ports:
+      - "5438:5432"
+    volumes:
+      - insights_db_data:/var/lib/postgresql/data
+      - insights_db_socket:/var/run/postgresql/
+
 volumes:
   case_triage_db_data:
   case_triage_db_socket:
@@ -133,3 +144,5 @@ volumes:
   pathways_db_socket:
   workflows_db_data:
   workflows_db_socket:
+  insights_db_data:
+  insights_db_socket:

@@ -1,0 +1,10 @@
+{"state_code":"US_PA","metric_id":"incarceration_starts_and_inferred","period":"YEAR","end_date":"2023-04-01","caseload_type":"ALL","target":0.14,"threshold":0.21,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"incarceration_starts_and_inferred","period":"YEAR","end_date":"2023-05-01","caseload_type":"ALL","target":0.13,"threshold":0.2}
+{"state_code":"US_PA","metric_id":"task_completions_transfer_to_limited_supervision","period":"YEAR","end_date":"2023-04-01","caseload_type":"ALL","target":0.008,"threshold":0.1,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"task_completions_transfer_to_limited_supervision","period":"YEAR","end_date":"2023-05-01","caseload_type":"ALL","target":0.008,"threshold":0.1,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"absconsions_bench_warrants","period":"YEAR","end_date":"2023-05-01","caseload_type":"ALL","target":0.14,"threshold":0.21,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"absconsions_bench_warrants","period":"YEAR","end_date":"2023-04-01","caseload_type":"ALL","target":0.14,"threshold":0.21,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"absconsions_bench_warrants","period":"YEAR","end_date":"2023-03-01","caseload_type":"ALL","target":0.14,"threshold":0.21,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"absconsions_bench_warrants","period":"YEAR","end_date":"2023-02-01","caseload_type":"ALL","target":0.14,"threshold":0.21,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"absconsions_bench_warrants","period":"YEAR","end_date":"2023-01-01","caseload_type":"ALL","target":0.14,"threshold":0.21,"top_x_pct": null}
+{"state_code":"US_PA","metric_id":"absconsions_bench_warrants","period":"YEAR","end_date":"2022-12-01","caseload_type":"ALL","target":0.14,"threshold":0.21,"top_x_pct": null}

@@ -168,6 +168,7 @@ class CloudSqlToBQConfig:
             SchemaType.OUTLIERS,
             SchemaType.STATE,
             SchemaType.WORKFLOWS,
+            SchemaType.INSIGHTS,
         ):
             return False
 

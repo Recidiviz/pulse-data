@@ -27,6 +27,7 @@ class SchemaType(enum.Enum):
     PATHWAYS = "PATHWAYS"
     OUTLIERS = "OUTLIERS"
     WORKFLOWS = "WORKFLOWS"
+    INSIGHTS = "INSIGHTS"
 
     @property
     def is_multi_db_schema(self) -> bool:
@@ -36,6 +37,7 @@ class SchemaType(enum.Enum):
             SchemaType.PATHWAYS,
             SchemaType.OUTLIERS,
             SchemaType.WORKFLOWS,
+            SchemaType.INSIGHTS,
         ]
 
     @property

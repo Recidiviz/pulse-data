@@ -236,6 +236,19 @@ class TestSchemaUtils(unittest.TestCase):
             "opportunity",
             "opportunity_configuration",
         ]
+        insights_table_names = [
+            "metric_benchmarks",
+            "supervision_client_events",
+            "supervision_clients",
+            "supervision_officers",
+            "supervision_officer_supervisors",
+            "supervision_district_managers",
+            "supervision_officer_metrics",
+            "supervision_officer_outlier_status",
+            "supervision_state_metrics",
+            "configurations",
+            "user_metadata",
+        ]
 
         expected_table_class_names = (
             case_triage_table_names
@@ -245,6 +258,7 @@ class TestSchemaUtils(unittest.TestCase):
             + state_table_names
             + outliers_table_names
             + workflows_table_names
+            + insights_table_names
         )
 
         all_table_classes = get_all_table_classes()

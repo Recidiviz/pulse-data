@@ -30,6 +30,7 @@ from sqlalchemy.orm import RelationshipProperty
 
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
+    InsightsBase,
     JusticeCountsBase,
     OperationsBase,
     OutliersBase,
@@ -41,6 +42,7 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
+from recidiviz.persistence.database.schema.insights import schema as insights_schema
 from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
@@ -59,6 +61,7 @@ _SCHEMA_MODULES: List[ModuleType] = [
     operations_schema,
     outliers_schema,
     workflows_schema,
+    insights_schema,
 ]
 
 BQ_TYPES = {
@@ -268,6 +271,8 @@ def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
             return SchemaType.OUTLIERS
         case WorkflowsBase():
             return SchemaType.WORKFLOWS
+        case InsightsBase():
+            return SchemaType.INSIGHTS
 
     raise ValueError(f"Object of type [{type(schema_object)}] has unknown schema base.")
 
@@ -288,5 +293,7 @@ def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
             return OutliersBase
         case SchemaType.WORKFLOWS:
             return WorkflowsBase
+        case SchemaType.INSIGHTS:
+            return InsightsBase
 
     raise ValueError(f"Unexpected schema type [{schema_type}].")

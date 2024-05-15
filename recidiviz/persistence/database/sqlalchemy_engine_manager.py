@@ -197,6 +197,8 @@ class SQLAlchemyEngineManager:
                 return "outliers"
             case SchemaType.WORKFLOWS:
                 return "workflows"
+            case SchemaType.INSIGHTS:
+                return "insights"
 
         raise ValueError(f"Unexpected schema type [{schema_type}].")
 
