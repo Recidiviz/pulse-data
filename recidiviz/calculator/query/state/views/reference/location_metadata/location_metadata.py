@@ -110,6 +110,11 @@ UNION ALL
 
 SELECT state_code, location_external_id, location_name, location_type, location_metadata
 FROM `{project_id}.{reference_views_dataset}.us_mi_location_metadata_materialized`
+
+UNION ALL
+
+SELECT state_code, location_external_id, location_name, location_type, location_metadata
+FROM `{project_id}.{reference_views_dataset}.us_ar_location_metadata_materialized`
 """
 
 LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
