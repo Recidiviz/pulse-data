@@ -16,7 +16,7 @@
 # =============================================================================
 """Base class for the reported value(s) for a Justice Counts context."""
 
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, Dict, List, Type, TypeVar
 
 import attr
 
@@ -60,3 +60,30 @@ class MetricContextData:
         key = ContextKey[json["key"]]
         value = json["value"]
         return cls(key=key, value=value)
+
+    @classmethod
+    def get_metric_context_data_from_storage_json(
+        cls: Type[MetricContextDataT],
+        stored_metric_contexts: Dict[str, Any],
+        metric_definition_contexts: List[Context],
+    ) -> List[MetricContextDataT]:
+        """
+        Returns:
+        - A list of all MetricContextData objects for a metric. If the context is not
+        stored in the MetricSettings table, the value will be None.
+
+        Parameters:
+        - stored_metric_contexts: A dictionary of the metric contexts stored in
+        jsonified MetricInterfaces in the MetricSettings table. We remove contexts that
+        have null values before storing, so this dictionary might not contain all
+        possible context values for a metric. This is why we cross-reference with
+        `metric_definition_contexts`, which is a list of all possible contexts for a
+        metric.
+        - metric_definition_contexts: A list of all possible contexts for a metric. We
+        get this value by calling AggregatedDimension.dimension_to_contexts[dim].
+        """
+        context_data: List[MetricContextDataT] = []
+        for context in metric_definition_contexts:
+            value = stored_metric_contexts.get(context.key.value, None)
+            context_data.append(cls(key=context.key, value=value))
+        return context_data

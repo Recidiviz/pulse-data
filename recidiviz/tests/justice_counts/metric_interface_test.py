@@ -21,6 +21,8 @@ from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List, Optional
 from unittest import TestCase
 
+from deepdiff import DeepDiff
+
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
@@ -692,21 +694,22 @@ class TestMetricInterface(TestCase):
             metric_interface.to_storage_json(),
             {
                 "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "version": "v1",
                 "is_metric_enabled": False,
-                "contexts": [],
-                "aggregated_dimensions": [
-                    {
-                        "dimension_to_enabled_status": [
-                            {"dimension": "Emergency Calls", "enabled": False},
-                            {"dimension": "Non-emergency Calls", "enabled": False},
-                            {"dimension": "Unknown Calls", "enabled": False},
-                        ],
-                        "dimension_to_includes_excludes_member_to_setting": [],
-                        "dimension_to_contexts": [],
+                "contexts": {},
+                "aggregated_dimensions": {
+                    "metric/law_enforcement/calls_for_service/type": {
+                        "dimension_to_enabled_status": {
+                            "Emergency Calls": False,
+                            "Non-emergency Calls": False,
+                            "Unknown Calls": False,
+                        },
+                        "dimension_to_includes_excludes_member_to_setting": {},
+                        "dimension_to_contexts": {},
                     }
-                ],
+                },
                 "disaggregated_by_supervision_subsystems": None,
-                "includes_excludes_member_to_setting": [],
+                "includes_excludes_member_to_setting": {},
                 "custom_reporting_frequency": {
                     "custom_frequency": None,
                     "starting_month": None,
@@ -714,29 +717,22 @@ class TestMetricInterface(TestCase):
             },
         )
 
-    def test_to_storage_json_disabled_dimensions(self) -> None:
+    def test_to_storage_json_include_contexts(self) -> None:
         metric_interface = self.test_schema_objects.get_agency_metric_interface(
-            is_metric_enabled=True, include_disaggregation=True
+            is_metric_enabled=True, include_contexts=True
         )
         self.assertEqual(
             metric_interface.to_storage_json(),
             {
                 "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "version": "v1",
                 "is_metric_enabled": True,
-                "contexts": [],
-                "aggregated_dimensions": [
-                    {
-                        "dimension_to_enabled_status": [
-                            {"dimension": "Emergency Calls", "enabled": False},
-                            {"dimension": "Non-emergency Calls", "enabled": False},
-                            {"dimension": "Unknown Calls", "enabled": False},
-                        ],
-                        "dimension_to_includes_excludes_member_to_setting": [],
-                        "dimension_to_contexts": [],
-                    }
-                ],
+                "contexts": {
+                    "INCLUDES_EXCLUDES_DESCRIPTION": "our metrics are different because xyz"
+                },
+                "aggregated_dimensions": {},
                 "disaggregated_by_supervision_subsystems": None,
-                "includes_excludes_member_to_setting": [],
+                "includes_excludes_member_to_setting": {},
                 "custom_reporting_frequency": {
                     "custom_frequency": None,
                     "starting_month": None,
@@ -744,37 +740,7 @@ class TestMetricInterface(TestCase):
             },
         )
 
-    def test_to_storage_json_prefilled_contexts(self) -> None:
-        metric_interface = self.test_schema_objects.get_agency_metric_interface(
-            is_metric_enabled=True, include_disaggregation=True
-        )
-        self.assertEqual(
-            metric_interface.to_storage_json(),
-            {
-                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
-                "is_metric_enabled": True,
-                "contexts": [],
-                "aggregated_dimensions": [
-                    {
-                        "dimension_to_enabled_status": [
-                            {"dimension": "Emergency Calls", "enabled": False},
-                            {"dimension": "Non-emergency Calls", "enabled": False},
-                            {"dimension": "Unknown Calls", "enabled": False},
-                        ],
-                        "dimension_to_includes_excludes_member_to_setting": [],
-                        "dimension_to_contexts": [],
-                    }
-                ],
-                "disaggregated_by_supervision_subsystems": None,
-                "includes_excludes_member_to_setting": [],
-                "custom_reporting_frequency": {
-                    "custom_frequency": None,
-                    "starting_month": None,
-                },
-            },
-        )
-
-    def test_to_storage_json_partially_enabled_disaggregation(self) -> None:
+    def test_to_storage_json_partially_disabled_disaggregation(self) -> None:
         metric_interface = self.test_schema_objects.get_agency_metric_interface(
             is_metric_enabled=True,
             include_disaggregation=True,
@@ -784,26 +750,161 @@ class TestMetricInterface(TestCase):
             metric_interface.to_storage_json(),
             {
                 "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "version": "v1",
                 "is_metric_enabled": True,
-                "contexts": [],
-                "aggregated_dimensions": [
-                    {
-                        "dimension_to_enabled_status": [
-                            {"dimension": "Emergency Calls", "enabled": True},
-                            {"dimension": "Non-emergency Calls", "enabled": False},
-                            {"dimension": "Unknown Calls", "enabled": False},
-                        ],
-                        "dimension_to_includes_excludes_member_to_setting": [],
-                        "dimension_to_contexts": [],
+                "contexts": {},
+                "aggregated_dimensions": {
+                    "metric/law_enforcement/calls_for_service/type": {
+                        "dimension_to_enabled_status": {
+                            "Emergency Calls": True,
+                            "Non-emergency Calls": False,
+                            "Unknown Calls": False,
+                        },
+                        "dimension_to_includes_excludes_member_to_setting": {},
+                        "dimension_to_contexts": {},
                     }
-                ],
+                },
                 "disaggregated_by_supervision_subsystems": None,
-                "includes_excludes_member_to_setting": [],
+                "includes_excludes_member_to_setting": {},
                 "custom_reporting_frequency": {
                     "custom_frequency": None,
                     "starting_month": None,
                 },
             },
+        )
+
+    def test_from_storage_json_with_contexts(self) -> None:
+        """
+        This test checks if the MetricInterface.from_storage_json method parses the JSON
+        as expected. We are using the JSON representation of the following method:
+        self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True,
+            include_contexts=True,
+        )
+        """
+        storage_json = {
+            "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+            "version": "v1",
+            "is_metric_enabled": True,
+            "contexts": {
+                "INCLUDES_EXCLUDES_DESCRIPTION": "our metrics are different because xyz"
+            },
+            "aggregated_dimensions": {},
+            "disaggregated_by_supervision_subsystems": None,
+            "includes_excludes_member_to_setting": {},
+            "custom_reporting_frequency": {
+                "custom_frequency": None,
+                "starting_month": None,
+            },
+        }
+
+        # Metric Interface instantiation
+        metric_interface = MetricInterface(
+            key="LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+            is_metric_enabled=True,
+            contexts=[
+                MetricContextData(
+                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                    value="our metrics are different because xyz",
+                )
+            ],
+            aggregated_dimensions=[],  # Empty as per JSON
+            disaggregated_by_supervision_subsystems=None,
+            includes_excludes_member_to_setting={},  # Empty as per JSON
+            custom_reporting_frequency=CustomReportingFrequency(
+                frequency=None, starting_month=None
+            ),
+        )
+        # DeepDiff compares complex objects and returns the difference between them.
+        self.assertFalse(
+            DeepDiff(
+                metric_interface,
+                MetricInterface.from_storage_json(storage_json),
+                ignore_order=True,
+            )
+        )
+
+    def test_from_storage_json_include_disaggregations(self) -> None:
+        """
+        This test is to check if the MetricInterface.from_storage_json method parses the
+        JSON as expected. We are using the JSON representation of the following method:
+        self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True,
+            include_disaggregation=True,
+            use_partially_disabled_disaggregation=True,
+        )
+        Notice how in the parsed result, the dictionary values are populated as None (or
+        an empty dict) for all dimension types even if the JSON representation does not
+        contain an entry for that type. This is necessary since we are referencing the
+        MetricDefinition of the metric when populating the MetricInterface from the JSON.
+        """
+        storage_json = {
+            "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+            "version": "v1",
+            "is_metric_enabled": True,
+            "contexts": {},
+            "aggregated_dimensions": {
+                "metric/law_enforcement/calls_for_service/type": {
+                    "dimension_to_enabled_status": {
+                        "Emergency Calls": True,
+                        "Non-emergency Calls": False,
+                        "Unknown Calls": False,
+                    },
+                    "dimension_to_includes_excludes_member_to_setting": {},
+                    "dimension_to_contexts": {},
+                }
+            },
+            "disaggregated_by_supervision_subsystems": None,
+            "includes_excludes_member_to_setting": {},
+            "custom_reporting_frequency": {
+                "custom_frequency": None,
+                "starting_month": None,
+            },
+        }
+        metric_interface = MetricInterface(
+            key="LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+            is_metric_enabled=True,
+            contexts=[
+                MetricContextData(
+                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION, value=None
+                )
+            ],
+            aggregated_dimensions=[
+                MetricAggregatedDimensionData(
+                    dimension_to_value={
+                        CallType.EMERGENCY: None,
+                        CallType.NON_EMERGENCY: None,
+                        CallType.OTHER: None,
+                        CallType.UNKNOWN: None,
+                    },
+                    dimension_to_enabled_status={
+                        CallType.EMERGENCY: True,
+                        CallType.NON_EMERGENCY: False,
+                        CallType.OTHER: None,
+                        CallType.UNKNOWN: False,
+                    },
+                    dimension_to_includes_excludes_member_to_setting={
+                        CallType.EMERGENCY: {},
+                        CallType.NON_EMERGENCY: {},
+                        CallType.OTHER: {},
+                        CallType.UNKNOWN: {},
+                    },
+                    dimension_to_contexts={},
+                )
+            ],
+            disaggregated_by_supervision_subsystems=None,
+            includes_excludes_member_to_setting={},
+            custom_reporting_frequency=CustomReportingFrequency(
+                frequency=None, starting_month=None
+            ),
+        )
+        # DeepDiff compares complex objects and returns the difference between them.
+        self.assertFalse(
+            DeepDiff(
+                metric_interface,
+                MetricInterface.from_storage_json(storage_json),
+                ignore_order=True,
+            )
         )
 
     def test_to_json_disabled_disaggregation(self) -> None:
