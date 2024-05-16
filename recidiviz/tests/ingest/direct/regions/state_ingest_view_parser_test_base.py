@@ -166,7 +166,6 @@ class StateIngestViewParserTestBase:
                 ),
                 context=IngestViewContentsContextImpl(ingest_instance=ingest_instance),
             )
-
         if debug:
             if in_ci():
                 self.test.fail(
