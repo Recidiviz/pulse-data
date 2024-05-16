@@ -29,6 +29,7 @@ terraform {
 
 locals {
   project_name_str = var.project_id == "recidiviz-123" ? "PRODUCTION" : "STAGING"
+  monitoring_dag_sendgrid_from_email_regex = var.project_id == "recidiviz-123" ? "alerts\\+airflow-production@recidiviz\\.org" : "alerts\\+airflow-staging@recidiviz\\.org"
 }
 
 # Docs: https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs/resources/service
@@ -75,16 +76,12 @@ resource "pagerduty_service_integration" "airflow_monitoring_email_integration" 
   integration_email = "${var.integration_email_username}@recidiviz.pagerduty.com"
   service           = pagerduty_service.service.id
   email_incident_creation = "use_rules"
-  # TODO(#28642): Change this back to `and-rules-email` once we figure out how to make filtering work
-  email_filter_mode       = "all-email"
+  email_filter_mode       = "and-rules-email"
   email_filter {
     body_mode        = "always"
     body_regex       = null
-    from_email_mode = "always"
-    from_email_regex = null
-    # TODO(#28642): Reintroduce email filtering separately once service deploy succeeds
-    # from_email_mode  = "match"
-    # from_email_regex = var.project_id == "recidiviz-123" ? "alerts+airflow-production@recidiviz.org" : "alerts+airflow-staging@recidiviz.org"
+    from_email_mode  = "match"
+    from_email_regex = local.monitoring_dag_sendgrid_from_email_regex
     subject_mode     = "always"
     subject_regex    = null
   }
