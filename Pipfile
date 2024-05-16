@@ -241,6 +241,8 @@ xlrd = "*"
 google-cloud-run = "*"
 snapshottest = "*"
 cachetools = "*"
+functions-framework = "*"
+cloudevents = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
