@@ -32,7 +32,8 @@ function upload_deployment_log {
   CURRENT_TIME="$(date +"%s")"
 
   local LOG_FILE_NAME="${RELEASE_VERSION_TAG}-${GIT_HASH}-${CURRENT_TIME}.log"
-  local LOG_OBJECT_URI="gs://${PROJECT_ID}-deploy-logs/$(date '+%Y/%m/%d')/${LOG_FILE_NAME}"
+  local LOG_OBJECT_URI
+  LOG_OBJECT_URI="gs://${PROJECT_ID}-deploy-logs/$(date '+%Y/%m/%d')/${LOG_FILE_NAME}"
 
   gsutil cp "${DEPLOYMENT_LOG_PATH}" "${LOG_OBJECT_URI}" > /dev/null 2>&1
 
@@ -362,13 +363,14 @@ function deploy_terraform_infrastructure {
     GIT_HASH=$2
     DOCKER_IMAGE_TAG=$3
     TF_STATE_PREFIX=""
+    PAGERDUTY_TOKEN=$(get_secret "$PROJECT_ID" pagerduty_terraform_key) || exit_on_fail
 
     echo "Starting terraform deployment..."
 
     while true
     do
         reconfigure_terraform_backend "$PROJECT_ID" "$TF_STATE_PREFIX"
-        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
+        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="pagerduty_token=${PAGERDUTY_TOKEN}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
         CURRENT_TIME=$(date +'%s')
