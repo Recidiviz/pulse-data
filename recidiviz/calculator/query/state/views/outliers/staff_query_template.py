@@ -79,7 +79,6 @@ def staff_query_template(role: str) -> str:
     INNER JOIN `{{project_id}}.normalized_state.state_staff` staff 
         ON attrs.staff_id = staff.staff_id AND attrs.state_code = staff.state_code
     WHERE staff.state_code = '{state}' 
-      AND "SUPERVISION_OFFICER" IN UNNEST(attrs.role_type_array)
       {f"AND {config.supervision_staff_exclusions}" if config.supervision_staff_exclusions else ""}
 """
         )
