@@ -171,15 +171,15 @@ columns:
       TODO(#18645): Fill in with answer from ND
 always_historical_export: False
 table_relationships:
-  - foreign_table: elite_assessment_results
+  - foreign_table: recidiviz_elite_assessment_results
     join_logic:
-      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_assessment_results.ASSESSMENT_ID
-  - foreign_table: elite_assessment_supervisors
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = recidiviz_elite_assessment_results.ASSESSMENT_ID
+  - foreign_table: recidiviz_elite_AssessmentSupervisors
     join_logic:
-      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_assessment_supervisors.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = recidiviz_elite_AssessmentSupervisors.ASSESSMENT_ID
   - foreign_table: elite_OffenderAssessmentItems
     join_logic:
       - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_OffenderAssessmentItems.ASSESSMENT_ID
-  - foreign_table: elite_assessments
+  - foreign_table: recidiviz_elite_Assessments
     join_logic:
-      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = elite_assessments.ASSESSMENT_ID
+      - recidiviz_elite_OffenderAssessments.ASSESSMENT_TYPE_ID = recidiviz_elite_Assessments.ASSESSMENT_ID
