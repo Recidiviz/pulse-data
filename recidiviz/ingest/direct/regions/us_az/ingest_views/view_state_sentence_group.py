@@ -37,8 +37,9 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH base AS (
 SELECT DISTINCT
-    -- off.COMMITMENT_ID AS external_id,
-    -- doc.DOC_ID AS doc_id,
+    -- sentence group external ID is COMMITMENT_ID-DOC_ID
+    off.COMMITMENT_ID,
+    doc.DOC_ID,
     doc.PERSON_ID AS person_id,
     off.UPDT_DTM AS group_update_datetime,
     -- See view description for explanation of datetime field hierarchy.
@@ -57,11 +58,20 @@ SELECT DISTINCT
     COALESCE(
         NULLIF(EXPIRATION_DTM_ML, 'NULL'), 
         NULLIF(EXPIRATION_DTM, 'NULL')) AS SentenceExpirationDate, -- SED
-FROM {AZ_DOC_SC_OFFENSE@ALL} off
-LEFT JOIN {AZ_DOC_SC_EPISODE} sc_episode ON off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
-LEFT JOIN {DOC_EPISODE} doc ON sc_episode.DOC_ID = doc.DOC_ID
-WHERE doc.PERSON_ID IS NOT NULL
-AND off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
+FROM 
+    {AZ_DOC_SC_OFFENSE@ALL} AS off
+LEFT JOIN 
+    {AZ_DOC_SC_EPISODE} AS sc_episode 
+ON 
+    off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
+LEFT JOIN 
+    {DOC_EPISODE} AS doc 
+ON 
+    sc_episode.DOC_ID = doc.DOC_ID
+WHERE 
+    doc.PERSON_ID IS NOT NULL
+AND 
+    off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
 )
 
 SELECT *

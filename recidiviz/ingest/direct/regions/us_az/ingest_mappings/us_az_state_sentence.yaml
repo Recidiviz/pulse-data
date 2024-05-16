@@ -30,6 +30,9 @@ output:
       - StatePersonExternalId:
           external_id: person_id
           id_type: $literal("US_AZ_PERSON_ID")
+    sentence_groups:
+      - StateSentenceGroup:
+          external_id: sentence_group_external_id
     sentences:
       - StateSentence:
           county_code: county_code
@@ -41,4 +44,5 @@ output:
           initial_time_served_days: jail_credit_days
           #set to internal unkown until we know how to map sentence type
           sentence_type: $literal_enum(StateSentenceType.INTERNAL_UNKNOWN)
+          # TODO(#29642) Hydrate StateSentenceGroup here
           sentence_group_external_id: sentence_group_external_id
