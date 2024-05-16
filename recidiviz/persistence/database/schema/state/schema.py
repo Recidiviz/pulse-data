@@ -1344,7 +1344,7 @@ class StatePerson(StateBase):
         "StatePersonHousingStatusPeriod", backref="person", lazy="selectin"
     )
     sentence_groups = relationship(
-        "StateSentenceGroupLength", backref="person", lazy="selectin"
+        "StateSentenceGroup", backref="person", lazy="selectin"
     )
 
 
@@ -4241,6 +4241,53 @@ class StateSentenceLength(StateBase, _ReferencesStatePersonSharedColumns):
     person = relationship("StatePerson", uselist=False)
 
 
+class StateSentenceGroup(StateBase, _ReferencesStatePersonSharedColumns):
+    """
+    Represents a logical grouping of sentences that encompass an
+    individual's interactions with a department of corrections.
+    It begins with an individual's first sentence imposition and ends at liberty.
+    This is a state agnostic term used by Recidiviz for a state
+    specific administrative phenomena.
+    """
+
+    __tablename__ = "state_sentence_group"
+    __table_args__ = (
+        {
+            "comment": """
+    Represents a logical grouping of sentences that encompass an 
+    individual's interactions with a department of corrections. 
+    It begins with an individual's first sentence imposition and ends at liberty.
+    This is a state agnostic term used by Recidiviz for a state 
+    specific administrative phenomena.
+    """.strip()
+        },
+    )
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSentenceGroup"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    sentence_group_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="state sentence group"
+        ),
+    )
+    sentence_group_lengths = relationship(
+        "StateSentenceGroupLength", backref="sentence_group", lazy="selectin"
+    )
+
+
 class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a historical ledger of attributes relating to a state designated group of sentences."""
 
@@ -4254,22 +4301,23 @@ class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):
         Integer,
         primary_key=True,
         comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="state sentence group"
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="state sentence group length"
         ),
+    )
+    sentence_group_id = Column(
+        Integer,
+        ForeignKey(
+            "state_sentence_group.sentence_group_id",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        comment="Unique internal ID for a state sentence group.",
     )
     state_code = Column(
         String(255),
         nullable=False,
         index=True,
         comment=STATE_CODE_COMMENT,
-    )
-    external_id = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSentenceGroupLength"
-        ),
     )
     group_update_datetime = Column(
         DateTime,
@@ -4314,3 +4362,6 @@ class StateSentenceGroupLength(StateBase, _ReferencesStatePersonSharedColumns):
             "StateSentenceGroupLength observations for this observation's StateSentenceGroup"
         ),
     )
+
+    # Cross-entity relationships
+    person = relationship("StatePerson", uselist=False)

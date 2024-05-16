@@ -1,15 +1,14 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - external_id
-  - doc_id
+  # - external_id
+  # - doc_id
   - person_id
   - group_update_datetime
   - CommunitySupervisionBeginDate
   - CommunitySupervisionEndDate
   - EarnedReleaseCreditDate
   - SentenceExpirationDate
-  - sequence_num
 unused_columns: []
 output:
   StatePerson:
@@ -19,12 +18,6 @@ output:
           id_type: $literal("US_AZ_PERSON_ID")
     sentence_groups:
       - StateSentenceGroupLength:
-          external_id:
-            $concat:
-              $values:
-                - external_id
-                - doc_id
-                - sequence_num
           group_update_datetime: group_update_datetime
           parole_eligibility_date_external: CommunitySupervisionBeginDate
           projected_full_term_release_date_min_external: EarnedReleaseCreditDate
@@ -38,4 +31,3 @@ output:
                   $is_null: CommunitySupervisionEndDate
                 $then: SentenceExpirationDate
               - $else: CommunitySupervisionEndDate
-          sequence_num: sequence_num

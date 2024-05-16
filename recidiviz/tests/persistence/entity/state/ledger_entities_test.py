@@ -444,14 +444,12 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
 
     def test_ledger_datetime_is_not_future(self) -> None:
         ok = entities.StateSentenceGroupLength(
-            external_id="GROUP-00",
             state_code=self.state_code,
             group_update_datetime=self.the_past,
         )
         self.assertEqual(ok.ledger_datetime_field, self.the_past)
         with self.assertRaisesRegex(ValueError, "Datetime field with value"):
             _ = entities.StateSentenceGroupLength(
-                external_id="GROUP-00",
                 state_code=self.state_code,
                 group_update_datetime=self.the_future,
             )
@@ -460,10 +458,9 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
         ledger = entities.StateSentenceGroupLength(
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
-            external_id="EXTERNAL-ID",
             sequence_num=None,
         )
-        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-EXTERNAL-ID")
+        self.assertEqual(ledger.partition_key, "2023-01-01T00:00:00-None-")
 
     @patch("recidiviz.pipelines.ingest.state.validator.ledger_entity_checks")
     def test_ledger_entity_checks_is_called(
@@ -471,15 +468,13 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
     ) -> None:
         """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
         person = self.new_state_person()
-        group = entities.StateSentenceGroupLength(
-            external_id="sentence-group",
+        # TODO(#29316) Validate StateSentenceGroup as well
+        _ = entities.StateSentenceGroupLength(
             state_code=self.state_code,
             group_update_datetime=datetime.datetime(2022, 1, 1),
             sequence_num=None,
         )
-        person.sentence_groups = [group]
         _ = validate_root_entity(person, self.field_index)
-        # TODO(#29316) Validate StateSentenceGroup as well
         mock_ledger_entity_checks.assert_not_called()
 
     def test_enforced_datetime_pairs(self) -> None:
@@ -489,19 +484,17 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
             projected_full_term_release_date_min_external=self.after,
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
-            external_id="EXTERNAL-ID",
             sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceGroupLength StateSentenceGroupLength\(external_id='EXTERNAL-ID', sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
+            r"Found StateSentenceGroupLength StateSentenceGroupLength\(sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected minimum full term release datetime 1999-01-01.",
         ):
             _ = entities.StateSentenceGroupLength(
                 projected_parole_release_date_external=self.after,
                 projected_full_term_release_date_min_external=self.before,
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
-                external_id="EXTERNAL-ID",
                 sequence_num=None,
             )
         # "projected_parole_release_date_external" before "projected_full_term_release_date_max_external"
@@ -510,19 +503,17 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
             projected_full_term_release_date_max_external=self.after,
             group_update_datetime=self.ledger_time,
             state_code=self.state_code,
-            external_id="EXTERNAL-ID",
             sequence_num=None,
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"Found StateSentenceGroupLength StateSentenceGroupLength\(external_id='EXTERNAL-ID', sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
+            r"Found StateSentenceGroupLength StateSentenceGroupLength\(sentence_group_length_id=None\) with projected parole release datetime 2022-01-01 after projected maximum full term release datetime 1999-01-01.",
         ):
             _ = entities.StateSentenceGroupLength(
                 projected_parole_release_date_external=self.after,
                 projected_full_term_release_date_max_external=self.before,
                 group_update_datetime=self.ledger_time,
                 state_code=self.state_code,
-                external_id="EXTERNAL-ID",
                 sequence_num=None,
             )
 

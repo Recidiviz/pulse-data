@@ -95,6 +95,7 @@ class TestSchemaUtils(unittest.TestCase):
             "StateChargeV2",
             "StateSentenceStatusSnapshot",
             "StateSentenceLength",
+            "StateSentenceGroup",
             "StateSentenceGroupLength",
         ]
         operations_database_entity_names = [
@@ -205,6 +206,7 @@ class TestSchemaUtils(unittest.TestCase):
             "state_charge_v2_state_sentence_association",
             "state_sentence_status_snapshot",
             "state_sentence_length",
+            "state_sentence_group",
             "state_sentence_group_length",
         ]
         operations_table_names = [
@@ -322,6 +324,7 @@ class TestSchemaUtils(unittest.TestCase):
             "StateChargeV2",
             "StateSentenceStatusSnapshot",
             "StateSentenceLength",
+            "StateSentenceGroup",
             "StateSentenceGroupLength",
         ]
 

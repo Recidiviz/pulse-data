@@ -37,9 +37,9 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH base AS (
 SELECT DISTINCT
-    off.COMMITMENT_ID AS external_id,
+    -- off.COMMITMENT_ID AS external_id,
+    -- doc.DOC_ID AS doc_id,
     doc.PERSON_ID AS person_id,
-    doc.DOC_ID AS doc_id,
     off.UPDT_DTM AS group_update_datetime,
     -- See view description for explanation of datetime field hierarchy.
     COALESCE(
@@ -64,11 +64,7 @@ WHERE doc.PERSON_ID IS NOT NULL
 AND off.OFFENSE_ID = sc_episode.FINAL_OFFENSE_ID
 )
 
-SELECT 
-    *, 
-    ROW_NUMBER() OVER (
-        PARTITION BY external_id 
-        ORDER BY group_update_datetime) AS sequence_num
+SELECT *
 FROM base
 -- This is only the case for 68 offenses that do not have any listed release dates.
 WHERE group_update_datetime IS NOT NULL
