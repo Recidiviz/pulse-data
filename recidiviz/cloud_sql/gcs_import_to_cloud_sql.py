@@ -341,11 +341,11 @@ def _import_gcs_json_to_cloud_sql(
 
             session.commit()
 
-            logging.info(
-                "Added %s entities in import to %s",
-                added_entities,
-                destination_table.name,
-            )
+    logging.info(
+        "Added %s entities in import to %s",
+        added_entities,
+        destination_table.name,
+    )
 
 
 def import_gcs_file_to_cloud_sql(

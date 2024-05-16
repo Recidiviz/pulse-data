@@ -36,7 +36,7 @@ import json
 import logging
 import os
 import sys
-from typing import List, Tuple
+from typing import IO, List, Tuple
 
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql.ddl import DropTable
@@ -56,6 +56,8 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     build_temporary_sqlalchemy_table,
     parse_exported_json_row_from_bigquery,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
@@ -92,7 +94,7 @@ def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
 
 
 def _reset_insights_table(
-    model: SQLAlchemyModelType, database_key: SQLAlchemyDatabaseKey
+    model: SQLAlchemyModelType, database_key: SQLAlchemyDatabaseKey, file: IO
 ) -> None:
     """
     Mimics logic from recidiviz.cloud_sql.gcs_import_to_cloud_sql.import_gcs_file_to_cloud_sql
@@ -108,28 +110,19 @@ def _reset_insights_table(
         logging.info("Recreating table %s", temporary_table.name)
         _recreate_table(database_key, temporary_table_model_sql)
 
-    logging.info("Hydrating table %s with fixture data", temporary_table.name)
-
-    filename = f"{model.__tablename__}.json"
-    fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
-    skipped_rows = 0
-    with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
-        with SessionFactory.using_database(database_key) as session:
-            for row in fixture_file:
-                try:
-                    json_entity = json.loads(row)
-                    flattened_json_entity = parse_exported_json_row_from_bigquery(
-                        json_entity, model
-                    )
-                    session.execute(
-                        temporary_table.insert().values(**flattened_json_entity)
-                    )
-                except Exception as _:
-                    skipped_rows += 1
-            session.commit()
-
-    if skipped_rows > 0:
-        logging.error("Skipped %s rows!", skipped_rows)
+    with SessionFactory.using_database(database_key) as session:
+        for row in file:
+            try:
+                json_entity = json.loads(row)
+                flattened_json_entity = parse_exported_json_row_from_bigquery(
+                    json_entity, model
+                )
+                session.execute(
+                    temporary_table.insert().values(**flattened_json_entity)
+                )
+            except Exception as e:
+                raise e
+        session.commit()
 
     logging.info(
         "Dropping existing %s to replace with temporary table", destination_table_name
@@ -154,6 +147,8 @@ def reset_insights_fixtures(
     database_key: SQLAlchemyDatabaseKey,
     tables: List[SQLAlchemyModelType],
     state: str,
+    data_type: str,
+    gcs_bucket: str,
 ) -> None:
     """Deletes all ETL data and re-imports data from our fixture files"""
     logging.info("dropping all tables for %s", state)
@@ -165,13 +160,27 @@ def reset_insights_fixtures(
     logging.info("Done creating tables")
 
     for table in tables:
-        _reset_insights_table(table, database_key)
+        table_name = table.__tablename__
+        logging.info("Hydrating table %s with %s data", table_name, data_type)
+        if data_type == "FIXTURE":
+            filename = f"{table_name}.json"
+            fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
+            with open(fixture_path, "r", encoding="UTF-8") as file:
+                _reset_insights_table(table, database_key, file)
+
+        elif data_type == "GCS":
+            gcsfs = GcsfsFactory.build()
+            gcs_path = f"gs://{gcs_bucket}/{state}/{table_name}.json"
+            gcsfs_path = GcsfsFilePath.from_absolute_path(gcs_path)
+            with gcsfs.open(gcsfs_path) as file:
+                _reset_insights_table(table, database_key, file)
 
 
 def main(
     data_type: str,
     state_codes: List[str],
     tables: List[SQLAlchemyModelType],
+    gcs_bucket: str,
 ) -> None:
     create_dbs(state_codes, SchemaType.INSIGHTS)
 
@@ -182,10 +191,9 @@ def main(
         database_key = database_manager.database_key_for_state(state)
         insights_engine = SQLAlchemyEngineManager.get_engine_for_database(database_key)
 
-        if data_type == "FIXTURE":
-            reset_insights_fixtures(insights_engine, database_key, tables, state)
-        else:
-            raise NotImplementedError("Unexpected data type")
+        reset_insights_fixtures(
+            insights_engine, database_key, tables, state, data_type, gcs_bucket
+        )
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -196,7 +204,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         "--data_type",
         help="Type of data to load, defaults to FIXTURE.",
         type=str,
-        choices=["FIXTURE"],
+        choices=["FIXTURE", "GCS"],
         default="FIXTURE",
     )
 
@@ -226,6 +234,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         ],
     )
 
+    parser.add_argument(
+        "--gcs_bucket",
+        help="The bucket to read GCS data from. If empty and data_type=GCS, reads from the staging insights-etl-data bucket.",
+        default="recidiviz-staging-insights-etl-data",
+    )
+
     return parser.parse_known_args(argv)
 
 
@@ -240,4 +254,4 @@ if __name__ == "__main__":
     table_classes = [
         get_database_entity_by_table_name(schema, table) for table in args.tables
     ]
-    main(args.data_type, args.state_codes, table_classes)
+    main(args.data_type, args.state_codes, table_classes, args.gcs_bucket)
