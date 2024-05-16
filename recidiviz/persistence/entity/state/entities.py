@@ -2324,6 +2324,7 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_int
     )
 
+    # TODO(#29642) Hydrate StateSentenceGroup here
     sentence_group_external_id: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
