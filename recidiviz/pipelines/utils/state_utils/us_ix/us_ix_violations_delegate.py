@@ -16,7 +16,15 @@
 # =============================================================================
 """Contains US_IX implementation of the StateSpecificViolationDelegate."""
 
+import datetime
+from typing import List
 
+from dateutil.relativedelta import relativedelta
+
+from recidiviz.common.date import DateRange
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -24,3 +32,25 @@ from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate im
 
 class UsIxViolationDelegate(StateSpecificViolationDelegate):
     """US_IX implementation of the StateSpecificViolationDelegate."""
+
+    def violation_history_window_relevant_to_critical_date(
+        self,
+        critical_date: datetime.date,
+        sorted_and_filtered_violation_responses: List[
+            NormalizedStateSupervisionViolationResponse
+        ],
+        default_violation_history_window_months: int,
+    ) -> DateRange:
+        """For US_IX we look for violation responses up to 14 days after and 24 months before the admission_date for the
+        incarceration period (critical date). We set the lower bound to 24 months so we only attach violations
+        that have happened within 24 months since the incarceration period admission date.
+        """
+
+        violation_window_lower_bound_inclusive = critical_date - relativedelta(
+            months=24
+        )
+        violation_window_upper_bound_exclusive = critical_date + relativedelta(days=14)
+        return DateRange(
+            lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
+            upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
+        )
