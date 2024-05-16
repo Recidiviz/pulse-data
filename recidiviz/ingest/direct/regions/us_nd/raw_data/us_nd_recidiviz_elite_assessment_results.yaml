@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: elite_assessment_supervisors
+file_tag: recidiviz_elite_assessment_results
 file_description: |-
   Unclear what the purpose of this table is. It is a secondary reference table to help 
   decode data included in elite_assessments - what it serves to decode will need to be
@@ -7,12 +7,14 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - ASSESSMENT_ID
-  - SUPERVISION_LEVEL_TYPE
 columns:
   - name: ACTIVE_FLAG
-    description: whether this assessment is still used.
+    description: Whether this assessment is still used.
   - name: ASSESSMENT_ID
     description: The ID of the assessment.
+  - name: CELL_SHARING_ALERT_FLAG
+    description: |-
+      TODO(#18645): Fill in with answer from ND
   - name: CREATE_DATETIME
     description: |-
       The date and time this record was created.
@@ -21,23 +23,13 @@ columns:
     description: |-
       The user ID of the user who created this record.
     is_pii: True
-  - name: EFFECTIVE_DATE
-    description: |-
-      TODO(#18645): Fill in with answer from ND
-    field_type: datetime
   - name: EXPIRY_DATE
     description: |-
-      TODO(#18645): Fill in with answer from ND
+      The date this assessment result expires.
     field_type: datetime
   - name: LIST_SEQ
     description: |-
-      TODO(#18645): Fill in with answer from ND
-  - name: MAX_SCORE
-    description: |-
-      TODO(#18645): Fill in with answer from ND
-  - name: MINI_SCORE
-    description: |-
-      TODO(#18645): Fill in with answer from ND
+      Unclear. Likely the sequence order in which this assessment was performed relative to other assessments for the same individual.
   - name: MODIFY_DATETIME
     description: |-
       The last time this record was modified.

@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: elite_assessments
+file_tag: recidiviz_elite_Assessments
 file_description: |-
   Contains information about assessments performed by the DOCR. Rows can relate to entire 
   assessments, or specific questions on assessments. When the latter is true, the entire
@@ -135,12 +135,12 @@ columns:
       Whether or not this record can be updated over time.
 always_historical_export: False
 table_relationships:
-  - foreign_table: elite_assessment_results
+  - foreign_table: recidiviz_elite_assessment_results
     join_logic:
-      - elite_assessments.ASSESSMENT_ID = elite_assessment_results.ASSESSMENT_ID
-  - foreign_table: elite_assessment_supervisors
+      - recidiviz_elite_Assessments.ASSESSMENT_ID = recidiviz_elite_assessment_results.ASSESSMENT_ID
+  - foreign_table: recidiviz_elite_AssessmentSupervisors
     join_logic:
-      - elite_assessments.ASSESSMENT_ID = elite_assessment_supervisors.ASSESSMENT_ID
+      - recidiviz_elite_Assessments.ASSESSMENT_ID = recidiviz_elite_AssessmentSupervisors.ASSESSMENT_ID
   - foreign_table: elite_OffenderAssessmentItems
     join_logic:
-      - elite_assessments.ASSESSMENT_ID = elite_OffenderAssessmentItems.ASSESSMENT_ID
+      - recidiviz_elite_Assessments.ASSESSMENT_ID = elite_OffenderAssessmentItems.ASSESSMENT_ID

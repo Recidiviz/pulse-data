@@ -6,7 +6,9 @@ data_classification: source
 primary_key_cols: [OFFENDER_BOOK_ID, ALERT_SEQ]
 columns:
   - name: ALERT_CODE
-    description: The code for this particular alert
+    description: |-
+      The code for this particular alert. Can be decoded using RECIDIVIZ_REFERENCE_alert_codes 
+      reference table.
   - name: ALERT_SEQ
     description: The sequence of the alert with regard to others for this person
   - name: ALERT_STATUS
@@ -17,7 +19,9 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %H:%M:%S %p', {col_name})"
   - name: ALERT_TYPE
-    description: The type of alert
+    description: |-
+      The type of alert. Can be decoded using RECIDIVIZ_REFERENCE_alert_types 
+      reference table.
   - name: AUTHORIZE_PERSON_TEXT
     description: Unknown
     is_pii: True

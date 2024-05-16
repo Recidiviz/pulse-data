@@ -68,3 +68,6 @@ columns:
       When this record was most recently modified in the source system.
     datetime_sql_parsers:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y  %H:%M:%S %p', {col_name})"
+  - name: ORDER_TYPE
+    description: |-
+      The type of court order.
