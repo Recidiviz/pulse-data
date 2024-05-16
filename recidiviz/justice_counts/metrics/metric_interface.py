@@ -31,6 +31,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
+    IncludesExcludesSet,
     IncludesExcludesSetting,
     MetricDefinition,
 )
@@ -131,30 +132,25 @@ class MetricInterface:
             "key": self.key,
             # Type: Optional[bool]
             "is_metric_enabled": self.is_metric_enabled,
-            # Type: List[MetricContextData]
-            "contexts": [
-                {
-                    "key": context.key.value,
-                    "value": context.value,
-                }
+            # Type: List[MetricContextData] -> Dict[key, value]
+            "contexts": {
+                context.key.value: context.value
                 for context in self.contexts
-            ],
+                if context.value is not None
+            },
             # Type: List[MetricAggregatedDimensionData]
-            "aggregated_dimensions": [
-                aggregated_dimension.to_storage_json()
+            "aggregated_dimensions": {
+                aggregated_dimension.dimension_identifier(): aggregated_dimension.to_storage_json()
                 for aggregated_dimension in self.aggregated_dimensions
-            ],
+            },
             # Type: Optional[bool]
             "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
             # Type: Dict[enum.Enum, Optional[IncludesExcludesSetting]]
-            "includes_excludes_member_to_setting": [
-                {
-                    "member": member.value,
-                    "include_excludes_setting": include_excludes_setting.value,
-                }
+            "includes_excludes_member_to_setting": {
+                member.value: include_excludes_setting.value
                 for member, include_excludes_setting in self.includes_excludes_member_to_setting.items()
                 if include_excludes_setting is not None
-            ],
+            },
             # Type: CustomReportingFrequency
             # Fields:
             #   frequency: Optional[schema.ReportingFrequency]
@@ -165,7 +161,69 @@ class MetricInterface:
                 else None,
                 "starting_month": self.custom_reporting_frequency.starting_month,
             },
+            "version": "v1",
         }
+
+    @classmethod
+    def from_storage_json(
+        cls: Type[MetricInterfaceT],
+        json: Dict[str, Any],
+    ) -> MetricInterfaceT:
+        """Creates a instance of a MetricInterface from a formatted json."""
+        metric_definition = METRIC_KEY_TO_METRIC[json["key"]]
+
+        contexts = MetricContextData.get_metric_context_data_from_storage_json(
+            stored_metric_contexts=json.get("contexts", {}),
+            # stored_metric_contexts=dict(json.get("contexts", []).items()),
+            metric_definition_contexts=metric_definition.contexts,
+        )
+
+        aggregated_dimensions: List[MetricAggregatedDimensionData] = []
+        if metric_definition.aggregated_dimensions is not None:
+            str_to_aggr_dimension = {
+                aggregated_dimension.dimension.dimension_identifier(): aggregated_dimension
+                for aggregated_dimension in metric_definition.aggregated_dimensions
+            }
+            aggregated_dimensions = [
+                MetricAggregatedDimensionData.from_storage_json(
+                    json=aggregated_dimension_json,
+                    aggregated_dimension=str_to_aggr_dimension[
+                        # aggregated_dimension_json["key"]
+                        dimension_identifier
+                    ],
+                )
+                for dimension_identifier, aggregated_dimension_json in json.get(
+                    "aggregated_dimensions", {}
+                ).items()
+            ]
+
+        disaggregated_by_supervision_subsystems: Optional[bool] = (
+            False  # Cannot be null for supervision systems.
+            if metric_definition.system == schema.System.SUPERVISION
+            and json.get("disaggregated_by_supervision_subsystems") is None
+            else json.get("disaggregated_by_supervision_subsystems")
+        )
+
+        includes_excludes_member_to_setting: Dict[
+            enum.Enum, Optional[IncludesExcludesSetting]
+        ] = IncludesExcludesSet.get_includes_excludes_dict_from_storage_json(
+            includes_excludes_member_to_setting=json.get(
+                "includes_excludes_member_to_setting", {}
+            ),
+            includes_excludes_set_lst=metric_definition.includes_excludes,
+        )
+        return cls(
+            key=json["key"],
+            value=None,  # Stored metric interfaces do not contain datapoint fields.
+            is_metric_enabled=json.get("is_metric_enabled", None),
+            contexts=contexts,
+            aggregated_dimensions=aggregated_dimensions,
+            disaggregated_by_supervision_subsystems=disaggregated_by_supervision_subsystems,
+            includes_excludes_member_to_setting=includes_excludes_member_to_setting,
+            custom_reporting_frequency=CustomReportingFrequency.from_json(
+                json.get("custom_reporting_frequency", {})
+            ),
+        )
 
     def get_reporting_frequency_to_use(
         self,

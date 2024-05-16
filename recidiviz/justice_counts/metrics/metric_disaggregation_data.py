@@ -17,6 +17,7 @@
 """Base class for the reported value(s) for a Justice Counts metric dimension."""
 
 import enum
+from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List, Optional, Type, TypeVar, cast
 
 import attr
@@ -85,46 +86,112 @@ class MetricAggregatedDimensionData:
         """
         return {
             # Optional[Dict[DimensionBase, Any]]
-            "dimension_to_enabled_status": [
-                {
-                    "dimension": dimension.to_enum().value,
-                    "enabled": enabled,
-                }
+            "dimension_to_enabled_status": {
+                dimension.to_enum().value: enabled
                 for dimension, enabled in self.dimension_to_enabled_status.items()
                 if enabled is not None
-            ]
+            }
             if self.dimension_to_enabled_status is not None
             else None,
             # Dict[DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]]
-            "dimension_to_includes_excludes_member_to_setting": [
-                {
-                    "dimension": dimension.to_enum().value,
-                    "includes_excludes_member_to_setting": [
-                        {
-                            "member": member.value,
-                            "include_excludes_setting": include_excludes_setting.value,
-                        }
-                        for member, include_excludes_setting in includes_excludes_member_to_setting.items()
-                        if include_excludes_setting is not None
-                    ],
+            "dimension_to_includes_excludes_member_to_setting": {
+                dimension.to_enum().value: {
+                    member.value: include_excludes_setting.value
+                    for member, include_excludes_setting in includes_excludes_member_to_setting.items()
+                    if include_excludes_setting is not None
                 }
                 for dimension, includes_excludes_member_to_setting in self.dimension_to_includes_excludes_member_to_setting.items()
-            ],
+            },
             # Dict[DimensionBase, List[MetricContextData]]
-            "dimension_to_contexts": [
-                {
-                    "dimension": dimension.to_enum().value,
-                    "contexts": [
-                        {
-                            "key": context.key.value,
-                            "value": context.value,
-                        }
-                        for context in contexts
-                    ],
+            "dimension_to_contexts": {
+                dimension.to_enum().value: {
+                    context.key.value: context.value for context in contexts
                 }
                 for dimension, contexts in self.dimension_to_contexts.items()
-            ],
+            },
         }
+
+    @classmethod
+    def from_storage_json(
+        cls: Type[MetricAggregatedDimensionDataT],
+        json: Dict[str, Any],
+        aggregated_dimension: AggregatedDimension,
+    ) -> MetricAggregatedDimensionDataT:
+        """
+        Convert the json object from the database to a MetricAggregatedDimensionData
+        object. This is the inverse of to_storage_json.
+        We must reference the AggregatedDimension to populate the full set of dimensions
+        and members for include exclude settings and contexts, even if they are not
+        present in the json.
+        """
+        dimension_class = aggregated_dimension.dimension  # example: RaceAndEthnicity
+        dimension_str_to_dimension = {
+            dimension.to_enum().value: dimension for dimension in dimension_class  # type: ignore[attr-defined]
+        }
+        # We set the value of all dimensions to None since from_storage_json does not
+        # return report datapoints. Report datapoints are stored in the Datapoints table.
+        dimension_to_value: Dict[DimensionBase, Any] = {
+            dimension: None for dimension in dimension_class  # type: ignore[attr-defined]
+        }
+
+        # For dimensions not present in the json, we set their enabled status to None.
+        dimension_to_enabled_status: Dict[DimensionBase, Any] = {}
+        for dimension in dimension_class:  # type: ignore[attr-defined]
+            dimension_to_enabled_status[dimension] = None
+
+        for dimension, enabled_status in json.get(
+            "dimension_to_enabled_status", {}
+        ).items():
+            dimension_to_enabled_status[
+                dimension_str_to_dimension[dimension]
+            ] = enabled_status
+
+        dimension_to_includes_excludes_member_to_setting: Dict[
+            DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
+        ] = defaultdict(dict)
+        if aggregated_dimension.dimension_to_includes_excludes is not None:
+            json_dimension_to_includes_excludes_member_to_setting = json.get(
+                "dimension_to_includes_excludes_member_to_setting", {}
+            )
+            for dimension in dimension_class:  # type: ignore[attr-defined]
+                # If the dimension in the dimension class is not represented in the
+                # stored json, this is fine.
+                # get_includes_excludes_dict_from_storage_json() will populate the dict
+                # with a default setting for that member.
+                includes_excludes_member_to_setting = (
+                    json_dimension_to_includes_excludes_member_to_setting.get(
+                        dimension.to_enum().value, {}
+                    )
+                )
+                dimension_to_includes_excludes_member_to_setting[
+                    dimension
+                ] = IncludesExcludesSet.get_includes_excludes_dict_from_storage_json(
+                    includes_excludes_member_to_setting=includes_excludes_member_to_setting,
+                    includes_excludes_set_lst=aggregated_dimension.dimension_to_includes_excludes.get(
+                        dimension
+                    ),
+                )
+
+        dimension_to_contexts: Dict[DimensionBase, List[MetricContextData]] = {}
+        if aggregated_dimension.dimension_to_contexts is not None:
+            for dimension_str, stored_metric_contexts in json[
+                "dimension_to_contexts"
+            ].items():
+                dimension = dimension_str_to_dimension[dimension_str]
+                dimension_to_contexts[
+                    dimension
+                ] = MetricContextData.get_metric_context_data_from_storage_json(
+                    stored_metric_contexts=stored_metric_contexts,
+                    metric_definition_contexts=aggregated_dimension.dimension_to_contexts[
+                        dimension
+                    ],
+                )
+        return cls(
+            dimension_to_value=dimension_to_value,
+            dimension_to_enabled_status=dimension_to_enabled_status,
+            dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
+            dimension_to_contexts=dimension_to_contexts,
+        )
 
     def to_json(
         self,
@@ -437,6 +504,8 @@ class MetricAggregatedDimensionData:
         # Validate that all dimensions enum instances in the dictionary belong
         # to the same dimension enum class
         if self.dimension_to_value is None:
+            return
+        if value is None or value == {}:
             return
         dimension_classes = [d.__class__ for d in value.keys()]
         if not all(d == dimension_classes[0] for d in dimension_classes):

@@ -17,7 +17,7 @@
 """Base class for official Justice Counts metrics."""
 
 import enum
-from typing import Dict, List, Optional, Set, Type
+from typing import Any, Dict, List, Optional, Set, Type, TypeVar
 
 import attr
 
@@ -37,7 +37,13 @@ class IncludesExcludesSetting(enum.Enum):
     NO = "No"
 
 
+IncludesExcludesSetT = TypeVar("IncludesExcludesSetT", bound="IncludesExcludesSet")
+
+
 class IncludesExcludesSet:
+    """Represents a set of includes / excludes options for a given metric aggregate or
+    breakdown."""
+
     # Enum that describes all includes / excludes
     # options (i.e PrisonsStaffIncludesExcludes)
     members: Type[enum.Enum]
@@ -63,6 +69,45 @@ class IncludesExcludesSet:
             if excluded_set is not None and member in excluded_set:
                 setting = IncludesExcludesSetting.NO
             self.member_to_default_inclusion_setting[member] = setting
+
+    @classmethod
+    def get_includes_excludes_dict_from_storage_json(
+        cls: Type[IncludesExcludesSetT],
+        includes_excludes_member_to_setting: Dict[str, Any],
+        includes_excludes_set_lst: Optional[List[IncludesExcludesSetT]] = None,
+    ) -> Dict[enum.Enum, Optional[IncludesExcludesSetting]]:
+        """
+        Returns:
+        - A dictionary that maps IncludeExclude members to IncludeExclude settings. If
+        an IncludeExclude member is not in includes_excludes_member_to_setting, the
+        setting is set to None.
+
+        Parameters:
+        - includes_excludes_member_to_setting:
+            Maps an IncludeExclude member to the IncludeExclude setting. This map might
+            not contain all IncludeExclude members relevant to the metric/dimension.
+        - includes_excludes_set_lst:
+            List of all IncludesExcludesSet objects for the metric aggregate (or metric
+            dimension) that describes what data is included/excluded.
+            This data is used to populate the includes_excludes dict with "Nones" for
+            all IncludeExclude members not included in includes_excludes_member_to_setting.
+        """
+        if includes_excludes_set_lst is None:
+            return {}
+        if len(includes_excludes_member_to_setting) == 0:
+            return {}
+        includes_excludes_dict: Dict[enum.Enum, Optional[IncludesExcludesSetting]] = {}
+        for includes_excludes in includes_excludes_set_lst:
+            for (
+                member,
+                _,
+            ) in includes_excludes.member_to_default_inclusion_setting.items():
+                setting = includes_excludes_member_to_setting.get(member.value, None)
+                try:
+                    includes_excludes_dict[member] = IncludesExcludesSetting(setting)
+                except ValueError:
+                    includes_excludes_dict[member] = None
+        return includes_excludes_dict
 
 
 class MetricCategory(enum.Enum):
