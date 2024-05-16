@@ -79,6 +79,6 @@ module "monitoring-airflow-pagerduty-service" {
   escalation_policy_id = local.reliability_escalation_policy_id
   # TODO(#28642): Change this to "monitoring-airflow" when the routing code is updated
   #  to use the email defined in RecidivizPagerDutyService
-  integration_email_username = var.project_id == "recidiviz-123" ? "data-platform-airflow-${var.project_id}" : "airflow-dag--monitoring-email.6ai6cy3n"
+  integration_email_username = var.project_id == "recidiviz-123" ? "monitoring-airflow-${var.project_id}" : "airflow-dag--monitoring-email.6ai6cy3n"
   is_monitoring_service      = true
 }
