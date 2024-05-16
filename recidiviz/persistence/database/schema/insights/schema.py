@@ -88,7 +88,7 @@ class SupervisionDistrictManager(InsightsBase):
 
     state_code = Column(String, primary_key=True)
     external_id = Column(String, primary_key=True)
-    full_name = Column(JSONB, nullable=True)
+    full_name = Column(JSONB(none_as_null=True), nullable=True)
     email = Column(String, nullable=True)
     # Id of the supervision district the manager is assigned to
     supervision_district = Column(String, nullable=False)
@@ -218,7 +218,7 @@ class SupervisionClientEvent(InsightsBase):
     # The id of the JII the event applies to
     client_id = Column(String)
     # Should follow the Recidiviz-standard JSON struct string representation
-    client_name = Column(JSONB, nullable=True)
+    client_name = Column(JSONB(none_as_null=True), nullable=True)
     # The external id of the officer assigned to this person at the time the event occurred
     officer_id = Column(String)
     # The start date of the officer assignment period that this event occurred in
@@ -232,7 +232,7 @@ class SupervisionClientEvent(InsightsBase):
     # The supervision type at the time of the event
     supervision_type = Column(String, nullable=True)
     # JSON object of information related to this event
-    attributes = Column(JSONB, nullable=True)
+    attributes = Column(JSONB(none_as_null=True), nullable=True)
     pseudonymized_client_id = Column(String, nullable=False)
     pseudonymized_officer_id = Column(String, nullable=False)
 
@@ -245,7 +245,7 @@ class SupervisionClients(InsightsBase):
     state_code = Column(String, primary_key=True)
     client_id = Column(String, primary_key=True)
     pseudonymized_client_id = Column(String, nullable=False)
-    client_name = Column(JSONB, nullable=True)
+    client_name = Column(JSONB(none_as_null=True), nullable=True)
     birthdate = Column(Date, nullable=True)
     gender = Column(String, nullable=True)
     race_or_ethnicity = Column(String, nullable=True)
