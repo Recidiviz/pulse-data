@@ -801,7 +801,7 @@ class MetricSetting(JusticeCountsBase):
     # A json representation of a MetricInterface object. We strip the metric interface
     # of all report datapoints (both aggregated and disaggregated) before storing it in
     # the database.
-    metric_interface = Column(String, nullable=True)
+    metric_interface = Column(JSONB, nullable=True)
 
     # Date of the most recent update to the metric setting.
     last_updated = Column(DateTime, nullable=True)
