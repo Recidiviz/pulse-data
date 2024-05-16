@@ -633,12 +633,17 @@ def generate_full_graph_state_person(
     )
     sentence.sentence_lengths = [sentence_length]
 
-    sentence_group = entities.StateSentenceGroupLength(
-        external_id="SENTENCE-GROUP-LEDGER-ID",
+    sentence_group = entities.StateSentenceGroup(
+        state_code="US_XX",
+        external_id="SG",
+    )
+    sentence_group_length = entities.StateSentenceGroupLength(
         state_code="US_XX",
         group_update_datetime=datetime.datetime(2023, 1, 1),
         sequence_num=None,
     )
+    sentence_group.sentence_group_lengths = [sentence_group_length]
+
     person.sentence_groups = [sentence_group]
 
     drug_screen = entities.StateDrugScreen(

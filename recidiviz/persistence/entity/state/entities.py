@@ -483,7 +483,7 @@ class StatePerson(
     housing_status_periods: List["StatePersonHousingStatusPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    sentence_groups: List["StateSentenceGroupLength"] = attr.ib(
+    sentence_groups: List["StateSentenceGroup"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
 
@@ -2711,19 +2711,36 @@ class StateSentenceLength(LedgerEntityMixin, BuildableAttr, DefaultableAttr, Ent
 
 
 @attr.s(eq=False, kw_only=True)
+class StateSentenceGroup(BuildableAttr, DefaultableAttr, HasExternalIdEntity):
+    """
+    Represents a logical grouping of sentences that encompass an
+    individual's interactions with a department of corrections.
+    It begins with an individual's first sentence imposition and ends at liberty.
+    This is a state agnostic term used by Recidiviz for a state
+    specific administrative phenomena.
+    """
+
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+    # Unique internal identifier for a sentence group
+    # Primary key - Only optional when hydrated in the parsing layer,
+    # before we have written this entity to the persistence layer
+    sentence_group_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+    sentence_group_lengths: List["StateSentenceGroupLength"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+
+
+@attr.s(eq=False, kw_only=True)
 class StateSentenceGroupLength(
-    LedgerEntityMixin, BuildableAttr, DefaultableAttr, HasExternalIdEntity
+    LedgerEntityMixin, BuildableAttr, DefaultableAttr, Entity
 ):
     """Represents a historical ledger of attributes relating to a state designated group of sentences."""
 
     state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Primary key - Only optional when parsing, before we have written this entity to the persistence layer.
-    # A unique identifier for the collection of sentences defining a continuous period of time served
-    # in the criminal justice system.
-    sentence_group_length_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
 
     # The date when all sentence term attributes are updated
     group_update_datetime: datetime.datetime = attr.ib(
@@ -2749,8 +2766,16 @@ class StateSentenceGroupLength(
         default=None, validator=attr_validators.is_opt_date
     )
 
+    # Primary key - Only optional when parsing, before we have written this entity to the persistence layer.
+    # A unique identifier for the collection of sentences defining a continuous period of time served
+    # in the criminal justice system.
+    sentence_group_length_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+    sentence_group: Optional["StateSentenceGroup"] = attr.ib(default=None)
 
     # TODO(#27577) Better understand projected dates and enforce them properly.
     def __attrs_post_init__(self) -> None:
@@ -2771,7 +2796,7 @@ class StateSentenceGroupLength(
 
     @property
     def ledger_partition_columns(self) -> List[str]:
-        return ["external_id"]
+        return []
 
     @property
     def ledger_datetime_field(self) -> DateOrDateTime:
