@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,34 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "4.84.0"
-    }
-    google-beta = {
-      source  = "hashicorp/google-beta"
-      version = "4.84.0"
-    }
-    pagerduty = {
-      source  = "PagerDuty/pagerduty"
-      version = "3.11.4"
-    }
-  }
+locals {
+   # See: https://recidiviz.pagerduty.com/escalation_policies#P7Y4PYG
+   implementation_engineer_escalation_policy_id = "P7Y4PYG"
 }
 
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
+module "airflow-tasks-pagerduty-service" {
+  source = "../pagerduty-service"
 
-provider "google-beta" {
-  project = var.project_id
-  region  = var.region
-}
-
-provider "pagerduty" {
-  # https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs#token
-  token = var.pagerduty_token
+  project_id = var.project_id
+  service_base_name                = "Airflow Tasks: ${var.state_code}"
+  service_description         = "Airflow tasks that do data processing specific to ${var.state_code}."
+  escalation_policy_id        = local.implementation_engineer_escalation_policy_id
+  integration_email_username  = "${local.lower_state_code}-airflow-${var.project_id}"
 }

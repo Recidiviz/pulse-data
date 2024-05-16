@@ -17,7 +17,7 @@
 resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
   name     = "admin-panel-hydrate-cache"
   location = var.region
-  provider = "google-beta"
+  provider = google-beta
 
   template {
     template {

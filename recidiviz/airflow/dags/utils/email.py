@@ -26,7 +26,17 @@ SENDGRID_MAIL_SENDER = "SENDGRID_MAIL_SENDER"
 
 
 def can_send_mail() -> bool:
-    can_send = not os.getenv(SENDGRID_MAIL_FROM) or not os.getenv(SENDGRID_MAIL_SENDER)
+    mail_from = os.getenv(SENDGRID_MAIL_FROM)
+    mail_sender = os.getenv(SENDGRID_MAIL_SENDER)
+
+    if (mail_from and not mail_sender) or (mail_sender and not mail_from):
+        raise RuntimeError(
+            f"Must have either none or both of {SENDGRID_MAIL_FROM} and "
+            f"{SENDGRID_MAIL_SENDER} env variables set. Found {mail_from=} and "
+            f"{mail_sender=}."
+        )
+
+    can_send = bool(mail_from) and bool(mail_sender)
 
     if not can_send:
         logging.warning(
