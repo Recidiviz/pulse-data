@@ -208,6 +208,7 @@ supervisors_joined_to_supervisees AS (
           csp_moving_into_unit.start_date < slp.end_date OR slp.end_date IS NULL
         )
       )
+      AND csp_moving_into_unit.BadgeNumber != slp.BadgeNumber
     
     UNION DISTINCT
     
@@ -225,7 +226,8 @@ supervisors_joined_to_supervisees AS (
         csp_already_supervising_unit.start_date <= slp.start_date AND (
           csp_already_supervising_unit.end_date > slp.start_date OR csp_already_supervising_unit.end_date IS NULL
         )
-      ) 
+      )
+    AND csp_already_supervising_unit.BadgeNumber != slp.BadgeNumber
   ),
   -- Normalizes by:
   -- 1) removing non-supervisor periods (which is where supervisor_BadgeNumber is null)
