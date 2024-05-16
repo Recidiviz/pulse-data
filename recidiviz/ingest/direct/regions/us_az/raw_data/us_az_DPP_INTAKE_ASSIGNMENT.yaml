@@ -14,9 +14,15 @@ columns:
     description: DPP_ID of person on supervision. FK to DPP_EPISODE
     is_pii: True
   - name: ASSIGNED_FROM
-    description: unknown
+    description: Date the person was given this assignment
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: ASSIGNED_TO
-    description: unknown
+    description: Date the assignment was changed
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: REASSIGNMENT_PERIOD_ID
     description: unknown
   - name: CHANGE_ID
