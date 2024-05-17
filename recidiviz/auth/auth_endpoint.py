@@ -125,15 +125,17 @@ def _upsert_user_rows(
                 "Roster contains a row that is missing an email address (required)"
             )
         validate_email_address(row["email_address"])
-        email = row["email_address"].lower()
-        role = row["role"].lower()
 
-        associated_state_role = (
-            session.query(StateRolePermissions)
-            .filter_by(state_code=f"{state_code.upper()}", role=f"{role}")
-            .first()
+        email = row["email_address"].lower()
+        roles = [value.strip().lower() for value in row["roles"].split(",")]
+
+        associated_state_roles = (
+            session.query(StateRolePermissions.role)
+            .filter_by(state_code=f"{state_code.upper()}")
+            .where(StateRolePermissions.role.in_(roles))
+            .all()
         )
-        if not associated_state_role:
+        if len(associated_state_roles) != len(roles):
             raise ValueError(
                 f"Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email {email}"
             )
@@ -147,8 +149,10 @@ def _upsert_user_rows(
                 row["pseudonymized_id"] = generate_pseudonymized_id(
                     row["state_code"], row["external_id"]
                 )
-        row["role"] = row["role"].lower()
-        row["roles"] = [row["role"]]
+        row["roles"] = [value.strip().lower() for value in row["roles"].split(",")]
+        row["role"] = row["roles"][
+            0
+        ]  # leaving this here until we remove 'role' from the schemas
         row["user_hash"] = generate_user_hash(row["email_address"])
 
         # update existing row or add new row

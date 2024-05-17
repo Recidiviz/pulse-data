@@ -50,7 +50,7 @@ export const UploadStateUserRosterModal = ({
         method="PUT"
         columns={[
           "email_address",
-          "role",
+          "roles",
           "district",
           "external_id",
           "first_name",

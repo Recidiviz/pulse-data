@@ -1,2 +1,2 @@
-district,email_address,role,first_name,last_name
+district,email_address,roles,first_name,last_name
 "NEW DISTRICT",leadership@domain.org,leadership_role,"leadership","user"

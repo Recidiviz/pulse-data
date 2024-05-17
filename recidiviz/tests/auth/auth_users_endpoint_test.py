@@ -953,7 +953,7 @@ class AuthUsersEndpointTestCase(TestCase):
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
-            roles=["leadership_role"],
+            roles=["leadership_role"],  # This should change with the new upload
             external_id="0000",  # This should change with the new upload
             district="",
         )
@@ -1130,6 +1130,52 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
             )
             self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_missing_external_id")  # type: ignore[attr-defined]
+
+    def test_upload_roster_multiple_roles(self) -> None:
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="leadership_role",
+            routes={"A": True},
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="supervision_staff",
+            routes={"B": True},
+        )
+        facilities_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="facilities_staff",
+            routes={"C": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [leadership_default, supervision_staff_default, facilities_staff_default],
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_multiple_roles.csv"), "rb"
+        ) as fixture, self.app.test_request_context(), self.assertLogs(
+            level="INFO"
+        ) as log:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertReasonLog(
+                log.output,
+                "uploading roster for state US_XX with reason: test",
+            )
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.snapshot.assert_match(json.loads(response.data), name="test_upload_roster_multiple_roles")  # type: ignore[attr-defined]
 
     ########
     # PATCH /users
