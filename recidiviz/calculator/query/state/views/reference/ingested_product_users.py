@@ -40,7 +40,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         SELECT
             'US_MO' AS state_code,
             LOWER(email) AS email_address,
-            IF(STRING_AGG(DISTINCT district, ',') IS NOT NULL, 'supervision_staff', 'leadership_role') as role,
+            IF(STRING_AGG(DISTINCT district, ',') IS NOT NULL, 'supervision_staff', 'leadership_role') as roles,
             -- the old dashboard_user_restrictions views used an empty string for no district
             -- instead of NULL, so keep that behavior here.
             IFNULL(STRING_AGG(DISTINCT district, ','), '') AS district,
@@ -60,7 +60,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
         SELECT
             'US_ND' AS state_code,
             CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
-            'supervision_staff' AS role,
+            'supervision_staff' AS roles,
             IFNULL(STRING_AGG(DISTINCT SITEID, ','), '') AS district,
             OFFICER as external_id,
             FNAME AS first_name,
@@ -82,7 +82,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = f"""
                 WHEN is_supervision_officer_supervisor THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER_SUPERVISOR.value}"
                 WHEN is_supervision_officer THEN "{RosterPredefinedRoles.SUPERVISION_OFFICER.value}"
                 ELSE "{RosterPredefinedRoles.UNKNOWN.value}"
-            END AS role,
+            END AS roles,
             supervision_district_id AS district,
             external_id,
             given_names AS first_name,
@@ -121,7 +121,7 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "state_code",
         "email_address",
         "external_id",
-        "role",
+        "roles",
         # TODO(#26245): Rename to district_id or district_name (or supervision_[one of those]?)
         "district",
         "first_name",

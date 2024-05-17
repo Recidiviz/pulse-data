@@ -473,6 +473,62 @@ snapshots[
 ]
 
 snapshots[
+    "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_multiple_roles"
+] = [
+    {
+        "allowedSupervisionLocationIds": "",
+        "allowedSupervisionLocationLevel": "",
+        "blocked": False,
+        "district": "ABC",
+        "emailAddress": "facilities_staff@domain.org",
+        "externalId": "2834",
+        "featureVariants": {},
+        "firstName": "facilities",
+        "lastName": "user",
+        "pseudonymizedId": "pseudo-2834",
+        "role": "facilities_staff",
+        "roles": ["facilities_staff", "supervision_staff"],
+        "routes": {"B": True, "C": True},
+        "stateCode": "US_XX",
+        "userHash": "qV9HFu2yhYFzM885nGWvJN1LqsJBuxINllOXOT9fzs8=",
+    },
+    {
+        "allowedSupervisionLocationIds": "",
+        "allowedSupervisionLocationLevel": "",
+        "blocked": False,
+        "district": None,
+        "emailAddress": "leadership@domain.org",
+        "externalId": "3975",
+        "featureVariants": {},
+        "firstName": "leadership",
+        "lastName": "user",
+        "pseudonymizedId": "pseudo-3975",
+        "role": "leadership_role",
+        "roles": ["leadership_role", "supervision_staff"],
+        "routes": {"A": True, "B": True},
+        "stateCode": "US_XX",
+        "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
+    },
+    {
+        "allowedSupervisionLocationIds": "",
+        "allowedSupervisionLocationLevel": "",
+        "blocked": False,
+        "district": None,
+        "emailAddress": "supervision_staff@domain.org",
+        "externalId": "3706",
+        "featureVariants": {},
+        "firstName": "supervision",
+        "lastName": "user",
+        "pseudonymizedId": "pseudo-3706",
+        "role": "supervision_staff",
+        "roles": ["supervision_staff"],
+        "routes": {"B": True},
+        "stateCode": "US_XX",
+        "userHash": "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI=",
+    },
+]
+
+snapshots[
     "AuthUsersEndpointTestCase.AuthUsersEndpointTestCase test_upload_roster_then_sync_roster"
 ] = [
     {
@@ -560,8 +616,8 @@ snapshots[
         "lastName": "user",
         "pseudonymizedId": "pseudo-3975",
         "role": "leadership_role",
-        "roles": ["leadership_role"],
-        "routes": {"A": True},
+        "roles": ["leadership_role", "supervision_staff"],
+        "routes": {"A": True, "B": True},
         "stateCode": "US_XX",
         "userHash": "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk=",
     },
