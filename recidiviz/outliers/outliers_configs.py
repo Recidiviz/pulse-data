@@ -100,7 +100,9 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
-        supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER')",
+        supervision_staff_exclusions="""'OTHER' NOT IN UNNEST(specialized_caseload_type_array)
+        AND 'DRUG_COURT' NOT IN UNNEST(specialized_caseload_type_array)
+        """,
     ),
     StateCode.US_PA: OutliersBackendConfig(
         metrics=[
