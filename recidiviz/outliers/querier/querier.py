@@ -56,8 +56,7 @@ from recidiviz.outliers.types import (
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
-from recidiviz.persistence.database.schema.outliers.schema import (
-    Configuration,
+from recidiviz.persistence.database.schema.insights.schema import (
     MetricBenchmark,
     SupervisionClientEvent,
     SupervisionClients,
@@ -65,6 +64,9 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
+)
+from recidiviz.persistence.database.schema.outliers.schema import (
+    Configuration,
     UserMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -75,15 +77,27 @@ class OutliersQuerier:
     """Implements Querier abstractions for Outliers data sources"""
 
     state_code: StateCode = attr.ib()
-    database_manager: StateSegmentedDatabaseManager = attr.ib(
+
+    # TODO(#29848): Remove and use only Insights DB manager once `configurations` and `user_metadata` tables are migrated
+    outliers_database_manager: StateSegmentedDatabaseManager = attr.ib(
         factory=lambda: StateSegmentedDatabaseManager(
             get_outliers_enabled_states(), SchemaType.OUTLIERS
         )
     )
 
+    insights_database_manager: StateSegmentedDatabaseManager = attr.ib(
+        factory=lambda: StateSegmentedDatabaseManager(
+            get_outliers_enabled_states(), SchemaType.INSIGHTS
+        )
+    )
+
     @cached_property
-    def database_session(self) -> sessionmaker:
-        return self.database_manager.get_session(self.state_code)
+    def outliers_database_session(self) -> sessionmaker:
+        return self.outliers_database_manager.get_session(self.state_code)
+
+    @cached_property
+    def insights_database_session(self) -> sessionmaker:
+        return self.insights_database_manager.get_session(self.state_code)
 
     def get_officer_level_report_data_for_all_officer_supervisors(
         self, end_date: date
@@ -114,7 +128,7 @@ class OutliersQuerier:
         end_date = end_date.replace(day=1)
         prev_end_date = end_date - relativedelta(months=1)
 
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             officer_supervisor_records = (
                 session.query(SupervisionOfficerSupervisor)
                 .select_from(SupervisionOfficerSupervisor)
@@ -384,7 +398,7 @@ class OutliersQuerier:
         :param pseudonymized_id: The pseudonymized id to filter supervisors by. If not provided, get all supervisor entities.
         :rtype: List of SupervisionOfficerSupervisorEntity
         """
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             end_date = self._get_latest_period_end_date(session)
 
             supervisors_query = (
@@ -532,7 +546,7 @@ class OutliersQuerier:
         """
         num_lookback_periods = num_lookback_periods or DEFAULT_NUM_LOOKBACK_PERIODS
 
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             end_date = (
                 self._get_latest_period_end_date(session)
                 if period_end_date is None
@@ -685,7 +699,7 @@ class OutliersQuerier:
         :rtype: List of dictionary
         """
 
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             end_date = (
                 self._get_latest_period_end_date(session)
                 if period_end_date is None
@@ -725,7 +739,7 @@ class OutliersQuerier:
         :rtype: List of SupervisionClientEvent
         """
 
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             # The earliest event date is the start of the year time period.
             earliest_event_date = period_end_date - relativedelta(years=1)
 
@@ -758,7 +772,7 @@ class OutliersQuerier:
         :param period_end_date: The end date of the period to get for. If not provided, use the latest end date available.
         :rtype: Optional[SupervisionOfficerEntity]
         """
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             officer_external_id = (
                 session.query(SupervisionOfficer.external_id)
                 .filter(SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id)
@@ -799,7 +813,7 @@ class OutliersQuerier:
         """
         Returns the SupervisionOfficerSupervisor given the external_id.
         """
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             supervisor = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == external_id)
@@ -836,7 +850,7 @@ class OutliersQuerier:
                 "Should provide either an external id for the officer or supervisor to filter on."
             )
 
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             end_date = (
                 self._get_latest_period_end_date(session)
                 if period_end_date is None
@@ -1017,7 +1031,7 @@ class OutliersQuerier:
         """
         Returns the SupervisionClient entity given the pseudonymized_id.
         """
-        with self.database_session() as session:
+        with self.insights_database_session() as session:
             client = (
                 session.query(SupervisionClients)
                 .filter(SupervisionClients.pseudonymized_client_id == pseudonymized_id)
@@ -1028,7 +1042,7 @@ class OutliersQuerier:
 
     def get_user_metadata(self, pseudonymized_id: str) -> Optional[UserMetadata]:
         """Returns the UserMetadata entity given the pseudonymized_id."""
-        with self.database_session() as session:
+        with self.outliers_database_session() as session:
             return (
                 session.query(UserMetadata)
                 .filter(UserMetadata.pseudonymized_id == pseudonymized_id)
@@ -1038,7 +1052,7 @@ class OutliersQuerier:
     def update_user_metadata(
         self, pseudonymized_id: str, has_seen_onboarding: bool
     ) -> None:
-        with self.database_session() as session:
+        with self.outliers_database_session() as session:
             upsert_stmt = (
                 insert(UserMetadata)
                 .values(
@@ -1081,7 +1095,7 @@ class OutliersQuerier:
         emails will always use the latest, active Configuration object set for the
         entire state, i.e. there is no feature variant.
         """
-        with self.database_session() as session:
+        with self.outliers_database_session() as session:
             user_feature_variants = (
                 list(user_context.feature_variants.keys()) if user_context else []
             )
@@ -1120,7 +1134,7 @@ class OutliersQuerier:
         Gets all of the Configuration database entities for the state in reverse
         time order.
         """
-        with self.database_session() as session:
+        with self.outliers_database_session() as session:
             # Get all configurations
             configs = (
                 session.query(Configuration)
@@ -1135,7 +1149,7 @@ class OutliersQuerier:
         Adds an active Configuration entity and deactivates any active entity that shares
         the feature variant of the new entity.
         """
-        with self.database_session() as session:
+        with self.outliers_database_session() as session:
             try:
                 # Deserialize the new Configuration entity
                 config = Configuration(**config_dict)
@@ -1172,7 +1186,7 @@ class OutliersQuerier:
         """
         Gets a configuration by id.
         """
-        with self.database_session() as session:
+        with self.outliers_database_session() as session:
             config = (
                 session.query(Configuration).filter(Configuration.id == config_id).one()
             )
@@ -1186,7 +1200,7 @@ class OutliersQuerier:
         is the only active default (feature_variant=None) configuration.
         """
 
-        with self.database_session() as session:
+        with self.outliers_database_session() as session:
             config = (
                 session.query(Configuration).filter(Configuration.id == config_id).one()
             )

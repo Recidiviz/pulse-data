@@ -35,7 +35,7 @@ from recidiviz.persistence.database.schema.outliers.schema import Configuration
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.outliers.querier_test import load_model_fixture
+from recidiviz.tests.outliers.querier_test import load_model_from_csv_fixture
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
@@ -104,7 +104,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
             session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
 
-            for config in load_model_fixture(Configuration):
+            for config in load_model_from_csv_fixture(Configuration):
                 session.add(Configuration(**config))
 
     @classmethod
