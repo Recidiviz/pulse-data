@@ -186,7 +186,7 @@ def _print_initial_analytics(
     initial_text_document_ids = set()
     for message_doc in message_query.stream():
         doc_batch_id = _get_batch_id_from_doc(message_doc)
-        if doc_batch_id == f"eligibility_{initial_batch_id}":
+        if doc_batch_id == initial_batch_id:
             doc_id = _get_doc_id_from_doc(message_doc)
             initial_text_document_ids.add(doc_id)
     num_initial_text_document_ids = len(initial_text_document_ids)
@@ -223,7 +223,7 @@ def _print_initial_analytics(
 
     for message_doc in initial_message_query.stream():
         doc_batch_id = _get_batch_id_from_doc(message_doc)
-        if doc_batch_id != f"eligibility_{initial_batch_id}":
+        if doc_batch_id != initial_batch_id:
             continue
         jii_message = message_doc.to_dict()
         if jii_message is None:
@@ -281,7 +281,7 @@ def _print_eligibility_analytics(
     eligibility_text_document_ids = set()
     for eligibility_message_doc in eligibility_message_query.stream():
         doc_batch_id = _get_batch_id_from_doc(eligibility_message_doc)
-        if doc_batch_id == f"eligibility_{eligibility_batch_id}":
+        if doc_batch_id == eligibility_batch_id:
             doc_id = _get_doc_id_from_doc(eligibility_message_doc)
             eligibility_text_document_ids.add(doc_id)
     num_eligibility_text_document_ids = len(eligibility_text_document_ids)
@@ -319,7 +319,7 @@ def _print_eligibility_analytics(
 
     for eligibility_message_doc in eligibility_message_query.stream():
         doc_batch_id = _get_batch_id_from_doc(eligibility_message_doc)
-        if doc_batch_id != f"eligibility_{eligibility_batch_id}":
+        if doc_batch_id != eligibility_batch_id:
             continue
         eligibility_jii_message = eligibility_message_doc.to_dict()
         if eligibility_jii_message is None:
@@ -527,7 +527,7 @@ def _get_doc_id_from_doc(doc: DocumentSnapshot) -> str:
 
 def _get_batch_id_from_doc(doc: DocumentSnapshot) -> str:
     """Helper function that returns a document's batch_id"""
-    return doc.reference.path.split("/")[-1]
+    return doc.reference.path.split("/")[-1].split("eligibility_")[1]
 
 
 if __name__ == "__main__":
