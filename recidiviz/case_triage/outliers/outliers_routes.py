@@ -330,30 +330,42 @@ def create_outliers_api_blueprint() -> Blueprint:
                 "metricId": event.metric_id,
                 "eventDate": event.event_date.isoformat() if event.event_date else None,
                 "clientId": event.client_id,
-                "clientName": {
-                    "givenNames": PersonName(**event.client_name).given_names,
-                    "middleNames": PersonName(**event.client_name).middle_names,
-                    "surname": PersonName(**event.client_name).surname,
-                },
+                "clientName": (
+                    {
+                        "givenNames": PersonName(**event.client_name).given_names,
+                        "middleNames": PersonName(**event.client_name).middle_names,
+                        "surname": PersonName(**event.client_name).surname,
+                    }
+                    if event.client_name
+                    else None
+                ),
                 "officerId": event.officer_id,
                 "pseudonymizedClientId": event.pseudonymized_client_id,
-                "attributes": convert_nested_dictionary_keys(
-                    event.attributes, snake_to_camel
-                )
-                if event.attributes
-                else None,
-                "officerAssignmentDate": event.officer_assignment_date.isoformat()
-                if event.officer_assignment_date
-                else None,
-                "officerAssignmentEndDate": event.officer_assignment_end_date.isoformat()
-                if event.officer_assignment_end_date
-                else None,
-                "supervisionStartDate": event.supervision_start_date.isoformat()
-                if event.supervision_start_date
-                else None,
-                "supervisionEndDate": event.supervision_end_date.isoformat()
-                if event.supervision_end_date
-                else None,
+                "attributes": (
+                    convert_nested_dictionary_keys(event.attributes, snake_to_camel)
+                    if event.attributes
+                    else None
+                ),
+                "officerAssignmentDate": (
+                    event.officer_assignment_date.isoformat()
+                    if event.officer_assignment_date
+                    else None
+                ),
+                "officerAssignmentEndDate": (
+                    event.officer_assignment_end_date.isoformat()
+                    if event.officer_assignment_end_date
+                    else None
+                ),
+                "supervisionStartDate": (
+                    event.supervision_start_date.isoformat()
+                    if event.supervision_start_date
+                    else None
+                ),
+                "supervisionEndDate": (
+                    event.supervision_end_date.isoformat()
+                    if event.supervision_end_date
+                    else None
+                ),
                 "supervisionType": event.supervision_type,
             }
             for event in events
@@ -548,21 +560,25 @@ def create_outliers_api_blueprint() -> Blueprint:
                 "metricId": event.metric_id,
                 "eventDate": event.event_date.isoformat(),
                 "clientId": event.client_id,
-                "clientName": {
-                    "givenNames": PersonName(**event.client_name).given_names,
-                    "middleNames": PersonName(**event.client_name).middle_names,
-                    "surname": PersonName(**event.client_name).surname,
-                }
-                if event.client_name
-                else None,
+                "clientName": (
+                    {
+                        "givenNames": PersonName(**event.client_name).given_names,
+                        "middleNames": PersonName(**event.client_name).middle_names,
+                        "surname": PersonName(**event.client_name).surname,
+                    }
+                    if event.client_name
+                    else None
+                ),
                 "officerId": event.officer_id,
                 "pseudonymizedClientId": event.pseudonymized_client_id,
-                "attributes": convert_nested_dictionary_keys(
-                    event.attributes,
-                    snake_to_camel,
-                )
-                if event.attributes
-                else None,
+                "attributes": (
+                    convert_nested_dictionary_keys(
+                        event.attributes,
+                        snake_to_camel,
+                    )
+                    if event.attributes
+                    else None
+                ),
             }
             for event in events
         ]
@@ -593,11 +609,15 @@ def create_outliers_api_blueprint() -> Blueprint:
             "stateCode": client.state_code,
             "clientId": client.client_id,
             "pseudonymizedClientId": client.pseudonymized_client_id,
-            "clientName": {
-                "givenNames": PersonName(**client.client_name).given_names,
-                "middleNames": PersonName(**client.client_name).middle_names,
-                "surname": PersonName(**client.client_name).surname,
-            },
+            "clientName": (
+                {
+                    "givenNames": PersonName(**client.client_name).given_names,
+                    "middleNames": PersonName(**client.client_name).middle_names,
+                    "surname": PersonName(**client.client_name).surname,
+                }
+                if client.client_name
+                else None
+            ),
             "birthdate": client.birthdate.isoformat(),
             "gender": client.gender,
             "raceOrEthnicity": client.race_or_ethnicity,
