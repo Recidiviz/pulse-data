@@ -23,7 +23,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    WITH current_address AS (
+    WITH 
+    -- CTE that compiles each person's current address
+    current_address AS (
         # How current_address is determined:
         #   if PrimaryAddress = True then use that as current_address (never a case where an individual has more than 1 primary address)
         #   if individual doesn't have a Primary Address listed, then use the address with the most recent start date
@@ -61,6 +63,7 @@ VIEW_QUERY_TEMPLATE = """
         ) a
         WHERE address_priority = 1
     ),
+    -- CTE that pulls together all name aliases for each person
     alias_records AS (
         SELECT 
             n.OffenderId,
@@ -77,12 +80,13 @@ VIEW_QUERY_TEMPLATE = """
         LEFT JOIN {ref_NameSuffixType} r
             USING(NameSuffixTypeId)
     ),
-    # using AliasNameTypeDesc = Default for full_name on person since there's one default name per individual
+    -- CTE that using AliasNameTypeDesc = Default to determine each person's full name and result in one name record per person
     name_records AS (
         SELECT *
         FROM alias_records
         WHERE AliasNameTypeId = '0'
     ),
+    -- CTE that pulls together current phone numbers
     -- confirmed that all phone numbers are of length 10
     -- using the below ranking system, there will only ever be one phone number per person
     -- ranking system: take most recently updated primary phone, otherwise take most recently updated phone overall
@@ -120,7 +124,7 @@ VIEW_QUERY_TEMPLATE = """
         r.RaceDesc,
         e.EthnicOriginDesc,
         p.PhoneNumber,
-        o.EmailAddress
+        em.EmailAddress
     FROM {ind_Offender} o
     LEFT JOIN {ind_Race} r
         ON o.RaceId = r.RaceId
@@ -134,6 +138,10 @@ VIEW_QUERY_TEMPLATE = """
         ON o.EthnicOriginId = e.EthnicOriginId
     LEFT JOIN current_phone_numbers p
         ON o.OffenderId = p.OffenderId
+    LEFT JOIN {ind_Offender_EmailAddress} oe
+        on o.OffenderId = oe.OffenderId AND oe.PrimaryEmailAddress = '1'
+    LEFT JOIN {ref_EmailAddress} em
+        USING(EmailAddressId)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
