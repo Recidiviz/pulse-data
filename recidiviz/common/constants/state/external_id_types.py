@@ -83,8 +83,6 @@ US_PA_PBPP_EMPLOYEE_NUM = "US_PA_PBPP_EMPLOYEE_NUM"
 US_TN_DOC = "US_TN_DOC"
 # Identifier for the type of state staff id provided by the TN system
 US_TN_STAFF_TOMIS = "US_TN_STAFF_TOMIS"
-# Email identifier
-US_TN_STAFF_EMAIL = "US_TN_STAFF_EMAIL"
 
 US_ME_DOC = "US_ME_DOC"
 # Identifier for the type of state staff id provided by the ME system
