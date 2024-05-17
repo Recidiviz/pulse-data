@@ -44,19 +44,20 @@ from recidiviz.outliers.types import (
     SupervisionOfficerEntity,
     SupervisionOfficerSupervisorEntity,
 )
-from recidiviz.persistence.database.schema.outliers.schema import (
-    Configuration,
+from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionClientEvent,
     SupervisionClients,
     SupervisionOfficerSupervisor,
 )
+from recidiviz.persistence.database.schema.outliers.schema import Configuration
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.outliers.querier_test import (
     TEST_CLIENT_EVENT_1,
     TEST_METRIC_3,
-    load_model_fixture,
+    load_model_from_csv_fixture,
+    load_model_from_json_fixture,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.metadata import local_project_id_override
@@ -156,18 +157,33 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
 
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        self.outliers_database_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name="us_pa"
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.outliers_database_key
+        )
 
-        with SessionFactory.using_database(self.database_key) as session:
-            for supervisor in load_model_fixture(SupervisionOfficerSupervisor):
-                session.add(SupervisionOfficerSupervisor(**supervisor))
-            for event in load_model_fixture(SupervisionClientEvent):
-                session.add(SupervisionClientEvent(**event))
-            for client in load_model_fixture(SupervisionClients):
-                session.add(SupervisionClients(**client))
-            for config in load_model_fixture(Configuration):
+        self.insights_database_key = SQLAlchemyDatabaseKey(
+            SchemaType.INSIGHTS, db_name="us_pa"
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.insights_database_key
+        )
+
+        with SessionFactory.using_database(self.outliers_database_key) as session:
+            for config in load_model_from_csv_fixture(Configuration):
                 session.add(Configuration(**config))
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            for supervisor in load_model_from_json_fixture(
+                SupervisionOfficerSupervisor
+            ):
+                session.add(SupervisionOfficerSupervisor(**supervisor))
+            for event in load_model_from_json_fixture(SupervisionClientEvent):
+                session.add(SupervisionClientEvent(**event))
+            for client in load_model_from_json_fixture(SupervisionClients):
+                session.add(SupervisionClients(**client))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -178,7 +194,11 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             os.unsetenv("AUTH0_CLAIM_NAMESPACE")
 
         local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
+            self.outliers_database_key
+        )
+
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.insights_database_key
         )
 
     @classmethod
@@ -312,7 +332,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
         mock_enabled_states.return_value = ["US_PA"]
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == "102")
@@ -394,7 +414,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
         mock_enabled_states.return_value = ["US_PA"]
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == "101")
@@ -683,7 +703,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             top_x_pct_metrics=[],
         )
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             # The supervisor object returned doesn't match the supervisor of the officer
             mock_get_supervisor.return_value = (
                 session.query(SupervisionOfficerSupervisor)
@@ -758,7 +778,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             top_x_pct_metrics=[],
         )
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             # The supervisor object returned doesn't match the supervisor of the officer
             mock_get_supervisor.return_value = (
                 session.query(SupervisionOfficerSupervisor)
@@ -881,7 +901,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             top_x_pct_metrics=[],
         )
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == "102")
@@ -950,7 +970,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
         with local_project_id_override("test-project"):
-            with SessionFactory.using_database(self.database_key) as session:
+            with SessionFactory.using_database(self.insights_database_key) as session:
                 with patch("logging.Logger.error") as mock_logger:
                     mock_get_supervisor.return_value = (
                         session.query(SupervisionOfficerSupervisor)
@@ -1106,7 +1126,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             top_x_pct_metrics=[],
         )
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = None
             mock_get_events.return_value = (
                 session.query(SupervisionClientEvent)
@@ -1189,7 +1209,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             top_x_pct_metrics=[],
         )
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             mock_get_supervisor.return_value = None
             mock_get_events.return_value = (
                 session.query(SupervisionClientEvent)
@@ -1304,7 +1324,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             top_x_pct_metrics=[],
         )
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             # The supervisor object returned doesn't match the supervisor of the officer
             mock_get_supervisor.return_value = (
                 session.query(SupervisionOfficerSupervisor)

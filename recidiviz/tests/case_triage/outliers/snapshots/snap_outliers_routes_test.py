@@ -78,7 +78,7 @@ snapshots["TestOutliersRoutes.TestOutliersRoutes test_get_events_by_client_succe
             "clientId": "111",
             "clientName": {
                 "givenNames": "Harry",
-                "middleNames": None,
+                "middleNames": "",
                 "surname": "Potter",
             },
             "eventDate": "2023-05-01",
@@ -99,7 +99,7 @@ snapshots[
             "clientId": "111",
             "clientName": {
                 "givenNames": "Harry",
-                "middleNames": None,
+                "middleNames": "",
                 "surname": "Potter",
             },
             "eventDate": "2023-05-01",
@@ -120,7 +120,7 @@ snapshots[
             "clientId": "222",
             "clientName": {
                 "givenNames": "Olivia",
-                "middleNames": None,
+                "middleNames": "",
                 "surname": "Rodrigo",
             },
             "eventDate": "2023-04-01",
@@ -146,7 +146,7 @@ snapshots[
             "clientId": "222",
             "clientName": {
                 "givenNames": "Olivia",
-                "middleNames": None,
+                "middleNames": "",
                 "surname": "Rodrigo",
             },
             "eventDate": "2023-04-01",

@@ -294,7 +294,9 @@ def parse_exported_json_row_from_bigquery(
 ) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
     for key, value in data.items():
-        if isinstance(model.__table__.c[key].type, JSONB):
+        if value is None:
+            result[key] = None
+        elif isinstance(model.__table__.c[key].type, JSONB):
             result[key] = json.loads(value)
         elif value == "true":
             result[key] = True

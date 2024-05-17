@@ -27,6 +27,9 @@ import pytest
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from recidiviz.case_triage.outliers.user_context import UserContext
+from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
+    parse_exported_json_row_from_bigquery,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -42,41 +45,41 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
     UserInfo,
 )
-from recidiviz.persistence.database.schema.outliers.schema import (
-    Configuration,
+from recidiviz.persistence.database.schema.insights.schema import (
+    InsightsBase,
     MetricBenchmark,
-    OutliersBase,
     SupervisionClientEvent,
     SupervisionClients,
     SupervisionDistrictManager,
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
+)
+from recidiviz.persistence.database.schema.outliers.schema import (
+    Configuration,
+    OutliersBase,
     UserMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tools.outliers import fixtures
+from recidiviz.tools.insights import fixtures as insights_json_fixtures
+from recidiviz.tools.outliers import fixtures as outliers_csv_fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
-def load_model_fixture(
+def load_model_from_csv_fixture(
     model: OutliersBase, filename: Optional[str] = None
 ) -> List[Dict]:
     filename = f"{model.__tablename__}.csv" if filename is None else filename
-    fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
+    fixture_path = os.path.join(
+        os.path.dirname(outliers_csv_fixtures.__file__), filename
+    )
     results = []
     with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
         reader = csv.DictReader(fixture_file)
         for row in reader:
             for k, v in row.items():
-                if k == "full_name":
-                    row["full_name"] = json.loads(row["full_name"])
-                if k == "client_name" and v != "":
-                    row["client_name"] = json.loads(row["client_name"])
-                if k == "attributes" and v != "":
-                    row["attributes"] = json.loads(row["attributes"])
                 if k == "has_seen_onboarding" and v != "":
                     row["has_seen_onboarding"] = json.loads(row["has_seen_onboarding"])
                 if v == "True":
@@ -86,6 +89,23 @@ def load_model_fixture(
                 if v == "":
                     row[k] = None
             results.append(row)
+
+    return results
+
+
+def load_model_from_json_fixture(
+    model: InsightsBase, filename: Optional[str] = None
+) -> List[Dict]:
+    filename = f"{model.__tablename__}.json" if filename is None else filename
+    fixture_path = os.path.join(
+        os.path.dirname(insights_json_fixtures.__file__), filename
+    )
+    results = []
+    with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
+        for row in fixture_file:
+            json_obj = json.loads(row)
+            flattened_json = parse_exported_json_row_from_bigquery(json_obj, model)
+            results.append(flattened_json)
 
     return results
 
@@ -142,35 +162,52 @@ class TestOutliersQuerier(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+        # TODO(#29848): Remove and use only Insights DB manager once `configurations` and `user_metadata` tables are migrated
+        self.outliers_database_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name="us_pa"
+        )
+        self.insights_database_key = SQLAlchemyDatabaseKey(
+            SchemaType.INSIGHTS, db_name="us_pa"
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.outliers_database_key
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.insights_database_key
+        )
 
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.outliers_database_key) as session:
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
             session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
-
-            for officer in load_model_fixture(SupervisionOfficer):
-                session.add(SupervisionOfficer(**officer))
-            for status in load_model_fixture(SupervisionOfficerOutlierStatus):
-                session.add(SupervisionOfficerOutlierStatus(**status))
-            for supervisor in load_model_fixture(SupervisionOfficerSupervisor):
-                session.add(SupervisionOfficerSupervisor(**supervisor))
-            for manager in load_model_fixture(SupervisionDistrictManager):
-                session.add(SupervisionDistrictManager(**manager))
-            for benchmark in load_model_fixture(MetricBenchmark):
-                session.add(MetricBenchmark(**benchmark))
-            for event in load_model_fixture(SupervisionClientEvent):
-                session.add(SupervisionClientEvent(**event))
-            for client in load_model_fixture(SupervisionClients):
-                session.add(SupervisionClients(**client))
-            for metadata in load_model_fixture(UserMetadata):
+            for metadata in load_model_from_csv_fixture(UserMetadata):
                 session.add(UserMetadata(**metadata))
-            for config in load_model_fixture(Configuration):
+            for config in load_model_from_csv_fixture(Configuration):
                 session.add(Configuration(**config))
+
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            for officer in load_model_from_json_fixture(SupervisionOfficer):
+                session.add(SupervisionOfficer(**officer))
+            for status in load_model_from_json_fixture(SupervisionOfficerOutlierStatus):
+                session.add(SupervisionOfficerOutlierStatus(**status))
+            for supervisor in load_model_from_json_fixture(
+                SupervisionOfficerSupervisor
+            ):
+                session.add(SupervisionOfficerSupervisor(**supervisor))
+            for manager in load_model_from_json_fixture(SupervisionDistrictManager):
+                session.add(SupervisionDistrictManager(**manager))
+            for benchmark in load_model_from_json_fixture(MetricBenchmark):
+                session.add(MetricBenchmark(**benchmark))
+            for event in load_model_from_json_fixture(SupervisionClientEvent):
+                session.add(SupervisionClientEvent(**event))
+            for client in load_model_from_json_fixture(SupervisionClients):
+                session.add(SupervisionClients(**client))
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
+            self.outliers_database_key
+        )
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.insights_database_key
         )
 
     @classmethod
@@ -229,7 +266,7 @@ class TestOutliersQuerier(TestCase):
 
     def test_get_supervisor_from_pseudonymized_id_found_match(self) -> None:
         # Return matching supervisor
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             expected = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == "101")
@@ -250,7 +287,7 @@ class TestOutliersQuerier(TestCase):
 
     def test_get_events_by_officer(self) -> None:
         # Return matching event
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             metric_id = TEST_METRIC_3.name
             expected = (
                 session.query(SupervisionClientEvent)
@@ -344,7 +381,7 @@ class TestOutliersQuerier(TestCase):
 
     def test_get_events_by_client(self) -> None:
         # Return matching event
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             metric_id = TEST_METRIC_3.name
             expected = (
                 session.query(SupervisionClientEvent)
