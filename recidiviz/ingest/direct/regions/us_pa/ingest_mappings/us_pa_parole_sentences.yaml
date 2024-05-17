@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - ParoleNumber
+  - ParoleCountID
+  - RelReleaseDate
+  - RelMaxDate
+  - HReDelDate
+  - HReDelCode
+  - list_of_offense_descriptions
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    # TODO(#29719): add separate view to ingest task deadlines over time
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("PAROLE")
+                - ParoleNumber
+                - ParoleCountID
+          projected_completion_date: RelMaxDate
+          completion_date: HReDelDate
+          effective_date: RelReleaseDate
+          status:
+            $conditional:
+              - $if:
+                  $is_null: HReDelCode
+                $then: $literal_enum(StateSentenceStatus.SERVING)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: HReDelCode
+                    $mappings:
+                      StateSentenceStatus.COMPLETED:
+                        - "43" # Successful completion of sentence at maximum expiration date
+                        - "47" # Death while under supervision of causes unrelated to crime.
+                        - "48" # Death while under supervision caused by criminal activity
+                        - "45" # Case closed for client with criminal charges pending that has reached maximum expiration of sentence on paroled offense # usually applies to absconders or unconvicted violators
+                        - "49" # Not an actually closed case - Case reached the Maximum Experiation Date for a State Sentence but has a county sentence of probation to finish. Closes the case and reopens it as a county probation case,
+                      StateSentenceStatus.REVOKED:
+                        - "40" # Recommitment to prison for new criminal convictions while under supervision
+                        - "41" # Recommitment to prison for adjudication of technical parole violations while under supervision
+                        - "42" # Recommitment to prison for convictions of new crimes and technical parole violations while under supervision
+                        - "44" # Conviction and return to prison to serve detainer sentence.
+                      StateSentenceStatus.PARDONED:
+                        - "46" # The Board of Pardons grants a pardon or commutation which terminates supervision, or early discharge is granted by a judge.
+                      StateSentenceStatus.VACATED:
+                        - "50" # Case Opened in Error
+                      StateSentenceStatus.INTERNAL_UNKNOWN:
+                        - "51" # Not sure what this code means TODO(#29816)
+          supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PAROLE)
+          is_life:
+            $equal:
+              - RelMaxDate
+              - $literal("2999-01-01")
+          charges:
+            - $foreach:
+                $iterable:
+                  $split_json: list_of_offense_descriptions
+                $result:
+                  $conditional:
+                    - $if:
+                        $not_null:
+                          $json_extract:
+                            $key: offense_code_num
+                            $json: $iter_item
+                      $then:
+                        StateCharge:
+                          external_id:
+                            $concat:
+                              $values:
+                                - $literal("PAROLE")
+                                - ParoleNumber
+                                - ParoleCountID
+                                - $json_extract:
+                                    $key: offense_code_num
+                                    $json: $iter_item
+                          description:
+                            $json_extract:
+                              $key: PBPPOffenseDescription
+                              $json: $iter_item
+                          status: $literal_enum(StateChargeStatus.CONVICTED)
