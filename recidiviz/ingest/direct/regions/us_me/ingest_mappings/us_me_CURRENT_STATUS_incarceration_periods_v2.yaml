@@ -19,7 +19,7 @@ input_columns:
   - next_movement_type
   - transfer_type
   - transfer_reason
-  - new_incarceration_period_id
+  - incarceration_period_id
 unused_columns: []
 output:
   StatePerson:
@@ -33,7 +33,7 @@ output:
             $concat:
               $values:
                 - client_id
-                - new_incarceration_period_id
+                - incarceration_period_id
           custodial_authority:
             $enum_mapping:
               $raw_text: jurisdiction_location_type
