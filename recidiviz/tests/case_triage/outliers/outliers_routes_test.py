@@ -347,6 +347,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     external_id="123",
                     pseudonymized_id="hashhash",
                     supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
                     outlier_metrics=[
@@ -380,6 +381,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     external_id="456",
                     pseudonymized_id="hashhashhash",
                     supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
                     outlier_metrics=[],
@@ -429,6 +431,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     external_id="123",
                     pseudonymized_id="hashhash",
                     supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
                     outlier_metrics=[
@@ -457,6 +460,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     external_id="456",
                     pseudonymized_id="hashhashhash",
                     supervisor_external_id="102",
+                    supervisor_external_ids=["102"],
                     district="Hogwarts",
                     caseload_type=None,
                     outlier_metrics=[],
@@ -686,6 +690,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -761,6 +766,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -835,6 +841,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[],
@@ -884,6 +891,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -952,6 +960,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -1031,6 +1040,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -1109,6 +1119,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -1192,6 +1203,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -1307,6 +1319,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[
@@ -1378,6 +1391,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[],
@@ -1426,6 +1440,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             external_id="123",
             pseudonymized_id="hashhash",
             supervisor_external_id="102",
+            supervisor_external_ids=["102"],
             district="Guts",
             caseload_type=None,
             outlier_metrics=[

@@ -283,7 +283,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
         if not user_context.can_access_all_supervisors and (
             not supervisor
-            or officer_entity.supervisor_external_id != supervisor.external_id
+            or (supervisor.external_id not in officer_entity.supervisor_external_ids)
         ):
             return jsonify_response(
                 "User cannot access all supervisors and does not supervise the requested officer.",
@@ -413,7 +413,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         # If the current user cannot access data about all supervisors, ensure that they supervise the requested officer.
         if not user_context.can_access_all_supervisors and (
             not supervisor
-            or officer_entity.supervisor_external_id != supervisor.external_id
+            or supervisor.external_id not in officer_entity.supervisor_external_ids
         ):
             return jsonify_response(
                 "User cannot access all supervisors and does not supervise the requested officer.",

@@ -240,14 +240,14 @@ class TestOutliersQuerier(TestCase):
         }
         self.snapshot.assert_match(actual_json, name="test_get_officer_level_report_data_by_supervisor_json")  # type: ignore[attr-defined]
 
-    def test_get_supervision_officer_entities(
+    def test_get_supervision_officer_supervisor_entities(
         self,
     ) -> None:
         actual = OutliersQuerier(
             StateCode.US_PA
         ).get_supervision_officer_supervisor_entities()
 
-        self.snapshot.assert_match(actual, name="test_get_supervision_officer_entities")  # type: ignore[attr-defined]
+        self.snapshot.assert_match(actual, name="test_get_supervision_officer_supervisor_entities")  # type: ignore[attr-defined]
 
     def test_get_officers_for_supervisor(self) -> None:
         actual = OutliersQuerier(StateCode.US_PA).get_officers_for_supervisor(

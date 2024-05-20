@@ -69,7 +69,7 @@ def staff_query_template(role: str) -> str:
         {get_pseudonymized_id_query_str("attrs.state_code || attrs.officer_id")} AS pseudonymized_id,
         staff.email,
         COALESCE(attrs.supervision_district_name,attrs.supervision_district_name_inferred) AS supervision_district,
-        -- TODO(#28250): Handle when CA is ingested such that there are multiple supervisors
+        -- TODO(#29942): Deprecate once array is deployed and fully in use
         attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)] AS supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
         attrs.supervisor_staff_external_id_array AS supervisor_external_ids

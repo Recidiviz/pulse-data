@@ -41,6 +41,7 @@ from recidiviz.outliers.types import (
     MetricContext,
     MetricOutcome,
     OfficerMetricEntity,
+    OfficerOutlierStatus,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
     OutliersBackendConfig,
@@ -179,6 +180,7 @@ class OutliersQuerier:
                     metrics,
                     metrics_with_outliers,
                 ) = self._get_officer_level_data_for_officer_supervisor(
+                    session,
                     external_id,
                     metric_name_to_metric_context,
                 )
@@ -201,6 +203,7 @@ class OutliersQuerier:
 
     @staticmethod
     def _get_officer_level_data_for_officer_supervisor(
+        session: Session,
         supervision_officer_supervisor_id: str,
         metric_id_to_metric_context: Dict[OutliersMetricConfig, MetricContext],
     ) -> Tuple[List[OutlierMetricInfo], List[OutliersMetricConfig]]:
@@ -212,7 +215,7 @@ class OutliersQuerier:
         metrics_without_outliers = []
 
         for metric, metric_context in metric_id_to_metric_context.items():
-            entities = metric_context.entities
+            officer_entities = metric_context.entities
 
             other_officer_rates: Dict[TargetStatus, List[float]] = {
                 TargetStatus.FAR: [],
@@ -221,16 +224,44 @@ class OutliersQuerier:
             }
             highlighted_officers: List[OfficerMetricEntity] = []
 
-            for entity in entities:
-                target_status = entity.target_status
-                rate = entity.rate
+            for officer_entity in officer_entities:
+                target_status = officer_entity.target_status
+                rate = officer_entity.rate
+
+                # .one() raises an exception if there are multiple or no results, which should be unexpected here
+                officer = (
+                    session.query(SupervisionOfficer)
+                    .filter(
+                        SupervisionOfficer.external_id == officer_entity.external_id
+                    )
+                    .with_entities(
+                        SupervisionOfficer.external_id,
+                        SupervisionOfficer.full_name,
+                        SupervisionOfficer.supervisor_external_id,
+                        SupervisionOfficer.supervisor_external_ids,
+                        SupervisionOfficer.supervision_district,
+                    )
+                    .one()
+                )
 
                 if (
                     target_status == TargetStatus.FAR
-                    and entity.supervisor_external_id
-                    == supervision_officer_supervisor_id
+                    and supervision_officer_supervisor_id
+                    in officer.supervisor_external_ids
                 ):
-                    highlighted_officers.append(entity)
+                    highlighted_officers.append(
+                        OfficerMetricEntity(
+                            name=PersonName(**officer.full_name),
+                            external_id=officer.external_id,
+                            supervisor_external_id=officer.supervisor_external_id,
+                            supervisor_external_ids=officer.supervisor_external_ids,
+                            supervision_district=officer.supervision_district,
+                            rate=officer_entity.rate,
+                            target_status=officer_entity.target_status,
+                            prev_rate=officer_entity.prev_rate,
+                            prev_target_status=officer_entity.prev_target_status,
+                        )
+                    )
                 else:
                     other_officer_rates[target_status].append(rate)
 
@@ -267,11 +298,6 @@ class OutliersQuerier:
         # Get officer metrics for the given metric_id for the current and previous period
         combined_period_officer_metrics = (
             session.query(SupervisionOfficerOutlierStatus)
-            .join(
-                SupervisionOfficer,
-                SupervisionOfficer.external_id
-                == SupervisionOfficerOutlierStatus.officer_id,
-            )
             .filter(
                 SupervisionOfficerOutlierStatus.metric_id == metric.name,
                 SupervisionOfficerOutlierStatus.end_date.in_([end_date, prev_end_date]),
@@ -283,9 +309,6 @@ class OutliersQuerier:
                 SupervisionOfficerOutlierStatus.end_date,
                 SupervisionOfficerOutlierStatus.metric_rate,
                 SupervisionOfficerOutlierStatus.status,
-                SupervisionOfficer.full_name,
-                SupervisionOfficer.supervisor_external_id,
-                SupervisionOfficer.supervision_district,
             )
             .all()
         )
@@ -308,8 +331,8 @@ class OutliersQuerier:
             )
         )
 
-        # Generate the OfficerMetricEntity object for all officers
-        entities: List[OfficerMetricEntity] = []
+        # Generate the OfficerOutlierStatus object for all officers
+        entities: List[OfficerOutlierStatus] = []
         for officer_metric_record in current_period_officer_metrics:
             rate = officer_metric_record.metric_rate
             target_status = officer_metric_record.status
@@ -336,16 +359,14 @@ class OutliersQuerier:
             prev_target_status = prev_period_record[0].status if prev_rate else None
 
             entities.append(
-                OfficerMetricEntity(
-                    name=PersonName(**officer_metric_record.full_name),
+                OfficerOutlierStatus(
+                    external_id=officer_metric_record.officer_id,
                     rate=rate,
                     target_status=TargetStatus(target_status),
                     prev_rate=prev_rate,
                     prev_target_status=(
                         TargetStatus(prev_target_status) if prev_target_status else None
                     ),
-                    supervisor_external_id=officer_metric_record.supervisor_external_id,
-                    supervision_district=officer_metric_record.supervision_district,
                 )
             )
 
@@ -401,19 +422,26 @@ class OutliersQuerier:
         with self.insights_database_session() as session:
             end_date = self._get_latest_period_end_date(session)
 
+            officers_subquery = session.query(
+                SupervisionOfficer.external_id,
+                func.unnest(SupervisionOfficer.supervisor_external_ids).label(
+                    "supervisor_external_id"
+                ),
+            ).subquery()
+
             supervisors_query = (
                 session.query(SupervisionOfficerSupervisor)
                 .join(
-                    SupervisionOfficer,
+                    officers_subquery,
                     and_(
-                        SupervisionOfficer.supervisor_external_id
+                        officers_subquery.c.supervisor_external_id
                         == SupervisionOfficerSupervisor.external_id
                     ),
                 )
                 .join(
                     SupervisionOfficerOutlierStatus,
                     and_(
-                        SupervisionOfficer.external_id
+                        officers_subquery.c.external_id
                         == SupervisionOfficerOutlierStatus.officer_id,
                         SupervisionOfficerOutlierStatus.end_date == end_date,
                         # TODO(#24998): Account for comparing benchmarks by caseload type
@@ -877,6 +905,7 @@ class OutliersQuerier:
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
                     SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
@@ -886,6 +915,7 @@ class OutliersQuerier:
                     SupervisionOfficer.full_name,
                     SupervisionOfficer.pseudonymized_id,
                     SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervisor_external_ids,
                     SupervisionOfficer.supervision_district,
                     SupervisionOfficer.specialized_caseload_type,
                     SupervisionOfficerOutlierStatus.metric_id,
@@ -929,7 +959,9 @@ class OutliersQuerier:
             if supervisor_external_id:
                 # If the supervisor external id is specified, filter by the supervisor external id.
                 officer_status_query = officer_status_query.filter(
-                    SupervisionOfficer.supervisor_external_id == supervisor_external_id
+                    SupervisionOfficer.supervisor_external_ids.any(
+                        supervisor_external_id
+                    )
                 )
 
             officer_status_records = officer_status_query.all()
@@ -999,6 +1031,7 @@ class OutliersQuerier:
                         external_id=record.external_id,
                         pseudonymized_id=record.pseudonymized_id,
                         supervisor_external_id=record.supervisor_external_id,
+                        supervisor_external_ids=record.supervisor_external_ids,
                         district=record.supervision_district,
                         caseload_type=record.specialized_caseload_type,
                         outlier_metrics=(
