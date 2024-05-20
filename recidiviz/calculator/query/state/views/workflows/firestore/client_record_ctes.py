@@ -472,7 +472,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
         SELECT
             state_code,
             person_id,
-            ARRAY_AGG(STRUCT(milestone_type AS type, milestone_text AS text, milestone_date AS miltestone_date) IGNORE NULLS ORDER BY milestone_priority ASC) AS milestones
+            ARRAY_AGG(STRUCT(milestone_type AS type, milestone_text AS text, milestone_date AS milestone_date) IGNORE NULLS ORDER BY milestone_priority ASC) AS milestones
         FROM (
             -- birthdays
             -- milestone_date is the first day of the month for the individual's birthday month
