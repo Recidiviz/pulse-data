@@ -118,7 +118,8 @@ This is because we make the following assumptions:
 import argparse
 import datetime
 import logging
-from typing import Optional, Set
+from collections import defaultdict
+from typing import Dict, Optional, Set, Tuple
 
 from google.cloud.firestore_v1 import ArrayUnion, FieldFilter
 from twilio.rest import Client as TwilioClient
@@ -133,7 +134,12 @@ from recidiviz.case_triage.util import MessageType
 from recidiviz.case_triage.workflows.utils import ExternalSystemRequestStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
-from recidiviz.utils.environment import get_gcp_environment
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    get_gcp_environment,
+)
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.secrets import get_secret
 
@@ -183,6 +189,22 @@ def create_parser() -> argparse.ArgumentParser:
         default=False,
         help="Whether or not you would like to attempt to resend texts that were previously undelivered. If provided, you must also specify the --previous-batch-id-to-update-status-for-to-update-status-for flag.",
     )
+    parser.add_argument(
+        "--resend-eligibility-texts",
+        required=False,
+        type=str_to_bool,
+        default=False,
+        help="Whether or not you would like to attempt to resend eligibility texts to individuals that have already received eligibility texts in the past 90 days.",
+    )
+    parser.add_argument(
+        "--project-id",
+        choices=[
+            GCP_PROJECT_STAGING,
+            GCP_PROJECT_PRODUCTION,
+        ],
+        help="Used to select which GCP project in which to run this script.",
+        required=False,
+    )
     return parser
 
 
@@ -195,6 +217,7 @@ def send_id_lsu_texts(
     dry_run: bool,
     message_type: str,
     redeliver_failed_messages: bool,
+    resend_eligibility_texts: bool,
     previous_batch_id: Optional[str] = None,
     callback_url: Optional[str] = None,
 ) -> None:
@@ -231,19 +254,11 @@ def send_id_lsu_texts(
 
     firestore_client = FirestoreClientImpl(project_id="jii-pilots")
 
-    # Get all document_ids for individuals who already received an initial text
-    message_ref = firestore_client.get_collection_group(
-        collection_path="lsu_eligibility_messages"
-    )
-    message_query = message_ref.where(
-        filter=FieldFilter("message_type", "==", MessageType.INITIAL_TEXT.value)
-    ).where(
-        filter=FieldFilter("status", "==", ExternalSystemRequestStatus.SUCCESS.value)
-    )
-    initial_text_document_ids = {
-        message_doc.reference.path.split("/")[1]
-        for message_doc in message_query.stream()
-    }
+    (
+        initial_text_document_ids,
+        eligibility_text_document_ids_to_text_timestamp,
+    ) = _get_initial_and_eligibility_doc_ids(firestore_client=firestore_client)
+
     logging.info(
         "%s individuals have already received initial/welcome texts.",
         len(initial_text_document_ids),
@@ -252,6 +267,12 @@ def send_id_lsu_texts(
         "Document ids of individuals who have received initial/welcome texts: "
     )
     logging.info(initial_text_document_ids)
+    logging.info(
+        "%s individuals have already received eligibility texts.",
+        len(eligibility_text_document_ids_to_text_timestamp),
+    )
+    logging.info("Document ids of individuals who have received eligibility texts: ")
+    logging.info(eligibility_text_document_ids_to_text_timestamp.keys())
 
     # Get all document_ids for individuals who have opted-out
     twilio_ref = firestore_client.get_collection(collection_path="twilio_messages")
@@ -301,17 +322,18 @@ def send_id_lsu_texts(
             document_id = f"{state_code}_{external_id}"
             logging.info("document_id: %s", document_id)
 
-            if previous_batch_id is not None and redeliver_failed_messages is True:
-                # Filter to only send texts to individuals if previous text failed
-                if document_id not in external_ids_to_retry:
-                    continue
-
-            # Check that current document_id has not opted-out
-            if document_id in opt_out_document_ids:
-                logging.info(
-                    "JII with document id %s has opted-out of receiving texts. Will not attempt to send message.",
-                    document_id,
-                )
+            attempt_to_send_text = _attempt_to_send_text(
+                previous_batch_id=previous_batch_id,
+                redeliver_failed_messages=redeliver_failed_messages,
+                document_id=document_id,
+                external_ids_to_retry=external_ids_to_retry,
+                opt_out_document_ids=opt_out_document_ids,
+                message_type=message_type,
+                initial_text_document_ids=initial_text_document_ids,
+                eligibility_text_document_ids_to_text_timestamp=eligibility_text_document_ids_to_text_timestamp,
+                resend_eligibility_texts=resend_eligibility_texts,
+            )
+            if attempt_to_send_text is False:
                 continue
 
             logging.info(
@@ -323,28 +345,6 @@ def send_id_lsu_texts(
                 base_url = PRODUCTION_URL
             if callback_url is not None:
                 base_url = callback_url
-
-            # If this is an initial/welcome text, and the individual has already
-            # received an initial/welcome text in the past, do not attempt to send
-            # them an initial/welcome text
-            if message_type == MessageType.INITIAL_TEXT.value:
-                if document_id in initial_text_document_ids:
-                    logging.info(
-                        "Individual with document id [%s] has already received initial text. Do not attempt to send initial text.",
-                        document_id,
-                    )
-                    continue
-
-            # If this is an eligibility text, and the individual has not
-            # received an initial/welcome text in the past, do not attempt to send
-            # them an eligibility text
-            if message_type == MessageType.ELIGIBILITY_TEXT.value:
-                if document_id not in initial_text_document_ids:
-                    logging.info(
-                        "Individual with document id [%s] has not received initial text. Do not attempt to send eligibility text.",
-                        document_id,
-                    )
-                    continue
 
             if dry_run is True:
                 logging.info(
@@ -421,6 +421,128 @@ def send_id_lsu_texts(
                 )
 
 
+def _attempt_to_send_text(
+    redeliver_failed_messages: bool,
+    document_id: str,
+    external_ids_to_retry: set,
+    opt_out_document_ids: set,
+    message_type: str,
+    initial_text_document_ids: set,
+    eligibility_text_document_ids_to_text_timestamp: Dict[str, str],
+    resend_eligibility_texts: bool,
+    previous_batch_id: Optional[str] = None,
+) -> bool:
+    """
+    Checks whether or not to attempt to send a text message to an individual.
+
+    Returns either True or False
+    """
+    if previous_batch_id is not None and redeliver_failed_messages is True:
+        # Filter to only send texts to individuals if previous text failed
+        if document_id not in external_ids_to_retry:
+            return False
+
+    # Check that current document_id has not opted-out
+    if document_id in opt_out_document_ids:
+        logging.info(
+            "JII with document id %s has opted-out of receiving texts. Will not attempt to send message.",
+            document_id,
+        )
+        return False
+
+    # If this is an initial/welcome text, and the individual has already
+    # received an initial/welcome text in the past, do not attempt to send
+    # them an initial/welcome text
+    if message_type == MessageType.INITIAL_TEXT.value:
+        if document_id in initial_text_document_ids:
+            logging.info(
+                "Individual with document id [%s] has already received initial text. Do not attempt to send initial text.",
+                document_id,
+            )
+            return False
+
+    # If this is an eligibility text, and the individual has not
+    # received an initial/welcome text in the past, do not attempt to send
+    # them an eligibility text
+    if message_type == MessageType.ELIGIBILITY_TEXT.value:
+        if document_id not in initial_text_document_ids:
+            logging.info(
+                "Individual with document id [%s] has not received initial text. Do not attempt to send eligibility text.",
+                document_id,
+            )
+            return False
+
+    # If this is an eligibility text, and the individual has
+    # received an eligibility text in the past 90 days, do not attempt to send
+    # them an eligibility text
+    if (
+        message_type == MessageType.ELIGIBILITY_TEXT.value
+        and eligibility_text_document_ids_to_text_timestamp.get(document_id) is not None
+    ):
+        text_timestamp = eligibility_text_document_ids_to_text_timestamp.get(
+            document_id
+        )
+        ninety_days_ago = datetime.datetime.now(
+            datetime.timezone.utc
+        ) - datetime.timedelta(days=90)
+        if text_timestamp > ninety_days_ago and resend_eligibility_texts is False:  # type: ignore[operator]
+            logging.info(
+                "Individual with document id [%s] has already received an eligibility text in the past 90 days. Do not attempt to send eligibility text.",
+                document_id,
+            )
+            return False
+
+        if text_timestamp > ninety_days_ago and resend_eligibility_texts is True:  # type: ignore[operator]
+            logging.info(
+                "Individual with document id [%s] has already received an eligibility text in the past 90 days. Re-send eligibility text anyway.",
+                document_id,
+            )
+        elif text_timestamp < ninety_days_ago:  # type: ignore[operator]
+            logging.info(
+                "Individual with document id [%s] received an eligibility text over 90 days ago. Re-send eligibility text.",
+                document_id,
+            )
+
+    return True
+
+
+def _get_initial_and_eligibility_doc_ids(
+    firestore_client: FirestoreClientImpl,
+) -> Tuple[set, Dict]:
+    """Get all document_ids for individuals who already received a text (initial or eligibility).
+    Store and return document_ids for initial text messages as a set.
+    Store and return document_ids for eligibility texts as a dictionary that maps the document_id to the timestamp of the
+    eligibility text.
+    These structures are used later to determine if/who we should attempt to send texts to.
+    """
+
+    message_ref = firestore_client.get_collection_group(
+        collection_path="lsu_eligibility_messages"
+    )
+    message_query = message_ref.where(
+        filter=FieldFilter("status", "==", ExternalSystemRequestStatus.SUCCESS.value)
+    )
+    initial_text_document_ids = set()
+    eligibility_text_document_ids_to_text_timestamp: Dict[
+        str, datetime.datetime
+    ] = defaultdict()
+    for message_doc in message_query.stream():
+        message_dict = message_doc.to_dict()
+        if message_dict is None:
+            continue
+
+        message_doc_id = message_doc.reference.path.split("/")[1]
+        if message_dict["message_type"] == MessageType.INITIAL_TEXT.value:
+            initial_text_document_ids.add(message_doc_id)
+        elif message_dict["message_type"] == MessageType.ELIGIBILITY_TEXT.value:
+            text_timestamp = message_dict["timestamp"]
+            eligibility_text_document_ids_to_text_timestamp[
+                message_doc_id
+            ] = text_timestamp
+
+    return initial_text_document_ids, eligibility_text_document_ids_to_text_timestamp
+
+
 def _update_statuses_from_previous_batch(
     twilio_client: TwilioClient,
     firestore_client: FirestoreClientImpl,
@@ -479,11 +601,24 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
 
-    send_id_lsu_texts(
-        bigquery_view=args.bigquery_view,
-        dry_run=args.dry_run,
-        callback_url=args.callback_url,
-        message_type=args.message_type,
-        previous_batch_id=args.previous_batch_id_to_update_status_for,
-        redeliver_failed_messages=args.redeliver_failed_messages,
-    )
+    if args.project_id is not None:
+        with local_project_id_override(args.project_id):
+            send_id_lsu_texts(
+                bigquery_view=args.bigquery_view,
+                dry_run=args.dry_run,
+                callback_url=args.callback_url,
+                message_type=args.message_type,
+                previous_batch_id=args.previous_batch_id_to_update_status_for,
+                redeliver_failed_messages=args.redeliver_failed_messages,
+                resend_eligibility_texts=args.resend_eligibility_texts,
+            )
+    else:
+        send_id_lsu_texts(
+            bigquery_view=args.bigquery_view,
+            dry_run=args.dry_run,
+            callback_url=args.callback_url,
+            message_type=args.message_type,
+            previous_batch_id=args.previous_batch_id_to_update_status_for,
+            redeliver_failed_messages=args.redeliver_failed_messages,
+            resend_eligibility_texts=args.resend_eligibility_texts,
+        )
