@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.workflows.all_funnel_events import (
+    ALL_FUNNEL_EVENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.client_record_archive import (
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
 )
@@ -128,4 +131,5 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     WORKFLOWS_USAGE_VIEW_BUILDER,
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
     CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER,
+    ALL_FUNNEL_EVENTS_VIEW_BUILDER,
 ]
