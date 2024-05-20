@@ -7,7 +7,7 @@ input_columns:
   - start_date
   - end_date
   - ParoleUnit
-  - type
+  - AgentClassification
 unused_columns: []
 output:
   StateStaff:
@@ -33,15 +33,17 @@ output:
               $values:
                 - BadgeNumber
                 - ParoleUnit
+                - AgentClassification
                 - start_date
           start_date: start_date
           end_date: end_date
           role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
           role_subtype:
-            $conditional:
-              - $if:
-                  $equal:
-                    - type
-                    - $literal("Supv")
-                $then: $literal_enum(StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR)
-              - $else: $literal_enum(StateStaffRoleSubtype.SUPERVISION_OFFICER)
+            $enum_mapping:
+              $raw_text: AgentClassification
+              $mappings:
+                StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                  - "Parole Agent I, AP"
+                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                  - "Parole Agent II, AP (Supv)"
+                  - "Parole Agent III, AP"
