@@ -44,6 +44,7 @@ class ConfigurationSchema(CamelCaseSchema):
     at_or_below_rate_label = fields.Str(required=True)
     absconders_label = fields.Str(required=True)
     at_or_above_rate_label = fields.Str(required=True)
+    outliers_hover = fields.Str(required=True)
 
 
 class FullConfigurationSchema(ConfigurationSchema):

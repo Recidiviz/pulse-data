@@ -285,6 +285,18 @@ const AddConfigForm = ({
         >
           <Input />
         </Form.Item>
+        <Form.Item
+          name="outliersHover"
+          label="Outliers hover tooltip"
+          rules={[
+            {
+              required: true,
+              message: `Please input the string that describes what an outlier is`,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
       </Form>
     </DraggableModal>
   );

@@ -274,6 +274,15 @@ class Configuration(OutliersBase):
     exclusion_reason_description = Column(String, nullable=False)
     slightly_worse_than_rate_label = Column(String, nullable=False)
     at_or_below_rate_label = Column(String, nullable=False)
+    absconders_label = Column(String, nullable=False, server_default="absconders")
+    at_or_above_rate_label = Column(
+        String, nullable=False, server_default="At or above statewide rate"
+    )
+    outliers_hover = Column(
+        String,
+        nullable=False,
+        server_default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
+    )
     # When adding new columns below, be sure to set a default value with the
     # server_default parameter and autogenerate a migration so that existing values
     # in the database have this column hydrated.
@@ -282,10 +291,6 @@ class Configuration(OutliersBase):
     #     - recidiviz/outliers/types.py::OutliersProductConfiguration
     #     - frontends/admin-panel/src/InsightsStore/models/InsightsConfiguration.ts
     #     - frontends/admin-panel/src/components/Insights/AddConfigForm.tsx
-    absconders_label = Column(String, nullable=False, server_default="absconders")
-    at_or_above_rate_label = Column(
-        String, nullable=False, server_default="At or above statewide rate"
-    )
 
     def to_dict(self) -> Dict[str, Any]:
         return {

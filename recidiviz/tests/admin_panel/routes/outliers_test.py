@@ -346,6 +346,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
                             "supervisionSupervisorLabel": "supervisor",
                             "supervisionUnitLabel": "unit",
                             "noneAreOutliersLabel": "are outliers",
+                            "outliersHover": "Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
                             "slightlyWorseThanRateLabel": "slightly worse than statewide rate",
                             "worseThanRateLabel": "Far worse than statewide rate",
                             "atOrBelowRateLabel": "At or below statewide rate",
