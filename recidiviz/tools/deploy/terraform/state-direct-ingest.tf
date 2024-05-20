@@ -29,4 +29,5 @@ module "state_direct_ingest_buckets_and_accounts" {
   storage_notification_service_account_email = data.google_app_engine_default_service_account.default.email
   storage_notification_oidc_audience         = local.app_engine_iap_client
   storage_notification_endpoint_base_url     = local.app_engine_url
+  git_hash                                   = var.git_hash
 }

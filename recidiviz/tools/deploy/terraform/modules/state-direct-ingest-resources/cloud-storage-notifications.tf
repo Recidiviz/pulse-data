@@ -22,7 +22,7 @@ module "primary_ingest" {
   push_endpoint         = "${var.storage_notification_endpoint_base_url}/direct/${local.is_ingest_launched ? "handle_direct_ingest_file?start_ingest=true" : "normalize_raw_file_path"}"
   service_account_email = var.storage_notification_service_account_email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
-  oidc_audience = var.storage_notification_oidc_audience
+  oidc_audience        = var.storage_notification_oidc_audience
   ack_deadline_seconds = 20
 }
 
@@ -34,4 +34,26 @@ module "secondary_ingest" {
   service_account_email = var.storage_notification_service_account_email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
   oidc_audience = var.storage_notification_oidc_audience
+}
+
+module "primary_ingest_cf" {
+  source                = "./cloud-function"
+  bucket_name           = google_storage_bucket.direct-ingest-bucket.name
+  state_code            = lower(var.state_code)
+  git_hash              = var.git_hash
+  project_id            = var.project_id
+  region                = var.region
+  service_account_email = google_service_account.cf_account.email
+  dry_run               = true
+}
+module "secondary_ingest_cf" {
+  source                = "./cloud-function"
+  bucket_name           = module.secondary-direct-ingest-bucket.name
+  state_code            = lower(var.state_code)
+  ingest_instance       = "SECONDARY"
+  git_hash              = var.git_hash
+  project_id            = var.project_id
+  region                = var.region
+  service_account_email = google_service_account.cf_account.email
+  dry_run               = true
 }
