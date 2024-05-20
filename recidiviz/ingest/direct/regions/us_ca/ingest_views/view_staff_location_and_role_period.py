@@ -170,12 +170,12 @@ WITH pa_1_location_periods AS (
 -- supervisor location periods through similar logic to above, but retaining only
 -- supervisor Agents, and not caring about where they supervise clients.
 supervisor_location_periods AS (
-  -- 
   WITH supervisors AS (
     SELECT
       DISTINCT BadgeNumber,
       ParoleUnit,
       update_datetime,
+      AgentClassification
     FROM AgentParole__ALL_generated_view
     WHERE
       BadgeNumber IS NOT NULL
@@ -190,11 +190,12 @@ supervisor_location_periods AS (
     SELECT
       s.BadgeNumber AS possible_BadgeNumber,
       s.ParoleUnit AS possible_ParoleUnit,
+      s.AgentClassification AS possible_AgentClassification,
       ud.update_datetime AS start_date,
-      LEAD(ud.update_datetime) OVER (PARTITION BY s.BadgeNumber, s.ParoleUnit ORDER BY update_datetime) AS end_date,
+      LEAD(ud.update_datetime) OVER (PARTITION BY s.BadgeNumber, s.ParoleUnit, s.AgentClassification ORDER BY update_datetime) AS end_date,
     FROM 
       (SELECT DISTINCT update_datetime FROM AgentParole__ALL_generated_view) ud,
-      (SELECT DISTINCT BadgeNumber, ParoleUnit FROM supervisors) s 
+      (SELECT DISTINCT BadgeNumber, ParoleUnit, AgentClassification FROM supervisors) s 
   ),
   filled_all_dates AS (
     SELECT
@@ -202,14 +203,17 @@ supervisor_location_periods AS (
       ad.end_date,
       ad.possible_ParoleUnit,
       ad.possible_BadgeNumber,
+      ad.possible_AgentClassification,
       s.BadgeNumber, -- If there is actually a supervisor, this will be populated
       s.ParoleUnit,
+      s.AgentClassification
     FROM all_dates_cross_badge_units ad
     LEFT JOIN supervisors s
     ON
       s.BadgeNumber = ad.possible_BadgeNumber
       AND s.update_datetime = ad.start_date
       AND s.ParoleUnit = ad.possible_ParoleUnit 
+      and s.AgentClassification = ad.possible_AgentClassification
   ),
   -- `proto_supervisor_location_periods` drops any periods where there was not a change in
   -- ParoleUnit. The result is two "proto periods" that reflect the start and end of
@@ -222,10 +226,17 @@ supervisor_location_periods AS (
       end_date,
       possible_ParoleUnit,
       possible_BadgeNumber,
+      possible_AgentClassification,
       BadgeNumber,
       ParoleUnit,
-      LAG(ParoleUnit) OVER (PARTITION BY possible_BadgeNumber, possible_ParoleUnit ORDER BY start_date) IS NOT NULL AS previous_unit_is_same,
-      LEAD(ParoleUnit) OVER (PARTITION BY possible_BadgeNumber, possible_ParoleUnit ORDER BY start_date) IS NOT NULL AS next_unit_is_same
+      AgentClassification,
+      -- If the following or preceding BadgeNumber (or ParoleUnit or
+      -- AgentClassification) is null, that means that on this date, the join in
+      -- `filled_all_dates` failed, and that on this date, this officer is not X
+      -- AgentClassification in Y ParoleUnit -- IE this location / role period should be
+      -- closed, which we will do in the next couple CTEs.
+      LAG(BadgeNumber) OVER (PARTITION BY possible_BadgeNumber, possible_ParoleUnit, possible_AgentClassification ORDER BY start_date) IS NOT NULL AS previous_unit_and_classification_is_same,
+      LEAD(BadgeNumber) OVER (PARTITION BY possible_BadgeNumber, possible_ParoleUnit, possible_AgentClassification ORDER BY start_date) IS NOT NULL AS next_unit_and_classification_is_same
     FROM
       filled_all_dates 
     WHERE True -- Required because of https://github.com/google/zetasql/issues/124
@@ -235,11 +246,11 @@ supervisor_location_periods AS (
         -- 1. the unit side of null -> unit transitions
         -- 2. the B side of unit A -> unit B transitions
         -- (previous_parole_unit_continued is null OR previous_parole_unit_continued <> ParoleUnit)
-        NOT previous_unit_is_same OR
+        NOT previous_unit_and_classification_is_same OR
         -- This clause captures when a supervisor ends with a unit. Specifically:
         -- 1. the unit side of unit -> null transitions
         -- 2. the A side of unit A -> unit B transitions
-        NOT next_unit_is_same
+        NOT next_unit_and_classification_is_same
       )
     ) 
   ),
@@ -255,14 +266,15 @@ supervisor_location_periods AS (
       start_date,
       -- Usually we want to use the next periods end date, but if it's a single week period, 
       -- we already have the correct end date.
-      IF(NOT previous_unit_is_same AND NOT next_unit_is_same,
+      IF(NOT previous_unit_and_classification_is_same AND NOT next_unit_and_classification_is_same,
         end_date,
-        LEAD(end_date) OVER (PARTITION BY BadgeNumber, ParoleUnit ORDER BY start_date)
+        LEAD(end_date) OVER (PARTITION BY BadgeNumber, ParoleUnit, AgentClassification ORDER BY start_date)
       ) as end_date,
       BadgeNumber,
       ParoleUnit,
-      previous_unit_is_same,
-      next_unit_is_same
+      AgentClassification,
+      previous_unit_and_classification_is_same,
+      next_unit_and_classification_is_same
     FROM
       proto_supervisor_location_periods
   )
@@ -270,7 +282,7 @@ supervisor_location_periods AS (
   -- end_dates.
   SELECT *
   FROM proto_supervisor_location_periods_2
-  WHERE NOT previous_unit_is_same
+  WHERE NOT previous_unit_and_classification_is_same
 )
 -- Lastly, we join the two location CTEs together, and add the `type` column to identify
 -- if period reflects a PA I period or a Supervisor period. We use this to fill out the
@@ -280,7 +292,7 @@ SELECT
   start_date,
   end_date,
   ParoleUnit,
-  'PA I, AP' as type
+  'Parole Agent I, AP' as AgentClassification
 FROM pa_1_location_periods
 
 UNION DISTINCT
@@ -290,7 +302,7 @@ SELECT
   start_date,
   end_date, 
   ParoleUnit,
-  'Supv' as type -- We don't care if they're a PA II or PA III right now. TODO(#28927)
+  AgentClassification
 FROM supervisor_location_periods
 """
 
