@@ -29,7 +29,7 @@ terraform {
 
 locals {
   project_name_str = var.project_id == "recidiviz-123" ? "PRODUCTION" : "STAGING"
-  monitoring_dag_sendgrid_from_email_regex = var.project_id == "recidiviz-123" ? "alerts\\+airflow-production@recidiviz\\.org" : "alerts\\+airflow-staging@recidiviz\\.org"
+  monitoring_dag_sendgrid_from_email_regex = "alerts\\+airflow-(staging|production)@recidiviz\\.org"
 }
 
 # Docs: https://registry.terraform.io/providers/PagerDuty/pagerduty/latest/docs/resources/service
