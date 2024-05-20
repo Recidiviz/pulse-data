@@ -246,9 +246,26 @@ class OutliersBackendConfig:
 
 
 @attr.s
+class OfficerOutlierStatus:
+    # The officer's external id
+    external_id: str = attr.ib()
+    # The current rate for this unit of analysis
+    rate: float = attr.ib()
+    # Categorizes how the rate for this OfficerMetricEntity compares to the target value
+    target_status: TargetStatus = attr.ib()
+    # The rate for the prior YEAR period for this unit of analysis;
+    # None if there is no metric rate for the previous period
+    prev_rate: Optional[float] = attr.ib()
+    # The target status for the previous period
+    prev_target_status: Optional[TargetStatus] = attr.ib(default=None)
+
+
+@attr.s
 class OfficerMetricEntity:
     # The name of the unit of analysis, i.e. full name of a SupervisionOfficer object
     name: PersonName = attr.ib()
+    # The officer's external id
+    external_id: str = attr.ib()
     # The current rate for this unit of analysis
     rate: float = attr.ib()
     # Categorizes how the rate for this OfficerMetricEntity compares to the target value
@@ -258,6 +275,8 @@ class OfficerMetricEntity:
     prev_rate: Optional[float] = attr.ib()
     # The external_id of this OfficerMetricEntity's supervisor
     supervisor_external_id: str = attr.ib()
+    # The external_id of this OfficerMetricEntity's supervisor
+    supervisor_external_ids: List[str] = attr.ib()
     # The supervision district the officer is assigned to
     supervision_district: str = attr.ib()
     # The target status for the previous period
@@ -269,7 +288,7 @@ class MetricContext:
     # Unless otherwise specified, the target is the state average for the current period
     target: float = attr.ib()
     # All units of analysis for a given state and metric for the current period
-    entities: List[OfficerMetricEntity] = attr.ib()
+    entities: List[OfficerOutlierStatus] = attr.ib()
     # Describes how the TargetStatus is calculated (see the Enum definition)
     target_status_strategy: TargetStatusStrategy = attr.ib(
         default=TargetStatusStrategy.IQR_THRESHOLD
@@ -327,6 +346,8 @@ class SupervisionOfficerEntity:
     pseudonymized_id: str = attr.ib()
     # The officer's supervisor's external id
     supervisor_external_id: str = attr.ib()
+    # The officer's supervisor's external ids
+    supervisor_external_ids: List[str] = attr.ib()
     # The district the officer
     district: str = attr.ib()
     # The officer's caseload type in the latest period
