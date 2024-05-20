@@ -459,6 +459,11 @@ class OutliersProductConfiguration:
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
 
+    # The string that is in the "Outliers" hover tooltip explaining what an outlier is
+    outliers_hover: str = attr.ib(
+        default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate."
+    )
+
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 

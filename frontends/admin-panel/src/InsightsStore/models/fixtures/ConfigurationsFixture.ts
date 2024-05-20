@@ -38,6 +38,8 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     worseThanRateLabel: "Far worse than statewide rate",
     abscondersLabel: "absconders",
     atOrAboveRateLabel: "At or above statewide rate",
+    outliersHover:
+      "Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
   },
   {
     featureVariant: "featureVariant1",
@@ -59,6 +61,8 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     worseThanRateLabel: "Far worse than statewide rate",
     abscondersLabel: "absconders",
     atOrAboveRateLabel: "At or above statewide rate",
+    outliersHover:
+      "Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
   },
   {
     featureVariant: "featureVariant1",
@@ -80,5 +84,7 @@ export const rawInsightsConfigurationFixture: Array<InsightsConfiguration> = [
     worseThanRateLabel: "Far worse than statewide rate",
     abscondersLabel: "absconders",
     atOrAboveRateLabel: "At or above statewide rate",
+    outliersHover:
+      "Has a rate on any metric significantly higher/lower than peers - over 1 Interquartile Range above/below the statewide rate.",
   },
 ];
