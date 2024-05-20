@@ -19,10 +19,15 @@ import logging
 import os
 from datetime import date
 from distutils.util import strtobool
-from typing import Optional
+from http import HTTPStatus
+from typing import Optional, Tuple
 
 import functions_framework
+import google.auth.transport.requests
+import google.oauth2.id_token
+import requests
 from cloudevents.http import CloudEvent
+from flask import Request
 
 from recidiviz.cloud_functions.cloud_function_utils import cloud_functions_log
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -42,13 +47,13 @@ fs: Optional[DirectIngestGCSFileSystem] = None
 
 @functions_framework.cloud_event
 def normalize_filename(cloud_event: CloudEvent) -> None:
-    """Function to normalize ingest filenames in GCS.
-    Is triggered by a finalized object event in GCS.
-    If the file is a zip file, it will be unzipped and moved to deprecated storage."""
+    """Function to normalize ingest filenames in GCS triggered by a finalized object event in GCS.
+    If the file is a zip file, it will invoke another cloud function to handle the unzipping
+    in order to allocate more memory to the process."""
     data = cloud_event.data
 
-    bucket = data["bucket"]
-    relative_file_path = data["name"]
+    bucket = data.get("bucket")
+    relative_file_path = data.get("name")
 
     if not bucket or not relative_file_path:
         cloud_functions_log(
@@ -111,23 +116,88 @@ def normalize_filename(cloud_event: CloudEvent) -> None:
                 severity="INFO", message="Dry run enabled. Skipping unzip."
             )
             return
+        response = _invoke_zipfile_handler(bucket, relative_file_path)
+        cloud_functions_log(
+            severity="ERROR" if response.status_code != 200 else "INFO",
+            message=f"Response from zipfile handler function: {response.status_code} - {response.text}",
+        )
+
+
+def _invoke_zipfile_handler(bucket: str, relative_file_path: str) -> requests.Response:
+    function_url = os.environ["ZIPFILE_HANDLER_FUNCTION_URL"]
+    payload = {"bucket": bucket, "name": relative_file_path}
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {_get_access_token(function_url)}",
+    }
+
+    cloud_functions_log(
+        severity="INFO", message=f"Invoking {function_url} with payload: {payload}"
+    )
+    return requests.post(function_url, headers=headers, json=payload, timeout=540)
+
+
+def _get_access_token(audience: str) -> str:
+    request = google.auth.transport.requests.Request()
+    return google.oauth2.id_token.fetch_id_token(request, audience)
+
+
+@functions_framework.http
+def handle_zipfile(request: Request) -> Tuple[str, HTTPStatus]:
+    """Function to handle zip files in GCS triggered by HTTP POST request.
+    If the file is a zip file, it will be unzipped and moved to deprecated storage."""
+    if (data := request.get_json(silent=True)) is None:
+        error_msg = f"Missing data in request: {request}"
+        cloud_functions_log(severity="ERROR", message=error_msg)
+        return error_msg, HTTPStatus.BAD_REQUEST
+
+    bucket = data.get("bucket")
+    relative_file_path = data.get("name")
+
+    if not bucket or not relative_file_path:
+        error_msg = f"Missing bucket or file name in request data: {data}"
+        cloud_functions_log(severity="ERROR", message=error_msg)
+        return error_msg, HTTPStatus.BAD_REQUEST
+
+    path = GcsfsPath.from_bucket_and_blob_name(
+        bucket_name=bucket, blob_name=relative_file_path
+    )
+    if not isinstance(path, GcsfsFilePath):
+        error_msg = f"Incorrect type [{type(path)}] for path: [{path.uri()}]"
+        cloud_functions_log(severity="ERROR", message=error_msg)
+        return error_msg, HTTPStatus.BAD_REQUEST
+
+    logging.info("Handling file [%s]", path.abs_path())
+
+    if not path.has_zip_extension:
         cloud_functions_log(
             severity="INFO",
-            message=f"File [{path.abs_path()}] is a zip file, unzipping...",
+            message=f"File [{path.abs_path()}] is not a zipfile. Returning.",
         )
-        try:
-            fs.unzip(path, GcsfsBucketPath(bucket))
-            fs.mv(
-                src_path=path,
-                dst_path=gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
-                    region_code=os.environ["STATE_CODE"],
-                    ingest_instance=DirectIngestInstance(os.environ["INGEST_INSTANCE"]),
-                    deprecated_on_date=date.today(),
-                    project_id=os.environ["PROJECT_ID"],
-                ),
-            )
-        except ValueError as e:
-            cloud_functions_log(
-                severity="ERROR",
-                message=f"Error unzipping file [{path.abs_path()}]: {e}",
-            )
+        return "OK", HTTPStatus.OK
+
+    global fs
+    if fs is None:
+        fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
+
+    cloud_functions_log(
+        severity="INFO",
+        message=f"File [{path.abs_path()}] is a zip file, unzipping...",
+    )
+    try:
+        fs.unzip(path, GcsfsBucketPath(bucket))
+        fs.mv(
+            src_path=path,
+            dst_path=gcsfs_direct_ingest_deprecated_storage_directory_path_for_state(
+                region_code=os.environ["STATE_CODE"],
+                ingest_instance=DirectIngestInstance(os.environ["INGEST_INSTANCE"]),
+                deprecated_on_date=date.today(),
+                project_id=os.environ["PROJECT_ID"],
+            ),
+        )
+    except ValueError as e:
+        error_msg = f"Error unzipping file [{path.abs_path()}]: {e}"
+        cloud_functions_log(severity="ERROR", message=error_msg)
+        return error_msg, HTTPStatus.INTERNAL_SERVER_ERROR
+
+    return "OK", HTTPStatus.OK
