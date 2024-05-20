@@ -55,13 +55,13 @@ columns:
       - value: W
         description: White
       - value: B
-        description: Black
+        description: Black and African American
       - value: A
-        description: Asian
+        description: Asian and Pacific Islander
       - value: N
-        description: Unknown (TODO(#29084))
+        description: Not Elsewhere Classfied
       - value: I
-        description: Unknown (TODO(#29084))
+        description: Indian American and Alaskan Native
   - name: ParoleCountID
     description: External ID for a particular stint of a particular person under supervision by PADOC
 separator: ","
