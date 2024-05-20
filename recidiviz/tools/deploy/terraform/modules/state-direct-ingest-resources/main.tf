@@ -80,3 +80,8 @@ resource "google_project_iam_member" "cloudprofiler_agent" {
   role    = "roles/cloudprofiler.agent"
   member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
 }
+
+resource "google_service_account" "cf_account" {
+  account_id   = "${local.direct_ingest_formatted_str}-cf"
+  display_name = "A service account for ${var.state_code} cloud functions"
+}

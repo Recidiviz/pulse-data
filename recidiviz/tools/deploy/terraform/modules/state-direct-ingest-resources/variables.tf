@@ -63,6 +63,9 @@ variable "storage_notification_endpoint_base_url" {
   type = string
 }
 
+variable "git_hash" {
+  type = string
+}
 
 locals {
   lower_state_code            = replace(lower(var.state_code), "_", "-")

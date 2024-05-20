@@ -17,7 +17,7 @@
 
 
 locals {
-  raw_data_import_max_concurrent_dispatches = 5
+  raw_data_import_max_concurrent_dispatches         = 5
   materialize_ingest_view_max_concurrent_dispatches = 5
 }
 
@@ -37,7 +37,7 @@ module "scheduler-queue-secondary" {
   max_dispatches_per_second = 100
   # TODO(#20925): Remove this count and update the moved block to reverse once
   # this has shipped to prod.
-  count                     = 1
+  count = 1
 }
 
 moved {
