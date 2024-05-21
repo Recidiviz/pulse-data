@@ -58,13 +58,11 @@ module "data-platform-airflow-pagerduty-service" {
     pagerduty = pagerduty
   }
 
-  project_id           = var.project_id
-  service_base_name    = "Airflow Tasks: Data Platform"
-  service_description  = "State-agnostic data platform infrastructure Airflow tasks."
-  escalation_policy_id = local.infrastructure_escalation_policy_id
-  # TODO(#28642): Change this to "data-platform-airflow" when the routing code is updated
-  #  to use the email defined in RecidivizPagerDutyService
-  integration_email_username = var.project_id == "recidiviz-123" ? "data-platform-airflow-${var.project_id}" : "calculation-dag-email.b1cp4to2"
+  project_id                      = var.project_id
+  service_base_name               = "Airflow Tasks: Data Platform"
+  service_description             = "State-agnostic data platform infrastructure Airflow tasks."
+  escalation_policy_id            = local.infrastructure_escalation_policy_id
+  integration_email_base_username = "data-platform-airflow"
 }
 
 module "monitoring-airflow-pagerduty-service" {
@@ -73,12 +71,10 @@ module "monitoring-airflow-pagerduty-service" {
     pagerduty = pagerduty
   }
 
-  project_id           = var.project_id
-  service_base_name    = "Airflow DAG: Monitoring"
-  service_description  = "Airflow tasks / DAG responsible for generating PagerDuty alerts."
-  escalation_policy_id = local.reliability_escalation_policy_id
-  # TODO(#28642): Change this to "monitoring-airflow" when the routing code is updated
-  #  to use the email defined in RecidivizPagerDutyService
-  integration_email_username = var.project_id == "recidiviz-123" ? "monitoring-airflow-${var.project_id}" : "airflow-dag--monitoring-email.6ai6cy3n"
-  is_monitoring_service      = true
+  project_id                      = var.project_id
+  service_base_name               = "Airflow DAG: Monitoring"
+  service_description             = "Airflow tasks / DAG responsible for generating PagerDuty alerts."
+  escalation_policy_id            = local.reliability_escalation_policy_id
+  integration_email_base_username = "monitoring-airflow"
+  is_monitoring_service           = true
 }

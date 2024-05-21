@@ -339,8 +339,11 @@ def main() -> int:
 
     valid_monitoring_dag_prefixes = {
         "recidiviz.airflow.dags",
+        "recidiviz.common.attr_validators",
+        "recidiviz.common.constants.states",
         "recidiviz.persistence.database.schema_type",
         "recidiviz.utils.environment",
+        "recidiviz.utils.types",
     }
 
     success &= check_dependencies_for_entrypoint(

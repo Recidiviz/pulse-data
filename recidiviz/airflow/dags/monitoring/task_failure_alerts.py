@@ -22,8 +22,7 @@ from pprint import pprint
 from typing import Dict, List
 
 import pandas
-from airflow.exceptions import AirflowNotFoundException
-from airflow.models import Connection, DagRun, TaskInstance
+from airflow.models import DagRun, TaskInstance
 from airflow.providers.sendgrid.utils.emailer import send_email
 from airflow.utils.session import NEW_SESSION, create_session, provide_session
 from airflow.utils.state import State
@@ -33,11 +32,15 @@ from sqlalchemy.orm import Query, Session
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
-from recidiviz.airflow.dags.monitoring.alerting_trigger_predicates import (
-    should_trigger_airflow_alerting_incident,
-)
 from recidiviz.airflow.dags.monitoring.dag_registry import (
+    get_all_dag_ids,
     get_discrete_configuration_parameters,
+)
+from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
+    get_alerting_service_for_incident,
+)
+from recidiviz.airflow.dags.monitoring.incident_trigger_gating import (
+    should_trigger_airflow_alerting_incident,
 )
 from recidiviz.airflow.dags.utils.email import can_send_mail
 from recidiviz.airflow.dags.utils.environment import (
@@ -247,26 +250,12 @@ def _build_task_instance_state_dataframe(
     return df
 
 
-def get_configured_pagerduty_integrations() -> Dict[str, str]:
-    """Returns a dictionary of configured DAG IDs -> PagerDuty Integration email.
-    The PagerDuty Integrations are configured on a service-by-service basis inside PagerDuty.
-    """
-    try:
-        connection = Connection.get_connection_from_secrets("pagerduty_integration")
-        return connection.extra_dejson
-    except AirflowNotFoundException as e:
-        logging.warning("Could not find connection with id %s", "pagerduty_integration")
-        raise e
-
-
 def report_failed_tasks() -> None:
     """Reports unique task failure incidents to PagerDuty.
     If the task has succeeded since the incident was opened, we send with the subject `Task success: `
     which resolves the open incident in PagerDuty.
     """
-
-    pagerduty_integrations = get_configured_pagerduty_integrations()
-    for dag_id in pagerduty_integrations.keys():
+    for dag_id in get_all_dag_ids(project_id=get_project_id()):
         with create_session() as session:
             logging.info("Building task history for dag: %s", dag_id)
             incident_history = build_incident_history(
@@ -305,8 +294,10 @@ def report_failed_tasks() -> None:
                 else "Task success:"
             )
 
+            alerting_service = get_alerting_service_for_incident(incident)
+
             send_email(
-                to=pagerduty_integrations[incident.dag_id],
+                to=alerting_service.service_integration_email,
                 subject=f"{event} {incident.unique_incident_id}",
                 html_content=f"{incident}",
             )

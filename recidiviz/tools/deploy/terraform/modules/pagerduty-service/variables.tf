@@ -37,9 +37,10 @@ variable "escalation_policy_id" {
   type = string
 }
 
-// The username (i.e. the part before the @) of the integration email for this service.
-// Mail sent by our Sendgrid email accounts to this email can be used to trigger/resolve alerts.
-variable "integration_email_username" {
+// The base part of the username of the integration email for this service (the full username for this service's
+// integration email will append`-{project_id}` to the base username within the monitoring DAG itself). Mail sent by our
+// Sendgrid email accounts to this email can be used to trigger/resolve alerts.
+variable "integration_email_base_username" {
   type = string
 }
 

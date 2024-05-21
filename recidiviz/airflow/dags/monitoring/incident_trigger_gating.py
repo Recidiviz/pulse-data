@@ -49,7 +49,7 @@ class AlertingIncidentTriggerPredicate:
     dag_id: Optional[str] = attr.ib(default=None)
 
 
-def incident_has_been_updated_recently(incident: AirflowAlertingIncident) -> bool:
+def _incident_has_been_updated_recently(incident: AirflowAlertingIncident) -> bool:
     """Incidents are only reported to PagerDuty if they are "active" (opened, still occurring, or resolved) within
     the last two days.
     This has no intentional functional difference and is only done to save on SendGrid email quota.
@@ -65,12 +65,12 @@ def incident_has_been_updated_recently(incident: AirflowAlertingIncident) -> boo
     return timedelta(days=2) > now_utc - most_recent_update
 
 
-def get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
+def _get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
     project_id = get_project_id()
     return [
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.PRECONDITION,
-            condition=incident_has_been_updated_recently,
+            condition=_incident_has_been_updated_recently,
             failure_message="incident has not occurred recently",
         ),
         AlertingIncidentTriggerPredicate(
@@ -109,7 +109,7 @@ def should_trigger_airflow_alerting_incident(
     """
     predicates = [
         predicate
-        for predicate in get_trigger_predicates()
+        for predicate in _get_trigger_predicates()
         # Gather predicates that apply to all DAGs, or ones specific to this DAG
         if predicate.dag_id is None or incident.dag_id == predicate.dag_id
     ]

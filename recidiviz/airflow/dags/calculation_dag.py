@@ -29,6 +29,9 @@ from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
 from requests import Response
 
+from recidiviz.airflow.dags.calculation.constants import (
+    STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID,
+)
 from recidiviz.airflow.dags.calculation.dataflow.metrics_pipeline_task_group_delegate import (
     MetricsDataflowPipelineTaskGroupDelegate,
 )
@@ -414,7 +417,7 @@ def create_calculation_dag() -> None:
     update_all_views >> validations
 
     with TaskGroup(group_id="metric_exports") as metric_exports:
-        with TaskGroup(group_id="state_specific_metric_exports"):
+        with TaskGroup(group_id=STATE_SPECIFIC_METRIC_EXPORTS_GROUP_ID):
             create_branching_by_key(
                 metric_export_branches_by_state_code(
                     post_normalization_pipelines_by_state

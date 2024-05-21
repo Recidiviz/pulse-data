@@ -51,8 +51,8 @@ def get_all_dag_ids(project_id: str) -> List[str]:
     recidiviz/airflow/dags/*_dag.py file.
     """
     return [
-        get_calculation_dag_id(project_id),
         get_monitoring_dag_id(project_id),
+        get_calculation_dag_id(project_id),
         get_sftp_dag_id(project_id),
         get_ingest_dag_id(project_id),
         get_raw_data_import_dag_id(project_id),

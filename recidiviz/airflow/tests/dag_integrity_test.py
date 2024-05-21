@@ -17,14 +17,21 @@
 """
 Unit test to ensure that the DAGs are valid and will be properly loaded into the Airflow UI.
 """
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 from airflow.models import DagBag
 
+from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
+    AirflowAlertingIncident,
+)
 from recidiviz.airflow.dags.monitoring.dag_registry import (
     get_all_dag_ids,
     get_discrete_configuration_parameters,
     get_known_configuration_parameters,
+)
+from recidiviz.airflow.dags.monitoring.incident_alert_routing import (
+    get_alerting_service_for_incident,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 
@@ -89,4 +96,21 @@ class TestDagIntegrity(AirflowIntegrationTest):
                     f"Found parameters defined in get_discrete_configuration_parameters() "
                     f"for dag [{dag_id}] which are not defined for that DAG in "
                     f"get_known_configuration_parameters(): {missing_params}"
+                )
+
+    def test_all_tasks_have_alerting_service(self) -> None:
+        """
+        Verify task ids are valid and can be parsed by our task alerting routing code
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        self.assertNotEqual(len(dag_bag.dags), 0)
+        for dag in dag_bag.dags.values():
+            for task_id in dag.task_ids:
+                get_alerting_service_for_incident(
+                    AirflowAlertingIncident(
+                        dag_id=dag.dag_id,
+                        conf="{}",
+                        task_id=task_id,
+                        failed_execution_dates=[datetime.now(tz=timezone.utc)],
+                    )
                 )
