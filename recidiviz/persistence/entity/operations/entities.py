@@ -285,3 +285,15 @@ class DirectIngestRawDataImportSession(Entity, BuildableAttr, DefaultableAttr):
     deleted_rows: int = attr.ib()
     # File object from direct_ingest_raw_big_query_file_metadata table
     bq_file: Optional["DirectIngestRawBigQueryFileMetadata"] = attr.ib(default=None)
+
+
+@attr.s(eq=False)
+class DirectIngestRawDataFlashStatus(Entity, BuildableAttr, DefaultableAttr):
+
+    region_code: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # The timestamp of when the status of a particular instance changes.
+    status_timestamp: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # Whether or not this status row indicates that flashing is active
+    flashing_in_progress: bool = attr.ib(validator=attr_validators.is_bool)

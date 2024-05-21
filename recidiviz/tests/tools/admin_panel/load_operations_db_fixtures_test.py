@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestInstanceStatus,
+    DirectIngestRawDataFlashStatus,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
@@ -111,3 +112,27 @@ class TestOperationsLoadFixtures(unittest.TestCase):
 
             for instance in DirectIngestInstance:
                 self.assertEqual(required_states, instance_to_state_codes[instance])
+
+    def test_direct_ingest_raw_data_flash_status_contains_data_for_all_states(
+        self,
+    ) -> None:
+        """Enforces that the fixture for the status table at
+        recidiviz/tools/admin_panel/fixtures/operations_db/direct_ingest_raw_data_flash_status.csv
+        has data for all states.
+        """
+
+        # Clear DB and then load in fixture data
+        reset_operations_db_fixtures(self.engine)
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as read_session:
+            actual_states = {
+                region[0]
+                for region in read_session.query(
+                    DirectIngestRawDataFlashStatus.region_code
+                ).all()
+            }
+            expected_states = {name.upper() for name in get_existing_region_codes()}
+
+            self.assertEqual(actual_states, expected_states)

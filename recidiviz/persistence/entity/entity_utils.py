@@ -128,6 +128,7 @@ _OPERATIONS_CLASS_HIERARCHY = [
     operations_entities.DirectIngestRawDataResourceLock.__name__,
     operations_entities.DirectIngestSftpIngestReadyFileMetadata.__name__,
     operations_entities.DirectIngestSftpRemoteFileMetadata.__name__,
+    operations_entities.DirectIngestRawDataFlashStatus.__name__,
 ]
 
 _state_direction_checker = None
