@@ -165,6 +165,7 @@ def get_initial_status_for_instance(
     )
 
 
+# TODO(#28239) remove this manager once raw data import dag is fully rolled out, not used
 class DirectIngestInstanceStatusManager:
     """An interface for reading and updating DirectIngestInstanceStatuses. For a
     visualization of valid instance statuses transitions, please refer to

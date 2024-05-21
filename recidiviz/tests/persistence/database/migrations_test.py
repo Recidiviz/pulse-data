@@ -396,6 +396,7 @@ class TestOperationsMigrations(MigrationsTestBase):
     def schema_type(cls) -> SchemaType:
         return SchemaType.OPERATIONS
 
+    # TODO(#28239) remove once direct_ingest_instance_status is dropped
     def test_direct_ingest_instance_status_contains_data_for_all_states(
         self,
     ) -> None:

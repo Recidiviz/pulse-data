@@ -37,6 +37,7 @@ from recidiviz.ingest.direct.types.errors import (
 from recidiviz.utils import metadata
 
 
+# TODO(#28239) remove class once raw data import dag is fully rolled out
 class IngestRawFileImportControllerFactory:
     """Factory class for building IngestRawFileImportControllers."""
 

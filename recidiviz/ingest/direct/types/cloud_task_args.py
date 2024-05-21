@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
 from recidiviz.utils.types import ClsT
 
 
+# TODO(#28239) remove once raw data import dag is fully rolled out
 @attr.s(frozen=True)
 class CloudTaskArgs:
     @abc.abstractmethod

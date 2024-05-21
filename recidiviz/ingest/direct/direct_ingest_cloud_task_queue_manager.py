@@ -45,7 +45,7 @@ HANDLE_NEW_FILES_TASK_ID_TAG = "handle_new_files"
 _TASK_LOCATION = "us-east1"
 QUEUE_STATE_ENUM = tasks_v2.Queue.State
 
-
+# TODO(#28239) remove all code once raw data import dag is fully rolled out
 class IngestQueueState(TypedDict):
     name: str
     state: QUEUE_STATE_ENUM

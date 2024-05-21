@@ -97,6 +97,8 @@ class IngestReleaseLockEntrypoint(EntrypointInterface):
 
         return parser
 
+    # TODO(#29058): add "fake" raw resource lock acquisition here behind gating and log
+    # if we are starved
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
         state_update_lock_manager = StateUpdateLockManager(
