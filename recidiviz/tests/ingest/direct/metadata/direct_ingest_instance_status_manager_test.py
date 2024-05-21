@@ -43,6 +43,7 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestInstanc
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
+# TODO(#28239) remove once raw data import dag is fully rolled out
 @pytest.mark.uses_db
 class DirectIngestInstanceStatusManagerTest(TestCase):
     """Implements tests for DirectIngestInstanceStatusManager."""

@@ -71,7 +71,7 @@ from recidiviz.utils.pubsub_helper import (
 
 direct_ingest_control = Blueprint("direct_ingest_control", __name__)
 
-
+# TODO(#28239) remove all endpoints once raw data import dag is fully rolled out
 @direct_ingest_control.route("/normalize_raw_file_path", methods=["POST"])
 @requires_gae_auth
 def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:

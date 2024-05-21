@@ -54,6 +54,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
+# TODO(#29058): add gated update to use new import code
 def do_sandbox_raw_file_import(
     state_code: StateCode,
     sandbox_dataset_prefix: str,

@@ -87,7 +87,7 @@ OperationsBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="OperationsBase"
 )
 
-
+# TODO(#28239) remove this table once raw data import dag is fully rolled out, not used
 class DirectIngestInstanceStatus(OperationsBase):
     """Represents the status and various metadata about an ingest instance over time. Allows us to track the duration
     of reruns and the time spent on each part of ingest."""

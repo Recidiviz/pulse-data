@@ -124,6 +124,7 @@ def _add_file_to_fake_gcsfs(fs: FakeGCSFileSystem, source_path: str) -> GcsfsFil
     return ingest_fs.mv_raw_file_to_normalized_path(file_path)
 
 
+# TODO(#28239): remove once raw data import dag is fully rolled out
 def main(
     state_code: StateCode,
     source_local_path: str,

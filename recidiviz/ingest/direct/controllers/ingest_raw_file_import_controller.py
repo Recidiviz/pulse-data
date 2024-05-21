@@ -78,7 +78,7 @@ from recidiviz.utils import environment
 
 _RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_RAW_FILE_"
 
-
+# TODO(#28239) remove class once raw data import dag is fully rolled out
 class IngestRawFileImportController:
     """Parses and persists individual-level info from direct ingest partners."""
 

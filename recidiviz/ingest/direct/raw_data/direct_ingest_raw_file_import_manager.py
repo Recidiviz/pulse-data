@@ -83,6 +83,7 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestRawFile
 from recidiviz.utils import metadata
 
 
+# TODO(#28239) remove once raw data import dag is fully rolled out
 class DirectIngestRawFileReader:
     """Reads a raw CSV using the defined file config."""
 
@@ -755,6 +756,7 @@ def augment_raw_data_df_with_metadata_columns(
 _RAW_TABLE_CONFIGS_BY_STATE = {}
 
 
+# TODO(#28239) move somewhere else, maybe direct_ingest_regions or raw_file_config_utils
 def get_region_raw_file_config(
     region_code: str, region_module: Optional[ModuleType] = None
 ) -> DirectIngestRegionRawFileConfig:

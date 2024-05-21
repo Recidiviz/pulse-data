@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
+# TODO(#29058): add gated check w/ new DirectIngestRawDataFlashStatusManager
 def _verify_raw_data_flashing_not_in_progress(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> None:

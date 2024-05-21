@@ -19,6 +19,7 @@
 from flask import request
 
 
+# TODO(#28239) remove once raw data import dag is fully rolled out
 def get_current_cloud_task_id() -> str:
     """Returns the cloud task id of the cloud task that this code is currently
     being executed from. This function can only be called from within a task created
