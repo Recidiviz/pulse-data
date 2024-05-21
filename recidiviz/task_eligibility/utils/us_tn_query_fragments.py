@@ -354,7 +354,7 @@ def us_tn_classification_forms(
             "TN, ISC, DIVERSION SENTENCES" AS criteria,
             date_imposed AS event_date,
             description AS note_title,
-            CAST(projected_completion_date_max AS STRING) AS note_body,
+            CONCAT("Expires: ", CAST(projected_completion_date_max AS STRING)) AS note_body,
         FROM `{{project_id}}.sessions.sentences_preprocessed_materialized`
         WHERE state_code = "US_TN"
     ),
@@ -567,6 +567,7 @@ def us_tn_classification_forms(
            incompatible.incompatible_array AS form_information_incompatible_array,
            CASE WHEN ARRAY_LENGTH(incompatible.incompatible_array)>0 THEN TRUE ELSE FALSE END AS form_information_has_incompatibles,
            health.HealthRelatedClassification AS form_information_health_classification,
+           prea.form_information_latest_prea_screening_results,
     FROM
         `{{project_id}}.{{task_eligibility_dataset}}.{tes_view}_materialized` tes
     INNER JOIN
@@ -642,5 +643,16 @@ def us_tn_classification_forms(
         AND latest_vantage.latest_row = 1
     LEFT JOIN active_vantage_recommendations
         ON pei.external_id = active_vantage_recommendations.OffenderID
+    LEFT JOIN (
+        SELECT OffenderID, 
+                STRUCT(
+                    CAST(ScreeningDate AS DATE) AS latest_prea_screening_date,
+                    VictimFindingLevel AS victim_finding_level,
+                    AggressorFindingLevel AS aggressor_finding_level
+                    ) AS form_information_latest_prea_screening_results,
+        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.PREAScreeningResults_latest`
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(ScreeningDate AS DATE) DESC) = 1
+    ) prea
+        ON pei.external_id = prea.OffenderID
     {where_clause}
     """

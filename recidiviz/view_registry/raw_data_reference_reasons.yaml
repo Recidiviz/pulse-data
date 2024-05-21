@@ -1301,6 +1301,12 @@ US_TN:
   OffenderTreatment:
     outliers_views.supervision_client_events: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  PREAScreeningResults:
+    workflows_views.us_tn_annual_reclassification_review_record: |-
+      Used in opportunity record query for workflows tool. No schema ingesting PREA results.
+    workflows_views.us_tn_custody_level_downgrade_record: |-
+      Used in opportunity record query for workflows tool. No schema ingesting PREA results.
+
   PriorRecord:
     analyst_data.us_tn_cr_raw_sentence_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
