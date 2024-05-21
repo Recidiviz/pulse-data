@@ -145,6 +145,9 @@ class FileDependenciesTest(unittest.TestCase):
                     "recidiviz.utils.secrets": [
                         Callsite(filepath="r/utils/secrets.py", lineno=0, col_offset=0)
                     ],
+                    "recidiviz.utils.types": [
+                        Callsite(filepath="r/utils/types.py", lineno=0, col_offset=0)
+                    ],
                 },
                 "recidiviz.utils.environment": {
                     "recidiviz.utils.metadata": [
@@ -176,6 +179,11 @@ class FileDependenciesTest(unittest.TestCase):
                             lineno=22,
                             col_offset=0,
                         )
+                    ]
+                },
+                "recidiviz.utils.types": {
+                    "recidiviz.common.date": [
+                        Callsite(filepath="r/common/date.py", lineno=27, col_offset=0)
                     ]
                 },
             },
@@ -334,6 +342,9 @@ class FileDependenciesTest(unittest.TestCase):
                     ],
                     "recidiviz.utils.secrets": [
                         Callsite(filepath="r/utils/secrets.py", lineno=23, col_offset=0)
+                    ],
+                    "recidiviz.utils.types": [
+                        Callsite(filepath="r/utils/types.py", lineno=19, col_offset=0)
                     ],
                 },
             },

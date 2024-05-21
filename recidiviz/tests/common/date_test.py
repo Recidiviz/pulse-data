@@ -17,14 +17,18 @@
 """Tests for date.py"""
 import datetime
 import unittest
+from typing import Optional
 
+import attr
 import pandas as pd
 from freezegun import freeze_time
 from parameterized import parameterized
 
 from recidiviz.common.date import (
+    CriticalRangesBuilder,
     DateRange,
     DateRangeDiff,
+    DurationMixin,
     NonNegativeDateRange,
     PotentiallyOpenDateRange,
     calendar_unit_date_diff,
@@ -505,3 +509,612 @@ class TestConvertCriticalDatesToTimeSpans(unittest.TestCase):
             has_open_end_date=False,
         )
         self.assertListEqual(expected_results, results)
+
+
+@attr.define(kw_only=True)
+class _SimpleDurationObject(DurationMixin):
+    id: str
+    start_date_inclusive: datetime.date
+    end_date_exclusive: Optional[datetime.date]
+
+    @property
+    def duration(self) -> DateRange:
+        return DateRange.from_maybe_open_range(
+            self.start_date_inclusive, self.end_date_exclusive
+        )
+
+
+@attr.define(kw_only=True)
+class _SimpleDurationObjectAnother(DurationMixin):
+    another_id: str
+    start_date_inclusive: datetime.date
+    end_date_exclusive: Optional[datetime.date]
+
+    @property
+    def duration(self) -> DateRange:
+        return DateRange.from_maybe_open_range(
+            self.start_date_inclusive, self.end_date_exclusive
+        )
+
+
+class TestCriticalRangesBuilder(unittest.TestCase):
+    """Tests for CriticalRangesBuilder."""
+
+    DATE_1 = datetime.date(2021, 1, 1)
+    DATE_2 = datetime.date(2022, 2, 2)
+    DATE_3 = datetime.date(2023, 3, 3)
+    DATE_4 = datetime.date(2024, 4, 4)
+
+    def test_empty(self) -> None:
+        ranges_builder = CriticalRangesBuilder([])
+        self.assertEqual([], ranges_builder.get_sorted_critical_ranges())
+
+    def test_single_zero_day_range(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_1,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_a])
+
+        # Even though there are input ranges, the only input data is zero-day
+        # ranges which effectively exist for zero time. Since there are no non-zero
+        # ranges of time we can attribute objects to, we return no ranges.
+        self.assertEqual([], ranges_builder.get_sorted_critical_ranges())
+
+    def test_zero_day_range_fully_overlapped(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_3,
+        )
+        # Zero-day span
+        obj_b = _SimpleDurationObject(
+            id="B",
+            start_date_inclusive=self.DATE_2,
+            end_date_exclusive=self.DATE_2,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_a, obj_b])
+
+        expected_ranges = [
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_1,
+                upper_bound_exclusive_date=self.DATE_2,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_2,
+                upper_bound_exclusive_date=self.DATE_3,
+            ),
+        ]
+        self.assertEqual(expected_ranges, ranges_builder.get_sorted_critical_ranges())
+
+        # Test objects overlapping with range - zero-day object doesn't overlap with
+        # either.
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+
+    def test_zero_day_range_adjacent_to_others(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_2,
+        )
+        # Zero-day span
+        obj_b = _SimpleDurationObject(
+            id="B",
+            start_date_inclusive=self.DATE_2,
+            end_date_exclusive=self.DATE_2,
+        )
+        obj_c = _SimpleDurationObject(
+            id="B",
+            start_date_inclusive=self.DATE_2,
+            end_date_exclusive=self.DATE_3,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_c, obj_a, obj_b])
+
+        expected_ranges = [
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_1,
+                upper_bound_exclusive_date=self.DATE_2,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_2,
+                upper_bound_exclusive_date=self.DATE_3,
+            ),
+        ]
+        self.assertEqual(expected_ranges, ranges_builder.get_sorted_critical_ranges())
+
+        # Test objects overlapping with range - zero-day object doesn't overlap with
+        # either.
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_c],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+
+    def test_single_open_range(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=None,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_a])
+
+        expected_range = PotentiallyOpenDateRange(
+            lower_bound_inclusive_date=self.DATE_1,
+            upper_bound_exclusive_date=None,
+        )
+
+        self.assertEqual(
+            [expected_range],
+            ranges_builder.get_sorted_critical_ranges(),
+        )
+
+        # Test objects overlapping with range
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_range, _SimpleDurationObject
+            ),
+        )
+
+        # Test objects preceding critical range
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_range, _SimpleDurationObject
+            ),
+        )
+
+        # Test objects following critical range
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_range, _SimpleDurationObject
+            ),
+        )
+
+    def test_single_closed_range(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_2,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_a])
+
+        expected_range = DateRange(
+            lower_bound_inclusive_date=self.DATE_1,
+            upper_bound_exclusive_date=self.DATE_2,
+        )
+
+        self.assertEqual(
+            [expected_range],
+            ranges_builder.get_sorted_critical_ranges(),
+        )
+
+        # Test objects overlapping with range
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_range, _SimpleDurationObject
+            ),
+        )
+
+        # Test objects preceding critical range
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_range, _SimpleDurationObject
+            ),
+        )
+
+        # Test objects following critical range
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_range, _SimpleDurationObject
+            ),
+        )
+
+    def test_several_contiguous(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_2,
+        )
+        obj_b = _SimpleDurationObject(
+            id="B",
+            start_date_inclusive=self.DATE_2,
+            end_date_exclusive=self.DATE_3,
+        )
+        obj_c = _SimpleDurationObject(
+            id="C",
+            start_date_inclusive=self.DATE_3,
+            end_date_exclusive=None,
+        )
+        # This overlaps with first two objects
+        obj_d = _SimpleDurationObject(
+            id="D",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_3,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_a, obj_b, obj_c, obj_d])
+
+        expected_ranges = [
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_1,
+                upper_bound_exclusive_date=self.DATE_2,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_2,
+                upper_bound_exclusive_date=self.DATE_3,
+            ),
+            PotentiallyOpenDateRange(
+                lower_bound_inclusive_date=self.DATE_3,
+                upper_bound_exclusive_date=None,
+            ),
+        ]
+        self.assertEqual(expected_ranges, ranges_builder.get_sorted_critical_ranges())
+
+        # Test objects overlapping with range
+        self.assertEqual(
+            [obj_a, obj_d],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_d, obj_b],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_c],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObjectAnother
+            ),
+        )
+
+        # Test objects preceding critical range
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_d, obj_b],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[2], _SimpleDurationObjectAnother
+            ),
+        )
+
+        # Test objects following critical range
+        self.assertEqual(
+            [obj_b],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_c],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[0], _SimpleDurationObjectAnother
+            ),
+        )
+
+    def test_several_with_gap(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_2,
+        )
+        obj_b = _SimpleDurationObject(
+            id="B",
+            start_date_inclusive=self.DATE_3,
+            end_date_exclusive=self.DATE_4,
+        )
+        obj_c = _SimpleDurationObject(
+            id="C",
+            start_date_inclusive=self.DATE_4,
+            end_date_exclusive=None,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_c, obj_b, obj_a])
+
+        expected_ranges = [
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_1,
+                upper_bound_exclusive_date=self.DATE_2,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_2,
+                upper_bound_exclusive_date=self.DATE_3,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_3,
+                upper_bound_exclusive_date=self.DATE_4,
+            ),
+            PotentiallyOpenDateRange(
+                lower_bound_inclusive_date=self.DATE_4,
+                upper_bound_exclusive_date=None,
+            ),
+        ]
+        self.assertEqual(expected_ranges, ranges_builder.get_sorted_critical_ranges())
+
+        # Test objects overlapping with range
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_b],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_c],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[3], _SimpleDurationObject
+            ),
+        )
+
+        gap_range = expected_ranges[1]
+        # Test objects preceding / following gap range
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_directly_preceding_range(
+                gap_range, _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_b],
+            ranges_builder.get_objects_directly_following_range(
+                gap_range, _SimpleDurationObject
+            ),
+        )
+
+    def test_multiple_open_ranges(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_2,
+        )
+        obj_b = _SimpleDurationObject(
+            id="B",
+            start_date_inclusive=self.DATE_3,
+            end_date_exclusive=self.DATE_4,
+        )
+        obj_c = _SimpleDurationObject(
+            id="C",
+            start_date_inclusive=self.DATE_2,
+            end_date_exclusive=None,
+        )
+        # This overlaps with first two objects
+        obj_d = _SimpleDurationObject(
+            id="D",
+            start_date_inclusive=self.DATE_3,
+            end_date_exclusive=None,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_d, obj_b, obj_c, obj_a])
+
+        expected_ranges = [
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_1,
+                upper_bound_exclusive_date=self.DATE_2,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_2,
+                upper_bound_exclusive_date=self.DATE_3,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_3,
+                upper_bound_exclusive_date=self.DATE_4,
+            ),
+            PotentiallyOpenDateRange(
+                lower_bound_inclusive_date=self.DATE_4,
+                upper_bound_exclusive_date=None,
+            ),
+        ]
+        self.assertEqual(expected_ranges, ranges_builder.get_sorted_critical_ranges())
+
+        # Test objects overlapping with range
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_c],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_c, obj_b, obj_d],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_c, obj_d],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[3], _SimpleDurationObject
+            ),
+        )
+
+        # Test objects preceding critical range
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_b],
+            ranges_builder.get_objects_directly_preceding_range(
+                expected_ranges[3], _SimpleDurationObject
+            ),
+        )
+
+        # Test objects following critical range
+        self.assertEqual(
+            [obj_c],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_b, obj_d],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_directly_following_range(
+                expected_ranges[3], _SimpleDurationObject
+            ),
+        )
+
+    def test_mixed_types(self) -> None:
+        obj_a = _SimpleDurationObject(
+            id="A",
+            start_date_inclusive=self.DATE_1,
+            end_date_exclusive=self.DATE_3,
+        )
+        obj_b = _SimpleDurationObjectAnother(
+            another_id="B",
+            start_date_inclusive=self.DATE_2,
+            end_date_exclusive=self.DATE_4,
+        )
+        ranges_builder = CriticalRangesBuilder([obj_a, obj_b])
+
+        expected_ranges = [
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_1,
+                upper_bound_exclusive_date=self.DATE_2,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_2,
+                upper_bound_exclusive_date=self.DATE_3,
+            ),
+            DateRange(
+                lower_bound_inclusive_date=self.DATE_3,
+                upper_bound_exclusive_date=self.DATE_4,
+            ),
+        ]
+        self.assertEqual(expected_ranges, ranges_builder.get_sorted_critical_ranges())
+
+        # Test objects overlapping with range
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[0], _SimpleDurationObjectAnother
+            ),
+        )
+        self.assertEqual(
+            [obj_a],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[1], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_b],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[1], _SimpleDurationObjectAnother
+            ),
+        )
+        self.assertEqual(
+            [],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[2], _SimpleDurationObject
+            ),
+        )
+        self.assertEqual(
+            [obj_b],
+            ranges_builder.get_objects_overlapping_with_critical_range(
+                expected_ranges[2], _SimpleDurationObjectAnother
+            ),
+        )
