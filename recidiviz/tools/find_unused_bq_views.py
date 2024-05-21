@@ -132,11 +132,11 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
     US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.clients_milestones_congratulated_another_way import (
-    CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.all_funnel_events import (
     ALL_FUNNEL_EVENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.clients_milestones_congratulated_another_way import (
+    CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_panel_opened import (
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
@@ -146,6 +146,9 @@ from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snooze
 )
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata import (
+    US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
     WORKFLOWS_USAGE_VIEW_BUILDER,
@@ -209,6 +212,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
     ),
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
+    ),
+    US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER.address: (
+        "Will be used for MO Restrictive Housing workflows (Daniel Allen 05/21/24)"
     ),
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (Damini Sharma 12/21/23)"
