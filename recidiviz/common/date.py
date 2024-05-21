@@ -19,10 +19,12 @@ import datetime
 import re
 from abc import ABCMeta, abstractmethod
 from calendar import isleap
-from typing import Iterable, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Type, TypeVar, Union
 
 import attr
 import pandas as pd
+
+from recidiviz.utils.types import assert_type
 
 DateOrDateTime = Union[datetime.date, datetime.datetime]
 # Date Parsing
@@ -205,7 +207,7 @@ def calendar_unit_date_diff(
     return diff_result
 
 
-@attr.s
+@attr.s(frozen=True)
 class PotentiallyOpenDateRange:
     """Object representing a range of dates where the end date could be null (open)."""
 
@@ -424,6 +426,201 @@ class DurationMixin(metaclass=ABCMeta):
 DurationMixinT = TypeVar("DurationMixinT", bound=DurationMixin)
 
 
+class CriticalRangesBuilder:
+    """Class that can be used to construct a list of critical date ranges associated
+    with a list of objects that each represent a time span.
+
+    A "critical range" can be defined as a period of time when the set of overlapping
+    input objects remains exactly the same.
+
+    The list of critical ranges and associated metadata is built at instantiation time
+    in O(N) time, where N is the number of input duration objects. All public methods on
+    this class have O(M) runtime, where M is the number of returned objects.
+    """
+
+    def __init__(self, duration_objects: List[DurationMixin]) -> None:
+        for o in duration_objects:
+            if not o.start_date_inclusive:
+                raise ValueError(
+                    f"Cannot build critical ranges from objects with a null "
+                    f"start_date_inclusive. Found: {o}"
+                )
+
+        # DurationMixin objects sorted by start date (earliest to latest), then end date
+        # (earliest to latest, with open ranges sorted last).
+        sorted_duration_objects = sorted(
+            duration_objects,
+            key=lambda o: (
+                o.start_date_inclusive,
+                o.end_date_exclusive or datetime.date.max,
+            ),
+        )
+        self._sorted_critical_ranges = self._build_sorted_critical_ranges(
+            sorted_duration_objects
+        )
+
+        # Maps each critical range to its index in self._sorted_critical_ranges
+        self._critical_range_to_index: Dict[PotentiallyOpenDateRange, int] = {
+            cr: i for i, cr in enumerate(self._sorted_critical_ranges)
+        }
+
+        # Maps each critical range to the objects that overlap that range
+        self._critical_range_to_overlapping_objects: Dict[
+            PotentiallyOpenDateRange, List[DurationMixin]
+        ] = self._build_overlapping_objects_by_critical_range(
+            sorted_duration_objects, self._sorted_critical_ranges
+        )
+
+    @staticmethod
+    def _build_sorted_critical_ranges(
+        duration_objects: List[DurationMixin],
+    ) -> List[PotentiallyOpenDateRange]:
+        """Derives a set of date ranges that can be built using all dates associated
+        with the given input duration objects.
+        """
+        has_open_end_date = any(o.end_date_exclusive is None for o in duration_objects)
+        critical_dates = {
+            assert_type(o.start_date_inclusive, datetime.date) for o in duration_objects
+        } | {
+            o.end_date_exclusive
+            for o in duration_objects
+            if o.end_date_exclusive is not None
+        }
+
+        return convert_critical_dates_to_time_spans(
+            critical_dates, has_open_end_date=has_open_end_date
+        )
+
+    @staticmethod
+    def _build_overlapping_objects_by_critical_range(
+        sorted_duration_objects: List[DurationMixin],
+        sorted_critical_ranges: List[PotentiallyOpenDateRange],
+    ) -> Dict[PotentiallyOpenDateRange, List[DurationMixin]]:
+        """Returns a dictionary mapping critical range to the list of ALL objects that
+        overlap with that date range.
+        """
+        critical_range_to_overlapping_objects = {}
+
+        next_duration_index = 0
+        open_ranges: List[DurationMixin] = []
+        for critical_range in sorted_critical_ranges:
+            # LOOP PRECONDITIONS:
+            # 1) All objs that were already open BEFORE the start of this range are in
+            #   open_ranges.
+            # 2) The next object to look at is at index next_duration_index
+
+            # Discard all objects that ended before the start of this range.
+            open_ranges = [
+                o
+                for o in open_ranges
+                if not o.end_date_exclusive
+                or o.end_date_exclusive > critical_range.lower_bound_inclusive_date
+            ]
+
+            # Add any objects that have started with this new range.
+            while next_duration_index < len(sorted_duration_objects):
+                next_duration = sorted_duration_objects[next_duration_index]
+
+                if (
+                    assert_type(next_duration.start_date_inclusive, datetime.date)
+                    > critical_range.lower_bound_inclusive_date
+                ):
+                    # This object's time window hasn't started yet
+                    break
+                next_duration_index += 1
+
+                if (
+                    next_duration.start_date_inclusive
+                    == next_duration.end_date_exclusive
+                ):
+                    # Zero-day periods don't overlap with ranges
+                    continue
+                open_ranges.append(next_duration)
+            critical_range_to_overlapping_objects[critical_range] = open_ranges
+        return critical_range_to_overlapping_objects
+
+    def _get_preceding_range(
+        self, critical_range: PotentiallyOpenDateRange
+    ) -> Optional[PotentiallyOpenDateRange]:
+        """Get the range directly preceding the given input range."""
+        index = self._critical_range_to_index[critical_range]
+        if index == 0:
+            return None
+        return self._sorted_critical_ranges[index - 1]
+
+    def _get_following_range(
+        self, critical_range: PotentiallyOpenDateRange
+    ) -> Optional[PotentiallyOpenDateRange]:
+        """Get the range directly following the given input range."""
+        index = self._critical_range_to_index[critical_range]
+        if index >= len(self._sorted_critical_ranges) - 1:
+            return None
+        return self._sorted_critical_ranges[index + 1]
+
+    def get_sorted_critical_ranges(self) -> List[PotentiallyOpenDateRange]:
+        """Returns the list of ranges that can be built from the set of start and end
+        dates associated with the list of input duration objects.
+        """
+        return self._sorted_critical_ranges
+
+    def get_objects_overlapping_with_critical_range(
+        self,
+        critical_range: PotentiallyOpenDateRange,
+        type_filter: Type[DurationMixinT],
+    ) -> List[DurationMixinT]:
+        """Returns all input objects of type |type_filter| overlapping with the
+        provided |critical_range|. The |critical_range| must be one of the ranges
+        returned by get_sorted_critical_ranges().
+        """
+        return [
+            o
+            for o in self._critical_range_to_overlapping_objects[critical_range]
+            if isinstance(o, type_filter)
+        ]
+
+    def get_objects_directly_preceding_range(
+        self,
+        critical_range: PotentiallyOpenDateRange,
+        type_filter: Type[DurationMixinT],
+    ) -> List[DurationMixinT]:
+        """Returns objects of type |type_filter| that end on the day |critical_range|
+        starts. The |critical_range| must be one of the ranges returned by
+        get_sorted_critical_ranges().
+        """
+        preceding_range = self._get_preceding_range(critical_range)
+        if not preceding_range:
+            return []
+        return [
+            o
+            for o in self.get_objects_overlapping_with_critical_range(
+                preceding_range, type_filter
+            )
+            if o.end_date_exclusive == critical_range.lower_bound_inclusive_date
+        ]
+
+    def get_objects_directly_following_range(
+        self,
+        critical_range: PotentiallyOpenDateRange,
+        type_filter: Type[DurationMixinT],
+    ) -> List[DurationMixinT]:
+        """Returns objects of type |type_filter| that start on the day |critical_range|
+        ends. The |critical_range| must be one of the ranges returned by
+        get_sorted_critical_ranges().
+        """
+        following_range = self._get_following_range(critical_range)
+        if not following_range:
+            return []
+
+        return [
+            o
+            for o in self.get_objects_overlapping_with_critical_range(
+                following_range, type_filter
+            )
+            if critical_range.upper_bound_exclusive_date
+            and o.start_date_inclusive == critical_range.upper_bound_exclusive_date
+        ]
+
+
 def is_date_str(potential_date_str: str) -> bool:
     """Returns True if the string is an ISO-formatted date, (e.g. '2019-09-25'), False otherwise."""
     try:
@@ -510,9 +707,10 @@ def merge_sorted_date_ranges(
                 date_range.lower_bound_inclusive_date
                 == prev_duration.upper_bound_exclusive_date
             ):
-                merged_ranges[
-                    -1
-                ].upper_bound_exclusive_date = date_range.upper_bound_exclusive_date
+                merged_ranges[-1] = NonNegativeDateRange(
+                    merged_ranges[-1].lower_bound_inclusive_date,
+                    date_range.upper_bound_exclusive_date,
+                )
                 continue
         merged_ranges.append(date_range)
     return merged_ranges
