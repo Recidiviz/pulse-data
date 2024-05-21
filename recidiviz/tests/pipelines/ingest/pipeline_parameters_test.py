@@ -19,7 +19,7 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance

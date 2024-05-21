@@ -17,7 +17,7 @@
 """
 Helper functions for creating branches based on state codes.
 """
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowFailException
@@ -28,8 +28,15 @@ from airflow.utils.state import TaskInstanceState
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
+from recidiviz.airflow.dags.utils.config_utils import get_state_code_filter
+
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
+
+
+def select_state_code_parameter_branch(dag_run: DagRun) -> Optional[List[str]]:
+    state_code_filter = get_state_code_filter(dag_run)
+    return [state_code_filter] if state_code_filter else None
 
 
 def _get_id_for_operator_or_group(
@@ -48,11 +55,12 @@ BRANCH_END_TASK_NAME = "branch_end"
 
 def create_branching_by_key(
     branch_by_key: Dict[str, Union[BaseOperator, TaskGroup]],
-    get_key_filter: Callable[[DagRun], Optional[str]],
+    select_branches_fn: Callable[[DagRun], Optional[List[str]]],
 ) -> Tuple[BaseOperator, BaseOperator]:
-    r"""
-    Given a map of all possible branches and a key filter, creates a BranchPythonOperator, that
-    selects only the branches that the get_key_filter returns.
+    r"""Given a map of all possible branches and a branch filter function, creates a
+    BranchPythonOperator, that selects only the branches that the select_branches_fn 
+    returns. If the return value of select_branches_fn evaluates to False, all branches
+    will be selected.
 
     The resulting structure looks like this:
 
@@ -81,11 +89,15 @@ def create_branching_by_key(
                 "Dag run not passed to task. Should be automatically set due to function being a task."
             )
 
-        key_filter = get_key_filter(dag_run)
-        selected_keys = [key_filter] if key_filter else branch_by_key.keys()
+        selected_branch_keys_override = select_branches_fn(dag_run)
+        selected_branch_keys = (
+            selected_branch_keys_override
+            if selected_branch_keys_override
+            else branch_by_key.keys()
+        )
         return [
             start_branch_by_key[selected_key].task_id
-            for selected_key in selected_keys
+            for selected_key in selected_branch_keys
             # If the selected state does not have a branch in this branching,
             # we just skip it and select no branches for that state.
             if selected_key in branch_ids_by_key

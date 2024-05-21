@@ -20,7 +20,7 @@ from collections import defaultdict
 from typing import Dict, List, Set
 from unittest.mock import Mock, patch
 
-from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.common.constants.states import StateCode

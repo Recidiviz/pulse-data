@@ -33,10 +33,10 @@ from recidiviz.airflow.dags.utils.config_utils import (
     handle_params_check,
     handle_queueing_result,
 )
-from recidiviz.airflow.dags.utils.environment import get_project_id
-from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
+from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 

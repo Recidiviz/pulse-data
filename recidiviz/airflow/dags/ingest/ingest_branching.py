@@ -17,7 +17,7 @@
 """
 Logic for state and ingest instance specific branching.
 """
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from airflow.models import BaseOperator, DagRun
 from airflow.utils.task_group import TaskGroup
@@ -26,7 +26,7 @@ from recidiviz.airflow.dags.utils.config_utils import (
     get_ingest_instance,
     get_state_code_filter,
 )
-from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.common.constants.states import StateCode
@@ -40,12 +40,12 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 # pylint: disable=W0106 expression-not-assigned
 
 
-def get_state_code_and_ingest_instance_key(dag_run: DagRun) -> Optional[str]:
+def get_state_code_and_ingest_instance_key(dag_run: DagRun) -> Optional[List[str]]:
     state_code = get_state_code_filter(dag_run)
     instance = get_ingest_instance(dag_run)
 
     if state_code and instance:
-        return get_ingest_branch_key(state_code, instance)
+        return [get_ingest_branch_key(state_code, instance)]
     if state_code or instance:
         raise ValueError(
             "expected state code and ingest instance to be set together, but only one was set"

@@ -36,7 +36,7 @@ import logging
 import sys
 from typing import List, Optional
 
-from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl

@@ -17,7 +17,7 @@
 """
 Helper functions for orchestrating the Ingest Airflow Dag.
 """
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -37,3 +37,21 @@ def get_ingest_pipeline_enabled_state_and_instance_pairs() -> (
         for state in get_direct_ingest_states_existing_in_env()
         for instance in DirectIngestInstance
     ]
+
+
+def get_raw_data_dag_enabled_states() -> List[StateCode]:
+    """Returns a List of all state codes enabled for the raw data dag"""
+    return get_direct_ingest_states_existing_in_env()
+
+
+def get_raw_data_dag_enabled_state_and_instance_pairs() -> (
+    Set[Tuple[StateCode, DirectIngestInstance]]
+):
+    """Returns a set of all state and ingest instance pairs that the raw data import DAG
+    should be run for.
+    """
+    return {
+        (state, instance)
+        for state in get_raw_data_dag_enabled_states()
+        for instance in DirectIngestInstance
+    }

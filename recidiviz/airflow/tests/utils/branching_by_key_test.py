@@ -25,15 +25,14 @@ from airflow.exceptions import AirflowFailException
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
+from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.utils.branching_by_key import (
     BRANCH_END_TASK_NAME,
     create_branching_by_key,
+    select_state_code_parameter_branch,
 )
-from recidiviz.airflow.dags.utils.config_utils import (
-    STATE_CODE_FILTER,
-    get_state_code_filter,
-)
+from recidiviz.airflow.dags.utils.config_utils import STATE_CODE_FILTER
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -65,7 +64,7 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 "US_ZZ": us_zz_task_group(),
             }
 
-            create_branching_by_key(state_codes, get_state_code_filter)
+            create_branching_by_key(state_codes, select_state_code_parameter_branch)
 
         test_dag = create_test_dag()
         branching_start = test_dag.get_task("branch_start")
@@ -90,10 +89,11 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 "US_ZZ": EmptyOperator(task_id="US_ZZ"),
             }
 
-            create_branching_by_key(state_codes, get_state_code_filter)
+            create_branching_by_key(state_codes, select_state_code_parameter_branch)
 
         test_dag = create_test_dag()
-        test_dag.test()
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(test_dag, session=session)
 
     def test_all_states_one_fails(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
@@ -106,15 +106,15 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 ),
             }
 
-            create_branching_by_key(state_codes, get_state_code_filter)
+            create_branching_by_key(state_codes, select_state_code_parameter_branch)
 
         test_dag = create_test_dag()
-        test_dag.test()
-        dagrun = test_dag.get_last_dagrun()
-        us_zz_ti = dagrun.get_task_instance("US_ZZ")
-        self.assertEqual(us_zz_ti.state, "failed")
-        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
-        self.assertEqual(branch_end_ti.state, "failed")
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                test_dag,
+                session=session,
+                expected_failure_ids=["US_ZZ$", BRANCH_END_TASK_NAME],
+            )
 
     def test_all_states_upstream_fails(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
@@ -128,17 +128,25 @@ class TestBranchingByKey(AirflowIntegrationTest):
             }
 
             branch_start, _ = create_branching_by_key(
-                state_codes, get_state_code_filter
+                state_codes, select_state_code_parameter_branch
             )
             upstream_failed >> branch_start
 
         test_dag = create_test_dag()
-        test_dag.test()
-        dagrun = test_dag.get_last_dagrun()
-        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
-        self.assertEqual(branch_end_ti.state, "failed")
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                test_dag,
+                session=session,
+                expected_failure_ids=[
+                    "upstream",
+                    "US_XX",  # since upstream failed, status will be upstream_failed
+                    "US_ZZ",  # since upstream failed, status will be upstream_failed
+                    BRANCH_END_TASK_NAME,
+                ],
+                skip_checking_task_statuses=True,
+            )
 
-    def test_selected_state_succeeds_branch_succeeds(self) -> None:
+    def test_single_selected_state_succeeds_branch_succeeds(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
         def create_test_dag() -> None:
             state_codes = {
@@ -148,17 +156,38 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 ),
             }
 
-            create_branching_by_key(state_codes, get_state_code_filter)
+            create_branching_by_key(state_codes, select_state_code_parameter_branch)
 
         test_dag = create_test_dag()
-        test_dag.test(run_conf={STATE_CODE_FILTER: "US_XX"})
-        dagrun = test_dag.get_last_dagrun()
-        us_xx_ti = dagrun.get_task_instance("US_XX")
-        self.assertEqual(us_xx_ti.state, "success")
-        us_zz_ti = dagrun.get_task_instance("US_ZZ")
-        self.assertEqual(us_zz_ti.state, "skipped")
-        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
-        self.assertEqual(branch_end_ti.state, "success")
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                test_dag,
+                session=session,
+                run_conf={STATE_CODE_FILTER: "US_XX"},
+                expected_skipped_ids=["US_ZZ"],
+            )
+
+    def test_selected_state_succeeds_branch_succeeds(self) -> None:
+        @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
+        def create_test_dag() -> None:
+            state_codes = {
+                "US_XX": EmptyOperator(task_id="US_XX"),
+                "US_YY": EmptyOperator(task_id="US_YY"),
+                "US_ZZ": PythonOperator(
+                    task_id="US_ZZ", python_callable=raise_task_failure
+                ),
+            }
+
+            create_branching_by_key(state_codes, lambda _: ["US_XX", "US_YY"])
+
+        test_dag = create_test_dag()
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                test_dag,
+                session=session,
+                expected_skipped_ids=["US_ZZ"],
+            )
 
     def test_selected_state_fails_branch_fails(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
@@ -170,14 +199,14 @@ class TestBranchingByKey(AirflowIntegrationTest):
                 ),
             }
 
-            create_branching_by_key(state_codes, get_state_code_filter)
+            create_branching_by_key(state_codes, select_state_code_parameter_branch)
 
         test_dag = create_test_dag()
-        test_dag.test(run_conf={STATE_CODE_FILTER: "US_ZZ"})
-        dagrun = test_dag.get_last_dagrun()
-        us_xx_ti = dagrun.get_task_instance("US_XX")
-        self.assertEqual(us_xx_ti.state, "skipped")
-        us_zz_ti = dagrun.get_task_instance("US_ZZ")
-        self.assertEqual(us_zz_ti.state, "failed")
-        branch_end_ti = dagrun.get_task_instance(BRANCH_END_TASK_NAME)
-        self.assertEqual(branch_end_ti.state, "failed")
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                test_dag,
+                session=session,
+                run_conf={STATE_CODE_FILTER: "US_ZZ"},
+                expected_skipped_ids=["US_XX"],
+                expected_failure_ids=["US_ZZ$", BRANCH_END_TASK_NAME],
+            )
