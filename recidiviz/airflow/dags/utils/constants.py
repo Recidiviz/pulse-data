@@ -14,18 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Constants that may be referenced by multiple DAGs."""
 
-locals {
-   # See: https://recidiviz.pagerduty.com/escalation_policies#P7Y4PYG
-   implementation_engineer_escalation_policy_id = "P7Y4PYG"
-}
+# Task id for the task in a Dataflow pipeline group that builds the parameters for the
+# flex template.
+CREATE_FLEX_TEMPLATE_TASK_ID = "create_flex_template"
 
-module "airflow-tasks-pagerduty-service" {
-  source = "../pagerduty-service"
-
-  project_id = var.project_id
-  service_base_name                = "Airflow Tasks: ${var.state_code}"
-  service_description         = "Airflow tasks that do data processing specific to ${var.state_code}."
-  escalation_policy_id        = local.implementation_engineer_escalation_policy_id
-  integration_email_base_username  = "${local.lower_state_code}-airflow"
-}
+# Task id for the task in a Dataflow pipeline group that runs a dataflow pipeline.
+DATAFLOW_OPERATOR_TASK_ID = "run_pipeline"

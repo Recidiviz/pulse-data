@@ -29,6 +29,10 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.dags.utils.config_utils import get_sandbox_prefix
+from recidiviz.airflow.dags.utils.constants import (
+    CREATE_FLEX_TEMPLATE_TASK_ID,
+    DATAFLOW_OPERATOR_TASK_ID,
+)
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.pipelines.pipeline_parameters import (
     PIPELINE_INPUT_DATASET_OVERRIDES_JSON_ARG_NAME,
@@ -36,9 +40,6 @@ from recidiviz.pipelines.pipeline_parameters import (
     PipelineParameters,
     PipelineParametersT,
 )
-
-CREATE_FLEX_TEMPLATE_TASK_ID = "create_flex_template"
-DATAFLOW_OPERATOR_TASK_ID = "run_pipeline"
 
 
 class UpstreamTaskOutputs:

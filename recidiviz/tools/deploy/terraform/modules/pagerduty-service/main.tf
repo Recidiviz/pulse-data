@@ -71,9 +71,7 @@ resource "pagerduty_service" "service" {
 resource "pagerduty_service_integration" "airflow_monitoring_email_integration" {
   name              = "Email"
   type              = "generic_email_inbound_integration"
-  # TODO(#28642): Append -${var.project_id} here instead of with each call to this module when
-  #  the imported services use new standard emails.
-  integration_email = "${var.integration_email_username}@recidiviz.pagerduty.com"
+  integration_email = "${var.integration_email_base_username}-${var.project_id}@recidiviz.pagerduty.com"
   service           = pagerduty_service.service.id
   email_incident_creation = "use_rules"
   email_filter_mode       = "and-rules-email"

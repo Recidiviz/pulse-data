@@ -16,15 +16,10 @@
 # =============================================================================
 """Information about PagerDuty services."""
 
-from typing import List
-
 import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
-)
 
 
 @attr.define
@@ -70,11 +65,6 @@ class RecidivizPagerDutyService:
         """Returns the service for alerts related to state-specific Airflow data
         platform task failures for the given state_code.
         """
-        if state_code not in get_existing_direct_ingest_states():
-            raise ValueError(
-                f"PagerDuty Airflow service does not exist for [{state_code.value}]"
-            )
-
         state_code_str = state_code.value.lower().replace("_", "-")
         base_username = f"{state_code_str}-airflow"
         return RecidivizPagerDutyService(
@@ -83,20 +73,6 @@ class RecidivizPagerDutyService:
                 base_username, project_id=project_id
             ),
         )
-
-    @classmethod
-    def all_services(cls, project_id: str) -> List["RecidivizPagerDutyService"]:
-        """Returns the list of all services managed for a given project."""
-        return [
-            cls.data_platform_airflow_service(project_id=project_id),
-            cls.monitoring_airflow_service(project_id=project_id),
-            *[
-                cls.airflow_service_for_state_code(
-                    project_id=project_id, state_code=state_code
-                )
-                for state_code in get_existing_direct_ingest_states()
-            ],
-        ]
 
     @staticmethod
     def _build_integration_email(base_username: str, project_id: str) -> str:

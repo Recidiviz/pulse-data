@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for RecidivizPagerDutyService."""
 import unittest
-from typing import Dict
+from typing import Dict, List
 
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
@@ -63,10 +63,26 @@ class TestRecidivizPagerDutyService(unittest.TestCase):
             ).service_integration_email,
         )
 
+    @classmethod
+    def _all_services(cls, project_id: str) -> List[RecidivizPagerDutyService]:
+        """Returns the list of all services managed for a given project."""
+        return [
+            RecidivizPagerDutyService.data_platform_airflow_service(
+                project_id=project_id
+            ),
+            RecidivizPagerDutyService.monitoring_airflow_service(project_id=project_id),
+            *[
+                RecidivizPagerDutyService.airflow_service_for_state_code(
+                    project_id=project_id, state_code=state_code
+                )
+                for state_code in get_existing_direct_ingest_states()
+            ],
+        ]
+
     def test_services_all_have_unique_emails(self) -> None:
         found_emails: Dict[str, RecidivizPagerDutyService] = {}
         for project_id in GCP_PROJECTS:
-            for service in RecidivizPagerDutyService.all_services(project_id):
+            for service in self._all_services(project_id):
                 email = service.service_integration_email
                 if email in found_emails:
                     raise ValueError(
