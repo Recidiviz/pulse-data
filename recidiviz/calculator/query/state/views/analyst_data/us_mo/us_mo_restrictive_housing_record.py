@@ -109,6 +109,31 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
     ,
     {current_bed_stay_cte()}
     ,
+    solitary_assignments AS (
+        SELECT
+            person_id,
+            start_date,
+            end_date,
+        FROM `{{project_id}}.sessions.us_mo_confinement_type_sessions_materialized`
+        WHERE 
+            confinement_type = 'SOLITARY_CONFINEMENT'
+            AND start_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 1 YEAR)
+    )
+    ,
+    solitary_assignments_by_person AS (
+        SELECT
+            person_id,
+            COUNT(*) AS num_solitary_assignments_past_year,
+            ARRAY_AGG(
+                STRUCT(
+                    start_date,
+                    end_date
+                ) ORDER BY start_date DESC
+            ) AS solitary_assignment_dates,
+        FROM solitary_assignments
+        GROUP BY 1
+    )
+    ,
     d1_sanctions AS (
         SELECT
             person_id,
@@ -398,6 +423,8 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
             TO_JSON(IFNULL(unwaived_enemies_by_person.unwaived_enemies, [])) AS metadata_unwaived_enemies,
             TO_JSON(IFNULL(cdv_d1_sanctions_by_person.sanctions, [])) AS metadata_all_sanctions,
             IFNULL(cdv_d1_sanctions_by_person.num_d1_sanctions_past_year, 0) AS metadata_num_d1_sanctions_past_year,
+            TO_JSON(IFNULL(solitary_assignments_by_person.solitary_assignment_dates, [])) AS metadata_solitary_assignment_info_past_year,
+            IFNULL(solitary_assignments_by_person.num_solitary_assignments_past_year, 0) AS metadata_num_solitary_assignments_past_year,
             active_d1_sanctions.sanction_start_date AS metadata_active_d1_sanction_start_date,
             active_d1_sanctions.sanction_expiration_date AS metadata_active_d1_sanction_expiration_date,
             active_d1_sanctions.sanction_length AS metadata_active_d1_sanction_length,
@@ -428,6 +455,8 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
         LEFT JOIN unwaived_enemies_by_person
         USING (external_id)
         LEFT JOIN cdv_d1_sanctions_by_person
+        USING (person_id)
+        LEFT JOIN solitary_assignments_by_person
         USING (person_id)
         LEFT JOIN active_d1_sanctions
         USING (person_id)
