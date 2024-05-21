@@ -49,9 +49,11 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     RecidivizKubernetesPodOperator,
     build_kubernetes_pod_task,
 )
-from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
+from recidiviz.airflow.dags.utils.branching_by_key import (
+    create_branching_by_key,
+    select_state_code_parameter_branch,
+)
 from recidiviz.airflow.dags.utils.config_utils import (
-    get_state_code_filter,
     get_trigger_ingest_dag_post_bq_refresh,
 )
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
@@ -367,7 +369,9 @@ def create_calculation_dag() -> None:
         normalization_pipelines_by_state = (
             normalization_pipeline_branches_by_state_code()
         )
-        create_branching_by_key(normalization_pipelines_by_state, get_state_code_filter)
+        create_branching_by_key(
+            normalization_pipelines_by_state, select_state_code_parameter_branch
+        )
 
     update_normalized_state_dataset = execute_update_normalized_state()
 
@@ -386,7 +390,7 @@ def create_calculation_dag() -> None:
             post_normalization_pipeline_branches_by_state_code()
         )
         create_branching_by_key(
-            post_normalization_pipelines_by_state, get_state_code_filter
+            post_normalization_pipelines_by_state, select_state_code_parameter_branch
         )
 
     # This ensures that all of the normalization pipelines for a state will
@@ -404,7 +408,7 @@ def create_calculation_dag() -> None:
             validation_branches_by_state_code(
                 states_to_validate=normalization_pipelines_by_state.keys()
             ),
-            get_state_code_filter,
+            select_state_code_parameter_branch,
         )
 
     update_all_views >> validations
@@ -415,7 +419,7 @@ def create_calculation_dag() -> None:
                 metric_export_branches_by_state_code(
                     post_normalization_pipelines_by_state
                 ),
-                get_state_code_filter,
+                select_state_code_parameter_branch,
             )
 
         product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)

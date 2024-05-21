@@ -76,7 +76,8 @@ resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_run_topic" {
 
   pubsub_target {
     topic_name = google_pubsub_topic.raw_data_import_dag_pubsub_topic.id
-    data       = base64encode("{}") # Run raw data import DAG with no filters.
+    # Run raw data import DAG with a PRIMARY filter
+    data = base64encode("{\"ingest_instance\": \"PRIMARY\"}")
   }
 }
 

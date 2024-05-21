@@ -121,6 +121,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self.project_environment_patcher.start()
 
     def tearDown(self) -> None:
+        super().tearDown()
         self.environment_patcher.stop()
         self.project_environment_patcher.stop()
 

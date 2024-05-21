@@ -28,7 +28,7 @@ from typing import Dict, List, Optional, Type
 import attr
 from google.cloud import bigquery
 
-from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -291,9 +291,11 @@ def update_state_specific_normalized_state_schemas(
 
         update_normalized_table_schemas_in_dataset(
             normalized_state_dataset_id,
-            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if sandbox_dataset_prefix
-            else None,
+            (
+                TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if sandbox_dataset_prefix
+                else None
+            ),
         )
 
 
@@ -409,9 +411,11 @@ def update_state_specific_ingest_state_schemas(
                 dataset_id=state_dataset_for_state_code(
                     state_code, ingest_instance, sandbox_dataset_prefix
                 ),
-                default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if sandbox_dataset_prefix
-                else None,
+                default_table_expiration_ms=(
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                    if sandbox_dataset_prefix
+                    else None
+                ),
                 table=table,
             )
             for state_code, ingest_instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
@@ -545,7 +549,9 @@ def update_state_specific_ingest_view_results_schemas(
             ),
             state_code,
             ingest_instance,
-            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-            if sandbox_dataset_prefix
-            else None,
+            (
+                TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if sandbox_dataset_prefix
+                else None
+            ),
         )
