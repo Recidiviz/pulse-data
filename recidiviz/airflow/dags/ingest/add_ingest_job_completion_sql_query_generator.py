@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The CloudSQLQueryGenerator for adding job completion info to DirectIngestDataflowJob."""
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -24,6 +24,7 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
+from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
 
 
 class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
@@ -32,7 +33,9 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     def __init__(
         self,
         region_code: str,
-        ingest_instance: str,
+        # TODO(#27378): Delete this arg and always pull from the context once the ingest
+        #  pipelines are only run in the calc DAG.
+        ingest_instance: Optional[str],
         run_pipeline_task_id: str,
     ) -> None:
         super().__init__()
@@ -51,16 +54,27 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         pipeline: Dict[str, Any] = operator.xcom_pull(
             context, key="return_value", task_ids=self.run_pipeline_task_id
         )
+        if self.ingest_instance:
+            ingest_instance: Optional[str] = self.ingest_instance
+        else:
+            ingest_instance = get_ingest_instance(context["dag_run"])
 
-        postgres_hook.run(self.insert_sql_query(pipeline["id"]))
+        if not ingest_instance:
+            raise ValueError(f"Expected to find ingest_instance argument: {context}")
 
-    def insert_sql_query(
-        self,
-        job_id: str,
-    ) -> str:
+        postgres_hook.run(
+            self.insert_sql_query(
+                job_id=pipeline["id"],
+                region_code=self.region_code,
+                ingest_instance=ingest_instance,
+            )
+        )
+
+    @staticmethod
+    def insert_sql_query(job_id: str, region_code: str, ingest_instance: str) -> str:
         return f"""
             INSERT INTO direct_ingest_dataflow_job
                 (job_id, region_code, ingest_instance, completion_time , is_invalidated)
             VALUES
-                ('{job_id}', '{self.region_code.upper()}', '{self.ingest_instance.upper()}', NOW(), FALSE);
+                ('{job_id}', '{region_code.upper()}', '{ingest_instance.upper()}', NOW(), FALSE);
         """

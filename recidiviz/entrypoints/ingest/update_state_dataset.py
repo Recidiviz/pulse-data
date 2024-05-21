@@ -54,6 +54,9 @@ def execute_state_dataset_refresh(
             "Refresh can only proceed for secondary databases into a sandbox."
         )
 
+    # TODO(#27378): Once ingest pipelines have been moved into the calculation DAG, we
+    #  no longer will need to control access to the state dataset via this lock and can
+    #  remove locking code from this function and delete the StateUpdateLockManager.
     state_update_lock_manager = StateUpdateLockManager(ingest_instance)
     state_update_lock_manager_lock_id = str(uuid.uuid4())
 

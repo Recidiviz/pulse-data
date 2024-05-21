@@ -35,7 +35,6 @@ class TestSetWatermarkSqlQueryGenerator(unittest.TestCase):
     def setUp(self) -> None:
         self.generator = SetWatermarkSqlQueryGenerator(
             region_code="US_XX",
-            ingest_instance="PRIMARY",
             get_max_update_datetime_task_id="test_get_max_update_datetime_task_id",
             run_pipeline_task_id="test_dataflow_pipeline_task_id",
         )

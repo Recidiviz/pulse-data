@@ -33,13 +33,11 @@ class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     def __init__(
         self,
         region_code: str,
-        ingest_instance: str,
         get_max_update_datetime_task_id: str,
         run_pipeline_task_id: str,
     ) -> None:
         super().__init__()
         self.region_code = region_code
-        self.ingest_instance = ingest_instance
         self.get_max_update_datetime_task_id = get_max_update_datetime_task_id
         self.run_pipeline_task_id = run_pipeline_task_id
 

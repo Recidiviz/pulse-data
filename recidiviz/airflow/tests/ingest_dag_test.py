@@ -45,7 +45,10 @@ _HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_ingest_dag.handle_queueing_result"
 
 
 def _fake_pod_operator(*args: Any, **kwargs: Any) -> BaseOperator:
-    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
+    if (
+        "--entrypoint=LegacyIngestPipelineShouldRunInDagEntrypoint"
+        in kwargs["arguments"]
+    ):
         return fake_operator_with_return_value(True)(*args, **kwargs)
 
     return fake_operator_constructor(*args, **kwargs)

@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.utils import environment
 
 
+# TODO(#27378): Delete this function once the legacy ingest DAG has been deleted
 def _secondary_has_raw_data_changes(state_code: StateCode) -> bool:
     """
     Returns if there are raw data changes that require a reimport for the given state. If so,
@@ -59,6 +60,7 @@ def _secondary_has_raw_data_changes(state_code: StateCode) -> bool:
     )
 
 
+# TODO(#27378): Delete this function once the legacy ingest DAG has been deleted
 def _secondary_has_manifest_views_with_launch_env_changes(
     state_code: StateCode,
 ) -> bool:
@@ -92,6 +94,7 @@ def _secondary_has_manifest_views_with_launch_env_changes(
     )
 
 
+# TODO(#27378): Delete this function once the legacy ingest DAG has been deleted
 def _should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
     """
     Returns whether the secondary ingest pipeline should be run for the given state.
@@ -122,7 +125,8 @@ def _has_launchable_ingest_views(
     )
 
 
-def ingest_pipeline_should_run_in_dag(
+# TODO(#27378): Delete this function once the legacy ingest DAG has been deleted
+def legacy_ingest_pipeline_should_run_in_dag(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> bool:
     """Returns True if we should run the ingest pipeline for this (state, instance),
@@ -155,6 +159,77 @@ def ingest_pipeline_should_run_in_dag(
             "No special gating/raw data reimport state indicates that we should run "
             "the SECONDARY [%s] pipeline - returning False",
             state_code.value,
+        )
+        return False
+
+    logging.info(
+        "Ingest pipeline for [%s, %s] is eligible to run - returning True",
+        state_code.value,
+        ingest_instance.value,
+    )
+    return True
+
+
+# TODO(#27378): Delete this entrypoint once the legacy ingest DAG has been deleted
+class LegacyIngestPipelineShouldRunInDagEntrypoint(EntrypointInterface):
+    """Entrypoint for the ingest pipeline should run in dag check."""
+
+    @staticmethod
+    def get_parser() -> argparse.ArgumentParser:
+        """Parses arguments for the ingest pipeline should run in dag check."""
+        parser = argparse.ArgumentParser()
+
+        parser.add_argument(
+            "--state_code",
+            help="The state code for which the ingest pipeline enabled status needs to be checked",
+            type=StateCode,
+            choices=list(StateCode),
+            required=True,
+        )
+
+        parser.add_argument(
+            "--ingest_instance",
+            help="The ingest instance for which the ingest pipeline enabled status needs to be checked",
+            type=DirectIngestInstance,
+            choices=list(DirectIngestInstance),
+            required=True,
+        )
+
+        return parser
+
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        """Runs the raw data flashing check."""
+        state_code = args.state_code
+        ingest_instance = args.ingest_instance
+
+        save_to_xcom(
+            legacy_ingest_pipeline_should_run_in_dag(state_code, ingest_instance)
+        )
+
+
+def ingest_pipeline_should_run_in_dag(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> bool:
+    """Returns True if we should run the ingest pipeline for this (state, instance),
+    False otherwise.
+    """
+    if not direct_ingest_regions.get_direct_ingest_region(
+        state_code.value.lower()
+    ).is_ingest_launched_in_env():
+        logging.info(
+            "Ingest for [%s, %s] is not launched in environment [%s] - returning False",
+            state_code.value,
+            ingest_instance.value,
+            environment.get_gcp_environment(),
+        )
+        return False
+
+    if not _has_launchable_ingest_views(state_code, ingest_instance):
+        logging.info(
+            "No launchable views found for [%s, %s] - returning False",
+            state_code.value,
+            ingest_instance.value,
         )
         return False
 
