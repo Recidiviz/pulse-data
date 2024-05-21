@@ -23,6 +23,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 
 
+# TODO(#27378): Delete this entrypoint once the legacy ingest DAG has been deleted
 class IngestAcquireLockEntrypoint(EntrypointInterface):
     """Entrypoint for acquiring the ingest lock"""
 
@@ -64,6 +65,7 @@ class IngestAcquireLockEntrypoint(EntrypointInterface):
         state_update_lock_manager.acquire_lock(lock_id=args.lock_id)
 
 
+# TODO(#27378): Delete this entrypoint once the legacy ingest DAG has been deleted
 class IngestReleaseLockEntrypoint(EntrypointInterface):
     """Entrypoint for releasing the ingest lock"""
 

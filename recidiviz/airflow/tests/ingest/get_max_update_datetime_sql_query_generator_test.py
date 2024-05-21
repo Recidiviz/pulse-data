@@ -17,7 +17,7 @@
 """Unit tests for GetMaxUpdateDateTimeSqlQueryGenerator"""
 import datetime
 import unittest
-from unittest.mock import create_autospec
+from unittest.mock import Mock, create_autospec
 
 import freezegun
 import pandas as pd
@@ -35,11 +35,6 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 class TestGetMaxUpdateDateTimeSqlQueryGenerator(unittest.TestCase):
     """Unit tests for GetWatermarkSqlQueryGenerator"""
 
-    def setUp(self) -> None:
-        self.generator = GetMaxUpdateDateTimeSqlQueryGenerator(
-            region_code="US_XX", ingest_instance="PRIMARY"
-        )
-
     def test_generates_sql_correctly(self) -> None:
         expected_query = """
             SELECT file_tag, MAX(update_datetime) AS max_update_datetime
@@ -50,10 +45,21 @@ class TestGetMaxUpdateDateTimeSqlQueryGenerator(unittest.TestCase):
             AND region_code = 'US_XX'
             GROUP BY file_tag;
         """
-        self.assertEqual(self.generator.sql_query(), expected_query)
+        self.assertEqual(
+            GetMaxUpdateDateTimeSqlQueryGenerator.sql_query(
+                region_code="US_XX", ingest_instance="PRIMARY"
+            ),
+            expected_query,
+        )
 
+    # TODO(#27378): Delete when we remove the ingest_instance param
+    #  from GetMaxUpdateDateTimeSqlQueryGenerator.
     @freezegun.freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
-    def test_max_update_datetimes_retrieved_correctly(self) -> None:
+    def test_max_update_datetimes_retrieved_correctly_legacy(self) -> None:
+        generator = GetMaxUpdateDateTimeSqlQueryGenerator(
+            region_code="US_XX", ingest_instance="PRIMARY"
+        )
+
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
@@ -71,7 +77,41 @@ class TestGetMaxUpdateDateTimeSqlQueryGenerator(unittest.TestCase):
             ]
         )
 
-        results = self.generator.execute_postgres_query(
+        results = generator.execute_postgres_query(
+            mock_operator, mock_postgres, mock_context
+        )
+
+        self.assertDictEqual(results, sample_data)
+
+    @freezegun.freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
+    def test_max_update_datetimes_retrieved_correctly(self) -> None:
+        generator = GetMaxUpdateDateTimeSqlQueryGenerator(
+            region_code="US_XX", ingest_instance=None
+        )
+
+        mock_operator = create_autospec(CloudSqlQueryOperator)
+        mock_postgres = create_autospec(PostgresHook)
+
+        dag_run = Mock()
+        dag_run.conf = {"ingest_instance": "PRIMARY"}
+        dag_run.dag_id = "test_dag"
+        dag_run.run_id = "test_run"
+        mock_context = {"dag_run": dag_run}
+
+        sample_data = {
+            "test_file_tag": "2023-01-26 00:00:00.000000",
+        }
+
+        mock_postgres.get_pandas_df.return_value = pd.DataFrame(
+            [
+                {
+                    "file_tag": "test_file_tag",
+                    "max_update_datetime": pd.Timestamp(year=2023, month=1, day=26),
+                }
+            ]
+        )
+
+        results = generator.execute_postgres_query(
             mock_operator, mock_postgres, mock_context
         )
 

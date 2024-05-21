@@ -23,10 +23,12 @@ from typing import Dict, Tuple
 from airflow.decorators import task
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
-from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_delegate import (
     IngestDataflowPipelineTaskGroupDelegate,
+)
+from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    INGEST_INSTANCE_JINJA_ARG,
 )
 from recidiviz.airflow.dags.ingest.add_ingest_job_completion_sql_query_generator import (
     AddIngestJobCompletionSqlQueryGenerator,
@@ -37,7 +39,6 @@ from recidiviz.airflow.dags.ingest.get_max_update_datetime_sql_query_generator i
 from recidiviz.airflow.dags.ingest.get_watermark_sql_query_generator import (
     GetWatermarkSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.ingest.ingest_branching import get_ingest_branch_key
 from recidiviz.airflow.dags.ingest.set_watermark_sql_query_generator import (
     SetWatermarkSqlQueryGenerator,
 )
@@ -63,16 +64,14 @@ from recidiviz.persistence.database.schema_type import SchemaType
 # pylint: disable=W0106 expression-not-assigned
 
 
-def _ingest_pipeline_should_run_in_dag(
-    state_code: StateCode, instance: DirectIngestInstance
-) -> KubernetesPodOperator:
+def _ingest_pipeline_should_run_in_dag(state_code: StateCode) -> KubernetesPodOperator:
     return build_kubernetes_pod_task(
         task_id="ingest_pipeline_should_run_in_dag",
         container_name="ingest_pipeline_should_run_in_dag",
         arguments=[
-            "--entrypoint=LegacyIngestPipelineShouldRunInDagEntrypoint",
+            "--entrypoint=IngestPipelineShouldRunInDagEntrypoint",
             f"--state_code={state_code.value}",
-            f"--ingest_instance={instance.value}",
+            INGEST_INSTANCE_JINJA_ARG,
         ],
         cloud_sql_connections=[SchemaType.OPERATIONS],
         do_xcom_push=True,
@@ -124,7 +123,7 @@ def _should_run_based_on_watermarks(
 
 
 def _verify_raw_data_flashing_not_in_progress(
-    state_code: StateCode, instance: DirectIngestInstance
+    state_code: StateCode,
 ) -> KubernetesPodOperator:
     return build_kubernetes_pod_task(
         task_id="verify_raw_data_flashing_not_in_progress",
@@ -132,7 +131,7 @@ def _verify_raw_data_flashing_not_in_progress(
         arguments=[
             "--entrypoint=IngestCheckRawDataFlashingEntrypoint",
             f"--state_code={state_code.value}",
-            f"--ingest_instance={instance.value}",
+            INGEST_INSTANCE_JINJA_ARG,
         ],
         cloud_sql_connections=[SchemaType.OPERATIONS],
     )
@@ -140,7 +139,6 @@ def _verify_raw_data_flashing_not_in_progress(
 
 def _initialize_dataflow_pipeline(
     state_code: StateCode,
-    instance: DirectIngestInstance,
     operations_cloud_sql_conn_id: str,
 ) -> Tuple[TaskGroup, CloudSqlQueryOperator]:
     """
@@ -151,7 +149,7 @@ def _initialize_dataflow_pipeline(
     with TaskGroup("initialize_dataflow_pipeline") as initialize_dataflow_pipeline:
         check_ingest_pipeline_should_run_in_dag = (
             handle_ingest_pipeline_should_run_in_dag_check(
-                _ingest_pipeline_should_run_in_dag(state_code, instance).output
+                _ingest_pipeline_should_run_in_dag(state_code).output
             )
         )
 
@@ -160,7 +158,7 @@ def _initialize_dataflow_pipeline(
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=GetMaxUpdateDateTimeSqlQueryGenerator(
                 region_code=state_code.value,
-                ingest_instance=instance.value,
+                ingest_instance=None,
             ),
         )
 
@@ -169,7 +167,7 @@ def _initialize_dataflow_pipeline(
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=GetWatermarkSqlQueryGenerator(
                 region_code=state_code.value,
-                ingest_instance=instance.value,
+                ingest_instance=None,
             ),
         )
 
@@ -182,74 +180,34 @@ def _initialize_dataflow_pipeline(
             check_ingest_pipeline_should_run_in_dag
             >> [get_max_update_datetimes, get_watermarks]
             >> should_run_based_on_watermarks
-            >> _verify_raw_data_flashing_not_in_progress(state_code, instance)
+            >> _verify_raw_data_flashing_not_in_progress(state_code)
         )
 
     return initialize_dataflow_pipeline, get_max_update_datetimes
 
 
-def _acquire_lock(
-    state_code: StateCode, instance: DirectIngestInstance
-) -> KubernetesPodOperator:
-    return build_kubernetes_pod_task(
-        task_id="acquire_lock",
-        container_name="acquire_lock",
-        arguments=[
-            "--entrypoint=IngestAcquireLockEntrypoint",
-            f"--state_code={state_code.value}",
-            f"--ingest_instance={instance.value}",
-            "--lock_id={{dag_run.run_id}}" + f"_{state_code.value}_{instance.value}",
-        ],
-    )
-
-
-def _release_lock(
-    state_code: StateCode, instance: DirectIngestInstance
-) -> KubernetesPodOperator:
-    return build_kubernetes_pod_task(
-        trigger_rule=TriggerRule.NONE_SKIPPED,
-        task_id="release_lock",
-        container_name="release_lock",
-        arguments=[
-            "--entrypoint=IngestReleaseLockEntrypoint",
-            f"--state_code={state_code.value}",
-            f"--ingest_instance={instance.value}",
-            "--lock_id={{dag_run.run_id}}" + f"_{state_code.value}_{instance.value}",
-        ],
-    )
-
-
-def create_single_ingest_pipeline_group(
-    state_code: StateCode,
-    instance: DirectIngestInstance,
-) -> TaskGroup:
+def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
     """
-    Creates a dataflow pipeline operator for the given state and ingest instance.
+    Creates a dataflow pipeline operator for the given state.
     """
 
     operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
         SchemaType.OPERATIONS
     )
 
-    with TaskGroup(get_ingest_branch_key(state_code.value, instance.value)) as dataflow:
+    with TaskGroup(f"{state_code.value.lower()}_dataflow") as dataflow:
         (
             initialize_dataflow_pipeline,
             get_max_update_datetimes,
-        ) = _initialize_dataflow_pipeline(
-            state_code, instance, operations_cloud_sql_conn_id
-        )
-
-        acquire_lock = _acquire_lock(state_code, instance)
+        ) = _initialize_dataflow_pipeline(state_code, operations_cloud_sql_conn_id)
 
         dataflow_pipeline_group, run_pipeline = build_dataflow_pipeline_task_group(
             delegate=IngestDataflowPipelineTaskGroupDelegate(
                 state_code=state_code,
-                default_ingest_instance=instance,
+                default_ingest_instance=DirectIngestInstance.PRIMARY,
                 max_update_datetimes_operator=get_max_update_datetimes,
             )
         )
-
-        release_lock = _release_lock(state_code, instance)
 
         write_upper_bounds = CloudSqlQueryOperator(
             task_id="write_upper_bounds",
@@ -266,18 +224,16 @@ def create_single_ingest_pipeline_group(
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=AddIngestJobCompletionSqlQueryGenerator(
                 region_code=state_code.value,
-                ingest_instance=instance.value,
+                ingest_instance=None,
                 run_pipeline_task_id=run_pipeline.task_id,
             ),
         )
 
         (
             initialize_dataflow_pipeline
-            >> acquire_lock
             >> dataflow_pipeline_group
-            >> release_lock
+            >> write_ingest_job_completion
+            >> write_upper_bounds
         )
-
-        dataflow_pipeline_group >> write_ingest_job_completion >> write_upper_bounds
 
     return dataflow
