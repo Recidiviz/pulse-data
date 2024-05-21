@@ -94,38 +94,45 @@ FROM (
   )
 )
 WHERE answer IS NOT NULL AND question_title IS NOT NULL
-ORDER BY OffenderQuestionnaireTemplateId, SectionId)
+ORDER BY OffenderQuestionnaireTemplateId, SectionId),
 
 -- This CTE aggregates all the results into one row pers survey.
 -- For violation type (which is a "check all that apply" question), we string agg
 -- all distinct violation type values.
 -- We also take the MIN of violation date across all survey-section-question-answer rows, 
 -- but we only expect one non-null value for violation date per survey anyways.
-SELECT
-  CompletedByEmployeeId,
-  CompletedDate,
-  OffenderQuestionnaireTemplateId,
-  OffenderId,
-  MIN(violation_date) as violation_date,
-  STRING_AGG(DISTINCT violation_type, "," ORDER BY violation_type) AS violation_types
-FROM (
-SELECT 
-  DISTINCT
-  CompletedByEmployeeId,
-  CompletedDate,
-  OffenderQuestionnaireTemplateId,
-  OffenderId,
-  CASE
-    WHEN question_title = "Report of Violation Date" 
-    OR question_title = "Violation Date" 
-    THEN answer END AS violation_date,
-  CASE
-    WHEN question_title = "Violation Type" 
-    OR question_title = "Violation Type (check all that apply)"
-    THEN answer END AS violation_type,
-  FROM survey_answer_per_question
+aggregated_results AS (
+  SELECT
+    CompletedByEmployeeId,
+    CompletedDate,
+    OffenderQuestionnaireTemplateId,
+    OffenderId,
+    MIN(violation_date) as violation_date,
+    STRING_AGG(DISTINCT violation_type, "," ORDER BY violation_type) AS violation_types
+  FROM (
+  SELECT 
+    DISTINCT
+    CompletedByEmployeeId,
+    CompletedDate,
+    OffenderQuestionnaireTemplateId,
+    OffenderId,
+    CASE
+      WHEN question_title = "Report of Violation Date" 
+      OR question_title = "Violation Date" 
+      THEN DATE(PARSE_DATE('%m/%d/%Y', TRIM(answer))) END AS violation_date,
+    CASE
+      WHEN question_title = "Violation Type" 
+      OR question_title = "Violation Type (check all that apply)"
+      THEN answer END AS violation_type,
+    FROM survey_answer_per_question
+  )
+  GROUP BY CompletedByEmployeeId,CompletedDate,OffenderQuestionnaireTemplateId,OffenderId
 )
-GROUP BY CompletedByEmployeeId,CompletedDate,OffenderQuestionnaireTemplateId,OffenderId
+
+-- finally, only keep violations after the atlas migration date (because we'll use the legacy view for violations before then)
+SELECT * 
+FROM aggregated_results
+WHERE violation_date >= DATE(2022,11,10);
 
 """
 
