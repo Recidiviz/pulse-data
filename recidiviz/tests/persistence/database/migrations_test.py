@@ -453,6 +453,58 @@ class TestOperationsMigrations(MigrationsTestBase):
             for instance in DirectIngestInstance:
                 self.assertEqual(required_states, instance_to_state_codes[instance])
 
+    def test_direct_ingest_raw_data_flash_status_contains_data_for_all_states(
+        self,
+    ) -> None:
+        '''Enforces that after all migrations the set of region_codes that have rows in 
+        direct_ingest_raw_data_flash_status matches the list of known states.
+
+        If this test fails, you will likely have to add a new migration because a new state
+        was recently created. To do so, first run:
+        ```
+        python -m recidiviz.tools.migrations.autogenerate_migration \
+            --database OPERATIONS \
+            --message add_us_xx_initial_flash_status
+        ```
+
+        This will generate a blank migration. You should then modify the migration, changing
+        the `upgrade` method to look like:
+        ```
+        def upgrade() -> None:
+            op.execute("""
+                INSERT INTO direct_ingest_raw_data_flash_status (region_code, status_timestamp, flashing_in_progress) VALUES
+                ('US_XX', '20XX-YY-ZZT00:00:00.000000', '0')
+            """)
+
+        def downgrade() -> None:
+            op.execute(
+                f"""
+                   DELETE FROM direct_ingest_raw_data_flash_status
+                   WHERE region_code = 'US_XX';
+               """
+            )
+        ```
+
+        Afterwards, this test should ideally pass.
+        '''
+
+        with runner(self.default_config(), self.engine) as r:
+            r.migrate_up_to("head")
+
+            engine = create_engine(
+                local_persistence_helpers.postgres_db_url_from_env_vars()
+            )
+
+            conn = engine.connect()
+            rows = conn.execute(
+                "SELECT region_code FROM direct_ingest_raw_data_flash_status;"
+            )
+
+            actual_states = {row[0] for row in rows}
+            expected_states = {name.upper() for name in get_existing_region_codes()}
+
+            assert actual_states == expected_states
+
 
 class TestOutliersMigrations(MigrationsTestBase):
     __test__ = True

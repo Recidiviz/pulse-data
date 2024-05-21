@@ -507,3 +507,18 @@ class DirectIngestRawDataImportSession(OperationsBase):
             name="historical_diffs_must_have_non_null_updated_and_deleted",
         ),
     )
+
+
+class DirectIngestRawDataFlashStatus(OperationsBase):
+
+    __tablename__ = "direct_ingest_raw_data_flash_status"
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The timestamp of when this status row was created
+    status_timestamp = Column(DateTime(timezone=True), nullable=False)
+
+    # Whether or not this status row indicates that flashing is in progress
+    flashing_in_progress = Column(Boolean, nullable=False)
+
+    __table_args__ = (PrimaryKeyConstraint(region_code, status_timestamp),)
