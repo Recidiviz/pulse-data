@@ -125,6 +125,45 @@ def _unique_constraint_check(
                 yield error_msg
 
 
+def _sentence_group_checks(
+    state_person: state_entities.StatePerson,
+) -> Iterable[Error]:
+    """Yields errors related to StateSentenceGroup and StateSentenceGroupLength:
+    - If this person has StateSentenceGroup entities, then the external ID must be associated with a sentence.
+    """
+    sentences_by_group = defaultdict(list)
+    for sentence in state_person.sentences:
+        sentences_by_group[sentence.sentence_group_external_id].append(sentence)
+
+    # If we've hydrated any StateSentenceGroup entities, we check that
+    # every StateSentence.sentence_group_external_id exists as an external_id
+    # of a StateSentenceGroup
+    if ids_from_groups := {sg.external_id for sg in state_person.sentence_groups}:
+        for sgid in set(sentences_by_group.keys()).difference(ids_from_groups):
+            sentence_ext_ids = [s.external_id for s in sentences_by_group[sgid]]
+            yield f"Found {sentence_ext_ids=} referencing non-existent StateSentenceGroup {sgid}."
+
+    # Every StateSentenceGroup should have at least one associated StateSentence
+    # If all sentences do not have parole possible, then all group level projected parole dates should be None
+    for sg in state_person.sentence_groups:
+        sentences = sentences_by_group.get(sg.external_id)
+        if not sentences:
+            yield f"Found StateSentenceGroup {sg.external_id} without an associated sentence."
+        elif {s.parole_possible for s in sentences} == {False}:
+            for length in sg.sentence_group_lengths:
+                if length.parole_eligibility_date_external is not None:
+                    yield f"{sg.limited_pii_repr()} has parole eligibility date, but none of its sentences allow parole."
+                if length.projected_parole_release_date_external is not None:
+                    yield f"{sg.limited_pii_repr()} has projected parole release date, but none of its sentences allow parole."
+
+        if err := ledger_entity_checks(
+            state_person,
+            state_entities.StateSentenceGroupLength,
+            sg.sentence_group_lengths,
+        ):
+            yield err
+
+
 def _sentencing_entities_checks(
     state_person: state_entities.StatePerson,
 ) -> Iterable[Error]:
@@ -133,6 +172,11 @@ def _sentencing_entities_checks(
     - If StateSentenceStatusSnapshot entities with a REVOKED SentenceStatus stem from a sentence that
       do not have a PAROLE or PROBATION sentence_type.
     """
+
+    # TODO(#29961) We need to update the test fixtures for sentence group checks.
+    if state_person.state_code != StateCode.US_AZ.value:
+        yield from _sentence_group_checks(state_person)
+
     for sentence in state_person.sentences:
         if not sentence.imposed_date:
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
@@ -143,7 +187,6 @@ def _sentencing_entities_checks(
             and state_person.state_code != StateCode.US_AZ.value
         ):
             yield f"Found sentence {sentence.limited_pii_repr()} with no charges."
-        # TODO(#29316) Validate parole projected dates of StateSentenceGroup as well
         if sentence.parole_possible is False:
             if any(
                 length.parole_eligibility_date_external is not None
@@ -251,8 +294,6 @@ def validate_root_entity(
                 root_entity.task_deadlines,
             ):
                 error_messages.append(err)
-
-        # TODO(#29316) Validate StateSentenceGroup as well
 
     return error_messages
 

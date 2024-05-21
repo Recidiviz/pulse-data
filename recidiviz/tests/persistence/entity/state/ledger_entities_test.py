@@ -468,14 +468,24 @@ class StateSentenceGroupLengthTest(unittest.TestCase, LedgerEntityTestCaseProtoc
     ) -> None:
         """Tests that we call ledger_entity_checks when the ledger entity is in the tree."""
         person = self.new_state_person()
-        # TODO(#29316) Validate StateSentenceGroup as well
-        _ = entities.StateSentenceGroupLength(
+        group_length_1 = entities.StateSentenceGroupLength(
             state_code=self.state_code,
             group_update_datetime=datetime.datetime(2022, 1, 1),
             sequence_num=None,
         )
+        group_length_2 = entities.StateSentenceGroupLength(
+            state_code=self.state_code,
+            group_update_datetime=datetime.datetime(2023, 1, 1),
+            sequence_num=None,
+        )
+        group = entities.StateSentenceGroup(
+            state_code=self.state_code,
+            external_id="TEST-SG",
+            sentence_group_lengths=[group_length_1, group_length_2],
+        )
+        person.sentence_groups.append(group)
         _ = validate_root_entity(person, self.field_index)
-        mock_ledger_entity_checks.assert_not_called()
+        mock_ledger_entity_checks.assert_called()
 
     def test_enforced_datetime_pairs(self) -> None:
         # "projected_parole_release_date_external" before "projected_full_term_release_date_min_external"

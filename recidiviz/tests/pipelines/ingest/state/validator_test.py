@@ -810,3 +810,204 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         self.state_person.sentences.append(incarceration_sentence)
         errors = validate_root_entity(self.state_person, self.field_index)
         self.assertEqual(len(errors), 0)
+
+    def test_sentence_to_sentence_group_reference(self) -> None:
+        """Tests that StateSentenceGroup entities have a reference from a sentence."""
+        self.state_person.sentence_groups.append(
+            state_entities.StateSentenceGroup(
+                state_code=self.state_code,
+                external_id="TEST-SG",
+            )
+        )
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            sentence_group_external_id="TEST-SG",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            charges=[
+                state_entities.StateChargeV2(
+                    state_code=self.state_code,
+                    external_id="CHARGE-EXTERNAL-1",
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        self.state_person.sentences.append(sentence)
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(len(errors), 0)
+
+        # Error when there is a SG but no sentence
+        self.state_person.sentences = []
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            errors[0],
+            "Found StateSentenceGroup TEST-SG without an associated sentence.",
+        )
+
+        # Error when there is a sentence but no SG (but at least one SG)
+        sentence.sentence_group_external_id = "TEST-SG-2"
+        self.state_person.sentences = [sentence]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(len(errors), 2)
+        self.assertEqual(
+            errors[0],
+            "Found sentence_ext_ids=['SENT-EXTERNAL-1'] referencing non-existent StateSentenceGroup TEST-SG-2.",
+        )
+        self.assertEqual(
+            errors[1],
+            "Found StateSentenceGroup TEST-SG without an associated sentence.",
+        )
+
+    def test_no_parole_possible_means_no_parole_projected_dates_group_level(
+        self,
+    ) -> None:
+        """
+        If all sentences in a sentence group have parole_possible=False,
+        then there should be no parole related projected dates on all
+        sentence_group_length entities.
+        """
+        # One sentence, parole_possible is None - no Error
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            sentence_group_external_id="SG-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=None,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        group = state_entities.StateSentenceGroup(
+            state_code=self.state_code,
+            external_id="SG-EXTERNAL-1",
+            sentence_group_lengths=[
+                state_entities.StateSentenceGroupLength(
+                    state_code=self.state_code,
+                    group_update_datetime=datetime(2022, 1, 1),
+                    parole_eligibility_date_external=date(2025, 1, 1),
+                ),
+            ],
+        )
+        self.state_person.sentences = [sentence]
+        self.state_person.sentence_groups = [group]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(errors, [])
+
+        # One sentence, parole_possible is False - Expected Error
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            sentence_group_external_id="SG-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=False,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        self.state_person.sentences = [sentence]
+        self.state_person.sentence_groups = [group]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(
+            errors,
+            [
+                "StateSentenceGroup(external_id='SG-EXTERNAL-1', sentence_group_id=None) "
+                "has parole eligibility date, but none of its sentences allow parole."
+            ],
+        )
+
+        # Mutliple sentences, parole_possible is False - Expected Error
+        sentence_1 = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            sentence_group_external_id="SG-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=False,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        sentence_2 = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-2",
+            sentence_group_external_id="SG-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=False,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        self.state_person.sentences = [sentence_1, sentence_2]
+        self.state_person.sentence_groups = [group]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(
+            errors,
+            [
+                "StateSentenceGroup(external_id='SG-EXTERNAL-1', sentence_group_id=None) "
+                "has parole eligibility date, but none of its sentences allow parole."
+            ],
+        )
+
+        # Mutliple sentences, parole_possible is True or None - No Error
+        sentence_1 = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            sentence_group_external_id="SG-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=None,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        sentence_2 = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-2",
+            sentence_group_external_id="SG-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.STATE_PRISON,
+            imposed_date=date(2022, 1, 1),
+            parole_possible=True,
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        self.state_person.sentences = [sentence_1, sentence_2]
+        self.state_person.sentence_groups = [group]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(errors, [])
