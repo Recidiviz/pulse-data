@@ -35,6 +35,11 @@ def get_monitoring_dag_id(project_id: str) -> str:
     return f"{project_id}_hourly_monitoring_dag"
 
 
+def get_raw_data_import_dag_id(project_id: str) -> str:
+    """Returns the id of the raw data import DAG defined in raw_data_import_dag.py."""
+    return f"{project_id}_raw_data_import_dag"
+
+
 def get_sftp_dag_id(project: str) -> str:
     """Returns the id of the monitoring DAG defined in sftp_dag.py."""
     return f"{project}_sftp_dag"
@@ -50,6 +55,7 @@ def get_all_dag_ids(project_id: str) -> List[str]:
         get_monitoring_dag_id(project_id),
         get_sftp_dag_id(project_id),
         get_ingest_dag_id(project_id),
+        get_raw_data_import_dag_id(project_id),
     ]
 
 
@@ -77,6 +83,11 @@ def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]
             "ingest_instance",
             "state_code_filter",
         }
+    if dag_id == get_raw_data_import_dag_id(project_id):
+        return {
+            "ingest_instance",
+            "state_code_filter",
+        }
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
 
 
@@ -94,5 +105,7 @@ def get_discrete_configuration_parameters(project_id: str, dag_id: str) -> List[
     if dag_id == get_sftp_dag_id(project_id):
         return []
     if dag_id == get_ingest_dag_id(project_id):
+        return ["ingest_instance", "state_code_filter"]
+    if dag_id == get_raw_data_import_dag_id(project_id):
         return ["ingest_instance", "state_code_filter"]
     raise ValueError(f"Unexpected dag_id [{dag_id}]")
