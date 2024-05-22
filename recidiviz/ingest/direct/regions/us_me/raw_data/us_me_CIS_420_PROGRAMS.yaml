@@ -3,6 +3,7 @@ file_tag: CIS_420_PROGRAMS
 file_description: |-
   This table is a list of programs available.
 data_classification: source
+update_cadence: IRREGULAR
 primary_key_cols:
   - PROGRAM_ID
 columns:
