@@ -441,14 +441,14 @@ output:
                         - Level 4
                         - Maximum
                         - Parole
+                        - SO To General Low
+                        - SO To General Mod
+                        - SO To General High
                       StateSupervisionCaseType.SEX_OFFENSE:
                         - Sex Offense # Maybe?
                         - SO Low
-                        - SO To General Low
                         - SO Moderate
-                        - SO To General Mod
                         - SO High
-                        - SO To General High
                       StateSupervisionCaseType.DRUG_COURT:
                         - Substance Abuse # Maybe?
                         - Drug Court
