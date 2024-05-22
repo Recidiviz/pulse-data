@@ -53,6 +53,7 @@ from recidiviz.tests.pipelines.utils.state_utils import (
     templates as state_specific_calculation_test_templates_module,
 )
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.validation.config import regions as validation_config_module
 from recidiviz.validation.config import templates as validation_config_templates_module
 
@@ -243,6 +244,18 @@ class RegionFilesGenerator:
 def main(region_code: str) -> None:
     generator = RegionFilesGenerator(region_code)
     generator.generate_all_new_dirs_and_files()
+
+    # TODO(#30008): Remove this confirmation once we figure out how to generate these
+    #  Slack integrations via Terraform.
+    prompt_for_confirmation(
+        f"!! Once this change has deployed to production you will need to ask someone "
+        f"on Aurora to set up Slack integrations for the new "
+        f"'[PRODUCTION] Airflow Tasks: {region_code.upper()}' and "
+        f"'[STAGING] Airflow Tasks: {region_code.upper()}' services here: "
+        f"https://recidiviz.pagerduty.com/accounts_addons/P68QE5Y. Please add a "
+        f"reminder to do this to https://go/deploy-checklist/.",
+        "I HAVE ADDED A REMINDER",
+    )
 
 
 if __name__ == "__main__":
