@@ -17,9 +17,8 @@
 """Contains state-specific logic for certain aspects of normalization US_MO
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
-from typing import List, Optional, Set
+from typing import List, Optional
 
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
     StateIncarcerationPeriodAdmissionReason,
@@ -45,15 +44,6 @@ class UsMoIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_MO implementation of the StateSpecificIncarcerationNormalizationDelegate."""
-
-    def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
-        """US_MO drops all incarceration periods that aren't in a STATE_PRISON from
-        calculations."""
-        return {
-            t
-            for t in StateIncarcerationType
-            if t != StateIncarcerationType.STATE_PRISON
-        }
 
     def incarceration_transfer_admission_reason_override(
         self,
