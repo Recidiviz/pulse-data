@@ -22,6 +22,7 @@ from typing import Any, Callable
 from airflow.decorators import task
 from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import PythonOperator
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -32,6 +33,22 @@ def fake_operator_constructor(*_args: Any, **kwargs: Any) -> EmptyOperator:
         trigger_rule=kwargs["trigger_rule"]
         if "trigger_rule" in kwargs
         else TriggerRule.ALL_SUCCESS,
+    )
+
+
+def fake_failing_operator_constructor(*_args: Any, **kwargs: Any) -> BaseOperator:
+    task_id = kwargs["task_id"]
+
+    def fail() -> None:
+        raise ValueError(f"FAIL: {task_id}")
+
+    return PythonOperator(
+        task_id=kwargs["task_id"],
+        trigger_rule=kwargs["trigger_rule"]
+        if "trigger_rule" in kwargs
+        else TriggerRule.ALL_SUCCESS,
+        python_callable=fail,
+        retries=-1,
     )
 
 
