@@ -91,3 +91,27 @@ def trigger_ingest_dag_pubsub(
             }
         ),
     )
+
+
+def trigger_raw_data_import_dag_pubsub(
+    ingest_instance: DirectIngestInstance,
+    state_code_filter: Optional[StateCode],
+) -> None:
+    """Sends a message to the PubSub topic to trigger the raw data import DAG"""
+
+    logging.info(
+        "Triggering the raw data import DAG with instance: [%s], and state code filter: [%s]",
+        ingest_instance.value,
+        state_code_filter.value if state_code_filter else None,
+    )
+    pubsub_helper.publish_message_to_topic(
+        topic="v1.ingest.trigger_raw_data_import_dag",
+        message=json.dumps(
+            {
+                "state_code_filter": (
+                    state_code_filter.value if state_code_filter else None
+                ),
+                "ingest_instance": ingest_instance.value,
+            }
+        ),
+    )
