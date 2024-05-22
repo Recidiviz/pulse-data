@@ -11,9 +11,15 @@ US_AR:
   HOUSINGAREA:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  INMATEPROFILE:
+    workflows_views.us_ar_resident_metadata: |-
+      Used to pull in resident metadata.
   ORGANIZATIONPROF:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
+  PROGRAMACHIEVEMENT:
+    workflows_views.us_ar_resident_metadata: |-
+      Used to pull in resident metadata.
   RELATEDPARTY:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.

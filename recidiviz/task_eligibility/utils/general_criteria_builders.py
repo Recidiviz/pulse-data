@@ -391,6 +391,7 @@ def num_events_within_time_interval_spans(
             start_date,
             end_date,
             COUNT(event_date) AS event_count,
+            ARRAY_AGG(event_date ORDER BY event_date DESC) AS event_dates,
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     )

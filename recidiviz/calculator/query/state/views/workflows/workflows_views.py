@@ -99,6 +99,9 @@ from recidiviz.calculator.query.state.views.workflows.reidentified_dashboard_use
 from recidiviz.calculator.query.state.views.workflows.resident_record_archive import (
     RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
+    US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata import (
     US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
 )
@@ -131,6 +134,7 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_MILESTONES_CONGRATULATIONS_SENT_VIEW_BUILDER,
     PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
+    US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
     WORKFLOWS_USAGE_VIEW_BUILDER,
     US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
