@@ -62,6 +62,8 @@ output:
                       StateSupervisionLevel.LIMITED:
                         - Deported
                         - Pending Deport
+                        - Category E
+                        - SO Category E
                     $ignore:
                       - EO Non-Specialized
                       - OCS Sex Offender
@@ -78,7 +80,6 @@ output:
                       - Act HRSO GPS Specialized
                       - Enhanced Outpatient
                       - SO Non-Specialized
-                      - Category E
                       - Second Striker
                       - Offender with Mental Health Disorder Non-Specialized
                       - CS Prop 36 Eligible
@@ -87,7 +88,6 @@ output:
                       - HR Non-Specialized
                       - HC/HS Prop 36 Eligible
                       - Offender with Mental Health Disorder
-                      - SO Category E
                       - Trans Phase MISD
                       - High Services
                       - Vulnerable Release Program
@@ -100,8 +100,19 @@ output:
                       - CS P36 Specialized Caseload
           supervision_site: upper_ParoleUnit
           supervision_type:
+            # If someone's SupervisionLevel says they are deported, make them deported.
+            # Otherwise, we use OffenderGroup to see if someone is absconded. If
+            # OffenderGroup is null, but there is a SupervisionLevel, we know they are
+            # on Parole.
             $conditional:
               - $if:
+                  $in:
+                    $value: SupervisionLevel
+                    $options:
+                      - $literal("Deported")
+                      - $literal("Pending Deport")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.DEPORTED)
+              - $else_if:
                   $not_null: OffenderGroup
                 $then:
                   $enum_mapping:
@@ -119,6 +130,9 @@ output:
                         - MDPAR
                         - MRP
                         - PAROLE
+              - $else_if:
+                  $not_null: SupervisionLevel
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
           start_date: start_date
           termination_date: end_date
           supervising_officer_staff_external_id: BadgeNumber
