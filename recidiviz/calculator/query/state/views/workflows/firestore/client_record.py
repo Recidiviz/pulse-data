@@ -147,9 +147,6 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
-    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
-    ),
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),

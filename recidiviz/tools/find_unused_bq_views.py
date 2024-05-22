@@ -117,6 +117,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics i
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key import (
+    ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -169,7 +172,7 @@ from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_
 # List of views that are definitely referenced in Looker (as of 11/29/23). This list is
 # incomplete and you should add to this list / update the date in this comment as you
 # work with this script.
-LOOKER_REFERENCED_ADDRESSES = {
+LOOKER_REFERENCED_ADDRESSES: Set[BigQueryAddress] = {
     WORKFLOWS_USAGE_VIEW_BUILDER.address,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER.address,
     # TODO(Recidiviz/looker#427): The legacy TN compliant reporting dashboard
@@ -187,7 +190,11 @@ LOOKER_REFERENCED_ADDRESSES = {
 # listed along with the reason we still need to keep them. Please be as descriptive
 # as possible when updating this list, including a point of contact and date we were
 # still using this view where possible.
-UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON = {
+UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
+    ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER.address: (
+        "This is a generic view that helps understand LSI-R scoring which may be "
+        "useful for future analysis. (Anna 5/16/24"
+    ),
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER.address: (
         "This view aggregates early discharge stats at the officer-level. It is used "
         "to generate reports that can be used by supervisors to identify officers who "

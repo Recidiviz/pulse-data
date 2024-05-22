@@ -64,71 +64,6 @@ WITH last_day_of_data AS (
     GROUP BY 1, 2, 3, 4
 )
 
--- When clients referred to dosage probation in ID
-, dosage_probation AS (
-    SELECT
-        "DOSAGE_PROBATION" AS experiment_id,
-        "US_ID" AS state_code,
-        person_id,
-        COALESCE(dsg_asgnmt, "TREATED_INTERNAL_UNKNOWN") AS variant_id,
-        DATE(prgrm_strt_dt) AS variant_date,
-        NULL AS block_id,
-    FROM
-        `{project_id}.{us_id_raw_data_up_to_date_dataset}.DoPro_Participant_latest` a
-    INNER JOIN
-        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
-    ON
-        a.ofndr_num = b.external_id
-    WHERE
-        b.state_code = "US_ID" AND
-        -- Remove IDOC's test subject
-        ofndr_num NOT IN ("30054")
-)
-
--- When clients referred to GEO CIS in ID
-, geo_cis_referral AS (
-    SELECT
-        "GEO_CIS_REFERRAL" AS experiment_id,
-        "US_ID" AS state_code,
-        person_id,
-        "REFERRED" AS variant_id,
-        DATE(start_date) AS variant_date,
-        NULL AS block_id,
-    FROM
-        `{project_id}.{us_id_raw_data_up_to_date_dataset}.geo_cis_participants_latest` a
-    INNER JOIN
-        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
-    ON
-        a.person_external_id = b.external_id
-    WHERE
-        b.state_code = "US_ID" AND
-        -- Remove IDOC's test subject
-        person_external_id NOT IN ("30054")
-)
-
--- When clients begin supervision session preceding referral to GEO CIS, 
--- or when clients begin supervision session satisfying conditions for a matched control
-,
-geo_cis_referral_matched AS (
-    SELECT
-        experiment_id,
-        a.state_code,
-        person_id,
-        variant_id,
-        DATE(variant_date) AS variant_date,
-        block_id,
-    FROM
-        `{project_id}.{static_reference_dataset}.geo_cis_referrals_matched` a
-    INNER JOIN 
-        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
-    ON
-        a.person_external_id = b.external_id
-    WHERE
-        b.state_code = "US_ID" AND
-        -- Remove IDOC's test subject
-        person_external_id NOT IN ("30054") 
-)
-
 -- Covid-related CPP cohort in ND
 , us_nd_community_placement_program AS (
     SELECT 
@@ -205,15 +140,6 @@ geo_cis_referral_matched AS (
     FROM first_observed
     UNION ALL
     SELECT *
-    FROM dosage_probation
-    UNION ALL
-    SELECT *
-    FROM geo_cis_referral
-    UNION ALL
-    SELECT *
-    FROM geo_cis_referral_matched
-    UNION ALL
-    SELECT *
     FROM us_nd_community_placement_program
     UNION ALL
     SELECT *
@@ -237,9 +163,6 @@ PERSON_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
-    ),
     us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
     ),
