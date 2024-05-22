@@ -35,6 +35,7 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    fake_failing_operator_constructor,
     fake_operator_constructor,
     fake_operator_with_return_value,
 )
@@ -676,8 +677,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         )
         self.ingest_regions_patcher.start()
 
-        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
-
         self.project_patcher = patch(
             "recidiviz.airflow.dags.calculation_dag.get_project_id",
             return_value=_PROJECT_ID,
@@ -720,9 +719,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             "recidiviz.airflow.dags.utils.dataflow_pipeline_group.RecidivizDataflowFlexTemplateOperator",
             side_effect=fake_operator_constructor,
         )
-        self.recidiviz_dataflow_operator_patcher.start()
-
-        self.dag = create_calculation_dag()
+        self.mock_dataflow_operator_constructor = (
+            self.recidiviz_dataflow_operator_patcher.start()
+        )
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -738,9 +737,13 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.recidiviz_dataflow_operator_patcher.stop()
 
     def test_calculation_dag(self) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        dag = create_calculation_dag()
+
         with Session(bind=self.engine) as session:
             self.run_dag_test(
-                self.dag,
+                dag,
                 session=session,
                 run_conf={
                     "ingest_instance": "PRIMARY",
@@ -748,9 +751,13 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             )
 
     def test_calculation_dag_with_state(self) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        dag = create_calculation_dag()
+
         with Session(bind=self.engine) as session:
             self.run_dag_test(
-                self.dag,
+                dag,
                 session=session,
                 run_conf={
                     "ingest_instance": "PRIMARY",
@@ -777,13 +784,51 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             )
             self.assertIn(
                 "normalization.US_XX_start",
-                self.dag.task_ids,
+                dag.task_ids,
+            )
+
+    def test_calculation_dag_fail_single_ingest_pipeline(self) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        def fail_us_yy_ingest_operator_constructor(
+            *args: Any, **kwargs: Any
+        ) -> BaseOperator:
+            task_id = kwargs["body"].operator.task_id
+            if "us_yy" in task_id:
+                return fake_failing_operator_constructor(*args, **kwargs)
+            return fake_operator_constructor(*args, **kwargs)
+
+        self.mock_dataflow_operator_constructor.side_effect = (
+            fail_us_yy_ingest_operator_constructor
+        )
+
+        dag = create_calculation_dag()
+
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_ids=[
+                    r".*us_yy_dataflow.us-yy-ingest-primary.run_pipeline",
+                    r".*us_yy_dataflow.write_upper_bounds",
+                    r".*us_yy_dataflow.write_ingest_job_completion",
+                    r".*ingest.branch_end",
+                ],
+                # No downstream processes are skipped!
+                expected_skipped_ids=[],
             )
 
     def test_calculation_dag_with_state_and_sandbox(self) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        dag = create_calculation_dag()
+
         with Session(bind=self.engine) as session:
             self.run_dag_test(
-                self.dag,
+                dag,
                 session=session,
                 run_conf={
                     "ingest_instance": "PRIMARY",
@@ -796,13 +841,17 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             )
             self.assertIn(
                 "normalization.US_XX_start",
-                self.dag.task_ids,
+                dag.task_ids,
             )
 
     def test_calculation_dag_secondary(self) -> None:
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        dag = create_calculation_dag()
+
         with Session(bind=self.engine) as session:
             self.run_dag_test(
-                self.dag,
+                dag,
                 session=session,
                 run_conf={
                     "ingest_instance": "SECONDARY",
@@ -815,5 +864,5 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             )
             self.assertIn(
                 "normalization.US_XX_start",
-                self.dag.task_ids,
+                dag.task_ids,
             )

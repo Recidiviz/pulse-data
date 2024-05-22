@@ -141,6 +141,7 @@ def execute_update_state() -> RecidivizKubernetesPodOperator:
             INGEST_INSTANCE_JINJA_ARG,
             SANDBOX_PREFIX_JINJA_ARG,
         ],
+        trigger_rule=TriggerRule.ALL_DONE,
     )
 
 
