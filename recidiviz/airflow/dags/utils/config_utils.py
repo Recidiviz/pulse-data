@@ -27,7 +27,6 @@ from airflow.utils.trigger_rule import TriggerRule
 INGEST_INSTANCE = "ingest_instance"
 SANDBOX_PREFIX = "sandbox_prefix"
 STATE_CODE_FILTER = "state_code_filter"
-TRIGGER_INGEST_DAG_POST_BQ_REFRESH = "trigger_ingest_dag_post_bq_refresh"
 
 
 @task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)
@@ -61,10 +60,6 @@ def handle_queueing_result(action_type: Optional[str]) -> bool:
 def get_ingest_instance(dag_run: DagRun) -> Optional[str]:
     ingest_instance = dag_run.conf.get(INGEST_INSTANCE)
     return ingest_instance.upper() if ingest_instance else None
-
-
-def get_trigger_ingest_dag_post_bq_refresh(dag_run: DagRun) -> bool:
-    return dag_run.conf[TRIGGER_INGEST_DAG_POST_BQ_REFRESH]
 
 
 def get_state_code_filter(dag_run: DagRun) -> Optional[str]:

@@ -41,8 +41,8 @@ import {
   invalidateIngestPipelineRuns,
   markInstanceRawDataInvalidated,
   purgeIngestQueues,
-  runIngestDAGForState,
   transferRawDataMetadataToNewInstance,
+  triggerCalculationDAGForState,
 } from "../AdminPanelAPI/IngestOperations";
 import { StateCodeInfo } from "./general/constants";
 import {
@@ -1053,9 +1053,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 {stateCode} in <code>PRIMARY</code>.
               </p>
             }
-            actionButtonTitle="Start Ingest DAG Run"
+            actionButtonTitle="Start Calculation DAG Run"
             actionButtonEnabled
-            onActionButtonClick={async () => runIngestDAGForState(stateCode)}
+            onActionButtonClick={async () =>
+              triggerCalculationDAGForState(stateCode)
+            }
             nextSection={FlashChecklistStepSection.DONE}
           />
         </ChecklistSection>
