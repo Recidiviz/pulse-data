@@ -32,13 +32,15 @@ repos:
     hooks:
       - id: generate_docs_for_region
         name: generate_docs_for_region
-        entry: pipenv run python -m recidiviz.tools.docs.region_documentation_generator
+        entry: pipenv run python -m
+          recidiviz.tools.docs.region_documentation_generator
         language: system
         files: ^recidiviz/ingest/direct/regions/
         require_serial: true
       - id: generate_docs_for_endpoint
         name: generate_docs_for_endpoint
-        entry: pipenv run python -m recidiviz.tools.docs.endpoint_documentation_generator
+        entry: pipenv run python -m
+          recidiviz.tools.docs.endpoint_documentation_generator
         language: system
         files: ^recidiviz/
         exclude: >
@@ -46,21 +48,24 @@ repos:
         require_serial: true
       - id: generate_entity_documentation
         name: generate_entity_documentation
-        entry: pipenv run python -m recidiviz.tools.docs.entity_documentation_generator
+        entry: pipenv run python -m
+          recidiviz.tools.docs.entity_documentation_generator
         language: system
         files: >
           (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/database/schema/history_table_shared_columns_mixin.py|^recidiviz/common/constants/state/)$
         require_serial: true
       - id: generate_calc_documentation
         name: generate_calc_documentation
-        entry: pipenv run python -m recidiviz.calculator.calculation_documentation_generator
+        entry: pipenv run python -m
+          recidiviz.calculator.calculation_documentation_generator
         language: system
         files: ^recidiviz/calculator/|^recidiviz/pipelines/|^recidiviz/metrics/|^recidiviz/.*/views/|^recidiviz/big_query/|^recidiviz/persistence/database/schema/|^recidiviz/persistence/entity/|^recidiviz/task_eligibility/
         exclude: ^recidiviz/tests/|^recidiviz/calculator/modeling/
         require_serial: true
       - id: generate_ingest_mappings_schema_documentation
         name: generate_ingest_mappings_schema_documentation
-        entry: pipenv run python -m recidiviz.tools.docs.ingest_mappings_schema_documentation_generator
+        entry: pipenv run python -m
+          recidiviz.tools.docs.ingest_mappings_schema_documentation_generator
         language: system
         files: ^recidiviz/ingest/direct/ingest_mappings/yaml_schema/|^docs/engineering/ingest_mapping_schema/
         require_serial: true
@@ -75,3 +80,9 @@ repos:
         entry: recidiviz/tools/deploy/format_terraform.sh
         language: script
         files: ^recidiviz/tools/deploy/terraform/
+      - id: alphabetize_yaml
+        name: alphabetize_yaml
+        entry: pipenv run python -m
+          recidiviz.tools.alphabetize_raw_data_reference_reasons
+        language: system
+        files: recidiviz/view_registry/raw_data_reference_reasons.yaml

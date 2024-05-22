@@ -21,7 +21,7 @@ import os
 from collections import defaultdict
 from typing import Dict, Set
 
-import yaml
+from ruamel.yaml import YAML
 
 import recidiviz
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -52,7 +52,7 @@ class RawDataReferenceReasonsYamlLoader:
     @environment.test_only
     def get_yaml_data(cls) -> Dict[StateCode, Dict[str, Set[BigQueryAddress]]]:
         if not cls._yaml_data:
-            cls._load_yaml()
+            cls._yaml_data = cls._convert_raw_yaml_data_to_objs(cls.get_raw_yaml_data())
         return cls._yaml_data
 
     @classmethod
@@ -66,23 +66,21 @@ class RawDataReferenceReasonsYamlLoader:
         cls, state_code: StateCode
     ) -> Dict[str, Set[BigQueryAddress]]:
         """Get raw data filetags and downstream referencing views for a given region code."""
-        if not cls._yaml_data:
-            cls._load_yaml()
-        return cls._yaml_data.get(state_code, defaultdict(set))
+        return cls.get_yaml_data().get(state_code, defaultdict(set))
 
     @classmethod
     def _load_yaml(cls, yaml_path: str = RAW_DATA_REFERENCES_YAML_PATH) -> None:
         try:
             with open(yaml_path, "r", encoding="utf-8") as yaml_file:
-                cls._raw_yaml_data = yaml.safe_load(yaml_file)
-                cls._yaml_data = cls.convert_raw_yaml_data_to_objs(cls._raw_yaml_data)
+                yaml = YAML()
+                cls._raw_yaml_data = yaml.load(yaml_file)
         except Exception as e:
             raise RuntimeError(
                 f"Failed to load or parse YAML data from {yaml_path}: {e}"
             ) from e
 
     @staticmethod
-    def convert_raw_yaml_data_to_objs(
+    def _convert_raw_yaml_data_to_objs(
         references: Dict[str, Dict[str, Set[str]]]
     ) -> Dict[StateCode, Dict[str, Set[BigQueryAddress]]]:
         return {
