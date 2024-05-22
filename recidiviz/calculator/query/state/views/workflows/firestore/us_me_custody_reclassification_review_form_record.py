@@ -17,6 +17,7 @@
 """Queries information needed to fill out reclassification form in ME
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
@@ -25,23 +26,23 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     join_current_task_eligibility_spans_with_external_id,
 )
-from recidiviz.task_eligibility.utils.us_me_query_fragments import (
-    disciplinary_reports_helper,
-    program_enrollment_helper,
-    case_plan_goals_helper,
-)
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
-    task_eligibility_spans_state_specific_dataset,
     completion_event_state_specific_dataset,
+    task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
+    json_to_array_cte,
+    x_time_away_from_eligibility,
 )
-
+from recidiviz.task_eligibility.utils.us_me_query_fragments import (
+    case_plan_goals_helper,
+    disciplinary_reports_helper,
+    program_enrollment_helper,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -290,16 +291,30 @@ probation_term_cte AS (
       AND status = 'PENDING'
   GROUP BY 1,2
 ),
-eligible_clients AS (
+json_to_array_cte AS (
+        {json_to_array_cte('current_incarceration_pop_cte')}
+    ),
+eligible_and_almost_eligible_clients AS (
 
     -- ELIGIBLE
     {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
+    
+    UNION ALL
+    
+    -- Almost Eligible - 1 month away from reclassification reset date
+        -- Function uses strictly less than and we want 1 months inclusive so time_interval=2
+        {x_time_away_from_eligibility(
+            time_interval= 2,
+            date_part= 'MONTH',
+            criteria_name= 'US_ME_INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE',
+            from_cte_table_name = "json_to_array_cte",
+        )}
 
 )
 SELECT
   *
 FROM
-  eligible_clients
+  eligible_and_almost_eligible_clients
 LEFT JOIN
   arrival_date_cte
 USING

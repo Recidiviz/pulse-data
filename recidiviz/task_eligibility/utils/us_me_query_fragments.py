@@ -926,7 +926,8 @@ def reclassification_shared_logic(reclass_type: str) -> str:
       ts.reclasses_needed > 0 as meets_criteria,
       TO_JSON(STRUCT({"'ANNUAL'" if reclass_type == 'annual' else "'SEMIANNUAL'"} AS reclass_type,
         ANY_VALUE(ts.reclasses_needed) AS reclasses_needed,
-        MAX(meetings.reclass_meeting_date) AS latest_classification_date)) as reason,
+        MAX(meetings.reclass_meeting_date) AS latest_classification_date,
+        MAX(end_date) as eligible_date)) as reason,
     FROM
       third_sum ts
     LEFT JOIN meetings
