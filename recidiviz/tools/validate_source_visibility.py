@@ -337,6 +337,34 @@ def main() -> int:
         ),
     )
 
+    valid_raw_data_import_dag_prefixes = {
+        "recidiviz.airflow.dags",
+        "recidiviz.common",
+        "recidiviz.ingest.direct.types.direct_ingest_instance",
+        "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
+        "recidiviz.ingest.direct.direct_ingest_regions",
+        "recidiviz.utils.environment",
+        "recidiviz.utils",
+    }
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.airflow.dags.raw_data_import_dag",
+        valid_module_prefixes=make_module_matcher(valid_raw_data_import_dag_prefixes),
+    )
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz.airflow.tests.raw_data_dag_test",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.airflow.tests",
+                "recidiviz.tests.test_setup_utils",
+                "recidiviz.tools.utils.script_helpers",
+                "recidiviz.tools.postgres.local_postgres_helpers",
+                *valid_raw_data_import_dag_prefixes,
+            }
+        ),
+    )
+
     valid_monitoring_dag_prefixes = {
         "recidiviz.airflow.dags",
         "recidiviz.common.attr_validators",
