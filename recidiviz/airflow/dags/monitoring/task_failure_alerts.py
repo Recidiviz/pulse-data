@@ -59,11 +59,14 @@ def build_incident_history(
     session: Session = NEW_SESSION,
 ) -> Dict[str, AirflowAlertingIncident]:
     """Builds a dictionary of incidents to report"""
+
+    # Builds a Dataframe with one row per task instance for every DAG run in the given
+    # lookback window.
     dataframe = _build_task_instance_state_dataframe(
         dag_ids=dag_ids, lookback=lookback, session=session
     )
 
-    # Slice DataFrame to failed, success before generating session ids based on state change
+    # Filter down to only task instances in a failed or success state.
     dataframe = dataframe[
         (dataframe.state == TaskInstanceState.failed)
         | (dataframe.state == TaskInstanceState.success)
@@ -72,7 +75,12 @@ def build_incident_history(
     if dataframe.empty:
         return {}
 
+    # Add a new column that is True every time the state changes as compared to the
+    # previous row for the given (dag_id, conf, task_id) partition.
     dataframe["state_change"] = dataframe.state != dataframe.state.shift(1)
+
+    # Add a new session id column which is the same for all contiguous rows of the same
+    # state.
     dataframe["session_id"] = dataframe.groupby(level=dataframe.index.names)[
         "state_change"
     ].cumsum()
@@ -83,7 +91,13 @@ def build_incident_history(
     # Loop over discrete dag members (dag_id, conf, task_id)
     for discrete_dag in dataframe.index.unique():
         # Select all task runs for this discrete dag and copy slice into a new DataFrame
-        task_runs = dataframe.loc[discrete_dag].copy()
+        task_runs = dataframe.loc[
+            # We must pass the discrete_dag index cols as a list here so that loc always
+            # returns a Dataframe. Otherwise, it will return a Series if there is only
+            # one row in task_runs.
+            [discrete_dag]
+        ].copy()
+
         dag_id, conf, task_id = discrete_dag
 
         task_state_sessions = task_runs.groupby(["session_id"]).agg(
