@@ -131,7 +131,7 @@ resource "google_cloudfunctions2_function" "filename_normalization" {
   }
 
   event_trigger {
-    trigger_region        = "us" # The trigger must be in the same location as the bucket
+    trigger_region        = var.region # The trigger must be in the same location as the bucket
     event_type            = "google.cloud.storage.object.v1.finalized"
     retry_policy          = "RETRY_POLICY_RETRY"
     service_account_email = var.service_account_email
