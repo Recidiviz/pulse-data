@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.tools.alphabetize_raw_data_reference_reasons import is_sorted
 from recidiviz.tools.find_direct_raw_data_references import (
     find_direct_raw_data_references,
 )
@@ -55,10 +56,8 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
 
     def test_verify_yaml_entries_in_alphabetical_order(self) -> None:
         self.assertTrue(
-            TestEnforceRawDataReferenceDocumentation._is_sorted(
-                RawDataReferenceReasonsYamlLoader.get_raw_yaml_data()
-            ),
-            f"Entries in {RAW_DATA_REFERENCES_YAML} must be in alphabetical order.",
+            is_sorted(RawDataReferenceReasonsYamlLoader.get_raw_yaml_data()),
+            f"Entries in {RAW_DATA_REFERENCES_YAML} must be in alphabetical order. Please run `pipenv run python -m recidiviz.tools.alphabetize_raw_data_reference_reasons` to sort the entries.",
         )
 
     def test_find_direct_raw_data_references_missing_yaml_entries(self) -> None:
@@ -82,20 +81,6 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
                 f"Found raw data table references documented in {RAW_DATA_REFERENCES_YAML} which no longer exist. "
                 f"You should remove the following entries from the yaml file:\n\n{self._missing_references_to_str(missing_references)}"
             )
-
-    @staticmethod
-    def _is_sorted(references: Dict[str, Dict[str, Set[str]]]) -> bool:
-        state_codes = references.keys()
-        if list(state_codes) != sorted(state_codes):
-            return False
-        for file_tag_to_addresses in references.values():
-            file_tags = file_tag_to_addresses.keys()
-            if list(file_tags) != sorted(file_tags):
-                return False
-            for addresses in file_tag_to_addresses.values():
-                if list(addresses) != sorted(addresses):
-                    return False
-        return True
 
     @staticmethod
     def _missing_references_to_str(

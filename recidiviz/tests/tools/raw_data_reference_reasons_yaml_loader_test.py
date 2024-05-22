@@ -19,8 +19,8 @@ import unittest
 from collections import defaultdict
 from unittest.mock import mock_open, patch
 
-import yaml
 from mock import MagicMock
+from ruamel.yaml import YAML
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
@@ -73,7 +73,11 @@ class TestRawDataReferenceReasonsYamlLoader(unittest.TestCase):
         RawDataReferenceReasonsYamlLoader.reset_data()
 
     @patch("builtins.open", new_callable=mock_open, read_data=mock_yaml_content)
-    @patch("yaml.safe_load", side_effect=yaml.YAMLError("error parsing YAML"))
+    @patch.object(
+        YAML,
+        "load",
+        side_effect=ValueError("error parsing YAML"),
+    )
     def test_load_yaml_failure(self, _1: MagicMock, _2: MagicMock) -> None:
         with self.assertRaises(RuntimeError):
             RawDataReferenceReasonsYamlLoader.get_yaml_data()
@@ -82,7 +86,7 @@ class TestRawDataReferenceReasonsYamlLoader(unittest.TestCase):
 
     @patch("builtins.open", new_callable=mock_open, read_data=mock_yaml_invalid_content)
     def test_parse_yaml_failure(self, _: MagicMock) -> None:
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             RawDataReferenceReasonsYamlLoader.get_yaml_data()
 
     @patch("builtins.open", new_callable=mock_open, read_data=mock_yaml_content)
