@@ -98,7 +98,7 @@ LOCALHOST_URL = "http://localhost:5000"
 STAGING_URL = "https://app-staging.recidiviz.org"
 PRODUCTION_URL = "https://app.recidiviz.org"
 
-OPT_OUT_MESSAGE = "To stop receiving these texts, reply: STOP."
+OPT_OUT_MESSAGE = "To stop receiving these texts, reply: STOP"
 
 
 def create_workflows_api_blueprint() -> Blueprint:
