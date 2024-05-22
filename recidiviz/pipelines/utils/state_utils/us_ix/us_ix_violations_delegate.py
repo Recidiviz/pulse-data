@@ -47,7 +47,7 @@ class UsIxViolationDelegate(StateSpecificViolationDelegate):
         """
 
         violation_window_lower_bound_inclusive = critical_date - relativedelta(
-            months=24
+            months=12
         )
         violation_window_upper_bound_exclusive = critical_date + relativedelta(days=14)
         return DateRange(
