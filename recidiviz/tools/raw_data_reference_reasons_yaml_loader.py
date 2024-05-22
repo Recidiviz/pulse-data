@@ -49,7 +49,6 @@ class RawDataReferenceReasonsYamlLoader:
         return cls._raw_yaml_data
 
     @classmethod
-    @environment.test_only
     def get_yaml_data(cls) -> Dict[StateCode, Dict[str, Set[BigQueryAddress]]]:
         if not cls._yaml_data:
             cls._yaml_data = cls._convert_raw_yaml_data_to_objs(cls.get_raw_yaml_data())
