@@ -68,6 +68,10 @@ def build_incident_history(
         (dataframe.state == TaskInstanceState.failed)
         | (dataframe.state == TaskInstanceState.success)
     ]
+
+    if dataframe.empty:
+        return {}
+
     dataframe["state_change"] = dataframe.state != dataframe.state.shift(1)
     dataframe["session_id"] = dataframe.groupby(level=dataframe.index.names)[
         "state_change"

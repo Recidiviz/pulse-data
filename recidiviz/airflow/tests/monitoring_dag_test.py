@@ -119,6 +119,30 @@ class TestMonitoringDag(AirflowIntegrationTest):
 
         # If nothing fails, this test passes
 
+    def test_no_history(self) -> None:
+        with Session(bind=self.engine) as session:
+            history = build_incident_history(
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
+            )
+
+            self.assertEqual({}, history)
+
+    def test_no_terminated_tasks(self) -> None:
+        with Session(bind=self.engine) as session:
+            july_sixth = dummy_dag_run(test_dag, "2023-07-06")
+            july_sixth_parent = dummy_ti(parent_task, july_sixth, "running")
+
+            session.add_all([july_sixth, july_sixth_parent])
+
+            history = build_incident_history(
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
+            )
+            self.assertEqual({}, history)
+
     def test_graph_map_index(self) -> None:
         """
         Given a DAG grid view that looks like this:
