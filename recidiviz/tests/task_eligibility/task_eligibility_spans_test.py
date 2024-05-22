@@ -86,6 +86,10 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
                 table_id="all_state_specific_criteria",
             ),
             BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_ar",
+                table_id="all_state_specific_criteria",
+            ),
+            BigQueryAddress(
                 dataset_id="task_eligibility_spans_us_co", table_id="all_tasks"
             ),
             BigQueryAddress(

@@ -150,6 +150,9 @@ from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snooze
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.us_ar.resident_metadata import (
+    US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.us_mo.resident_metadata import (
     US_MO_RESIDENT_METADATA_VIEW_VIEW_BUILDER,
 )
@@ -213,6 +216,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     PRIORITIZED_ELIGIBILITY.address: (
         "Used for ongoing MOSOP work (n-damiani 12/21/23)"
+    ),
+    US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER.address: (
+        "Will be used for AR resident record (Daniel Allen 05/21/24)"
     ),
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER.address: (
         "Used for ongoing MOSOP work (n-damiani 12/21/23)"
