@@ -77,7 +77,6 @@ STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_co
 STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode, str
 ] = {
-    StateCode.US_ID: "movement",
     StateCode.US_IX: "com_Transfer",
     StateCode.US_ME: "CIS_309_MOVEMENT",
     StateCode.US_ND: "elite_externalmovements",
@@ -90,7 +89,6 @@ STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
 STATE_CODE_TO_PATHWAYS_SUPERVISION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode, str
 ] = {
-    StateCode.US_ID: "movement",
     StateCode.US_IX: "com_Transfer",
     StateCode.US_ND: "docstars_offendercasestable",
     StateCode.US_TN: "SupervisionPlan",

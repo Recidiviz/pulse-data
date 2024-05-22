@@ -98,43 +98,11 @@ US_CO:
     sessions.us_co_incarceration_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_ID:
-  DoPro_Participant:
-    experiments.person_assignments: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  assess_qstn_choice:
-    sessions.us_id_raw_lsir_assessments: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_codephonenumbertype:
-    workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_offender:
-    workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_offenderphonenumber:
-    workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_personphonenumber:
-    workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  cis_phonenumber:
-    workflows_views.client_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  geo_cis_participants:
-    experiments.person_assignments: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
   movement:
-    dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     population_projection_data.us_id_monthly_paid_incarceration_population: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ofndr_loc_hist:
     population_projection_data.us_id_monthly_paid_incarceration_population: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  ofndr_tst:
-    sessions.us_id_raw_lsir_assessments: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
-  tst_qstn_rspns:
-    sessions.us_id_raw_lsir_assessments: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_IX:
   RECIDIVIZ_REFERENCE_incarceration_location_names_map:

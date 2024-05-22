@@ -27,9 +27,6 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.workflows.us_ca.shared_ctes import (
     US_CA_MOST_RECENT_CLIENT_DATA,
 )
-from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
-    us_id_latest_phone_number,
-)
 from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
     us_tn_fines_fees_info,
     us_tn_supervision_type,
@@ -224,19 +221,15 @@ _CLIENT_RECORD_DISPLAY_IDS_CTE = """
     ),
 """
 
-_CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
+_CLIENT_RECORD_PHONE_NUMBERS_CTE = """
     phone_numbers AS (
-        # TODO(#14676): Pull from state_person.phone_number once hydrated
-        {us_id_latest_phone_number()}
-        UNION ALL
-        
         # TODO(#14676): Pull from state_person.phone_number once hydrated
         SELECT
             "US_ND" AS state_code,
             pei.person_external_id, 
             doc.PHONE AS phone_number
-        FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.docstars_offenders_latest` doc
-        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
+        FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offenders_latest` doc
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
         ON doc.SID = pei.person_external_id AND pei.state_code = "US_ND"
 
         UNION ALL
@@ -245,12 +238,12 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
             sp.state_code,
             pei.person_external_id,
             sp.current_phone_number
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
-        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
+        FROM `{project_id}.{normalized_state_dataset}.state_person` sp
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
             USING (person_id)
         WHERE
-            sp.state_code IN ({{workflows_supervision_states}})
-            AND sp.state_code NOT IN ("US_ID", "US_ND")
+            sp.state_code IN ({workflows_supervision_states})
+            AND sp.state_code NOT IN ("US_ND")
     ),
 """
 
