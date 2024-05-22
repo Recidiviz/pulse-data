@@ -19,11 +19,10 @@ that they are ready to be used in pipeline calculations."""
 import logging
 from copy import deepcopy
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
 
 import attr
 
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
     StateIncarcerationPeriodAdmissionReason,
@@ -182,15 +181,6 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         By default, returns None
         """
         return None
-
-    def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
-        """State-specific implementations of this class should return a non-empty set if
-        there are certain incarceration types that indicate a period should be dropped
-        entirely from calculations.
-
-        By default, returns an empty set.
-        """
-        return set()
 
     def handle_erroneously_set_temporary_custody_period(  # pylint: disable=unused-argument
         self,
@@ -446,12 +436,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         filtered_periods: List[StateIncarcerationPeriod] = []
 
         for idx, ip in enumerate(incarceration_periods):
-            if (
-                ip.incarceration_type
-                in self.normalization_delegate.incarceration_types_to_filter()
-            ):
-                continue
-
             previous_ip = filtered_periods[-1] if filtered_periods else None
             next_ip = (
                 incarceration_periods[idx + 1]

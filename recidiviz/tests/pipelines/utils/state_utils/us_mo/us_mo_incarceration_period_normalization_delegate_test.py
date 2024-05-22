@@ -181,7 +181,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         return ips
 
-    def test_prepare_incarceration_periods_for_calculations_multiple_jail_and_valid(
+    def test_prepare_incarceration_periods_for_calculations_multiple_jail_and_prison(
         self,
     ) -> None:
         state_code = "US_MO"
@@ -197,6 +197,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
+        # Fully nested in the previous period so it gets dropped
         jail_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=112,
             external_id="222",
@@ -209,7 +210,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        prison_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="333",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -224,7 +225,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_periods = [
             jail_period_1,
             jail_period_2,
-            valid_incarceration_period,
+            prison_period,
         ]
 
         for ip_order_combo in permutations(incarceration_periods):
@@ -237,50 +238,11 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual(
-                [valid_incarceration_period], validated_incarceration_periods
-            )
-
-    def test_prepare_incarceration_periods_for_calculations_valid_then_jail(
-        self,
-    ) -> None:
-        state_code = "US_MO"
-        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            external_id="1",
-            state_code=state_code,
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-        )
-
-        jail_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            external_id="2",
-            state_code=state_code,
-            admission_date=date(2010, 1, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2010, 1, 24),
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-        )
-
-        incarceration_periods = [valid_incarceration_period, jail_period]
-
-        for ip_order_combo in permutations(incarceration_periods):
-            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
-
-            validated_incarceration_periods = (
-                self._normalized_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test
-                )
-            )
-
-            self.assertEqual(
-                [valid_incarceration_period], validated_incarceration_periods
+                [
+                    jail_period_1,
+                    prison_period,
+                ],
+                validated_incarceration_periods,
             )
 
     def test_prepare_incarceration_periods_for_calculations_parole_board_hold(
