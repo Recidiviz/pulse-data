@@ -18,7 +18,7 @@
 Unit test to test the calculation pipeline DAG logic.
 """
 import os
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 from unittest.mock import MagicMock, patch
 
 import yaml
@@ -34,7 +34,10 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
-from recidiviz.airflow.tests.utils.dag_helper_functions import fake_operator_constructor
+from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    fake_operator_constructor,
+    fake_operator_with_return_value,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.ingest.pipeline_utils import (
@@ -210,6 +213,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             for task in dag.tasks
             if isinstance(task, RecidivizDataflowFlexTemplateOperator)
             and "normalization" not in task.task_id
+            and "ingest" not in task.task_id
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
@@ -230,7 +234,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         self,
     ) -> None:
         """Tests that the `normalized_state` dataset update happens after all
-        non normalization flex pipelines are run.
+        non ingest/normalization flex pipelines are run.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
@@ -241,6 +245,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
             for task in dag.tasks
             if isinstance(task, RecidivizDataflowFlexTemplateOperator)
             and "normalization" not in task.task_id
+            and "ingest" not in task.task_id
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
@@ -622,6 +627,22 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         )
 
 
+def _fake_pod_operator(*args: Any, **kwargs: Any) -> BaseOperator:
+    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
+        return fake_operator_with_return_value(True)(*args, **kwargs)
+
+    return fake_operator_constructor(*args, **kwargs)
+
+
+def _fake_pod_operator_ingest_pipeline_should_run_in_dag_false(
+    *args: Any, **kwargs: Any
+) -> BaseOperator:
+    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
+        return fake_operator_with_return_value(False)(*args, **kwargs)
+
+    return fake_operator_constructor(*args, **kwargs)
+
+
 @patch.dict(
     DEFAULT_PIPELINE_REGIONS_BY_STATE_CODE,
     values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
@@ -677,21 +698,29 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
 
         self.kubernetes_pod_operator_patcher = patch(
             "recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task",
-            side_effect=fake_operator_constructor,
+            side_effect=_fake_pod_operator,
         )
         self.kubernetes_pod_operator_patcher.start()
+
+        self.kubernetes_pod_operator_patcher_2 = patch(
+            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.build_kubernetes_pod_task",
+            side_effect=_fake_pod_operator,
+        )
+        self.mock_kubernetes_pod_operator_ = (
+            self.kubernetes_pod_operator_patcher_2.start()
+        )
+
+        self.cloud_sql_query_operator_patcher = patch(
+            "recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group.CloudSqlQueryOperator",
+            side_effect=fake_operator_with_return_value({}),
+        )
+        self.cloud_sql_query_operator_patcher.start()
 
         self.recidiviz_dataflow_operator_patcher = patch(
             "recidiviz.airflow.dags.utils.dataflow_pipeline_group.RecidivizDataflowFlexTemplateOperator",
             side_effect=fake_operator_constructor,
         )
         self.recidiviz_dataflow_operator_patcher.start()
-
-        self.pubsub_publish_message_operator_patcher = patch(
-            "recidiviz.airflow.dags.calculation_dag.PubSubPublishMessageOperator",
-            side_effect=fake_operator_constructor,
-        )
-        self.pubsub_publish_message_operator_patcher.start()
 
         self.dag = create_calculation_dag()
 
@@ -704,8 +733,9 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.pipeline_config_yaml_path_patcher.stop()
         self.project_environment_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
+        self.kubernetes_pod_operator_patcher_2.stop()
+        self.cloud_sql_query_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
-        self.pubsub_publish_message_operator_patcher.stop()
 
     def test_calculation_dag(self) -> None:
         with Session(bind=self.engine) as session:
@@ -714,22 +744,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 session=session,
                 run_conf={
                     "ingest_instance": "PRIMARY",
-                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
-            )
-
-    def test_calculation_dag_trigger_ingest_dag_false(self) -> None:
-        with Session(bind=self.engine) as session:
-            self.run_dag_test(
-                self.dag,
-                session=session,
-                run_conf={
-                    "ingest_instance": "PRIMARY",
-                    "trigger_ingest_dag_post_bq_refresh": False,
-                },
-                expected_skipped_ids=[
-                    r"\.trigger_ingest_dag",
-                ],
             )
 
     def test_calculation_dag_with_state(self) -> None:
@@ -740,17 +755,18 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                     "state_code_filter": "US_XX",
-                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
                 expected_failure_ids=[
+                    # This fails because no sandbox prefix arg is set when there is a
+                    # state_code_filter.
                     r"verify_parameters",
                 ],
                 expected_skipped_ids=[
                     r"wait_to_continue_or_cancel",
                     r"handle_queueing_result",
+                    r"ingest",
                     r"update_state",
                     r"bq_refresh",
-                    r"manage_trigger_ingest_dag",
                     r"update_managed_views",
                     r"normalization",
                     r"update_normalized_state",
@@ -773,7 +789,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
-                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
                 expected_skipped_ids=[
                     r"US[_-]YY",
@@ -793,7 +808,6 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "SECONDARY",
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
-                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
                 expected_skipped_ids=[
                     r"US[_-]YY",

@@ -92,7 +92,6 @@ def trigger_state_specific_calculation_dag(
     trigger_calculation_dag_pubsub(
         ingest_instance,
         state_code,
-        trigger_ingest_dag_post_bq_refresh=False,
         sandbox_prefix=sandbox_prefix,
     )
 

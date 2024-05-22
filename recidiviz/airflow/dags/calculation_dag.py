@@ -21,9 +21,7 @@ This file is uploaded to GCS on deploy.
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional
 
-from airflow.decorators import dag, task, task_group
-from airflow.models import DagRun
-from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
+from airflow.decorators import dag
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -37,6 +35,9 @@ from recidiviz.airflow.dags.calculation.dataflow.metrics_pipeline_task_group_del
 )
 from recidiviz.airflow.dags.calculation.dataflow.normalization_pipeline_task_group_delegate import (
     NormalizationDataflowPipelineTaskGroupDelegate,
+)
+from recidiviz.airflow.dags.calculation.dataflow.single_ingest_pipeline_group import (
+    create_single_ingest_pipeline_group,
 )
 from recidiviz.airflow.dags.calculation.dataflow.supplemental_pipeline_task_group_delegate import (
     SupplementalDataflowPipelineTaskGroupDelegate,
@@ -55,9 +56,6 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 from recidiviz.airflow.dags.utils.branching_by_key import (
     create_branching_by_key,
     select_state_code_parameter_branch,
-)
-from recidiviz.airflow.dags.utils.config_utils import (
-    get_trigger_ingest_dag_post_bq_refresh,
 )
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     build_dataflow_pipeline_task_group,
@@ -118,28 +116,6 @@ def refresh_bq_dataset_operator(
             SANDBOX_PREFIX_JINJA_ARG,
         ],
     )
-
-
-@task_group
-def manage_trigger_ingest_dag() -> None:
-    """Manage the triggering of the ingest DAG."""
-
-    trigger_ingest_dag = PubSubPublishMessageOperator(
-        task_id="trigger_ingest_dag",
-        project_id=get_project_id(),
-        topic="v1.ingest.trigger_ingest_dag",
-        messages=[{"data": b"{}"}],
-    )
-
-    @task.short_circuit()
-    def should_trigger_ingest_dag(dag_run: Optional[DagRun] = None) -> bool:
-        """Checks whether the ingest DAG should be triggered."""
-        if not dag_run:
-            raise ValueError("Dag run not passed to task")
-
-        return get_trigger_ingest_dag_post_bq_refresh(dag_run)
-
-    should_trigger_ingest_dag() >> trigger_ingest_dag
 
 
 def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
@@ -238,6 +214,14 @@ def create_pipeline_configs_by_state(
             state_code = pipeline_config.peek("state_code", str)
             pipeline_params_by_state[state_code].append(pipeline_config)
     return pipeline_params_by_state
+
+
+def ingest_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
+    branches_by_state_code = {}
+    for state_code in get_normalization_pipeline_enabled_states():
+        group = create_single_ingest_pipeline_group(state_code)
+        branches_by_state_code[state_code.value] = group
+    return branches_by_state_code
 
 
 def normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
@@ -356,7 +340,14 @@ def create_calculation_dag() -> None:
 
     initialize_dag = initialize_calculation_dag_group()
     initialize_dag >> bq_refresh
-    initialize_dag >> update_state_dataset >> manage_trigger_ingest_dag()
+
+    with TaskGroup(group_id="ingest") as ingest_task_group:
+        ingest_pipelines_by_state = ingest_pipeline_branches_by_state_code()
+        create_branching_by_key(
+            ingest_pipelines_by_state, select_state_code_parameter_branch
+        )
+
+    initialize_dag >> ingest_task_group >> update_state_dataset
 
     update_all_views = update_managed_views_operator()
 

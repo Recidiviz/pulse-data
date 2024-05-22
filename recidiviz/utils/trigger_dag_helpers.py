@@ -27,18 +27,16 @@ from recidiviz.utils import pubsub_helper
 def trigger_calculation_dag_pubsub(
     ingest_instance: DirectIngestInstance,
     state_code_filter: Optional[StateCode],
-    trigger_ingest_dag_post_bq_refresh: bool,
     sandbox_prefix: Optional[str] = None,
 ) -> None:
     """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
     refresh, which then will trigger the calculation DAG on completion."""
 
     logging.info(
-        "Triggering the calc DAG with instance: [%s], state code filter: [%s], and sandbox_prefix: [%s]. Trigger ingest DAG post BQ refresh: [%s]",
+        "Triggering the calc DAG with instance: [%s], state code filter: [%s], and sandbox_prefix: [%s].",
         ingest_instance.value,
         state_code_filter.value if state_code_filter else None,
         sandbox_prefix,
-        trigger_ingest_dag_post_bq_refresh,
     )
 
     # TODO(#25274): Remove this check once we properly implement the state_code_filter for PRIMARY
@@ -62,32 +60,6 @@ def trigger_calculation_dag_pubsub(
                 else None,
                 "ingest_instance": ingest_instance.value,
                 "sandbox_prefix": sandbox_prefix,
-                "trigger_ingest_dag_post_bq_refresh": trigger_ingest_dag_post_bq_refresh,
-            }
-        ),
-    )
-
-
-def trigger_ingest_dag_pubsub(
-    ingest_instance: Optional[DirectIngestInstance],
-    state_code_filter: Optional[StateCode],
-) -> None:
-    """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
-    refresh, which then will trigger the ingest DAG on completion."""
-
-    logging.info(
-        "Triggering the ingest DAG with instance: [%s], and state code filter: [%s]",
-        ingest_instance.value if ingest_instance else None,
-        state_code_filter.value if state_code_filter else None,
-    )
-    pubsub_helper.publish_message_to_topic(
-        topic="v1.ingest.trigger_ingest_dag",
-        message=json.dumps(
-            {
-                "state_code_filter": state_code_filter.value
-                if state_code_filter
-                else None,
-                "ingest_instance": ingest_instance.value if ingest_instance else None,
             }
         ),
     )

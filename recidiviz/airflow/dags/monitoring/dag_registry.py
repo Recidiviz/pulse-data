@@ -72,7 +72,6 @@ def get_known_configuration_parameters(project_id: str, dag_id: str) -> Set[str]
             "ingest_instance",
             "state_code_filter",
             "sandbox_prefix",
-            "trigger_ingest_dag_post_bq_refresh",
         }
     if dag_id == get_monitoring_dag_id(project_id):
         return set()

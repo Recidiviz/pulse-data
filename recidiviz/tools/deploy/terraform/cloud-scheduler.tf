@@ -16,16 +16,16 @@
 # =============================================================================
 
 resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline_topic" {
-  name        = "schedule_incremental_calculation_pipeline_cloud_function"
-  schedule    = "0 6 * * *" # Every day at 6 am
-  description = "Schedules the running of the incremental calculation pipeline topic"
+  name        = "schedule_calculation_dag_run_cloud_function"
+  schedule    = "0 3 * * *" # Every day at 3 am
+  description = "Triggers the calculation DAG via pubsub"
   time_zone   = "America/Los_Angeles"
 
   pubsub_target {
     # topic's full resource name.
     topic_name = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
     # Run nightly DAG with no state_code filter.
-    data = base64encode("{\"ingest_instance\": \"PRIMARY\", \"trigger_ingest_dag_post_bq_refresh\": false}")
+    data = base64encode("{\"ingest_instance\": \"PRIMARY\"}")
   }
 }
 resource "google_cloud_scheduler_job" "schedule_airflow_hourly_monitoring_dag_run_topic" {
@@ -52,25 +52,13 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
   }
 }
 
-
-resource "google_cloud_scheduler_job" "schedule_ingest_dag_run_topic" {
-  name        = "schedule_ingest_dag_run_cloud_function"
-  schedule    = "0 1 * * *" # Every day at 1 am Pacific
-  description = "Triggers the ingest DAG via pubsub"
-  time_zone   = "America/Los_Angeles"
-
-  pubsub_target {
-    topic_name = google_pubsub_topic.ingest_dag_pubsub_topic.id
-    data       = base64encode("{}") # Run ingest dag with no filters.
-  }
-}
-
-# TODO(#27378): consider moving this later in the evening when calc & ingest have been combined
+# TODO(#29135): consider moving this later in the evening based on approx expected runtime so it runs
+#  right before the calculation DAG.
 resource "google_cloud_scheduler_job" "schedule_raw_data_import_dag_run_topic" {
   # TODO(#29135) enable this cloud scheduler job during launch phase!
   paused      = true
   name        = "schedule_raw_data_import_dag_run_cloud_function"
-  schedule    = "0 21 * * *" # Every day at 9 pm Pacific
+  schedule    = "0 0 * * *" # Every day at 12 am Pacific
   description = "Triggers the raw data import DAG via pubsub"
   time_zone   = "America/Los_Angeles"
 

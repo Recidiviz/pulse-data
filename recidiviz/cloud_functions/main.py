@@ -86,9 +86,6 @@ def trigger_calculation_dag(
             "state_code_filter": json_body.get("state_code_filter"),
             "sandbox_prefix": json_body.get("sandbox_prefix"),
             "ingest_instance": json_body["ingest_instance"],
-            "trigger_ingest_dag_post_bq_refresh": json_body[
-                "trigger_ingest_dag_post_bq_refresh"
-            ],
         },
     )
     cloud_functions_log(
@@ -148,44 +145,6 @@ def trigger_sftp_dag(
     dag_name = f"{project_id}_sftp_dag"
 
     monitor_response = trigger_dag(airflow_uri, dag_name, data={})
-    cloud_functions_log(
-        severity="INFO",
-        message=f"The monitoring Airflow response is {monitor_response}",
-    )
-    return "", HTTPStatus(monitor_response.status_code)
-
-
-def trigger_ingest_dag(
-    event: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered by a Pub/Sub event and in turn triggers the ingest DAG."""
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
-    if not project_id:
-        error_str = "No project id set for call to run the ingest pipelines, returning."
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    airflow_uri = os.environ.get("AIRFLOW_URI")
-    if not airflow_uri:
-        error_str = "The environment variable 'AIRFLOW_URI' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    if "data" in event:
-        json_body = json.loads(base64.b64decode(event["data"]).decode("utf-8"))
-    else:
-        error_str = f"Could not find data needs in event parameter: {event}"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    monitor_response = trigger_dag(
-        airflow_uri,
-        dag_id=f"{project_id}_ingest_dag",
-        data={
-            "state_code_filter": json_body.get("state_code_filter"),
-            "ingest_instance": json_body.get("ingest_instance"),
-        },
-    )
     cloud_functions_log(
         severity="INFO",
         message=f"The monitoring Airflow response is {monitor_response}",

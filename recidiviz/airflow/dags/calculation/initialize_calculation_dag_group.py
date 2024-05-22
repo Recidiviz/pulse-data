@@ -30,7 +30,6 @@ from recidiviz.airflow.dags.utils.config_utils import (
     INGEST_INSTANCE,
     SANDBOX_PREFIX,
     STATE_CODE_FILTER,
-    TRIGGER_INGEST_DAG_POST_BQ_REFRESH,
     get_ingest_instance,
     get_sandbox_prefix,
     get_state_code_filter,
@@ -114,11 +113,6 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     ingest_instance = get_ingest_instance(dag_run)
     if not ingest_instance:
         raise ValueError("[ingest_instance] must be set in dag_run configuration")
-
-    if not isinstance(dag_run.conf.get(TRIGGER_INGEST_DAG_POST_BQ_REFRESH), bool):
-        raise ValueError(
-            f"[{TRIGGER_INGEST_DAG_POST_BQ_REFRESH}] must be set in dag_run configuration as boolean"
-        )
 
     if ingest_instance not in {instance.value for instance in DirectIngestInstance}:
         raise ValueError(
