@@ -354,6 +354,7 @@ class OutliersAdminPanelEndpointTests(TestCase):
                             "updatedBy": "test-user@recidiviz.org",
                             "abscondersLabel": "absconders",
                             "atOrAboveRateLabel": "At or above statewide rate",
+                            "docLabel": "DOC",
                         }
                     ),
                 ],

@@ -45,6 +45,7 @@ class ConfigurationSchema(CamelCaseSchema):
     absconders_label = fields.Str(required=True)
     at_or_above_rate_label = fields.Str(required=True)
     outliers_hover = fields.Str(required=True)
+    doc_label = fields.Str(required=True)
 
 
 class FullConfigurationSchema(ConfigurationSchema):
