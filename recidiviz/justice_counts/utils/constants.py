@@ -200,7 +200,6 @@ AGENCIES_TO_EXCLUDE = {
     489: "Georgia Department of Corrections",
     490: "Hawaii Department of Public Safety",
     491: "Idaho Department of Correction",
-    492: "Illinois Department of Corrections",
     493: "Indiana Department of Correction",
     494: "Kansas Department of Corrections",
     495: "Kentucky Department of Corrections",
