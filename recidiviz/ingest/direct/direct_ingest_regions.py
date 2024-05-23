@@ -91,7 +91,7 @@ class DirectIngestRegion:
         this region can be run in prod. All regions can be triggered to run in
         staging.
         """
-        return (
+        return self.exists_in_env() and (
             not environment.in_gcp_production()
             or self.environment == environment.get_gcp_environment()
         )
