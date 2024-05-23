@@ -147,7 +147,9 @@ export const EditUserForm = ({
             })}
             disabled={roles.length === 0 || stateCodes.length > 1}
             placeholder={
-              singleUserEdit ? selectedUsers[0].roles.join(", ") : undefined
+              singleUserEdit && selectedUsers[0].roles
+                ? selectedUsers[0].roles.join(", ")
+                : undefined
             }
           />
         </Form.Item>

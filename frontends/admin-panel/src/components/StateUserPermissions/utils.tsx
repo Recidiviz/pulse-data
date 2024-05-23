@@ -269,18 +269,19 @@ export const getPermissionsTableColumns = (
       dataIndex: "roles",
       key: "roles",
       width: 150,
-      filters: [...filterData(data)((d) => d.roles)],
+      filters: [...filterData(data)((d) => d.roles ?? [])],
       onFilter: (
         value: string | number | boolean,
         record: StateUserPermissionsResponse
       ) => {
-        return record.roles?.includes(
-          value as keyof StateUserPermissionsResponse
-        );
+        return !!record.roles && record.roles.includes(value as string);
       },
-      render: (text: string[], record: StateUserPermissionsResponse) => {
+      render: (
+        text: StateUserPermissionsResponse["roles"],
+        record: StateUserPermissionsResponse
+      ) => {
         return {
-          children: text.map((role) => formatText(`${role}\n`, record)),
+          children: (text ?? []).map((role) => formatText(`${role}\n`, record)),
         };
       },
     },
