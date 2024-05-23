@@ -37,6 +37,7 @@ export const insightsConfigurationSchema = z.object({
   abscondersLabel: z.string(),
   atOrAboveRateLabel: z.string(),
   outliersHover: z.string(),
+  docLabel: z.string(),
 });
 
 export type InsightsConfiguration = z.infer<typeof insightsConfigurationSchema>;

@@ -285,6 +285,7 @@ class Configuration(InsightsBase):
         nullable=False,
         server_default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
     )
+    doc_label = Column(String, nullable=False, server_default="DOC")
     # When adding new columns below, be sure to set a default value with the
     # server_default parameter and autogenerate a migration so that existing values
     # in the database have this column hydrated.

@@ -464,6 +464,9 @@ class OutliersProductConfiguration:
         default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate."
     )
 
+    # How to refer to the government agency body
+    doc_label: str = attr.ib(default="DOC")
+
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
 
