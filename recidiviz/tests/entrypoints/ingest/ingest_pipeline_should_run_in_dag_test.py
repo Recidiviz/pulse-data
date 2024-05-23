@@ -22,7 +22,6 @@ from unittest.mock import MagicMock, patch
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
     ingest_pipeline_should_run_in_dag,
-    legacy_ingest_pipeline_should_run_in_dag,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -41,15 +40,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.secondary_has_raw_data_changes_patcher = patch(
-            "recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag._secondary_has_raw_data_changes",
-            return_value=False,
-        )
-
-        self.mock_secondary_has_raw_data_changes = (
-            self.secondary_has_raw_data_changes_patcher.start()
-        )
-
         self.direct_ingest_regions_patcher = patch(
             "recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag.direct_ingest_regions",
             autospec=True,
@@ -63,198 +53,8 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.direct_ingest_regions_patcher.stop()
-        self.secondary_has_raw_data_changes_patcher.stop()
-
-    # TODO(#27378): Delete this test once the legacy ingest DAG has been deleted
-    def test_legacy_ingest_pipeline_should_run_in_dag(self) -> None:
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.SECONDARY
-            )
-        )
-
-    # TODO(#27378): Delete this test once the legacy ingest DAG has been deleted
-    def test_legacy_ingest_pipeline_should_run_in_dag_new_raw_data(self) -> None:
-        self.mock_secondary_has_raw_data_changes.side_effect = (
-            lambda state_code: state_code == StateCode.US_XX
-        )
-
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.SECONDARY
-            )
-        )
-
-    # TODO(#27378): Delete this test once the legacy ingest DAG has been deleted
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.get_gcp_environment",
-        return_value="production",
-    )
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.in_gcp_production",
-        return_value=True,
-    )
-    def test_legacy_ingest_pipeline_should_run_in_dag_only_us_dd_launched_in_env(
-        self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
-    ) -> None:
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertTrue(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            legacy_ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.SECONDARY
-            )
-        )
 
     def test_ingest_pipeline_should_run_in_dag(self) -> None:
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.SECONDARY
-            )
-        )
-
-    def test_ingest_pipeline_should_run_in_dag_new_raw_data(self) -> None:
-        self.mock_secondary_has_raw_data_changes.side_effect = (
-            lambda state_code: state_code == StateCode.US_XX
-        )
-
         self.assertTrue(
             ingest_pipeline_should_run_in_dag(
                 StateCode.US_XX, DirectIngestInstance.PRIMARY

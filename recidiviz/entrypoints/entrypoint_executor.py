@@ -34,13 +34,8 @@ from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.ingest.check_raw_data_flashing_not_in_progress import (
     IngestCheckRawDataFlashingEntrypoint,
 )
-from recidiviz.entrypoints.ingest.ingest_lock_management import (
-    IngestAcquireLockEntrypoint,
-    IngestReleaseLockEntrypoint,
-)
 from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
     IngestPipelineShouldRunInDagEntrypoint,
-    LegacyIngestPipelineShouldRunInDagEntrypoint,
 )
 from recidiviz.entrypoints.ingest.update_state_dataset import UpdateStateEntrypoint
 from recidiviz.entrypoints.metric_export.metric_view_export import (
@@ -74,11 +69,8 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     UpdateStateEntrypoint,
     ValidationEntrypoint,
     UpdateAllManagedViewsEntrypoint,
-    IngestAcquireLockEntrypoint,
-    IngestReleaseLockEntrypoint,
     IngestCheckRawDataFlashingEntrypoint,
     IngestPipelineShouldRunInDagEntrypoint,
-    LegacyIngestPipelineShouldRunInDagEntrypoint,
 }
 
 

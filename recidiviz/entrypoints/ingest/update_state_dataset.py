@@ -20,7 +20,6 @@ state-specific ingest pipelines.
 
 import argparse
 import datetime
-import uuid
 from typing import Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -32,7 +31,6 @@ from recidiviz.persistence.database.bq_refresh.union_dataflow_ingest import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
-from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 from recidiviz.utils.environment import gcp_only
 
 LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT = 60 * 60 * 4  # 4 hours
@@ -54,38 +52,23 @@ def execute_state_dataset_refresh(
             "Refresh can only proceed for secondary databases into a sandbox."
         )
 
-    # TODO(#27378): Once ingest pipelines have been moved into the calculation DAG, we
-    #  no longer will need to control access to the state dataset via this lock and can
-    #  remove locking code from this function and delete the StateUpdateLockManager.
-    state_update_lock_manager = StateUpdateLockManager(ingest_instance)
-    state_update_lock_manager_lock_id = str(uuid.uuid4())
+    start = datetime.datetime.now()
 
-    try:
-        state_update_lock_manager.acquire_lock(
-            lock_id=state_update_lock_manager_lock_id,
-            lock_wait_timeout=LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT,
-        )
-        start = datetime.datetime.now()
+    combine_ingest_sources_into_single_state_dataset(
+        ingest_instance=ingest_instance,
+        tables=list(get_all_table_classes_in_schema(SchemaType.STATE)),
+        output_sandbox_prefix=sandbox_prefix,
+    )
 
-        combine_ingest_sources_into_single_state_dataset(
-            ingest_instance=ingest_instance,
-            tables=list(get_all_table_classes_in_schema(SchemaType.STATE)),
-            output_sandbox_prefix=sandbox_prefix,
-        )
-
-        end = datetime.datetime.now()
-        runtime_sec = int((end - start).total_seconds())
-        success_persister = RefreshBQDatasetSuccessPersister(
-            bq_client=BigQueryClientImpl()
-        )
-        success_persister.record_success_in_bq(
-            schema_type=SchemaType.STATE,
-            direct_ingest_instance=ingest_instance,
-            dataset_override_prefix=sandbox_prefix,
-            runtime_sec=runtime_sec,
-        )
-    finally:
-        state_update_lock_manager.release_lock(state_update_lock_manager_lock_id)
+    end = datetime.datetime.now()
+    runtime_sec = int((end - start).total_seconds())
+    success_persister = RefreshBQDatasetSuccessPersister(bq_client=BigQueryClientImpl())
+    success_persister.record_success_in_bq(
+        schema_type=SchemaType.STATE,
+        direct_ingest_instance=ingest_instance,
+        dataset_override_prefix=sandbox_prefix,
+        runtime_sec=runtime_sec,
+    )
 
 
 class UpdateStateEntrypoint(EntrypointInterface):

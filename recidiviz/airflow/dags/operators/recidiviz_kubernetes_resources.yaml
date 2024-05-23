@@ -81,27 +81,6 @@ UpdateStateEntrypoint:
       cpu: 250m
       memory: 500Mi
 
-# TODO(#27378): Delete this once the ingest pipelines run in the calc DAG
-IngestAcquireLockEntrypoint:
-  default_resources:
-    limits:
-      cpu: 250m
-      memory: 500Mi
-
-# TODO(#27378): Delete this once the ingest pipelines run in the calc DAG
-IngestReleaseLockEntrypoint:
-  default_resources:
-    limits:
-      cpu: 250m
-      memory: 500Mi
-
-# TODO(#27378): Delete this once the ingest pipelines run in the calc DAG
-LegacyIngestPipelineShouldRunInDagEntrypoint:
-  default_resources:
-    limits:
-      cpu: 250m
-      memory: 500Mi
-
 IngestPipelineShouldRunInDagEntrypoint:
   default_resources:
     limits:
