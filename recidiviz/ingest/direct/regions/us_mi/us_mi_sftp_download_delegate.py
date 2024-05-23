@@ -18,7 +18,7 @@
 import io
 import re
 from datetime import datetime
-from typing import List
+from typing import Any, Dict, List
 from zipfile import ZipFile, is_zipfile
 
 from more_itertools import one
@@ -28,6 +28,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
+)
+from recidiviz.ingest.direct.sftp.metadata import (
+    DISABLED_ALGORITHMS_KWARG,
+    SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
@@ -110,3 +114,6 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def supported_environments(self) -> List[str]:
         return [GCP_PROJECT_PRODUCTION]
+
+    def get_transport_kwargs(self) -> Dict[str, Any]:
+        return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}

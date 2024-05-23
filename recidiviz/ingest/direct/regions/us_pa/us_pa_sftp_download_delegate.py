@@ -17,7 +17,7 @@
 """Class containing logic for how US_PA SFTP downloads are handled."""
 import io
 import re
-from typing import List
+from typing import Any, Dict, List
 from zipfile import ZipFile, is_zipfile
 
 from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE, GCSFileSystem
@@ -25,6 +25,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
+)
+from recidiviz.ingest.direct.sftp.metadata import (
+    DISABLED_ALGORITHMS_KWARG,
+    SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
 from recidiviz.utils.environment import GCP_PROJECTS
 
@@ -91,3 +95,21 @@ class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def supported_environments(self) -> List[str]:
         return GCP_PROJECTS
+
+    def get_transport_kwargs(self) -> Dict[str, Any]:
+        return {
+            DISABLED_ALGORITHMS_KWARG: {
+                **SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
+                # The kex (key exchange, see https://cryptography.io/en/latest/hazmat/primitives/asymmetric/dh/ docs)
+                # that works for authentication w/ PA is diffie-hellman-group-exchange-sha256,
+                # but these are all "allowed" by the PA servers and will be chosen over
+                # the desired kex by paramiko unless we disable them
+                "kex": [
+                    "curve25519-sha256@libssh.org",
+                    "ecdh-sha2-nistp256",
+                    "ecdh-sha2-nistp384",
+                    "ecdh-sha2-nistp521",
+                    "diffie-hellman-group16-sha512",
+                ],
+            }
+        }

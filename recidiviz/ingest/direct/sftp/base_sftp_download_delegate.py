@@ -16,7 +16,7 @@
 # =============================================================================
 """Base delegate class for handling SFTP downloads"""
 import abc
-from typing import List
+from typing import Any, Dict, List
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -46,3 +46,9 @@ class BaseSftpDownloadDelegate(abc.ABC):
     def supported_environments(self) -> List[str]:
         """Should be implemented to indicate which environments the SFTP download should
         occur."""
+
+    @abc.abstractmethod
+    def get_transport_kwargs(self) -> Dict[str, Any]:
+        """State-specific kwargs to be passed to paramiko's Transport client to help
+        configure connection setings during initial SFTP connection
+        """

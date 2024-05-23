@@ -16,12 +16,16 @@
 # =============================================================================
 """Class containing logic for how US_ME SFTP downloads are handled."""
 from datetime import datetime
-from typing import List
+from typing import Any, Dict, List
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
+)
+from recidiviz.ingest.direct.sftp.metadata import (
+    DISABLED_ALGORITHMS_KWARG,
+    SFTP_DISABLED_ALGORITHMS_PUB_KEYS,
 )
 from recidiviz.utils.environment import GCP_PROJECTS
 
@@ -64,3 +68,6 @@ class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def supported_environments(self) -> List[str]:
         return GCP_PROJECTS
+
+    def get_transport_kwargs(self) -> Dict[str, Any]:
+        return {DISABLED_ALGORITHMS_KWARG: SFTP_DISABLED_ALGORITHMS_PUB_KEYS}

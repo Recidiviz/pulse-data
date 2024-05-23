@@ -17,7 +17,6 @@
 """Tests for RecidivizGcsFileTransformOperator"""
 import datetime
 import unittest
-from typing import List
 from unittest.mock import MagicMock, create_autospec, patch
 
 from airflow import DAG
@@ -26,35 +25,14 @@ from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator import (
     RecidivizGcsFileTransformOperator,
 )
-from recidiviz.airflow.tests.test_utils import execute_task
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
-    BaseSftpDownloadDelegate,
+from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
+    FakeSftpDownloadDelegate,
 )
+from recidiviz.airflow.tests.test_utils import execute_task
+from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
-
-
-class FakeSftpDownloadDelegate(BaseSftpDownloadDelegate):
-    def root_directory(self, candidate_paths: List[str]) -> str:
-        return "/"
-
-    def filter_paths(self, candidate_paths: List[str]) -> List[str]:
-        return candidate_paths
-
-    def supported_environments(self) -> List[str]:
-        return [TEST_PROJECT_ID]
-
-    def post_process_downloads(
-        self, downloaded_path: GcsfsFilePath, gcsfs: GCSFileSystem
-    ) -> List[str]:
-        if "fail" in downloaded_path.abs_path():
-            return []
-        return [downloaded_path.abs_path()]
-
 
 TEST_PROJECT_ID = "recidiviz-testing"
 
