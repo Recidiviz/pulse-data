@@ -28,10 +28,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH
+-- These are cell level movements, already in period form, and the where qualifiers make sure we are grabbing the correct
+-- date times since there are a lot of erroneous incorrect open periods. This makes sure the open period correctly signifies 
+-- someone has no additional movements and is still incarcerated. 
 transfers AS (
-  # These are cell level movements, already in period form, and the where qualifiers make sure we are grabbing the correct
-  # date times since there are a lot of erroneous incorrect open periods. This makes sure the open period correctly signifies 
-  # someone has no additional movements and is still incarcerated. 
   SELECT t.*
   FROM (
     SELECT 
@@ -52,6 +52,8 @@ transfers AS (
     AND (MOVE_OUT_DATE IS NOT NULL OR OPEN IS NULL) # cleans out random open periods while keeping intentionally open ones
     AND (MOVE_IN_DATE < MOVE_OUT_DATE OR OPEN IS NULL) # removes bad data with reverse periods (but need to keep actually open periods)
 ), 
+-- These are slightly higher level movements than the previous CTE, primarily transfers. This table is already in period
+-- form and the TRANSFER_REASON helps fill in more period information.
 high_level_transfers AS (
   SELECT
     RECORD_KEY, 
@@ -64,7 +66,9 @@ high_level_transfers AS (
     TRANSFER_TO_DATE,
     RESPONSIBLE_DIVISION
   FROM {RCDVZ_PRDDTA_OP010P}
-), releases AS (
+),
+-- highest level release information for admission and release cycle 
+releases AS (
   SELECT
     RECORD_KEY, 
     CUSTODY_NUMBER,
@@ -73,7 +77,9 @@ high_level_transfers AS (
     RELEASE_DATE,
     RELEASE_REASON
   FROM {RCDVZ_PRDDTA_OP009P}
-), custody AS (
+), 
+-- higherst level custody information for a custody cycle (incarceration->supervision->freedom is one cycle)
+custody AS (
   SELECT 
     RECORD_KEY, 
     CUSTODY_NUMBER,
@@ -81,21 +87,26 @@ high_level_transfers AS (
     CUSTODY_TYPE,
     DISCHARGE_DATE,
   FROM {RCDVZ_PRDDTA_OP008P}
-), locations AS (
+), 
+-- additional location information
+locations AS (
   SELECT
     LOCATION_CODE,
     LOCATION_TYPE,
     LOCATION_NAME,
     COUNTY,
   FROM {RCDVZ_DOCDTA_TBLOCA}
-), units AS (
+), 
+-- unit and cell information
+units AS (
   SELECT DISTINCT
     LOCATION_CODE,
     CELL_NUMBER,
     UNIT_NUMBER,
   FROM {RCDVZ_DOCDTA_TBCELL}
-), cust_clclhd AS (
-  # The subquery within this one is to ensure we only get one, and the most accurate, custody level per date.
+), 
+-- The subquery within this cte is to ensure we only get one, and the most accurate, custody level per date.
+cust_clclhd AS (
   SELECT  c.* 
   FROM (
     SELECT DISTINCT
@@ -113,9 +124,10 @@ high_level_transfers AS (
     WHERE INSTITUTION_RISK NOT LIKE 'P%'
   ) c
   WHERE seq = 1
-), cust_clover AS (
-  # The subquery within this one is to ensure we only get one, and the most accurate, custody level override per date.
-  # Also, making all custody levels text so it doesn't consider custody level 1 to Minimum a change.
+), 
+-- The subquery within this cte is to ensure we only get one, and the most accurate, custody level override per date.
+-- Also, making all custody levels text so it doesn't consider custody level 1 to Minimum a change.
+cust_clover AS (
   SELECT cl.* 
   FROM (
     SELECT DISTINCT 
@@ -133,8 +145,8 @@ high_level_transfers AS (
   ) cl
   WHERE seq = 1
 ),
+-- Because CLOVER is the override table, we want to make sure we take preference of the custody level there, if exists. 
 rank_cust AS (
-  # Because CLOVER is the override table, we want to make sure we take preference of the custody level there, if exists. 
   SELECT 
     RECORD_KEY,
     clc.EFFECTIVE_DATE, 
@@ -143,6 +155,7 @@ rank_cust AS (
   LEFT JOIN cust_clover clo
   USING (RECORD_KEY, EFFECTIVE_DATE) 
 ),
+-- Lagging custody level over person for the next cte to only grab the new changes (not not create new periods to show same cust level assignment)
 rank_cust_level AS (
   SELECT 
     RECORD_KEY,
@@ -150,15 +163,16 @@ rank_cust_level AS (
     INSTITUTION_RISK,
     LAG(INSTITUTION_RISK) OVER(PARTITION BY RECORD_KEY ORDER BY EFFECTIVE_DATE) AS LAST_LEVEL,
   FROM rank_cust
-), cust_changes AS (
-  # Grabbing only where custody level changes and is populated so we don't create extra unnecessary periods. 
+), 
+-- Grabbing only where custody level changes and is populated so we don't create extra unnecessary periods. 
+cust_changes AS (
   SELECT * 
   FROM rank_cust_level
   WHERE INSTITUTION_RISK !=  LAST_LEVEL AND INSTITUTION_RISK IS NOT NULL
 ),
+-- Joining in other relevant transfer tables to the base cell movements from OP011P, custody CTE has released from over
+-- arching custody periods so pulling in the release reason when relevant. 
 periods AS (
-  # Joining in other relevant transfer tables to the base cell movements from OP011P, custody CTE has released from over
-  # arching custody periods so pulling in the release reason when relevant. 
   SELECT 
     transfers.RECORD_KEY,
     ROW_NUMBER() OVER (PARTITION BY transfers.RECORD_KEY ORDER BY CAST(transfers.CUSTODY_NUMBER AS INT64), CAST(transfers.ADMISSION_NUMBER AS INT64), CAST(transfers.TRANSFER_NUMBER AS INT64), CAST(MOVE_IN_DATE AS DATETIME)) AS PERIOD_ID,
@@ -203,8 +217,9 @@ periods AS (
   WHERE (LOCATION_TYPE IN ('L', 'I') # Institution or Jail 
   AND high_level_transfers.RESPONSIBLE_DIVISION IN ('I', 'L')) # Only counting as Incarceration Period if custodial authority is jail or prison facility
   OR CURRENT_STATUS IN ('IN', 'LC')
-), merging_units1 AS (
-  # Because schema has housing unit but not cell number, we want to squash cell transfers happening within same units.
+), 
+-- Because schema has housing unit but not cell number, we want to squash cell transfers happening within same units.
+merging_units1 AS (
   SELECT
     periods.RECORD_KEY,
     PERIOD_ID,
@@ -225,8 +240,9 @@ periods AS (
     TRANSFER_TO_DATE,
     TRANSFER_REASON,
   FROM periods
-), merging_units2 AS (
-  # Bringing MOVE_IN_DATE down to last MOVE_IN_DATE with the same unit number.
+),
+-- Bringing MOVE_IN_DATE down to last MOVE_IN_DATE with the same unit number. 
+merging_units2 AS (
   SELECT
     RECORD_KEY,
     PERIOD_ID,
@@ -248,16 +264,18 @@ periods AS (
     TRANSFER_REASON,
   FROM merging_units1
   WINDOW periods_for_units AS (PARTITION BY RECORD_KEY ORDER BY PERIOD_ID)
-), merging_units3 AS (
-  # Taking the MOVE_IN_DATE with the most recent MOVE_OUT_DATE to collapse periods with cell movements in same unit. 
+),
+-- Taking the MOVE_IN_DATE with the most recent MOVE_OUT_DATE to collapse periods with cell movements in same unit.  
+merging_units3 AS (
   SELECT mu.* FROM (
     SELECT *,
     ROW_NUMBER() OVER(PARTITION BY RECORD_KEY, merging_units2.MOVE_IN_DATE ORDER BY MOVE_OUT_DATE DESC) as seq
     FROM merging_units2
   ) mu
   WHERE seq = 1
-), added_releases AS (
-  # Joining in custody level where the date is between MOVE_IN_DATE and MOVE_OUT_DATE.
+), 
+-- Joining in custody level where the date is between MOVE_IN_DATE and MOVE_OUT_DATE.
+added_releases AS (
   SELECT 
     merging_units3.RECORD_KEY,
     PERIOD_ID,
@@ -279,8 +297,9 @@ periods AS (
   FROM merging_units3
   LEFT JOIN cust_changes rcl
   ON (merging_units3.RECORD_KEY = rcl.RECORD_KEY AND rcl.EFFECTIVE_DATE BETWEEN MOVE_IN_DATE AND MOVE_OUT_DATE)
-), cell_changes AS ( 
-  # Adding UNIT_CHANGE as admission reason when null
+), 
+-- Adding UNIT_CHANGE as admission reason when null
+cell_changes AS ( 
   SELECT 
     RECORD_KEY,
     PERIOD_ID,
@@ -301,9 +320,9 @@ periods AS (
     RESPONSIBLE_DIVISION
   FROM added_releases
 ),
+-- Setting up to add additional periods for when multiple custody level classifications happen within one existing period,
+-- and carrying admission reasons for next period through to release reason of previous to populate. 
 additional_releases AS ( 
-  # Setting up to add additional periods for when multiple custody level classifications happen within one existing period,
-  # and carrying admission reasons for next period through to release reason of previous to populate. 
   SELECT 
     RECORD_KEY,
     PERIOD_ID,
@@ -323,9 +342,10 @@ additional_releases AS (
     IFNULL(RELEASE_REASON, LEAD(ADMISSION_REASON) OVER (PARTITION BY RECORD_KEY ORDER BY period_id)) AS RELEASE_REASON,
     RESPONSIBLE_DIVISION
   FROM cell_changes
-), add_periods AS (
-  # Breaking up duplicate periods with different custody levels by using effective date to end one and begin the next, 
-  # also adding CUST_CHANGE as admission/release reason for these instances.
+),
+-- Breaking up duplicate periods with different custody levels by using effective date to end one and begin the next, 
+-- also adding CUST_CHANGE as admission/release reason for these instances. 
+add_periods AS (
   SELECT DISTINCT
     RECORD_KEY,
     PERIOD_ID AS OLD_PERIOD,
@@ -345,10 +365,10 @@ additional_releases AS (
     RESPONSIBLE_DIVISION
   FROM additional_releases
 ),
+-- The transfer reasons from OP009P generally match better as release reasons, but there are instances of INTAKE and 
+-- VIOLATION (revocation) when they should be admission reasons instead, so swapping those below. 
+-- Also dropping same day periods with no admission reason or cell.
 switch_admission AS (
-  # The transfer reasons from OP009P generally match better as release reasons, but there are instances of INTAKE and 
-  # VIOLATION (revocation) when they should be admission reasons instead, so swapping those below. 
-  # Also dropping same day periods with no admission reason or cell.
   SELECT 
     RECORD_KEY,
     ROW_NUMBER() OVER (PARTITION BY RECORD_KEY ORDER BY MOVE_IN_DATE) AS PERIOD_ID,
@@ -369,8 +389,9 @@ switch_admission AS (
     RESPONSIBLE_DIVISION
   FROM add_periods
   WHERE (DATE(MOVE_IN_DATE)) != (DATE(MOVE_OUT_DATE)) OR UNIT_NUMBER != 'NO CELL' OR ADMISSION_REASON IS NOT NULL
-), final AS (
-  # Carrying custody level over periods and adding a return from court release reason. 
+),
+-- Carrying custody level over periods and adding a return from court release reason.  
+final AS (
   SELECT 
     RECORD_KEY,
     PERIOD_ID, 

@@ -23,12 +23,17 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH distinct_mtrlms AS (
+WITH 
+-- A lot of reused "rules" in the MTRLMS table so getting the most recent and accurate ones.
+distinct_mtrlms AS (
   SELECT t.*
   FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY RULE_ALLEGED ORDER BY EFFECTIVE_DATE DESC) AS seq 
         FROM {RCDVZ_CISPRDDTA_MTRLMS}) t
   WHERE seq = 1
 ),
+-- Getting all information related to incidents and bucketing specific rule violations to severity number based on documentation
+-- provided by OR. This is how they determine if/time of seg stays for incidents. This list could be changed by OR. 
+-- This cte also joins in sanction table to see the coresponding response to incidents. 
 MISCONDUCTS AS (
   SELECT 
     mto.RECORD_KEY,
@@ -72,6 +77,7 @@ MISCONDUCTS AS (
   AND mtr.SEQUENCE_NO = mts.SEQUENCE_NO
   AND mtr.RULE_ALLEGED = mts.RULE_ALLEGED
 )
+-- Only want where the Miconduct_charge_id is populated
 SELECT  *
 FROM MISCONDUCTS
 WHERE MISCONDUCT_CHARGE_ID IS NOT NULL

@@ -25,7 +25,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH sentence AS (
+WITH 
+-- getting all relevant sentence information
+sentence AS (
   SELECT DISTINCT
     NEXT_NUMBER,
     CHARGE_NEXT_NUMBER,
@@ -41,7 +43,7 @@ WITH sentence AS (
     SENTENCE_LENGTH_YEARS, 
     SENTENCE_LENGTH_MONTHS,
     SENTENCE_LENGTH_DAYS,
-    LIFE_OR_DEATH, # (D or L) - for is_life and capital_punishment
+    LIFE_OR_DEATH, -- (D or L) - for is_life and capital_punishment
     TIME_SERVED, 
     TERMINATION_DATE,
     TERMINATION_CODE,
@@ -56,7 +58,9 @@ WITH sentence AS (
     PPS_SENTENCE_DAYS, 
     FLAG_137635
   FROM {RCDVZ_PRDDTA_OP054P}
-), charge AS ( 
+),
+-- getting all relevant charge information.  
+charge AS ( 
   SELECT DISTINCT
     RECORD_KEY, 
     CUSTODY_NUMBER,
@@ -77,7 +81,9 @@ WITH sentence AS (
     COURT_CASE_COUNT, 
     JUDGE
   FROM {RCDVZ_PRDDTA_OP053P}
-), offense AS ( 
+), 
+-- getting additional charge and offense information
+offense AS ( 
   SELECT
     RECORD_KEY,
     CUSTODY_NUMBER, 
@@ -87,7 +93,10 @@ WITH sentence AS (
     SENTENCE_BEGIN_DATE,
     CRIME_CATEGORY
   FROM {RCDVZ_PRDDTA_OPCOUR}
-), conditions AS (
+),
+-- conditions related to sentence - OPCONE is expired sentences and OPCOND are intended to be current conditions 
+-- aggregating the conditions into a list to have one row per sentence 
+conditions AS (
   SELECT 
     RECORD_KEY,
     COURT_CASE_NUMBER,
@@ -110,7 +119,10 @@ WITH sentence AS (
     USING (CONDITION_CODE, CONDITION_TYPE)
     WHERE RECORD_KEY NOT IN (SELECT RECORD_KEY FROM RCDVZ_CISPRDDTA_OPCOND_generated_view)
     GROUP BY RECORD_KEY, COURT_CASE_NUMBER, CUSTODY_NUMBER, ADMISSION_NUMBER 
-), additional_info AS (
+),
+-- this table contains the most accurate information and has additional information about relevant dates related to sentence
+-- If the parole release date is invalid (01/01/1901) making it null 
+additional_info AS (
   SELECT
     RECORD_KEY, 
     CUSTODY_NUMBER, 
@@ -127,7 +139,10 @@ WITH sentence AS (
     MINIMUM_DATE, 
     RESPONSIBLE_DIVISION
   FROM {RCDVZ_PRDDTA_OP013P}
-), crime_info AS (
+),
+-- this table is a master table from crime information, I am changing the text for the ORS description
+-- since there is 2 long descriptions for the short code which caused entity matching issues before 
+crime_info AS (
   SELECT
     ORS_NUMBER,
     ORS_SUBCLASS, 
@@ -138,9 +153,10 @@ WITH sentence AS (
     SEX_ASSAULT_CRIME,
     NCRP_OFFENSE_CODE
   FROM {RCDVZ_DOCDTA_TB209P}
-), descriptions AS (
-  # ORS Codes have subcodes to make distinct but need table to decode crime description abbreviations so 
-  # adding case when to avoid duplicated rows with slightly differing descriptions
+),
+-- ORS Codes have subcodes to make distinct but need table to decode crime description abbreviations so 
+-- adding case when to avoid duplicated rows with slightly differing descriptions 
+descriptions AS (
   SELECT DISTINCT
     ORS_ABBREVIATION,
     CASE 
@@ -166,6 +182,7 @@ WITH sentence AS (
     END AS ORS_DESCRIPTION,
 FROM crime_info
 ),
+-- getting the ncic code for specific crimes
 ncic_info AS (
   SELECT 
     ORS_NUMBER, 
@@ -173,6 +190,8 @@ ncic_info AS (
     NCIC_CODE
   FROM {RCDVZ_PBMIS_COMMON_NCIC_CODES}
 ),
+-- joining in all of the relevant crime and sentence information
+-- looking at crime committed date because after 1989 OR started sentnecing supervision seperately so parole as part of original sentence is not possible
 final AS (
   SELECT 
     RECORD_KEY, 
@@ -192,7 +211,7 @@ final AS (
     sentence.TERMINATION_CODE,
     additional_info.PAROLE_RELEASE_DATE,
     sentence.LIFE_OR_DEATH,
-    IF(CRIME_COMMITTED_DATE < '1989-11-01', 'Y', 'N') AS PAROLE_POSSIBLE, # after this date supervision sentenced separately
+    IF(CRIME_COMMITTED_DATE < '1989-11-01', 'Y', 'N') AS PAROLE_POSSIBLE, -- after this date supervision sentenced separately
     sentence.TIME_SERVED,
     sentence.STATUTORY_GOOD_TIME,
     sentence.EARNED_TIME_DAYS,  

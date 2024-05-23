@@ -25,9 +25,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH people_on_supervision AS (
-# finds all people with statuses for supervision that have not been terminated or are not currently unsupervised status (UNSU)
-# Limits all contact to people currently on superivison, is currently the desired functionality. Change if we need historical in future
+WITH 
+-- Finds all people with statuses for supervision that have not been terminated or are not currently unsupervised status (UNSU)
+-- Limits all contact to people currently on superivison, is currently the desired functionality. Change if we need historical in future
+people_on_supervision AS (
   SELECT DISTINCT 
     RECORD_KEY, 
     CURRENT_STATUS, 
@@ -40,6 +41,8 @@ WITH people_on_supervision AS (
   WHERE CURRENT_STATUS IN ('PS', 'PR', 'PO', 'CD', 'DV', 'PA', 'SL')
   AND OUTCOUNT_REASON IS NULL OR OUTCOUNT_REASON = 'UNSU'
 ),
+-- Grabs all measurable contact with the person on supervision, the caseload is not null, and the person is on supervision.
+-- There is a lot of erroneous entries in the contact table and these are the CHRONO_TYPEs that are relevant.
 contacts AS (
   SELECT DISTINCT
     RECORD_KEY,
@@ -50,11 +53,12 @@ contacts AS (
     CHRONO_WHAT, 
     (DATE(CHRONO_DATE)) AS CHRONO_DATE
   FROM {RCDVZ_CISPRDDTA_CMCROH} cm
-  WHERE CHRONO_WHO = 'O' # Contact for Adult in Custody or Adult in Supervision
+  WHERE CHRONO_WHO = 'O' -- Contact for Adult in Custody or Adult in Supervision
   AND CHRONO_TYPE IN ('O', 'OV', 'H', 'CORT', 'DAYR', 'E', 'FLD', 'J', 'TV', 'VV', 'TX') 
   AND cm.CASELOAD IS NOT null
   AND RECORD_KEY IN (SELECT DISTINCT RECORD_KEY FROM people_on_supervision)
 )
+-- We want to make sure we only have contacts for this persons period of supervision. 
 SELECT DISTINCT
   RECORD_KEY, 
   ps.CASELOAD, 
