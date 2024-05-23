@@ -161,6 +161,7 @@ def load_dataframe_from_path(
     return pd.DataFrame(values, columns=fixture_columns)
 
 
+# TODO(#29997) Update to handle code files
 @attr.define
 class DirectIngestTestFixturePath:
     """Class storing information about an ingest test fixture file."""

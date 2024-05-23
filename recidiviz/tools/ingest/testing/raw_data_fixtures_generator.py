@@ -101,6 +101,10 @@ class RawDataFixturesGenerator:
         randomized_values_map: Dict[str, str],
         datetime_format: str,
         overwrite: Optional[bool] = False,
+        # TODO(#29995) Show the tables, columns, and filters if True
+        preview: bool = False,
+        # TODO(#29994) Add functionality to get columns via a regex.
+        root_entity_external_id_column_regex: Optional[str] = None,
     ):
         self.project_id = project_id
         self.region_code = region_code
@@ -108,10 +112,12 @@ class RawDataFixturesGenerator:
         self.output_filename = output_filename
         self.root_entity_external_ids = root_entity_external_ids
         self.root_entity_external_id_columns = root_entity_external_id_columns
+        self.root_entity_external_id_column_regex = root_entity_external_id_column_regex
         self.file_tags_to_load_in_full = file_tags_to_load_in_full
         self.randomized_values_map = randomized_values_map
         self.datetime_format = datetime_format
         self.overwrite = overwrite
+        self.preview = preview
 
         self.bq_client = BigQueryClientImpl(project_id=project_id)
 
@@ -138,6 +144,7 @@ class RawDataFixturesGenerator:
             raw_data_source_instance=self.raw_data_source_instance,
         )
 
+    # TODO(#29997) Update the path for code files.
     def get_output_fixture_path(
         self, raw_file_dependency_config: DirectIngestViewRawFileDependency
     ) -> str:
@@ -311,6 +318,7 @@ class RawDataFixturesGenerator:
             self.validate_raw_table_exists(raw_table_dependency_config.raw_file_config)
 
             # Write fixtures to this path
+            # TODO(#29997) Update the path for code files.
             output_fixture_path = self.get_output_fixture_path(
                 raw_table_dependency_config
             )
@@ -339,6 +347,7 @@ class RawDataFixturesGenerator:
                 root_entity_external_id_columns=root_entity_external_id_columns,
             )
 
+            # TODO(#29997) Don't query code file if it already exists.
             query_job = self.bq_client.run_query_async(
                 query_str=query_str, use_query_cache=True
             )

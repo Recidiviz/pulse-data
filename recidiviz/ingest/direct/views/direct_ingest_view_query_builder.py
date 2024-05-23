@@ -97,6 +97,7 @@ class RawFileHistoricalRowsFilterType(Enum):
     LATEST = "LATEST"
 
 
+# TODO(#29997) Make is_code_file a top level property
 @attr.define(kw_only=True)
 class DirectIngestViewRawFileDependency:
     """Class containing information about a raw table that is a dependency of an ingest
