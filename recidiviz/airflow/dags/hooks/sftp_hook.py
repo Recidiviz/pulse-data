@@ -27,9 +27,16 @@ from paramiko.transport import Transport
 class RecidivizSFTPHook(SFTPHook):
     """Custom SFTPHook that supports two-factor authenticated SFTP servers."""
 
-    def __init__(self, ssh_conn_id: str, *args: Any, **kwargs: Dict[str, Any]) -> None:
+    def __init__(
+        self,
+        ssh_conn_id: str,
+        transport_kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Dict[str, Any]
+    ) -> None:
         super().__init__(ssh_conn_id=ssh_conn_id, ssh_hook=None, *args, **kwargs)
         self.conn: Optional[paramiko.SFTPClient] = None
+        self._transport_kwargs = transport_kwargs
 
         # Enable debug logging when creating SFTP connections
         logging.basicConfig(level=logging.DEBUG)
@@ -55,38 +62,37 @@ class RecidivizSFTPHook(SFTPHook):
             )
 
             transport = Transport(
-                (connection.host, connection.port or 22),
-                # A recent change to Paramiko defined a preference order for algorithms that
-                # are used to decrypt host keys and private keys. For RSA keys, we have
-                # identified that these two algorithms take precedent over ssh-rsa, which is
-                # the algorithm preferred by state partners. Therefore, if there are other
-                # channel closed errors, we should consider adding algorithms to this list
-                # in order to force preference of the algorithms that our hostkey secrets
-                # contain by our state partners.
-                disabled_algorithms={"pubkeys": ["rsa-sha2-512", "rsa-sha2-256"]},
+                (connection.host, connection.port or 22), **self._transport_kwargs
             )
 
-            transport.connect()
-            if private_key:
-                try:
-                    transport.auth_publickey(connection.login, private_key)
-                except Exception:
-                    # Generally, if a private key authentication method is required, then
-                    # a password has to be inputted as well as a second factor of auth.
-                    # This allows paramiko to continue to create the connection by manually
-                    # sending a message with password credentials forward.
-                    message = paramiko.Message()
-                    message.add_byte(paramiko.common.cMSG_USERAUTH_REQUEST)
-                    message.add_string(connection.login)
-                    message.add_string("ssh-connection")
-                    message.add_string("password")
-                    message.add_boolean(False)
-                    message.add_string(connection.password)
-                    # pylint: disable=protected-access
-                    transport._send_message(message)  # type: ignore
-            else:
-                transport.auth_password(connection.login, connection.password)
-            client = paramiko.SFTPClient.from_transport(transport)
+            try:
+                transport.connect()
+                if private_key:
+                    try:
+                        transport.auth_publickey(connection.login, private_key)
+                    except Exception:
+                        # Generally, if a private key authentication method is required, then
+                        # a password has to be inputted as well as a second factor of auth.
+                        # This allows paramiko to continue to create the connection by manually
+                        # sending a message with password credentials forward.
+                        message = paramiko.Message()
+                        message.add_byte(paramiko.common.cMSG_USERAUTH_REQUEST)
+                        message.add_string(connection.login)
+                        message.add_string("ssh-connection")
+                        message.add_string("password")
+                        message.add_boolean(False)
+                        message.add_string(connection.password)
+                        # pylint: disable=protected-access
+                        transport._send_message(message)  # type: ignore
+                else:
+                    transport.auth_password(connection.login, connection.password)
+                client = paramiko.SFTPClient.from_transport(transport)
+            except Exception as e:
+                raise ConnectionError(
+                    "Encountered an error while trying to establish an sftp connection. "
+                    "If you are not sure the cause of this error, see go/sftp-debugging "
+                    "for past errors and resolutions"
+                ) from e
             if not client:
                 raise ValueError("Expected proper SFTP client to be created.")
             self.conn = client

@@ -49,7 +49,8 @@ class FindSftpFilesOperator(BaseOperator):
     # pylint: disable=unused-argument
     def execute(self, context: Context) -> List[Dict[str, Union[str, int]]]:
         sftp_hook = RecidivizSFTPHook(
-            ssh_conn_id=f"{self.state_code.lower()}_sftp_conn_id"
+            ssh_conn_id=f"{self.state_code.lower()}_sftp_conn_id",
+            transport_kwargs=self.delegate.get_transport_kwargs(),
         )
         return self._get_paths_to_download_from_sftp(
             sftp_hook, excluded_remote_paths=self._get_excluded_remote_paths()

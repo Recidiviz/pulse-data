@@ -38,6 +38,9 @@ from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_sftp_download_bucket_path_for_state,
 )
+from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
+    SftpDownloadDelegateFactory,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -58,6 +61,7 @@ class RecidivizSftpToGcsOperator(BaseOperator):
         self.remote_file_path = remote_file_path
         self.sftp_timestamp = sftp_timestamp
 
+        self.delegate = SftpDownloadDelegateFactory.build(region_code=self.region_code)
         self.bucket = gcsfs_sftp_download_bucket_path_for_state(region_code, project_id)
         self.download_path = self.build_download_path()
 
@@ -93,7 +97,8 @@ class RecidivizSftpToGcsOperator(BaseOperator):
     def execute(self, context: Context) -> Dict[str, Union[str, int]]:
         gcs_hook = GCSHook()
         sftp_hook = RecidivizSFTPHook(
-            ssh_conn_id=f"{self.region_code.lower()}_sftp_conn_id"
+            ssh_conn_id=f"{self.region_code.lower()}_sftp_conn_id",
+            transport_kwargs=self.delegate.get_transport_kwargs(),
         )
 
         gcsfs = GCSFileSystemImpl(gcs_hook.get_conn())

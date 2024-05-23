@@ -28,13 +28,12 @@ from recidiviz.airflow.dags.hooks.sftp_hook import RecidivizSFTPHook
 from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
     FindSftpFilesOperator,
 )
+from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
+    FakeSftpDownloadDelegate,
+)
 from recidiviz.airflow.tests.test_utils import execute_task
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.local_file_paths import filepath_relative_to_caller
-from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
-    BaseSftpDownloadDelegate,
-)
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
@@ -47,24 +46,13 @@ YESTERDAY = TODAY - datetime.timedelta(1)
 TWO_DAYS_AGO = TODAY - datetime.timedelta(2)
 
 
-class FakeSftpDownloadDelegate(BaseSftpDownloadDelegate):
-    def root_directory(self, candidate_paths: List[str]) -> str:
-        return "/"
-
+class FakeFindSftpDownloadDelegate(FakeSftpDownloadDelegate):
     def filter_paths(self, candidate_paths: List[str]) -> List[str]:
         return [path for path in candidate_paths if path.startswith("test")]
 
-    def supported_environments(self) -> List[str]:
-        return [TEST_PROJECT_ID]
-
-    def post_process_downloads(
-        self, downloaded_path: GcsfsFilePath, gcsfs: GCSFileSystem
-    ) -> List[str]:
-        return [downloaded_path.abs_path()]
-
 
 @patch.object(
-    SftpDownloadDelegateFactory, "build", return_value=FakeSftpDownloadDelegate()
+    SftpDownloadDelegateFactory, "build", return_value=FakeFindSftpDownloadDelegate()
 )
 class TestFindSftpFilesOperator(unittest.TestCase):
     """Tests for FindSftpFilesOperator"""

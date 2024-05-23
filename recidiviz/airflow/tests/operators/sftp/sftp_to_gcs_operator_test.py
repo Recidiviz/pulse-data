@@ -17,19 +17,31 @@
 """Tests for the SftpToGcsOperator"""
 import datetime
 import unittest
+from unittest.mock import MagicMock, patch
 
 import pytz
 
 from recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator import (
     RecidivizSftpToGcsOperator,
 )
+from recidiviz.airflow.tests.operators.sftp.sftp_test_utils import (
+    FakeSftpDownloadDelegate,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
+    SftpDownloadDelegateFactory,
+)
 
 
+@patch.object(
+    SftpDownloadDelegateFactory, "build", return_value=FakeSftpDownloadDelegate()
+)
 class TestSftpToGcsOperator(unittest.TestCase):
     """Tests for the SftpToGcsOperator"""
 
-    def test_creates_correct_download_path(self) -> None:
+    def test_creates_correct_download_path(
+        self, _mock_sftp_delegate: MagicMock
+    ) -> None:
         operator = RecidivizSftpToGcsOperator(
             task_id="test-task",
             project_id="recidiviz-testing",
