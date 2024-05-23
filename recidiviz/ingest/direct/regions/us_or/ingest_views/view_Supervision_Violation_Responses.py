@@ -25,7 +25,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH base_sanction AS (
+WITH
+-- This table contains all the base sanction information. 
+base_sanction AS (
   SELECT 
     RECORD_KEY, 
     SANC_NUMBER, 
@@ -33,7 +35,9 @@ WITH base_sanction AS (
     SEQUENCE_NO, 
     DATE(SANC_DATE) AS SANC_DATE
   FROM {RCDVZ_CISPRDDTA_CMSACN}
-), imposed_sanc AS (
+), 
+-- Additional information for all imposed sanctions. 
+imposed_sanc AS (
   SELECT 
     RECORD_KEY, 
     SANC_NUMBER, 
@@ -51,7 +55,9 @@ WITH base_sanction AS (
     HEARING_DATE, 
     DECISION_DATE
   FROM {RCDVZ_CISPRDDTA_CMSAIM}
-), court_sanction AS (
+),
+-- Information about court imposed sanctions. 
+court_sanction AS (
   SELECT 
     RECORD_KEY, 
     SANC_NUMBER, 
@@ -62,13 +68,18 @@ WITH base_sanction AS (
     REC_CUST_UNITS, 
     REC_AUTH_CODE,
   FROM {RCDVZ_CISPRDDTA_CMSACO}
-), conditions as (
+),
+-- Getting information from the condition master table. 
+conditions as (
   SELECT 
     CONDITION_CODE, 
     CONDITION_TYPE,
     CONDITION_DESC
   FROM {RCDVZ_DOCDTA_TBCOND}
-), all_sanctions AS (
+), 
+-- Joining all sanction information in from various sanction tables and the violated conditions
+-- descriptions from the condition master table. 
+all_sanctions AS (
 SELECT 
   base_sanction.RECORD_KEY, 
   base_sanction.SANC_NUMBER, 
@@ -89,7 +100,10 @@ LEFT JOIN imposed_sanc
 USING (RECORD_KEY, SANC_NUMBER, CONDITION_CODE)
 LEFT JOIN conditions
 USING (CONDITION_CODE)
-), aggr AS (
+), 
+-- Grouping by sanction information to condense the conditions since sanctions have all possible conditions
+-- that may have been violated. 
+aggr AS (
   SELECT
     RECORD_KEY, 
     SANC_NUMBER, 
@@ -108,7 +122,10 @@ USING (CONDITION_CODE)
   LEFT JOIN {RCDVZ_DOCDTA_TBSANC}
   USING (SANCTION_CODE)
   GROUP BY RECORD_KEY, SANC_NUMBER, CONDITION_CODE, CONDITION_DESC, SANC_DATE,COURT_CASE_NUMBER,COUNTY, SANCTION_CODE,SANCTION_DESC,all_sanctions.SANCTION_TYPE,SANCTION_ACTION,LOCAL_SANCTION_FLAG
-), final AS (
+),
+-- Creating an array agg for all the results so there is only one row per record key and sanction number, 
+-- will be seperated in the mapping.  
+final AS ( 
   SELECT 
     RECORD_KEY, 
     SANC_NUMBER,
@@ -141,7 +158,6 @@ USING (CONDITION_CODE)
   FROM aggr
   GROUP BY RECORD_KEY, SANC_NUMBER
 )
-
 SELECT DISTINCT final.*, SANC_DATE
 FROM final
 LEFT JOIN base_sanction

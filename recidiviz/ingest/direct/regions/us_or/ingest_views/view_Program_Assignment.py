@@ -25,7 +25,9 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH programs AS (
+WITH 
+-- Getting program information from table CMOFFT
+programs AS (
     SELECT DISTINCT
       RECORD_KEY, 
       TREAT_ID, 
