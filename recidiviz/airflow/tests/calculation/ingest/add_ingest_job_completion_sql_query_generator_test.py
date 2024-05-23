@@ -19,9 +19,8 @@ import unittest
 from unittest.mock import Mock, create_autospec
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.context import Context
 
-from recidiviz.airflow.dags.ingest.add_ingest_job_completion_sql_query_generator import (
+from recidiviz.airflow.dags.calculation.ingest.add_ingest_job_completion_sql_query_generator import (
     AddIngestJobCompletionSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
@@ -45,35 +44,9 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
         )
         self.assertEqual(result, expected_query)
 
-    # TODO(#27378): Delete when we remove the ingest_instance param
-    #  from AddIngestJobCompletionSqlQueryGenerator.
-    def test_insert_statement_generated_correctly_legacy(self) -> None:
-        generator = AddIngestJobCompletionSqlQueryGenerator(
-            region_code="US_XX",
-            ingest_instance="PRIMARY",
-            run_pipeline_task_id="test_dataflow_pipeline_task_id",
-        )
-        mock_operator = create_autospec(CloudSqlQueryOperator)
-        mock_postgres = create_autospec(PostgresHook)
-        mock_context = create_autospec(Context)
-
-        mock_operator.xcom_pull.return_value = {"id": "test_job_id"}
-
-        generator.execute_postgres_query(mock_operator, mock_postgres, mock_context)
-
-        mock_postgres.run.assert_called_with(
-            """
-            INSERT INTO direct_ingest_dataflow_job
-                (job_id, region_code, ingest_instance, completion_time , is_invalidated)
-            VALUES
-                ('test_job_id', 'US_XX', 'PRIMARY', NOW(), FALSE);
-        """
-        )
-
     def test_insert_statement_generated_correctly(self) -> None:
         generator = AddIngestJobCompletionSqlQueryGenerator(
             region_code="US_XX",
-            ingest_instance=None,
             run_pipeline_task_id="test_dataflow_pipeline_task_id",
         )
         mock_operator = create_autospec(CloudSqlQueryOperator)

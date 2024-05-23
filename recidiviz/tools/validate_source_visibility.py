@@ -304,42 +304,6 @@ def main() -> int:
         ),
     )
 
-    valid_ingest_dag_prefixes = {
-        "recidiviz.airflow.dags",
-        "recidiviz.big_query.address_overrides",
-        "recidiviz.big_query.big_query_address",
-        "recidiviz.common",
-        "recidiviz.cloud_storage.gcsfs_path",
-        "recidiviz.ingest.direct.dataset_config",
-        "recidiviz.ingest.direct.direct_ingest_regions",
-        "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
-        "recidiviz.ingest.direct.types.direct_ingest_instance",
-        "recidiviz.persistence.database.schema_type",
-        "recidiviz.pipelines.ingest.dataset_config",
-        "recidiviz.pipelines.ingest.pipeline_parameters",
-        "recidiviz.pipelines.ingest.pipeline_utils",
-        "recidiviz.pipelines.pipeline_parameters",
-        "recidiviz.utils",
-    }
-
-    success &= check_dependencies_for_entrypoint(
-        "recidiviz.airflow.dags.ingest_dag",
-        valid_module_prefixes=make_module_matcher(valid_ingest_dag_prefixes),
-    )
-
-    success &= check_dependencies_for_entrypoint(
-        "recidiviz.airflow.tests.ingest_dag_test",
-        valid_module_prefixes=make_module_matcher(
-            {
-                "recidiviz.airflow.tests",
-                "recidiviz.tests.test_setup_utils",
-                "recidiviz.tools.utils.script_helpers",
-                "recidiviz.tools.postgres.local_postgres_helpers",
-                *valid_ingest_dag_prefixes,
-            }
-        ),
-    )
-
     valid_raw_data_import_dag_prefixes = {
         "recidiviz.airflow.dags",
         "recidiviz.common",

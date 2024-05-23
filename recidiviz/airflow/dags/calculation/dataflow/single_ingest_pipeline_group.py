@@ -27,20 +27,20 @@ from airflow.utils.task_group import TaskGroup
 from recidiviz.airflow.dags.calculation.dataflow.ingest_pipeline_task_group_delegate import (
     IngestDataflowPipelineTaskGroupDelegate,
 )
-from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
-    INGEST_INSTANCE_JINJA_ARG,
-)
-from recidiviz.airflow.dags.ingest.add_ingest_job_completion_sql_query_generator import (
+from recidiviz.airflow.dags.calculation.ingest.add_ingest_job_completion_sql_query_generator import (
     AddIngestJobCompletionSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.ingest.get_max_update_datetime_sql_query_generator import (
+from recidiviz.airflow.dags.calculation.ingest.get_max_update_datetime_sql_query_generator import (
     GetMaxUpdateDateTimeSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.ingest.get_watermark_sql_query_generator import (
+from recidiviz.airflow.dags.calculation.ingest.get_watermark_sql_query_generator import (
     GetWatermarkSqlQueryGenerator,
 )
-from recidiviz.airflow.dags.ingest.set_watermark_sql_query_generator import (
+from recidiviz.airflow.dags.calculation.ingest.set_watermark_sql_query_generator import (
     SetWatermarkSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    INGEST_INSTANCE_JINJA_ARG,
 )
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
@@ -157,8 +157,7 @@ def _initialize_dataflow_pipeline(
             task_id="get_max_update_datetimes",
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=GetMaxUpdateDateTimeSqlQueryGenerator(
-                region_code=state_code.value,
-                ingest_instance=None,
+                region_code=state_code.value
             ),
         )
 
@@ -167,7 +166,6 @@ def _initialize_dataflow_pipeline(
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=GetWatermarkSqlQueryGenerator(
                 region_code=state_code.value,
-                ingest_instance=None,
             ),
         )
 
@@ -224,7 +222,6 @@ def create_single_ingest_pipeline_group(state_code: StateCode) -> TaskGroup:
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
             query_generator=AddIngestJobCompletionSqlQueryGenerator(
                 region_code=state_code.value,
-                ingest_instance=None,
                 run_pipeline_task_id=run_pipeline.task_id,
             ),
         )

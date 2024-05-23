@@ -14,33 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The CloudSQLQueryGenerator for adding job completion info to DirectIngestDataflowJob."""
-from typing import Any, Dict, Optional
+"""The CloudSQLQueryGenerator for setting the watermark in DirectIngestDataflowRawTableUpperBounds."""
+from typing import Any, Dict
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
+from recidiviz.airflow.dags.calculation.ingest.metadata import (
+    RAW_DATA_FILE_TAG,
+    WATERMARK_DATETIME,
+)
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
 
 
-class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
-    """Custom query generator for adding job completion info to DirectIngestDataflowJob."""
+class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
+    """Custom query generator for setting the watermark in DirectIngestDataflowRawTableUpperBounds."""
 
     def __init__(
         self,
         region_code: str,
-        # TODO(#27378): Delete this arg and always pull from the context once the ingest
-        #  pipelines are only run in the calc DAG.
-        ingest_instance: Optional[str],
+        get_max_update_datetime_task_id: str,
         run_pipeline_task_id: str,
     ) -> None:
         super().__init__()
         self.region_code = region_code
-        self.ingest_instance = ingest_instance
+        self.get_max_update_datetime_task_id = get_max_update_datetime_task_id
         self.run_pipeline_task_id = run_pipeline_task_id
 
     def execute_postgres_query(
@@ -49,32 +50,35 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         postgres_hook: PostgresHook,
         context: Context,
     ) -> None:
-        """Inserts the job completion info into DirectIngestDataflowJob."""
+        """Inserts the watermark for each raw data file tag into DirectIngestDataflowRawTableUpperBounds."""
+
+        max_update_datetimes: Dict[str, str] = operator.xcom_pull(
+            context, key="return_value", task_ids=self.get_max_update_datetime_task_id
+        )
 
         pipeline: Dict[str, Any] = operator.xcom_pull(
             context, key="return_value", task_ids=self.run_pipeline_task_id
         )
-        if self.ingest_instance:
-            ingest_instance: Optional[str] = self.ingest_instance
-        else:
-            ingest_instance = get_ingest_instance(context["dag_run"])
-
-        if not ingest_instance:
-            raise ValueError(f"Expected to find ingest_instance argument: {context}")
 
         postgres_hook.run(
-            self.insert_sql_query(
-                job_id=pipeline["id"],
-                region_code=self.region_code,
-                ingest_instance=ingest_instance,
-            )
+            self.insert_sql_query(pipeline["id"], max_update_datetimes),
         )
 
-    @staticmethod
-    def insert_sql_query(job_id: str, region_code: str, ingest_instance: str) -> str:
+    def insert_sql_query(
+        self,
+        job_id: str,
+        max_update_datetimes: Dict[str, str],
+    ) -> str:
+        values = ", ".join(
+            [
+                f"('{self.region_code.upper()}', '{file_tag}', '{max_update_datetime}', '{job_id}')"
+                for file_tag, max_update_datetime in max_update_datetimes.items()
+            ]
+        )
+
         return f"""
-            INSERT INTO direct_ingest_dataflow_job
-                (job_id, region_code, ingest_instance, completion_time , is_invalidated)
+            INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds
+                (region_code, {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}, job_id)
             VALUES
-                ('{job_id}', '{region_code.upper()}', '{ingest_instance.upper()}', NOW(), FALSE);
+                {values};
         """

@@ -14,13 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The CloudSQLQueryGenerator for getting the max watermark from DirectIngestDataflowRawTableUpperBounds."""
-from typing import Dict, Optional
+"""The CloudSQLQueryGenerator for getting the max update datetime from direct_ingest_raw_file_metadata."""
+from typing import Dict
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
-from recidiviz.airflow.dags.ingest.metadata import RAW_DATA_FILE_TAG, WATERMARK_DATETIME
+from recidiviz.airflow.dags.calculation.ingest.metadata import (
+    FILE_TAG,
+    MAX_UPDATE_DATETIME,
+)
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
@@ -28,19 +31,13 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
 
 
-class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
-    """Custom query generator for getting the max watermark from DirectIngestDataflowRawTableUpperBounds."""
+# TODO(#29058) update to use new raw data metadata tables
+class GetMaxUpdateDateTimeSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
+    """Custom query generator for getting the max update datetime from direct_ingest_raw_file_metadata."""
 
-    def __init__(
-        self,
-        region_code: str,
-        # TODO(#27378): Delete this arg and always pull from the context once the ingest
-        #  pipelines are only run in the calc DAG.
-        ingest_instance: Optional[str],
-    ) -> None:
+    def __init__(self, region_code: str) -> None:
         super().__init__()
         self.region_code = region_code
-        self.ingest_instance = ingest_instance
 
     def execute_postgres_query(
         self,
@@ -48,38 +45,32 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
         postgres_hook: PostgresHook,
         context: Context,
     ) -> Dict[str, str]:
-        """Returns the max watermark from DirectIngestDataflowRawTableUpperBounds."""
+        """Returns the max update datetime from direct_ingest_raw_file_metadata."""
 
-        if self.ingest_instance:
-            ingest_instance: Optional[str] = self.ingest_instance
-        else:
-            ingest_instance = get_ingest_instance(context["dag_run"])
-
+        ingest_instance = get_ingest_instance(context["dag_run"])
         if not ingest_instance:
             raise ValueError(f"Expected to find ingest_instance argument: {context}")
 
-        watermark: Dict[str, str] = {
-            row[RAW_DATA_FILE_TAG]: row[WATERMARK_DATETIME].strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+        max_update_datetimes: Dict[str, str] = {
+            row[FILE_TAG]: row[MAX_UPDATE_DATETIME].strftime("%Y-%m-%d %H:%M:%S.%f")
             for _, row in postgres_hook.get_pandas_df(
                 self.sql_query(
-                    region_code=self.region_code, ingest_instance=ingest_instance
+                    region_code=self.region_code,
+                    ingest_instance=ingest_instance,
                 )
             ).iterrows()
         }
 
-        return watermark
+        return max_update_datetimes
 
     @staticmethod
     def sql_query(region_code: str, ingest_instance: str) -> str:
         return f"""
-            SELECT {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}
-            FROM direct_ingest_dataflow_raw_table_upper_bounds
-            WHERE job_id IN (
-                SELECT MAX(job_id) 
-                FROM direct_ingest_dataflow_job
-                WHERE region_code = '{region_code.upper()}' AND ingest_instance = '{ingest_instance.upper()}'
-                AND is_invalidated = FALSE
-            );
+            SELECT {FILE_TAG}, MAX(update_datetime) AS {MAX_UPDATE_DATETIME}
+            FROM direct_ingest_raw_file_metadata
+            WHERE raw_data_instance = '{ingest_instance.upper()}' 
+            AND is_invalidated = false 
+            AND file_processed_time IS NOT NULL 
+            AND region_code = '{region_code.upper()}'
+            GROUP BY {FILE_TAG};
         """

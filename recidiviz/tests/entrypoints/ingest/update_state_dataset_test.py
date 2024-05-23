@@ -26,7 +26,6 @@ from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersist
 from recidiviz.entrypoints.ingest import update_state_dataset
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 from recidiviz.utils.environment import GCPEnvironment
 
 REFRESH_ENTRYPOINT_PACKAGE_NAME = update_state_dataset.__name__
@@ -44,14 +43,6 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
     """Tests for execute_state_dataset_refresh()."""
 
     def setUp(self) -> None:
-        self.mock_state_update_lock_manager = create_autospec(StateUpdateLockManager)
-        self.mock_state_update_lock_patcher = mock.patch(
-            f"{REFRESH_ENTRYPOINT_PACKAGE_NAME}.StateUpdateLockManager"
-        )
-        self.mock_state_update_lock_patcher.start().return_value = (
-            self.mock_state_update_lock_manager
-        )
-
         self.mock_combine_patcher = mock.patch(
             f"{REFRESH_ENTRYPOINT_PACKAGE_NAME}.combine_ingest_sources_into_single_state_dataset"
         )
@@ -74,7 +65,6 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
-        self.mock_state_update_lock_patcher.stop()
         self.mock_combine_patcher.stop()
         self.mock_refresh_bq_dataset_persister_patcher.stop()
 
@@ -98,22 +88,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
         )
 
         self.mock_combine.assert_called_once()
-        self.mock_state_update_lock_manager.release_lock.assert_called_once()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_called_once()
-
-    def test_execute_state_dataset_refresh_acquire_lock_fails(self) -> None:
-        self.mock_state_update_lock_manager.acquire_lock.side_effect = Exception("Fail")
-
-        with self.assertRaisesRegex(Exception, "Fail"):
-            update_state_dataset.execute_state_dataset_refresh(
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                sandbox_prefix=None,
-            )
-
-        self.mock_combine.assert_not_called()
-        # Release lock still called!
-        self.mock_state_update_lock_manager.release_lock.assert_called_once()
-        self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
 
     def test_execute_state_dataset_refresh_combine_fails(self) -> None:
         self.mock_combine.side_effect = Exception("Fail")
@@ -123,10 +98,7 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
                 sandbox_prefix=None,
             )
 
-        self.mock_state_update_lock_manager.acquire_lock.assert_called_once()
         self.mock_combine.assert_called_once()
-        # Release lock still called!
-        self.mock_state_update_lock_manager.release_lock.assert_called_once()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
 
     def test_execute_state_dataset_refresh_record_success_fails(self) -> None:
@@ -139,11 +111,8 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
                 sandbox_prefix=None,
             )
 
-        self.mock_state_update_lock_manager.acquire_lock.assert_called_once()
         self.mock_combine.assert_called_once()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_called_once()
-        # Release lock still called!
-        self.mock_state_update_lock_manager.release_lock.assert_called_once()
 
     def test_execute_state_dataset_refresh_secondary_no_sandbox(self) -> None:
         with self.assertRaisesRegex(
@@ -155,7 +124,5 @@ class TestExecuteStateDatasetRefresh(unittest.TestCase):
                 sandbox_prefix=None,
             )
 
-        self.mock_state_update_lock_manager.acquire_lock.assert_not_called()
         self.mock_combine.assert_not_called()
-        self.mock_state_update_lock_manager.release_lock.assert_not_called()
         self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()

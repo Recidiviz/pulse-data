@@ -14,31 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The CloudSQLQueryGenerator for setting the watermark in DirectIngestDataflowRawTableUpperBounds."""
+"""The CloudSQLQueryGenerator for adding job completion info to DirectIngestDataflowJob."""
 from typing import Any, Dict
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
-from recidiviz.airflow.dags.ingest.metadata import RAW_DATA_FILE_TAG, WATERMARK_DATETIME
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryGenerator,
     CloudSqlQueryOperator,
 )
+from recidiviz.airflow.dags.utils.config_utils import get_ingest_instance
 
 
-class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
-    """Custom query generator for setting the watermark in DirectIngestDataflowRawTableUpperBounds."""
+class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
+    """Custom query generator for adding job completion info to DirectIngestDataflowJob."""
 
-    def __init__(
-        self,
-        region_code: str,
-        get_max_update_datetime_task_id: str,
-        run_pipeline_task_id: str,
-    ) -> None:
+    def __init__(self, region_code: str, run_pipeline_task_id: str) -> None:
         super().__init__()
         self.region_code = region_code
-        self.get_max_update_datetime_task_id = get_max_update_datetime_task_id
         self.run_pipeline_task_id = run_pipeline_task_id
 
     def execute_postgres_query(
@@ -47,35 +41,29 @@ class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
         postgres_hook: PostgresHook,
         context: Context,
     ) -> None:
-        """Inserts the watermark for each raw data file tag into DirectIngestDataflowRawTableUpperBounds."""
-
-        max_update_datetimes: Dict[str, str] = operator.xcom_pull(
-            context, key="return_value", task_ids=self.get_max_update_datetime_task_id
-        )
+        """Inserts the job completion info into DirectIngestDataflowJob."""
 
         pipeline: Dict[str, Any] = operator.xcom_pull(
             context, key="return_value", task_ids=self.run_pipeline_task_id
         )
+        ingest_instance = get_ingest_instance(context["dag_run"])
+
+        if not ingest_instance:
+            raise ValueError(f"Expected to find ingest_instance argument: {context}")
 
         postgres_hook.run(
-            self.insert_sql_query(pipeline["id"], max_update_datetimes),
+            self.insert_sql_query(
+                job_id=pipeline["id"],
+                region_code=self.region_code,
+                ingest_instance=ingest_instance,
+            )
         )
 
-    def insert_sql_query(
-        self,
-        job_id: str,
-        max_update_datetimes: Dict[str, str],
-    ) -> str:
-        values = ", ".join(
-            [
-                f"('{self.region_code.upper()}', '{file_tag}', '{max_update_datetime}', '{job_id}')"
-                for file_tag, max_update_datetime in max_update_datetimes.items()
-            ]
-        )
-
+    @staticmethod
+    def insert_sql_query(job_id: str, region_code: str, ingest_instance: str) -> str:
         return f"""
-            INSERT INTO direct_ingest_dataflow_raw_table_upper_bounds
-                (region_code, {RAW_DATA_FILE_TAG}, {WATERMARK_DATETIME}, job_id)
+            INSERT INTO direct_ingest_dataflow_job
+                (job_id, region_code, ingest_instance, completion_time , is_invalidated)
             VALUES
-                {values};
+                ('{job_id}', '{region_code.upper()}', '{ingest_instance.upper()}', NOW(), FALSE);
         """

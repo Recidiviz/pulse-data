@@ -21,7 +21,7 @@ from unittest.mock import create_autospec
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
-from recidiviz.airflow.dags.ingest.set_watermark_sql_query_generator import (
+from recidiviz.airflow.dags.calculation.ingest.set_watermark_sql_query_generator import (
     SetWatermarkSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (

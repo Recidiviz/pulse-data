@@ -22,9 +22,8 @@ from unittest.mock import Mock, create_autospec
 import freezegun
 import pandas as pd
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.context import Context
 
-from recidiviz.airflow.dags.ingest.get_watermark_sql_query_generator import (
+from recidiviz.airflow.dags.calculation.ingest.get_watermark_sql_query_generator import (
     GetWatermarkSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
@@ -53,42 +52,9 @@ class TestGetWatermarkSqlQueryGenerator(unittest.TestCase):
             expected_query,
         )
 
-    # TODO(#27378): Delete when we remove the ingest_instance param
-    #  from GetWatermarkSqlQueryGenerator.
-    @freezegun.freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
-    def test_watermark_retrieved_correctly_legacy(self) -> None:
-        generator = GetWatermarkSqlQueryGenerator(
-            region_code="US_XX", ingest_instance="PRIMARY"
-        )
-
-        mock_operator = create_autospec(CloudSqlQueryOperator)
-        mock_postgres = create_autospec(PostgresHook)
-        mock_context = create_autospec(Context)
-
-        sample_data = {
-            "test_file_tag": "2023-01-26 00:00:00",
-        }
-
-        mock_postgres.get_pandas_df.return_value = pd.DataFrame(
-            [
-                {
-                    "raw_data_file_tag": "test_file_tag",
-                    "watermark_datetime": pd.Timestamp(year=2023, month=1, day=26),
-                }
-            ]
-        )
-
-        results = generator.execute_postgres_query(
-            mock_operator, mock_postgres, mock_context
-        )
-
-        self.assertDictEqual(results, sample_data)
-
     @freezegun.freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
     def test_watermark_retrieved_correctly(self) -> None:
-        generator = GetWatermarkSqlQueryGenerator(
-            region_code="US_XX", ingest_instance=None
-        )
+        generator = GetWatermarkSqlQueryGenerator(region_code="US_XX")
 
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_postgres = create_autospec(PostgresHook)
