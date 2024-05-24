@@ -78,7 +78,7 @@ WITH all_events AS (
         timestamp,
         status,
         opportunity_type,
-        IF(status = "DENIAL_ENDED", 9999, 1) AS rank,
+        1 AS rank,
         denied_reasons,
     FROM `{project_id}.{workflows_views_dataset}.clients_latest_referral_status`
 )

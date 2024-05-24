@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.user_event_template import (
     user_event_template,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CLIENTS_OPPORTUNITY_SNOOZED_VIEW_NAME = "clients_opportunity_snoozed"
@@ -47,6 +47,9 @@ CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     workflows_views_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     segment_dataset=dataset_config.PULSE_DASHBOARD_SEGMENT_DATASET,
     should_materialize=True,
+    projects_to_deploy={
+        GCP_PROJECT_PRODUCTION
+    },  # snooze events don't exist in staging because we no longer log analytics events for recidiviz users
 )
 
 if __name__ == "__main__":
