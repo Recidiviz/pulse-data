@@ -32,7 +32,7 @@ class RecidivizSFTPHook(SFTPHook):
         ssh_conn_id: str,
         transport_kwargs: Dict[str, Any],
         *args: Any,
-        **kwargs: Dict[str, Any]
+        **kwargs: Dict[str, Any],
     ) -> None:
         super().__init__(ssh_conn_id=ssh_conn_id, ssh_hook=None, *args, **kwargs)
         self.conn: Optional[paramiko.SFTPClient] = None
@@ -68,23 +68,29 @@ class RecidivizSFTPHook(SFTPHook):
             try:
                 transport.connect()
                 if private_key:
-                    try:
-                        transport.auth_publickey(connection.login, private_key)
-                    except Exception:
-                        # Generally, if a private key authentication method is required, then
-                        # a password has to be inputted as well as a second factor of auth.
-                        # This allows paramiko to continue to create the connection by manually
-                        # sending a message with password credentials forward.
-                        message = paramiko.Message()
-                        message.add_byte(paramiko.common.cMSG_USERAUTH_REQUEST)
-                        message.add_string(connection.login)
-                        message.add_string("ssh-connection")
-                        message.add_string("password")
-                        message.add_boolean(False)
-                        message.add_string(connection.password)
-                        # pylint: disable=protected-access
-                        transport._send_message(message)  # type: ignore
+                    logging.info("starting public key auth flow...")
+                    next_steps = transport.auth_publickey(connection.login, private_key)
+                    if next_steps:
+                        if len(next_steps) == 1 and next_steps[0] == "password":
+                            # Generally, if a private key authentication method is required, then
+                            # a password has to be inputted as well as a second factor of auth.
+                            # This allows paramiko to continue to create the connection by manually
+                            # sending a message with password credentials forward.
+                            message = paramiko.Message()
+                            message.add_byte(paramiko.common.cMSG_USERAUTH_REQUEST)
+                            message.add_string(connection.login)
+                            message.add_string("ssh-connection")
+                            message.add_string("password")
+                            message.add_boolean(False)
+                            message.add_string(connection.password)
+                            # pylint: disable=protected-access
+                            transport._send_message(message)  # type: ignore
+                        else:
+                            raise ValueError(
+                                f"Unknown next authentication steps after public key auth: {next_steps}"
+                            )
                 else:
+                    logging.info("starting password auth flow...")
                     transport.auth_password(connection.login, connection.password)
                 client = paramiko.SFTPClient.from_transport(transport)
             except Exception as e:
