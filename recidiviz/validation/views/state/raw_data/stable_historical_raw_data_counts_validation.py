@@ -61,11 +61,7 @@ _DESCRIPTION_TEMPLATE = (
 )
 
 _DATE_FILTER_TEMPLATE = "update_datetime > DATETIME_SUB(CURRENT_DATETIME('US/Eastern'), INTERVAL {interval} DAY)"
-_DATE_EXCLUSION_TEMPLATE = """
-      NOT RANGE_CONTAINS(
-        RANGE(SAFE.PARSE_DATETIME('%FT%T%Ez', '{datetime_start_inclusive}'), SAFE.PARSE_DATETIME('%FT%T%Ez', '{datetime_end_exclusive}')),
-        update_datetime
-      )"""
+_DATE_EXCLUSION_TEMPLATE = "update_datetime NOT BETWEEN PARSE_DATETIME('%FT%T', '{datetime_start_inclusive}') AND PARSE_DATETIME('%FT%T', '{datetime_end_exclusive}')"
 _PERMANENT_EXCLUSION_KEY = "PERMANENT"
 _DATE_RANGE_EXCLUSION_KEY = "DATE_RANGE"
 
@@ -111,6 +107,10 @@ class StableCountsDateRangeExclusion:
     datetime_start_inclusive: datetime.datetime
     datetime_end_exclusive: datetime.datetime
 
+    @staticmethod
+    def format_for_query(dt: datetime.datetime) -> str:
+        return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
     @classmethod
     def from_exclusion(
         cls, exclusion: Dict[str, str]
@@ -120,11 +120,11 @@ class StableCountsDateRangeExclusion:
             datetime_start_inclusive=datetime.datetime.fromisoformat(
                 exclusion["datetime_start_inclusive"]
             ),
-            datetime_end_exclusive=datetime.datetime.fromisoformat(
-                exclusion["datetime_start_inclusive"]
-            )
-            if exclusion.get("datetime_start_inclusive")
-            else datetime.datetime.now(tz=datetime.UTC),
+            datetime_end_exclusive=(
+                datetime.datetime.fromisoformat(exclusion["datetime_end_exclusive"])
+                if exclusion.get("datetime_end_exclusive")
+                else datetime.datetime.now(tz=datetime.UTC)
+            ),
         )
 
 
@@ -228,8 +228,12 @@ class StableHistoricalRawDataCountsQueryBuilder:
                 date_filter_clauses.append(
                     StrictStringFormatter().format(
                         _DATE_EXCLUSION_TEMPLATE,
-                        datetime_start_inclusive=exclusion.datetime_start_inclusive.isoformat(),
-                        datetime_end_exclusive=exclusion.datetime_end_exclusive.isoformat(),
+                        datetime_start_inclusive=exclusion.format_for_query(
+                            exclusion.datetime_start_inclusive
+                        ),
+                        datetime_end_exclusive=exclusion.format_for_query(
+                            exclusion.datetime_end_exclusive
+                        ),
                     )
                 )
 
@@ -265,9 +269,9 @@ class StableHistoricalRawDataCountsQueryBuilder:
         )
 
 
-def collect_stable_historical_raw_data_counts_view_builders() -> List[
-    SimpleBigQueryViewBuilder
-]:
+def collect_stable_historical_raw_data_counts_view_builders() -> (
+    List[SimpleBigQueryViewBuilder]
+):
     view_builders = []
     # TODO(#28896) deprecate this pattern
     for state_code in get_direct_ingest_states_existing_in_env():
