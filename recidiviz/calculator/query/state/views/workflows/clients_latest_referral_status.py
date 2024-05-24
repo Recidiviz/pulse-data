@@ -33,7 +33,6 @@ CLIENTS_LATEST_REFERRAL_STATUS_DESCRIPTION = """
     View of client referral form status update events logged from UI
     """
 
-
 CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE = f"""
     WITH 
     status_updates AS (
@@ -56,6 +55,19 @@ CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE = f"""
             -- because that was the only possible value at the time
             IFNULL(opportunity_type, "compliantReporting") AS opportunity_type,
         FROM status_updates
+
+        UNION ALL
+
+        SELECT
+            person_id,
+            state_code,
+            person_external_id,
+            TIMESTAMP(end_date_actual) as timestamp,
+            "DENIAL_ENDED" as status,
+            NULL AS denied_reasons,
+            opportunity_type,
+        FROM `{{project_id}}.{{workflows_views_dataset}}.clients_snooze_spans_materialized`
+        WHERE end_date_actual IS NOT NULL
     )
     -- use most recent status update to eliminate completions that were later undone
     QUALIFY ROW_NUMBER() OVER (
