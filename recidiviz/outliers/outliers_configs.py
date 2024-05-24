@@ -27,7 +27,6 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
-    TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
     TREATMENT_STARTS,
     VIOLATION_RESPONSES,
@@ -73,14 +72,6 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 event_name_past_tense="had an absconsion related violation",
             ),
             OutliersMetricConfig.build_from_metric(
-                metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
-                title_display_name="Successful Discharge Rate",
-                body_display_name="successful discharge rate",
-                event_name="successful discharges",
-                event_name_singular="successful discharge",
-                event_name_past_tense="were successfully discharged",
-            ),
-            OutliersMetricConfig.build_from_metric(
                 metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
                 title_display_name="Limited Supervision Unit Transfer Rate",
                 body_display_name="Limited Supervision Unit transfer rate",
@@ -100,9 +91,7 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
-        supervision_staff_exclusions="""'OTHER' NOT IN UNNEST(specialized_caseload_type_array)
-        AND 'DRUG_COURT' NOT IN UNNEST(specialized_caseload_type_array)
-        """,
+        supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER')",
     ),
     StateCode.US_PA: OutliersBackendConfig(
         metrics=[
