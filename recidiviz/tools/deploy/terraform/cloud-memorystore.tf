@@ -52,7 +52,9 @@ resource "google_redis_instance" "admin_panel_cache" {
 
 resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_host" {
   secret_id = "case_triage_rate_limiter_redis_host"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "case_triage_rate_limiter_redis_host" {
@@ -62,7 +64,9 @@ resource "google_secret_manager_secret_version" "case_triage_rate_limiter_redis_
 
 resource "google_secret_manager_secret" "case_triage_sessions_redis_host" {
   secret_id = "case_triage_sessions_redis_host"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "case_triage_sessions_redis_host" {
@@ -73,7 +77,9 @@ resource "google_secret_manager_secret_version" "case_triage_sessions_redis_host
 
 resource "google_secret_manager_secret" "pathways_metric_redis_host" {
   secret_id = "pathways_metric_redis_host"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "pathways_metric_redis_host" {
@@ -84,7 +90,9 @@ resource "google_secret_manager_secret_version" "pathways_metric_redis_host" {
 
 resource "google_secret_manager_secret" "admin_panel_redis_host" {
   secret_id = "admin_panel_redis_host"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "admin_panel_redis_host" {
@@ -96,7 +104,9 @@ resource "google_secret_manager_secret_version" "admin_panel_redis_host" {
 
 resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_port" {
   secret_id = "case_triage_rate_limiter_redis_port"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "case_triage_rate_limiter_redis_port" {
@@ -107,7 +117,9 @@ resource "google_secret_manager_secret_version" "case_triage_rate_limiter_redis_
 
 resource "google_secret_manager_secret" "case_triage_sessions_redis_port" {
   secret_id = "case_triage_sessions_redis_port"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "case_triage_sessions_redis_port" {
@@ -117,7 +129,9 @@ resource "google_secret_manager_secret_version" "case_triage_sessions_redis_port
 
 resource "google_secret_manager_secret" "pathways_metric_redis_port" {
   secret_id = "pathways_metric_redis_port"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "pathways_metric_redis_port" {
@@ -128,7 +142,9 @@ resource "google_secret_manager_secret_version" "pathways_metric_redis_port" {
 
 resource "google_secret_manager_secret" "admin_panel_redis_port" {
   secret_id = "admin_panel_redis_port"
-  replication { automatic = true }
+  replication {
+    auto {}
+  }
 }
 
 resource "google_secret_manager_secret_version" "admin_panel_redis_port" {

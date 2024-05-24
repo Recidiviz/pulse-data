@@ -415,6 +415,11 @@ resource "google_storage_bucket" "dataflow-templates-scratch" {
   storage_class               = "STANDARD"
   uniform_bucket_level_access = true
 
+  # Disable soft delete to avoid incurring additional charges for ephemeral data
+  soft_delete_policy {
+    retention_duration_seconds = 0
+  }
+
   lifecycle_rule {
     action {
       type = "Delete"
