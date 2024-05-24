@@ -18,6 +18,7 @@
 
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
     nonnull_start_date_clause,
     revert_nonnull_end_date_clause,
     revert_nonnull_start_date_clause,
@@ -68,23 +69,18 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
         FROM
             incarceration_cases ic
         LEFT JOIN (
-            SELECT cs.person_id, cs.state_code, cs.start_date
-            FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` cs
-            INNER JOIN `{{project_id}}.reference_views.location_metadata_materialized`
-                    ON facility = location_external_id
-                  WHERE cs.state_code = 'US_TN'
-                    AND compartment_level_1 = 'INCARCERATION'  
-                    AND compartment_level_2 = 'GENERAL'
-                    AND location_type = 'STATE_PRISON'
-                    AND CURRENT_DATE('US/Eastern') BETWEEN cs.start_date
-                        AND {nonnull_end_date_clause('cs.end_date_exclusive')}
+            SELECT person_id, state_code, start_date
+            FROM `{{project_id}}.sessions.location_type_sessions_materialized`
+            WHERE CURRENT_DATE('US/Eastern') BETWEEN start_date
+                AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
+                AND location_type = "STATE_PRISON"
         ) c
             USING(person_id, state_code)
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_projected_completion_date_spans_materialized` t
           ON ic.person_id = t.person_id
               AND ic.state_code = t.state_code
               AND CURRENT_DATE('US/Eastern') 
-                BETWEEN t.start_date AND {nonnull_end_date_clause('t.end_date_exclusive')} 
+                BETWEEN t.start_date AND {nonnull_end_date_exclusive_clause('t.end_date_exclusive')} 
         WHERE ic.state_code IN ("US_TN")
         WINDOW w as (PARTITION BY ic.person_id)
         
@@ -135,7 +131,7 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
           ON ic.person_id = t.person_id
               AND ic.state_code = t.state_code
               AND CURRENT_DATE('US/Eastern') 
-                BETWEEN t.start_date AND {nonnull_end_date_clause('t.end_date_exclusive')} 
+                BETWEEN t.start_date AND {nonnull_end_date_exclusive_clause('t.end_date_exclusive')} 
         WHERE ic.state_code NOT IN ("US_ME", "US_MO", "US_TN")
         WINDOW w as (PARTITION BY ic.person_id)
     ),
@@ -194,7 +190,7 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = f"""
         FROM `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
         WHERE state_code NOT IN ("US_ME", "US_MO")
         AND CURRENT_DATE('US/Eastern') 
-            BETWEEN start_date AND {nonnull_end_date_clause('end_date_exclusive')} 
+            BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')} 
     ),
 """
 

@@ -94,7 +94,9 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             NULL AS incident_date,
             start_date AS session_start_date,
             0 AS disciplinary,
-        FROM incarceration_state_prison_sub_sessions_adjacent_spans
+        FROM
+            `{{project_id}}.sessions.location_type_sessions_materialized`
+        WHERE location_type = "STATE_PRISON"
     ),
     /* Each critical date can be relevant 6, 12, and 18 months after the date, since those are the boundaries when
     someone's score can change. This CTE joins an array of those months as well as computing the next critical date.
