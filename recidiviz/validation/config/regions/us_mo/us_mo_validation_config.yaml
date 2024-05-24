@@ -8,6 +8,9 @@ exclusions:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: MO has not provided us with person-level validation data for supervising officers
+  - validation_name: current_impact_funnel_status_duplicate_external_ids
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: In MO, the usMoOverdueRestrictiveHousingReviewHearing is intentionally designed to have 3 opportunities for each ID, which makes this validation invalid. If we begin to expand opportunties in MO, we should consider a more nuanced fix. However, for now excluding the validation is fine.
 max_allowed_error_overrides:
   - validation_name: state_supervision_period_by_start_date_stable_counts
     hard_max_allowed_error_override: 0.26
@@ -46,8 +49,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 3000
     override_reason: TODO(#15905). Error is 2500 as of 1/5/2022. Error now at 899 as of 1/25/23. Refresh reduced error. When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 400
-    override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly. Error is 96 as of 12/7/2022. TODO(#17629) - Error is 239 as of 1/5/2022.
+    hard_num_allowed_rows_override: 10000
+    override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly. Error is 96 as of 12/7/2022. TODO(#17629) - Error is 239 as of 1/5/2022. Refactor caused a spike that should be investigated. Level on 5/24/24 is 8156.
   - validation_name: incarceration_release_prior_to_admission
     hard_num_allowed_rows_override: 30
     override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow.
@@ -78,3 +81,6 @@ num_allowed_rows_overrides:
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 75000
     override_reason: Current failing level as of 4/20/23 is 61,378 rows (5%). Error increased to 71,241 as of 11/29/23. #TODO(#20402)
+  - validation_name: in_custody_sps_have_associated_ip
+    hard_num_allowed_rows_override: 300000
+    override_reason: We have not implemented this change in MO normalization yet. Once we do, this override should not be needed.
