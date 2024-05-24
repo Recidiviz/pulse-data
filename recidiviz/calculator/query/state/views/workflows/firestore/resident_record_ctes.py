@@ -247,16 +247,6 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
                                     ORDER BY IF(Cis_1240_Supervision_Type_Cd IN ('1', '4'), 0, 1) , 
                                             Assignment_Date DESC,
                                             Cis_1241_Super_Status_Cd) = 1
-
-        UNION ALL
-
-        SELECT
-            state_code,
-            -- In MO and TN we treat facilities as officers to allow searching by facility
-            ic.facility_id AS officer_id,
-            ic.person_external_id
-        FROM incarceration_cases ic
-        WHERE state_code IN ({search_by_location_states})
     ),
 """
 
@@ -338,7 +328,6 @@ _RESIDENTS_CTE = """
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
         LEFT JOIN portion_needed USING (state_code, person_id)
         LEFT JOIN months_remaining USING (state_code, person_id)
-        WHERE officer_id IS NOT NULL
     )
 """
 

@@ -43,7 +43,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
                 snake_to_camel(k): person_name_case(v)
                 for k, v in json.loads(data["person_name"]).items()
             },
-            "officerId": data["officer_id"],
+            "officerId": data.get("officer_id"),
             "facilityId": data.get("facility_id"),
             "unitId": data.get("unit_id"),
             "facilityUnitId": data.get("facility_unit_id"),

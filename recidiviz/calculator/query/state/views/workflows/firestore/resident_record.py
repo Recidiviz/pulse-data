@@ -96,9 +96,6 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
-    search_by_location_states=list_to_query_string(
-        ["US_MO", "US_TN", "US_IX", "US_MI", "US_ND"], quoted=True
-    ),
     us_tn_excluded_facility_ids=list_to_query_string(
         ["CJ", "WH", "GENERAL", "INACTIVE", "NOT_APPLICABLE"], quoted=True
     ),
