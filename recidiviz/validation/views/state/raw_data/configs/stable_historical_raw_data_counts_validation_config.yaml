@@ -25,7 +25,7 @@ DATE_RANGE:
         because the file itself is so big
     - file_tag: LBAKRDTA_TAK238
       datetime_start_inclusive: "2022-11-17T00:00:00Z"
-      datetime_end_exclusive: "2023-04-10T00:00:00Z"
+      datetime_end_exclusive: "2023-04-20T00:00:00Z"
       exclusion_reason:
         We inconsistently import sub-sections of the file based on what is needed
         because the file itself is so big
