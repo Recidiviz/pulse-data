@@ -43,8 +43,7 @@ unioned as (
         MiddleName,
         LastName,
         Suffix,
-        Email,
-        ROW_NUMBER()OVER(PARTITION BY FirstName,MiddleName,LastName ORDER BY Inactive) as Inactive
+        Email
     FROM {ref_Employee})
 
     UNION ALL
@@ -64,8 +63,7 @@ unioned as (
             END AS MiddleName,
         LastName,
         CAST(NULL as STRING) as Suffix,
-        CAST(NULL as STRING) as Email,
-        CAST(NULL as INT64) as Inactive
+        CAST(NULL as STRING) as Email
     FROM (
         SELECT
             empl_cd,
@@ -90,7 +88,7 @@ unioned as (
 -- (since we're pulling from two different sources and StaffId is not the PK)
 -- Let's make a prioritized list of which name information to use for each StaffId
 names as (
-    SELECT DISTINCT *
+    SELECT *
     FROM (
         SELECT 
             StaffId,
@@ -99,7 +97,6 @@ names as (
             LastName,
             Suffix,
             Email,
-            Inactive,
             ROW_NUMBER() OVER(PARTITION BY StaffId ORDER BY CASE Source WHEN 'ATLAS' THEN 1 WHEN 'CIS' THEN 2 END, LPAD(SourceId, 8, '0') DESC) as priority
         FROM unioned
         WHERE (
@@ -116,87 +113,19 @@ names as (
         OR UPPER(FirstName) IS NULL
     ) sub_all_names
     WHERE priority = 1
-),
--- Create aggragated string arrarys of all StaffIds related to a staff person
-agg_staff_ids AS (
-    SELECT 
-        Email,
-        CASE 
-            WHEN COUNT(DISTINCT StaffId) = 1 THEN MAX(StaffId)
-            ELSE NULL
-        END as StaffId,
-        CASE 
-            WHEN COUNT(DISTINCT StaffId) > 1 THEN STRING_AGG(DISTINCT StaffId, ',' ORDER BY StaffId)
-            ELSE NULL
-        END as StaffIds
-    FROM unioned u
-    GROUP BY Email
-),
--- Create aggragated string arrarys of all employeeCodes related to a staff person
-agg_employee_cds AS (
-    SELECT DISTINCT
-        StaffId,
-        Source,
-        STRING_AGG(DISTINCT SourceId, ',' ORDER BY SourceId) AS employeeCodes
-    FROM unioned u 
-    WHERE Source = 'CIS'
-    GROUP BY StaffId, Source
-),
--- Create aggragated string arrarys of all employeeIds related to a staff person
-agg_employee_ids AS (
-    SELECT DISTINCT
-        Email,
-        Source,
-        STRING_AGG(DISTINCT SourceId, "," ORDER BY SourceId) AS employeeIds,
-    FROM unioned u 
-    WHERE Source = "ATLAS"
-    GROUP BY 1,2
-),
+)
 
--- There are instances where a single staff person has multiple rows because they have 
--- different StaffIds and EmployeeIds and Empl_Cds but the same email so we collapse
--- to one row per email
-colapsed_union_on_email as (
-SELECT DISTINCT
+SELECT
+    u.Source,
+    u.SourceId,
+    u.StaffId,
     UPPER(n.FirstName) as FirstName,
     UPPER(n.MiddleName) as MiddleName,
     UPPER(n.LastName) as LastName,
     UPPER(n.Suffix) as Suffix,
-    UPPER(n.Email) as Email,
-    a.StaffId,
-    a.StaffIds,
-    e.employeeIds,
-    CASE
-        WHEN n.Inactive = 1
-        THEN c.employeeCodes
-        ELSE NULL
-    END AS employeeCodes,
-    ROW_NUMBER() OVER (
-            PARTITION BY UPPER(n.Email)
-            ORDER BY
-                (e.employeeIds IS NOT NULL AND c.employeeCodes IS NOT NULL) DESC,
-                e.employeeIds,
-                c.employeeCodes,
-                (e.employeeIds IS NULL AND c.employeeCodes IS NULL)
-        ) AS rn
+    UPPER(n.Email) as Email
 FROM unioned u
 LEFT JOIN names n USING(StaffId)
-LEFT JOIN agg_staff_ids a ON n.Email = a.Email
-LEFT JOIN agg_employee_ids e ON n.Email = e.Email
-LEFT JOIN agg_employee_cds c ON u.StaffId = c.StaffId)
-
-SELECT
-    FirstName,
-    MiddleName,
-    LastName,
-    Suffix,
-    Email,
-    StaffId,
-    StaffIds,
-    employeeIds,
-    employeeCodes
-FROM colapsed_union_on_email
-where rn = 1;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
