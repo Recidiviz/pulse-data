@@ -14,7 +14,7 @@ resource "google_compute_region_network_endpoint_group" "recidiviz_data_app_engi
 
 module "app-engine-load-balancer" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
-  version = "~> 6.2.0"
+  version = "~> 11.0.0"
   name    = "app-engine-loadbalancer-${var.project_id}"
   project = var.project_id
 
@@ -31,7 +31,16 @@ module "app-engine-load-balancer" {
           group = google_compute_region_network_endpoint_group.recidiviz_data_app_engine_neg.id
         }
       ]
-      enable_cdn      = true
+      enable_cdn = true
+      cdn_policy = {
+        cache_mode                   = "CACHE_ALL_STATIC"
+        default_ttl                  = 3600
+        max_ttl                      = 86400
+        client_ttl                   = 3600
+        negative_caching             = true
+        serve_while_stale            = 86400
+        signed_url_cache_max_age_sec = 0
+      }
       security_policy = google_compute_security_policy.recidiviz-waf-policy.id
       custom_request_headers = [
         "X-Client-Geo-Location: {client_region_subdivision}, {client_city}",
