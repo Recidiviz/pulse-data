@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for the Justice Counts SpreadsheetInterface."""
 import datetime
+import itertools
 import os
 import tempfile
 from pathlib import Path
@@ -285,20 +286,20 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
         # dissaggregations that have been disabled.
         with SessionFactory.using_database(self.database_key) as session:
             prison_super_agency = self.test_schema_objects.test_prison_super_agency
-            prison_affiliate_A = self.test_schema_objects.test_prison_affiliate_A
-            prison_affiliate_B = self.test_schema_objects.test_prison_affiliate_B
+            prison_child_agency_A = self.test_schema_objects.test_prison_child_agency_A
+            prison_child_agency_B = self.test_schema_objects.test_prison_child_agency_B
             test_user_A = self.test_schema_objects.test_user_A
             session.add_all(
                 [
                     prison_super_agency,
-                    prison_affiliate_A,
-                    prison_affiliate_B,
+                    prison_child_agency_A,
+                    prison_child_agency_B,
                     test_user_A,
                 ]
             )
             session.commit()
-            prison_affiliate_A.super_agency_id = prison_super_agency.id
-            prison_affiliate_B.super_agency_id = prison_super_agency.id
+            prison_child_agency_A.super_agency_id = prison_super_agency.id
+            prison_child_agency_B.super_agency_id = prison_super_agency.id
             session.refresh(prison_super_agency)
             super_agency_datapoints = (
                 self.test_schema_objects.get_test_agency_datapoints(
@@ -365,7 +366,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                             self.assertTrue("agency" in row)
                             self.assertTrue(
                                 row["agency"]
-                                in {prison_affiliate_A.name, prison_affiliate_B.name}
+                                in {
+                                    prison_child_agency_A.name,
+                                    prison_child_agency_B.name,
+                                }
                             )
 
                 # Single-page template
@@ -383,5 +387,68 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metrics_in_sheet = df["metric"].unique()
                 self.assertFalse({"admissions"} == (metrics_in_sheet))
                 agencies = df["agency"].unique()
-                self.assertTrue(prison_affiliate_A.name in agencies)
-                self.assertTrue(prison_affiliate_B.name in agencies)
+                self.assertTrue(prison_child_agency_A.name in agencies)
+                self.assertTrue(prison_child_agency_B.name in agencies)
+
+    def test_custom_child_agency_name(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            user = self.test_schema_objects.test_user_A
+            agency = self.test_schema_objects.test_prison_super_agency
+            child_agency = self.test_schema_objects.test_prison_child_agency_A
+            child_agency.custom_child_agency_name = "foobar"
+            session.add_all([user, agency, child_agency])
+            session.commit()
+            child_agency.super_agency_id = agency.id
+            session.refresh(agency)
+            session.refresh(user)
+
+            spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+                system=schema.System.PRISONS,
+                user_id=user.auth0_user_id,
+                agency_id=agency.id,
+            )
+            session.add(spreadsheet)
+            # Excel workbook will not have any warnings or errors.
+            # create_excel_file is populating the agency name with the custom_child_agency_name.
+
+            file_path = create_excel_file(
+                system=schema.System.PRISONS,
+                file_name="test_custom_child_agency_name.xlsx",
+                child_agencies=[child_agency],
+            )
+            (
+                metric_key_to_datapoint_jsons,
+                _,
+                _,
+                _,
+                _,
+                _,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
+                session=session,
+                xls=pd.ExcelFile(file_path),
+                spreadsheet=spreadsheet,
+                auth0_user_id=user.auth0_user_id,
+                agency=agency,
+                metric_key_to_metric_interface={},
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
+                upload_method=UploadMethod.BULK_UPLOAD,
+                upload_filetype=BulkUploadFileType.XLSX,
+            )
+
+            spreadsheet = session.query(schema.Spreadsheet).one()
+            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)
+            self.assertEqual(spreadsheet.ingested_by, user.auth0_user_id)
+
+            # Confirm that datapoints were ingested for the child agency
+            child_agency_datapoints = []
+            for datapoint_json_list in metric_key_to_datapoint_jsons.values():
+                child_agency_datapoints += [
+                    datapoint_json
+                    for datapoint_json in datapoint_json_list
+                    if datapoint_json["agency_name"] == child_agency.name
+                ]
+
+            self.assertTrue(
+                len(list(itertools.chain(*metric_key_to_datapoint_jsons.values()))) > 0
+            )
