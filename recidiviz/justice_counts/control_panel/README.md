@@ -221,7 +221,7 @@ docker exec -e SQLALCHEMY_DB_HOST=justice_counts_db -e SQLALCHEMY_DB_NAME=postgr
 5. [staging] To run the migration against the staging database, you will need to manually run the script below (with the dry-run flag set to False) after merging your PR to main. Make sure to run the script from an updated main branch that contains your db schema changes.
 
 ```
-pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head --dry-run=True --database JUSTICE_COUNTS --project-id justice-counts-staging
+pipenv run python -m recidiviz.tools.migrations.run_migrations_to_head --database JUSTICE_COUNTS --project-id justice-counts-staging --dry-run
 ```
 
 > Please note: You should only ever run migrations that are backwards compatible (i.e. safe to apply without any corresponding code changes). The database migration should always happen before the code that relies on the migration is merged. Deploying the code without first migrating the database will break our staging application.
