@@ -28,7 +28,12 @@ DeepDiff is used to compare complex structures. It ignores the order of elements
 lists. We needed to add clean up functions to remove empty fields from the metric
 interfaces, which remove all null value entries from the MetricInterface.
 
-How to run:
+Local Usage:
+
+docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.justice_counts.jobs.agency_metrics_serialization_test \
+  --project-id="justice-counts-local"
+
+Staging or Production Usage:
 
 pipenv run python -m recidiviz.justice_counts.jobs.agency_metrics_serialization_test \
   --project-id="justice-counts-staging"
@@ -58,12 +63,17 @@ from recidiviz.justice_counts.utils.constants import (
 )
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils.environment import (
     GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
     GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+    PROJECT_JUSTICE_COUNTS_LOCAL,
 )
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -76,11 +86,12 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--project-id",
         choices=[
+            PROJECT_JUSTICE_COUNTS_LOCAL,
             GCP_PROJECT_JUSTICE_COUNTS_STAGING,
             GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
         ],
         help="Used to select which GCP project in which to run this script.",
-        required=False,
+        required=True,
     )
     return parser
 
@@ -161,9 +172,7 @@ def clean(metric_interface: MetricInterface) -> MetricInterface:
 def fetch_data_for_session(
     session: Any,
 ) -> None:
-    """Retrieve agency, user, agency_user_account_association, and datapoint data from
-    both Auth0 as well as our database.
-    """
+    """Retrieve agency and datapoint data from our database."""
     original_agencies = session.execute(
         "select * from source where type = 'agency' and LOWER(name) not like '%test%'"
     ).all()
@@ -240,22 +249,34 @@ def serialization_test(
     logger.info("\n\n\n ----- No mismatches detected -----")
 
 
+def main(session: Any) -> None:
+    serialization_test(session)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
-    if args.project_id is not None:
-        with local_project_id_override(args.project_id):
-            schema_type = SchemaType.JUSTICE_COUNTS
-            database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-            with cloudsql_proxy_control.connection(
-                schema_type=schema_type,
+    schema_type = SchemaType.JUSTICE_COUNTS
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
+    # Local usage.
+    if args.project_id == PROJECT_JUSTICE_COUNTS_LOCAL:
+        justice_counts_engine = SQLAlchemyEngineManager.init_engine(
+            database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+        )
+        main(session=Session(bind=justice_counts_engine))
+        sys.exit(0)
+    # Staging/Production usage.
+    with local_project_id_override(args.project_id):
+        with cloudsql_proxy_control.connection(
+            schema_type=schema_type,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+        ):
+            with SessionFactory.for_proxy(
+                database_key=database_key,
                 secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
-            ):
-                with SessionFactory.for_proxy(
-                    database_key=database_key,
-                    secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
-                    autocommit=False,
-                ) as global_session:
-                    serialization_test(
-                        session=global_session,
-                    )
+                autocommit=False,
+            ) as global_session:
+                main(
+                    session=global_session,
+                )
