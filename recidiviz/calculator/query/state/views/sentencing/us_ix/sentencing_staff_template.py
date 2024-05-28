@@ -17,14 +17,25 @@
 """View logic to prepare US_IX SENTENCING staff data for PSI tools"""
 
 US_IX_SENTENCING_STAFF_TEMPLATE = """
+WITH 
+    -- Create array of all the external Ids of cases where this person is the client
+    caseIds AS (
+        SELECT DISTINCT
+            AssignedToUserId,
+            STRING_AGG(PSIReportId, ',') OVER (PARTITION BY AssignedToUserId ORDER BY UpdateDate) as caseIds
+        FROM  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
+    )
     SELECT DISTINCT
-        AssignedToUserId as external_id,
+        psi.AssignedToUserId as external_id,
         staff.full_name,
         staff.email,
-        "US_IX" AS state_code
+        "US_IX" AS state_code,
+        CONCAT('[', caseIds,']') AS caseIds
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff_external_id` id 
         ON psi.AssignedToUserId = id.external_id and id_type = 'US_IX_EMPLOYEE'
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff` staff 
         ON  staff.staff_id = id.staff_id
+    LEFT JOIN caseIds c 
+        ON psi.AssignedToUserId = c.AssignedToUserId
 """
