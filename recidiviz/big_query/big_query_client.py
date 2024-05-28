@@ -59,7 +59,7 @@ from recidiviz.ingest.direct.dataset_config import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import in_ci
+from recidiviz.utils.environment import in_test
 from recidiviz.utils.size import total_size
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -87,30 +87,31 @@ def client(project_id: str, region: str) -> bigquery.Client:
             # local BQ emulator.
             # Import test setup utils inline as an extra precaution against importing test code in production envs
             from recidiviz.tests.test_setup_utils import (  # pylint: disable=import-outside-toplevel
-                get_pytest_bq_emulator_port,
+                BQ_EMULATOR_PROJECT_ID,
+                get_bq_emulator_port,
             )
 
             client_options = ClientOptions(
-                api_endpoint=f"http://0.0.0.0:{get_pytest_bq_emulator_port()}"
+                api_endpoint=f"http://0.0.0.0:{get_bq_emulator_port()}"
             )
             new_client = bigquery.Client(
-                project_id,
+                BQ_EMULATOR_PROJECT_ID,
                 client_options=client_options,
                 credentials=AnonymousCredentials(),
             )
         else:
             new_client = bigquery.Client(project=project_id, location=region)
 
-            # Update the number of allowed connections to allow for more parallel BQ
-            # requests to the same Client. See:
-            # https://github.com/googleapis/python-storage/issues/253#issuecomment-687068266.
-            adapter = requests.adapters.HTTPAdapter(
-                pool_connections=BQ_CLIENT_MAX_POOL_CONNECTIONS,
-                pool_maxsize=BQ_CLIENT_MAX_POOL_SIZE,
-            )
-            # pylint: disable=protected-access
-            new_client._http.mount("https://", adapter)
-            new_client._http._auth_request.session.mount("https://", adapter)
+        # Update the number of allowed connections to allow for more parallel BQ
+        # requests to the same Client. See:
+        # https://github.com/googleapis/python-storage/issues/253#issuecomment-687068266.
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=BQ_CLIENT_MAX_POOL_CONNECTIONS,
+            pool_maxsize=BQ_CLIENT_MAX_POOL_SIZE,
+        )
+        # pylint: disable=protected-access
+        new_client._http.mount("https://", adapter)
+        new_client._http._auth_request.session.mount("https://", adapter)
 
         _clients_by_project_id_by_region[project_id][region] = new_client
     return _clients_by_project_id_by_region[project_id][region]
@@ -950,7 +951,7 @@ class BigQueryClientImpl(BigQueryClient):
         """
         date = datetime.date.today().isoformat()
         # __main__ has no __file__ attribute when pytest-xdist is running the process
-        if in_ci() and not hasattr(__main__, "__file__"):
+        if in_test() and not hasattr(__main__, "__file__"):
             script_name = "UNKNOWN"
         else:
             script_name = os.path.splitext(os.path.basename(__main__.__file__))[0]

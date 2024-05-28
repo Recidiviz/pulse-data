@@ -109,6 +109,8 @@ ydata-profiling = "*"
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
 sqlglot = "==23.11.2"
+docker = "*"
+docker-stubs = "*"
 
 [packages]
 callee = "*"
@@ -170,7 +172,8 @@ google-cloud-storage = ">=2.0.0"
 google-cloud-trace = "*"
 wrapt = "*"
 attrs = "*"
-requests = "*"
+# TODO(docker/docker-py#3256): Unpin when docker-py fixes issue
+requests = "==2.31.0"
 pytz = "*"
 # TODO(#9732): Upgrade to 4.0 introduces dateparsing errors to ingest controller tests
 tzlocal = "<4.0"
@@ -263,14 +266,3 @@ docker-build-jc = "docker build . -f Dockerfile.justice-counts -t us-central1-do
 docker-jc = "docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up"
 fixtures-jc = "docker exec pulse-data-control_panel_backend-1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures"
 migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --database JUSTICE_COUNTS --message "
-# Scripts for working with the BigQuery emulator
-# TODO(#20786): Migrate back to the goccy version by removing the comment about PAT and replacing recidiviz with goccy below.
-# Run this script once to download the emulator and again if you want to update the version.
-# Note, the image is private so you'll need to have docker login to ghcr.io with a 
-# Personal Access Token with read:packages permission.
-#   1. Create a new PAT at https://github.com/settings/tokens, ensure it has read:packages set.
-#   2. Run this command with your PAT and github username as filled in: 
-#      `echo $PAT | docker login ghcr.io -u $USERNAME --password-stdin`
-pull-bq-emulator = "docker pull ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.9 --platform=linux/amd64"
-# Run this script to launch the BQ emulator locally
-start-bq-emulator = "docker run -p 9050:9050 --rm ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.9 /bin/bigquery-emulator --project=recidiviz-bq-emulator-project --log-level=info"

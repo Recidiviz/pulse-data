@@ -282,11 +282,16 @@ jobs:
   big-query-emulator-tests:
     name: BigQuery Emulator Tests
     runs-on: ubuntu-20.04
+    # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
+    # If the emulator encounters an incorrect / unknown error that is continuously retried,
+    # we'd rather the process time out than incur additional billed minutes.
+    # Debugging can be done locally to find the root error
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
-        suite: [1, 2, 3]
-        suite-count: [3]
+        suite: [1, 2]
+        suite-count: [2]
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
@@ -296,47 +301,47 @@ jobs:
         run: |
           echo ${{ secrets.github_token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Pull emulator Docker image
-        run: pipenv run pull-bq-emulator
-      # TODO(#20786): Replace ghcr.io/recidiviz with ghcr.io/goccy to move back to the
-      # upstream bigquery emulator.
-      # Start two emulator processes for each of the running pytest processes.
-      # We must run one emulator per process specified in `pytest -n` below.
-      - name: Start emulator (1)
-        run: |
-          docker run -d -p 9050:9050 \
-            --name=recidiviz-bq-emulator-1 \
-            --cpus 1 \
-            --cpuset-cpus 0 \
-            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.9 \
-            /bin/bigquery-emulator \
-            --port=9050 \
-            --project=recidiviz-bq-emulator-project \
-            --log-level=info
-      - name: Start emulator (2)
-        run: |
-          docker run -d -p 9051:9051 \
-            --name=recidiviz-bq-emulator-2 \
-            --cpus 1 \
-            --cpuset-cpus 1 \
-            ghcr.io/recidiviz/bigquery-emulator:0.4.4-recidiviz.9 \
-            /bin/bigquery-emulator \
-            --port=9051 \
-            --project=recidiviz-bq-emulator-project \
-            --log-level=info
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
       - name: Run unittests
         run: |
           pipenv run pytest recidiviz/tests \
-            -m 'uses_bq_emulator' \
+            -m 'uses_bq_emulator and not view_graph_validation' \
             -n 2 \
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
             --durations=25
-      - name: Show logs (1)
-        if: ${{ failure() || cancelled() }}
-        run: docker logs recidiviz-bq-emulator-1
-      - name: Show logs (2)
-        if: ${{ failure() || cancelled() }}
-        run: docker logs recidiviz-bq-emulator-2
-      - name: Stop the container
+      - name: Remove the emulator docker containers
         if: ${{ always() }}
-        run: docker stop recidiviz-bq-emulator-1 && docker rm recidiviz-bq-emulator-1 && docker stop recidiviz-bq-emulator-2 && docker rm recidiviz-bq-emulator-2
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all
+
+  bigquery-view-graph-validation:
+    name: BigQuery View Graph Validation
+    runs-on: ubuntu-20.04
+    # The default retry strategy for the BigQuery Python SDK lasts 10 minutes.
+    # If the emulator encounters an incorrect / unknown error that is continuously retried,
+    # we'd rather the process time out than incur additional billed minutes.
+    # Debugging can be done locally to find the root error
+    timeout-minutes: 7
+    strategy:
+      fail-fast: true
+      matrix:
+        project: [staging, production]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      # TODO(#20786): This step can be removed when moving back to the upstream bigquery emulator.
+      - name: Docker auth with ghcr
+        run: |
+          echo ${{ secrets.github_token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Pull emulator Docker image
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control pull_image
+      - name: Write source table JSON
+        run: |
+          pipenv run python -m recidiviz.tools.deploy.generate_emulator_table_schema_json \
+          --project-id ${{ matrix.project == 'production' && 'recidiviz-123' || 'recidiviz-staging' }}
+      - name: Load view graph to emulator
+        run: pipenv run pytest -s "recidiviz/tests/big_query/view_graph_validation_test.py::${{matrix.project == 'production' && 'ProductionViewGraphTest' || 'StagingViewGraphTest'}}"
+      - name: Remove the emulator docker container
+        if: ${{ always() }}
+        run: pipenv run python -m recidiviz.tests.utils.big_query_emulator_control prune_all

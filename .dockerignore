@@ -208,6 +208,9 @@ recidiviz/tools/deploy/log/
 recidiviz/tools/postgres/log/
 recidiviz/tools/postgres/vendor/
 
+# Test fixtures
+recidiviz/tools/deploy/fixtures/emulator_source_tables.json
+
 # Tool logs
 logs/
 get-pip.py
