@@ -23,15 +23,10 @@ from typing import Any, Dict, Optional
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_query_provider import REFERENCED_BQ_ADDRESS_REGEX
 from recidiviz.utils.string import StrictStringFormatter
 
 PROJECT_ID_KEY = "project_id"
-
-
-REFERENCED_BQ_ADDRESS_REGEX = re.compile(
-    r"`(?P<project_id_clause>[\w-]*)\.(?P<dataset_id>[\w-]*)\.(?P<table_id>[\w-]*)`"
-)
-
 
 # The project_id is usually, but not always, used in the query text. The
 # BigQueryQueryBuilder class does not know whether it will be used so it always

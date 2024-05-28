@@ -16,25 +16,22 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
-import re
 from typing import Any, Callable, Generic, List, Optional, Set, TypeVar
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_query_builder import (
-    REFERENCED_BQ_ADDRESS_REGEX,
-    BigQueryQueryBuilder,
-)
+from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.utils import metadata
 
 _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
 BQ_TABLE_DESCRIPTION_MAX_LENGTH = 2**14
 
 
-# TODO(#25330): Remove this inheritance.
-class BigQueryView(bigquery.TableReference):
+# TODO(#25330): Remove the inheritance from TableReference
+class BigQueryView(bigquery.TableReference, BigQueryQueryProvider):
     """An implementation of bigquery.TableReference with extra functionality related to views."""
 
     def __init__(
@@ -98,9 +95,6 @@ class BigQueryView(bigquery.TableReference):
             )
         except ValueError as e:
             raise ValueError(f"Unable to format view query for {self.address}") from e
-
-        # List of referenced parent addresses, loaded lazily.
-        self._parent_tables: Optional[Set[BigQueryAddress]] = None
 
         if materialized_address == self.address:
             raise ValueError(
@@ -173,6 +167,10 @@ class BigQueryView(bigquery.TableReference):
             )
         return table_description
 
+    # BigQueryQueryProvider implementation
+    def get_query(self) -> str:
+        return self.view_query
+
     @property
     def view_query(self) -> str:
         return self._view_query
@@ -180,20 +178,6 @@ class BigQueryView(bigquery.TableReference):
     @property
     def view_query_template(self) -> str:
         return self._view_query_template
-
-    @property
-    def parent_tables(self) -> Set[BigQueryAddress]:
-        """Returns a set of set of addresses for tables/views referenced in the fully
-        formatted view query.
-        """
-        if self._parent_tables is None:
-            self._parent_tables = {
-                BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
-                for _project_id, dataset_id, table_id in re.findall(
-                    REFERENCED_BQ_ADDRESS_REGEX, self.view_query
-                )
-            }
-        return self._parent_tables
 
     @property
     def direct_select_query(self) -> str:
