@@ -58,6 +58,7 @@ resource "google_composer_environment" "default_v2" {
         "email-email_conn_id"                       = "sendgrid_default"
         "webserver-rbac"                            = true
         "webserver-web_server_name"                 = "orchestration-v2"
+        "webserver-show_trigger_form_if_no_params"  = "True"
         "scheduler-scheduler_zombie_task_threshold" = 3600
         "secrets-backend"                           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
         "secrets-backend_kwargs"                    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
