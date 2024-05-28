@@ -16,11 +16,18 @@
 # =============================================================================
 """Defines an interface that can be used to access a valid BigQuery query."""
 import abc
-from typing import Union
+import re
+from functools import lru_cache
+from typing import Set, Union
 
 import attr
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+
+REFERENCED_BQ_ADDRESS_REGEX = re.compile(
+    r"`(?P<project_id_clause>[\w-]*)\.(?P<dataset_id>[\w-]*)\.(?P<table_id>[\w-]*)`"
+)
 
 
 class BigQueryQueryProvider:
@@ -29,6 +36,21 @@ class BigQueryQueryProvider:
     @abc.abstractmethod
     def get_query(self) -> str:
         """Returns a SQL query that can be run in BigQuery."""
+
+    @property
+    def parent_tables(self) -> Set[BigQueryAddress]:
+        """Returns a set of addresses for tables/views referenced in query."""
+        return self._parent_tables(self.get_query())
+
+    @classmethod
+    @lru_cache(maxsize=None)
+    def _parent_tables(cls, query: str) -> Set[BigQueryAddress]:
+        return {
+            BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
+            for _project_id, dataset_id, table_id in re.findall(
+                REFERENCED_BQ_ADDRESS_REGEX, query
+            )
+        }
 
     @classmethod
     def resolve(cls, query_str_or_provider: Union[str, "BigQueryQueryProvider"]) -> str:
