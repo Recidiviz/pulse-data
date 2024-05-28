@@ -167,7 +167,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_xx_normalized_state\] in overrides which is "
             r"not a dataset this pipeline reads from. Datasets you can override: "
-            r"\['normalized_state', 'state', 'us_mo_raw_data_up_to_date_views'\].",
+            r"\['normalized_state'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(

@@ -20,13 +20,12 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-from typing import Dict, List, Type, Union
+from typing import List, Type, Union
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
@@ -70,12 +69,6 @@ class RecidivismMetricsPipeline(MetricPipeline):
         return [
             StateSpecificIncarcerationDelegate,
         ]
-
-    @classmethod
-    def state_specific_input_reference_view_builders(
-        cls,
-    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
-        return {}
 
     @classmethod
     def pipeline_name(cls) -> str:

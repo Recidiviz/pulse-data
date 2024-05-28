@@ -27,9 +27,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-)
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -39,7 +36,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
@@ -129,24 +125,6 @@ class TestReferenceViews(unittest.TestCase):
             STATIC_REFERENCE_TABLES_DATASET,
         }
 
-        exempted_reference_view_parents = {
-            # TODO(#10389): This reference view is used in both normalization and metrics
-            #  pipelines. The metrics pipelines should technically only reference
-            #  `normalized_state`, but it's not a huge deal that it references `state`
-            #  here (legacy sentences aren't normalized) and we'll be deleting this view
-            #  once we update all pipelines to use sentences v2 instead.
-            US_MO_SENTENCE_STATUSES_VIEW_BUILDER.address: {
-                BigQueryAddress(
-                    dataset_id=STATE_BASE_DATASET,
-                    table_id=schema.StateIncarcerationSentence.__tablename__,
-                ),
-                BigQueryAddress(
-                    dataset_id=STATE_BASE_DATASET,
-                    table_id=schema.StateSupervisionSentence.__tablename__,
-                ),
-            },
-        }
-
         for pipeline in collect_all_pipeline_classes():
             if issubclass(pipeline, ComprehensiveNormalizationPipeline):
                 allowed_parent_datasets = {
@@ -168,12 +146,6 @@ class TestReferenceViews(unittest.TestCase):
                 for parent in parents:
                     if parent.dataset_id in allowed_parent_datasets:
                         continue
-                    if (
-                        builder.address in exempted_reference_view_parents
-                        and parent in exempted_reference_view_parents[builder.address]
-                    ):
-                        continue
-
                     raise ValueError(
                         f"Found reference view builder "
                         f"[{builder.address.to_str()}] for pipeline "
