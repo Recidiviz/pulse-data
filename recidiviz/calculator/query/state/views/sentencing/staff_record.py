@@ -72,7 +72,14 @@ SENTENCING_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
-    columns=["state_code", "full_name", "external_id", "email", "pseudonymized_id"],
+    columns=[
+        "state_code",
+        "full_name",
+        "external_id",
+        "email",
+        "pseudonymized_id",
+        "caseIds",
+    ],
 )
 
 if __name__ == "__main__":

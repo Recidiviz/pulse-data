@@ -27,6 +27,13 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
                 ORDER BY StartDate DESC, Offender_AddressId DESC
             ) AS recency_rank
         FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ind_Offender_Address_latest`
+    ),
+    -- Create array of all the external Ids of cases where this person is the client
+    caseIds AS (
+        SELECT DISTINCT
+            OffenderId,
+            STRING_AGG(PSIReportId, ',') OVER (PARTITION BY OffenderId ORDER BY UpdateDate) as caseIds
+        FROM  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest`
     )
     SELECT DISTINCT
         psi.OffenderId AS external_id,
@@ -34,7 +41,8 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
         person.birthdate AS birth_date,
         person.gender,
         UPPER(loc.LocationName) AS county,
-        "US_IX" AS state_code
+        "US_IX" AS state_code,
+        CONCAT('[', caseIds,']') AS caseIds
     FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.com_PSIReport_latest` psi
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`  id 
         ON psi.OffenderId = id.external_id and id_type = 'US_IX_DOC'
@@ -46,6 +54,8 @@ US_IX_SENTENCING_CLIENT_TEMPLATE = """
         ON address.AddressId = ref.AddressId
     LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Location_latest` loc 
         ON loc.LocationId = ref.CountyId
+    LEFT JOIN caseIds c 
+        ON psi.OffenderId = c.OffenderId
     WHERE recency_rank = 1
 
 """
