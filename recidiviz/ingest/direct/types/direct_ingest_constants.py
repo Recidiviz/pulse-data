@@ -31,3 +31,7 @@ UPDATE_DATETIME_COL_DESCRIPTION = (
 # Recidiviz-managed ingest view results columns
 UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"
 MATERIALIZATION_TIME_COL_NAME = "__materialization_time"
+
+# Constants used in the raw data imports
+DIRECT_INGEST_UNPROCESSED_PREFIX = "unprocessed"
+DIRECT_INGEST_PROCESSED_PREFIX = "processed"

@@ -39,10 +39,11 @@ from recidiviz.cloud_storage.gcsfs_path import (
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    DIRECT_INGEST_PROCESSED_PREFIX,
+    DIRECT_INGEST_UNPROCESSED_PREFIX,
+)
 from recidiviz.ingest.direct.types.errors import DirectIngestError
-
-DIRECT_INGEST_UNPROCESSED_PREFIX = "unprocessed"
-DIRECT_INGEST_PROCESSED_PREFIX = "processed"
 
 
 def _build_raw_file_name(

@@ -32,7 +32,7 @@ from airflow.utils.context import Context
 from airflow.utils.db import initdb, resetdb
 from airflow.utils.state import DagRunState, State, TaskInstanceState
 from airflow.utils.types import DagRunType
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import DeclarativeMeta, Session
 
 from recidiviz import airflow as recidiviz_airflow_module
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -338,3 +338,39 @@ def _find_task_ids_for_given_search_regexes(
         found_task_ids.update(matching_task_ids)
 
     return found_task_ids
+
+
+class CloudSqlQueryGeneratorUnitTest(unittest.TestCase):
+    """Utility class for writitng unit tests for CloudSqlQueryGenerators"""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+    metas: List[DeclarativeMeta]
+    conn_id: str = "local_test_db"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        os.environ[
+            "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN"
+        ] = local_postgres_helpers.on_disk_postgres_db_url().render_as_string()
+        os.environ[
+            f"AIRFLOW_CONN_{cls.conn_id.upper()}"
+        ] = local_postgres_helpers.on_disk_postgres_db_url().render_as_string()
+        # Make sure airflow's secrets cache picks up local_test_db's connection
+        settings.initialize()
+
+    def setUp(self) -> None:
+        for meta in self.metas:
+            meta.metadata.create_all(settings.engine)
+
+    def tearDown(self) -> None:
+        for meta in self.metas:
+            meta.metadata.drop_all(settings.engine)
+        settings.engine.dispose()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )

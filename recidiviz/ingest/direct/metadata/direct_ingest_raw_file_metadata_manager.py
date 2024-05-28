@@ -27,10 +27,10 @@ from more_itertools import one
 from sqlalchemy import and_, case, func
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
-from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (

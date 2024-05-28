@@ -15,10 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The CloudSqlQueryGenerator for marking SFTP files as downloaded."""
-import datetime
 from typing import Dict, List, Set, Tuple, Union
 
-import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
@@ -27,6 +25,9 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
 from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
+from recidiviz.airflow.dags.utils.cloud_sql import (
+    postgres_formatted_current_datetime_utc_str,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -79,9 +80,6 @@ class MarkRemoteFilesDownloadedSqlQueryGenerator(
         self,
         sftp_files_with_timestamp_set: Set[Tuple[str, int]],
     ) -> str:
-        current_date = datetime.datetime.now(tz=pytz.UTC).strftime(
-            "%Y-%m-%d %H:%M:%S.%f %Z"
-        )
         sql_tuples = ",".join(
             [
                 f"('{file}', {timestamp})"
@@ -90,5 +88,5 @@ class MarkRemoteFilesDownloadedSqlQueryGenerator(
         )
 
         return f"""
-UPDATE direct_ingest_sftp_remote_file_metadata SET file_download_time = '{current_date}'
+UPDATE direct_ingest_sftp_remote_file_metadata SET file_download_time = '{postgres_formatted_current_datetime_utc_str()}'
 WHERE region_code = '{self.region_code}' AND (remote_file_path, sftp_timestamp) IN ({sql_tuples});"""

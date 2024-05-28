@@ -306,12 +306,18 @@ def main() -> int:
 
     valid_raw_data_import_dag_prefixes = {
         "recidiviz.airflow.dags",
+        "recidiviz.cloud_storage.gcsfs_path",
         "recidiviz.common",
-        "recidiviz.ingest.direct.types.direct_ingest_instance",
-        "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
+        "recidiviz.ingest.direct.direct_ingest_bucket_name_utils",
         "recidiviz.ingest.direct.direct_ingest_regions",
-        "recidiviz.utils.environment",
+        "recidiviz.ingest.direct.gcs.directory_path_utils",
+        "recidiviz.ingest.direct.regions.direct_ingest_region_utils",
+        "recidiviz.ingest.direct.types.direct_ingest_constants",
+        "recidiviz.ingest.direct.types.direct_ingest_instance",
+        "recidiviz.persistence.database.schema_type",
+        "recidiviz.persistence.errors",
         "recidiviz.utils",
+        "recidiviz.utils.environment",
     }
 
     success &= check_dependencies_for_entrypoint(
@@ -320,7 +326,7 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz.airflow.tests.raw_data_dag_test",
+        "recidiviz.airflow.tests.raw_data_import_dag_test",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.tests",
