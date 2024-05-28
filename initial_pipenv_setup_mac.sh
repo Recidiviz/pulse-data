@@ -25,6 +25,4 @@ pipenv run pre-commit install --overwrite
 # There is a not easily-solved requirement conflict on `dill` between `apache-beam` and `pylint`
 # More details can be found here: https://recidiviz.slack.com/archives/C028X32LRH7/p1701458677360479
 # TODO(apache/beam#22893): This can be moved into our Pipfile once Beam moves to cloudpickle or upgrades dill
-# TODO(#29735): Unpin once pylint 3.2.* version doesn't produce "Value 'attr.fields_dict(cls)' is
-#  unsubscriptable" errors.
-pip install pylint==3.1.1
+pip install pylint
