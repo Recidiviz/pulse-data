@@ -69,7 +69,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
+    LEGACY_NORMALIZATION_ENTITY_CLASSES,
 )
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.pipelines import dataflow_config
@@ -253,7 +253,7 @@ def update_normalized_table_schemas_in_dataset(
     ) as executor:
         normalized_entity_futures = [
             executor.submit(_update_normalized_entity, entity_cls)
-            for entity_cls in NORMALIZED_ENTITY_CLASSES
+            for entity_cls in LEGACY_NORMALIZATION_ENTITY_CLASSES
         ] + [
             executor.submit(
                 _update_normalized_entity_association, child_cls, parent_cls

@@ -17,7 +17,7 @@ from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
+    LEGACY_NORMALIZATION_ENTITY_CLASSES,
 )
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
@@ -45,7 +45,7 @@ def _build_normalized_state_entities() -> SourceTableCollection:
         dataset_id=NORMALIZED_STATE_DATASET,
     )
 
-    for entity_cls in NORMALIZED_ENTITY_CLASSES:
+    for entity_cls in LEGACY_NORMALIZATION_ENTITY_CLASSES:
         table_id = schema_utils.get_state_database_entity_with_name(
             entity_cls.base_class_name()
         ).__tablename__

@@ -40,7 +40,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
+    LEGACY_NORMALIZATION_ENTITY_CLASSES,
 )
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
@@ -503,7 +503,7 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
         schema_utils.get_state_database_entity_with_name(
             entity_cls.base_class_name()
         ).__tablename__: bq_schema_for_normalized_state_entity(entity_cls)
-        for entity_cls in NORMALIZED_ENTITY_CLASSES
+        for entity_cls in LEGACY_NORMALIZATION_ENTITY_CLASSES
     }
     normalized_association_table_ids_to_schema = {
         schema_utils.get_state_database_association_with_names(

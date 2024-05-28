@@ -59,7 +59,12 @@ from recidiviz.persistence.entity.state.state_entity_mixins import (
 )
 from recidiviz.utils import environment
 
-NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
+# These entities have base classes managed by NormalizationManagers in
+# our previous (and still existing) implementation of normalization.
+# Our new implementation will produced normalized versions of all entities.
+# TODO(#29517) Delete this when normalization and ingest are fully merged,
+# and the old implementation of normalization is deleted.
+LEGACY_NORMALIZATION_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
     NormalizedStateIncarcerationPeriod,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
@@ -103,7 +108,7 @@ def normalized_entity_class_with_base_class_name(
 ) -> Type[NormalizedStateEntity]:
     """Returns the NormalizedStateEntity class that has a base class with the name
     matching the provided |base_class_name|."""
-    for normalized_entity_cls in NORMALIZED_ENTITY_CLASSES:
+    for normalized_entity_cls in LEGACY_NORMALIZATION_ENTITY_CLASSES:
         if normalized_entity_cls.base_class_name() == base_class_name:
             return normalized_entity_cls
 

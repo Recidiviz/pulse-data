@@ -35,7 +35,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
+    LEGACY_NORMALIZATION_ENTITY_CLASSES,
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
 )
@@ -79,7 +79,7 @@ class TestBQSchemaForNormalizedStateEntity(unittest.TestCase):
     def test_bq_schema_for_normalized_state_entity(self) -> None:
         """Test that we can call this function for all NormalizedStateEntity entities
         without crashing"""
-        for entity in NORMALIZED_ENTITY_CLASSES:
+        for entity in LEGACY_NORMALIZATION_ENTITY_CLASSES:
             _ = bq_schema_for_normalized_state_entity(entity)
 
     def test_bq_schema_for_normalized_state_entity_test_output(self) -> None:
@@ -262,7 +262,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
     @mock.patch(
         "recidiviz.persistence.entity."
-        "normalized_entities_utils.NORMALIZED_ENTITY_CLASSES",
+        "normalized_entities_utils.LEGACY_NORMALIZATION_ENTITY_CLASSES",
         [
             FakeNormalizedStateSupervisionSentence,
             FakeNormalizedStateCharge,
