@@ -25,26 +25,9 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.date import NonNegativeDateRange
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
-    StateCharge,
-    StateEarlyDischarge,
-    StateIncarcerationPeriod,
-    StateIncarcerationSentence,
-    StatePerson,
-    StateProgramAssignment,
-    StateStaff,
-    StateStaffRolePeriod,
-    StateSupervisionCaseTypeEntry,
-    StateSupervisionContact,
-    StateSupervisionPeriod,
-    StateSupervisionSentence,
-    StateSupervisionViolatedConditionEntry,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateSupervisionViolationTypeEntry,
-)
+
+# TODO(#30075) Have all state entities have a normalized entity defined in this file.
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
     NormalizedStateEntity,
 )
@@ -80,8 +63,8 @@ def get_entity_class_names_excluded_from_normalization() -> List[str]:
     We never normalize the StatePerson / StateStaff entity.
     """
     return [
-        StatePerson.__name__,
-        StateStaff.__name__,
+        state_entities.StatePerson.__name__,
+        state_entities.StateStaff.__name__,
     ]
 
 
@@ -149,7 +132,7 @@ def add_normalized_entity_validator_to_ref_fields(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateAssessment(
-    StateAssessment, NormalizedStateEntity, SequencedEntityMixin
+    state_entities.StateAssessment, NormalizedStateEntity, SequencedEntityMixin
 ):
     """Stores instances of StateAssessment entities that have been normalized and are
     prepared to be used in calculations."""
@@ -168,7 +151,7 @@ class NormalizedStateAssessment(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateIncarcerationPeriod(
-    StateIncarcerationPeriod, NormalizedStateEntity, SequencedEntityMixin
+    state_entities.StateIncarcerationPeriod, NormalizedStateEntity, SequencedEntityMixin
 ):
     """Stores instances of StateIncarcerationPeriod entities that have been
     normalized and are prepared to be used in calculations."""
@@ -195,7 +178,7 @@ class NormalizedStateIncarcerationPeriod(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateProgramAssignment(
-    StateProgramAssignment, NormalizedStateEntity, SequencedEntityMixin
+    state_entities.StateProgramAssignment, NormalizedStateEntity, SequencedEntityMixin
 ):
     """Stores instances of StateProgramAssignment entities that have been
     normalized and are prepared to be used in calculations."""
@@ -210,7 +193,9 @@ class NormalizedStateProgramAssignment(
     kw_only=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
-class NormalizedStateSupervisionContact(StateSupervisionContact, NormalizedStateEntity):
+class NormalizedStateSupervisionContact(
+    state_entities.StateSupervisionContact, NormalizedStateEntity
+):
     """Stores instances of StateSupervisionContact entities that have been
     normalized and are prepared to be used in calculations."""
 
@@ -225,7 +210,7 @@ class NormalizedStateSupervisionContact(StateSupervisionContact, NormalizedState
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionPeriod(
-    StateSupervisionPeriod, NormalizedStateEntity, SequencedEntityMixin
+    state_entities.StateSupervisionPeriod, NormalizedStateEntity, SequencedEntityMixin
 ):
     """Stores instances of StateSupervisionPeriod entities that have been
     normalized and are prepared to be used in calculations."""
@@ -248,7 +233,7 @@ class NormalizedStateSupervisionPeriod(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionCaseTypeEntry(
-    StateSupervisionCaseTypeEntry, NormalizedStateEntity
+    state_entities.StateSupervisionCaseTypeEntry, NormalizedStateEntity
 ):
     """Stores instances of StateSupervisionCaseTypeEntry entities that have been
     normalized and are prepared to be used in calculations."""
@@ -261,7 +246,7 @@ class NormalizedStateSupervisionCaseTypeEntry(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolation(
-    StateSupervisionViolation, NormalizedStateEntity
+    state_entities.StateSupervisionViolation, NormalizedStateEntity
 ):
     """Stores instances of StateSupervisionViolation entities that have been
     normalized and are prepared to be used in calculations."""
@@ -273,7 +258,7 @@ class NormalizedStateSupervisionViolation(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolationTypeEntry(
-    StateSupervisionViolationTypeEntry, NormalizedStateEntity
+    state_entities.StateSupervisionViolationTypeEntry, NormalizedStateEntity
 ):
     """Stores instances of StateSupervisionViolationTypeEntry entities that have been
     normalized and are prepared to be used in calculations."""
@@ -285,7 +270,7 @@ class NormalizedStateSupervisionViolationTypeEntry(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolatedConditionEntry(
-    StateSupervisionViolatedConditionEntry, NormalizedStateEntity
+    state_entities.StateSupervisionViolatedConditionEntry, NormalizedStateEntity
 ):
     """Stores instances of StateSupervisionViolatedConditionEntry entities that have been
     normalized and are prepared to be used in calculations."""
@@ -297,7 +282,9 @@ class NormalizedStateSupervisionViolatedConditionEntry(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolationResponse(
-    StateSupervisionViolationResponse, NormalizedStateEntity, SequencedEntityMixin
+    state_entities.StateSupervisionViolationResponse,
+    NormalizedStateEntity,
+    SequencedEntityMixin,
 ):
     """Stores instances of StateSupervisionViolationResponse entities that have been
     normalized and are prepared to be used in calculations."""
@@ -312,7 +299,7 @@ class NormalizedStateSupervisionViolationResponse(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionViolationResponseDecisionEntry(
-    StateSupervisionViolationResponseDecisionEntry, NormalizedStateEntity
+    state_entities.StateSupervisionViolationResponseDecisionEntry, NormalizedStateEntity
 ):
     """Stores instances of StateSupervisionViolationResponseDecisionEntry entities that have been
     normalized and are prepared to be used in calculations."""
@@ -325,7 +312,7 @@ class NormalizedStateSupervisionViolationResponseDecisionEntry(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateIncarcerationSentence(
-    StateIncarcerationSentence, NormalizedStateEntity
+    state_entities.StateIncarcerationSentence, NormalizedStateEntity
 ):
     """Stores instances of StateIncarcerationSentence entities that have been
     normalized and are prepared to be used in calculations."""
@@ -337,7 +324,7 @@ class NormalizedStateIncarcerationSentence(
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
 class NormalizedStateSupervisionSentence(
-    StateSupervisionSentence, NormalizedStateEntity
+    state_entities.StateSupervisionSentence, NormalizedStateEntity
 ):
     """Stores instances of StateSupervisionSentence entities that have been
     normalized and are prepared to be used in calculations."""
@@ -348,7 +335,7 @@ class NormalizedStateSupervisionSentence(
     kw_only=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
-class NormalizedStateCharge(StateCharge, NormalizedStateEntity):
+class NormalizedStateCharge(state_entities.StateCharge, NormalizedStateEntity):
     """Stores instances of StateCharge entities that have been
     normalized and are prepared to be used in calculations."""
 
@@ -438,7 +425,9 @@ class NormalizedStateCharge(StateCharge, NormalizedStateEntity):
     kw_only=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
-class NormalizedStateEarlyDischarge(StateEarlyDischarge, NormalizedStateEntity):
+class NormalizedStateEarlyDischarge(
+    state_entities.StateEarlyDischarge, NormalizedStateEntity
+):
     """Stores instances of StateEarlyDischarge entities that have been normalized
     and are prepared to be used in calculations."""
 
@@ -448,6 +437,8 @@ class NormalizedStateEarlyDischarge(StateEarlyDischarge, NormalizedStateEntity):
     kw_only=True,
     field_transformer=add_normalized_entity_validator_to_ref_fields,
 )
-class NormalizedStateStaffRolePeriod(StateStaffRolePeriod, NormalizedStateEntity):
+class NormalizedStateStaffRolePeriod(
+    state_entities.StateStaffRolePeriod, NormalizedStateEntity
+):
     """Stores instances of StateStaffRolePeriod entities that have been normalized
     and are prepared to be used in calculations."""

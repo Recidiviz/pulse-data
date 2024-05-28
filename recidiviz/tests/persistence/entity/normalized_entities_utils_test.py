@@ -37,7 +37,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
+    LEGACY_NORMALIZATION_ENTITY_CLASSES,
     AdditionalAttributesMap,
     clear_entity_id_index_cache,
     copy_entities_and_add_unique_ids,
@@ -102,6 +102,8 @@ class TestNormalizedEntityClassesCoverage(unittest.TestCase):
     """Tests that all entity classes with Normalized versions are listed in
     NORMALIZED_ENTITY_CLASSES."""
 
+    # TODO(#30075) Test that all state entities have a normalized entity,
+    # regardless of usage w/ legacy normalization setup.
     def test_normalized_entity_classes_coverage(self) -> None:
         entity_classes = [
             entity_class
@@ -109,7 +111,7 @@ class TestNormalizedEntityClassesCoverage(unittest.TestCase):
             if issubclass(entity_class, NormalizedStateEntity)
         ]
 
-        self.assertCountEqual(entity_classes, NORMALIZED_ENTITY_CLASSES)
+        self.assertCountEqual(entity_classes, LEGACY_NORMALIZATION_ENTITY_CLASSES)
 
 
 class TestMergeAdditionalAttributesMaps(unittest.TestCase):

@@ -548,7 +548,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     @mock.patch(
         "recidiviz.pipelines.calculation_data_storage_manager."
-        "NORMALIZED_ENTITY_CLASSES",
+        "LEGACY_NORMALIZATION_ENTITY_CLASSES",
         [NormalizedStateIncarcerationPeriod],
     )
     @mock.patch(
@@ -645,7 +645,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     @mock.patch(
         "recidiviz.pipelines.calculation_data_storage_manager."
-        "NORMALIZED_ENTITY_CLASSES",
+        "LEGACY_NORMALIZATION_ENTITY_CLASSES",
         [NormalizedStateIncarcerationPeriod],
     )
     @mock.patch(
@@ -742,7 +742,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     @mock.patch(
         "recidiviz.pipelines.calculation_data_storage_manager."
-        "NORMALIZED_ENTITY_CLASSES",
+        "LEGACY_NORMALIZATION_ENTITY_CLASSES",
         [NormalizedStateIncarcerationPeriod],
     )
     @mock.patch(

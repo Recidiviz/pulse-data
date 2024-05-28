@@ -28,6 +28,9 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
     get_entity_class_in_module_with_name,
 )
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    LEGACY_NORMALIZATION_ENTITY_CLASSES,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state import normalized_entities
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -79,16 +82,25 @@ class TestNormalizedEntities(unittest.TestCase):
                 entity_name.replace(NORMALIZED_PREFIX, ""),
             )
 
-    def test_subtree_coverage(self) -> None:
-        """Tests that all entities in the subtrees of the root entities that get
-        normalized have NormalizedStateEntity counterparts."""
+    # TODO(#30075) Test that all state entities have a normalized entity.
+    def test_normalization_manager_subtree_coverage(self) -> None:
+        """
+        Tests all entities managed by NormalizationManagers in
+        the legacy normalization implementation. We check that
+        subtrees of the root entities that get normalized have
+        NormalizedStateEntity counterparts.
+        """
         classes_in_subtrees: Set[Type[Entity]] = set()
 
         for normalization_manager in NORMALIZATION_MANAGERS:
             for entity in normalization_manager.normalized_entity_classes():
                 classes_in_subtrees.update(classes_in_normalized_entity_subtree(entity))
 
-        self.assertEqual(self.normalized_entity_bases, classes_in_subtrees)
+        managed_normalized_entity_bases = {
+            e.__base__ for e in LEGACY_NORMALIZATION_ENTITY_CLASSES
+        }
+
+        self.assertEqual(managed_normalized_entity_bases, classes_in_subtrees)
 
     def test_not_normalized_entity_in_ref(self) -> None:
         # This should raise an error because we are trying to store a
