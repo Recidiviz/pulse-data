@@ -124,21 +124,8 @@ class MetricPipeline(
         """Returns the required state-specific delegates needed for the pipeline."""
 
     @classmethod
-    @abc.abstractmethod
-    def state_specific_input_reference_view_builders(
-        cls,
-    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
-        """Returns a dictionary mapping state codes to the builders of views whose
-        queries should be run to produce input data for the pipeline for the given
-        state only."""
-
-    @classmethod
     def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        return cls.input_reference_view_builders() + [
-            vb
-            for view_builders in cls.state_specific_input_reference_view_builders().values()
-            for vb in view_builders
-        ]
+        return cls.input_reference_view_builders()
 
     @classmethod
     @abc.abstractmethod
@@ -178,10 +165,7 @@ class MetricPipeline(
 
         metric_types = self.parse_metric_types(self.pipeline_parameters.metric_types)
 
-        reference_view_builders = (
-            self.input_reference_view_builders()
-            + self.state_specific_input_reference_view_builders().get(state_code, [])
-        )
+        reference_view_builders = self.input_reference_view_builders()
 
         pipeline_data = p | "Load required person-level data" >> ExtractRootEntityDataForPipeline(
             state_code=state_code,

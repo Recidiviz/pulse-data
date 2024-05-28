@@ -355,72 +355,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_contact_data = [normalized_database_base_dict(supervision_contact)]
 
-        us_mo_sentence_status_data: Iterable[Dict[str, Any]] = [
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "sentence_external_id": "is-123",
-                "sentence_status_external_id": "is-123-1",
-                "status_code": "10I1000",
-                "status_date": "20081120",
-                "status_description": "New Court Comm-Institution",
-            },
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "sentence_external_id": "is-123",
-                "sentence_status_external_id": "is-123-2",
-                "status_code": "40O1010",
-                "status_date": "20101204",
-                "status_description": "Parole Release",
-            },
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "sentence_external_id": "is-123",
-                "sentence_status_external_id": "is-123-2",
-                "status_code": "45O1060",
-                "status_date": "20110405",
-                "status_description": "Parole Ret-Treatment Center",
-            },
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "sentence_external_id": "is-123",
-                "sentence_status_external_id": "is-123-3",
-                "status_code": "40O1030",
-                "status_date": "20140414",
-                "status_description": "Parole Re-Release",
-            },
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "sentence_external_id": "ss-1122",
-                "sentence_status_external_id": "ss-1122-1",
-                "status_code": "25I1000",
-                "status_date": "20150314",
-                "status_description": "Court Probation - Addl Chg",
-            },
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "sentence_external_id": "ss-1122",
-                "sentence_status_external_id": "ss-1122-2",
-                "status_code": "45O7000",
-                "status_date": "20170104",
-                "status_description": "Field to DAI-Other Sentence",
-            },
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "sentence_external_id": "is-123",
-                "sentence_status_external_id": "is-123-2",
-                "status_code": "45O1010",
-                "status_date": "20170104",
-                "status_description": "Parole Ret-Tech Viol",
-            },
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -434,7 +368,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
-            "us_mo_sentence_statuses": us_mo_sentence_status_data,
         }
         data_dict.update(data_dict_overrides)
 

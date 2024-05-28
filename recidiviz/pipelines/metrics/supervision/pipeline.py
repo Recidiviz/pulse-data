@@ -17,13 +17,9 @@
 """The supervision metric calculation pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from typing import Dict, List, Type, Union
+from typing import List, Type, Union
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
@@ -84,16 +80,6 @@ class SupervisionMetricsPipeline(MetricPipeline):
             StateSpecificSupervisionDelegate,
             StateSpecificViolationDelegate,
         ]
-
-    @classmethod
-    def state_specific_input_reference_view_builders(
-        cls,
-    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
-        return {
-            # We need to bring in the US_MO sentence status table to load
-            # state-specific versions of sentences
-            StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_BUILDER]
-        }
 
     @classmethod
     def pipeline_name(cls) -> str:

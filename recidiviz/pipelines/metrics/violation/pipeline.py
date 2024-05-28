@@ -17,10 +17,9 @@
 """The violations metric calculation pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from typing import Dict, List, Type, Union
+from typing import List, Type, Union
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
@@ -59,12 +58,6 @@ class ViolationMetricsPipeline(MetricPipeline):
     @classmethod
     def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
         return []
-
-    @classmethod
-    def state_specific_input_reference_view_builders(
-        cls,
-    ) -> Dict[StateCode, List[BigQueryViewBuilder]]:
-        return {}
 
     @classmethod
     def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
