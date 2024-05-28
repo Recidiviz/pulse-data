@@ -37,6 +37,9 @@ def pytest_configure(config: Config) -> None:
     config.addinivalue_line(
         "markers", "uses_bq_emulator: for tests that use the BigQuery emulator"
     )
+    config.addinivalue_line(
+        "markers", "view_graph_validation: special marker for long-running test"
+    )
 
 
 def pytest_unconfigure() -> None:

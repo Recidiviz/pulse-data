@@ -132,7 +132,7 @@ _REASON_QUERY = f"""
           SELECT
             state_code,
             pei.person_id,
-            DATE(CAST(RelTransferDateYear AS INT),CAST(RelTransferDateMonth AS INT),CAST(RelTransferDateDay AS INT)) AS start_date,
+            DATE(CAST(RelTransferDateYear AS INT64),CAST(RelTransferDateMonth AS INT64),CAST(RelTransferDateDay AS INT64)) AS start_date,
             CAST(NULL AS DATE) AS end_date,
             FALSE AS meets_criteria,
             PBPPOffenseDescription AS description
@@ -147,7 +147,7 @@ _REASON_QUERY = f"""
           ON
             ParoleNumber = pei.external_id
           WHERE
-            DATE(CAST(RelTransferDateYear AS INT),CAST(RelTransferDateMonth AS INT),CAST(RelTransferDateDay AS INT)) IS NOT NULL
+            DATE(CAST(RelTransferDateYear AS INT64),CAST(RelTransferDateMonth AS INT64),CAST(RelTransferDateDay AS INT64)) IS NOT NULL
             AND id_type = 'US_PA_PBPP'
             AND state_code = 'US_PA'
             AND (PBPPOffenseDescription LIKE '%HOMICIDE%'

@@ -35,10 +35,8 @@ from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.tests.big_query.big_query_test_helper import BigQueryTestHelper
-from recidiviz.tests.test_setup_utils import get_pytest_bq_emulator_port
-from recidiviz.tools.utils.script_helpers import does_command_fail, run_command
-
-BQ_EMULATOR_PROJECT_ID = "recidiviz-bq-emulator-project"
+from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
+from recidiviz.tests.utils.big_query_emulator_control import BigQueryEmulatorControl
 
 
 # TODO(#15020): Migrate all usages of  BigQueryViewTestCase to use this test case
@@ -63,27 +61,23 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
     into issues, you should post in #platform-team.
     """
 
-    @classmethod
-    def _assert_bq_emulator_is_running(cls) -> None:
-        if does_command_fail("docker info"):
-            raise ValueError("The `docker info` command failed - is Docker running?")
+    control: BigQueryEmulatorControl
 
-        # Lists all running containers and looks for one with port 9050 exposed (this
-        # is the port used by the BQ emulator).
-        bq_emulator_container_ids = run_command(
-            f'docker ps --filter "expose={get_pytest_bq_emulator_port()}" -q',
-            timeout_sec=10,
-        )
-        if not bq_emulator_container_ids:
-            raise ValueError(
-                f"No Docker container found running the BQ emulator. Follow the "
-                f"instructions in the {BigQueryEmulatorTestCase.__name__} class to "
-                f"start the emulator."
-            )
+    # Deletes all tables / views in the emulator after each test
+    # Subclasses can choose to override this as it may not always be necessary
+    wipe_emulator_data_on_teardown = True
+
+    @classmethod
+    def get_input_schema_json_path(cls) -> str | None:
+        return None
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls._assert_bq_emulator_is_running()
+        cls.control = BigQueryEmulatorControl.build()
+        cls.control.pull_image()
+        cls.control.start_emulator(
+            input_schema_json_path=cls.get_input_schema_json_path()
+        )
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
@@ -92,11 +86,22 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         )
         self.project_id = self.project_id_patcher.start().return_value
         self.bq_client = BigQueryClientImpl()
-        self._wipe_emulator_data()
 
     def tearDown(self) -> None:
-        self._wipe_emulator_data()
         self.project_id_patcher.stop()
+        if self.wipe_emulator_data_on_teardown:
+            self._wipe_emulator_data()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # If the test failed, output the emulator logs prior to exiting
+        print(cls.control.get_logs())
+        cls.control.stop_emulator()
+
+    def query(self, query: str) -> pd.DataFrame:
+        return self.bq_client.run_query_async(
+            query_str=query, use_query_cache=True
+        ).to_dataframe()
 
     def _wipe_emulator_data(self) -> None:
         with futures.ThreadPoolExecutor(
@@ -117,11 +122,6 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
 
         for future in futures.as_completed(to_delete):
             future.result()
-
-    def query(self, query: str) -> pd.DataFrame:
-        return self.bq_client.run_query_async(
-            query_str=query, use_query_cache=True
-        ).to_dataframe()
 
     def run_query_test(
         self, query_str: str, expected_result: Iterable[Dict[str, Any]]

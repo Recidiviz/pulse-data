@@ -17,6 +17,8 @@
 """Helper functions for configuration of pytest tests"""
 import os
 
+BQ_EMULATOR_PROJECT_ID = "recidiviz-bq-emulator-project"
+
 
 def get_pytest_worker_id() -> int:
     """Retrieves the worker number from the appropriate environment variable
@@ -25,8 +27,14 @@ def get_pytest_worker_id() -> int:
     return int(os.environ.get("PYTEST_XDIST_WORKER", "gw0")[2:])
 
 
-def get_pytest_bq_emulator_port() -> int:
-    """Returns the port for the BigQuery emulator that the current pytest test should use.
-    The port number is variable to avoid interference between tests running in parallel.
+def get_bq_emulator_port() -> int:
+    """Returns the port for the BigQuery emulator that the current environment should
+    use. If we are running outside the context of pytest, we assume there is only one
+    emulator running at the default port. Otherwise, the port number is variable to
+    avoid interference between tests running in parallel.
     """
-    return 9050 + get_pytest_worker_id()
+    port = 9050
+    if not (pytest_worker_id := get_pytest_worker_id()):
+        return port
+
+    return port + pytest_worker_id

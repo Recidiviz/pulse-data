@@ -16,7 +16,6 @@
 # =============================================================================
 """Class for holding BigQuery source tables"""
 from functools import cached_property
-from typing import Any
 
 import attr
 from more_itertools import one
@@ -45,19 +44,16 @@ class SourceTableRepository:
         }
 
     def get_collections(
-        self, labels: dict[type[SourceTableLabel], Any]
+        self,
+        labels: list[SourceTableLabel],
     ) -> list[SourceTableCollection]:
         return [
             collection
             for collection in self.source_table_collections
-            if all(
-                collection.has_label(label, value) for label, value in labels.items()
-            )
+            if all(collection.has_label(label) for label in labels)
         ]
 
-    def get_collection(
-        self, labels: dict[type[SourceTableLabel], Any]
-    ) -> SourceTableCollection:
+    def get_collection(self, labels: list[SourceTableLabel]) -> SourceTableCollection:
         return one(self.get_collections(labels=labels))
 
     def build_config(self, address: BigQueryAddress) -> SourceTableConfig:

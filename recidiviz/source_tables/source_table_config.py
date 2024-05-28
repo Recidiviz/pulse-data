@@ -148,13 +148,13 @@ class SourceTableCollection:
         return BigQueryAddress(dataset_id=self.dataset_id, table_id=table_id)
 
     def has_table(self, table_id: str) -> bool:
-        return self._build_table_address(table_id) in self.source_tables
+        return self._build_table_address(table_id) in self.source_tables_by_address
 
-    def has_label(self, label_type: type[SourceTableLabel], value: Any) -> bool:
+    def has_label(self, label: SourceTableLabel) -> bool:
         return any(
-            value is None or label.value() == value
-            for label in self.labels
-            if isinstance(label, label_type)
+            src_label.value == label.value
+            for src_label in self.labels
+            if isinstance(src_label, type(label))
         )
 
     def add_source_table(

@@ -38,6 +38,47 @@ from recidiviz.source_tables.source_table_config import (
 )
 
 
+def _build_normalized_state_entities() -> SourceTableCollection:
+    """Builds the collection of normalization source tables"""
+    normalized_state_entities = SourceTableCollection(
+        labels=[DataflowPipelineSourceTableLabel("normalization")],
+        dataset_id=NORMALIZED_STATE_DATASET,
+    )
+
+    for entity_cls in NORMALIZED_ENTITY_CLASSES:
+        table_id = schema_utils.get_state_database_entity_with_name(
+            entity_cls.base_class_name()
+        ).__tablename__
+        normalized_state_entities.add_source_table(
+            table_id=table_id,
+            schema_fields=bq_schema_for_normalized_state_entity(entity_cls),
+        )
+
+    for manager in NORMALIZATION_MANAGERS:
+        for child_cls, parent_cls in manager.normalized_entity_associations():
+            association_table = schema_utils.get_state_database_association_with_names(
+                child_cls.__name__, parent_cls.__name__
+            )
+
+            normalized_state_entities.add_source_table(
+                table_id=association_table.name,
+                schema_fields=schema_for_sqlalchemy_table(
+                    association_table,
+                    add_state_code_field=True,
+                ),
+            )
+
+    # Add definitions for non-normalized non-association state entities
+    for table in get_all_table_classes_in_schema(SchemaType.STATE):
+        if not normalized_state_entities.has_table(table.name):
+            normalized_state_entities.add_source_table(
+                table_id=table.name,
+                schema_fields=bq_schema_for_sqlalchemy_table(SchemaType.STATE, table),
+            )
+
+    return normalized_state_entities
+
+
 def get_dataflow_output_source_table_collections() -> list[SourceTableCollection]:
     """Collects all source tables that are populated by our Dataflow pipelines"""
     dataflow_metrics = SourceTableCollection(
@@ -73,41 +114,6 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
                 schema_fields=pipeline.bq_schema_for_table(),
             )
 
-    normalized_state_entities = SourceTableCollection(
-        labels=[DataflowPipelineSourceTableLabel("normalization")],
-        dataset_id=NORMALIZED_STATE_DATASET,
-    )
-
-    for table in get_all_table_classes_in_schema(SchemaType.STATE):
-        if not normalized_state_entities.has_table(table.name):
-            normalized_state_entities.add_source_table(
-                table_id=table.name,
-                schema_fields=schema_for_sqlalchemy_table(table),
-            )
-
-    for entity_cls in NORMALIZED_ENTITY_CLASSES:
-        table_id = schema_utils.get_state_database_entity_with_name(
-            entity_cls.base_class_name()
-        ).__tablename__
-        normalized_state_entities.add_source_table(
-            table_id=table_id,
-            schema_fields=bq_schema_for_normalized_state_entity(entity_cls),
-        )
-
-    for manager in NORMALIZATION_MANAGERS:
-        for child_cls, parent_cls in manager.normalized_entity_associations():
-            association_table = schema_utils.get_state_database_association_with_names(
-                child_cls.__name__, parent_cls.__name__
-            )
-
-            normalized_state_entities.add_source_table(
-                table_id=association_table.name,
-                schema_fields=schema_for_sqlalchemy_table(
-                    association_table,
-                    add_state_code_field=True,
-                ),
-            )
-
     state_collections = []
 
     for (
@@ -130,6 +136,6 @@ def get_dataflow_output_source_table_collections() -> list[SourceTableCollection
     return [
         dataflow_metrics,
         supplemental_data,
-        normalized_state_entities,
+        _build_normalized_state_entities(),
         *state_collections,
     ]
