@@ -249,10 +249,9 @@ Denominator is the average daily caseload for the officer over the given time pe
                 event_name="abscondings",
                 event_name_singular="absconding",
                 event_name_past_tense="absconded",
-                description_markdown="""All reported abscondings in a given time period.
-
+                description_markdown="""All reported abscondings, as captured in the data we receive for all supervision levels except for CATEGORY D, DEPORTED and PENDING DEPORT, in a given time period.
 <br />
-Denominator is the average daily caseload for the officer over the given time period.""",
+Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=TREATMENT_STARTS,
@@ -262,10 +261,9 @@ Denominator is the average daily caseload for the officer over the given time pe
                 event_name_singular="program start",
                 event_name_past_tense="had a program start",
                 top_x_pct=10,
-                description_markdown="""All reported program starts in a given time period.
-
+                description_markdown="""All reported program starts that exist in PVDTS, as captured in the data we receive for all supervision levels except for CATEGORY D, DEPORTED and PENDING DEPORT, in a given time period.
 <br />
-Denominator is the average daily caseload for the officer over the given time period.""",
+Denominator is the average daily caseload for the agent over the given time period, including people on both active and admin supervision levels.""",
             ),
         ],
         supervision_officer_metric_exclusions="""
