@@ -132,6 +132,13 @@ US_IX:
   bop_BOPVoteValue:
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  com_PSIReport:
+    sentencing_views.sentencing_case_record: |-
+      Used to grab PSI information. 05/21/24
+    sentencing_views.sentencing_client_record: |-
+      Used to grab PSI information. 05/21/24
+    sentencing_views.sentencing_staff_record: |-
+      Used to grab PSI information. 05/21/24
   com_Transfer:
     dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -221,6 +228,8 @@ US_IX:
     task_eligibility_criteria_us_ix.no_active_nco: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ind_ContactMode:
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
@@ -233,6 +242,8 @@ US_IX:
   ind_OffenderNote:
     reference_views.us_ix_case_update_info: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
@@ -242,6 +253,8 @@ US_IX:
   ind_OffenderNoteInfo:
     reference_views.us_ix_case_update_info: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
@@ -249,12 +262,17 @@ US_IX:
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ind_OffenderNoteInfo_ContactMode:
+    sentencing_views.sentencing_case_record: |-
+      Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_crc_work_release_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  ind_Offender_Address:
+    sentencing_views.sentencing_client_record: |-
+      Used to grab JII address for PSI tool. 05/21/24
   ind_Offender_Alert:
     task_eligibility_criteria_us_ix.no_active_nco: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -276,6 +294,8 @@ US_IX:
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ref_Address:
+    sentencing_views.sentencing_client_record: |-
+      Used for sentencing PSI tool, we need it to grab client's county. 5/21/24
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ref_Employee:
@@ -296,6 +316,10 @@ US_IX:
   ref_Location:
     reference_views.us_ix_location_metadata: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    sentencing_views.sentencing_case_record: |-
+      Used for sentencing PSI tool, we need it as a reference for case county. 5/21/24
+    sentencing_views.sentencing_client_record: |-
+      Used for sentencing PSI tool, we need it as a reference for client's county. 5/21/24
     validation_views.supervisor_roster_exclusions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     workflows_views.client_record: |-
