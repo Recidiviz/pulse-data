@@ -15,10 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The CloudSqlQueryGenerator for marking all SFTP ingest ready files as discovered."""
-import datetime
 from typing import Dict, List, Set, Tuple, Union
 
-import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
@@ -29,6 +27,9 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.sftp.metadata import (
     POST_PROCESSED_NORMALIZED_FILE_PATH,
     REMOTE_FILE_PATH,
+)
+from recidiviz.airflow.dags.utils.cloud_sql import (
+    postgres_formatted_current_datetime_utc_str,
 )
 from recidiviz.utils.types import assert_type
 
@@ -55,7 +56,9 @@ class MarkIngestReadyFilesDiscoveredSqlQueryGenerator(
         post_processed_file_metadatas: List[
             Dict[str, Union[str, int]]
         ] = operator.xcom_pull(
-            context, key="return_value", task_ids=self.filter_invalid_gcs_files_task_id
+            context,
+            key="return_value",
+            task_ids=self.filter_invalid_gcs_files_task_id,
         )
         post_processed_file_to_remote_file_set: Set[Tuple[str, str]] = {
             (
@@ -105,12 +108,9 @@ SELECT post_processed_normalized_file_path, remote_file_path FROM
  AND (post_processed_normalized_file_path, remote_file_path) IN ({sql_tuples});"""
 
     def insert_sql_query(self, files_to_mark_discovered: Set[Tuple[str, str]]) -> str:
-        current_date = datetime.datetime.now(tz=pytz.UTC).strftime(
-            "%Y-%m-%d %H:%M:%S.%f %Z"
-        )
         values = ",".join(
             [
-                f"\n('{self.region_code}', '{post_processed_file}', '{remote_file}', '{current_date}')"
+                f"\n('{self.region_code}', '{post_processed_file}', '{remote_file}', '{postgres_formatted_current_datetime_utc_str()}')"
                 for post_processed_file, remote_file in sorted(
                     list(files_to_mark_discovered)
                 )

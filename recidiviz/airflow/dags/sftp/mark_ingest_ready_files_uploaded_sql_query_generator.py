@@ -14,11 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The CloudSQLQueryGenerator for marking SFTP files as downloaded."""
-import datetime
+"""The CloudSQLQueryGenerator for marking SFTP files as uploaded."""
 from typing import Dict, List, Set, Tuple, Union
 
-import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
@@ -29,6 +27,9 @@ from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
 from recidiviz.airflow.dags.sftp.metadata import (
     POST_PROCESSED_NORMALIZED_FILE_PATH,
     REMOTE_FILE_PATH,
+)
+from recidiviz.airflow.dags.utils.cloud_sql import (
+    postgres_formatted_current_datetime_utc_str,
 )
 from recidiviz.utils.types import assert_type
 
@@ -82,9 +83,6 @@ class MarkIngestReadyFilesUploadedSqlQueryGenerator(
         self,
         post_processed_path_to_remote_path_set: Set[Tuple[str, str]],
     ) -> str:
-        current_date = datetime.datetime.now(tz=pytz.UTC).strftime(
-            "%Y-%m-%d %H:%M:%S.%f %Z"
-        )
         sql_tuples = ",".join(
             [
                 f"('{post_processed_normalized_file_path}', '{remote_file_path}')"
@@ -95,5 +93,5 @@ class MarkIngestReadyFilesUploadedSqlQueryGenerator(
         )
 
         return f"""
-UPDATE direct_ingest_sftp_ingest_ready_file_metadata SET file_upload_time = '{current_date}'
+UPDATE direct_ingest_sftp_ingest_ready_file_metadata SET file_upload_time = '{postgres_formatted_current_datetime_utc_str()}'
 WHERE region_code = '{self.region_code}' AND (post_processed_normalized_file_path, remote_file_path) IN ({sql_tuples});"""

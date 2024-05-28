@@ -16,6 +16,8 @@
 # =============================================================================
 """Cloud SQL utilities for use in Airflow"""
 
+import datetime
+
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
@@ -23,3 +25,7 @@ def cloud_sql_conn_id_for_schema_type(schema_type: SchemaType) -> str:
     """These connection IDs will correspond to an Airflow Connection JSON or URI string
     stored in the Secrets Manager under `airflow-connections-{this connection id}`."""
     return f"{schema_type.value.lower()}_postgres_conn_id"
+
+
+def postgres_formatted_current_datetime_utc_str() -> str:
+    return datetime.datetime.now(tz=datetime.UTC).strftime("%Y-%m-%d %H:%M:%S.%f %Z")

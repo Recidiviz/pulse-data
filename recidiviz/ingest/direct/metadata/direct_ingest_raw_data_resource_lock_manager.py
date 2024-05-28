@@ -35,6 +35,10 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations import entities
+from recidiviz.persistence.errors import (
+    DirectIngestRawDataResourceLockAlreadyReleasedError,
+    DirectIngestRawDataResourceLockHeldError,
+)
 
 
 class DirectIngestRawDataResourceLockManager:
@@ -266,11 +270,3 @@ class DirectIngestRawDataResourceLockManager:
                 )
                 for new_lock in new_locks
             ]
-
-
-class DirectIngestRawDataResourceLockHeldError(Exception):
-    """Raised when trying to acquire a resource lock that is already held"""
-
-
-class DirectIngestRawDataResourceLockAlreadyReleasedError(KeyError):
-    """Raised when trying to release a resource lock that is already released"""

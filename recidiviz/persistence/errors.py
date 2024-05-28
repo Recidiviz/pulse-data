@@ -19,3 +19,11 @@
 
 class PersistenceError(Exception):
     """Raised when an error with the persistence layer is encountered."""
+
+
+class DirectIngestRawDataResourceLockHeldError(Exception):
+    """Raised when trying to acquire a resource lock that is already held"""
+
+
+class DirectIngestRawDataResourceLockAlreadyReleasedError(KeyError):
+    """Raised when trying to release a resource lock that is already released"""
