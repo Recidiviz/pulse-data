@@ -21,9 +21,7 @@ periods.
 
 This view is structured into two large CTEs which are finally merged for the final
 output. The first CTE reflects PA Is locations, the second CTE is for supervisor
-locations. When these are merged, we add a `type` that is used to specify the staff's
-role. We don't care currently if someone is a PA II or a PA III -- we think of them as a
-supervisor no matter what. See TODO(#28927).
+locations.
 
 There is similar logic in view_staff and view_supervisor_periods. We should do a pass
 over these views and abstract this common logic into fragments we can reuse.
@@ -36,10 +34,6 @@ weeks), we consider that PA I to operate in whichever unit they have the most cl
 (see #28597). I chose not to care about what AgentParole says for the supervisee
 information -- this is because if AgentParole said a PA I was in unit 2, but they're
 supervising 50 clients in unit 3 and 0 in unit 2, they're clearly in unit 3.
-
-### Notes
-1. May to July 2023 we stopped receiving badge numbers, so there are breaks in the
-supervision periods for this time. TODO(#28472)
 """
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
