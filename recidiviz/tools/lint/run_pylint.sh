@@ -28,7 +28,7 @@ merge_base_hash=$(git merge-base origin/main HEAD)|| exit_on_fail
 current_head_hash=$(git rev-parse HEAD)|| exit_on_fail
 current_head_branch_name=$(git rev-parse --abbrev-ref HEAD)|| exit_on_fail
 
-# Returns all files with updates that are not deletions
+# Returns all files with updates that are not deletions.
 changed_files_cmd="git diff --diff-filter=d --name-only $(git merge-base HEAD origin/main)" || exit_on_fail
 
 # Look for changes in Pipfile.lock and .pylintrc - changes in these files could mean that python files that have not

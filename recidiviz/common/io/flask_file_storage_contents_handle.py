@@ -29,12 +29,6 @@ class FlaskFileStorageContentsHandle(FileContentsHandle[str, IO]):
     def __init__(self, file_storage: FileStorage):
         self.file_storage = file_storage
 
-    def get_contents_iterator(self) -> Iterator[str]:
-        """Lazy function (generator) to read a file line by line."""
-        with self.open() as f:
-            while line := f.readline():
-                yield line
-
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[IO]:
         self.file_storage.stream.seek(
