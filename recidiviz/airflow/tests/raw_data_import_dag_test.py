@@ -74,6 +74,21 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         for root_task in state_specific_tasks_dag.roots:
             assert "acquire_raw_data_resource_locks" in root_task.task_id
 
+    def test_lock_after_everything_else(self) -> None:
+        """Tests that we release the resource locks as the last thing we do in
+        state-specific import branches
+        """
+
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        branch_end_and_one_before = dag.partial_subset(
+            task_ids_or_regex=r"branch_end",
+            include_upstream=False,
+            include_direct_upstream=True,
+        )
+
+        for root_task in branch_end_and_one_before.roots:
+            assert "release_raw_data_resource_locks" in root_task.task_id
+
 
 class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
     """Integration tests for the raw data import dag"""
@@ -169,7 +184,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         def _resource_lock_fails(*args: Dict, **kwargs: Dict) -> BaseOperator:
             if "acquire_raw_data_resource_locks" in kwargs["task_id"]:
                 return FakeFailureOperator(*args, **kwargs)
-            return fake_operator_with_return_value([])
+            return fake_operator_with_return_value([])(*args, **kwargs)
 
         self.mock_cloud_sql_patcher.side_effect = _resource_lock_fails
         with Session(bind=self.engine) as session:
@@ -182,6 +197,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 expected_failure_ids=[
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                     r".*_primary_import_branch\.list_unprocessed_paths",
+                    r".*_primary_import_branch\.release_raw_data_resource_locks",
                     BRANCH_END_TASK_NAME,
                 ],
                 expected_skipped_ids=[

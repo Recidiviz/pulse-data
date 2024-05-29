@@ -24,6 +24,9 @@ from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_d
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
+from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
+    AcquireRawDataResourceLockSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
@@ -37,8 +40,8 @@ from recidiviz.airflow.dags.raw_data.raw_data_branching import (
     get_raw_data_branch_filter,
     get_raw_data_import_branch_key,
 )
-from recidiviz.airflow.dags.raw_data.resource_lock_sql_query_generator import (
-    AcquireRawDataResourceLockSqlQueryGenerator,
+from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator import (
+    ReleaseRawDataResourceLockSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
@@ -112,7 +115,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: celery?
         # outputs: [ ImportReadyOriginalFile ], [ RequiresPreImportNormalizationFile ]
 
-        # ... code will go here ...
+        # TODO(#30170) implement processing logic & operations registration
 
         # ------------------------------------------------------------------------------
 
@@ -121,7 +124,8 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: k8s
         # outputs: [ ImportReadyNormalizedFile ]
 
-        # ... code will go here ...
+        # TODO(#29946) implement pre-import file boundary finder
+        # TODO(#30167) implement pre-import normalization
 
         # ------------------------------------------------------------------------------
 
@@ -130,16 +134,29 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: k8s
         # outputs: [ ImportSessionInfo ]
 
-        # ... code will go here ...
+        # TODO(#30168) implement bq load step
 
         # ------------------------------------------------------------------------------
 
         # --- step 4: cleanup and storage ----------------------------------------------
-        # inputs: [ ImportSessionInfo ], [ RequiresCleanupFile ]
+        # inputs: [ ImportSessionInfo ]
         # execution layer: k8s
         # outputs:
 
-        # ... code will go here ...
+        # TODO(#30169) implement writes to file metadata & import sessions, as well as
+        # file cleanup
+
+        release_locks = CloudSqlQueryOperator(
+            task_id="release_raw_data_resource_locks",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=ReleaseRawDataResourceLockSqlQueryGenerator(
+                region_code=state_code.value,
+                raw_data_instance=raw_data_instance,
+                acquire_resource_lock_task_id=acquire_locks.task_id,
+            ),
+        )
+
+        unprocessed_paths >> release_locks
 
         # ------------------------------------------------------------------------------
 
