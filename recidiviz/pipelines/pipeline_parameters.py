@@ -31,6 +31,7 @@ from apache_beam.options.pipeline_options import (
     SetupOptions,
     WorkerOptions,
 )
+from attr import Attribute
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -133,7 +134,7 @@ class PipelineParameters:
         return overrides.get_dataset(default_dataset_id)
 
     # Args used for job configuration
-    region: str = attr.ib(default="us-west1", validator=attr_validators.is_str)
+    region: str = attr.ib(validator=attr_validators.is_str)
     machine_type: str = attr.ib(
         default="n1-standard-32", validator=attr_validators.is_str
     )
@@ -151,7 +152,16 @@ class PipelineParameters:
             return f"template_metadata_dev/{self.sandbox_username}"
         return "template_metadata"
 
-    def _validate_service_account_email(self, service_account_email: str) -> None:
+    service_account_email: str = attr.ib()
+
+    @service_account_email.default
+    def _service_account_email_default(self) -> str:
+        return f"direct-ingest-state-{self.state_code.replace('_', '-').lower()}-df@{self.project}.iam.gserviceaccount.com"
+
+    @service_account_email.validator
+    def _service_account_email_validator(
+        self, _attribute: Attribute, service_account_email: Optional[str]
+    ) -> None:
         regex = r"[a-z0-9-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com"
         default_regex = r"[a-z0-9-]+@developer\.gserviceaccount\.com"
         if (
@@ -162,18 +172,6 @@ class PipelineParameters:
             raise ValueError(
                 f"service_account_email must be a valid service account email address, but was {service_account_email}"
             )
-
-    service_account_email_override: Optional[str] = attr.ib(default=None)
-
-    @property
-    def service_account_email(self) -> str:
-        if self.service_account_email_override:
-            email = self.service_account_email_override
-        else:
-            _state_code = self.state_code.replace("_", "-").lower()
-            email = f"direct-ingest-state-{_state_code}-df@{self.project}.iam.gserviceaccount.com"
-        self._validate_service_account_email(email)
-        return email
 
     # These will only be set when the pipeline options are derived
     # from command-line args (when flex pipeline is actually being

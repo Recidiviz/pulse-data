@@ -39,12 +39,13 @@ Examples:
         --ingest_view_results_only True \
         --skip_build True \
         --ingest_views_to_run "person staff" \
-        --service_account_email_override something@recidiviz-staging.iam.gserviceaccount.com 
+        --service_account_email something@recidiviz-staging.iam.gserviceaccount.com 
 """
 import argparse
 import json
 import logging
 from datetime import datetime
+from typing import List, Tuple
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
@@ -85,7 +86,7 @@ from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def parse_run_arguments() -> argparse.Namespace:
+def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to start a sandbox pipeline to a Namespace."""
     parser = argparse.ArgumentParser()
 
@@ -124,63 +125,34 @@ def parse_run_arguments() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
     )
 
-    parser.add_argument(
-        "--output_sandbox_prefix",
-        dest="output_sandbox_prefix",
-        help="This prefix string will be placed before any dataset name output by this pipeline.",
-        required=True,
-        type=str,
-    )
-
-    parser.add_argument(
-        "--ingest_view_results_only",
-        dest="ingest_view_results_only",
-        help="This will cause the pipeline to skip all actions after 'Write ingest_view results to table.'",
-        required=False,
-        default=False,
-    )
-
-    parser.add_argument(
-        "--ingest_views_to_run",
-        dest="ingest_views_to_run",
-        help="The ingest views you would like to run with this pipeline, separated by a space. If this is None, the pipeline will run all launchable views in the state.",
-        required=False,
-        type=str,
-    )
-
-    parser.add_argument(
-        "--service_account_email_override",
-        dest="service_account_email_override",
-        help="The GCP service account to run this pipeline that is not the default. You probably do not need to set it.",
-        required=False,
-        type=str,
-    )
-
-    return parser.parse_args()
+    return parser.parse_known_args()
 
 
-def build_sandbox_ingest_pipeline_params(
-    args: argparse.Namespace,
-) -> IngestPipelineParameters:
+def get_extra_pipeline_parameter_args(
+    project: str,
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+) -> List[str]:
+    """Returns additional pipeline command-line args that can be inferred from the
+    state code, instance and sandbox prefix.
     """
-    Returns PipelineParams built from the given command-line args,
-    as well as parameters inferred from the state code, instance, and sandbox prefix.
-    """
+    right_now = datetime.now()
+
     region = direct_ingest_regions.get_direct_ingest_region(
-        region_code=args.state_code.value
+        region_code=state_code.value
     )
-
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
     launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(
-        ingest_instance=args.ingest_instance
+        ingest_instance=ingest_instance
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
         launchable_ingest_views,
     )
+
     raw_table_dependencies = {
         raw_data_dependency.raw_file_config.file_tag
         for ingest_view in launchable_ingest_views
@@ -189,19 +161,18 @@ def build_sandbox_ingest_pipeline_params(
         ).raw_table_dependency_configs
     }
 
-    with local_project_id_override(args.project), cloudsql_proxy_control.connection(
+    with local_project_id_override(project), cloudsql_proxy_control.connection(
         schema_type=SchemaType.OPERATIONS
     ), SessionFactory.for_proxy(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
     ) as session:
         raw_file_metadata_manager = DirectIngestRawFileMetadataManager(
-            args.state_code.value, args.ingest_instance
+            state_code.value, ingest_instance
         )
         raw_data_max_upper_bounds = raw_file_metadata_manager.get_max_update_datetimes(
             session
         )
 
-    right_now = datetime.now()
     raw_data_upper_bound_dates_json = json.dumps(
         {
             file_tag: (
@@ -214,21 +185,21 @@ def build_sandbox_ingest_pipeline_params(
             for file_tag in raw_table_dependencies
         }
     )
-    params = IngestPipelineParameters(
+
+    return [
         # TODO(#18108): Once we have a distinct entrypoint for each pipeline type, we
         #  likely won't need this arg.
-        pipeline=INGEST_PIPELINE_NAME,
-        project=args.project,
-        state_code=args.state_code.value,
-        ingest_instance=args.ingest_instance.value,
-        output_sandbox_prefix=args.output_sandbox_prefix,
-        ingest_views_to_run=args.ingest_views_to_run,
-        raw_data_upper_bound_dates_json=raw_data_upper_bound_dates_json,
-        sandbox_username=get_sandbox_pipeline_username(),
-        service_account_email_override=args.service_account_email_override,
-    )
-
-    return params
+        "--pipeline",
+        INGEST_PIPELINE_NAME,
+        "--project",
+        project,
+        "--state_code",
+        state_code.value,
+        "--raw_data_upper_bound_dates_json",
+        raw_data_upper_bound_dates_json,
+        "--sandbox_username",
+        get_sandbox_pipeline_username(),
+    ]
 
 
 def run_sandbox_ingest_pipeline(
@@ -265,8 +236,16 @@ def main() -> None:
     """Creates sandbox datasets (as appropriate) and launches a sandbox ingest
     pipline as specified by the script args.
     """
-    known_args = parse_run_arguments()
-    params = build_sandbox_ingest_pipeline_params(known_args)
+    known_args, remaining_args = parse_run_arguments()
+    remaining_args += get_extra_pipeline_parameter_args(
+        known_args.project,
+        known_args.state_code,
+        known_args.ingest_instance,
+    )
+
+    params = IngestPipelineParameters.parse_from_args(
+        remaining_args, sandbox_pipeline=True
+    )
     with local_project_id_override(params.project):
         run_sandbox_ingest_pipeline(params, skip_build=known_args.skip_build)
 

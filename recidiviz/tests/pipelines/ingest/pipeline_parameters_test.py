@@ -114,7 +114,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            service_account_email_override="some-test-account@recidiviz-staging.iam.gserviceaccount.com",
+            service_account_email="some-test-account@recidiviz-staging.iam.gserviceaccount.com",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
         self.assertEqual(
@@ -129,7 +129,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            service_account_email_override="12345-compute@developer.gserviceaccount.com",
+            service_account_email="12345-compute@developer.gserviceaccount.com",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
         self.assertEqual(
@@ -143,15 +143,14 @@ class TestIngestPipelineParameters(unittest.TestCase):
             ValueError,
             r"service_account_email must be a valid service account email address.*",
         ):
-            params = IngestPipelineParameters(
+            _ = IngestPipelineParameters(
                 project="recidiviz-456",
                 state_code="US_OZ",
                 pipeline="test_pipeline_name",
                 region="us-west1",
-                service_account_email_override="some-test-account@somerandomwebsite.com",
+                service_account_email="some-test-account@somerandomwebsite.com",
                 raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             )
-            _ = params.service_account_email
 
     def test_parameters_with_sandbox_prefix(self) -> None:
         input_overrides_json = json.dumps(
