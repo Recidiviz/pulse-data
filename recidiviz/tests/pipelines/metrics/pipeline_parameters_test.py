@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     NORMALIZED_STATE_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.supervision.pipeline import SupervisionMetricsPipeline
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
@@ -171,6 +172,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(
-                    SupervisionMetricsPipeline
+                    SupervisionMetricsPipeline,
+                    StateCode(pipeline_parameters.state_code),
                 )
             )

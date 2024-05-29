@@ -20,6 +20,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
 )
@@ -114,11 +115,12 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_xx_state_primary\] in overrides which is not "
             r"a dataset this pipeline reads from. Datasets you can override: "
-            r"\['external_reference', 'state', 'us_mo_raw_data_up_to_date_views'\].",
+            r"\['external_reference', 'state'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(
-                    ComprehensiveNormalizationPipeline
+                    ComprehensiveNormalizationPipeline,
+                    StateCode(pipeline_parameters.state_code),
                 )
             )
 
@@ -138,6 +140,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         )
         pipeline_parameters.check_for_valid_input_dataset_overrides(
             get_all_reference_query_input_datasets_for_pipeline(
-                ComprehensiveNormalizationPipeline
+                ComprehensiveNormalizationPipeline,
+                StateCode(pipeline_parameters.state_code),
             )
         )

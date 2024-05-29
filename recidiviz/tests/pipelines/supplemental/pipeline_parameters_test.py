@@ -19,6 +19,7 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
@@ -107,7 +108,8 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(
-                    UsIxCaseNoteExtractedEntitiesPipeline
+                    UsIxCaseNoteExtractedEntitiesPipeline,
+                    StateCode(pipeline_parameters.state_code),
                 )
             )
 
@@ -126,6 +128,7 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
         )
         pipeline_parameters.check_for_valid_input_dataset_overrides(
             get_all_reference_query_input_datasets_for_pipeline(
-                UsIxCaseNoteExtractedEntitiesPipeline
+                UsIxCaseNoteExtractedEntitiesPipeline,
+                StateCode(pipeline_parameters.state_code),
             )
         )

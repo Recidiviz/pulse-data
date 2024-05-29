@@ -16,11 +16,13 @@
 # =============================================================================
 """Classes and configurations for all Dataflow pipelines."""
 import abc
-from typing import Generic, List, Type, TypeVar
+from typing import Dict, Generic, List, Type, TypeVar
 
 from apache_beam import Pipeline
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.pipeline_parameters import PipelineParametersT
 
 PipelineT = TypeVar("PipelineT", bound="BasePipeline")
@@ -41,10 +43,12 @@ class BasePipeline(abc.ABC, Generic[PipelineParametersT]):
 
     @classmethod
     @abc.abstractmethod
-    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        """The builders for all views whose queries are executed by ANY this pipeline to
-        produce input data across all states this pipeline may be run for (i.e. includes
-        all state-specific builders).
+    def all_input_reference_query_providers(
+        cls, state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
+    ) -> Dict[str, StateFilteredQueryProvider]:
+        """The query providers for all queries that are executed by this pipeline for
+        the provided state (i.e. includes all state-specific query providers for that
+        state), keyed by provider name.
         """
 
     @classmethod

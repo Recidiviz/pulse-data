@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, patch
 from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.ingest.pipeline_utils import (
@@ -355,7 +356,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
             r"\['us_xx_raw_data'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
-                get_all_reference_query_input_datasets_for_pipeline(StateIngestPipeline)
+                get_all_reference_query_input_datasets_for_pipeline(
+                    StateIngestPipeline,
+                    StateCode(pipeline_parameters.state_code),
+                )
             )
 
         input_overrides_json = json.dumps(
@@ -373,7 +377,10 @@ class TestIngestPipelineParameters(unittest.TestCase):
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
         pipeline_parameters.check_for_valid_input_dataset_overrides(
-            get_all_reference_query_input_datasets_for_pipeline(StateIngestPipeline)
+            get_all_reference_query_input_datasets_for_pipeline(
+                StateIngestPipeline,
+                StateCode(pipeline_parameters.state_code),
+            )
         )
 
     def test_default_ingest_pipeline_regions_by_state_code_filled_out(self) -> None:

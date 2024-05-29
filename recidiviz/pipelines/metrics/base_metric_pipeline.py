@@ -33,6 +33,8 @@ import apache_beam as beam
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
@@ -65,9 +67,6 @@ from recidiviz.pipelines.utils.execution_utils import (
     person_and_kwargs_for_identifier,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
-from recidiviz.pipelines.utils.reference_query_providers import (
-    view_builders_as_state_filtered_query_providers,
-)
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
     get_required_state_specific_metrics_producer_delegates,
@@ -112,6 +111,10 @@ class MetricPipeline(
     ) -> List[Union[Type[Entity], Type[NormalizedStateEntity]]]:
         """Returns the required entities for this pipeline."""
 
+    # TODO(#29518): When we update this pipeline to start reading directly from
+    #  us_xx_normalized_state, we will need to create reference queries from templates
+    #  so we can dynamically hydrate the source tables datasets. When that happens we
+    #  should no longer be pulling in BigQueryViewBuilder objects.
     @classmethod
     @abc.abstractmethod
     def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
@@ -124,8 +127,17 @@ class MetricPipeline(
         """Returns the required state-specific delegates needed for the pipeline."""
 
     @classmethod
-    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        return cls.input_reference_view_builders()
+    def all_input_reference_query_providers(
+        cls, state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
+    ) -> Dict[str, StateFilteredQueryProvider]:
+        view_builders = cls.input_reference_view_builders()
+        return {
+            vb.view_id: StateFilteredQueryProvider(
+                original_query=vb.build(address_overrides=address_overrides),
+                state_code_filter=state_code,
+            )
+            for vb in view_builders
+        }
 
     @classmethod
     @abc.abstractmethod
@@ -165,20 +177,21 @@ class MetricPipeline(
 
         metric_types = self.parse_metric_types(self.pipeline_parameters.metric_types)
 
-        reference_view_builders = self.input_reference_view_builders()
-
-        pipeline_data = p | "Load required person-level data" >> ExtractRootEntityDataForPipeline(
-            state_code=state_code,
-            project_id=self.pipeline_parameters.project,
-            entities_dataset=self.pipeline_parameters.normalized_input,
-            required_entity_classes=self.required_entities(),
-            reference_data_queries_by_name=view_builders_as_state_filtered_query_providers(
-                reference_view_builders,
+        pipeline_data = (
+            p
+            | "Load required person-level data"
+            >> ExtractRootEntityDataForPipeline(
                 state_code=state_code,
-                address_overrides=self.pipeline_parameters.input_dataset_overrides,
-            ),
-            root_entity_cls=entities.StatePerson,
-            root_entity_id_filter_set=person_id_filter_set,
+                project_id=self.pipeline_parameters.project,
+                entities_dataset=self.pipeline_parameters.normalized_input,
+                required_entity_classes=self.required_entities(),
+                reference_data_queries_by_name=self.all_input_reference_query_providers(
+                    state_code=state_code,
+                    address_overrides=self.pipeline_parameters.input_dataset_overrides,
+                ),
+                root_entity_cls=entities.StatePerson,
+                root_entity_id_filter_set=person_id_filter_set,
+            )
         )
 
         person_events = pipeline_data | "Get Events" >> beam.ParDo(

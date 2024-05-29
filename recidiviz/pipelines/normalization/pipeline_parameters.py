@@ -34,7 +34,12 @@ class NormalizationPipelineParameters(PipelineParameters):
 
     @property
     def state_data_input(self) -> str:
-        return self.get_input_dataset(STATE_BASE_DATASET)
+        return self.get_input_dataset(
+            # TODO(#29514): Update to reference state-specific
+            #  us_xx_state_primary dataset using the state_dataset_for_state_code
+            #  helper.
+            STATE_BASE_DATASET
+        )
 
     person_filter_ids: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str

@@ -17,17 +17,11 @@
 """Query provider classes / helpers for use querying reference queries in Dataflow
 pipelines.
 """
-from typing import Dict, Iterable, Optional, Set, Type
+from typing import Set, Type
 
 import attr
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_query_provider import (
-    BigQueryQueryProvider,
-    StateFilteredQueryProvider,
-)
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.common.constants.states import StateCode
+from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.persistence.entity.state import entities as state_entities
 
 
@@ -58,21 +52,3 @@ class RootEntityIdFilteredQueryProvider(BigQueryQueryProvider):
 {self.strip_semicolon(self.original_query)}
 ) WHERE {root_entity_id_field} IN {tuple(sorted(id_str_set))};
 """
-
-
-def view_builders_as_state_filtered_query_providers(
-    view_builders: Iterable[BigQueryViewBuilder],
-    state_code: StateCode,
-    address_overrides: Optional[BigQueryAddressOverrides],
-) -> Dict[str, StateFilteredQueryProvider]:
-    """For the given list of view builders, returns a mapping of view id to query
-    provider, where the query provider returns the results of the view query, filtered
-    down to only rows for the given |state_code|.
-    """
-    views = [vb.build(address_overrides=address_overrides) for vb in view_builders]
-    return {
-        v.view_id: StateFilteredQueryProvider(
-            original_query=v.view_query, state_code_filter=state_code
-        )
-        for v in views
-    }
