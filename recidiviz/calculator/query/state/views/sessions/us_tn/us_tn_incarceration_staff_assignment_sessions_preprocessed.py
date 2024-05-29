@@ -33,12 +33,17 @@ US_TN_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         pei.state_code AS state_code,
         pei.person_id,
+        pei.external_id as person_external_id,
         DATE(a.StartDate) AS start_date,
         DATE_ADD(DATE(a.EndDate), INTERVAL 1 DAY) AS end_date_exclusive,
         sei.staff_id AS incarceration_staff_assignment_id,
+        -- This field is to maintain consistency with US_ME
+        CAST(NULL AS STRING) AS incarceration_staff_assignment_external_id,
         "INCARCERATION_STAFF" AS incarceration_staff_assignment_role_type,
         -- Will update to more values if including non-counselor facility roles
         IF(AssignmentType = "COU", "COUNSELOR", "INTERNAL_UNKNOWN") AS incarceration_staff_assignment_role_subtype,
+        -- This field is to maintain consistency with US_ME
+        NULL AS case_priority,
     FROM `{project_id}.us_tn_raw_data_up_to_date_views.AssignedStaff_latest` a
     LEFT JOIN `{project_id}.normalized_state.state_person_external_id` pei
     ON

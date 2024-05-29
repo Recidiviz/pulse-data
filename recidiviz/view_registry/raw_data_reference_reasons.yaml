@@ -442,8 +442,8 @@ US_ME:
   CIS_124_SUPERVISION_HISTORY:
     dashboard_views.supervision_to_prison_population_snapshot_by_officer: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
-    workflows_views.resident_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+    sessions.us_me_incarceration_staff_assignment_sessions_preprocessed: |-
+      Used to pull in officer assignment data.
   CIS_125_CURRENT_STATUS_HIST:
     task_eligibility_criteria_us_me.no_detainers_warrants_or_other: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
