@@ -61,8 +61,12 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     UserMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.tools.insights import fixtures as insights_json_fixtures
 from recidiviz.tools.outliers import fixtures as outliers_csv_fixtures
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -176,6 +180,14 @@ class TestOutliersQuerier(TestCase):
             self.insights_database_key
         )
 
+        engine = SQLAlchemyEngineManager.get_engine_for_database(
+            database_key=self.insights_database_key
+        )
+        InsightsBase.metadata.drop_all(engine)
+        tables = get_all_table_classes_in_schema(SchemaType.INSIGHTS)
+        for table in tables:
+            InsightsBase.metadata.create_all(engine, tables=[table])
+
         with SessionFactory.using_database(self.outliers_database_key) as session:
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
             session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
@@ -192,6 +204,7 @@ class TestOutliersQuerier(TestCase):
             for supervisor in load_model_from_json_fixture(
                 SupervisionOfficerSupervisor
             ):
+
                 session.add(SupervisionOfficerSupervisor(**supervisor))
             for manager in load_model_from_json_fixture(SupervisionDistrictManager):
                 session.add(SupervisionDistrictManager(**manager))

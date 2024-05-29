@@ -54,6 +54,7 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
         "full_name",
         "pseudonymized_id",
         "supervision_district",
+        "supervision_unit",
         "email",
     ],
 )

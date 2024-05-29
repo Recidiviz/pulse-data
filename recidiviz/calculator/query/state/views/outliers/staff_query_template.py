@@ -72,7 +72,8 @@ def staff_query_template(role: str) -> str:
         -- TODO(#29942): Deprecate once array is deployed and fully in use
         attrs.supervisor_staff_external_id_array[SAFE_OFFSET(0)] AS supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
-        attrs.supervisor_staff_external_id_array AS supervisor_external_ids
+        attrs.supervisor_staff_external_id_array AS supervisor_external_ids,
+        attrs.supervision_unit_name AS supervision_unit
     FROM ({source_tbl}) supervision_staff
     INNER JOIN attrs
         ON attrs.state_code = supervision_staff.state_code AND attrs.officer_id = supervision_staff.external_id 

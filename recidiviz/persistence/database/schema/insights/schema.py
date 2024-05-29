@@ -78,6 +78,8 @@ class SupervisionOfficerSupervisor(PersonBase, InsightsBase):
 
     # Id of the supervision district the supervisor manages or has officers for
     supervision_district = Column(String, nullable=True)
+    # Name of the supervision unit the supervisor is in
+    supervision_unit = Column(String, nullable=True)
     email = Column(String, nullable=True)
 
 

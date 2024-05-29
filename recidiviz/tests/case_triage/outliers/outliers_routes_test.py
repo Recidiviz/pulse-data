@@ -45,14 +45,19 @@ from recidiviz.outliers.types import (
     SupervisionOfficerSupervisorEntity,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
+    InsightsBase,
     SupervisionClientEvent,
     SupervisionClients,
     SupervisionOfficerSupervisor,
 )
 from recidiviz.persistence.database.schema.outliers.schema import Configuration
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.tests.outliers.querier_test import (
     TEST_CLIENT_EVENT_1,
     TEST_METRIC_3,
@@ -170,6 +175,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.insights_database_key
         )
+
+        engine = SQLAlchemyEngineManager.get_engine_for_database(
+            database_key=self.insights_database_key
+        )
+        InsightsBase.metadata.drop_all(engine)
+        tables = get_all_table_classes_in_schema(SchemaType.INSIGHTS)
+        for table in tables:
+            InsightsBase.metadata.create_all(engine, tables=[table])
 
         with SessionFactory.using_database(self.outliers_database_key) as session:
             for config in load_model_from_csv_fixture(Configuration):
