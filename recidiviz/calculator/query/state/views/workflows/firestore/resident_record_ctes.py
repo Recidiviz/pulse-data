@@ -230,23 +230,14 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
 _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
     officer_assignments AS (
         SELECT DISTINCT
-            "US_ME" AS state_code,
-            IFNULL(ids.external_id_mapped, Cis_900_Employee_Id) AS officer_id,
-            Cis_100_Client_Id as person_external_id
-        FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_124_SUPERVISION_HISTORY_latest` sp
-        LEFT JOIN `{project_id}.{static_reference_dataset}.agent_multiple_ids_map` ids
-            ON Cis_900_Employee_Id = ids.external_id_to_map AND 'US_ME' = ids.state_code 
-        WHERE Supervision_End_Date IS NULL
-            -- Ignore assignments from the future
-            AND SAFE_CAST(Assignment_Date AS DATETIME) <= CURRENT_DATE('US/Eastern')
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY Cis_100_Client_Id 
-                        /* Prioritize cases in the following order 
-                                1) Case Workers (1) and Correctional Care and Treatment Worker (4)
-                                2) Latest assignment date
-                                3) Status of officer: primary, secondary, temporary */
-                                    ORDER BY IF(Cis_1240_Supervision_Type_Cd IN ('1', '4'), 0, 1) , 
-                                            Assignment_Date DESC,
-                                            Cis_1241_Super_Status_Cd) = 1
+            state_code,
+            incarceration_staff_assignment_external_id as officer_id,
+            person_external_id
+        FROM `{project_id}.{sessions_dataset}.incarceration_staff_assignment_sessions_preprocessed_materialized`
+        WHERE
+            state_code = 'US_ME'
+            AND end_date_exclusive IS NULL
+            AND case_priority = 1
     ),
 """
 
