@@ -29,11 +29,6 @@ class ZipFileContentsHandle(FileContentsHandle[bytes, ZipExtFile]):
         self.zip_internal_file_path = zip_internal_file_path
         self.zip_file = zip_file
 
-    def get_contents_iterator(self) -> Iterator[bytes]:
-        with self.open() as f:
-            while line := f.readline():
-                yield line
-
     @contextmanager
     def open(self, _: str = "r") -> Iterator[ZipExtFile]:  # type: ignore
         with self.zip_file.open(self.zip_internal_file_path, mode="r") as f:

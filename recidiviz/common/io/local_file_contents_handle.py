@@ -29,12 +29,6 @@ class LocalFileContentsHandle(FileContentsHandle[str, IO]):
         self.local_file_path = local_file_path
         self.cleanup_file = cleanup_file
 
-    def get_contents_iterator(self) -> Iterator[str]:
-        """Lazy function (generator) to read a file line by line."""
-        with self.open() as f:
-            while line := f.readline():
-                yield line
-
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[IO]:
         encoding = None if "b" in mode else "utf-8"

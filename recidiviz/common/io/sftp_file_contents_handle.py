@@ -78,13 +78,8 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, Union[SFTPFile, IO]]):
         self.sftp_file_path = sftp_file_path
         self.sftp_client = sftp_client
 
-    def get_contents_iterator(self) -> Iterator[bytes]:
-        with self.open() as f:
-            while line := f.readline():
-                yield line
-
     @contextmanager
-    def open(self, mode: str = "r") -> Iterator[Union[SFTPFile, IO]]:  # type: ignore
+    def open(self, mode: str = "r") -> Iterator[Union[SFTPFile, IO]]:
         if "r" in mode:
             with TemporaryFile(mode="w+b") as f:
                 # Perform a threaded download of the SFTP object to a temp file

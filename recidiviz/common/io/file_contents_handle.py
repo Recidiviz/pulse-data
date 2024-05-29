@@ -17,17 +17,34 @@
 """Defines an abstract interface that can be used to access file contents."""
 import abc
 from contextlib import contextmanager
-from typing import Generic, Iterator, TypeVar
+from typing import Generic, Iterator, Protocol, TypeVar, Union
 
-from recidiviz.common.io.contents_handle import ContentsHandle, ContentsRowType
+from recidiviz.common.io.contents_handle import ContentsHandle
 
-IoType = TypeVar("IoType")
+FileLineType_co = TypeVar("FileLineType_co", bound=Union[str, bytes], covariant=True)
 
 
-class FileContentsHandle(ContentsHandle, Generic[ContentsRowType, IoType]):
+class ReadLineIO(Protocol[FileLineType_co]):
+    """Protocol for any class that has readline() implemented."""
+
+    @abc.abstractmethod
+    def readline(self, limit: int = -1) -> FileLineType_co:
+        pass
+
+
+IoType = TypeVar("IoType", bound=ReadLineIO)
+
+
+class FileContentsHandle(ContentsHandle, Generic[FileLineType_co, IoType]):
     """Defines an abstract interface that can be used to access file contents."""
 
     @abc.abstractmethod
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[IoType]:
         """Should be overridden by subclasses to return a way to open a file stream."""
+
+    def get_contents_iterator(self) -> Iterator[FileLineType_co]:
+        """Lazy function (generator) to read a file line by line."""
+        with self.open() as f:
+            while line := f.readline():
+                yield line
