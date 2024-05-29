@@ -325,11 +325,11 @@ class DirectIngestRawFileConfig:
     #     123|456789|2|He said, "I will be there.|ASDF
     ignore_quotes: bool = attr.ib()
 
-    # TODO(#4243): Add alerts for order in magnitude changes in exported files.
     # If true, means that we **always** will get a historical version of this raw data file from the state and will
     # never change to incremental uploads (for example, because we need to detect row deletions).
     always_historical_export: bool = attr.ib()
 
+    # TODO(#28239) remove this once raw data import dag is fully rolled out
     # Defines the number of rows in each chunk we will read one at a time from the
     # original raw data file and write back to GCS files before loading into BQ.
     # Increasing this value may increase import speed, but should only be done carefully
@@ -364,6 +364,19 @@ class DirectIngestRawFileConfig:
     # updates). If this file is not a code table, it likely contains person-level
     # information that we expect to change more frequently
     is_code_file: bool = attr.ib(default=False)
+
+    # Boolean flag denoting whether the state sends us data for this file tag split into
+    # multiple csv files in each transfer. If this is the case, we need to do some
+    # extra handling to ensure that all csv file chunks get coalesced into the same
+    # file id in the operations databse.
+    is_chunked_file: bool = attr.ib(default=False, validator=attr_validators.is_bool)
+
+    # TODO(#30138) make the mechanism of knowing when we have all file chunks less brittle
+    # The number of distinct csv files we expect the state to send us for this file tag
+    # in every dump.
+    expected_number_of_chunks: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
 
     def __attrs_post_init__(self) -> None:
         self._validate_primary_keys()
@@ -413,6 +426,18 @@ class DirectIngestRawFileConfig:
             raise ValueError(
                 f"Table marked as primary person table, but no primary external ID"
                 f" column was specified for file [{self.file_tag}]"
+            )
+
+        if not self.is_chunked_file and self.expected_number_of_chunks:
+            raise ValueError(
+                f"Raw data config not marked as is_chunked_file should not have "
+                f"an expected number of chunks: [{self.expected_number_of_chunks}]"
+            )
+
+        if self.is_chunked_file and not self.expected_number_of_chunks:
+            raise ValueError(
+                "Raw data config marked as is_chunked_file must have an expected "
+                "number of chunks"
             )
 
     @property
@@ -673,6 +698,12 @@ class DirectIngestRawFileConfig:
         is_primary_person_table = (
             file_config_dict.pop_optional("is_primary_person_table", bool) or False
         )
+        is_chunked_file = (
+            file_config_dict.pop_optional("is_chunked_file", bool) or False
+        )
+        expected_number_of_chunks = (
+            file_config_dict.pop_optional("expected_number_of_chunks", int) or None
+        )
 
         if len(file_config_dict) > 0:
             raise ValueError(
@@ -718,6 +749,8 @@ class DirectIngestRawFileConfig:
             table_relationships=table_relationships,
             is_primary_person_table=is_primary_person_table,
             is_code_file=is_code_file,
+            is_chunked_file=is_chunked_file,
+            expected_number_of_chunks=expected_number_of_chunks,
         )
 
 

@@ -181,6 +181,14 @@
     "is_code_file": {
       "description": "If true, means that this file is a code table (likely does not contain person-level data and may have few day-over-day updates).",
       "type": "boolean"
+    },
+    "is_chunked_file": {
+      "description": "If true, means that this file tag is received in multiple files (chunks) within a given data transfer.",
+      "type": "boolean"
+    },
+    "expected_number_of_chunks": {
+      "description": "The number of distinct files (chunks) we expect to compose this file tag in each file transer",
+      "type": "integer"
     }
   },
   "required": [

@@ -18,3 +18,5 @@ ignore_quotes: True
 custom_line_terminator: "\n"
 update_cadence: DAILY
 is_code_file: True
+is_chunked_file: True
+expected_number_of_chunks: 100

@@ -157,6 +157,10 @@ class RawDataConfigWriter:
             config += f"update_cadence: {raw_file_config.update_cadence.value}\n"
         if raw_file_config.is_code_file:
             config += "is_code_file: True\n"
+        if raw_file_config.is_chunked_file:
+            config += "is_chunked_file: True\n"
+        if raw_file_config.expected_number_of_chunks:
+            config += f"expected_number_of_chunks: {raw_file_config.expected_number_of_chunks}\n"
 
         if raw_file_config.table_relationships:
             table_relationships_lines = ["table_relationships:"]
