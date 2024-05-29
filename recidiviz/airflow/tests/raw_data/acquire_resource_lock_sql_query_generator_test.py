@@ -25,10 +25,10 @@ from freezegun import freeze_time
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.raw_data.metadata import RESOURCE_LOCKS_NEEDED
-from recidiviz.airflow.dags.raw_data.resource_lock_sql_query_generator import (
+from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
     AcquireRawDataResourceLockSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.raw_data.metadata import RESOURCE_LOCKS_NEEDED
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
