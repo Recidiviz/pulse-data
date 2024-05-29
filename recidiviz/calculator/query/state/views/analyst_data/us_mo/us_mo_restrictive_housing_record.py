@@ -44,20 +44,23 @@ US_MO_RESTRICTIVE_HOUSING_RECORD_QUERY_TEMPLATE = f"""
     WITH base_query AS (
         SELECT
             pei.external_id,
-            rh.person_id,
-            rh.state_code,
-        FROM `{{project_id}}.task_eligibility_criteria_us_mo.in_restrictive_housing_materialized` rh
+            cs.person_id,
+            cs.state_code,
+        -- Populate for all people incarcerated in MO, since some of these fields may be
+        -- used in the resident record.
+        FROM `{{project_id}}.sessions.compartment_sessions_materialized` cs
         LEFT JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON
-                rh.person_id = pei.person_id
-                AND rh.state_code = pei.state_code
+                cs.person_id = pei.person_id
+                AND cs.state_code = pei.state_code
                 AND pei.id_type = "US_MO_DOC"
         WHERE 
             {today_between_start_date_and_nullable_end_date_exclusive_clause(
-                start_date_column="rh.start_date",
-                end_date_column="rh.end_date"
+                start_date_column="cs.start_date",
+                end_date_column="cs.end_date_exclusive"
             )}
-            AND rh.meets_criteria
+            AND cs.compartment_level_1 = 'INCARCERATION'
+            AND cs.state_code = "US_MO"
     )
     ,
     current_confinement_stay AS (
