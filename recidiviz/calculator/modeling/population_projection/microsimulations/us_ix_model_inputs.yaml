@@ -67,5 +67,4 @@ data_inputs:
     transitions_data: population_transitions_materialized
     population_data: total_population
     remaining_sentence_data: remaining_sentences_materialized
-    excluded_population_data: us_id_excluded_population
     state_code: US_IX

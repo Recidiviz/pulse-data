@@ -148,10 +148,6 @@ from recidiviz.validation.views.state.overlapping_incarceration_periods import (
 from recidiviz.validation.views.state.overlapping_supervision_periods import (
     OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.population_projection_data_validation.county_jail_population_person_level_external_comparison import (
-    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.population_projection_data_validation.population_projection_monthly_population_external_comparison import (
     POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
@@ -879,33 +875,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             ],
             partition_columns=["region_code", "termination_date"],
             hard_max_allowed_error=0.02,
-            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            comparison_columns=[
-                "external_person_external_id",
-                "internal_person_external_id",
-            ],
-            partition_columns=["region_code", "date_of_stay"],
-            hard_max_allowed_error=0.02,
-            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            validation_name_suffix="facility",
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            comparison_columns=["external_facility", "internal_facility"],
-            partition_columns=["region_code", "date_of_stay"],
-            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-            validation_name_suffix="legal_status",
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            comparison_columns=["external_legal_status", "internal_legal_status"],
-            partition_columns=["region_code", "date_of_stay"],
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(

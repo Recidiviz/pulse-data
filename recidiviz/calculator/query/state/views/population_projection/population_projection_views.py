@@ -72,12 +72,6 @@ from recidiviz.calculator.query.state.views.population_projection.supervision_re
 from recidiviz.calculator.query.state.views.population_projection.total_population import (
     TOTAL_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_excluded_population import (
-    US_ID_EXCLUDED_POPULATION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_monthly_paid_incarceration_population import (
-    US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_non_bias_full_population_transitions import (
     US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_BUILDER,
 )
@@ -89,9 +83,6 @@ from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_ri
 )
 from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_rider_population_transitions import (
     US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_total_jail_population import (
-    US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER,
 )
 
 POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
@@ -107,13 +98,10 @@ POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_PROJECTED_RELEASE_DATES_VIEW_BUILDER,
     SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER,
     TOTAL_POPULATION_VIEW_BUILDER,
-    US_ID_EXCLUDED_POPULATION_VIEW_BUILDER,
-    US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER,
     US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_BUILDER,
     US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_BUILDER,
     US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_BUILDER,
     US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER,
-    US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER,
     SPARK_COST_AVOIDANCE_VIEW_BUILDER,
     SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER,
     SPARK_POPULATION_VIEW_BUILDER,
