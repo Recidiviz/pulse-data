@@ -75,6 +75,9 @@ from recidiviz.calculator.query.state.views.workflows.clients_referral_implement
 from recidiviz.calculator.query.state.views.workflows.clients_referral_status_updated import (
     CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.clients_snooze_spans import (
+    CLIENTS_SNOOZE_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_surfaced import (
     CLIENTS_SURFACED_VIEW_BUILDER,
 )
@@ -132,6 +135,7 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_EDITED_VIEW_BUILDER,
     CLIENTS_MILESTONES_CONGRATULATIONS_SENT_VIEW_BUILDER,
+    CLIENTS_SNOOZE_SPANS_VIEW_BUILDER,
     PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
     US_AR_RESIDENT_METADATA_VIEW_VIEW_BUILDER,

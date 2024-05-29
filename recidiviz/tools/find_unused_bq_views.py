@@ -153,9 +153,6 @@ from recidiviz.calculator.query.state.views.workflows.clients_milestones_congrat
 from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_panel_opened import (
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.clients_opportunity_snoozed import (
-    CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
@@ -276,9 +273,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         "This is a state-specific preprocessing view that is useful for ad-hoc analysis and "
         "provides a template for an eventual  schema addition to support parole boards info. "
         "Will also likely be relevant to upcoming best path work (mayukas 12/21/23)"
-    ),
-    CLIENTS_OPPORTUNITY_SNOOZED_VIEW_BUILDER.address: (
-        "Pulled into a google sheet that is being used for impact tracking (Dana Hoffman 12/21/23)"
     ),
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER.address: (
         "Used in ongoing AZ reentry planning analysis. (EG)"
