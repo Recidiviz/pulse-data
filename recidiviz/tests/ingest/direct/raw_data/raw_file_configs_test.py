@@ -863,7 +863,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
 
     def test_parse_yaml(self) -> None:
         region_config = self.us_xx_region_config
-        self.assertEqual(23, len(region_config.raw_file_configs))
+        self.assertEqual(24, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -874,6 +874,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 "tagFullHistoricalExport",
                 "tagInvalidCharacters",
                 "tagNormalizationConflict",
+                "tagChunkedFile",
                 "tagCustomLineTerminatorNonUTF8",
                 "tagPipeSeparatedNonUTF8",
                 "tagDoubleDaggerWINDOWS1252",
@@ -1100,6 +1101,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             default_config.default_no_valid_primary_keys,
         )
         self.assertFalse(simple_file_config.is_code_file)
+        self.assertFalse(simple_file_config.is_chunked_file)
+        self.assertIsNone(simple_file_config.expected_number_of_chunks)
 
     def test_parsing_overrides_defaults(self) -> None:
         """Checks that all defaults are overridden for a file that does specify a
@@ -1124,6 +1127,8 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.assertEqual("|", file_config.separator)
         self.assertEqual(RawDataFileUpdateCadence.DAILY, file_config.update_cadence)
         self.assertTrue(file_config.is_code_file)
+        self.assertTrue(file_config.is_chunked_file)
+        self.assertIsNotNone(file_config.expected_number_of_chunks)
 
         # This file is always a historical export
         file_config = self.us_xx_region_config.raw_file_configs[
@@ -1502,3 +1507,17 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             custom_terminator.line_terminator
             == custom_terminator.custom_line_terminator
         )
+
+    def test_unexpected_number_of_chuks(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Raw data config not marked as is_chunked_file should not have an expected number of chunks: \[\d+\]",
+        ):
+            attr.evolve(self.sparse_config, expected_number_of_chunks=10)
+
+    def test_no_expected_number_of_chuks(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Raw data config marked as is_chunked_file must have an expected number of chunks",
+        ):
+            attr.evolve(self.sparse_config, is_chunked_file=True)
