@@ -88,6 +88,16 @@ jobs:
         run: |
           terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
           terraform -chdir=recidiviz/tools/deploy/terraform validate
+      - name: Ensure providers up to date
+        run: |
+          if [[ -n "$(git status recidiviz/tools/deploy/terraform --porcelain)" ]]; then
+           echo "Git status not clean - Terraform made changes to our setup."
+           echo "$(git diff)"
+           echo "A new file may have been added to one of our selected providers."
+           echo "Run ./recidiviz/tools/deploy/update_terraform_lock.sh and open a new PR with the changes."
+           echo "If you are not making changes to any Terraform files in this PR, tag the platform on-call engineer"
+           exit 1
+          fi
 
       # TODO(#6431): pre-commit was flaky in CI, so we turned it off. It should be
       # re-enabled soon.
