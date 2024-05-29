@@ -17,12 +17,14 @@
 """DAG configuration to run raw data imports"""
 
 from airflow.decorators import dag
-from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 from airflow.utils.task_group import TaskGroup
 
 from recidiviz.airflow.dags.monitoring.dag_registry import get_raw_data_import_dag_id
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
+)
+from recidiviz.airflow.dags.operators.raw_data.direct_ingest_list_files_operator import (
+    DirectIngestListNormalizedUnprocessedFilesOperator,
 )
 from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
     AcquireRawDataResourceLockSqlQueryGenerator,
@@ -51,9 +53,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    DIRECT_INGEST_UNPROCESSED_PREFIX,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 
@@ -75,6 +74,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
     with TaskGroup(
         get_raw_data_import_branch_key(state_code.value, raw_data_instance.value)
     ) as raw_data_branch:
+
         # --- step 1: resource lock & file discovery -----------------------------------
         # inputs: (state_code, raw_data_instance)
         # execution layer: celery
@@ -96,14 +96,13 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        unprocessed_paths = GCSListObjectsOperator(
-            task_id="list_unprocessed_paths",
+        unprocessed_paths = DirectIngestListNormalizedUnprocessedFilesOperator(
+            task_id="list_normalized_unprocessed_files",
             bucket=gcsfs_direct_ingest_bucket_for_state(
                 project_id=get_project_id(),
                 region_code=state_code.value,
                 ingest_instance=raw_data_instance,
             ).bucket_name,
-            prefix=DIRECT_INGEST_UNPROCESSED_PREFIX,
         )
 
         acquire_locks >> unprocessed_paths
@@ -112,14 +111,14 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # --- step 2: processing logic & metadata management ---------------------------
         # inputs: [ GcsfsFilePath ]
-        # execution layer: celery?
+        # execution layer: celery
         # outputs: [ ImportReadyOriginalFile ], [ RequiresPreImportNormalizationFile ]
 
         # TODO(#30170) implement processing logic & operations registration
 
         # ------------------------------------------------------------------------------
 
-        # --- step 2: pre-import normalization -----------------------------------------
+        # --- step 3: pre-import normalization -----------------------------------------
         # inputs: [ RequiresNormalizationFile ]
         # execution layer: k8s
         # outputs: [ ImportReadyNormalizedFile ]
@@ -129,7 +128,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # ------------------------------------------------------------------------------
 
-        # --- step 3: big-query upload -------------------------------------------------
+        # --- step 4: big-query upload -------------------------------------------------
         # inputs: [ *[ ImportReadyOriginalFile ], *[ ImportReadyNormalizedFile ] ]
         # execution layer: k8s
         # outputs: [ ImportSessionInfo ]
@@ -138,9 +137,9 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
 
         # ------------------------------------------------------------------------------
 
-        # --- step 4: cleanup and storage ----------------------------------------------
-        # inputs: [ ImportSessionInfo ]
-        # execution layer: k8s
+        # --- step 5: cleanup & storage ----------------------------------------------
+        # inputs: [ ImportSessionInfo ], [ RequiresCleanupFile ]
+        # execution layer: celery
         # outputs:
 
         # TODO(#30169) implement writes to file metadata & import sessions, as well as

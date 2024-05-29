@@ -83,6 +83,10 @@ class DirectIngestRawFilenameParts:
         return f"{self.file_tag}{suffix_str}"
 
 
+def is_path_normalized(file_path: GcsfsFilePath) -> bool:
+    return bool(re.match(_RAW_DATA_FILE_NAME_REGEX, file_path.file_name))
+
+
 def filename_parts_from_path(file_path: GcsfsFilePath) -> DirectIngestRawFilenameParts:
     match = re.match(_RAW_DATA_FILE_NAME_REGEX, file_path.file_name)
 
