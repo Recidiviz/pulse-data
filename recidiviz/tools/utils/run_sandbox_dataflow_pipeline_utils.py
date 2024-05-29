@@ -25,6 +25,7 @@ import google.auth.transport.requests
 import requests
 
 from recidiviz import pipelines
+from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.flex_pipeline_runner import pipeline_cls_for_pipeline_name
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
@@ -68,13 +69,17 @@ def get_template_path(pipeline_type: str) -> str:
 
 
 def get_all_reference_query_input_datasets_for_pipeline(
-    pipeline_cls: Type[BasePipeline],
+    pipeline_cls: Type[BasePipeline], state_code: StateCode
 ) -> Set[str]:
-    """Returns all datasets that reference queries for this pipeline may query from."""
+    """Returns all datasets that reference queries for this pipeline may query from when
+    there are no special address overrides set.
+    """
     return {
         parent_table.dataset_id
-        for vb in pipeline_cls.all_input_reference_view_builders()
-        for parent_table in vb.build().parent_tables
+        for provider in pipeline_cls.all_input_reference_query_providers(
+            state_code=state_code, address_overrides=None
+        ).values()
+        for parent_table in provider.parent_tables
     }
 
 
@@ -82,7 +87,9 @@ def run_sandbox_dataflow_pipeline(params: PipelineParameters, skip_build: bool) 
     """Runs the pipeline designated by the given |params|."""
     pipeline_cls = pipeline_cls_for_pipeline_name(params.pipeline)
     params.check_for_valid_input_dataset_overrides(
-        get_all_reference_query_input_datasets_for_pipeline(pipeline_cls)
+        get_all_reference_query_input_datasets_for_pipeline(
+            pipeline_cls, StateCode(params.state_code)
+        )
     )
 
     _, username = os.path.split(params.template_metadata_subdir)

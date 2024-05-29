@@ -37,6 +37,8 @@ from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
@@ -110,9 +112,6 @@ from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
     ExtractRootEntityDataForPipeline,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow, kwargs_for_entity_lists
-from recidiviz.pipelines.utils.reference_query_providers import (
-    view_builders_as_state_filtered_query_providers,
-)
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
 )
@@ -212,19 +211,44 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
             entities.StateStaff: {},
         }
 
+    # TODO(#29514): Update this to build reference queries from templates that we can
+    #  inject the state-specific us_xx_state dataset into.
     @classmethod
-    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        all_builders = []
+    def _input_query_providers_for_root_entity(
+        cls,
+        root_entity_cls: Type[Entity],
+        state_code: StateCode,
+        address_overrides: BigQueryAddressOverrides | None,
+    ) -> Dict[str, StateFilteredQueryProvider]:
+        all_builders = {}
+        for vb in cls.input_reference_view_builders()[root_entity_cls]:
+            all_builders[vb.view_id] = StateFilteredQueryProvider(
+                original_query=vb.build(address_overrides=address_overrides),
+                state_code_filter=state_code,
+            )
+        builders_by_state = cls.state_specific_input_reference_view_builders()[
+            root_entity_cls
+        ]
+        for vb in builders_by_state.get(state_code, []):
+            all_builders[vb.view_id] = StateFilteredQueryProvider(
+                original_query=vb.build(address_overrides=address_overrides),
+                state_code_filter=state_code,
+            )
+        return all_builders
 
-        for root_entity_cls in cls.input_reference_view_builders():
-            all_builders += cls.input_reference_view_builders()[root_entity_cls] + [
-                vb
-                for view_builders in cls.state_specific_input_reference_view_builders()[
-                    root_entity_cls
-                ].values()
-                for vb in view_builders
-            ]
+    @classmethod
+    def all_input_reference_query_providers(
+        cls, state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
+    ) -> Dict[str, StateFilteredQueryProvider]:
+        all_builders: Dict[str, StateFilteredQueryProvider] = {}
 
+        for root_entity_cls in [entities.StatePerson, entities.StateStaff]:
+            all_builders = {
+                **all_builders,
+                **cls._input_query_providers_for_root_entity(
+                    root_entity_cls, state_code, address_overrides
+                ),
+            }
         return all_builders
 
     @classmethod
@@ -288,12 +312,13 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                     normalized_entity_associations.add(
                         f"{child_entity_class.__name__}_{parent_entity_class.__name__}"
                     )
-            reference_view_builders = self.input_reference_view_builders().get(
-                root_entity_type, []
-            ).copy() + self.state_specific_input_reference_view_builders().get(
-                root_entity_type, {}
-            ).get(
-                state_code, []
+
+            reference_data_queries_by_name = (
+                self._input_query_providers_for_root_entity(
+                    root_entity_cls=root_entity_type,
+                    state_code=state_code,
+                    address_overrides=self.pipeline_parameters.input_dataset_overrides,
+                )
             )
 
             writable_entities = (
@@ -306,11 +331,7 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                     required_entity_classes=self.required_entities().get(
                         root_entity_type
                     ),
-                    reference_data_queries_by_name=view_builders_as_state_filtered_query_providers(
-                        reference_view_builders,
-                        state_code=state_code,
-                        address_overrides=self.pipeline_parameters.input_dataset_overrides,
-                    ),
+                    reference_data_queries_by_name=reference_data_queries_by_name,
                     root_entity_cls=root_entity_type,
                     root_entity_id_filter_set=person_id_filter_set,
                 )

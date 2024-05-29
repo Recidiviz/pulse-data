@@ -16,11 +16,9 @@
 # =============================================================================
 """Tests the pipeline names."""
 import unittest
-from typing import Dict, Set, Type
+from typing import Set, Type
 from unittest.mock import MagicMock, patch
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     REFERENCE_VIEWS_DATASET,
@@ -50,33 +48,11 @@ from recidiviz.pipelines.utils.pipeline_run_utils import (
     collect_all_pipeline_classes,
     collect_all_pipeline_names,
 )
-
-
-def get_all_pipeline_input_view_builders() -> Dict[
-    BigQueryAddress, BigQueryViewBuilder
-]:
-    return {
-        builder.address: builder
-        for pipeline in collect_all_pipeline_classes()
-        for builder in pipeline.all_input_reference_view_builders()
-    }
+from recidiviz.tools.find_unused_bq_views import get_all_pipeline_input_views
 
 
 class TestPipelineNames(unittest.TestCase):
     """Tests the names of all pipelines that can be run."""
-
-    def test_all_input_reference_view_builders(self) -> None:
-        for pipeline in collect_all_pipeline_classes():
-            found_addresses = set()
-            for builder in pipeline.all_input_reference_view_builders():
-                if builder.address in found_addresses:
-                    self.fail(
-                        f"Found duplicate builder defined for pipeline "
-                        f"[{pipeline.pipeline_name()}]. Within each pipeline, the list "
-                        f"returned by all_input_reference_view_builders() should not "
-                        f"contain duplicates."
-                    )
-                found_addresses.add(builder.address)
 
     def test_collect_all_pipeline_names(self) -> None:
         """Tests that each pipeline has a unique pipeline_name."""
@@ -88,16 +64,22 @@ class TestPipelineNames(unittest.TestCase):
 class TestReferenceViews(unittest.TestCase):
     """Tests reference views are appropriately referenced."""
 
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456")
+    )
     def test_all_reference_views_in_dataset(self) -> None:
         """Asserts that all the reference views required by the pipelines are in the
         reference_views dataset."""
-        for builder in get_all_pipeline_input_view_builders().values():
-            self.assertEqual(
-                REFERENCE_VIEWS_DATASET,
-                builder.dataset_id,
-                f"Found view [{builder.address.to_str()}] that is referenced by "
-                f"pipelines but which does not live in the reference_views dataset.",
-            )
+        for state_code in get_existing_direct_ingest_states():
+            for view_address in get_all_pipeline_input_views(
+                state_code, address_overrides=None
+            ):
+                self.assertEqual(
+                    REFERENCE_VIEWS_DATASET,
+                    view_address.dataset_id,
+                    f"Found view [{view_address.to_str()}] that is referenced by "
+                    f"pipelines but which does not live in the reference_views dataset.",
+                )
 
     @patch(
         "recidiviz.utils.metadata.project_id", MagicMock(return_value="recidiviz-456")
@@ -126,32 +108,40 @@ class TestReferenceViews(unittest.TestCase):
         }
 
         for pipeline in collect_all_pipeline_classes():
-            if issubclass(pipeline, ComprehensiveNormalizationPipeline):
-                allowed_parent_datasets = {
-                    *all_pipelines_allowed_datasets,
-                    STATE_BASE_DATASET,
-                }
-            elif issubclass(pipeline, (MetricPipeline, SupplementalDatasetPipeline)):
-                allowed_parent_datasets = {
-                    *all_pipelines_allowed_datasets,
-                    NORMALIZED_STATE_DATASET,
-                }
-            elif issubclass(pipeline, StateIngestPipeline):
-                allowed_parent_datasets = all_pipelines_allowed_datasets
-            else:
-                raise ValueError(f"Unexpected pipeline type [{type(pipeline)}]")
+            for state_code in get_existing_direct_ingest_states():
+                if issubclass(pipeline, ComprehensiveNormalizationPipeline):
+                    allowed_parent_datasets = {
+                        *all_pipelines_allowed_datasets,
+                        STATE_BASE_DATASET,
+                    }
+                elif issubclass(
+                    pipeline, (MetricPipeline, SupplementalDatasetPipeline)
+                ):
+                    allowed_parent_datasets = {
+                        *all_pipelines_allowed_datasets,
+                        NORMALIZED_STATE_DATASET,
+                    }
+                elif issubclass(pipeline, StateIngestPipeline):
+                    allowed_parent_datasets = all_pipelines_allowed_datasets
+                else:
+                    raise ValueError(f"Unexpected pipeline type [{type(pipeline)}]")
 
-            for builder in pipeline.all_input_reference_view_builders():
-                parents = builder.build(address_overrides=None).parent_tables
-                for parent in parents:
-                    if parent.dataset_id in allowed_parent_datasets:
-                        continue
-                    raise ValueError(
-                        f"Found reference view builder "
-                        f"[{builder.address.to_str()}] for pipeline "
-                        f"[{pipeline.__name__}] referencing a table in a dataset that "
-                        f"is not allowed: {parent.to_str()}."
-                    )
+                for (
+                    provider_name,
+                    provider,
+                ) in pipeline.all_input_reference_query_providers(
+                    state_code=state_code,
+                    address_overrides=None,
+                ).items():
+                    parents = provider.parent_tables
+                    for parent in parents:
+                        if parent.dataset_id in allowed_parent_datasets:
+                            continue
+                        raise ValueError(
+                            f"Found reference view builder [{provider_name}] for "
+                            f"pipeline [{pipeline.__name__}] referencing a table in a "
+                            f"dataset that is not allowed: {parent.to_str()}."
+                        )
 
 
 class TestPipelineValidations(unittest.TestCase):

@@ -49,9 +49,6 @@ from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
     WriteToBigQuery,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.pipelines.utils.reference_query_providers import (
-    view_builders_as_state_filtered_query_providers,
-)
 
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
@@ -178,8 +175,7 @@ class UsIxCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
     def run_pipeline(self, p: Pipeline) -> None:
         state_code = StateCode(self.pipeline_parameters.state_code)
         query_name, query_provider = one(
-            view_builders_as_state_filtered_query_providers(
-                [US_IX_CASE_UPDATE_INFO_VIEW_BUILDER],
+            self.all_input_reference_query_providers(
                 state_code=state_code,
                 address_overrides=self.pipeline_parameters.input_dataset_overrides,
             ).items()

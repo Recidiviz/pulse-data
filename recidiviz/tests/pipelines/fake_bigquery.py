@@ -67,9 +67,7 @@ from recidiviz.pipelines.utils.beam_utils.extractor_utils import ROOT_ENTITY_ID_
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.pipelines.all_pipelines_test import (
-    get_all_pipeline_input_view_builders,
-)
+from recidiviz.tests.pipelines.all_pipelines_test import get_all_pipeline_input_views
 from recidiviz.tests.pipelines.calculator_test_utils import NormalizedDatabaseDict
 
 DatasetStr = str
@@ -340,14 +338,14 @@ class FakeReadFromBigQueryFactory:
                 root_entity_id_field,
             )
 
-        for builder in get_all_pipeline_input_view_builders().values():
-            view_query = BigQueryQueryProvider.strip_semicolon(
-                builder.build(address_overrides=None).view_query
-            )
+        for view_address, view in get_all_pipeline_input_views(
+            state_code=state_code, address_overrides=None
+        ).items():
+            view_query = BigQueryQueryProvider.strip_semicolon(view.view_query)
             if view_query in query:
                 return FakeReadFromBigQueryFactory._get_data_from_table(
                     data_dict=data_dict,
-                    table_name=builder.view_id,
+                    table_name=view_address.table_id,
                     state_code_value=state_code.value,
                     root_entity_id_field=root_entity_id_field,
                     root_entity_filter_ids=None,

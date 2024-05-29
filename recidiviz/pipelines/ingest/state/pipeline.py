@@ -16,12 +16,13 @@
 # =============================================================================
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
-from typing import Any, Dict, List, Set, Tuple, Type
+from typing import Any, Dict, Set, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
@@ -116,8 +117,10 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         return "INGEST"
 
     @classmethod
-    def all_input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        return []
+    def all_input_reference_query_providers(
+        cls, state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
+    ) -> Dict[str, StateFilteredQueryProvider]:
+        return {}
 
     def run_pipeline(self, p: Pipeline) -> None:
         field_index = CoreEntityFieldIndex()

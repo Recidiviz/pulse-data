@@ -74,6 +74,7 @@ US_MO_SENTENCE_STATUSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_MO_SENTENCE_STATUSES_VIEW_NAME,
     view_query_template=US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE,
     description=US_MO_SENTENCE_STATUSES_DESCRIPTION,
+    # TODO(#29514): Update this to read from us_mo_state_primary instead of state
     base_dataset=dataset_config.STATE_BASE_DATASET,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
