@@ -17,9 +17,6 @@ exclusions:
     exclusion_reason: TODO(#28862) Hydrate new sentencing entities
 
 max_allowed_error_overrides:
-  - validation_name: county_jail_population_person_level_external_comparison
-    hard_max_allowed_error_override: 0.18
-    override_reason: TODO(#6011) Incorporate more of the unpaid bed logic for the county jail incarcerations
   - validation_name: population_projection_monthly_population_external_comparison
     hard_max_allowed_error_override: 0.03
     override_reason: TODO(#6010) IDOC uses a slightly different population metric which causes discrepencies

@@ -53,7 +53,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       FROM UNNEST(GENERATE_DATE_ARRAY('2016-01-01', DATE_TRUNC(CURRENT_DATE, MONTH),
         INTERVAL 1 MONTH)) AS date
     ),
-    historical_supervision_population_output AS (
+    historical_population_output AS (
       SELECT
           sessions.state_code,
           date,
@@ -67,29 +67,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       UNNEST(['ALL', IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2)]) AS legal_status,
       UNNEST(['ALL', gender]) AS simulation_group
       WHERE gender IN ('FEMALE', 'MALE')
-        AND (compartment_level_1 = 'SUPERVISION'
-            -- Exclude incarceration populations for US_ID as they are included in the next CTE
-            OR (compartment_level_1 = 'INCARCERATION' AND sessions.state_code != 'US_ID')
-        )
-        AND compartment_level_2 IN ('{included_types}')
-      GROUP BY state_code, date, compartment, legal_status, simulation_group
-    ),
-    historical_incarceration_population_output AS (
-      -- TODO(#8623): use `dataflow_sessions_materialized` directly once it has paid bed logic
-      SELECT
-        state_code,
-        report_month AS date,
-        compartment_level_1 AS compartment,
-        legal_status,
-        simulation_group,
-        COUNT(DISTINCT person_id) AS total_population
-      FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized` inc_pop
-      INNER JOIN historical_dates
-        ON historical_dates.date = inc_pop.report_month,
-      UNNEST(['ALL', compartment_level_2]) AS legal_status,
-      UNNEST(['ALL', gender]) AS simulation_group
-      WHERE state_code = 'US_ID'
-        AND gender IN ('FEMALE', 'MALE')
+        AND compartment_level_1 IN ('INCARCERATION', 'SUPERVISION')
         AND compartment_level_2 IN ('{included_types}')
       GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
@@ -134,24 +112,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         total_population,
         total_population AS total_population_min,
         total_population AS total_population_max
-    FROM historical_supervision_population_output
-
-    UNION ALL
-
-    SELECT
-        state_code, 
-        "HISTORICAL" AS simulation_tag,
-        NULL AS date_created,
-        date AS simulation_date,
-        EXTRACT(YEAR FROM date) AS year,
-        EXTRACT(MONTH FROM date) AS month,
-        compartment,
-        legal_status,
-        simulation_group,
-        total_population,
-        total_population AS total_population_min,
-        total_population AS total_population_max
-    FROM historical_incarceration_population_output
+    FROM historical_population_output
     """
 
 MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -160,7 +121,6 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=MICROSIM_PROJECTION_QUERY_TEMPLATE,
     description=MICROSIM_PROJECTION_VIEW_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
     included_types="', '".join(
         [status.name for status in MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES]
