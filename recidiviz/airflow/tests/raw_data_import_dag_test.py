@@ -130,7 +130,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
         )
         self.mock_cloud_sql_patcher = self.cloud_sql_query_operator_patcher.start()
         self.gcs_operator_patcher = patch(
-            "recidiviz.airflow.dags.raw_data_import_dag.GCSListObjectsOperator",
+            "recidiviz.airflow.dags.raw_data_import_dag.DirectIngestListNormalizedUnprocessedFilesOperator",
             side_effect=fake_operator_with_return_value([]),
         )
         self.gcs_operator_patcher.start()
@@ -196,7 +196,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 },
                 expected_failure_ids=[
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
-                    r".*_primary_import_branch\.list_unprocessed_paths",
+                    r".*_primary_import_branch\.list_normalized_unprocessed_files",
                     r".*_primary_import_branch\.release_raw_data_resource_locks",
                     BRANCH_END_TASK_NAME,
                 ],

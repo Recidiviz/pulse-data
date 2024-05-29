@@ -63,7 +63,7 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
 
         resources_locked = {result["lock_resource"] for result in results}
 
-        self.assertSetEqual(resources_locked, set(RESOURCE_LOCKS_NEEDED))
+        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
         for result in results:
             assert_type(result["lock_id"], int)
 
@@ -78,7 +78,7 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
 
         resources_locked = {result["lock_resource"] for result in results}
 
-        self.assertSetEqual(resources_locked, set(RESOURCE_LOCKS_NEEDED))
+        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
         for result in results:
             assert_type(result["lock_id"], int)
 
@@ -98,7 +98,7 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
 
         resources_locked = {result["lock_resource"] for result in results}
 
-        self.assertSetEqual(resources_locked, set(RESOURCE_LOCKS_NEEDED))
+        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
         old_ids = set()
         for result in results:
             assert_type(result["lock_id"], int)
@@ -108,7 +108,7 @@ class TestAcquireRawDataResourceLockSqlQueryGenerator(CloudSqlQueryGeneratorUnit
             mock_operator, self.mock_pg_hook, mock_context
         )
 
-        self.assertSetEqual(resources_locked, set(RESOURCE_LOCKS_NEEDED))
+        self.assertSetEqual(resources_locked, {r.value for r in RESOURCE_LOCKS_NEEDED})
         for result in results_new:
             assert_type(result["lock_id"], int)
             assert result["lock_id"] not in old_ids
