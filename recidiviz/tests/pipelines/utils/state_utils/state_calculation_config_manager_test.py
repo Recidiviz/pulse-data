@@ -18,11 +18,9 @@
 state_calculation_config_manager functions."""
 import datetime
 import unittest
-from typing import Any, Dict, List, Sequence, Type, Union, no_type_check
-from unittest.mock import MagicMock
+from typing import Any, Dict, List, Sequence, Type, Union
 
-import mock
-
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -32,24 +30,27 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StatePerson,
     StateStaffSupervisorPeriod,
-    StateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
+from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
+from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
+    NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.state_utils import state_calculation_config_manager
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    _get_state_specific_incarceration_delegate,
     _get_state_specific_supervision_delegate,
     get_required_state_specific_delegates,
     get_required_state_specific_metrics_producer_delegates,
     get_state_specific_case_compliance_manager,
+    get_state_specific_incarceration_period_normalization_delegate,
+    get_state_specific_sentence_normalization_delegate,
+    get_state_specific_staff_role_period_normalization_delegate,
+    get_state_specific_supervision_period_normalization_delegate,
+    get_state_specific_violation_response_normalization_delegate,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -87,6 +88,7 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_respo
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
+from recidiviz.utils.range_querier import RangeQuerier
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 
@@ -100,6 +102,7 @@ DEFAULT_US_MO_SENTENCE_STATUSES = [
     },
 ]
 
+# TODO(#30202): Delete this once all pipelines have been migrated away from get_required_state_specific_delegates
 # The state-specific delegates that should be used in state-agnostic tests
 STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificIncarcerationNormalizationDelegate": UsXxIncarcerationNormalizationDelegate(),
@@ -115,7 +118,6 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
 }
 
 
-@no_type_check
 def test_get_required_state_specific_delegates() -> None:
     """Tests that we can call all functions in the state_calculation_config_manager
     file with all of the state codes that we expect to be supported."""
@@ -124,7 +126,8 @@ def test_get_required_state_specific_delegates() -> None:
             state.value,
             [
                 subclass
-                for subclass in StateSpecificDelegate.__subclasses__()
+                for pipeline_cls in MetricPipeline.__subclasses__()
+                for subclass in pipeline_cls.state_specific_required_delegates()
                 if subclass is not StateSpecificMetricsProducerDelegate
             ],
             entity_kwargs={
@@ -156,23 +159,6 @@ def test_get_required_state_specific_delegates() -> None:
             },
         )
 
-        test_sp = StateSupervisionPeriod.new_with_defaults(
-            state_code=state.value,
-            external_id="sp1",
-        )
-
-        get_state_specific_case_compliance_manager(
-            person=None,
-            supervision_period=test_sp,
-            case_type=None,
-            start_of_supervision=None,
-            assessments_by_date=None,
-            supervision_contacts_by_date=None,
-            violation_responses=None,
-            incarceration_period_index=None,
-            supervision_delegate=None,
-        )
-
         _get_state_specific_supervision_delegate(state.value)
 
         for subclass in StateSpecificMetricsProducerDelegate.__subclasses__():
@@ -183,62 +169,6 @@ def test_get_required_state_specific_delegates() -> None:
 
 class TestGetRequiredStateSpecificDelegates(unittest.TestCase):
     """Tests the get_required_state_specific_delegates function."""
-
-    @mock.patch(
-        "recidiviz.pipelines.utils.state_utils.state_calculation_config_manager"
-        "._get_state_specific_violation_response_normalization_delegate"
-    )
-    @mock.patch(
-        "recidiviz.pipelines.utils.state_utils.state_calculation_config_manager"
-        "._get_state_specific_supervision_period_normalization_delegate"
-    )
-    @mock.patch(
-        "recidiviz.pipelines.utils.state_utils.state_calculation_config_manager"
-        "._get_state_specific_incarceration_period_normalization_delegate"
-    )
-    def test_get_required_state_specific_delegates(
-        self,
-        get_incarceration_delegate: MagicMock,
-        get_supervision_delegate: MagicMock,
-        get_violation_response_delegate: MagicMock,
-    ) -> None:
-        get_incarceration_delegate.return_value = STATE_DELEGATES_FOR_TESTS[
-            StateSpecificIncarcerationNormalizationDelegate.__name__
-        ]
-        get_supervision_delegate.return_value = STATE_DELEGATES_FOR_TESTS[
-            StateSpecificSupervisionNormalizationDelegate.__name__
-        ]
-        get_violation_response_delegate.return_value = STATE_DELEGATES_FOR_TESTS[
-            StateSpecificViolationResponseNormalizationDelegate.__name__
-        ]
-
-        required_delegates = [
-            StateSpecificIncarcerationNormalizationDelegate,
-            StateSpecificSupervisionNormalizationDelegate,
-            StateSpecificViolationResponseNormalizationDelegate,
-        ]
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {}
-
-        delegates = (
-            state_calculation_config_manager.get_required_state_specific_delegates(
-                state_code="US_XX",
-                required_delegates=required_delegates,
-                entity_kwargs=entity_kwargs,
-            )
-        )
-        expected_delegates = {
-            StateSpecificIncarcerationNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS[
-                StateSpecificIncarcerationNormalizationDelegate.__name__
-            ],
-            StateSpecificSupervisionNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS[
-                StateSpecificSupervisionNormalizationDelegate.__name__
-            ],
-            StateSpecificViolationResponseNormalizationDelegate.__name__: STATE_DELEGATES_FOR_TESTS[
-                StateSpecificViolationResponseNormalizationDelegate.__name__
-            ],
-        }
-
-        self.assertEqual(expected_delegates, delegates)
 
     def test_get_required_state_specific_delegates_no_delegates(self) -> None:
         required_delegates: List[Type[StateSpecificDelegate]] = []
@@ -254,3 +184,71 @@ class TestGetRequiredStateSpecificDelegates(unittest.TestCase):
         expected_delegates: Dict[str, Any] = {}
 
         self.assertEqual(expected_delegates, delegates)
+
+    def test_get_state_specific_staff_role_period_normalization_delegate_defined(
+        self,
+    ) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            _ = get_state_specific_staff_role_period_normalization_delegate(
+                state_code.value, staff_supervisor_periods=[]
+            )
+
+    def test_get_state_specific_violation_response_normalization_delegate(self) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            _ = get_state_specific_violation_response_normalization_delegate(
+                state_code.value, incarceration_periods=[]
+            )
+
+    def test_get_state_specific_sentence_normalization_delegate(self) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            _ = get_state_specific_sentence_normalization_delegate(state_code.value)
+
+    def test_get_state_specific_incarceration_period_normalization_delegate(
+        self,
+    ) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            _ = get_state_specific_incarceration_period_normalization_delegate(
+                state_code.value
+            )
+
+    def test_get_state_specific_supervision_period_normalization_delegate(self) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            _ = get_state_specific_supervision_period_normalization_delegate(
+                state_code.value,
+                incarceration_periods=[],
+                assessments=[],
+                us_mo_sentence_statuses_list=[],
+            )
+
+    def test_get_state_specific_case_compliance_manager(self) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            test_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
+                state_code=state_code.value, external_id="sp1", sequence_num=1
+            )
+            _ = get_state_specific_case_compliance_manager(
+                person=StatePerson.new_with_defaults(
+                    state_code=state_code.value, person_id=1
+                ),
+                supervision_period=test_sp,
+                case_type=StateSupervisionCaseType.INTERNAL_UNKNOWN,
+                start_of_supervision=datetime.date(2020, 1, 1),
+                assessments_by_date=RangeQuerier(
+                    [], lambda assessment: assessment.assessment_date
+                ),
+                supervision_contacts_by_date=RangeQuerier(
+                    [], lambda contact: contact.contact_date
+                ),
+                violation_responses=[],
+                incarceration_period_index=NormalizedIncarcerationPeriodIndex(
+                    sorted_incarceration_periods=[],
+                    incarceration_delegate=_get_state_specific_incarceration_delegate(
+                        state_code=state_code.value
+                    ),
+                ),
+                supervision_delegate=_get_state_specific_supervision_delegate(
+                    state_code=state_code.value
+                ),
+            )
+
+    # TODO(#30202): Add tests for remainder of delegates once they've been migrated over
+    #  to public methods.

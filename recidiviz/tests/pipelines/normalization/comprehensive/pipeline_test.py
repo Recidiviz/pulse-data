@@ -20,8 +20,6 @@ import unittest
 from typing import Any, Dict, Iterable, List, Optional, Set, Type
 from unittest.mock import patch
 
-import mock
-
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -42,7 +40,7 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.pipelines.normalization.comprehensive import pipeline
+from recidiviz.pipelines.normalization.comprehensive import entity_normalizer, pipeline
 from recidiviz.pipelines.normalization.utils import entity_normalization_manager_utils
 from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.tests.persistence.database import database_test_utils
@@ -55,13 +53,13 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteNormalizedEntitiesToBigQuery,
     FakeWriteToBigQueryFactory,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
 )
 
 _STATE_CODE = "US_XX"
@@ -81,19 +79,15 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             FakeWriteNormalizedEntitiesToBigQuery
         )
 
-        self.required_state_specific_delegates_patcher = mock.patch(
-            "recidiviz.pipelines.normalization.comprehensive.pipeline"
-            ".get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-
-        self.mock_get_required_state_delegates = (
-            self.required_state_specific_delegates_patcher.start()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            entity_normalizer
         )
         self.pipeline_class = pipeline.ComprehensiveNormalizationPipeline
 
     def tearDown(self) -> None:
-        self.required_state_specific_delegates_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
+
         self.project_id_patcher.stop()
 
     def run_test_pipeline(
@@ -141,6 +135,20 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         self, fake_person_id: int, fake_staff_id: int, state_code: str = "US_XX"
     ) -> Dict[str, Iterable]:
         """Builds a data_dict for a basic run of the pipeline."""
+
+        person = database_test_utils.generate_test_person(
+            person_id=fake_person_id,
+            state_code=state_code,
+            incarceration_incidents=[],
+            supervision_violations=[],
+            supervision_contacts=[],
+            incarceration_sentences=[],
+            supervision_sentences=[],
+            incarceration_periods=[],
+            supervision_periods=[],
+        )
+
+        person_data = [normalized_database_base_dict(person)]
 
         incarceration_period = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -351,6 +359,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             ]
         )
         data_dict_overrides = {
+            schema.StatePerson.__tablename__: person_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
             schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,

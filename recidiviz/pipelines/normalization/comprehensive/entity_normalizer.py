@@ -16,7 +16,9 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-from typing import Any, Dict, List, Sequence, Tuple, Type
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
+
+from more_itertools import one
 
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
@@ -24,6 +26,10 @@ from recidiviz.calculator.query.state.views.reference.state_charge_offense_descr
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
+    US_MO_SENTENCE_STATUSES_VIEW_NAME,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -34,9 +40,11 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
     StateProgramAssignment,
     StateStaff,
     StateStaffRolePeriod,
+    StateStaffSupervisorPeriod,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -53,30 +61,20 @@ from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils 
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     AssessmentNormalizationManager,
-    StateSpecificAssessmentNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
-    StateSpecificSentenceNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
     StaffRolePeriodNormalizationManager,
-    StateSpecificStaffRolePeriodNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
     SupervisionContactNormalizationManager,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
@@ -85,6 +83,15 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,
 )
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_assessment_normalization_delegate,
+    get_state_specific_incarceration_period_normalization_delegate,
+    get_state_specific_sentence_normalization_delegate,
+    get_state_specific_staff_role_period_normalization_delegate,
+    get_state_specific_supervision_period_normalization_delegate,
+    get_state_specific_violation_response_normalization_delegate,
+)
+from recidiviz.utils.types import assert_type
 
 EntityNormalizerContext = Dict[str, Any]
 
@@ -95,7 +102,9 @@ class ComprehensiveEntityNormalizer:
     """Entity normalizer class for the normalization pipeline that normalizes all
     entities with configured normalization processes."""
 
-    def __init__(self) -> None:
+    def __init__(self, state_code: StateCode) -> None:
+        # Store as a string to avoid issues with pickling
+        self.state_code_str = state_code.value
         self.field_index = CoreEntityFieldIndex()
 
     def normalize_entities(
@@ -116,29 +125,30 @@ class ComprehensiveEntityNormalizer:
         # TODO(#21376) Properly refactor once strategy for separate normalization is defined.
         if root_entity_type == StateStaff:
             return self._normalize_staff_entities(
-                staff_id=root_entity_id,
                 staff_role_periods=normalizer_args[StateStaffRolePeriod.__name__],
-                staff_role_period_normalization_delegate=normalizer_args[
-                    StateSpecificStaffRolePeriodNormalizationDelegate.__name__
+                staff_supervisor_periods=normalizer_args[
+                    StateStaffSupervisorPeriod.__name__
                 ],
             )
+
+        if US_MO_SENTENCE_STATUSES_VIEW_NAME in normalizer_args:
+            us_mo_sentence_statuses_list = [
+                a
+                for a in normalizer_args[US_MO_SENTENCE_STATUSES_VIEW_NAME]
+                if isinstance(a, dict)
+            ]
+        else:
+            us_mo_sentence_statuses_list = None
+
+        person = one(normalizer_args[StatePerson.__name__])
+        if person.person_id != root_entity_id:
+            raise ValueError(
+                f"Found root_entity_id [{root_entity_id}] which does not match the "
+                f"person_id [{person.person_id}]"
+            )
+
         return self._normalize_person_entities(
-            person_id=root_entity_id,
-            ip_normalization_delegate=normalizer_args[
-                StateSpecificIncarcerationNormalizationDelegate.__name__
-            ],
-            sp_normalization_delegate=normalizer_args[
-                StateSpecificSupervisionNormalizationDelegate.__name__
-            ],
-            violation_response_normalization_delegate=normalizer_args[
-                StateSpecificViolationResponseNormalizationDelegate.__name__
-            ],
-            assessment_normalization_delegate=normalizer_args[
-                StateSpecificAssessmentNormalizationDelegate.__name__
-            ],
-            sentence_normalization_delegate=normalizer_args[
-                StateSpecificSentenceNormalizationDelegate.__name__
-            ],
+            person=person,
             incarceration_periods=normalizer_args[StateIncarcerationPeriod.__name__],
             incarceration_sentences=normalizer_args[
                 StateIncarcerationSentence.__name__
@@ -157,16 +167,12 @@ class ComprehensiveEntityNormalizer:
             state_person_to_state_staff=normalizer_args[
                 STATE_PERSON_TO_STATE_STAFF_VIEW_NAME
             ],
+            us_mo_sentence_statuses_list=us_mo_sentence_statuses_list,
         )
 
     def _normalize_person_entities(
         self,
-        person_id: int,
-        ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
-        sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
-        violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
-        assessment_normalization_delegate: StateSpecificAssessmentNormalizationDelegate,
-        sentence_normalization_delegate: StateSpecificSentenceNormalizationDelegate,
+        person: StatePerson,
         incarceration_periods: List[StateIncarcerationPeriod],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
@@ -177,6 +183,9 @@ class ComprehensiveEntityNormalizer:
         supervision_contacts: List[StateSupervisionContact],
         charge_offense_descriptions_to_labels: List[Dict[str, Any]],
         state_person_to_state_staff: List[Dict[str, Any]],
+        # TODO(#30199): Remove MO sentence statuses table dependency in favor of
+        #  state_sentence_status_snapshot data
+        us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
     ) -> EntityNormalizerResult:
         """Normalizes all entities rooted with StatePerson with corresponding normalization managers."""
 
@@ -184,12 +193,8 @@ class ComprehensiveEntityNormalizer:
             Tuple[str, str], int
         ] = build_staff_external_id_to_staff_id_map(state_person_to_state_staff)
         processed_entities = all_normalized_person_entities(
-            person_id=person_id,
-            ip_normalization_delegate=ip_normalization_delegate,
-            sp_normalization_delegate=sp_normalization_delegate,
-            violation_response_normalization_delegate=violation_response_normalization_delegate,
-            assessment_normalization_delegate=assessment_normalization_delegate,
-            sentence_normalization_delegate=sentence_normalization_delegate,
+            state_code=StateCode(self.state_code_str),
+            person=person,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
             violation_responses=violation_responses,
@@ -200,21 +205,23 @@ class ComprehensiveEntityNormalizer:
             supervision_contacts=supervision_contacts,
             charge_offense_descriptions_to_labels=charge_offense_descriptions_to_labels,
             staff_external_id_to_staff_id=staff_external_id_to_staff_id,
+            us_mo_sentence_statuses_list=us_mo_sentence_statuses_list,
             field_index=self.field_index,
         )
 
         return processed_entities
 
-    # pylint: disable=unused-argument
     def _normalize_staff_entities(
         self,
-        staff_id: int,
         staff_role_periods: List[StateStaffRolePeriod],
-        staff_role_period_normalization_delegate: StateSpecificStaffRolePeriodNormalizationDelegate,
+        staff_supervisor_periods: List[StateStaffSupervisorPeriod],
     ) -> EntityNormalizerResult:
         """Normalizes all entities rooted with StateStaff with corresponding normalization managers."""
         staff_role_period_normalization_manager = StaffRolePeriodNormalizationManager(
-            staff_role_periods, staff_role_period_normalization_delegate
+            staff_role_periods,
+            get_state_specific_staff_role_period_normalization_delegate(
+                self.state_code_str, staff_supervisor_periods
+            ),
         )
         (
             processed_staff_role_periods,
@@ -230,12 +237,8 @@ class ComprehensiveEntityNormalizer:
 
 
 def all_normalized_person_entities(
-    person_id: int,
-    ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
-    sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
-    violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
-    assessment_normalization_delegate: StateSpecificAssessmentNormalizationDelegate,
-    sentence_normalization_delegate: StateSpecificSentenceNormalizationDelegate,
+    state_code: StateCode,
+    person: StatePerson,
     incarceration_periods: List[StateIncarcerationPeriod],
     supervision_periods: List[StateSupervisionPeriod],
     violation_responses: List[StateSupervisionViolationResponse],
@@ -246,6 +249,9 @@ def all_normalized_person_entities(
     supervision_contacts: List[StateSupervisionContact],
     charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
+    # TODO(#30199): Remove MO sentence statuses table dependency in favor of
+    #  state_sentence_status_snapshot data
+    us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
     field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
@@ -254,8 +260,10 @@ def all_normalized_person_entities(
     entities.
     """
     violation_response_manager = ViolationResponseNormalizationManager(
-        person_id=person_id,
-        delegate=violation_response_normalization_delegate,
+        person_id=assert_type(person.person_id, int),
+        delegate=get_state_specific_violation_response_normalization_delegate(
+            state_code.value, incarceration_periods
+        ),
         violation_responses=violation_responses,
         staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )
@@ -277,7 +285,7 @@ def all_normalized_person_entities(
         incarceration_sentences,
         supervision_sentences,
         charge_offense_descriptions_to_labels,
-        sentence_normalization_delegate,
+        get_state_specific_sentence_normalization_delegate(state_code.value),
     )
     (
         processed_incarceration_sentences,
@@ -335,9 +343,16 @@ def all_normalized_person_entities(
         (processed_incarceration_periods, additional_ip_attributes),
         (processed_supervision_periods, additional_sp_attributes),
     ) = normalized_periods_for_calculations(
-        person_id=person_id,
-        ip_normalization_delegate=ip_normalization_delegate,
-        sp_normalization_delegate=sp_normalization_delegate,
+        person_id=assert_type(person.person_id, int),
+        ip_normalization_delegate=get_state_specific_incarceration_period_normalization_delegate(
+            state_code.value
+        ),
+        sp_normalization_delegate=get_state_specific_supervision_period_normalization_delegate(
+            state_code.value,
+            assessments,
+            incarceration_periods,
+            us_mo_sentence_statuses_list,
+        ),
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
         normalized_violation_responses=normalized_violation_responses,
@@ -349,7 +364,7 @@ def all_normalized_person_entities(
 
     assessment_normalization_manager = AssessmentNormalizationManager(
         assessments,
-        assessment_normalization_delegate,
+        get_state_specific_assessment_normalization_delegate(state_code.value, person),
         staff_external_id_to_staff_id,
     )
 

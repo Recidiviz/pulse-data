@@ -72,35 +72,29 @@ from recidiviz.pipelines.normalization.pipeline_parameters import (
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     AssessmentNormalizationManager,
-    StateSpecificAssessmentNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
-    StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
-    StateSpecificSentenceNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
     StaffRolePeriodNormalizationManager,
-    StateSpecificStaffRolePeriodNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
     SupervisionContactNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
-    StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
@@ -112,12 +106,6 @@ from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
     ExtractRootEntityDataForPipeline,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow, kwargs_for_entity_lists
-from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_delegates,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
 from recidiviz.utils.types import assert_type
 
 
@@ -183,21 +171,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         }
 
     @classmethod
-    def state_specific_required_delegates(
-        cls,
-    ) -> Dict[Type[Entity], List[Type[StateSpecificDelegate]]]:
-        return {
-            entities.StatePerson: [
-                StateSpecificIncarcerationNormalizationDelegate,
-                StateSpecificSupervisionNormalizationDelegate,
-                StateSpecificViolationResponseNormalizationDelegate,
-                StateSpecificAssessmentNormalizationDelegate,
-                StateSpecificSentenceNormalizationDelegate,
-            ],
-            entities.StateStaff: [StateSpecificStaffRolePeriodNormalizationDelegate],
-        }
-
-    @classmethod
     def state_specific_input_reference_view_builders(
         cls,
     ) -> Dict[Type[Entity], Dict[StateCode, List[BigQueryViewBuilder]]]:
@@ -206,7 +179,10 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 # We need to bring in the US_MO sentence status table to do
                 # do state-specific processing of the sentences for normalizing
                 # supervision periods.
-                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_BUILDER],
+                StateCode.US_MO: [
+                    # TODO(#30199): Remove dependency on this view in favor of StateSentenceStatusSnapshot
+                    US_MO_SENTENCE_STATUSES_VIEW_BUILDER
+                ],
             },
             entities.StateStaff: {},
         }
@@ -250,10 +226,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 ),
             }
         return all_builders
-
-    @classmethod
-    def entity_normalizer(cls) -> ComprehensiveEntityNormalizer:
-        return ComprehensiveEntityNormalizer()
 
     @classmethod
     def required_entity_normalization_managers(
@@ -338,12 +310,8 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
                 | f"Normalize entities for {root_entity_type.__name__}"
                 >> beam.ParDo(
                     NormalizeEntities(),
-                    state_code=state_code.value,
                     root_entity_type=root_entity_type,
-                    entity_normalizer=self.entity_normalizer(),
-                    state_specific_required_delegates=self.state_specific_required_delegates().get(
-                        root_entity_type
-                    ),
+                    entity_normalizer=ComprehensiveEntityNormalizer(state_code),
                 )
                 | f"Convert to dict to be written to BQ {root_entity_type.__name__}"
                 >> beam.ParDo(
@@ -416,10 +384,8 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
 
 @with_input_types(
     beam.typehints.Tuple[int, Dict[str, Iterable[Any]]],
-    str,
     Type[Entity],
     ComprehensiveEntityNormalizer,
-    List[Type[StateSpecificDelegate]],
 )
 @with_output_types(
     beam.typehints.Tuple[
@@ -440,10 +406,8 @@ class NormalizeEntities(beam.DoFn):
     def process(
         self,
         element: Tuple[int, Dict[str, Iterable[Any]]],
-        state_code: str,
         root_entity_type: Type[Entity],
         entity_normalizer: ComprehensiveEntityNormalizer,
-        state_specific_required_delegates: List[Type[StateSpecificDelegate]],
     ) -> Generator[
         Tuple[
             int,
@@ -457,20 +421,9 @@ class NormalizeEntities(beam.DoFn):
         """Runs the entities through normalization."""
         root_entity_id, person_entities = element
 
-        entity_kwargs = kwargs_for_entity_lists(person_entities)
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=state_code,
-            required_delegates=state_specific_required_delegates,
-            entity_kwargs=entity_kwargs,
-        )
-
         all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {
-            **entity_kwargs,
-            **required_delegates,
-        }
+            str, Union[Sequence[Entity], List[TableRow]]
+        ] = kwargs_for_entity_lists(person_entities)
 
         (
             normalized_entities,

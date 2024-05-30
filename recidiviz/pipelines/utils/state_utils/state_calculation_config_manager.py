@@ -16,11 +16,8 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 from datetime import date
-from typing import Dict, List, Optional, Sequence, Set, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
 
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
@@ -721,12 +718,13 @@ from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_violations_delegate impor
     UsTnViolationDelegate,
 )
 from recidiviz.utils.range_querier import RangeQuerier
-from recidiviz.utils.types import assert_type
 
 
+# TODO(#30202): Delete this entirely once it's no longer used in metric pipelines
 def get_required_state_specific_delegates(
     state_code: str,
     required_delegates: List[Type[StateSpecificDelegate]],
+    # pylint: disable=unused-argument
     entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
 ) -> Dict[str, StateSpecificDelegate]:
     """Returns a dictionary where the keys are the names of the required delegates
@@ -734,41 +732,7 @@ def get_required_state_specific_delegates(
     implementation of that delegate."""
     required_state_specific_delegates: Dict[str, StateSpecificDelegate] = {}
     for required_delegate in required_delegates:
-        if required_delegate is StateSpecificAssessmentNormalizationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_assessment_normalization_delegate(
-                state_code, entity_kwargs
-            )
-        elif required_delegate is StateSpecificIncarcerationNormalizationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_incarceration_period_normalization_delegate(
-                state_code
-            )
-        elif required_delegate is StateSpecificSupervisionNormalizationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_supervision_period_normalization_delegate(
-                state_code, entity_kwargs
-            )
-        elif required_delegate is StateSpecificSentenceNormalizationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_sentence_normalization_delegate(state_code)
-        elif required_delegate is StateSpecificStaffRolePeriodNormalizationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_staff_role_period_normalization_delegate(
-                state_code, entity_kwargs
-            )
-        elif required_delegate is StateSpecificViolationResponseNormalizationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_violation_response_normalization_delegate(
-                state_code, entity_kwargs
-            )
-        elif required_delegate is StateSpecificCommitmentFromSupervisionDelegate:
+        if required_delegate is StateSpecificCommitmentFromSupervisionDelegate:
             required_state_specific_delegates[
                 required_delegate.__name__
             ] = _get_state_specific_commitment_from_supervision_delegate(state_code)
@@ -858,17 +822,12 @@ def get_state_specific_case_compliance_manager(
     return None
 
 
-def _get_state_specific_assessment_normalization_delegate(
+def get_state_specific_assessment_normalization_delegate(
     state_code: str,
-    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
+    person: StatePerson,
 ) -> StateSpecificAssessmentNormalizationDelegate:
     """Returns the type of AssessmentNormalizationDelegate that should be used for
     normalizing StateAssessment entities from a given |state_code|."""
-    persons = (
-        [assert_type(a, StatePerson) for a in entity_kwargs[StatePerson.__name__]]
-        if entity_kwargs and entity_kwargs.get(StatePerson.__name__) is not None
-        else None
-    )
     if state_code == StateCode.US_AR.value:
         return UsArAssessmentNormalizationDelegate()
     if state_code == StateCode.US_CA.value:
@@ -897,11 +856,11 @@ def _get_state_specific_assessment_normalization_delegate(
         return UsOzAssessmentNormalizationDelegate()
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
-        if persons is None:
+        if person is None:
             raise ValueError(
                 "Missing StatePerson entity for UsIxAssessmentNormalizationDelegate"
             )
-        return UsIxAssessmentNormalizationDelegate(persons=persons)
+        return UsIxAssessmentNormalizationDelegate(person=person)
     if state_code == StateCode.US_ID.value:
         return UsIdAssessmentNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
@@ -909,7 +868,7 @@ def _get_state_specific_assessment_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_incarceration_period_normalization_delegate(
+def get_state_specific_incarceration_period_normalization_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationNormalizationDelegate:
     """Returns the type of IncarcerationNormalizationDelegate that should be used for
@@ -950,29 +909,16 @@ def _get_state_specific_incarceration_period_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_supervision_period_normalization_delegate(
+def get_state_specific_supervision_period_normalization_delegate(
     state_code: str,
-    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
+    assessments: List[StateAssessment],
+    incarceration_periods: List[StateIncarcerationPeriod],
+    # TODO(#30199): Remove MO sentence statuses table dependency in favor of
+    #  state_sentence_status_snapshot data
+    us_mo_sentence_statuses_list: Optional[List[Dict[str, Any]]],
 ) -> StateSpecificSupervisionNormalizationDelegate:
     """Returns the type of SupervisionNormalizationDelegate that should be used for
     normalizing StateSupervisionPeriod entities from a given |state_code|."""
-    assessments = (
-        [
-            assert_type(a, StateAssessment)
-            for a in entity_kwargs[StateAssessment.__name__]
-        ]
-        if entity_kwargs and entity_kwargs.get(StateAssessment.__name__) is not None
-        else None
-    )
-    incarceration_periods: Optional[List[StateIncarcerationPeriod]] = (
-        [
-            assert_type(a, StateIncarcerationPeriod)
-            for a in entity_kwargs[StateIncarcerationPeriod.__name__]
-        ]
-        if entity_kwargs
-        and entity_kwargs.get(StateIncarcerationPeriod.__name__) is not None
-        else None
-    )
     if state_code == StateCode.US_AR.value:
         return UsArSupervisionNormalizationDelegate()
     if state_code == StateCode.US_CA.value:
@@ -990,17 +936,12 @@ def _get_state_specific_supervision_period_normalization_delegate(
     if state_code == StateCode.US_MI.value:
         return UsMiSupervisionNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
-        if not entity_kwargs or US_MO_SENTENCE_STATUSES_VIEW_NAME not in entity_kwargs:
+        if us_mo_sentence_statuses_list is None:
             raise ValueError(
                 "Missing US_MO sentence status view for UsMoSupervisionNormalizationDelegate"
             )
-        us_mo_sentence_statuses = [
-            a
-            for a in entity_kwargs[US_MO_SENTENCE_STATUSES_VIEW_NAME]
-            if isinstance(a, dict)
-        ]
         return UsMoSupervisionNormalizationDelegate(
-            sentence_statuses_list=us_mo_sentence_statuses
+            sentence_statuses_list=us_mo_sentence_statuses_list
         )
     if state_code == StateCode.US_NC.value:
         return UsNcSupervisionNormalizationDelegate()
@@ -1031,7 +972,7 @@ def _get_state_specific_supervision_period_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_sentence_normalization_delegate(
+def get_state_specific_sentence_normalization_delegate(
     state_code: str,
 ) -> StateSpecificSentenceNormalizationDelegate:
     """Returns the type of SentenceNormalizationDelegate that should be used for normalizing
@@ -1073,22 +1014,13 @@ def _get_state_specific_sentence_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_staff_role_period_normalization_delegate(
+def get_state_specific_staff_role_period_normalization_delegate(
     state_code: str,
-    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
+    staff_supervisor_periods: List[StateStaffSupervisorPeriod],
 ) -> StateSpecificStaffRolePeriodNormalizationDelegate:
     """Returns the type of StaffRolePeriodNormalizationDelegate that should be used for normalizing
     StateStaff entities from a given |state_code|.
     """
-    staff_supervisor_periods = (
-        [
-            assert_type(a, StateStaffSupervisorPeriod)
-            for a in entity_kwargs[StateStaffSupervisorPeriod.__name__]
-        ]
-        if entity_kwargs
-        and entity_kwargs.get(StateStaffSupervisorPeriod.__name__) is not None
-        else None
-    )
     if state_code == StateCode.US_AR.value:
         return UsArStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_CA.value:
@@ -1211,21 +1143,12 @@ def _get_state_specific_violation_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_violation_response_normalization_delegate(
+def get_state_specific_violation_response_normalization_delegate(
     state_code: str,
-    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
+    incarceration_periods: List[StateIncarcerationPeriod],
 ) -> StateSpecificViolationResponseNormalizationDelegate:
     """Returns the type of StateSpecificViolationResponseNormalizationDelegate that should be used for
     violation calculations in a given |state_code|."""
-    incarceration_periods = (
-        [
-            assert_type(a, StateIncarcerationPeriod)
-            for a in entity_kwargs[StateIncarcerationPeriod.__name__]
-        ]
-        if entity_kwargs
-        and entity_kwargs.get(StateIncarcerationPeriod.__name__) is not None
-        else None
-    )
     if state_code == StateCode.US_AR.value:
         return UsArViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_CA.value:

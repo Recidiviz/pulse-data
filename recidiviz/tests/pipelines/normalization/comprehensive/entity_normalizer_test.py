@@ -30,6 +30,7 @@ from recidiviz.calculator.query.state.views.reference.state_person_to_state_staf
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -45,6 +46,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateProgramAssignment,
     StateStaff,
     StateStaffRolePeriod,
+    StateStaffSupervisorPeriod,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -70,12 +72,6 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_delegates,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
 from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
     get_normalized_violation_tree,
     get_violation_tree,
@@ -84,23 +80,28 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 from recidiviz.tests.pipelines.normalization.utils.entity_normalization_manager_utils_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
 )
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
-)
 
 _STATE_CODE = "US_XX"
-
 
 # TODO(#21376) Properly refactor once strategy for separate normalization is defined.
 class TestNormalizeEntities(unittest.TestCase):
     """Tests the normalize_entities function on the ComprehensiveEntityNormalizer."""
 
     def setUp(self) -> None:
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            entity_normalizer
+        )
+
         self.pipeline = pipeline.ComprehensiveNormalizationPipeline
-        self.entity_normalizer = entity_normalizer.ComprehensiveEntityNormalizer()
+        self.entity_normalizer = entity_normalizer.ComprehensiveEntityNormalizer(
+            state_code=StateCode.US_XX
+        )
 
         self.full_graph_person = generate_full_graph_state_person(
             set_back_edges=True, include_person_back_edges=False, set_ids=True
@@ -113,24 +114,27 @@ class TestNormalizeEntities(unittest.TestCase):
         for v in self.full_graph_person.supervision_violations:
             self.violation_responses.extend(v.supervision_violation_responses)
 
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
+
     def _run_normalize_person_entities(
         self,
-        incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
-        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
-        violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
-        program_assignments: Optional[List[StateProgramAssignment]] = None,
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
-        supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
-        assessments: Optional[List[StateAssessment]] = None,
-        persons: Optional[List[StatePerson]] = None,
-        supervision_contacts: Optional[List[StateSupervisionContact]] = None,
-        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]] = None,
-        state_code_override: Optional[str] = None,
-        state_person_to_state_staff: Optional[List[Dict[str, Any]]] = None,
+        incarceration_periods: Optional[List[StateIncarcerationPeriod]],
+        supervision_periods: Optional[List[StateSupervisionPeriod]],
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        program_assignments: Optional[List[StateProgramAssignment]],
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        supervision_sentences: Optional[List[StateSupervisionSentence]],
+        assessments: Optional[List[StateAssessment]],
+        persons: Optional[List[StatePerson]],
+        supervision_contacts: Optional[List[StateSupervisionContact]],
+        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]],
+        state_person_to_state_staff: Optional[List[Dict[str, Any]]],
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the
         ComprehensiveEntityNormalizer for StatePerson."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             StateIncarcerationPeriod.__name__: incarceration_periods or [],
             StateSupervisionPeriod.__name__: supervision_periods or [],
             StateSupervisionViolationResponse.__name__: violation_responses or [],
@@ -144,20 +148,6 @@ class TestNormalizeEntities(unittest.TestCase):
             or [],
             STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
         }
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=self.pipeline.state_specific_required_delegates().get(
-                    StatePerson, []
-                ),
-                entity_kwargs=entity_kwargs,
-            )
-
-        all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {**required_delegates, **entity_kwargs}
 
         assert self.full_graph_person.person_id is not None
 
@@ -168,27 +158,14 @@ class TestNormalizeEntities(unittest.TestCase):
     def _run_normalize_staff_entities(
         self,
         staff_role_periods: Optional[List[StateStaffRolePeriod]],
-        state_code_override: Optional[str] = None,
+        staff_supervisor_periods: Optional[List[StateStaffSupervisorPeriod]],
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the ComprehensiveEntityNormalizer
         for StateStaff."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
-            StateStaffRolePeriod.__name__: staff_role_periods or []
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+            StateStaffRolePeriod.__name__: staff_role_periods or [],
+            StateStaffSupervisorPeriod.__name__: staff_supervisor_periods or [],
         }
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=self.pipeline.state_specific_required_delegates().get(
-                    StateStaff, []
-                ),
-                entity_kwargs=entity_kwargs,
-            )
-
-        all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {**required_delegates, **entity_kwargs}
 
         assert self.full_graph_staff.staff_id is not None
 
@@ -398,6 +375,7 @@ class TestNormalizeEntities(unittest.TestCase):
             normalized_entities,
             additional_attributes_map,
         ) = self._run_normalize_person_entities(
+            persons=[self.full_graph_person],
             incarceration_periods=self.full_graph_person.incarceration_periods,
             supervision_periods=self.full_graph_person.supervision_periods,
             violation_responses=violation_responses,
@@ -493,10 +471,17 @@ class TestNormalizeEntities(unittest.TestCase):
         doesn't have instances of all the entities that get normalized."""
 
         _ = self._run_normalize_person_entities(
+            persons=[self.full_graph_person],
             incarceration_periods=self.full_graph_person.incarceration_periods,
-            supervision_periods=None,
+            supervision_periods=[],
             violation_responses=get_violation_tree().supervision_violation_responses,
-            program_assignments=None,
+            program_assignments=[],
+            incarceration_sentences=[],
+            supervision_sentences=[],
+            assessments=[],
+            supervision_contacts=[],
+            charge_offense_descriptions_to_labels=[],
+            state_person_to_state_staff=[],
         )
 
     def test_normalize_staff_entities(self) -> None:
@@ -506,7 +491,9 @@ class TestNormalizeEntities(unittest.TestCase):
         (
             normalized_entities,
             additional_attributes_map,
-        ) = self._run_normalize_staff_entities(self.full_graph_staff.role_periods)
+        ) = self._run_normalize_staff_entities(
+            self.full_graph_staff.role_periods, self.full_graph_staff.supervisor_periods
+        )
 
         self.assertDictEqual(
             additional_attributes_map,
@@ -534,8 +521,14 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
     """
 
     def setUp(self) -> None:
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            entity_normalizer
+        )
+
         self.pipeline = pipeline.ComprehensiveNormalizationPipeline
-        self.entity_normalizer = entity_normalizer.ComprehensiveEntityNormalizer()
+        self.entity_normalizer = entity_normalizer.ComprehensiveEntityNormalizer(
+            state_code=StateCode.US_XX
+        )
 
         self.full_graph_person = generate_full_graph_state_person(
             set_back_edges=True, include_person_back_edges=False, set_ids=True
@@ -551,23 +544,26 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
 
         self.field_index = CoreEntityFieldIndex()
 
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
+
     def _normalize_person_entities_and_convert(
         self,
-        incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
-        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
-        violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
-        program_assignments: Optional[List[StateProgramAssignment]] = None,
-        supervision_contacts: Optional[List[StateSupervisionContact]] = None,
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
-        supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
-        assessments: Optional[List[StateAssessment]] = None,
-        persons: Optional[List[StatePerson]] = None,
-        state_code_override: Optional[str] = None,
-        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]] = None,
-        state_person_to_state_staff: Optional[List[Dict[str, Any]]] = None,
+        incarceration_periods: Optional[List[StateIncarcerationPeriod]],
+        supervision_periods: Optional[List[StateSupervisionPeriod]],
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+        program_assignments: Optional[List[StateProgramAssignment]],
+        supervision_contacts: Optional[List[StateSupervisionContact]],
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        supervision_sentences: Optional[List[StateSupervisionSentence]],
+        assessments: Optional[List[StateAssessment]],
+        persons: Optional[List[StatePerson]],
+        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]],
+        state_person_to_state_staff: Optional[List[Dict[str, Any]]],
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             StateIncarcerationPeriod.__name__: incarceration_periods or [],
             StateSupervisionPeriod.__name__: supervision_periods or [],
             StateSupervisionViolationResponse.__name__: violation_responses or [],
@@ -581,21 +577,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             or [],
             STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
         }
-
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=self.pipeline.state_specific_required_delegates().get(
-                    StatePerson, []
-                ),
-                entity_kwargs=entity_kwargs,
-            )
-
-        all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {**required_delegates, **entity_kwargs}
 
         assert self.full_graph_person.person_id is not None
 
@@ -624,28 +605,14 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
 
     def _normalize_staff_entities_and_convert(
         self,
-        staff_role_periods: Optional[List[StateStaffRolePeriod]] = None,
-        state_code_override: Optional[str] = None,
+        staff_role_periods: Optional[List[StateStaffRolePeriod]],
+        staff_supervisor_periods: Optional[List[StateStaffSupervisorPeriod]],
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
-            StateStaffRolePeriod.__name__: staff_role_periods or []
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+            StateStaffRolePeriod.__name__: staff_role_periods or [],
+            StateStaffSupervisorPeriod.__name__: staff_supervisor_periods or [],
         }
-
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=self.pipeline.state_specific_required_delegates().get(
-                    StateStaff, []
-                ),
-                entity_kwargs=entity_kwargs,
-            )
-
-        all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {**required_delegates, **entity_kwargs}
 
         assert self.full_graph_staff.staff_id is not None
 
@@ -747,12 +714,17 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             normalized_scs.append(normalized_sc)
 
         normalized_entities = self._normalize_person_entities_and_convert(
+            persons=[self.full_graph_person],
             incarceration_periods=self.full_graph_person.incarceration_periods,
             supervision_periods=self.full_graph_person.supervision_periods,
             violation_responses=get_violation_tree().supervision_violation_responses,
             program_assignments=self.full_graph_person.program_assignments,
             supervision_contacts=self.full_graph_person.supervision_contacts,
+            incarceration_sentences=[],
+            supervision_sentences=[],
+            assessments=[],
             state_person_to_state_staff=STATE_PERSON_TO_STATE_STAFF_LIST,
+            charge_offense_descriptions_to_labels=[],
         )
 
         expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {
@@ -788,11 +760,17 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             normalized_ips.append(normalized_ip)
 
         normalized_entities = self._normalize_person_entities_and_convert(
+            persons=[self.full_graph_person],
             incarceration_periods=self.full_graph_person.incarceration_periods,
-            supervision_periods=None,
+            supervision_periods=[],
             violation_responses=get_violation_tree().supervision_violation_responses,
-            program_assignments=None,
-            supervision_contacts=None,
+            program_assignments=[],
+            supervision_contacts=[],
+            incarceration_sentences=[],
+            supervision_sentences=[],
+            assessments=[],
+            state_person_to_state_staff=[],
+            charge_offense_descriptions_to_labels=[],
         )
 
         expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {
@@ -812,6 +790,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
     def test_normalize_staff_entities(self) -> None:
         normalized_entities = self._normalize_staff_entities_and_convert(
             staff_role_periods=self.full_graph_staff.role_periods,
+            staff_supervisor_periods=self.full_graph_staff.supervisor_periods,
         )
 
         normalized_role_periods: Sequence[NormalizedStateStaffRolePeriod] = [

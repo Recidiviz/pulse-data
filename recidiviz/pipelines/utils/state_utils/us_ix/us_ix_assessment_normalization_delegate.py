@@ -16,9 +16,7 @@
 # =============================================================================
 """Contains US_IX implementation of the StateSpecificAssessmentNormalizationDelegate."""
 import datetime
-from typing import List, Optional
-
-from more_itertools import one
+from typing import Optional
 
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
@@ -30,8 +28,8 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_n
 class UsIxAssessmentNormalizationDelegate(StateSpecificAssessmentNormalizationDelegate):
     """US_IX implementation of the StateSpecificAssessmentNormalizationDelegate."""
 
-    def __init__(self, persons: List[StatePerson]) -> None:
-        self.gender = one(persons).gender
+    def __init__(self, person: StatePerson) -> None:
+        self.gender = person.gender
 
     def set_lsir_assessment_score_bucket(
         self, assessment: StateAssessment
