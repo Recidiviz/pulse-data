@@ -29,3 +29,4 @@ columns:
   - name: Locking
   - name: IsCustom
     description: IsCustom boolean
+is_code_file: True
