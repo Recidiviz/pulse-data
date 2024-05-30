@@ -18,11 +18,13 @@ columns:
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: ASSIGNED_TO
     description: Date the assignment was changed
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S %p', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', REGEXP_REPLACE({col_name}, r'.0000000', ''))"
   - name: REASSIGNMENT_PERIOD_ID
     description: unknown
   - name: CHANGE_ID

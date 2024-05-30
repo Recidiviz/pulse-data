@@ -38,6 +38,9 @@ from recidiviz.common.constants.state.state_person import StateEthnicity
 from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 
 
 def parse_ethnicity(
@@ -309,3 +312,31 @@ def parse_staff_caseload_type(raw_text: str) -> Optional[StateStaffCaseloadType]
             return StateStaffCaseloadType.INTERNAL_UNKNOWN
         return StateStaffCaseloadType.GENERAL
     return StateStaffCaseloadType.INTERNAL_UNKNOWN
+
+
+def parse_supervision_level(
+    supervision_level: str, admission_reason: str
+) -> Optional[StateSupervisionLevel]:
+    """Parses a person's supervision level based first on whether the admission reason
+    for the given subspan means they have absconded or are in custody, and if not, based on
+    their stated supervision level."""
+    if admission_reason == "Releasee Abscond":
+        return StateSupervisionLevel.ABSCONSION
+    if admission_reason in ("Temporary Placement", "In Custody - Other"):
+        return StateSupervisionLevel.IN_CUSTODY
+
+    # If neither of the above cases are true, then base supervision level off of the
+    # supervision_level field directly.
+    if supervision_level:
+        if supervision_level in ("Low(Minimum)", "Minimum"):
+            return StateSupervisionLevel.MINIMUM
+        if supervision_level in ("Medium(Moderate)", "Medium"):
+            return StateSupervisionLevel.MEDIUM
+        if supervision_level in ("Intensive", "High (Intense)"):
+            return StateSupervisionLevel.HIGH
+        if supervision_level in ("Moderate/ High(Maximum)", "Maximum"):
+            return StateSupervisionLevel.MAXIMUM
+        return StateSupervisionLevel.INTERNAL_UNKNOWN
+
+    # If none of the above cases are true, we do not know this person's supervision level.
+    return StateSupervisionLevel.PRESENT_WITHOUT_INFO

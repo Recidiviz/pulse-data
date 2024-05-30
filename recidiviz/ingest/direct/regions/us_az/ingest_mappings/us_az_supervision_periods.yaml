@@ -3,12 +3,12 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - DOC_ID
   - PERSON_ID
-  - admission_date
-  - admission_reason
-  - release_date
-  - release_reason
+  - START_DATE
+  - END_DATE
+  - START_REASON
+  - END_REASON
+  - SUPERVISION_LEVEL
   - period_seq
 unused_columns: []
 output:
@@ -23,35 +23,29 @@ output:
             $concat:
               $values:
                 - PERSON_ID
-                - DOC_ID
                 - period_seq
-          start_date: admission_date
+          start_date: START_DATE
           admission_reason:
             $enum_mapping:
-              $raw_text: admission_reason
+              $raw_text: START_REASON
               $mappings:
                 StateSupervisionPeriodAdmissionReason.ABSCONSION:
                   - Releasee Abscond
                 StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
-                  - Community Supervision Release
-                  - Regular Parole - Juvenile
-                  - WK F 41-160411C
-                  - Drug Transition Release
-                  - Return Community Service
-                  - Home Arrest 41-1604.13
-                  - Mandatory Release
-                  - Discretionary Release
-                  - Temporary Release
-                  - Provisional Release
-                  - Parole (Early/Emergency)
-                  - Correctional Release Center
-                  - Return to Custody in Error (Community Corrections)
                   - Paroled - Regular
-                  - Supervision Closed in Error
-                  - NEW CODE - Earned Release
+                  - Parole (Early/Emergency)
+                  - Temporary Release
+                  - Mandatory Release
+                  - Provisional Release
+                  - Discretionary Release
+                  - Regular Parole - Juvenile
+                  - Correctional Release Center
+                  - Community Supervision Release
                   - Standard Transition Release
-                  - Release by Court
-                  - DC to Probation
+                  - Drug Transition Release
+                  - WK F 41-160411C
+                  - Home Arrest 41-1604.13
+                  - Intake New Offender
                 StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
                   # This is the case when there was a warrant out for a person who absconded,
                   # but rather than send them back to custody when they returned, the warrant
@@ -59,78 +53,115 @@ output:
                   - Warrant Quashed
                 StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION:
                   - REIN FROM SUSP.
-                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                StateSupervisionPeriodAdmissionReason.INVESTIGATION:
                   - Temporary Placement
+                  - In Custody - Other
                 StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
-                  # >.1% of periods have these admission reasons. This is due to a known
-                  # issue with tracking multiple consecutive release dates.
-                  # TODO(#28562): refactor to account for this.
-                  - OLD/NEW CODE - Expiration
-                  - Deport 1/2 Term
-                  - Absolute Discharge
-          termination_date: release_date
+                  - Return Community Service
+                  - Return to Custody in Error (Community Corrections)
+                  - Supervision Closed in Error
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - Supervision Level Change
+          termination_date: END_DATE
           termination_reason:
             $enum_mapping:
-              $raw_text: release_reason
+              $raw_text: END_REASON
               $mappings:
                 StateSupervisionPeriodTerminationReason.ABSCONSION:
                   - Releasee Abscond
                 StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
-                  - Temporary Placement
-                  - Reopen Last Prison Episode
-                  - Temporary Release Return
-                  - In Custody - Other
-                  - Close Supervision Episode - Leave Prison Episode Active
                   - RTRN CUSTDY ITP
-                  - Return to Custody in Error (Community Corrections)
+                  - Recommitment
+                  - Reopen Last Prison Episode
+                  - New Commitment
+                  - Close Supervision Episode - Leave Prison Episode Active
+                StateSupervisionPeriodTerminationReason.INVESTIGATION:
+                  - In Custody - Other
+                  - Temporary Placement
+                StateSupervisionPeriodTerminationReason.COMMUTED:
+                  - Commutation
                 StateSupervisionPeriodTerminationReason.DEATH:
                   - Death
                 StateSupervisionPeriodTerminationReason.DISCHARGE:
-                  - Correctional Release Center Release
-                  - Absolute Discharge
-                  - Activated In Error
+                  # Describes a person being released from their supervision earlier than their sentence’s end date.
+                  - NEW CODE - Earned Release
+                  - Release by Court
+                  - Admin Action Case Closed
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
                   - OLD/NEW CODE - Expiration
                   - End of Supervision
-                  - ISC Closure
+                  - Absolute Discharge
                   - Community Supervision End Date
-                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
-                  - Release ISC
+                  - DC to Probation
+                  - ISC Case Closure
+                  - ISC Closure
+                # Describes a person’s supervision ending because they have reached the maximum completion date on their sentence.
                 StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
-                  - Drug Transition Release
-                  - Return Community Service
-                  - Discretionary Release
+                  - Provisional Release
                   - Paroled - Regular
-                  - Release by Court
-                  - Community Supervision Release
-                  - Parole (Early/Emergency)
-                  - Home Arrest 41-1604.13
+                  - Standard Transition Release
+                  - Shock Incarceration Release
+                  - Drug Transition Release
+                  - Discretionary Release
+                  - Flat Discretionary Release
                   - Temporary Release
+                  - Mandatory Release
                   - WK F 41-160411C
-                  - NEW CODE - Earned Release
-                  - Supervision Closed in Error # 10 instances since 2020, none before
-                  - Release in Error Return
-                  - Standard Transition Release # Comes after a different type of release as a status change
-                  - Provisional Release # Comes after a different type of release as a status change
-                  - Correctional Release Center # Comes after a different type of release as a status change
+                  - Home Arrest 41-1604.13
+                  - Parole (Early/Emergency)
+                  - Correctional Release Center
+                  - Correctional Release Center Release
+                  - Community Supervision Release
+                  - Supervision Level Change
+                  - SHOCK Incarceration End
+                  # Only in the data twice, before 1990
+                  - REIN FROM SUSP.
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - Transfer WICC/ICC
+                  - Release ISC
+                  - Transfer/Return Interstate
+                  - ISC Commitment
+                  - Return Deport 1/2 Term
+                  - Deport 1/2 Term
                 StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
+                  - Warrant Quashed
                   - Return from Abscond
-                  - Warrant Quashed # A person absconded but is not returned to custody after returning
+                  - Return from Escape
                 StateSupervisionPeriodTerminationReason.REVOCATION:
-                  - Provisional Rel Rescinded/Revoked
-                  - 41-1604.16 Revoked # Community Supervision for persons convicted of certain drug charges, revoked
-                  - Mandatory Release Res/Rev
-                  - ERCD Release Return # Earned Release Credit Date
-                  - TIS Release Return # Truth in Sentencing
-                  - Home Arrest Rescinded/Revoked
-                  - Parole Revoked/41.1604.11K # Work Furlough Revoked
-                  - SB1291 Violated # Unclear what SB12921 is
-                  - Work Furlough Rescinded/Revoked
-                  - Discretionary Release Returnee
+                  - TIS Release Return
                   - Parole Revoked-Regular
+                  - Provisional Rel Rescinded/Revoked
+                  - Temporary Release Return
+                  - SB1291 Violated
+                  - Discretionary Release Returnee
+                  - Home Arrest Rescinded/Revoked
+                  - Return Community Service
+                  - Work Furlough Rescinded/Revoked
+                  - Mandatory Release Res/Rev
+                  - Parole Revoked/41.1604.11K
                   - Drug Transition Violated
+                  - Return from WICC/ICC
+                  - Condition of Probation
+                  - 41-1604.16 Revoked
+                  - ERCD Release Return
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
-                  - REIN FROM SUSP. # 2 occurrences total, most recently in 1988
-                  - Deactivated in Error # 3 occurrences total
-                  - Deport 1/2 Term # 6 occurrences total, 3 since 2020
-                  - Mandatory Release # Typically follows a different type of release, last occurred in 2002
+                  - Release in Error Return
+                  - Activated In Error
+                  - Deactivated in Error
+                  - Return to Custody in Error (Inactive)
+                  - Supervision Closed in Error
+                  - Return to Custody in Error (Community Corrections)
+          supervision_level:
+            $custom:
+              $function: us_az_custom_enum_parsers.parse_supervision_level
+              $args:
+                supervision_level: SUPERVISION_LEVEL
+                admission_reason: START_REASON
+          supervision_type:
+            $conditional:
+              - $if:
+                  $equal:
+                    - START_REASON
+                    - $literal("Releasee Abscond")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
+              - $else: $literal_enum(StateSupervisionPeriodSupervisionType.PAROLE)
