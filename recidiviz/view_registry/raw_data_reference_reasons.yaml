@@ -1,9 +1,3 @@
-# This file tracks the reasons for each direct raw data reference in our view graph.
-# For each view referenced directly by our view graph, you must provide an explanation for
-# why you need to use the raw data directly instead of a state-agnostic dataset like `normalized_state`
-# or `sessions`. Please be as verbose as you can when filling out this document, including which columns
-# you need from the raw table and why. This will help infrastructure teams identify gaps in our schema
-# and areas for reducing tech debt.
 US_AR:
   ADDRESS:
     reference_views.us_ar_location_metadata: |-
@@ -23,7 +17,6 @@ US_AR:
   RELATEDPARTY:
     reference_views.us_ar_location_metadata: |-
       Used to pull in location reference data.
-
 US_AZ:
   AZ_AQ_CATEGORY:
     analyst_data.us_az_action_queue: |-
@@ -1017,6 +1010,9 @@ US_MO:
     reference_views.supervision_location_ids_to_names: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
 US_ND:
+  RECIDIVIZ_REFERENCE_alert_codes:
+    workflows_views.us_nd_work_release_form_record: |-
+      Alerts are not ingested.
   RECIDIVIZ_REFERENCE_state_attorney:
     workflows_views.us_nd_complete_discharge_early_from_supervision_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
@@ -1069,17 +1065,27 @@ US_ND:
     task_eligibility_criteria_us_nd.incarceration_within_6_months_of_parole_review_date:
       |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  elite_offenderchargestable:
+    task_eligibility_criteria_us_nd.has_an_aomms_sentence: |-
+      We needed this to connect to sentences_preprocessed.
   elite_offendersentenceaggs:
     sessions.us_nd_incarceration_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   elite_offendersentences:
     sessions.us_nd_consecutive_sentences_preprocessed: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+    task_eligibility_criteria_us_nd.has_an_aomms_sentence: |-
+      There's no place to store MIN/MAN sentences.
     task_eligibility_criteria_us_nd.has_to_serve_85_percent_of_sentence: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   elite_offense_in_custody_and_pos_report_data:
     task_eligibility_criteria_us_nd.no_level_2_or_3_infractions_for_6_months: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
+  recidiviz_elite_offender_alerts:
+    task_eligibility_criteria_us_nd.has_registration_requirements: |-
+      Alerts are not ingested.
+    workflows_views.us_nd_work_release_form_record: |-
+      Alerts are not ingested.
 US_OR:
   RCDVZ_CISPRDDTA_CMOFFT:
     workflows_views.us_or_earned_discharge_record: |-
@@ -1297,7 +1303,6 @@ US_TN:
       Used in opportunity record query for workflows tool. No schema ingesting PREA results.
     workflows_views.us_tn_custody_level_downgrade_record: |-
       Used in opportunity record query for workflows tool. No schema ingesting PREA results.
-
   PriorRecord:
     analyst_data.us_tn_cr_raw_sentence_preprocessing: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

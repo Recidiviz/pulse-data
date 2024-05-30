@@ -39,32 +39,43 @@ _CRITERIA_NAME = "US_ND_REQUIRES_COMMITTEE_APPROVAL_FOR_WORK_RELEASE"
 _DESCRIPTION = """
 Certain cases will need further approval from a work/education committee. This is true for 
 folks who satisfy one of the following three conditions:
-    1. The person is required to serve 85% of their sentence
-    2. The person has an Armed Offender Minimum Mandatory Sentence (AOMMS)
-    3. The person has registration requirements (e.g. sexual, violent, among others)
+    1. The person has registration requirements (e.g. sexual, violent, among others)
+    2. The person is required to serve 85% of their sentence
+    3. The person has an Armed Offender Minimum Mandatory Sentence (AOMMS)
 """
-# TODO(#27938): Add AOMMS cases as CRITERIA_QUERY_3
 _CRITERIA_QUERY_1 = """
     SELECT
         * EXCEPT (reason),
         TRUE AS has_registration_requirements,
         FALSE AS has_to_serve_85_percent_of_sentence,
+        FALSE AS has_an_aomms_sentence,
     FROM `{project_id}.{task_eligibility_criteria_us_nd}.has_registration_requirements_materialized`"""
 
 _CRITERIA_QUERY_2 = """
     SELECT
         * EXCEPT (reason),
         TRUE AS has_to_serve_85_percent_of_sentence,
-        FALSE AS has_registration_requirements
+        FALSE AS has_registration_requirements,
+        FALSE AS has_an_aomms_sentence,
     FROM `{project_id}.{task_eligibility_criteria_us_nd}.has_to_serve_85_percent_of_sentence_materialized`"""
 
+_CRITERIA_QUERY_3 = """
+    SELECT
+        * EXCEPT (reason),
+        FALSE AS has_to_serve_85_percent_of_sentence,
+        FALSE AS has_registration_requirements,
+        TRUE AS has_an_aomms_sentence,
+    FROM `{project_id}.{task_eligibility_criteria_us_nd}.has_an_aomms_sentence_materialized`"""
+
 _JSON_CONTENT = """LOGICAL_OR(has_registration_requirements) AS has_registration_requirements,
-                    LOGICAL_OR(has_to_serve_85_percent_of_sentence) AS has_to_serve_85_percent_of_sentence"""
+                    LOGICAL_OR(has_to_serve_85_percent_of_sentence) AS has_to_serve_85_percent_of_sentence,
+                    LOGICAL_OR(has_an_aomms_sentence) AS has_an_aomms_sentence"""
 
 _QUERY_TEMPLATE = f"""
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
-                                             _CRITERIA_QUERY_2],
+                                             _CRITERIA_QUERY_2,
+                                             _CRITERIA_QUERY_3],
         meets_criteria="LOGICAL_OR(meets_criteria)",
         json_content=_JSON_CONTENT,
     )}"""

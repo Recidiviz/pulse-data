@@ -28,6 +28,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     MINIMUM_SECURITY_FACILITIES,
+    reformat_ids,
     ATP_FACILITIES,
 )
 from recidiviz.common.constants.states import StateCode
@@ -61,7 +62,7 @@ WITH wr_facilities AS (
 ),
 
 wr_as_program AS (
-    -- All work release programs
+    -- All work release programs registered in the program profiles table
     SELECT 
       peid.state_code,
       peid.person_id,
@@ -78,18 +79,18 @@ wr_as_program AS (
     LEFT JOIN `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.elite_ProgramServices_latest` ps
       USING(PROGRAM_ID)
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-      ON peid.external_id = REPLACE(REPLACE(CAST(pp.OFFENDER_BOOK_ID AS STRING), '.00', ''), ',', '')
+      ON peid.external_id = {reformat_ids('OFFENDER_BOOK_ID')}
         AND peid.state_code = 'US_ND'
         AND peid.id_type = 'US_ND_ELITE_BOOKING'
     WHERE ps.DESCRIPTION IN ('YCC INSTITUTIONAL WORK RELEASE', 'WORK RELEASE', 'JRMU WORK RELEASE')
 ),
 
 wr_sessions AS (
-    -- In MRCC and JRCC, folks are only on WR if they are assigned explicitly to a WR program
+    -- In MINIMUM_SECURITY_FACILITIES, folks are only on WR if they are assigned explicitly to a WR program
     SELECT
         f.state_code,
         f.person_id,
-        -- Given that someone could start at MRCC/JRCC without being in a WR program, we may 
+        -- Given that someone could start at MINIMUM_SECURITY_FACILITIES without being in a WR program, we may 
         --      need to use the start_date of the WR program to determine when they 
         --      started WR.
         GREATEST(
@@ -109,6 +110,8 @@ wr_sessions AS (
         AND f.start_date < {nonnull_end_date_exclusive_clause('p.end_date_exclusive')}
         AND p.start_date < {nonnull_end_date_exclusive_clause('f.end_date_exclusive')}
     WHERE f.facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
+        -- HRCC does not have a work-release program
+        AND f.facility != 'HRCC'
 
     UNION ALL 
 
@@ -124,7 +127,7 @@ wr_sessions AS (
 
     SELECT *
     FROM wr_facilities
-    WHERE facility NOT IN ('MRCC', 'BTC', 'JRCC')
+    WHERE facility NOT IN {tuple(MINIMUM_SECURITY_FACILITIES + ['BTC'])}
 ),
 
 {create_sub_sessions_with_attributes("wr_sessions")},

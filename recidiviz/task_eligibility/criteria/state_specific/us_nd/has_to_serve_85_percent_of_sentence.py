@@ -23,10 +23,12 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.us_nd_query_fragments import reformat_ids
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -48,7 +50,7 @@ WITH sentences_with_85_rule AS (
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON state_code = 'US_ND'
       AND id_type = 'US_ND_ELITE_BOOKING'
-      AND pei.external_id = REPLACE(REPLACE(eo.OFFENDER_BOOK_ID, '.00', ''), ',', '')
+      AND pei.external_id = {reformat_ids('eo.OFFENDER_BOOK_ID')}
   -- We only keep folks with an actual 85% rule
   WHERE EIGHTYFIVE_PERCENT_DATE IS NOT NULL
     AND eo.START_DATE < eo.SENTENCE_EXPIRY_DATE

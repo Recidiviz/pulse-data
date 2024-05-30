@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows transfers to minimum security facilities (JRCC or MRCC)."""
+"""Defines a view that shows transfers to minimum security
+facilities or units."""
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
@@ -25,11 +26,11 @@ from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjace
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
-    MINIMUM_SECURITY_FACILITIES,
+    MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE,
 )
 
 _DESCRIPTION = """Defines a view that shows transfers to minimum security
-facilities (JRCC or MRCC)."""
+facilities or units."""
 
 _QUERY_TEMPLATE = f"""
 WITH housing_unit_sess AS (
@@ -40,9 +41,7 @@ WITH housing_unit_sess AS (
         end_date_exclusive AS end_date,
     FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
     WHERE state_code = 'US_ND'
-        AND facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
-        -- Only folks on JRMU in JRCC are minimum security
-        AND NOT REGEXP_CONTAINS(housing_unit, r'JRMU')
+    {MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE}
 )
 SELECT 
   state_code,

@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     not_in_minimum_security_facility,
+    not_in_an_orientation_unit,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
@@ -52,6 +53,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         custody_level_is_minimum.VIEW_BUILDER,
         not_in_minimum_security_facility.VIEW_BUILDER,
         not_in_work_release.VIEW_BUILDER,
+        not_in_an_orientation_unit.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
 )
