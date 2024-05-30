@@ -44,7 +44,8 @@ unioned as (
         LastName,
         Suffix,
         Email,
-        ROW_NUMBER()OVER(PARTITION BY FirstName,MiddleName,LastName ORDER BY Inactive) as Inactive
+        ROW_NUMBER()OVER(PARTITION BY FirstName,MiddleName,LastName ORDER BY Inactive) as Inactive,
+        RANK()OVER(PARTITION BY UPPER(COALESCE(StaffId, SPLIT(Email, '@')[SAFE_OFFSET(0)])) ORDER BY Email) as doubleStaffId
     FROM {ref_Employee})
 
     UNION ALL
@@ -65,7 +66,8 @@ unioned as (
         LastName,
         CAST(NULL as STRING) as Suffix,
         CAST(NULL as STRING) as Email,
-        CAST(NULL as INT64) as Inactive
+        CAST(NULL as INT64) as Inactive,
+        CAST(NULL as INT64) as doubleStaffId
     FROM (
         SELECT
             empl_cd,
@@ -86,6 +88,25 @@ unioned as (
     -- only pull active employees
     WHERE empl_stat = 'A')
 ),
+-- There are times when many users can have different emails/names but the same StaffId
+-- so we concat a suffix so that two separate State Staff entities can be created
+cleaned_union AS (
+    SELECT
+        Source,
+        SourceId,
+        CASE
+            WHEN doubleStaffId = 2
+            THEN CONCAT(StaffId, "-2")
+            ELSE StaffId
+        END AS StaffId,
+        Email,
+        FirstName,
+        MiddleName,
+        LastName,
+        Suffix,
+        Inactive
+    FROM unioned
+),
 -- It possible for a single StaffId to be associated with different name information 
 -- (since we're pulling from two different sources and StaffId is not the PK)
 -- Let's make a prioritized list of which name information to use for each StaffId
@@ -101,21 +122,34 @@ names as (
             Email,
             Inactive,
             ROW_NUMBER() OVER(PARTITION BY StaffId ORDER BY CASE Source WHEN 'ATLAS' THEN 1 WHEN 'CIS' THEN 2 END, LPAD(SourceId, 8, '0') DESC) as priority
-        FROM unioned
-        WHERE (
-            UPPER(FirstName) NOT LIKE '%NAMCHG%' AND 
-            UPPER(FirstName) NOT LIKE '%NMCHG%' AND 
-            UPPER(FirstName) NOT LIKE '%- NC' AND
-            UPPER(FirstName) NOT LIKE '%NMCGH%' AND
-            UPPER(FirstName) NOT LIKE '%NMCH%' AND
-            UPPER(FirstName) NOT LIKE '%- WRONG%' AND
-            UPPER(FirstName) NOT LIKE '%- HISTORY%' AND
-            UPPER(FirstName) NOT LIKE '%- DUPLICATE%' AND
-            UPPER(FirstName) NOT LIKE '%- OLD%'
-        ) 
-        OR UPPER(FirstName) IS NULL
+        FROM cleaned_union
     ) sub_all_names
     WHERE priority = 1
+),
+-- some names come in strings to denote that the row is a name change, we want to remove
+-- this text so it's not present when surfaced to the officers
+cleaned_names AS (
+    SELECT 
+        StaffId,
+        REGEXP_REPLACE(
+            UPPER(FirstName), 
+            '-NAMCHGFLAG|-NAMCHG|-NMCHG|- NC|NMCGH|NMCH|- WRONG|- HISTORY|- DUPLICATE|- OLD', 
+            ''
+        ) AS FirstName,
+        REGEXP_REPLACE(
+            UPPER(MiddleName), 
+            '-NAMCHGFLAG|-NAMCHG|-NMCHG|- NC|NMCGH|NMCH|- WRONG|- HISTORY|- DUPLICATE|- OLD', 
+            ''
+        ) AS MiddleName,
+        REGEXP_REPLACE(
+            UPPER(LastName), 
+            '-NAMCHGFLAG|-NAMCHG|-NMCHG|- NC|NMCGH|NMCH|- WRONG|- HISTORY|- DUPLICATE|- OLD', 
+            ''
+        ) AS LastName,
+        Suffix,
+        Email,
+        Inactive
+    FROM names
 ),
 -- Create aggragated string arrarys of all StaffIds related to a staff person
 agg_staff_ids AS (
@@ -129,7 +163,7 @@ agg_staff_ids AS (
             WHEN COUNT(DISTINCT StaffId) > 1 THEN STRING_AGG(DISTINCT StaffId, ',' ORDER BY StaffId)
             ELSE NULL
         END as StaffIds
-    FROM unioned u
+    FROM cleaned_union u
     GROUP BY Email
 ),
 -- Create aggragated string arrarys of all employeeCodes related to a staff person
@@ -138,7 +172,7 @@ agg_employee_cds AS (
         StaffId,
         Source,
         STRING_AGG(DISTINCT SourceId, ',' ORDER BY SourceId) AS employeeCodes
-    FROM unioned u 
+    FROM cleaned_union u 
     WHERE Source = 'CIS'
     GROUP BY StaffId, Source
 ),
@@ -148,7 +182,7 @@ agg_employee_ids AS (
         Email,
         Source,
         STRING_AGG(DISTINCT SourceId, "," ORDER BY SourceId) AS employeeIds,
-    FROM unioned u 
+    FROM cleaned_union u 
     WHERE Source = "ATLAS"
     GROUP BY 1,2
 ),
@@ -179,10 +213,10 @@ SELECT DISTINCT
                 c.employeeCodes,
                 (e.employeeIds IS NULL AND c.employeeCodes IS NULL)
         ) AS rn
-FROM unioned u
-LEFT JOIN names n USING(StaffId)
-LEFT JOIN agg_staff_ids a ON n.Email = a.Email
-LEFT JOIN agg_employee_ids e ON n.Email = e.Email
+FROM cleaned_union u
+LEFT JOIN cleaned_names n USING(StaffId)
+LEFT JOIN agg_staff_ids a ON u.Email = a.Email
+LEFT JOIN agg_employee_ids e ON u.Email = e.Email
 LEFT JOIN agg_employee_cds c ON u.StaffId = c.StaffId)
 
 SELECT
@@ -196,7 +230,7 @@ SELECT
     employeeIds,
     employeeCodes
 FROM colapsed_union_on_email
-where rn = 1;
+where rn = 1 and Email is not null;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
