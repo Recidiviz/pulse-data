@@ -22,9 +22,11 @@ from typing import Dict, List, Optional, Tuple
 
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_metrics_producer_delegates,
-    get_supported_states,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
@@ -769,7 +771,7 @@ def pathways_state_specific_officer_filter(
 def get_all_primary_supervision_external_id_types() -> Tuple[str, ...]:
     """Returns a tuple of strings that indicate all of the state external id types for queries."""
     supervision_id_types = []
-    for state in get_supported_states():
+    for state in get_existing_direct_ingest_states():
         delegate = get_required_state_specific_metrics_producer_delegates(
             state_code=state.value,
             required_delegates={StateSpecificSupervisionMetricsProducerDelegate},
