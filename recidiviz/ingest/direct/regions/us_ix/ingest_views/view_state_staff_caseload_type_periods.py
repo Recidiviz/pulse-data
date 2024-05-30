@@ -75,17 +75,6 @@ VIEW_QUERY_TEMPLATE = f""",
         where caseload_type_raw like '%LSU%'
 
         UNION ALL 
-
-        -- ALCOHOL_AND_DRUG
-        SELECT *, 'ALCOHOL_AND_DRUG' AS caseload_type
-        FROM caseload_periods
-        where 
-            caseload_type_raw like '%DUI%' or 
-            (caseload_type_raw like '%DRUG%' AND 
-             caseload_type_raw not like '%COURT%' AND 
-             caseload_type_raw not like '%CT%')
-
-        UNION ALL
         
         -- COMMUNITY_FACILITY
         SELECT *, 'COMMUNITY_FACILITY' AS caseload_type
@@ -98,9 +87,8 @@ VIEW_QUERY_TEMPLATE = f""",
         SELECT *, 'DRUG_COURT' AS caseload_type
         FROM caseload_periods
         where     
-            caseload_type_raw like '%DC%' or
-            caseload_type_raw like '%DRUG COURT%' or
-            caseload_type_raw like '%DRUG CT%'
+            caseload_type_raw like '%DC%' OR
+            caseload_type_raw like '%DRUG%'
         
         UNION ALL
 
@@ -131,8 +119,9 @@ VIEW_QUERY_TEMPLATE = f""",
         SELECT *, 'OTHER_COURT' AS caseload_type
         FROM caseload_periods
         where
-            caseload_type_raw like '%FAMILY COURT%' or
-            caseload_type_raw like '%WOOD COURT%'
+            caseload_type_raw like '%FAMILY COURT%' OR
+            caseload_type_raw like '%WOOD COURT%' OR
+            caseload_type_raw like '%DUI%'
 
         UNION ALL
 

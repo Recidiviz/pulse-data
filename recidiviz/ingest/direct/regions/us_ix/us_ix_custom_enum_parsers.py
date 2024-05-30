@@ -182,8 +182,6 @@ def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
     if caseload_type:
         if caseload_type == "ADMINSTRATIVE_SUPERVISION":
             return StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION
-        if caseload_type == "ALCOHOL_AND_DRUG":
-            return StateStaffCaseloadType.ALCOHOL_AND_DRUG
         if caseload_type == "COMMUNITY_FACILITY":
             return StateStaffCaseloadType.COMMUNITY_FACILITY
         if caseload_type == "DRUG_COURT":
