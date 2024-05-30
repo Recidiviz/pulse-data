@@ -59,6 +59,22 @@ def state_specific_dataflow_facility_name_transformation() -> str:
                 WHEN state_code = 'US_IX' AND facility="TREASURE VALLEY COMMUNITY REENTRY CENTER" THEN "SICI COMMUNITY WORK CENTER"
                 WHEN state_code = 'US_IX' AND facility="US MARSHAL CUSTODY" THEN "U.S. MARSHALL CUSTODY"
                 WHEN state_code = 'US_IX' AND facility="FEDERAL FACILITY" THEN "FEDERAL BUREAU OF PRISONS"
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'DOUGLAS' THEN 'ASPC-DOUGLAS'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'EYMAN' THEN 'ASPC-EYMAN'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'PERRYVILLE' THEN 'ASPC-PERRYVILLE-F'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'PHOENIX' THEN 'ASPC-PHOENIX'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'LEWIS' THEN 'ASPC-LEWIS'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'SAFFORD' THEN 'ASPC-SAFFORD'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'TUCSON' THEN 'ASPC-TUCSON'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'WINSLOW' THEN 'ASPC-WINSLOW'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'YUMA' THEN 'ASPC-YUMA'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'LA PALMA' THEN 'CONTRACT'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'KINGMAN' THEN 'CONTRACT'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'RED ROCK ELOY' THEN 'CONTRACT'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'MARANA' THEN 'CONTRACT'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'CACF' THEN 'CONTRACT'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'FLORENCE WEST' THEN 'CONTRACT'
+                WHEN state_code = 'US_AZ' AND UPPER(facility) = 'PHOENIX WEST' THEN 'CONTRACT'
             ELSE facility END,
             'EXTERNAL_UNKNOWN'
         ) AS facility
