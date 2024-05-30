@@ -23,129 +23,126 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH critical_dates AS (
+WITH 
+-- This CTE collects all dates on which any relevant action or status change took place.
+-- These dates will later be used to construct periods. 
+-- Each row contains one critical date, and the actions that were taken or attributes that
+-- changed for a given person on that date. 
+critical_dates AS (
 SELECT DISTINCT
-  traffic.INMATE_TRAFFIC_HISTORY_ID,
-  traffic.DOC_ID, 
-  doc_ep.PERSON_ID, 
-  -- Do not include timestamp because same-day movements are often logged out of order.
-  CAST(CAST(REPLACE(MOVEMENT_DATE,'.0000000','') AS DATETIME) AS DATE) AS critical_date,
-  MOVEMENT_CODE_ID, 
-  COALESCE(traffic.MOVEMENT_REASON_ID,  traffic.INTERNAL_MOVE_REASON_ID) AS MOVEMENT_REASON_ID,
-  LOCATOR_CODE_ID,
-FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
-LEFT JOIN {DOC_EPISODE} doc_ep
-USING (DOC_ID)
-WHERE traffic.MOVEMENT_DATE IS NOT NULL
-),
-base AS (
-SELECT DISTINCT
-  INMATE_TRAFFIC_HISTORY_ID,
-  DOC_ID, 
-  critical_dates.PERSON_ID, 
-  critical_date,
-  MOVEMENT_CODE_ID, 
-  MOVEMENT_REASON_ID,
-  LOCATOR_CODE_ID, 
-FROM critical_dates
-),
-base_with_descriptions AS ( 
-  SELECT * FROM (
-  SELECT DISTINCT
-    base.*,
-    mvmt_codes.MOVEMENT_DESCRIPTION,
-    custody_lookup.DESCRIPTION AS in_out_custody,
-    action_lookup.DESCRIPTION AS period_action,
-  FROM base 
-  LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
-  USING(MOVEMENT_CODE_ID) 
-  -- This table and field establish what the right course of action is regarding the period as a 
-  -- result of this movement (close, open, or reopen)
-  LEFT JOIN {LOOKUPS} action_lookup
-  ON(PRSN_CMM_SUPV_EPSD_LOGIC_ID = action_lookup.LOOKUP_ID)
-  LEFT JOIN {LOOKUPS} custody_lookup
-  ON (IN_OUT_CUSTODY = custody_lookup.LOOKUP_ID))
-  -- only include periods related to supervision
-  WHERE UPPER(period_action) LIKE '%SUPERVISION EPISODE%'
-),
-periods AS (
-  SELECT 
-    INMATE_TRAFFIC_HISTORY_ID,
-    DOC_ID,
-    PERSON_ID,
-    in_out_custody AS adm_in_out_custody,
-    critical_date AS admission_date,
-    period_action AS adm_action,
-    COALESCE(MOVEMENT_DESCRIPTION, 'UNKNOWN') AS admission_reason,
-    LEAD(critical_date) OVER (person_period_window) AS release_date,
-    LEAD(COALESCE(MOVEMENT_DESCRIPTION, 'UNKNOWN')) OVER (person_period_window) AS release_reason,
-    LEAD(period_action) OVER (person_period_window) AS rel_action,
-  FROM base_with_descriptions
-  WINDOW person_period_window AS (PARTITION BY DOC_ID, PERSON_ID ORDER BY critical_date,
-  -- deterministiscally sort redundant same-day movements
-  INMATE_TRAFFIC_HISTORY_ID,
-  COALESCE(MOVEMENT_DESCRIPTION, 'UNKNOWN')
-  )
-), carry_forward_IDs AS (
-  -- when someone absconds in AZ, their supervision period is closed and the DPP_ID 
-  -- associated with it is cleared from the system. Since we associate periods of 
-  -- absconsion with the original supervision period the person is absconding from, 
-  -- we want to keep that period open until the person is no longer on absconsion status.
-
-  -- This CTE also filters out a number of periods we don't want:
-  -- 1. periods with no IDs
-  -- 2. periods where a client was in custody, except for those that we are assuming
-  --    are investigative periods
-  -- 3. periods that begin with a release from supervision, except those that mark periods
-  --    of absconsion.
-  -- There are many exclusions to account for various edge cases to the above three categories.
-  SELECT
-    DOC_ID,
-    PERSON_ID,
-    adm_in_out_custody,
-    admission_date,
-    adm_action,
-    admission_reason,
-    release_date,
-    release_reason,
-    rel_action,
-  FROM periods
-  WHERE (DOC_ID IS NOT NULL AND PERSON_ID IS NOT NULL)
-  -- exclude periods that begin with a return to custody, unless it is of the form
-  -- "temporary placement --> revocation"
-  AND (UPPER(adm_in_out_custody) != "IN" OR (
-    UPPER(ADMISSION_REASON) = 'TEMPORARY PLACEMENT'
-    AND UPPER(REL_ACTION) = 'CLOSE SUPERVISION EPISODE & REOPEN LAST PRISON EPISODE'))
-  -- these are periods that begin with a return to custody, but have data errors in the 
-  -- associated in_out_custody field. Excludes a total of ~28,000 rows.
-  AND UPPER(admission_reason) NOT LIKE "%IN CUSTODY%"
-  AND UPPER(admission_reason) NOT LIKE "%REVOKED%"
-  -- exclude periods that begin with a release from supervision
-  AND UPPER(admission_reason) NOT LIKE "%END DATE%"
-  AND UPPER(admission_reason) NOT LIKE "%END OF SUPERVISION%"
-  -- exclude periods that begin with an end to a supervision period, unless it is of the form
-  -- "earned release --> expiration"
-  AND (NOT (UPPER(ADM_ACTION) LIKE "%CLOSE PRISON%" AND UPPER(ADM_ACTION) LIKE "%CLOSE SUPERVISION%")
-    OR (UPPER(ADM_ACTION) LIKE "%CLOSE PRISON%" AND UPPER(ADM_ACTION) LIKE "%CLOSE SUPERVISION%"
-       AND UPPER(RELEASE_REASON) IN ('OLD/NEW CODE - EXPIRATION', 'COMMUNITY SUPERVISION END DATE')))
-  -- exclude periods that begin with a discharge from supervision, excluding periods of 
-  -- absconsion that AZ considers closed but we want to track.
-  AND NOT (UPPER(ADM_ACTION) = 'CLOSE SUPERVISION EPISODE' AND UPPER(ADMISSION_REASON) != 'RELEASEE ABSCOND')
-  -- exclude periods that were activated in error. These are not formally closed, so lead to overlapping periods. 
-  AND UPPER(admission_reason) NOT LIKE "%ACTIVATED IN ERROR%"
-  -- exclude periods that begin with a person's death
-  AND UPPER(admission_reason) != "DEATH"
-  WINDOW person_period_window AS (PARTITION BY DOC_ID, PERSON_ID ORDER BY admission_date)
-)
-SELECT DISTINCT
+-- critical dates from movements table
+  NULLIF(doc_episode.PERSON_ID, 'NULL') AS PERSON_ID,
   DOC_ID,
-  PERSON_ID,
-  admission_date,
-  admission_reason,
-  release_date,
-  release_reason,
-  ROW_NUMBER() OVER (PARTITION BY DOC_ID, PERSON_ID ORDER BY admission_date) as period_seq
-FROM carry_forward_IDs
+  NULLIF(doc_episode.DPP_ID, 'NULL') AS DPP_ID,
+  -- Do not include timestamp because same-day movements are often logged out of order.
+  CAST(CAST(MOVEMENT_DATE AS DATETIME) AS DATE) AS CRITICAL_DATE,
+  mvmt_codes.MOVEMENT_DESCRIPTION,
+  CAST(NULL AS STRING) AS supervision_level,
+  action_lookup.OTHER_2 AS sup_period_action,
+FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
+LEFT JOIN {DOC_EPISODE} doc_episode
+USING (DOC_ID)
+LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
+USING(MOVEMENT_CODE_ID) 
+LEFT JOIN {LOOKUPS} action_lookup
+-- This field establishes what the right course of action is regarding the period as a 
+-- result of this movement (close, open, or reopen)
+ON(PRSN_CMM_SUPV_EPSD_LOGIC_ID = action_lookup.LOOKUP_ID)
+WHERE traffic.MOVEMENT_DATE IS NOT NULL
+AND MOVEMENT_CODE_ID IS NOT NULL AND MOVEMENT_CODE_ID != 'NULL'
+-- Only include rows with some supervision-related action (Create, Close, or Re-Open)
+AND (action_lookup.OTHER_2 IS NOT NULL
+OR action_lookup.OTHER IS NOT NULL)
+
+UNION ALL 
+
+-- critical dates from DPP episode table (supervision level tracking)
+-- TODO(#30235): Understand how changes or updates to supervision levels are tracked
+-- to make sure they are all accounted for in this view. 
+SELECT DISTINCT
+  NULLIF(dpp_episode.PERSON_ID, 'NULL') AS PERSON_ID,
+  CAST(NULL AS STRING) AS DOC_ID,
+  NULLIF(DPP_ID, 'NULL') AS DPP_ID,
+  -- Do not include timestamp because same-day movements are often logged out of order.
+  CAST(CAST(SUPERVISION_LEVEL_STARTDATE AS DATETIME) AS DATE) AS CRITICAL_DATE,
+  'Supervision Level Change' AS MOVEMENT_DESCRIPTION,
+  level_lookup.DESCRIPTION AS supervision_level,
+  'Maintain' AS sup_period_action
+FROM {DPP_EPISODE@ALL} dpp_episode
+LEFT JOIN {LOOKUPS} level_lookup
+ON(dpp_episode.SUPERVISION_LEVEL_ID = LOOKUP_ID)
+),
+-- This CTE uses the critical dates from the critical_dates CTE to create periods
+-- in which specific sets of attributes were true. The output contains a specific set of 
+-- movements that started and ended a period, the start and end dates themselves, and the
+-- attributes that were true for a given person during that period. 
+periods AS (
+SELECT DISTINCT
+  PERSON_ID, 
+  DOC_ID,
+  DPP_ID,
+  CRITICAL_DATE AS START_DATE,
+  LEAD(CRITICAL_DATE) OVER person_window AS END_DATE,
+  sup_period_action AS start_action,
+  LEAD(sup_period_action) OVER person_window AS end_action,
+  MOVEMENT_DESCRIPTION AS START_REASON,
+  LEAD(MOVEMENT_DESCRIPTION) OVER person_window AS END_REASON,
+  supervision_level
+FROM critical_dates
+WINDOW person_window AS (PARTITION BY PERSON_ID ORDER BY CRITICAL_DATE, DPP_ID, 
+    CASE 
+      -- When any or all of these movements happen on the same date, we want them to 
+      -- be sorted in this order for the results to make the most logical sense.
+      WHEN MOVEMENT_DESCRIPTION = 'Community Supervision End Date' THEN 100
+      WHEN MOVEMENT_DESCRIPTION = 'TIS Release Return' THEN 3
+      WHEN MOVEMENT_DESCRIPTION = 'Temporary Placement' THEN 2
+      WHEN MOVEMENT_DESCRIPTION = 'Supervision Level Change' THEN 1
+    END, 
+    MOVEMENT_DESCRIPTION)
+),
+-- This CTE takes all the attributes that were true on a given date and carries them
+-- forward in a given person's supervision stint, until they change. As of 2024-05-29, the 
+-- only attribute being tracked in this way by this view is supervision level.
+carry_forward_attributes AS (
+  SELECT DISTINCT
+    PERSON_ID,
+    START_DATE,
+    END_DATE,
+    start_action,
+    end_action,
+    start_reason,
+    end_reason,
+    LAST_VALUE(supervision_level IGNORE NULLS) OVER (PARTITION BY PERSON_ID, DPP_ID ORDER BY START_DATE, IFNULL(END_DATE, CAST('9999-01-01' AS DATE))) AS supervision_level
+    FROM periods
+)
+-- The final subquery in this view filters the existing queries to exclude those that
+-- start with a transition to liberty, but include those that represent a period of 
+-- absconsion or a period spent in custody. It also prevents supervision periods from 
+-- being opened before a person is released from prison just because their supervision
+-- level was assigned for their later release. 
+SELECT DISTINCT
+  PERSON_ID, 
+  START_DATE,
+  END_DATE,
+  START_REASON,
+  END_REASON,
+  SUPERVISION_LEVEL,
+  ROW_NUMBER() OVER (PARTITION BY PERSON_ID ORDER BY START_DATE, IFNULL(END_DATE, CAST('9999-01-01' AS DATE)), START_REASON, IFNULL(END_REASON, 'ZZZ')) AS period_seq
+FROM carry_forward_attributes
+WHERE PERSON_ID IS NOT NULL
+-- only keep zero-day periods if they are overall period admissions or releases, to preserve
+-- admission and release reasons
+AND (start_date != end_date 
+  OR (start_date=end_date AND start_action IN ("Create", "Re-Open"))
+  OR (start_date=end_date AND end_action = "Close")
+  OR end_date IS NULL)
+-- Only allow periods to start with a "close" action if they reflect situations that we consider
+-- a part of a supervision period rather than an incarceration (investigations & absconsions)
+-- NOTE: only do this when the in-custody period falls after the start of a supervision period
+AND (start_action != 'Close' OR (start_action = 'Close' AND start_reason IN ('Releasee Abscond', 'Temporary Placement', 'In Custody - Other')))
+-- exclude periods that begin with a supervision level being assigned and end with a supervision period starting, 
+-- since these would open a supervision period before the person was actually released from prison. 
+AND (NOT (start_action = 'Maintain' AND end_action = 'Create') OR end_action IS NULL)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
