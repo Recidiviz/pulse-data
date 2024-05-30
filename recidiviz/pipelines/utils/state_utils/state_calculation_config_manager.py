@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
-import os
 from datetime import date
 from typing import Dict, List, Optional, Sequence, Set, Type, Union
 
@@ -24,7 +23,6 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
@@ -284,6 +282,45 @@ from recidiviz.pipelines.utils.state_utils.us_ia.us_ia_violation_response_normal
 )
 from recidiviz.pipelines.utils.state_utils.us_ia.us_ia_violations_delegate import (
     UsIaViolationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_assessment_normalization_delegate import (
+    UsIdAssessmentNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
+    UsIdCommitmentFromSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_incarceration_delegate import (
+    UsIdIncarcerationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_incarceration_metrics_producer_delegate import (
+    UsIdIncarcerationMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_incarceration_period_normalization_delegate import (
+    UsIdIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_recidivism_metrics_producer_delegate import (
+    UsIdRecidivismMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_sentence_normalization_delegate import (
+    UsIdSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_staff_role_period_normalization_delegate import (
+    UsIdStaffRolePeriodNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_delegate import (
+    UsIdSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_metrics_producer_delegate import (
+    UsIdSupervisionMetricsProducerDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_period_normalization_delegate import (
+    UsIdSupervisionNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_violation_response_normalization_delegate import (
+    UsIdViolationResponseNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_violations_delegate import (
+    UsIdViolationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_ix.us_ix_assessment_normalization_delegate import (
     UsIxAssessmentNormalizationDelegate,
@@ -865,6 +902,8 @@ def _get_state_specific_assessment_normalization_delegate(
                 "Missing StatePerson entity for UsIxAssessmentNormalizationDelegate"
             )
         return UsIxAssessmentNormalizationDelegate(persons=persons)
+    if state_code == StateCode.US_ID.value:
+        return UsIdAssessmentNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzAssessmentNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
@@ -904,6 +943,8 @@ def _get_state_specific_incarceration_period_normalization_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxIncarcerationNormalizationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzIncarcerationNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
@@ -982,6 +1023,8 @@ def _get_state_specific_supervision_period_normalization_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxSupervisionNormalizationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdSupervisionNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzSupervisionNormalizationDelegate()
 
@@ -1023,6 +1066,8 @@ def _get_state_specific_sentence_normalization_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxSentenceNormalizationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdSentenceNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzSentenceNormalizationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
@@ -1054,6 +1099,8 @@ def _get_state_specific_staff_role_period_normalization_delegate(
         return UsIaStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_IX.value:
         return UsIxStaffRolePeriodNormalizationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_ME.value:
         return UsMeStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_MI.value:
@@ -1116,6 +1163,8 @@ def _get_state_specific_commitment_from_supervision_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzCommitmentFromSupervisionDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
@@ -1155,6 +1204,8 @@ def _get_state_specific_violation_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxViolationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdViolationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzViolationDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
@@ -1216,6 +1267,8 @@ def _get_state_specific_violation_response_normalization_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxViolationResponseNormalizationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzViolationResponseNormalizationDelegate()
 
@@ -1256,6 +1309,8 @@ def _get_state_specific_incarceration_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxIncarcerationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdIncarcerationDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzIncarcerationDelegate()
 
@@ -1296,6 +1351,8 @@ def _get_state_specific_supervision_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxSupervisionDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdSupervisionDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzSupervisionDelegate()
 
@@ -1336,6 +1393,8 @@ def _get_state_specific_incarceration_metrics_producer_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxIncarcerationMetricsProducerDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdIncarcerationMetricsProducerDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzIncarcerationMetricsProducerDelegate()
 
@@ -1376,6 +1435,8 @@ def _get_state_specific_supervision_metrics_producer_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdSupervisionMetricsProducerDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzSupervisionMetricsProducerDelegate()
 
@@ -1420,36 +1481,9 @@ def _get_state_specific_recidivism_metrics_producer_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdRecidivismMetricsProducerDelegate()
     if state_code == StateCode.US_AZ.value:
         return UsAzRecidivismMetricsProducerDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
-
-
-def get_supported_states() -> Set[StateCode]:
-    """Determines which states have directories containing state-specific delegates in
-    the state_utils directory."""
-    state_utils_path = os.path.dirname(__file__)
-    directories = [
-        dir_item
-        for dir_item in os.listdir(state_utils_path)
-        if is_non_empty_code_directory(os.path.join(state_utils_path, dir_item))
-    ]
-    supported_states: Set[StateCode] = set()
-
-    for directory in directories:
-        try:
-            state_code = StateCode(directory.upper())
-            supported_states.add(state_code)
-        except ValueError:
-            continue
-
-    if not supported_states:
-        raise ValueError(
-            "Found zero supported states, which should never happen. If "
-            "the location of the state-specific state utils directories "
-            "have moved to a new location please update the "
-            "state_utils_path."
-        )
-
-    return supported_states

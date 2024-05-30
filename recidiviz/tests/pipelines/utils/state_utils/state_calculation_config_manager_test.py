@@ -23,6 +23,9 @@ from unittest.mock import MagicMock
 
 import mock
 
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
@@ -116,7 +119,7 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
 def test_get_required_state_specific_delegates() -> None:
     """Tests that we can call all functions in the state_calculation_config_manager
     file with all of the state codes that we expect to be supported."""
-    for state in state_calculation_config_manager.get_supported_states():
+    for state in get_existing_direct_ingest_states():
         get_required_state_specific_delegates(
             state.value,
             [
