@@ -50,13 +50,13 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
 
     @staticmethod
     def _normalized_assessments_for_calculations(
-        assessments: List[StateAssessment], persons: List[StatePerson]
+        assessments: List[StateAssessment], person: StatePerson
     ) -> Tuple[List[StateAssessment], AdditionalAttributesMap]:
         """Helper function for testing the normalized_assessments_and_additional_attributes
         for US_PA."""
         assessments_normalization_manager = AssessmentNormalizationManager(
             assessments=assessments,
-            delegate=UsIxAssessmentNormalizationDelegate(persons=persons),
+            delegate=UsIxAssessmentNormalizationDelegate(person=person),
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -88,7 +88,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=datetime.date(2019, 1, 1),
                 )
             ],
-            persons=[StatePerson(state_code=STATE_CODE, person_id=2, gender=None)],
+            person=StatePerson(state_code=STATE_CODE, person_id=2, gender=None),
         )
 
         self.assertEqual(
@@ -128,7 +128,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=datetime.date(2020, 11, 1),
                 )
             ],
-            persons=[StatePerson(state_code=STATE_CODE, person_id=2, gender=gender)],
+            person=StatePerson(state_code=STATE_CODE, person_id=2, gender=gender),
         )
 
         self.assertEqual(
@@ -156,7 +156,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=datetime.date(2020, 11, 1),
                 )
             ],
-            persons=[StatePerson(state_code=STATE_CODE, person_id=2, gender=None)],
+            person=StatePerson(state_code=STATE_CODE, person_id=2, gender=None),
         )
 
         self.assertEqual(
@@ -192,11 +192,9 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=datetime.date(2017, 11, 1),
                 ),
             ],
-            persons=[
-                StatePerson(
-                    state_code=STATE_CODE, person_id=2, gender=StateGender.FEMALE
-                )
-            ],
+            person=StatePerson(
+                state_code=STATE_CODE, person_id=2, gender=StateGender.FEMALE
+            ),
         )
 
         self.assertEqual(
@@ -229,11 +227,9 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                     assessment_date=None,
                 )
             ],
-            persons=[
-                StatePerson(
-                    state_code=STATE_CODE, person_id=2, gender=StateGender.FEMALE
-                )
-            ],
+            person=StatePerson(
+                state_code=STATE_CODE, person_id=2, gender=StateGender.FEMALE
+            ),
         )
 
         self.assertEqual(
