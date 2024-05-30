@@ -26,6 +26,8 @@ output:
                 - ParoleCountID
           projected_completion_date: RelMaxDate
           completion_date: HReDelDate
+          # TODO(#30223): identify which date field to actually use for date_imposed
+          date_imposed: RelReleaseDate
           effective_date: RelReleaseDate
           status:
             $conditional:
