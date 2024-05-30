@@ -122,6 +122,8 @@ products:
         environment: production
       - state_code: US_PA
         environment: production
+      - state_code: US_AR
+        environment: production
   # TODO(#29763): Deprecate OUTLIERS export in favor of INSIGHTS
   - name: Outliers
     description: Outliers is a state-agnostic product offering for staff performance and accountability.
