@@ -46,7 +46,9 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
 from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer as InsightsSupervisionOfficer,
 )
-from recidiviz.persistence.database.schema.outliers.schema import SupervisionOfficer
+from recidiviz.persistence.database.schema.outliers.schema import (
+    SupervisionDistrictManager,
+)
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
@@ -428,9 +430,11 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
         self.app = app
         self.client = self.app.test_client()
         self.bucket = "test-project-outliers-etl-data"
-        self.view = "supervision_officers"
+        self.view = "supervision_district_managers"
         self.state_code = "US_XX"
-        self.columns = [col.name for col in SupervisionOfficer.__table__.columns]
+        self.columns = [
+            col.name for col in SupervisionDistrictManager.__table__.columns
+        ]
         self.fs = FakeGCSFileSystem()
         self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
         self.fs_patcher.start()
@@ -540,7 +544,7 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
                 database_key=SQLAlchemyDatabaseKey(
                     schema_type=SchemaType.OUTLIERS, db_name="us_xx"
                 ),
-                model=SupervisionOfficer,
+                model=SupervisionDistrictManager,
                 gcs_uri=GcsfsFilePath.from_bucket_and_blob_name(
                     self.bucket, f"{self.state_code}/{self.view}.csv"
                 ),
