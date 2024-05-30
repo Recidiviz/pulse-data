@@ -70,6 +70,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
 
             doc_id, row = delegate.transform_row(fixture)
             # First row US_MO Resident with RestrictiveHousingOpp
+            # and metadata blob
             self.assertEqual(doc_id, "300")
             self.assertEqual(
                 {
@@ -92,6 +93,13 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "gender": "FEMALE",
                     "admissionDate": "2023-01-01",
                     "releaseDate": "2027-03-28",
+                    "metadata": {
+                        "topLevelKey": {
+                            "firstNestedKey": "don't_reformat_me",
+                            "secondNestedKey": 17,
+                        },
+                        "anotherTopLevelKey": "jackalope",
+                    },
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": ["usMoRestrictiveHousingStatusHearing"],
                     "usTnFacilityAdmissionDate": None,
@@ -127,6 +135,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "gender": "FEMALE",
                     "admissionDate": "2023-01-01",
                     "releaseDate": "2024-03-28",
+                    "metadata": {},
                     "sccpEligibilityDate": "2023-08-14",
                     "usMePortionNeededEligibleDate": "2023-08-14",
                     "allEligibleOpportunities": [
@@ -166,6 +175,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "gender": "MALE",
                     "admissionDate": "2020-07-11",
                     "releaseDate": "2026-01-23",
+                    "metadata": {},
                     "sccpEligibilityDate": "2023-03-17",
                     "usMePortionNeededEligibleDate": "2024-03-20",
                     "allEligibleOpportunities": [
@@ -204,6 +214,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "gender": "UNKNOWN",
                     "admissionDate": "2023-05-01",
                     "releaseDate": "2024-05-01",
+                    "metadata": {},
                     "sccpEligibilityDate": None,
                     "allEligibleOpportunities": ["usTnCustodyLevelDowngrade"],
                     "usTnFacilityAdmissionDate": None,

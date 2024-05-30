@@ -18,6 +18,7 @@
 import json
 from typing import List, Tuple
 
+from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
@@ -50,6 +51,10 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "custodyLevel": data.get("custody_level"),
             "admissionDate": data.get("admission_date"),
             "releaseDate": data.get("release_date"),
+            "allEligibleOpportunities": data.get("all_eligible_opportunities"),
+            "metadata": convert_nested_dictionary_keys(
+                data.get("metadata", {}), snake_to_camel
+            ),
             "portionServedNeeded": data.get("portion_served_needed"),
             "usMePortionNeededEligibleDate": data.get(
                 "us_me_portion_needed_eligible_date"
@@ -57,10 +62,5 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "sccpEligibilityDate": data.get("sccp_eligibility_date"),
             "usTnFacilityAdmissionDate": data.get("us_tn_facility_admission_date"),
         }
-
-        if "all_eligible_opportunities" in data:
-            new_document["allEligibleOpportunities"] = data[
-                "all_eligible_opportunities"
-            ]
 
         return data["person_external_id"], new_document
