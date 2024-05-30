@@ -574,7 +574,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 4, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2017, 5, 7),
+            release_date=date(2017, 4, 30),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
             custodial_authority=StateCustodialAuthority.COUNTY,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,

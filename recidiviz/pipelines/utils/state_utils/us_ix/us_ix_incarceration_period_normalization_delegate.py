@@ -17,27 +17,16 @@
 """Contains US_IX implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 from typing import List, Optional
 
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.date import CriticalRangesBuilder
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
-)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.persistence.entity.state.normalized_entities import (
-    NormalizedStateSupervisionPeriod,
-)
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
@@ -45,6 +34,7 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
     NormalizedSupervisionPeriodIndex,
 )
 from recidiviz.pipelines.utils.incarceration_period_utils import (
+    infer_incarceration_periods_from_in_custody_sps,
     periods_are_temporally_adjacent,
 )
 from recidiviz.pipelines.utils.period_utils import (
@@ -264,58 +254,13 @@ def _us_ix_infer_additional_in_custody_periods(
     want to infer an incarceration_period for that time in order to begin sessions at
     the correct incarceration start.
     """
-    critical_range_builder = CriticalRangesBuilder(
-        [*incarceration_periods, *supervision_period_index.sorted_supervision_periods]
+
+    # Infer a temporary custody incarceration period if supervision level is IN_CUSTODY
+    all_incarceration_periods = infer_incarceration_periods_from_in_custody_sps(
+        person_id=person_id,
+        state_code=StateCode.US_IX,
+        incarceration_periods=incarceration_periods,
+        supervision_period_index=supervision_period_index,
     )
 
-    inferred_incarceration_periods = []
-    for critical_range in critical_range_builder.get_sorted_critical_ranges():
-        overlapping_ips = (
-            critical_range_builder.get_objects_overlapping_with_critical_range(
-                critical_range, StateIncarcerationPeriod
-            )
-        )
-        if overlapping_ips:
-            # If there is already an ingested IP overlapping with this range, do not
-            # create a new inferred one.
-            continue
-
-        overlapping_sps = (
-            critical_range_builder.get_objects_overlapping_with_critical_range(
-                critical_range, NormalizedStateSupervisionPeriod
-            )
-        )
-
-        if not any(
-            sp.supervision_level == StateSupervisionLevel.IN_CUSTODY
-            for sp in overlapping_sps
-        ):
-            continue
-
-        if critical_range.upper_bound_exclusive_date:
-            release_reason = (
-                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
-            )
-        else:
-            release_reason = None
-
-        new_incarceration_period = StateIncarcerationPeriod(
-            state_code=StateCode.US_IX.value,
-            external_id=f"{overlapping_sps[0].external_id}-IN-CUSTODY",
-            admission_date=critical_range.lower_bound_inclusive_date,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_date=critical_range.upper_bound_exclusive_date,
-            release_reason=release_reason,
-            custodial_authority=StateCustodialAuthority.COUNTY,
-            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-        )
-        # Add a unique id to the new IP
-        update_normalized_entity_with_globally_unique_id(
-            person_id=person_id,
-            entity=new_incarceration_period,
-            state_code=StateCode.US_IX,
-        )
-        inferred_incarceration_periods.append(new_incarceration_period)
-
-    return incarceration_periods + inferred_incarceration_periods
+    return all_incarceration_periods

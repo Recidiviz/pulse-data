@@ -18,30 +18,25 @@
 from datetime import timedelta
 from typing import List, Optional
 
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
-)
-from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionLevel,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
-)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
+)
+from recidiviz.pipelines.utils.incarceration_period_utils import (
+    infer_incarceration_periods_from_in_custody_sps,
 )
 
 
@@ -198,55 +193,11 @@ def _us_tn_infer_additional_periods(
     """
 
     # Infer a temporary custody incarceration period if supervision level is IN_CUSTODY
-    if supervision_period_index:
-        for sp in supervision_period_index.sorted_supervision_periods:
-            if sp.supervision_level == StateSupervisionLevel.IN_CUSTODY:
+    all_incarceration_periods = infer_incarceration_periods_from_in_custody_sps(
+        person_id=person_id,
+        state_code=StateCode.US_TN,
+        incarceration_periods=incarceration_periods,
+        supervision_period_index=supervision_period_index,
+    )
 
-                inference_reason = "IN-CUSTODY"
-
-                if sp.termination_date:
-                    # If the SP has a termination date, we set the new inferred IP with that termination date.
-                    new_incarceration_period = StateIncarcerationPeriod(
-                        state_code=StateCode.US_TN.value,
-                        external_id=f"{sp.external_id}-{inference_reason}",
-                        admission_date=sp.start_date,
-                        admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                        release_date=sp.termination_date,
-                        release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-                        custodial_authority=StateCustodialAuthority.COUNTY,
-                        incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-                        specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-                    )
-
-                    # Add a unique id to the new IP
-                    update_normalized_entity_with_globally_unique_id(
-                        person_id=person_id,
-                        entity=new_incarceration_period,
-                        state_code=StateCode.US_TN,
-                    )
-
-                    incarceration_periods.append(new_incarceration_period)
-
-                    continue
-
-                # If the SP does not have a termination date (meaning it is a current open period), we set only the admission date.
-                new_incarceration_period = StateIncarcerationPeriod(
-                    state_code=StateCode.US_TN.value,
-                    external_id=f"{sp.external_id}-{inference_reason}",
-                    admission_date=sp.start_date,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                    custodial_authority=StateCustodialAuthority.COUNTY,
-                    incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-                )
-
-                # Add a unique id to the new IP
-                update_normalized_entity_with_globally_unique_id(
-                    person_id=person_id,
-                    entity=new_incarceration_period,
-                    state_code=StateCode.US_TN,
-                )
-
-                incarceration_periods.append(new_incarceration_period)
-
-    return incarceration_periods
+    return all_incarceration_periods
