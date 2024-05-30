@@ -27,6 +27,9 @@ from recidiviz.calculator.query.state.views.analyst_data.all_task_type_eligibili
 from recidiviz.calculator.query.state.views.analyst_data.consecutive_payments_preprocessed import (
     CONSECUTIVE_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.custody_classification_assessment_dates import (
+    CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
     EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
 )
@@ -213,6 +216,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_com
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cr_raw_sentence_preprocessing import (
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_custody_classification_assessment_dates_preprocessed import (
+    US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_exemptions_preprocessed import (
     US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -344,4 +350,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_BUILDER,
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
+    US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
+    CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_VIEW_BUILDER,
 ]
