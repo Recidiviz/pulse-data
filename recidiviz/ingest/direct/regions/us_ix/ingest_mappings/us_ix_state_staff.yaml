@@ -3,18 +3,20 @@
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
-  - Source
-  - SourceId
-  - StaffId
   - FirstName
   - MiddleName
   - LastName
   - Suffix
   - Email
+  - StaffId
+  - StaffIds
+  - employeeIds
+  - employeeCodes
 unused_columns: []
 output:
   StateStaff:
     external_ids:
+      #Employee staff Id from Atlas when there's only one Staff Id
       - $conditional:
           - $if:
               $not_null: StaffId
@@ -22,23 +24,46 @@ output:
               StateStaffExternalId:
                 external_id: StaffId
                 id_type: $literal("US_IX_STAFF_ID")
+      #Employee staff Id from Atlas when there's multiple Staff Id
+      - $foreach:
+          $iterable: StaffIds
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_IX_STAFF_ID")
+      #Employee IDs from Atlas
+      - $foreach:
+          $iterable: employeeIds
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_IX_EMPLOYEE")
+      #Employee codes from CIS
+      - $foreach:
+          $iterable: employeeCodes
+          $result:
+            $conditional:
+              - $if:
+                  $not_null: $iter_item
+                $then:
+                  StateStaffExternalId:
+                    external_id: $iter_item
+                    id_type: $literal("US_IX_CIS_EMPL_CD")
       - $conditional:
           - $if:
-              $equal:
-                - Source
-                - $literal("ATLAS")
+              $not_null: Email
             $then:
               StateStaffExternalId:
-                external_id: SourceId
-                id_type: $literal("US_IX_EMPLOYEE")
-          - $else_if:
-              $equal:
-                - Source
-                - $literal("CIS")
-            $then:
-              StateStaffExternalId:
-                external_id: SourceId
-                id_type: $literal("US_IX_CIS_EMPL_CD")
+                external_id: Email
+                id_type: $literal("US_IX_STAFF_EMAIL")
     full_name:
       $person_name:
         $given_names: FirstName

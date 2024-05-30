@@ -39,6 +39,9 @@ US_IX_EMPLOYEE = "US_IX_EMPLOYEE"
 US_IX_CIS_EMPL_CD = "US_IX_CIS_EMPL_CD"
 # Identifier for StaffId which is common across the Atlas system and the legacy CIS system
 US_IX_STAFF_ID = "US_IX_STAFF_ID"
+# IX Staff Email
+US_IX_STAFF_EMAIL = "US_IX_STAFF_EMAIL"
+
 
 US_MO_DOC = "US_MO_DOC"
 US_MO_SID = "US_MO_SID"
