@@ -17,10 +17,7 @@
 """Defines a view that shows when hearings that were scheduled have occurred, regardless
 of whether they were on time.
 """
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
@@ -33,21 +30,11 @@ of whether they were on time.
 """
 
 _QUERY_TEMPLATE = """
-    -- TODO(#23526): Pull classification decision date from metadata once ingested and entity deletion issues resolved
-    -- TODO(#24737): Pull classification decision from metadata once ingested
     SELECT state_code,
-           person_id, 
-           DATE(ClassificationDecisionDate) AS completion_event_date, 
+           person_id,
+           classification_decision_date AS completion_event_date, 
     FROM
-        `{project_id}.{raw_data_up_to_date_views_dataset}.Classification_latest` classification
-    INNER JOIN
-        `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-    ON
-        classification.OffenderID = pei.external_id
-    AND
-        pei.state_code = 'US_TN'
-    WHERE ClassificationDecision = 'A'
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderId, CAFDate ORDER BY CAST(ClassificationSequenceNumber AS INT64) DESC) = 1
+        `{project_id}.analyst_data.custody_classification_assessment_dates_materialized`
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecificTaskCompletionEventBigQueryViewBuilder(
@@ -55,10 +42,6 @@ VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = StateSpecifi
     completion_event_type=TaskCompletionEventType.INCARCERATION_ASSESSMENT_COMPLETED,
     description=_DESCRIPTION,
     completion_event_query_template=_QUERY_TEMPLATE,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
-    ),
 )
 
 if __name__ == "__main__":

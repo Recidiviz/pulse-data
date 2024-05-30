@@ -19,10 +19,6 @@ Helper SQL queries for Tennessee
 """
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
-    create_sub_sessions_with_attributes,
-)
 
 DISCIPLINARY_HISTORY_MONTH_LOOKBACK = "60"
 
@@ -136,124 +132,6 @@ def keep_contact_codes(
         )
         USING(person_id, contact_date)
         {qualify}
-    """
-
-
-def at_least_X_time_since_latest_assessment(
-    assessment_type: str,
-    date_interval: int = 12,
-    date_part: str = "MONTH",
-) -> str:
-    """
-    Args:
-        assessment_type (str): Type of assessment
-        date_interval (int): Number of weeks, months, etc between assessments
-        date_part (str): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
-    Returns:
-        f-string: Spans of time where the criteria is NOT met, because X time has not passed between assessments
-    """
-
-    return f"""
-    WITH assessment_sessions_cte AS
-    (
-        SELECT
-            state_code,
-            person_id,
-            /* The logic behind the start and end date is the following - during the classification process we see a 
-            few different relevant dates: CAFDate, ClassificationDate, and ClassificationDecisionDate. CAFDate is the
-            date of the CAF form, and what we ingest as assessment_date. ClassificationDate is the date the
-            classification was submitted, and ClassificationDecisionDate is when a decision was made. 
-            
-            We want the span when someone is ineligible to begin on classification_decision_date; this ensures that
-            someone will continue to show up as eligible even after a form has been submitted for them, until the final
-            hearing is done and a decision is made.
-            
-            We want the span to end 12 months after the ClassificationDate, as per what Counselors have told us they use
-            to evaluate when a person needs an annual reclass.
-            
-            Since a person is considered "eligible" during the whole month where their assessment is due, we use a
-            DATE_TRUNC() for the end date so that someone becomes eligible in the month of their assessment due date.
-            
-            This also improves tracking historical spans in situations when an annual assessment may be filled out
-            prior to the due date, since we consider someone eligible the starting the first of the month when their
-            assessment is due 
-            */
-            classification_decision_date AS start_date,
-            DATE_SUB(DATE_TRUNC(DATE_ADD(assessment_date, INTERVAL {date_interval} {date_part}), MONTH), INTERVAL 1 WEEK) AS end_date,
-            FALSE AS meets_criteria,
-            assessment_date,
-        FROM
-            (
-                SELECT asmt.* EXCEPT(assessment_date),
-                        classification_decision_date,
-                        classification_decision,
-                        COALESCE(
-                            DATE(NULLIF(JSON_EXTRACT_SCALAR(assessment_metadata,"$.CLASSIFICATIONDATE"),"")),
-                            assessment_date
-                        ) AS assessment_date,                        
-                FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` asmt
-                LEFT JOIN (
-                    SELECT person_id, 
-                            DATE(CAFDate) AS caf_date, 
-                            -- TODO(#24737): Pull from metadata once ClassificationDecision is ingested
-                            ClassificationDecision AS classification_decision,
-                            -- TODO(#23526): Pull classification decision date from metadata once ingested and entity deletion issues resolved
-                            DATE(ClassificationDecisionDate) AS classification_decision_date,
-                    FROM
-                        `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Classification_latest` classification
-                    INNER JOIN
-                        `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-                    ON
-                        classification.OffenderID = pei.external_id
-                    AND
-                        pei.state_code = 'US_TN'
-                    QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderId, CAFDate ORDER BY ClassificationSequenceNumber DESC) = 1
-                ) caf_raw
-                    ON asmt.person_id = caf_raw.person_id
-                    AND asmt.assessment_date = caf_raw.caf_date
-            )
-        WHERE
-            assessment_type = "{assessment_type}"
-            -- Removes a small number of spans where ClassificationDecisionDate appears to be 1 year after the ClassficationDate
-            AND DATE_SUB(DATE_TRUNC(DATE_ADD(assessment_date, INTERVAL {date_interval} {date_part}), MONTH), INTERVAL 1 WEEK) > classification_decision_date
-            AND COALESCE(classification_decision,'A') = 'A'
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_type, assessment_date ORDER BY assessment_score DESC) = 1
-    )
-    ,
-    {create_sub_sessions_with_attributes('assessment_sessions_cte')}
-    ,
-    dedup_cte AS
-    (
-        SELECT
-            *,
-        FROM sub_sessions_with_attributes
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
-            ORDER BY assessment_date DESC) = 1
-    )
-    ,
-    sessionized_cte AS 
-    /*
-    Sessionize so that we have continuous periods of time for which a person is eligible. A
-    new session exists either when a person becomes eligible, or if a person has an additional assessment in the 
-    specified date interval, which changes the "assessment_date" value.
-    */
-    (
-    {aggregate_adjacent_spans(table_name='dedup_cte',
-                       attribute=['assessment_date','meets_criteria'],
-                       end_date_field_name='end_date')}
-    )
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        meets_criteria,
-        TO_JSON(STRUCT(assessment_date AS most_recent_assessment_date,
-                        DATE_ADD(assessment_date, INTERVAL 12 MONTH) AS assessment_due_date
-                        )
-                ) AS reason
-    FROM sessionized_cte
     """
 
 
