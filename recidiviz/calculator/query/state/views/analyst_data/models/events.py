@@ -133,11 +133,16 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.CUSTODY_LEVEL_CHANGE,
         description="Custody level changes",
-        sql_source="""SELECT *,
+        sql_source="""SELECT cl.*,
+    months_between_assessment_due_and_downgrade,
     IF(custody_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
-    custody_level AS new_custody_level,
+    cl.custody_level AS new_custody_level,
 FROM
-    `{project_id}.sessions.custody_level_sessions_materialized`
+    `{project_id}.sessions.custody_level_sessions_materialized` cl
+LEFT JOIN `{project_id}.analyst_data.number_months_between_custody_downgrade_and_assessment_due_materialized` n
+    ON cl.person_id = n.person_id
+    AND cl.state_code = n.state_code
+    AND cl.custody_level_session_id = n.custody_level_session_id
 WHERE
     custody_downgrade > 0 OR custody_upgrade > 0
 """,
@@ -146,6 +151,7 @@ WHERE
             "previous_custody_level",
             "new_custody_level",
             "custody_level_num_change",
+            "months_between_assessment_due_and_downgrade",
         ],
         event_date_col="start_date",
     ),

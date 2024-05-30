@@ -1792,6 +1792,41 @@ MAX_DAYS_STABLE_EMPLOYMENT_365 = AssignmentSpanMaxDaysMetric(
     ],
 )
 
+NUMBER_MONTHS_BETWEEN_DOWNGRADE_AND_ASSESSMENT_DUE = EventValueMetric(
+    name="number_months_between_downgrade_and_assessment_due",
+    display_name="Number of months between custody level downgraded and assessment due date",
+    description="Average number of months ahead of a scheduled custody classification assessment that someone is downgraded."
+    "A negative number means someone was downgraded sooner than expected. A positive number means they were"
+    "downgraded after the assessment due date",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.CUSTODY_LEVEL_CHANGE,
+            event_conditions_dict={"change_type": ["DOWNGRADE"]},
+        )
+    ],
+    event_value_numeric="months_between_assessment_due_and_downgrade",
+    event_count_metric=CUSTODY_LEVEL_DOWNGRADES,
+)
+
+NUMBER_MONTHS_BETWEEN_DOWNGRADE_TO_MINIMUM_AND_ASSESSMENT_DUE = EventValueMetric(
+    name="number_months_between_downgrade_to_minimum_and_assessment_due",
+    display_name="Number of months between custody level downgraded to minimum and assessment due date",
+    description="Average number of months ahead of a scheduled custody classification assessment that someone is downgraded "
+    "to minimum custody level. A negative number means someone was downgraded sooner than expected. "
+    "A positive number means they were downgraded after the assessment due date",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.CUSTODY_LEVEL_CHANGE,
+            event_conditions_dict={
+                "change_type": ["DOWNGRADE"],
+                "new_custody_level": ["MINIMUM"],
+            },
+        )
+    ],
+    event_value_numeric="months_between_assessment_due_and_downgrade",
+    event_count_metric=CUSTODY_LEVEL_DOWNGRADES_TO_MINIMUM,
+)
+
 PAROLE_BOARD_HEARINGS = EventCountMetric(
     name="parole_board_hearings",
     display_name="Parole Board Hearings",

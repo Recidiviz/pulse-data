@@ -32,32 +32,37 @@ CUSTODY_LEVEL_SESSIONS_QUERY_TEMPLATE = f"""
     WITH sub_sessions_cte AS
     (
     SELECT 
-        state_code,
-        person_id,
-        correctional_level AS custody_level,
-        start_date,
-        end_date_exclusive,
+        css.state_code,
+        ss.compartment_level_0_super_session_id,
+        css.person_id,
+        css.correctional_level AS custody_level,
+        css.start_date,
+        css.end_date_exclusive,
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` css
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_0_super_sessions_materialized` ss
+        ON css.person_id = ss.person_id
+        AND css.session_id BETWEEN ss.session_id_start AND ss.session_id_end
     WHERE compartment_level_1 IN ('INCARCERATION','INCARCERATION_OUT_OF_STATE')
         -- TODO(#5178): Once custody level ingest issues in TN are resolved, this can be removed
-        AND state_code != "US_TN"
+        AND css.state_code != "US_TN"
     
     UNION ALL
     
     -- TODO(#5178): Once custody level ingest issues in TN are resolved, this can be removed
     SELECT
         state_code,
+        compartment_level_0_super_session_id,
         person_id,
         custody_level,
         start_date,
         end_date_exclusive
-    FROM `{{project_id}}.analyst_data.us_tn_classification_raw_materialized`    
-    )
+    FROM `{{project_id}}.analyst_data.us_tn_custody_level_sessions_preprocessed`
+    )    
     ,
     sessionized_cte AS
     (
     {aggregate_adjacent_spans(table_name='sub_sessions_cte',
-                       attribute='custody_level',
+                       attribute=['custody_level','compartment_level_0_super_session_id'],
                        session_id_output_name='custody_level_session_id',
                        end_date_field_name='end_date_exclusive')}
     )

@@ -17,25 +17,30 @@
 """Computes custody levels from raw TN data"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TN_CLASSIFICATION_RAW_VIEW_NAME = "us_tn_classification_raw"
+US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_NAME = (
+    "us_tn_custody_level_sessions_preprocessed"
+)
 
-US_TN_CLASSIFICATION_RAW_VIEW_DESCRIPTION = (
+US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION = (
     """Computes custody levels from raw TN data"""
 )
 
-US_TN_CLASSIFICATION_RAW_QUERY_TEMPLATE = """
+US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
     -- TODO(#5178): Once custody level ingest issues in TN are resolved, this view can be deleted
     SELECT
-        state_code,
-        person_id,
-        custody_level,
-        custody_level_raw_text,
+        raw.state_code,
+        raw.person_id,
+        raw.custody_level,
+        raw.custody_level_raw_text,
         classification_date AS start_date,
-        LEAD(classification_date) OVER (PARTITION BY person_id ORDER BY classification_date ASC) AS end_date_exclusive, 
+        compartment_level_0_super_session_id,
+        LEAD(classification_date) OVER (PARTITION BY raw.person_id, compartment_level_0_super_session_id
+                                        ORDER BY classification_date ASC) AS end_date_exclusive, 
     FROM (
         SELECT
             state_code,
@@ -48,8 +53,8 @@ US_TN_CLASSIFICATION_RAW_QUERY_TEMPLATE = """
                 WHEN RecommendedCustody = "MED" THEN "MEDIUM"
                 WHEN RecommendedCustody LIKE "MI%" THEN "MINIMUM"
             END AS custody_level
-        FROM `{project_id}.us_tn_raw_data_up_to_date_views.Classification_latest` c
-        INNER JOIN `{project_id}.normalized_state.state_person_external_id` pei
+        FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.Classification_latest` c
+        INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pei
             ON c.OffenderID = pei.external_id
             AND pei.state_code = "US_TN"
         -- Only keep classifications that were approved
@@ -60,18 +65,22 @@ US_TN_CLASSIFICATION_RAW_QUERY_TEMPLATE = """
             CAST(ClassificationDate AS DATETIME)
             ORDER BY CAST(ClassificationDecisionDate AS DATETIME) DESC
         ) = 1    
-    )
+    ) raw
+    LEFT JOIN `{{project_id}}.sessions.compartment_level_0_super_sessions_materialized` ss
+        ON raw.person_id = ss.person_id
+        AND raw.classification_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause("ss.end_date_exclusive")}
+    WHERE compartment_level_0 IN ('INCARCERATION')
         
 """
 
-US_TN_CLASSIFICATION_RAW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
-    view_id=US_TN_CLASSIFICATION_RAW_VIEW_NAME,
-    description=US_TN_CLASSIFICATION_RAW_VIEW_DESCRIPTION,
-    view_query_template=US_TN_CLASSIFICATION_RAW_QUERY_TEMPLATE,
-    should_materialize=True,
+    view_id=US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_NAME,
+    description=US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_DESCRIPTION,
+    view_query_template=US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_QUERY_TEMPLATE,
+    should_materialize=False,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_CLASSIFICATION_RAW_VIEW_BUILDER.build_and_print()
+        US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_BUILDER.build_and_print()
