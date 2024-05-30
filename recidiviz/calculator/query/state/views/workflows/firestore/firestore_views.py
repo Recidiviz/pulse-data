@@ -129,7 +129,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_re
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_work_release_form_record import (
+from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_transfer_to_atp_form_record import (
     US_ND_WORK_RELEASE_FORM_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_or_earned_discharge_record import (

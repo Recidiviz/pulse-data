@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Queries information needed to fill out a work-release form in ND
+"""Queries information needed to fill out a ATP form in ND
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -28,24 +28,31 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
     json_to_array_cte,
 )
+from recidiviz.task_eligibility.utils.us_nd_query_fragments import reformat_ids
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 US_ND_WORK_RELEASE_FORM_RECORD_VIEW_NAME = "us_nd_work_release_form_record"
 
 US_ND_WORK_RELEASE_FORM_RECORD_DESCRIPTION = """
-    Queries information needed to fill out a work-release form in ND
+    Queries information needed to fill out a ATP form in ND
     """
 
 US_ND_WORK_RELEASE_FORM_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_incarceration_pop_cte AS (
     {join_current_task_eligibility_spans_with_external_id(state_code= "'US_ND'", 
-    tes_task_query_view = 'work_release_form_materialized',
+    tes_task_query_view = 'transfer_to_atp_form_materialized',
     id_type = "'US_ND_ELITE'")}
 ),
 
@@ -89,6 +96,25 @@ case_notes_cte AS (
         AND spa.participation_status = 'IN_PROGRESS'
     GROUP BY 1,2,3,4,5
     HAVING note_body IS NOT NULL
+
+    UNION ALL
+
+    -- Alerts
+    SELECT 
+        peid.external_id,
+        'Active Alerts' AS criteria,
+        rrac.Description AS note_title,
+        eoa.COMMENT_TEXT AS note_body,
+        SAFE_CAST(LEFT(eoa.ALERT_DATE, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.recidiviz_elite_offender_alerts_latest` eoa
+    INNER JOIN `{{project_id}}.{{raw_data_views_dataset}}.RECIDIVIZ_REFERENCE_alert_codes` rrac
+        ON eoa.ALERT_CODE = rrac.Code
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        ON peid.external_id = {reformat_ids('eoa.OFFENDER_BOOK_ID')}
+            AND peid.state_code = 'US_ND'
+            AND peid.id_type = 'US_ND_ELITE_BOOKING'
+    WHERE ALERT_STATUS = 'ACTIVE'
+    AND ALERT_CODE IN ('SEXOF', 'SEX', 'VICTIM', 'VIC', 'CHILD', 'VIOLENT','NOCONT', 'OAC')
 ), 
 json_to_array_cte AS (
     {json_to_array_cte('current_incarceration_pop_cte')}
@@ -114,6 +140,12 @@ US_ND_WORK_RELEASE_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ND
+    ),
+    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
+    raw_data_views_dataset=raw_tables_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )

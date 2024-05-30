@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time during which someone in ND is not
-in a minimimum security facility or unit.
+in an orientation unit. These are units that house people who have just arrived to 
+the DOC and are not yet eligible for many opportunities because of this.
 """
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -27,14 +28,12 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
-    MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE,
-)
 
-_CRITERIA_NAME = "US_ND_NOT_IN_MINIMUM_SECURITY_FACILITY"
+_CRITERIA_NAME = "US_ND_NOT_IN_AN_ORIENTATION_UNIT"
 
 _DESCRIPTION = """Describes the spans of time during which someone in ND is not
-in a minimimum security facility or unit."""
+in an orientation unit. These are units that house people who have just arrived to 
+the DOC and are not yet eligible for many opportunities because of this."""
 
 _QUERY_TEMPLATE = f"""
 SELECT 
@@ -42,13 +41,13 @@ SELECT
     person_id,
     start_date,
     DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
-    facility,
     FALSE AS meets_criteria,
-    TO_JSON(STRUCT(start_date AS minimum_facility_start_date,
-                   facility AS minimum_facility)) AS reason,
+    TO_JSON(STRUCT(start_date AS housing_unit_start_date,
+                   ANY_VALUE(housing_unit) AS housing_unit)) AS reason,
 FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
 WHERE state_code = 'US_ND'
-{MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE}
+    -- Only folks on ORU in NDSP are in an orientation unit
+    AND (facility = 'NDSP' AND REGEXP_CONTAINS(housing_unit, r'ORU'))
     AND start_date < {nonnull_end_date_exclusive_clause('end_date_exclusive')}
 GROUP BY 1,2,3,4,5
 """

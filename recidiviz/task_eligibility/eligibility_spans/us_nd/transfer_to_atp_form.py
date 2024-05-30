@@ -16,7 +16,7 @@
 # =============================================================================
 """
 Shows the spans of time during which someone in ND is eligible
-for a work release (also known as Adult Training Program (ATP)).
+for the Adult Training Program (ATP).
 """
 
 from recidiviz.common.constants.states import StateCode
@@ -40,12 +40,12 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which someone in ND is eligible
-for a work release (also known as Adult Training Program (ATP)).
+for the Adult Training Program (ATP).
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ND,
-    task_name="WORK_RELEASE_FORM",
+    task_name="TRANSFER_TO_ATP_FORM",
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[

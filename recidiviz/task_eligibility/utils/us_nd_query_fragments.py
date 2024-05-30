@@ -38,6 +38,7 @@ MINIMUM_SECURITY_FACILITIES = [
     "JRCC",  # James River Correctional Center,
     "MRCC",  # Missouri River Correctional Center
     "HRCC",  # Heart River Correctional Center
+    "DWCRC",  # Dakota Women's Correctional and Rehabilitation Center
 ]
 
 ATP_FACILITIES = [
@@ -50,6 +51,14 @@ ATP_FACILITIES = [
     "SWMCCC",  # SW Multi-County Correctional Center - Work Release (ATP)
     "WCJWRP",  # Ward County Jail - Work Release Program (ATP)
 ]
+
+# Where clause needed to identify folks who are on minimum security facilities or units
+MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE = f"""
+    AND facility IN {tuple(MINIMUM_SECURITY_FACILITIES)}
+    -- Only folks on JRMU in JRCC are minimum security
+    AND (facility != 'JRCC' OR REGEXP_CONTAINS(housing_unit, r'JRMU'))
+    -- Only folks on Haven in DWCRC are minimum security
+    AND (facility != 'DWCRC' OR REGEXP_CONTAINS(housing_unit, r'HVN'))"""
 
 
 def parole_review_date_criteria_builder(
@@ -125,3 +134,21 @@ def parole_review_date_criteria_builder(
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=False,
     )
+
+
+def reformat_ids(column_name: str) -> str:
+    """
+    Generates a SQL expression to reformat the IDs in a specified column.
+
+    This function constructs a SQL expression that removes commas and the
+    ".00" suffix from the IDs in the given column name. It is useful for
+    cleaning up numeric ID representations stored as strings in databases.
+
+    Args:
+        column_name (str): The name of the column containing the IDs to be reformatted.
+
+    Returns:
+        str: A SQL expression that replaces commas and ".00" in the specified column.
+    """
+
+    return f"""REPLACE(REPLACE({column_name},',',''), '.00', '')"""
