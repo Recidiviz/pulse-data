@@ -24,6 +24,7 @@ import argparse
 import logging
 import time
 
+import sentry_sdk
 from oauth2client.client import GoogleCredentials
 
 from recidiviz.justice_counts.jobs.csg_data_pull import generate_agency_summary_csv
@@ -34,6 +35,7 @@ from recidiviz.justice_counts.jobs.super_agency_data_pull import (
     generate_superagency_summary,
 )
 from recidiviz.justice_counts.jobs.user_permissions_check import check_user_permissions
+from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -67,6 +69,12 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 if __name__ == "__main__":
+    sentry_sdk.init(
+        dsn=JUSTICE_COUNTS_SENTRY_DSN,
+        # Enable performance monitoring
+        enable_tracing=True,
+    )
+
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     environment_str = (
@@ -95,7 +103,7 @@ if __name__ == "__main__":
             environment=environment_str,
         )
     except Exception as e:
-        logger.info("CSG Data Pull Script Failed: %s", str(e))
+        logger.exception("CSG Data Pull Script Failed: %s", str(e))
     try:
         time.sleep(60)
         logger.info("Running Dashboard Data Pull")
@@ -105,7 +113,7 @@ if __name__ == "__main__":
             google_credentials=credentials,
         )
     except Exception as e:
-        logger.info("Agency Dashboard Script Failed %s", str(e))
+        logger.exception("Agency Dashboard Script Failed %s", str(e))
     try:
         time.sleep(60)
         logger.info("Running Superagency Data Pull")
@@ -115,7 +123,7 @@ if __name__ == "__main__":
             google_credentials=credentials,
         )
     except Exception as e:
-        logger.info("Superagency Data Pull Script Failed: %s", str(e))
+        logger.exception("Superagency Data Pull Script Failed: %s", str(e))
     try:
         time.sleep(60)
         logger.info("Closing DB Connection Before Running User Permissions Check")
@@ -126,4 +134,4 @@ if __name__ == "__main__":
             session=global_session,
         )
     except Exception as e:
-        logger.info("User Permissions Check: %s", str(e))
+        logger.exception("User Permissions Check: %s", str(e))
