@@ -51,6 +51,9 @@ from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed i
 from recidiviz.calculator.query.state.views.analyst_data.models.analyst_data_view_collector import (
     get_spans_and_events_view_builders,
 )
+from recidiviz.calculator.query.state.views.analyst_data.number_months_downgrade_and_assessment_due import (
+    NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.payments_preprocessed import (
     PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -192,9 +195,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q8 impo
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cellbed_assignment_raw import (
     US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_classification_raw import (
-    US_TN_CLASSIFICATION_RAW_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_eligible import (
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
 )
@@ -218,6 +218,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cr_raw_sent
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_custody_classification_assessment_dates_preprocessed import (
     US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_custody_level_sessions_preprocessed import (
+    US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_exemptions_preprocessed import (
     US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
@@ -345,11 +348,12 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
     US_TN_MAX_STAYS_VIEW_BUILDER,
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
-    US_TN_CLASSIFICATION_RAW_VIEW_BUILDER,
+    US_TN_CUSTODY_LEVEL_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
     US_TN_CELLBED_ASSIGNMENT_RAW_VIEW_BUILDER,
     US_AZ_ACTION_QUEUE_VIEW_BUILDER,
     US_AZ_HOME_PLAN_PREPROCESSED_VIEW_BUILDER,
     US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
     CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_VIEW_BUILDER,
+    NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,
 ]

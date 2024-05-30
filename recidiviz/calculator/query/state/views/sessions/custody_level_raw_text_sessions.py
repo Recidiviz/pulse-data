@@ -53,7 +53,7 @@ CUSTODY_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = f"""
         custody_level_raw_text,
         start_date,
         end_date_exclusive
-    FROM `{{project_id}}.analyst_data.us_tn_classification_raw_materialized`    
+    FROM `{{project_id}}.analyst_data.us_tn_custody_level_sessions_preprocessed`    
     
     )
     SELECT *
