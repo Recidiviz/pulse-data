@@ -33,13 +33,13 @@ SELECT
     state_code,
     person_id,
     NULL AS external_id,
-    compartment_level_0_super_session_id,
+    supervision_legal_authority_session_id,
     fee_type,
     transaction_type,
     start_date,
     end_date,
     unpaid_balance,
-    compartment_level_0_unpaid_balance    
+    unpaid_balance_within_supervision_session    
 FROM
     `{project_id}.{analyst_dataset}.us_tn_fines_fees_sessions_preprocessed`
     
@@ -49,13 +49,13 @@ SELECT
     state_code,
     person_id,
     external_id,
-    NULL AS compartment_level_0_super_session_id,
+    NULL AS supervision_legal_authority_session_id,
     fee_type,
     transaction_type,
     start_date,
     end_date,
     unpaid_balance,
-    NULL AS compartment_level_0_unpaid_balance    
+    NULL AS unpaid_balance_within_supervision_session    
 FROM
     `{project_id}.{analyst_dataset}.us_me_fines_fees_sessions_preprocessed`
 

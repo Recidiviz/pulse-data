@@ -18,7 +18,7 @@
 Unique on state code, person_id, compartment_level_0_super_session_id, fee_type, start_date, end_date"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
@@ -115,7 +115,7 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
             p.person_id,
             p.change_date AS start_date,
             p.transaction_type,
-            compartment_level_0_super_session_id,
+            supervision_legal_authority_session_id,
             LEAD(change_date) OVER (PARTITION BY p.state_code,
                                                p.person_id
                                   ORDER BY change_date) AS end_date,
@@ -125,28 +125,28 @@ US_TN_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
                                     ) AS unpaid_balance,
             SUM(activity_amount) OVER (PARTITION BY p.state_code, 
                                                     p.person_id,
-                                                    cs.compartment_level_0_super_session_id
+                                                    ss.supervision_legal_authority_session_id
                                     ORDER BY change_date
-            ) AS compartment_level_0_unpaid_balance,
+            ) AS unpaid_balance_within_supervision_session,
         FROM
             population_change_dates_agg p
         LEFT JOIN
-            `{{project_id}}.{{sessions_dataset}}.compartment_level_0_super_sessions_materialized` cs
+            `{{project_id}}.{{sessions_dataset}}.supervision_legal_authority_sessions_materialized` ss
         ON 
-            p.person_id = cs.person_id
+            p.person_id = ss.person_id
         AND 
-            p.change_date BETWEEN cs.start_date AND {nonnull_end_date_clause('cs.end_date')}
+            p.change_date BETWEEN ss.start_date AND {nonnull_end_date_exclusive_clause('ss.end_date_exclusive')}
     )
     SELECT 
         state_code,
         person_id,
         start_date,
         end_date,
-        compartment_level_0_super_session_id,
+        supervision_legal_authority_session_id,
         "SUPERVISION_FEES" AS fee_type,
         transaction_type,
         unpaid_balance,
-        compartment_level_0_unpaid_balance,
+        unpaid_balance_within_supervision_session,
     FROM
         time_agg_join
 """

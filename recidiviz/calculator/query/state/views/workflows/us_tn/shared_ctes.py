@@ -31,7 +31,7 @@ def us_tn_fines_fees_info() -> str:
                ff.person_id,
                pei.person_external_id,
                ff.current_balance,
-        FROM ({client_specific_fines_fees_balance(unpaid_balance_field="compartment_level_0_unpaid_balance")}) ff
+        FROM ({client_specific_fines_fees_balance(unpaid_balance_field="unpaid_balance_within_supervision_session")}) ff
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             USING (person_id)
         -- This line helps specify which fee_type we're getting in TN

@@ -35,7 +35,7 @@ _QUERY_TEMPLATE = f"""
     {has_unpaid_fines_fees_balance(
         fee_type = "SUPERVISION_FEES",
         unpaid_balance_criteria = "<= 500",
-        unpaid_balance_field= "compartment_level_0_unpaid_balance")}
+        unpaid_balance_field= "unpaid_balance_within_supervision_session")}
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
