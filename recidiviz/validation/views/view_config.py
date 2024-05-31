@@ -47,6 +47,9 @@ from recidiviz.validation.views.external_data.population_projection_monthly_popu
 from recidiviz.validation.views.external_data.recidivism_person_level import (
     RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_az.incarceration_population_by_facility import (
+    US_AZ_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.regions.us_co.incarceration_population_person_level import (
     US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
@@ -272,6 +275,7 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
         get_supervision_population_by_type_view_builder(),
         CB_971_REPORT_UNIFIED_VIEW_BUILDER,
         CB_971_REPORT_SUPERVISION_UNIFIED_VIEW_BUILDER,
+        US_AZ_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
         US_MI_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
         US_MI_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
         US_MI_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
