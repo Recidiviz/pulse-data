@@ -43,7 +43,7 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.environment import in_gcp_staging, in_offline_mode
+from recidiviz.utils.environment import in_offline_mode
 
 PATHWAYS_ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -128,14 +128,6 @@ def create_pathways_api_blueprint() -> Blueprint:
     @api.get("/<state>/<metric_name>")
     def metrics(state: str, metric_name: str) -> Response:
         state_code = StateCode(state)
-
-        # TODO(#29907): Remove after Maine test
-        if (
-            in_gcp_staging()
-            and state_code != StateCode.US_ME
-            and state_code in ENABLED_METRICS_BY_STATE_BY_NAME
-        ):
-            state_code = StateCode.US_OZ
 
         try:
             metric_mapper = ENABLED_METRICS_BY_STATE_BY_NAME[state_code][metric_name]
