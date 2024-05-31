@@ -70,7 +70,11 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
                     StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT.value,
                 ],
             },
-        )
+        ),
+        SpanSelector(
+            span_type=SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION,
+            span_conditions_dict={"has_facilities_workflows": ["true"]},
+        ),
     ],
     MetricPopulationType.SUPERVISION: [
         SpanSelector(
@@ -89,6 +93,10 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
         SpanSelector(
             span_type=SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION,
             span_conditions_dict={},
+        ),
+        SpanSelector(
+            span_type=SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION,
+            span_conditions_dict={"has_supervision_workflows": ["true"]},
         ),
     ],
     MetricPopulationType.JUSTICE_INVOLVED: [

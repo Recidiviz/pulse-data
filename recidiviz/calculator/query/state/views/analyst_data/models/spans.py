@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
+    WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
@@ -363,6 +366,17 @@ USING
         ],
         span_start_date_col="start_date",
         span_end_date_col="end_date",
+    ),
+    SpanQueryBuilder(
+        span_type=SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION,
+        description="Spans of time over which a workflows user is associated with a given location",
+        sql_source=WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER.table_for_query,
+        attribute_cols=[
+            "has_supervision_workflows",
+            "has_facilities_workflows",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
     ),
 ]
 

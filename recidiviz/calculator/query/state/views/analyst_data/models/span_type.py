@@ -51,6 +51,7 @@ class SpanType(Enum):
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION = (
         "WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSION"
     )
+    WORKFLOWS_USER_CASELOAD_ACCESS_SESSION = "WORKFLOWS_USER_CASELOAD_ACCESS_SESSION"
 
     @property
     def unit_of_observation_type(self) -> MetricUnitOfObservationType:
@@ -77,5 +78,7 @@ class SpanType(Enum):
             return MetricUnitOfObservationType.PERSON_ID
         if self in [SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION]:
             return MetricUnitOfObservationType.SUPERVISION_OFFICER
+        if self in [SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION]:
+            return MetricUnitOfObservationType.WORKFLOWS_USER
 
         raise ValueError(f"No unit_of_observation_type found for SpanType {self.value}")
