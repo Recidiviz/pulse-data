@@ -18,13 +18,11 @@
 in an orientation unit. These are units that house people who have just arrived to 
 the DOC and are not yet eligible for many opportunities because of this.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_exclusive_clause,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -46,8 +44,10 @@ SELECT
                    ANY_VALUE(housing_unit) AS housing_unit)) AS reason,
 FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
 WHERE state_code = 'US_ND'
-    -- Only folks on ORU in NDSP are in an orientation unit
-    AND (facility = 'NDSP' AND REGEXP_CONTAINS(housing_unit, r'ORU'))
+    -- Folks on ORU in NDSP are in an orientation unit
+    AND ((facility = 'NDSP' AND REGEXP_CONTAINS(housing_unit, r'ORU'))
+    -- Folks on HZN-E in DWCRC are in an orientation unit
+        OR (facility = 'DWCRC' AND REGEXP_CONTAINS(housing_unit, r'HZN-E')))
     AND start_date < {nonnull_end_date_exclusive_clause('end_date_exclusive')}
 GROUP BY 1,2,3,4,5
 """
