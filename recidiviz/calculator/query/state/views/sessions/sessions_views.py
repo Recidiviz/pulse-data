@@ -171,6 +171,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_downgrade_sessi
 from recidiviz.calculator.query.state.views.sessions.supervision_employment_status_sessions import (
     SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_legal_authority_sessions import (
+    SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_level_dedup_priority import (
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
@@ -342,6 +345,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER,
     STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER,
     SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_LEGAL_AUTHORITY_SESSIONS_VIEW_BUILDER,
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
     SUPERVISION_OFFICER_INFERRED_LOCATION_SESSIONS_VIEW_BUILDER,

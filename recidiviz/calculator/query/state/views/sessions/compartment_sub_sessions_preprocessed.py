@@ -137,6 +137,8 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         cte.housing_unit_type,
         cte.housing_unit_type_raw_text,
         cte.case_type,
+        LOGICAL_OR(cte.compartment_level_1 LIKE 'SUPERVISION%') 
+            OVER(PARTITION BY cte.person_id, cte.state_code, cte.dataflow_session_id) AS is_on_supervision,
         cte.prioritized_race_or_ethnicity,
         cte.gender,
         cte.start_date,
@@ -199,6 +201,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS case_type,
+        CAST(NULL AS BOOL) AS is_on_supervision,
         prioritized_race_or_ethnicity,
         gender,
         start_date,
@@ -452,6 +455,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         first_sub_session,
         last_sub_session,
         session_id_prelim,
+        is_on_supervision,
 
         /*
         The following field is calculated to tells us which sub-sessions are actually impacted by the inference. This is
