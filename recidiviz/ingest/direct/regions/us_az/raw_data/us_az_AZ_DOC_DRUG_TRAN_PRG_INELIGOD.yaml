@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_DRUG_TRAN_PRG_INELIGOD
+file_description: |-
+  A component of Drug Transition Program eligibility and release documentation.
+data_classification: source
+primary_key_cols: [INELIGIBLE_OVERRIDE_ID]
+columns:
+  - name: INELIGIBLE_OVERRIDE_ID
+    description: |-
+      PK for the table
+  - name: DRUG_TRAN_PRG_ELIGIBILITY_ID
+    description: |-
+      FK to AZ_DOC_DRUG_TRAN_PRG_ELIG
+  - name: INELIGIBLE_OVERRIDE_REASON_ID
+    description: |-
+      OverRide ineligiblity criteria
+    is_pii: True
+  - name: OVERRIDE_COMMENT
+    description: |-
+      TC comments on ineligiblity override
+    is_pii: True
+  - name: ACTIVE_FLAG
+    description: |-
+      Is the record active/current Y/N Flag
+  - name: TC_CREATE_DTM
+    description: |-
+      Date/time TC record created
+    field_type: datetime
+  - name: TC_CREATE_USERID
+    description: |-
+      TC who created the override
+    is_pii: True

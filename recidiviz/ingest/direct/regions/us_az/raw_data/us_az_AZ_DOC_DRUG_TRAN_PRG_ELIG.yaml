@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: AZ_DOC_TRANSITION_PRG_ELIG
+file_tag: AZ_DOC_DRUG_TRAN_PRG_ELIG
 file_description: |-
-  A component of Standard Transition Program eligibility and release documentation.
+  A component of Drug Transition Program eligibility and release documentation.
 data_classification: source
-primary_key_cols: [TRANSITION_PRG_ELIGIBILITY_ID]
+primary_key_cols: [DRUG_TRAN_PRG_ELIGIBILITY_ID]
 columns:
-  - name: TRANSITION_PRG_ELIGIBILITY_ID
+  - name: DRUG_TRAN_PRG_ELIGIBILITY_ID
     description: |-
       Primary key for table
   - name: DOC_ID

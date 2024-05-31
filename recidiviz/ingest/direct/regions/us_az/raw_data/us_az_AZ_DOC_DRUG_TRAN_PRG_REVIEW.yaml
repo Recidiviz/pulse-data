@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_DRUG_TRAN_PRG_REVIEW
+file_description: |-
+  A component of Drug Transition Program eligibility and release documentation.
+data_classification: source
+primary_key_cols: [DRUG_TRAN_PRG_ELIGIBILITY_ID, CREATE_DTM]
+columns:
+  - name: DRUG_TRAN_PRG_ELIGIBILITY_ID
+    description: |-
+      Part of composite PK
+  - name: CREATE_DTM
+    description: |-
+      Part of composite PK
+    field_type: datetime
+  - name: DECISION_ID
+    description: |-
+      Transition coordinator's decision
+  - name: DENIED_REASON_ID
+    description: |-
+      If dentied the reason eligibility was denied
+  - name: DENIED_OTHER_COMMENT
+    description: |-
+      Description if denied reason was Other
+    is_pii: True
+  - name: RETURN_REASON_ID
+    description: |-
+      Reason record returned to COIII/Community Corrections
+  - name: RETURN_OTHER_COMMENT
+    description: |-
+      Description if return reason was Other
+    is_pii: True
+  - name: CREATE_USERID
+    description: |-
+      User who created record
+    is_pii: True
+  - name: OTHER_COMMENT
+    description: |-
+      Description if reason was Other
+    is_pii: True
