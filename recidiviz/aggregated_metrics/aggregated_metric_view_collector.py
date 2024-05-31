@@ -172,6 +172,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -401,6 +402,31 @@ def collect_aggregated_metrics_view_builders(
     Collects all aggregated metrics view builders at all available units of analysis and populations
     """
     view_builders = []
+
+    # Produce a metric assignment sessions view for every combination of population
+    # and configured unit of observation type.
+    for (
+        population_type,
+        unit_of_analysis_types,
+    ) in UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE.items():
+        # For every population, create all the assignment tables having a corresponding unit of analysis
+        for (
+            unit_of_observation_type,
+            unit_of_analysis_type,
+        ) in UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT:
+            if (unit_of_analysis_type in unit_of_analysis_types) and (
+                unit_of_observation_type
+                in POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION[
+                    population_type
+                ]
+            ):
+                view_builders.append(
+                    generate_metric_assignment_sessions_view_builder(
+                        unit_of_analysis_type=unit_of_analysis_type,
+                        unit_of_observation_type=unit_of_observation_type,
+                        population_type=population_type,
+                    )
+                )
     # TODO(#29291): Filter all_metrics list down to only metrics we use downstream in
     #  products / Looker, then make it easier for DAs, etc to query configured metrics
     #  in an ad-hoc way from notebooks, etc.
@@ -425,20 +451,6 @@ def collect_aggregated_metrics_view_builders(
             population_type
         ]:
             unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
-            # Produce a metric assignment sessions view for every combination of population
-            # and configured unit of observation type.
-            for (
-                unit_of_observation_type
-            ) in POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION[
-                population_type
-            ]:
-                view_builders.append(
-                    generate_metric_assignment_sessions_view_builder(
-                        unit_of_analysis_type=unit_of_analysis_type,
-                        unit_of_observation_type=unit_of_observation_type,
-                        population_type=population_type,
-                    )
-                )
 
             # Build metric builder views by type
             # PeriodSpanAggregatedMetric

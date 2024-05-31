@@ -61,6 +61,7 @@ class MetricUnitOfObservationType(Enum):
 
     SUPERVISION_OFFICER = "OFFICER"
     PERSON_ID = "PERSON"
+    WORKFLOWS_USER = "WORKFLOWS_USER"
 
     @property
     def short_name(self) -> str:
@@ -136,6 +137,10 @@ METRIC_UNITS_OF_OBSERVATION = [
     MetricUnitOfObservation(
         type=MetricUnitOfObservationType.PERSON_ID,
         primary_key_columns=frozenset(["state_code", "person_id"]),
+    ),
+    MetricUnitOfObservation(
+        type=MetricUnitOfObservationType.WORKFLOWS_USER,
+        primary_key_columns=frozenset(["state_code", "email_address"]),
     ),
 ]
 
@@ -285,6 +290,10 @@ WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
 SELECT * FROM `{project_id}.sessions.supervision_staff_attribute_sessions_materialized`
 WHERE "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
 """,
+    (
+        MetricUnitOfObservationType.WORKFLOWS_USER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT * FROM `{project_id}.analyst_data.workflows_user_caseload_access_sessions_materialized`""",
 }
 
 UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[

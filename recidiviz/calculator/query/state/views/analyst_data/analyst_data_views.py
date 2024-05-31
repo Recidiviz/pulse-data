@@ -270,6 +270,9 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_events
 from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact_funnel_status_sessions import (
     WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_user_caseload_access_sessions import (
+    WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ALL_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
@@ -356,4 +359,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_PREPROCESSED_VIEW_BUILDER,
     CUSTODY_CLASSIFICATION_ASSESSMENT_DATES_VIEW_BUILDER,
     NUMBER_MONTHS_BETWEEN_CUSTODY_DOWNGRADE_AND_ASSESSMENT_DUE_VIEW_BUILDER,
+    WORKFLOWS_USER_CASELOAD_ACCESS_SESSIONS_VIEW_BUILDER,
 ]
