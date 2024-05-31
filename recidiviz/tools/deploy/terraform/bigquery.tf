@@ -176,7 +176,7 @@ resource "google_bigquery_table" "workflows_snooze_status_archive" {
     ignore_unknown_values = true
     max_bad_records       = 0
     source_format         = "NEWLINE_DELIMITED_JSON"
-    source_uris           = ["gs://${var.project_id}-snooze-statuses/*.json"]
+    source_uris           = ["gs://${var.project_id}-snooze-status-archive/*.json"]
   }
   schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/workflows_snooze_status_archive.yaml"))["schema"])
 }
