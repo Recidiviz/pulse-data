@@ -1,26 +1,20 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: AZ_DOC_TRANSITION_PRG_ELIG
+file_tag: AZ_DOC_TRANSITION_PRG_NOTES
 file_description: |-
   A component of Standard Transition Program eligibility and release documentation.
 data_classification: source
-primary_key_cols: [TRANSITION_PRG_ELIGIBILITY_ID]
+primary_key_cols: [TRANSITION_NOTE_ID]
 columns:
-  - name: TRANSITION_PRG_ELIGIBILITY_ID
+  - name: TRANSITION_NOTE_ID
     description: |-
       Primary key for table
-  - name: DOC_ID
+  - name: TRANSITION_PRG_ELIGIBILITY_ID
     description: |-
-      DOC_ID for inmate
+      FK to AZ_DOC_TRANSITION_PRG_ELIG
+  - name: COMMENTS
+    description: |-
+      Comments entered
     is_pii: True
-  - name: RELEASE_TYPE_ID
-    description: |-
-      Inmates release type ID
-  - name: ELIGIBILITY_STATUS_ID
-    description: |-
-      Eligibility status ID
-  - name: ACTIVE
-    description: |-
-      Active flag
   - name: CREATE_DTM
     description: |-
       Date record was created
