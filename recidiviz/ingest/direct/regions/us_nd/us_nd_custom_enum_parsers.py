@@ -461,6 +461,10 @@ def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
             return StateStaffCaseloadType.SEX_OFFENSE
         if "DOMESTIC VIOLENCE" in raw_text:
             return StateStaffCaseloadType.DOMESTIC_VIOLENCE
+        if "COMMUNITY CORRECTIONS AGENT" in raw_text:
+            return StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION
+        if "PRETRIAL" in raw_text:
+            return StateStaffCaseloadType.OTHER_COURT
         return StateStaffCaseloadType.GENERAL
     return StateStaffCaseloadType.INTERNAL_UNKNOWN
 
