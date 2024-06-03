@@ -18,8 +18,7 @@
 import json
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, Dict, Optional
-from unittest import TestCase
+from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 import flask
@@ -32,11 +31,9 @@ from flask_smorest import Api
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.outliers import outliers_blueprint
 from recidiviz.persistence.database.schema.outliers.schema import Configuration
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.outliers.querier_test import load_model_from_csv_fixture
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
+from recidiviz.tests.insights.utils import load_model_from_csv_fixture
 
 
 @patch(
@@ -45,13 +42,13 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
 )
 @pytest.mark.uses_db
 @pytest.mark.usefixtures("snapshottest_snapshot")
-class OutliersAdminPanelEndpointTests(TestCase):
+class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
     """Tests of our Flask endpoints"""
 
-    # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
-
     def setUp(self) -> None:
+        """Sets up the local infra needed for the endpoint tests"""
+        super().setUp()
+
         # Set up app
         self.app = Flask(__name__)
         self.app.register_blueprint(admin_panel_blueprint)
@@ -96,31 +93,15 @@ class OutliersAdminPanelEndpointTests(TestCase):
                 config_id=config_id,
             )
 
-        # Set up database
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
-
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self.outliers_database_key) as session:
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
             session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
 
             for config in load_model_from_csv_fixture(Configuration):
                 session.add(Configuration(**config))
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-
     def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
-        )
+        super().tearDown()
 
     ########
     # GET /outliers/enabled_state_codes

@@ -64,13 +64,18 @@ def get_on_disk_postgres_log_dir_prefix() -> str:
 
 
 @environment.local_only
-def start_on_disk_postgresql_database() -> str:
+def start_on_disk_postgresql_database(
+    additional_databases_to_create: list[str] | None = None,
+) -> str:
     """Starts and initializes a local postgres database for use in tests.
     Clears all postgres instances in the tmp folder. Should be called in the setUpClass function so
     this only runs once per test class.
-
     Returns the directory where the database data lives.
     """
+
+    if additional_databases_to_create is None:
+        additional_databases_to_create = []
+
     # Clears the tmp directory of all postgres directories
     _clear_all_on_disk_postgresql_databases()
 
@@ -137,10 +142,15 @@ def start_on_disk_postgresql_database() -> str:
         as_user=password_record,
         assert_success=False,
     )
-    run_command(
-        f"createdb -p {get_on_disk_postgres_port()} -O {TEST_POSTGRES_USER_NAME} {get_on_disk_postgres_database_name()}",
-        as_user=password_record,
-    )
+    databases_to_create = [
+        get_on_disk_postgres_database_name(),
+        *additional_databases_to_create,
+    ]
+    for database in databases_to_create:
+        run_command(
+            f"createdb -p {get_on_disk_postgres_port()} -O {TEST_POSTGRES_USER_NAME} {database}",
+            as_user=password_record,
+        )
 
     print(
         f"Created database `{get_on_disk_postgres_database_name()}` on postgres instance bound to port {get_on_disk_postgres_port()}"

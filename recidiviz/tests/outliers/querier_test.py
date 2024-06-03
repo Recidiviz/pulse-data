@@ -15,21 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This class implements tests for the OutliersQuerier class"""
-import csv
-import json
-import os
 from datetime import date, datetime
-from typing import Dict, List, Optional
-from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from recidiviz.case_triage.outliers.user_context import UserContext
-from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
-    parse_exported_json_row_from_bigquery,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -46,7 +38,6 @@ from recidiviz.outliers.types import (
     UserInfo,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
-    InsightsBase,
     MetricBenchmark,
     SupervisionClientEvent,
     SupervisionClients,
@@ -57,62 +48,14 @@ from recidiviz.persistence.database.schema.insights.schema import (
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
     Configuration,
-    OutliersBase,
     UserMetadata,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
+from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
+from recidiviz.tests.insights.utils import (
+    load_model_from_csv_fixture,
+    load_model_from_json_fixture,
 )
-from recidiviz.tools.insights import fixtures as insights_json_fixtures
-from recidiviz.tools.outliers import fixtures as outliers_csv_fixtures
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-
-
-def load_model_from_csv_fixture(
-    model: OutliersBase, filename: Optional[str] = None
-) -> List[Dict]:
-    filename = f"{model.__tablename__}.csv" if filename is None else filename
-    fixture_path = os.path.join(
-        os.path.dirname(outliers_csv_fixtures.__file__), filename
-    )
-    results = []
-    with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
-        reader = csv.DictReader(fixture_file)
-        for row in reader:
-            for k, v in row.items():
-                if k == "has_seen_onboarding" and v != "":
-                    row["has_seen_onboarding"] = json.loads(row["has_seen_onboarding"])
-                if v == "True":
-                    row[k] = True
-                if v == "False":
-                    row[k] = False
-                if v == "":
-                    row[k] = None
-            results.append(row)
-
-    return results
-
-
-def load_model_from_json_fixture(
-    model: InsightsBase, filename: Optional[str] = None
-) -> List[Dict]:
-    filename = f"{model.__tablename__}.json" if filename is None else filename
-    fixture_path = os.path.join(
-        os.path.dirname(insights_json_fixtures.__file__), filename
-    )
-    results = []
-    with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
-        for row in fixture_file:
-            json_obj = json.loads(row)
-            flattened_json = parse_exported_json_row_from_bigquery(json_obj, model)
-            results.append(flattened_json)
-
-    return results
-
 
 TEST_END_DATE = date(year=2023, month=5, day=1)
 TEST_PREV_END_DATE = date(year=2023, month=4, day=1)
@@ -155,38 +98,11 @@ TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
 
 @pytest.mark.uses_db
 @pytest.mark.usefixtures("snapshottest_snapshot")
-class TestOutliersQuerier(TestCase):
+class TestOutliersQuerier(InsightsDbTestCase):
     """Implements tests for the OutliersQuerier."""
 
-    # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-
     def setUp(self) -> None:
-        # TODO(#29848): Remove and use only Insights DB manager once `configurations` and `user_metadata` tables are migrated
-        self.outliers_database_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name="us_pa"
-        )
-        self.insights_database_key = SQLAlchemyDatabaseKey(
-            SchemaType.INSIGHTS, db_name="us_pa"
-        )
-        local_persistence_helpers.use_on_disk_postgresql_database(
-            self.outliers_database_key
-        )
-        local_persistence_helpers.use_on_disk_postgresql_database(
-            self.insights_database_key
-        )
-
-        engine = SQLAlchemyEngineManager.get_engine_for_database(
-            database_key=self.insights_database_key
-        )
-        InsightsBase.metadata.drop_all(engine)
-        tables = get_all_table_classes_in_schema(SchemaType.INSIGHTS)
-        for table in tables:
-            InsightsBase.metadata.create_all(engine, tables=[table])
+        super().setUp()
 
         with SessionFactory.using_database(self.outliers_database_key) as session:
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
@@ -216,18 +132,7 @@ class TestOutliersQuerier(TestCase):
                 session.add(SupervisionClients(**client))
 
     def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.outliers_database_key
-        )
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.insights_database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
-        )
+        super().tearDown()
 
     @patch(
         "recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_backend_config"

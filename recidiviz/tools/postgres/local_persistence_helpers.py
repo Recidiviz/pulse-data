@@ -121,11 +121,12 @@ def teardown_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) ->
 
 @environment.local_only
 def use_on_disk_postgresql_database(
-    database_key: SQLAlchemyDatabaseKey, create_tables: Optional[bool] = True
+    database_key: SQLAlchemyDatabaseKey,
+    create_tables: Optional[bool] = True,
+    engine: Engine | None = None,
 ) -> Engine:
     """Connects SQLAlchemy to a local test postgres server. Should be called after the test database and user have
     already been initialized.
-
     This includes:
     1. Create all tables in the newly created Postgres database
     2. Bind the global SessionMaker to the new database engine
@@ -133,7 +134,11 @@ def use_on_disk_postgresql_database(
     if database_key.declarative_meta not in DECLARATIVE_BASES:
         raise ValueError(f"Unexpected database key: {database_key}.")
 
-    engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
+    # The default behavior of use_on_disk_postgresql_database initializes an engine
+    # using the default on disk postgres database name. This causes issues for state-segmented databases
+    # as initializing the engine for distinct database keys ends up connecting to the same database.
+    # Users can pass an engine to avoid this behavior
+    engine = engine or SQLAlchemyEngineManager.init_engine_for_postgres_instance(
         database_key=database_key,
         db_url=on_disk_postgres_db_url(),
     )
