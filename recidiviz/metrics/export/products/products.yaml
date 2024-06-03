@@ -168,3 +168,10 @@ products:
     exports:
       - PRODUCT_FAILED_LOGINS
     environment: production
+  - name: Sentencing
+    description: Sentencing is (currently) and Idaho product offering that powers tools to assist in the creation of PSIs (Pre-Sentencing Investigations)
+    exports:
+      - SENTENCING
+    states:
+      - state_code: US_IX
+        environment: production

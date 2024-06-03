@@ -476,6 +476,13 @@ module "insights-etl-data" {
   name_suffix = "insights-etl-data"
 }
 
+module "sentencing-etl-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "sentencing-etl-data"
+}
+
 module "generated-assets" {
   source = "./modules/cloud-storage-bucket"
 

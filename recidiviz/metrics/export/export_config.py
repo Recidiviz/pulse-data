@@ -55,6 +55,9 @@ from recidiviz.calculator.query.state.views.reference.ingested_product_users imp
 from recidiviz.calculator.query.state.views.reference.product_failed_logins_monthly import (
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sentencing.sentencing_views import (
+    SENTENCING_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
@@ -185,6 +188,7 @@ INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-insights-etl-data"
 PRODUCT_FAILED_LOGINS_MONTHLY_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-product-failed-logins-monthly"
 )
+SENTENCING_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-sentencing-etl-data"
 
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
@@ -348,6 +352,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: []
         },
+    ),
+    # Sentencing views
+    ExportViewCollectionConfig(
+        view_builders_to_export=SENTENCING_VIEW_BUILDERS,
+        output_directory_uri_template=SENTENCING_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="SENTENCING",
+        allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
 ]
 
