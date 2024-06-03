@@ -157,6 +157,9 @@ class DatapointsForMetric:
                             for context_key, datapoint in context_key_to_datapoints.items()
                         ]
                         for dim_base, context_key_to_datapoints in self.dimension_to_context_key_to_datapoints.items()
+                        if aggregated_dimension.dimension_to_contexts is not None
+                        and dim_base
+                        in aggregated_dimension.dimension_to_contexts.keys()
                     },
                 ),
             )
