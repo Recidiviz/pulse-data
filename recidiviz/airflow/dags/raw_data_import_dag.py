@@ -42,6 +42,9 @@ from recidiviz.airflow.dags.raw_data.raw_data_branching import (
     get_raw_data_branch_filter,
     get_raw_data_import_branch_key,
 )
+from recidiviz.airflow.dags.raw_data.register_raw_gcs_file_metadata_sql_query_generator import (
+    RegisterRawGCSFileMetadataSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator import (
     ReleaseRawDataResourceLockSqlQueryGenerator,
 )
@@ -114,7 +117,19 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: celery
         # outputs: [ ImportReadyOriginalFile ], [ RequiresPreImportNormalizationFile ]
 
-        # TODO(#30170) implement processing logic & operations registration
+        register_gcs_file_metadata = CloudSqlQueryOperator(
+            task_id="register_raw_gcs_file_metadata",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=RegisterRawGCSFileMetadataSqlQueryGenerator(
+                region_code=state_code.value,
+                raw_data_instance=raw_data_instance,
+                list_unprocessed_files_task_id=unprocessed_paths.task_id,
+            ),
+        )
+
+        # TODO(#30170) implement splitting into RequiresNormalizationFile, ImportReadyOriginalFile
+
+        unprocessed_paths >> register_gcs_file_metadata
 
         # ------------------------------------------------------------------------------
 
@@ -155,7 +170,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        unprocessed_paths >> release_locks
+        register_gcs_file_metadata >> release_locks
 
         # ------------------------------------------------------------------------------
 
