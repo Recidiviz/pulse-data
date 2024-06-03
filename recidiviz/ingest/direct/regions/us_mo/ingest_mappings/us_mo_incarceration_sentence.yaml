@@ -63,6 +63,10 @@ output:
             $equal: [BT_CRR, $literal("LIF")]
           is_capital_punishment:
             $equal: [BT_SDI, $literal("Y")]
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text: BS_CNS
+              $custom_parser: us_mo_custom_enum_parsers.parse_sentencing_authority
           charges:
             - StateChargeV2:
                 external_id: $variable(charge_external_id)

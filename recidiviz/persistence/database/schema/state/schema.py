@@ -3795,6 +3795,12 @@ class StateSentence(StateBase, _ReferencesStatePersonSharedColumns):
         comment="The class of authority imposing the sentence (COUNTY, STATE, etc.)",
     )
 
+    sentencing_authority_raw_text = Column(
+        String,
+        nullable=True,
+        comment="Raw text used to hydrate sentencing_authority.",
+    )
+
     sentence_type_raw_text = Column(
         String,
         nullable=True,

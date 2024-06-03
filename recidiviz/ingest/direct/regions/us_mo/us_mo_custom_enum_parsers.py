@@ -39,6 +39,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
+    StateSentencingAuthority,
 )
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -1271,3 +1272,18 @@ def parse_state_sentence_type_from_supervision_status(
     # We assume everything from the TAK024 (Sentence Prob) is
     # in fact, PROBATION. Unless it has been parsed otherwise above.
     return StateSentenceType.PROBATION
+
+
+def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
+    """
+    Returns the StateSentencingAuthority.
+
+    MODOC marks the text field BS_CNS as OTST for IS Compact sentences.
+    Indeterminate and IS Compact sentences may also have projected dates
+    of all '8's.
+    """
+    if raw_text == "OTST":
+        return StateSentencingAuthority.OTHER_STATE
+    if not raw_text:
+        return StateSentencingAuthority.PRESENT_WITHOUT_INFO
+    return StateSentencingAuthority.COUNTY

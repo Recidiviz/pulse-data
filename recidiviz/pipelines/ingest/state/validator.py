@@ -180,6 +180,14 @@ def _sentencing_entities_checks(
     for sentence in state_person.sentences:
         if not sentence.imposed_date:
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
+
+        # TODO(#30295) Hydrate in US_AZ
+        # TODO(#28952) Hydrate in US_IX
+        if not sentence.sentencing_authority and state_person.state_code not in (
+            StateCode.US_AZ.value,
+            StateCode.US_IX.value,
+        ):
+            yield f"Found sentence {sentence.limited_pii_repr()} with no sentencing_authority."
         # TODO(#29457) Ensure test fixture data and ingest views allow this check to happen in AZ
         # We can then remove the state code check from this statement.
         if (

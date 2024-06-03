@@ -2355,6 +2355,9 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None,
         validator=pre_norm_opt(attr.validators.instance_of(StateSentencingAuthority)),
     )
+    sentencing_authority_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # Raw text indicating whether a sentence is supervision/incarceration/etc
     sentence_type_raw_text: Optional[str] = attr.ib(

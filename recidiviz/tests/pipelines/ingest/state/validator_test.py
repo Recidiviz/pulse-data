@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_charge import StateChargeV2Status
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
+    StateSentencingAuthority,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.schema.state import schema
@@ -565,6 +566,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             external_id="SENT-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
@@ -609,6 +611,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             external_id="SENT-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
         )
         self.state_person.sentences.append(sentence)
@@ -619,12 +622,37 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             errors[0],
         )
 
+    def test_sentences_have_sentencing_authority_invalid(self) -> None:
+        """Tests that sentences post root entity merge all have a sentencing_authority."""
+        sentence = state_entities.StateSentence(
+            state_code=self.state_code,
+            external_id="SENT-EXTERNAL-1",
+            person=self.state_person,
+            sentence_type=StateSentenceType.PROBATION,
+            imposed_date=date(2022, 1, 1),
+            charges=[
+                state_entities.StateChargeV2(
+                    external_id="CHARGE",
+                    state_code=self.state_code,
+                    status=StateChargeV2Status.PRESENT_WITHOUT_INFO,
+                )
+            ],
+        )
+        self.state_person.sentences.append(sentence)
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(
+            "Found sentence StateSentence(external_id='SENT-EXTERNAL-1', sentence_id=None) with no sentencing_authority.",
+            errors[0],
+        )
+
     def test_sentences_have_type_and_imposed_date_invalid(self) -> None:
         """Tests that sentences post root entity merge all have a sentence_type and imposed_date."""
         sentence = state_entities.StateSentence(
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             person=self.state_person,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             charges=[
                 state_entities.StateChargeV2(
                     external_id="CHARGE",
@@ -651,6 +679,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             external_id="SENT-EXTERNAL-1",
             sentence_type=StateSentenceType.PROBATION,
             imposed_date=date(2022, 1, 1),
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             charges=[
                 state_entities.StateChargeV2(
                     external_id="CHARGE",
@@ -677,6 +706,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-4",
             sentence_type=StateSentenceType.PAROLE,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2023, 1, 1),
             charges=[
                 state_entities.StateChargeV2(
@@ -708,6 +738,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-2",
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
                 state_entities.StateChargeV2(
@@ -754,6 +785,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-1",
             sentence_type=StateSentenceType.PROBATION,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
                 state_entities.StateChargeV2(
@@ -783,6 +815,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             state_code=self.state_code,
             external_id="SENT-EXTERNAL-2",
             sentence_type=StateSentenceType.PROBATION,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
                 state_entities.StateChargeV2(
@@ -825,6 +858,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentence_group_external_id="TEST-SG",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             charges=[
                 state_entities.StateChargeV2(
@@ -876,6 +910,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentence_group_external_id="SG-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
@@ -909,6 +944,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentence_group_external_id="SG-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             parole_possible=False,
             charges=[
@@ -937,6 +973,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentence_group_external_id="SG-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             parole_possible=False,
             charges=[
@@ -953,6 +990,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentence_group_external_id="SG-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             parole_possible=False,
             charges=[
@@ -981,6 +1019,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentence_group_external_id="SG-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             parole_possible=None,
             charges=[
@@ -997,6 +1036,7 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
             sentence_group_external_id="SG-EXTERNAL-1",
             person=self.state_person,
             sentence_type=StateSentenceType.STATE_PRISON,
+            sentencing_authority=StateSentencingAuthority.PRESENT_WITHOUT_INFO,
             imposed_date=date(2022, 1, 1),
             parole_possible=True,
             charges=[

@@ -73,6 +73,10 @@ output:
                 - $literal("95O1020") # Court Prob Comp-Lifetime Supv
                 - $literal("95O2060") # Parole / CR Comp-Lifetime Supv
           imposed_date: BU_SF
+          sentencing_authority:
+            $enum_mapping:
+              $raw_text: BS_CNS
+              $custom_parser: us_mo_custom_enum_parsers.parse_sentencing_authority
           county_code:
             $custom:
               $function: us_mo_custom_parsers.normalize_county_code
