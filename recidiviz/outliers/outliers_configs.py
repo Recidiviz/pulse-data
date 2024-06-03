@@ -21,13 +21,11 @@ from typing import Dict, Set
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
-    EARLY_DISCHARGE_REQUESTS,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_AND_INFERRED,
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
     INCARCERATION_STARTS_MOST_SEVERE_VIOLATION_TYPE_NOT_ABSCONSION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
-    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
     TREATMENT_STARTS,
     VIOLATION_RESPONSES,
     VIOLATIONS,
@@ -70,22 +68,6 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 event_name="absconsion violations",
                 event_name_singular="absconsion violation",
                 event_name_past_tense="had an absconsion related violation",
-            ),
-            OutliersMetricConfig.build_from_metric(
-                metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
-                title_display_name="Limited Supervision Unit Transfer Rate",
-                body_display_name="Limited Supervision Unit transfer rate",
-                event_name="LSU transfers",
-                event_name_singular="LSU transfer",
-                event_name_past_tense="were transferred to LSU",
-            ),
-            OutliersMetricConfig.build_from_metric(
-                metric=EARLY_DISCHARGE_REQUESTS,
-                title_display_name="Earned Discharge Request Rate",
-                body_display_name="earned discharge request rate",
-                event_name="earned discharge requests",
-                event_name_singular="earned discharge request",
-                event_name_past_tense="requested earned discharge",
             ),
         ],
         supervision_officer_metric_exclusions="""
