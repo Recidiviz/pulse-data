@@ -27,20 +27,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.read_only_csv_normalizing_stream import (
     ReadOnlyCsvNormalizingStream,
 )
-
-UTF_8_ENCODING = "UTF-8"
-
-# Also known as 'latin-1', used in the census and lots of other government data
-ISO_8859_1_ENCODING = "ISO-8859-1"
-
-# Very similar to ISO-8859-1, but not quite the same. See differences in this table:
-# https://en.wikipedia.org/wiki/Windows-1252#Character_set
-WINDOWS_1252_ENCODING = "WINDOWS-1252"
-
-COMMON_RAW_FILE_ENCODINGS = [
+from recidiviz.common.constants.encoding import (
+    COMMON_RAW_FILE_ENCODINGS,
     UTF_8_ENCODING,
-    ISO_8859_1_ENCODING,
-]
+)
 
 
 class GcsfsCsvReaderDelegate:
