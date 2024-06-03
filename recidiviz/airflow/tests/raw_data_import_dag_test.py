@@ -89,6 +89,24 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
         for root_task in branch_end_and_one_before.roots:
             assert "release_raw_data_resource_locks" in root_task.task_id
 
+    def test_step_2_sequencing(self) -> None:
+        dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
+        step_2_root = dag.partial_subset(
+            task_ids_or_regex=r"list_normalized_unprocessed_files",
+            include_upstream=False,
+            include_downstream=True,
+        )
+        step_2_task_ids = ["register_raw_gcs_file_metadata"]
+
+        for root in step_2_root.roots:
+            assert "list_normalized_unprocessed_files" in root.task_id
+            curr_task = root
+            for step_2_task_id in step_2_task_ids:
+                assert len(curr_task.downstream_list) == 1
+                next_task = curr_task.downstream_list[0]
+                assert step_2_task_id in next_task.task_id
+                curr_task = next_task
+
 
 class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
     """Integration tests for the raw data import dag"""
@@ -198,6 +216,7 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
                     r".*_primary_import_branch\.list_normalized_unprocessed_files",
                     r".*_primary_import_branch\.release_raw_data_resource_locks",
+                    r".*_primary_import_branch\.register_raw_gcs_file_metadata",
                     BRANCH_END_TASK_NAME,
                 ],
                 expected_skipped_ids=[

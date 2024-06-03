@@ -15,8 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Metadata and constants used in the raw data import DAG"""
+from functools import cached_property
+from typing import Optional, Tuple
+
+import attr
+
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_raw_data_resource_lock import (
     DirectIngestRawDataResourceLockResource,
+)
+from recidiviz.ingest.direct.gcs.filename_parts import (
+    DirectIngestRawFilenameParts,
+    filename_parts_from_path,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -45,3 +55,40 @@ def get_resource_lock_ttl(raw_data_instance: DirectIngestInstance) -> int:
             return RESOURCE_LOCK_TTL_SECONDS_SECONDARY
         case _:
             raise ValueError(f"Unexpected value: {raw_data_instance.value}")
+
+
+@attr.define
+class RawGCSFileMetadataSummary:
+    """This represents metadata about a single literal file (e.g. a CSV) that is stored
+    in GCS
+
+    Attributes:
+        gcs_file_id (int): An id that corresponds to the literal file in Google Cloud
+            Storage in direct_ingest_raw_gcs_file_metadata. A single file will always
+            have a single gcs_file_id.
+        file_id (int | None): A "conceptual" file id that corresponds to a single,
+            conceptual file sent to us by the state. For raw files states send us in
+            chunks (such as ContactNoteComment), each literal CSV that makes up the
+            whole file will have a different gcs_file_id, but all of those entries will
+            have the same file_id.
+        path (GcsfsFilePath): The path in Google Cloud Storage of the file.
+    """
+
+    gcs_file_id: int
+    file_id: Optional[int]
+    path: GcsfsFilePath
+
+    @cached_property
+    def parts(self) -> DirectIngestRawFilenameParts:
+        return filename_parts_from_path(self.path)
+
+    def to_xcom(self) -> Tuple[int, Optional[int], str]:
+        return self.gcs_file_id, self.file_id, self.path.abs_path()
+
+    @classmethod
+    def from_gcs_metadata_table_row(
+        cls, db_record: Tuple[int, str], abs_path: GcsfsFilePath
+    ) -> "RawGCSFileMetadataSummary":
+        return RawGCSFileMetadataSummary(
+            gcs_file_id=db_record[0], file_id=None, path=abs_path
+        )
