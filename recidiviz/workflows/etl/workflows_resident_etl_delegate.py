@@ -53,7 +53,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "releaseDate": data.get("release_date"),
             "allEligibleOpportunities": data.get("all_eligible_opportunities"),
             "metadata": convert_nested_dictionary_keys(
-                data.get("metadata", {}), snake_to_camel
+                json.loads(data.get("metadata", "{}")), snake_to_camel
             ),
             "portionServedNeeded": data.get("portion_served_needed"),
             "usMePortionNeededEligibleDate": data.get(
