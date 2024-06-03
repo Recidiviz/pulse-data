@@ -19,7 +19,7 @@ import os
 from datetime import datetime
 from http import HTTPStatus
 from typing import Callable, Optional
-from unittest import TestCase, mock
+from unittest import mock
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -45,26 +45,18 @@ from recidiviz.outliers.types import (
     SupervisionOfficerSupervisorEntity,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
-    InsightsBase,
     SupervisionClientEvent,
     SupervisionClients,
     SupervisionOfficerSupervisor,
 )
 from recidiviz.persistence.database.schema.outliers.schema import Configuration
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-)
-from recidiviz.tests.outliers.querier_test import (
-    TEST_CLIENT_EVENT_1,
-    TEST_METRIC_3,
+from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
+from recidiviz.tests.insights.utils import (
     load_model_from_csv_fixture,
     load_model_from_json_fixture,
 )
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.tests.outliers.querier_test import TEST_CLIENT_EVENT_1, TEST_METRIC_3
 from recidiviz.utils.metadata import local_project_id_override
 
 TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
@@ -85,8 +77,9 @@ TEST_CLIENT_EVENT = OutliersClientEventConfig.build(
 )
 
 
+@pytest.mark.uses_db
 @pytest.mark.usefixtures("snapshottest_snapshot")
-class OutliersBlueprintTestCase(TestCase):
+class OutliersBlueprintTestCase(InsightsDbTestCase):
     """Base class for Outliers flask tests"""
 
     mock_authorization_handler: MagicMock
@@ -94,6 +87,7 @@ class OutliersBlueprintTestCase(TestCase):
     test_client: FlaskClient
 
     def setUp(self) -> None:
+        super().setUp()
         self.mock_authorization_handler = MagicMock()
 
         self.auth_patcher = mock.patch(
@@ -111,6 +105,7 @@ class OutliersBlueprintTestCase(TestCase):
         self.test_client = self.test_app.test_client()
 
     def tearDown(self) -> None:
+        super().tearDown()
         self.auth_patcher.stop()
 
     @staticmethod
@@ -145,13 +140,6 @@ class OutliersBlueprintTestCase(TestCase):
 class TestOutliersRoutes(OutliersBlueprintTestCase):
     """Implements tests for the outliers routes."""
 
-    # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-
     def setUp(self) -> None:
         super().setUp()
 
@@ -161,28 +149,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
-
-        self.outliers_database_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name="us_pa"
-        )
-        local_persistence_helpers.use_on_disk_postgresql_database(
-            self.outliers_database_key
-        )
-
-        self.insights_database_key = SQLAlchemyDatabaseKey(
-            SchemaType.INSIGHTS, db_name="us_pa"
-        )
-        local_persistence_helpers.use_on_disk_postgresql_database(
-            self.insights_database_key
-        )
-
-        engine = SQLAlchemyEngineManager.get_engine_for_database(
-            database_key=self.insights_database_key
-        )
-        InsightsBase.metadata.drop_all(engine)
-        tables = get_all_table_classes_in_schema(SchemaType.INSIGHTS)
-        for table in tables:
-            InsightsBase.metadata.create_all(engine, tables=[table])
 
         with SessionFactory.using_database(self.outliers_database_key) as session:
             for config in load_model_from_csv_fixture(Configuration):
@@ -205,20 +171,6 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             os.environ["AUTH0_CLAIM_NAMESPACE"] = self.old_auth_claim_namespace
         else:
             os.unsetenv("AUTH0_CLAIM_NAMESPACE")
-
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.outliers_database_key
-        )
-
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.insights_database_key
-        )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
-        )
 
     def test_get_state_configuration_failure(self) -> None:
         # State is not enabled
