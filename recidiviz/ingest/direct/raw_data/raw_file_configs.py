@@ -24,13 +24,14 @@ from typing import Dict, List, Optional, Set, Tuple
 import attr
 from more_itertools import one
 
-from recidiviz.cloud_storage.gcsfs_csv_reader import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.csv import DEFAULT_CSV_LINE_TERMINATOR
+from recidiviz.common.constants.encoding import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     RawTableRelationshipInfo,
 )
+from recidiviz.utils.encoding import to_python_standard
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
@@ -479,9 +480,9 @@ class DirectIngestRawFileConfig:
     def encodings_to_try(self) -> List[str]:
         """Returns an ordered list of encodings we should try for this file."""
         return [self.encoding] + [
-            encoding
+            encoding.upper()
             for encoding in COMMON_RAW_FILE_ENCODINGS
-            if encoding.upper() != self.encoding.upper()
+            if to_python_standard(encoding) != to_python_standard(self.encoding)
         ]
 
     def get_column_info(self, column_name: str) -> RawTableColumnInfo:

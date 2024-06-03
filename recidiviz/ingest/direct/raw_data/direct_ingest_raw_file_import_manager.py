@@ -35,7 +35,6 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_csv_reader import (
-    UTF_8_ENCODING,
     GcsfsCsvReader,
     GcsfsCsvReaderDelegate,
 )
@@ -44,6 +43,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
     SplittingGcsfsCsvReaderDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.constants.encoding import UTF_8
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import google_api_retry_predicate
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
@@ -229,7 +229,7 @@ class DirectIngestRawFileReader:
         # engine because the separator encoded in utf-8 is > 1 char
         # long, and the 'c' engine does not support such separators;
         # you can avoid this warning by specifying engine='python'.
-        if len(file_config.separator.encode(UTF_8_ENCODING)) > 1:
+        if len(file_config.separator.encode(UTF_8)) > 1:
             # The python engine is slower but more feature-complete.
             kwargs["engine"] = "python"
 

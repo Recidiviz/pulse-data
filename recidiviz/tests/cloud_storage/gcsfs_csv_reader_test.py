@@ -23,11 +23,11 @@ import pandas as pd
 import pandas.errors
 
 from recidiviz.cloud_storage.gcsfs_csv_reader import (
-    COMMON_RAW_FILE_ENCODINGS,
     GcsfsCsvReader,
     GcsfsCsvReaderDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.encoding import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
