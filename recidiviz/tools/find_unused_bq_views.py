@@ -119,15 +119,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers_archiv
 from recidiviz.calculator.query.state.views.outliers.supervision_usage_metrics import (
     SUPERVISION_USAGE_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sentencing.case_record import (
-    SENTENCING_CASE_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentencing.client_record import (
-    SENTENCING_CLIENT_RECORD_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sentencing.staff_record import (
-    SENTENCING_STAFF_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -367,15 +358,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     ALL_FUNNEL_EVENTS_VIEW_BUILDER.address: (
         "Will be referenced to support Workflows Milestones Impact Tracking (see #28874) (Michelle Orden 4/23/24)"
-    ),
-    SENTENCING_CASE_RECORD_VIEW_BUILDER.address: (
-        "Will be referenced to power Sentencing PSI tools see (see #28886) (Santy Mendoza 5/21/24)"
-    ),
-    SENTENCING_CLIENT_RECORD_VIEW_BUILDER.address: (
-        "Will be referenced to power Sentencing PSI tools see (see #28886) (Santy Mendoza 5/21/24)"
-    ),
-    SENTENCING_STAFF_RECORD_VIEW_BUILDER.address: (
-        "Will be referenced to power Sentencing PSI tools see (see #28886) (Santy Mendoza 5/21/24)"
     ),
 }
 
