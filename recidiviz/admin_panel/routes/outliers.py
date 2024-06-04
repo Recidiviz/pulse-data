@@ -191,6 +191,7 @@ class PromoteToProdConfigurationsAPI(MethodView):
         config_dict.pop("id")
         config_dict.pop("updated_at")
         config_dict.pop("status")
+        config_dict.pop("duplicate_write", None)
 
         logging.info(
             "Making request to /configurations API in production for [%s]",
