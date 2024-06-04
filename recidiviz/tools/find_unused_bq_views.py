@@ -152,6 +152,9 @@ from recidiviz.calculator.query.state.views.workflows.clients_milestones_side_pa
 from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.milestones_funnel import (
+    MILESTONES_FUNNEL_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
     WORKFLOWS_USAGE_VIEW_BUILDER,
 )
@@ -358,6 +361,9 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
     ),
     ALL_FUNNEL_EVENTS_VIEW_BUILDER.address: (
         "Will be referenced to support Workflows Milestones Impact Tracking (see #28874) (Michelle Orden 4/23/24)"
+    ),
+    MILESTONES_FUNNEL_VIEW_BUILDER.address: (
+        "Will be referenced to support Workflows Milestones Impact Tracking (see #28874) (Michelle Orden 5/22/24)"
     ),
 }
 

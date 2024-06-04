@@ -90,6 +90,9 @@ from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_stat
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.workflows.milestones_funnel import (
+    MILESTONES_FUNNEL_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.person_id_to_external_id import (
     PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
 )
@@ -144,4 +147,5 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_MILESTONES_SIDE_PANEL_OPENED_VIEW_BUILDER,
     CLIENTS_MILESTONES_CONGRATULATED_ANOTHER_WAY_VIEW_BUILDER,
     ALL_FUNNEL_EVENTS_VIEW_BUILDER,
+    MILESTONES_FUNNEL_VIEW_BUILDER,
 ]
