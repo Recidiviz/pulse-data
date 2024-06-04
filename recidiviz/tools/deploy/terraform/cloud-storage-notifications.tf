@@ -60,19 +60,6 @@ module "handle_workflows_firestore_etl" {
 
   suffix = "workflows-firestore-etl"
 }
-
-module "handle_outliers_etl" {
-  source = "./modules/cloud-storage-notification"
-
-  bucket_name                = module.outliers-etl-data.name
-  push_endpoint              = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_outliers"
-  service_account_email      = google_service_account.application_data_import_cloud_run.email
-  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\") AND NOT hasPrefix(attributes.objectId, \"sandbox/\")"
-  minimum_backoff            = "180s"
-  maximum_backoff            = "600s"
-  message_retention_duration = "86400s"
-}
-
 module "handle_insights_etl" {
   source = "./modules/cloud-storage-notification"
 
@@ -85,10 +72,10 @@ module "handle_insights_etl" {
   message_retention_duration = "86400s"
 }
 
-module "archive_outliers_file" {
+module "archive_insights_file" {
   source = "./modules/cloud-storage-notification"
 
-  bucket_name           = module.outliers-etl-data.name
+  bucket_name           = module.insights-etl-data.name
   push_endpoint         = "${local.app_engine_url}/outliers-utils/archive-file"
   service_account_email = data.google_app_engine_default_service_account.default.email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication

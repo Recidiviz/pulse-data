@@ -57,10 +57,9 @@ class PersonBase:
 
 
 class SupervisionOfficer(PersonBase, InsightsBase):
-    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.insights_supervision_officers`"""
+    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_officers`"""
 
-    # TODO(#29763): Rename to supervision_officers when OUTLIERS/INSIGHTS divergence is resolved
-    __tablename__ = "insights_supervision_officers"
+    __tablename__ = "supervision_officers"
 
     supervisor_external_id = Column(String, nullable=True)
     # List of supervisors for this officer
@@ -313,18 +312,3 @@ class UserMetadata(InsightsBase):
 
     pseudonymized_id = Column(String, primary_key=True)
     has_seen_onboarding = Column(Boolean, default=False)
-
-
-# TODO(#29763): Delete when supervision_officers divergence is resolved
-class TempSupervisionOfficer(PersonBase, InsightsBase):
-    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_officers`"""
-
-    __tablename__ = "supervision_officers"
-
-    supervisor_external_id = Column(String, nullable=True)
-    # List of supervisors for this officer
-    supervisor_external_ids = Column(ARRAY(String), nullable=True)
-    # Id of the supervision district the officer is assigned to
-    supervision_district = Column(String, nullable=True)
-    # specialized caseload type, if applicable
-    specialized_caseload_type = Column(String, nullable=True)

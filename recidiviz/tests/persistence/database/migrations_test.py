@@ -557,8 +557,6 @@ class TestInsightsMigrations(MigrationsTestBase):
             "metric_benchmarks_pkey",
             "supervision_officer_outlier_status_pkey",
             "supervision_state_metrics_pkey",
-            # TODO(#29763): Remove when supervision_officers divergence is resolved
-            "insights_supervision_officers_pkey",
             "supervision_officers_pkey",
         }
 

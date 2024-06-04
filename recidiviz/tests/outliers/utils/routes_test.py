@@ -61,7 +61,7 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
         test_data = "\n".join(['{"a": "b"}', '{"a": "z"}'])
         self.fake_gcs.upload_from_string(
             GcsfsFilePath.from_absolute_path(
-                f"gs://recidiviz-test-outliers-etl-data/{test_filename}"
+                f"gs://recidiviz-test-insights-etl-data/{test_filename}"
             ),
             test_data,
             "text/json",
@@ -74,7 +74,7 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
                     "message": {
                         "data": base64.b64encode(b"anything").decode(),
                         "attributes": {
-                            "bucketId": "recidiviz-test-outliers-etl-data",
+                            "bucketId": "recidiviz-test-insights-etl-data",
                             "objectId": test_filename,
                         },
                     }
@@ -86,7 +86,7 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
             self.assertEqual(
                 self.fake_gcs.download_as_string(
                     GcsfsFilePath.from_absolute_path(
-                        f"gs://recidiviz-test-outliers-etl-data-archive/2023-12-04/{test_filename}"
+                        f"gs://recidiviz-test-insights-etl-data-archive/2023-12-04/{test_filename}"
                     )
                 ),
                 test_data,
@@ -127,7 +127,7 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
         test_data = "\n".join(['{"a": "b"}', '{"a": "z"}'])
         self.fake_gcs.upload_from_string(
             GcsfsFilePath.from_absolute_path(
-                f"gs://recidiviz-test-outliers-etl-data/{test_filename}"
+                f"gs://recidiviz-test-insights-etl-data/{test_filename}"
             ),
             test_data,
             "text/json",
@@ -140,7 +140,7 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
                     "message": {
                         "data": base64.b64encode(b"anything").decode(),
                         "attributes": {
-                            "bucketId": "recidiviz-test-outliers-etl-data",
+                            "bucketId": "recidiviz-test-insights-etl-data",
                             "objectId": test_filename,
                         },
                     }
@@ -152,7 +152,7 @@ class TestOutliersUtilsRoutes(unittest.TestCase):
             self.assertFalse(
                 self.fake_gcs.exists(
                     GcsfsFilePath.from_absolute_path(
-                        f"gs://recidiviz-test-outliers-etl-data-archive/2023-12-04/{test_filename}"
+                        f"gs://recidiviz-test-insights-etl-data-archive/2023-12-04/{test_filename}"
                     )
                 )
             )
