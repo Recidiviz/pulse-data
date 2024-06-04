@@ -408,7 +408,53 @@ def us_tn_classification_forms(
         FROM ({detainers_cte()})
         WHERE end_date IS NULL
         GROUP BY 1
-    )
+    ),
+    incompatibles AS (
+        /*
+         This table should list each pair of incompatible folks (i.e. Person A as Offender ID
+         and Person B as IncompatibleOffenderID, and another row for Person B as Offender ID 
+         and Person A as  IncompatibleOffenderID. But this doesn't always happen so we're unioning
+         the table twice (first using OffenderID and then using IncompatibleOffenderID to catch all)
+        */
+        SELECT
+            DISTINCT
+            OffenderID,
+            CASE WHEN IncompatibleType = 'S' THEN 'STAFF'
+                  ELSE facility_id
+                  END AS incompatible_offender_id,
+            IncompatibleType AS incompatible_type,
+        FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.IncompatiblePair_latest` i
+        INNER JOIN 
+            `{{project_id}}.normalized_state.state_person_external_id` pei
+        ON
+            i.IncompatibleOffenderID = pei.external_id
+        AND
+            pei.state_code = 'US_TN'
+        INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+            USING(person_id, state_code)
+        WHERE IncompatibleRemovedDate IS NULL
+
+        UNION DISTINCT 
+    
+        SELECT
+            DISTINCT
+            IncompatibleOffenderID AS OffenderID,
+            CASE WHEN IncompatibleType = 'S' THEN 'STAFF'
+                  ELSE facility_id
+                  END AS incompatible_offender_id,
+            IncompatibleType AS incompatible_type,
+        FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.IncompatiblePair_latest` i
+        INNER JOIN 
+            `{{project_id}}.normalized_state.state_person_external_id` pei
+        ON
+            i.OffenderID = pei.external_id
+        AND
+            pei.state_code = 'US_TN'
+        -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
+        INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+            USING(person_id, state_code)
+        WHERE IncompatibleRemovedDate IS NULL
+   )
     SELECT tes.state_code,
            tes.reasons,
            pei.external_id,
@@ -487,26 +533,10 @@ def us_tn_classification_forms(
     ) seg
         ON pei.external_id = seg.OffenderID
     LEFT JOIN (
-        SELECT OffenderID, ARRAY_AGG(STRUCT(incompatible_ids AS incompatible_offender_id,
-                                            IncompatibleType AS incompatible_type)) AS incompatible_array
-        FROM (
-            SELECT DISTINCT
-                    OffenderID,
-                    CASE WHEN IncompatibleType = 'S' THEN 'STAFF'
-                         ELSE facility_id
-                         END AS incompatible_ids,
-                    IncompatibleType,
-            FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.IncompatiblePair_latest` i
-            INNER JOIN 
-                `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-            ON
-                i.IncompatibleOffenderID = pei.external_id
-            AND
-                pei.state_code = 'US_TN'
-            INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
-                USING(person_id, state_code)
-            WHERE IncompatibleRemovedDate IS NULL
-            )
+        SELECT OffenderID, ARRAY_AGG(STRUCT(incompatible_offender_id,
+                                            incompatible_type)) AS incompatible_array
+        FROM
+            incompatibles
         GROUP BY 1
     ) incompatible
         ON pei.external_id = incompatible.OffenderID
