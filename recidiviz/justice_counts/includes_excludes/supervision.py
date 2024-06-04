@@ -92,41 +92,31 @@ class SupervisionFinesFeesIncludesExcludes(Enum):
 class SupervisionExpensesTimeframeIncludesExcludes(Enum):
     """Includes/Excludes class for Supervision Expenses"""
 
-    SINGLE_YEAR = ("Expenses for single fiscal year",)
-    BIENNIUM = ("Biennium funding allocated during the time period",)
-    MULTI_YEAR = ("Multi-year appropriations allocated in during the time period",)
+    SINGLE_YEAR = "Expenses for single fiscal year"
+    BIENNIUM = "Biennium funding allocated during the time period"
+    MULTI_YEAR = "Multi-year appropriations allocated in during the time period"
 
 
 class SupervisionExpensesPurposeIncludesExcludes(Enum):
     FACILITY_MAINTENANCE = (
-        "Expenses for community supervision office facility operations and maintenance",
+        "Expenses for community supervision office facility operations and maintenance"
     )
-    CONFINEMENT_FACILITY = (
-        "Expenses for community supervision confinement facility operations and maintenance (e.g., violation centers, halfway back facilities, etc.)",
-    )
+    CONFINEMENT_FACILITY = "Expenses for community supervision confinement facility operations and maintenance (e.g., violation centers, halfway back facilities, etc.)"
     RENTAL_FACILITIES = (
-        "Expenses for construction or rental of new community supervision facilities",
+        "Expenses for construction or rental of new community supervision facilities"
     )
     TREATMENT_PROGRAMMING = (
-        "Expenses for agency-run or contracted treatment and programming",
+        "Expenses for agency-run or contracted treatment and programming"
     )
-    SUPERVISION_STAFF = ("Expenses for community supervision staff",)
-    SUPPORT_STAFF = ("Expenses for central administrative and support staff",)
-    PRIVATE_SERVICES = (
-        "Expenses for the operation of private community supervision services contracted by the agency",
-    )
-    INTERSTATE_COMPACT = (
-        "Expenses for supervision services contracted to other jurisdictions through interstate compact",
-    )
-    STIPENDS_JAILS = (
-        "Expenses for stipends or reimbursements for people on supervision detained in jail facilities (locally or out of state)",
-    )
-    STIPENDS_PRISONS = (
-        "Expenses for stipends or reimbursements for people on supervision detained in prison facilities (locally or out of state)",
-    )
-    JAILS = ("Expenses for jail facility operations and maintenance",)
-    PRISONS = ("Expenses for prison facility operations and maintenance",)
-    JUVENILE_SUPERVISION = ("Expenses for juvenile supervision",)
+    SUPERVISION_STAFF = "Expenses for community supervision staff"
+    SUPPORT_STAFF = "Expenses for central administrative and support staff"
+    PRIVATE_SERVICES = "Expenses for the operation of private community supervision services contracted by the agency"
+    INTERSTATE_COMPACT = "Expenses for supervision services contracted to other jurisdictions through interstate compact"
+    STIPENDS_JAILS = "Expenses for stipends or reimbursements for people on supervision detained in jail facilities (locally or out of state)"
+    STIPENDS_PRISONS = "Expenses for stipends or reimbursements for people on supervision detained in prison facilities (locally or out of state)"
+    JAILS = "Expenses for jail facility operations and maintenance"
+    PRISONS = "Expenses for prison facility operations and maintenance"
+    JUVENILE_SUPERVISION = "Expenses for juvenile supervision"
 
 
 class SupervisionPersonnelExpensesIncludesExcludes(Enum):

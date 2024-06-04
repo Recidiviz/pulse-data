@@ -47,9 +47,7 @@ class PrisonFundingTimeframeIncludesExcludes(Enum):
 
 class PrisonFundingPurposeIncludesExcludes(Enum):
     FACILITY_MAINTENANCE = "Funding for prison facility operations and maintenance"
-    OPERATIONS = (
-        "Funding for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)",
-    )
+    OPERATIONS = "Funding for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
     FACILITY_CONSTRUCTION = (
         "Funding for construction or rental of new prison facilities"
     )
