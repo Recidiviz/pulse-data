@@ -50,6 +50,9 @@ US_AZ:
     analyst_data.us_az_home_plan_preprocessed: |-
       There is no place to store "Home Plan" reentry planning information in our schema,
       and this info is relevant to a reentry analysis in AZ.
+  AZ_DOC_PRISON:
+    reference_views.us_az_location_metadata: |-
+      We pull all prison facility locations from this raw data into the location metadata view.
   AZ_DOC_SC_COMMITMENT:
     analyst_data.us_az_early_discharge_sessions_preprocessing: |-
       We don't ingest early discharge data.
@@ -59,6 +62,9 @@ US_AZ:
   AZ_DOC_SC_OFFENSE:
     analyst_data.us_az_early_discharge_sessions_preprocessing: |-
       We don't ingest early discharge data.
+  DPP_OFFICE_LOCATION:
+    reference_views.us_az_location_metadata: |-
+      We pull all supervision locations from this raw data into the location metadata view.
   LOOKUPS:
     analyst_data.us_az_action_queue: |-
       Needed a way to cleanly view raw data from a specific screen in ACIS. No place
@@ -68,6 +74,8 @@ US_AZ:
     analyst_data.us_az_home_plan_preprocessed: |-
       There is no place to store "Home Plan" reentry planning information in our schema,
       and this info is relevant to a reentry analysis in AZ.
+    reference_views.us_az_location_metadata: |-
+      We decode location names in the location metadata view.
   validation_daily_count_sheet_by_facility:
     us_az_validation.incarceration_population_by_facility: |-
       This is a raw data table containing external comparison validation data, being
