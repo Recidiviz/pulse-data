@@ -94,9 +94,7 @@ from google.cloud.bigquery.table import TableListItem
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_config import (

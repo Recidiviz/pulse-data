@@ -27,6 +27,7 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
@@ -519,7 +520,7 @@ class ViewManagerTest(unittest.TestCase):
             [
                 mock.call(
                     dataset_ref,
-                    view_update_manager.TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 )
                 for dataset_ref in dataset_refs
             ],

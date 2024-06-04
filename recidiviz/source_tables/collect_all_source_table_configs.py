@@ -46,15 +46,18 @@ from recidiviz.source_tables.dataflow_output_table_collector import (
     get_dataflow_output_source_table_collections,
 )
 from recidiviz.source_tables.source_table_config import (
+    RawDataSourceTableLabel,
     SchemaTypeSourceTableLabel,
     SourceTableCollection,
     SourceTableConfig,
+    SourceTableLabel,
 )
 from recidiviz.source_tables.source_table_repository import SourceTableRepository
 from recidiviz.source_tables.us_mi_validation_oneoffs import (
     collect_duplicative_us_mi_validation_oneoffs,
 )
-from recidiviz.tools.deploy.update_raw_data_table_schemas import ONE_DAY_MS
+
+ONE_DAY_MS = 24 * 60 * 60 * 1000
 
 
 def _collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
@@ -68,18 +71,23 @@ def _collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
             # For a given state and instance, create the raw datasets used for housing temporary tables related to
             # raw data pruning. The tables within the dataset will be temporarily added and deleted in the process of
             # raw data pruning, but the datasets themselves won't.
+            labels: list[SourceTableLabel] = [
+                RawDataSourceTableLabel(state_code=state_code, ingest_instance=instance)
+            ]
             collections.extend(
                 [
                     SourceTableCollection(
                         dataset_id=raw_data_pruning_new_raw_data_dataset(
                             state_code, instance
                         ),
+                        labels=labels,
                         default_table_expiration_ms=ONE_DAY_MS,
                     ),
                     SourceTableCollection(
                         dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
                             state_code, instance
                         ),
+                        labels=labels,
                         default_table_expiration_ms=ONE_DAY_MS,
                     ),
                 ]
@@ -90,6 +98,7 @@ def _collect_raw_data_source_table_collections() -> list[SourceTableCollection]:
                     state_code=state_code,
                     instance=instance,
                 ),
+                labels=labels,
             )
 
             collections.append(raw_data_collection)

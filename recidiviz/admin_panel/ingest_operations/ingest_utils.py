@@ -27,9 +27,7 @@ import cattr
 import google_crc32c
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath

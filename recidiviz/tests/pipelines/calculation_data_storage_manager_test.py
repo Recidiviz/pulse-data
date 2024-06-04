@@ -28,9 +28,7 @@ from freezegun import freeze_time
 from google.cloud import bigquery
 from mock import patch
 
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized import (
     most_recent_dataflow_metrics,

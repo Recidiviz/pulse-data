@@ -22,8 +22,12 @@ from typing import Any
 import attr
 from google.cloud.bigquery import ExternalConfig, SchemaField, Table
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -40,6 +44,23 @@ class SourceTableConfig:
     external_data_configuration: ExternalConfig | None = attr.ib(default=None)
     clustering_fields: list[str] | None = attr.ib(factory=list)
     yaml_definition_path: str | None = attr.ib(default=None)
+    is_sandbox_table: bool = attr.ib(default=False)
+
+    def as_sandbox_table(self, sandbox_dataset_prefix: str) -> "SourceTableConfig":
+        if self.is_sandbox_table:
+            raise ValueError(
+                f"Config for [{self.address.to_str()}] is already a sandbox config."
+            )
+        return attr.evolve(
+            self,
+            address=BigQueryAddress(
+                dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
+                    sandbox_dataset_prefix, self.address.dataset_id
+                ),
+                table_id=self.address.table_id,
+            ),
+            is_sandbox_table=True,
+        )
 
     def to_dict(self) -> dict[str, Any]:
         representation = {
@@ -125,6 +146,18 @@ class DataflowPipelineSourceTableLabel(SourceTableLabel[str]):
 
 
 @attr.define
+class RawDataSourceTableLabel(SourceTableLabel[tuple[StateCode, DirectIngestInstance]]):
+    state_code: StateCode = attr.ib(validator=attr.validators.in_(options=StateCode))
+    ingest_instance: DirectIngestInstance = attr.ib(
+        validator=attr.validators.in_(options=DirectIngestInstance)
+    )
+
+    @property
+    def value(self) -> tuple[StateCode, DirectIngestInstance]:
+        return self.state_code, self.ingest_instance
+
+
+@attr.define
 class SchemaTypeSourceTableLabel(SourceTableLabel[SchemaType]):
     schema_type: SchemaType = attr.ib(validator=attr.validators.instance_of(SchemaType))
 
@@ -135,7 +168,9 @@ class SchemaTypeSourceTableLabel(SourceTableLabel[SchemaType]):
 
 @attr.s(auto_attribs=True)
 class SourceTableCollection:
-    """Represents a set of source tables in a dataset. A dataset may be composed of multiple collections"""
+    """Represents a set of source tables in a dataset. A dataset may be composed of
+    multiple collections.
+    """
 
     dataset_id: str
     labels: list[SourceTableLabel[Any]] = attr.ib(factory=list)
@@ -143,6 +178,36 @@ class SourceTableCollection:
     source_tables_by_address: dict[BigQueryAddress, SourceTableConfig] = attr.ib(
         factory=dict
     )
+    is_sandbox_collection: bool = attr.ib(default=False)
+
+    def as_sandbox_collection(
+        self, sandbox_dataset_prefix: str
+    ) -> "SourceTableCollection":
+        if self.is_sandbox_collection:
+            raise ValueError("Config for this collection is already a sandbox config.")
+
+        dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
+            sandbox_dataset_prefix, self.dataset_id
+        )
+        source_tables_by_address = {}
+        for source_table in self.source_tables_by_address.values():
+            sandbox_table = source_table.as_sandbox_table(sandbox_dataset_prefix)
+            source_tables_by_address[sandbox_table.address] = sandbox_table
+
+        return attr.evolve(
+            self,
+            dataset_id=dataset_id,
+            source_tables_by_address=source_tables_by_address,
+            is_sandbox_collection=True,
+        )
+
+    @property
+    def table_expiration_ms(self) -> int | None:
+        return (
+            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+            if self.is_sandbox_collection
+            else self.default_table_expiration_ms
+        )
 
     def _build_table_address(self, table_id: str) -> BigQueryAddress:
         return BigQueryAddress(dataset_id=self.dataset_id, table_id=table_id)

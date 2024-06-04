@@ -33,10 +33,8 @@ from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     DASHBOARD_VIEW_BUILDERS,
 )

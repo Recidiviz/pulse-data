@@ -27,9 +27,7 @@ from sqlalchemy.orm import DeclarativeMeta, relationship
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
