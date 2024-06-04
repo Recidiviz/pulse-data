@@ -38,6 +38,9 @@ from recidiviz.outliers.types import (
     UserInfo,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
+    Configuration as InsightsConfiguration,
+)
+from recidiviz.persistence.database.schema.insights.schema import (
     MetricBenchmark,
     SupervisionClientEvent,
     SupervisionClients,
@@ -45,6 +48,9 @@ from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
+)
+from recidiviz.persistence.database.schema.insights.schema import (
+    UserMetadata as InsightsUserMetadata,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
     Configuration,
@@ -120,7 +126,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
             for supervisor in load_model_from_json_fixture(
                 SupervisionOfficerSupervisor
             ):
-
                 session.add(SupervisionOfficerSupervisor(**supervisor))
             for manager in load_model_from_json_fixture(SupervisionDistrictManager):
                 session.add(SupervisionDistrictManager(**manager))
@@ -363,6 +368,12 @@ class TestOutliersQuerier(InsightsDbTestCase):
         metadata = querier.get_user_metadata(pid)
         self.assertIsNotNone(metadata)
         self.assertTrue(metadata.has_seen_onboarding)  # type: ignore
+        self.assertTrue(metadata.duplicate_write)  # type: ignore
+
+        # Ensure double write works
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            user_metadata = session.query(InsightsUserMetadata).first()
+            self.assertEqual(user_metadata.pseudonymized_id, pid)
 
     def test_update_user_metadata_existing_entity(self) -> None:
         pid = "hash1"
@@ -488,10 +499,18 @@ class TestOutliersQuerier(InsightsDbTestCase):
         results = querier.get_configurations()
         self.assertEqual(results[0].feature_variant, None)
         self.assertEqual(results[0].updated_by, "alexa@recidiviz.org")
+        self.assertTrue(results[0].duplicate_write)
         # Assumes that the first non-header row in configurations.csv has feature_variant=None
         self.assertEqual(
             querier.get_configuration(1).status, ConfigurationStatus.INACTIVE.value
         )
+
+        # Ensure double write works
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            config = session.query(InsightsConfiguration).first()
+            self.assertEqual(config.feature_variant, None)
+            self.assertEqual(config.id, 1)
+            self.assertEqual(config.updated_by, "alexa@recidiviz.org")
 
     def test_add_configuration_fv(self) -> None:
         config_to_add = {
@@ -524,6 +543,13 @@ class TestOutliersQuerier(InsightsDbTestCase):
             querier.get_configuration(3).status, ConfigurationStatus.INACTIVE.value
         )
 
+        # Ensure double write works
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            config = session.query(InsightsConfiguration).first()
+            self.assertEqual(config.feature_variant, "fv1")
+            self.assertEqual(config.id, 1)
+            self.assertEqual(config.updated_by, "alexa@recidiviz.org")
+
     def test_add_configuration_error(self) -> None:
         config_to_add = {
             "updated_at": datetime(2024, 2, 1),
@@ -543,6 +569,11 @@ class TestOutliersQuerier(InsightsDbTestCase):
             querier.add_configuration(config_to_add)
             # Assert the latest entity is the first non-header row in configurations.csv
             self.assertEqual(querier.get_configurations()[0].id, 1)
+
+        # Ensure double write does not happen
+        with SessionFactory.using_database(self.insights_database_key) as session:
+            config = session.query(InsightsConfiguration).first()
+            self.assertIsNone(config)
 
     def test_deactivate_configuration_no_matching_id(self) -> None:
         with self.assertRaises(NoResultFound):

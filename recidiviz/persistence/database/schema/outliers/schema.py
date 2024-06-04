@@ -30,6 +30,7 @@ from sqlalchemy import (
     Identity,
     Integer,
     String,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
@@ -284,6 +285,9 @@ class Configuration(OutliersBase):
         server_default="Has a rate on any metric significantly higher than peers - over 1 Interquartile Range above the statewide rate.",
     )
     doc_label = Column(String, nullable=False, server_default="DOC")
+    # Internally used field to avoid conflicts when exporting this table's data
+    # and importing it as a CSV via the Cloud SQL UI
+    duplicate_write = Column(Boolean, nullable=False, server_default=text("FALSE"))
     # When adding new columns below, be sure to set a default value with the
     # server_default parameter and autogenerate a migration so that existing values
     # in the database have this column hydrated.
@@ -309,3 +313,6 @@ class UserMetadata(OutliersBase):
 
     pseudonymized_id = Column(String, primary_key=True)
     has_seen_onboarding = Column(Boolean, default=False)
+    # Internally used field to avoid conflicts when exporting this table's data
+    # and importing it as a CSV via the Cloud SQL UI
+    duplicate_write = Column(Boolean, nullable=False, server_default=text("FALSE"))

@@ -18,6 +18,8 @@
 from typing import Optional
 from unittest import TestCase
 
+from recidiviz.persistence.database.schema.insights.schema import InsightsBase
+from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -64,6 +66,13 @@ class InsightsDbTestCase(TestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.insights_database_key, engine=self.insights_engine
         )
+
+        # Drop and (re)create all tables
+        OutliersBase.metadata.drop_all(self.outliers_engine)
+        OutliersBase.metadata.create_all(self.outliers_engine)
+
+        InsightsBase.metadata.drop_all(self.insights_engine)
+        InsightsBase.metadata.create_all(self.insights_engine)
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
