@@ -42,11 +42,11 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.insights.schema import (
-    SupervisionOfficer as InsightsSupervisionOfficer,
-)
-from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionClientEvent,
     SupervisionOfficer,
+)
+from recidiviz.persistence.database.schema.pathways.schema import (
+    PrisonPopulationProjection,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
@@ -116,7 +116,7 @@ class TestGCSImportToCloudSQL(TestCase):
         )
 
     def setUp(self) -> None:
-        self.officer_1_id = "45678"
+        self.state_code = StateCode.US_MO.value
         self.mock_instance_id = "mock_instance_id"
         self.cloud_sql_client_patcher = patch(
             "recidiviz.cloud_sql.gcs_import_to_cloud_sql.CloudSQLClientImpl"
@@ -130,14 +130,14 @@ class TestGCSImportToCloudSQL(TestCase):
             "get_stripped_cloudsql_instance_id",
             Mock(return_value=self.mock_instance_id),
         )
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_mo")
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_mo")
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.table_name = SupervisionOfficer.__tablename__
-        self.model = SupervisionOfficer
-        self.columns = [col.name for col in SupervisionOfficer.__table__.columns]
+        self.model = PrisonPopulationProjection
+        self.table_name = self.model.__tablename__
+        self.columns = [col.name for col in self.model.__table__.columns]
         self.export_uri = GcsfsFilePath.from_absolute_path(
-            "US_MO/supervision_officers.csv"
+            f"{self.state_code}/{self.table_name}.csv"
         )
         self.now = "2023-08-30T13:33:09.109433"
 
@@ -151,9 +151,7 @@ class TestGCSImportToCloudSQL(TestCase):
         self, values: Optional[List[str]] = None, **_kwargs: Any
     ) -> str:
         with SessionFactory.using_database(self.database_key) as session:
-            csv_values = [
-                "('US_MO', '45678', 2190437865, '{\"first\": \"fname\", \"last\": \"lname\"}', '45678::hashed', NULL, NULL, NULL)",
-            ]
+            csv_values = ["('US_MO',2024,1,'HISTORICAL','ALL','ALL',23354,23354,23354)"]
             if values:
                 csv_values = csv_values + values
             session.execute(
@@ -217,35 +215,43 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            destination_table_rows = session.query(SupervisionOfficer).all()
+            destination_table_rows = session.query(self.model).all()
 
         self.assertEqual(len(destination_table_rows), 1)
-        self.assertEqual(destination_table_rows[0].external_id, self.officer_1_id)
+        self.assertEqual(destination_table_rows[0].state_code, self.state_code)
 
     def test_import_gcs_csv_to_cloud_sql_with_region_code(self) -> None:
         """Assert that rows are copied to the temp table for every region code before being swapped to
         the destination table."""
-        officer_1 = SupervisionOfficer(
+        row_1 = PrisonPopulationProjection(
             state_code="US_PA",
-            external_id="0001",
-            staff_id=123456789,
-            full_name={"first": "fname", "last": "lname"},
-            pseudonymized_id="0001::hashed",
+            year=2024,
+            month=1,
+            simulation_tag="HISTORICAL",
+            gender="ALL",
+            legal_status="ALL",
+            total_population=1930,
+            total_population_min=1930,
+            total_population_max=1930,
         )
-        officer_2 = SupervisionOfficer(
+        row_2 = PrisonPopulationProjection(
             state_code="US_PA",
-            external_id="0002",
-            staff_id=987654321,
-            full_name={"first": "fname2", "last": "lname2"},
-            pseudonymized_id="0002::hashed",
+            year=2024,
+            month=2,
+            simulation_tag="HISTORICAL",
+            gender="ALL",
+            legal_status="ALL",
+            total_population=1930,
+            total_population_min=1930,
+            total_population_max=1930,
         )
-        add_entity_to_database_session(self.database_key, [officer_1, officer_2])
+        add_entity_to_database_session(self.database_key, [row_1, row_2])
 
         def _mock_side_effect(**_kwargs: Any) -> str:
             return self._mock_load_data_from_csv(
                 values=[
-                    "('US_MO', '23456', 6745892301, '{\"first\": \"fname2\", \"last\": \"lname2\"}', '23456::hashed', NULL, NULL, NULL)",
-                    "('US_MO', '34567', 7654983210, '{\"first\": \"fname3\", \"last\": \"lname3\"}', '34567::hashed', NULL, NULL, NULL)",
+                    "('US_MO',2024,3,'HISTORICAL','ALL','ALL',23354,23354,23354)",
+                    "('US_MO',2024,4,'HISTORICAL','ALL','ALL',23354,23354,23354)",
                 ]
             )
 
@@ -262,7 +268,7 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            destination_table_rows = session.query(SupervisionOfficer).all()
+            destination_table_rows = session.query(PrisonPopulationProjection).all()
             state_codes = [row.state_code for row in destination_table_rows]
             self.assertEqual(len(destination_table_rows), 5)
             self.assertEqual(set(state_codes), {"US_MO", "US_PA"})
@@ -272,14 +278,18 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            officer_1 = SupervisionOfficer(
-                state_code="US_MI",
-                external_id="0001",
-                staff_id=123456789,
-                full_name={"first": "fname", "last": "lname"},
-                pseudonymized_id="0001::hashed",
+            row_1 = PrisonPopulationProjection(
+                state_code="US_PA",
+                year=2024,
+                month=1,
+                simulation_tag="HISTORICAL",
+                gender="ALL",
+                legal_status="ALL",
+                total_population=1930,
+                total_population_min=1930,
+                total_population_max=1930,
             )
-            add_entity_to_database_session(self.database_key, [officer_1])
+            add_entity_to_database_session(self.database_key, [row_1])
             self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
                 "Error while importing CSV to temp table"
             )
@@ -292,7 +302,7 @@ class TestGCSImportToCloudSQL(TestCase):
                     gcs_uri=self.export_uri,
                     columns=self.columns,
                 )
-            destination_table_rows = session.query(SupervisionOfficer).all()
+            destination_table_rows = session.query(PrisonPopulationProjection).all()
             self.assertEqual(len(destination_table_rows), 1)
 
     def test_import_gcs_csv_to_cloud_sql_session_error(self) -> None:
@@ -300,14 +310,18 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            officer_1 = SupervisionOfficer(
-                state_code="US_MI",
-                external_id="0001",
-                staff_id=123456789,
-                full_name={"first": "fname", "last": "lname"},
-                pseudonymized_id="0001::hashed",
+            row_1 = PrisonPopulationProjection(
+                state_code="US_PA",
+                year=2024,
+                month=1,
+                simulation_tag="HISTORICAL",
+                gender="ALL",
+                legal_status="ALL",
+                total_population=1930,
+                total_population_min=1930,
+                total_population_max=1930,
             )
-            add_entity_to_database_session(self.database_key, [officer_1])
+            add_entity_to_database_session(self.database_key, [row_1])
 
             def _mock_side_effect(**_kwargs: Any) -> str:
                 raise ValueError("An error occurred!")
@@ -322,7 +336,7 @@ class TestGCSImportToCloudSQL(TestCase):
                     columns=self.columns,
                 )
 
-            destination_table_rows = session.query(SupervisionOfficer).all()
+            destination_table_rows = session.query(PrisonPopulationProjection).all()
             self.assertEqual(len(destination_table_rows), 1)
 
     def test_retry(self) -> None:
@@ -395,15 +409,13 @@ class TestGCSImportToCloudSQLWithGeneratedPrimaryKey(TestCase):
             "get_stripped_cloudsql_instance_id",
             Mock(return_value=self.mock_instance_id),
         )
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_mi")
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_mi")
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.table_name = SupervisionClientEvent.__tablename__
         self.model = SupervisionClientEvent
+        self.table_name = self.model.__tablename__
         self.columns = [
-            col.name
-            for col in SupervisionClientEvent.__table__.columns
-            if col.name != "_id"
+            col.name for col in self.model.__table__.columns if col.name != "_id"
         ]
         self.export_uri = GcsfsFilePath.from_absolute_path(
             "US_MI/supervision_client_events.csv"
@@ -423,7 +435,7 @@ class TestGCSImportToCloudSQLWithGeneratedPrimaryKey(TestCase):
             )
             return "fake-id"
 
-    def test_import_gcs_csv_to_cloud_sql_with_generated_primary_key(self) -> None:
+    def test_import_gcs_file_to_cloud_sql_with_generated_primary_key(self) -> None:
         existing_row = SupervisionClientEvent(
             state_code="US_MI",
             metric_id="violations",
@@ -452,7 +464,7 @@ class TestGCSImportToCloudSQLWithGeneratedPrimaryKey(TestCase):
         self.mock_cloud_sql_client.import_gcs_csv.side_effect = _mock_side_effect
         self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
 
-        import_gcs_csv_to_cloud_sql(
+        import_gcs_file_to_cloud_sql(
             database_key=self.database_key,
             model=self.model,
             gcs_uri=self.export_uri,
@@ -462,7 +474,7 @@ class TestGCSImportToCloudSQLWithGeneratedPrimaryKey(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            destination_table_rows = session.query(SupervisionClientEvent).all()
+            destination_table_rows = session.query(self.model).all()
             self.assertEqual(len(destination_table_rows), len(values_to_import))
 
 
@@ -573,11 +585,9 @@ class TestGCSImportFileToCloudSQL(TestCase):
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_ca")
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.table_name = InsightsSupervisionOfficer.__tablename__
-        self.model = InsightsSupervisionOfficer
-        self.columns = [
-            col.name for col in InsightsSupervisionOfficer.__table__.columns
-        ]
+        self.model = SupervisionOfficer
+        self.table_name = self.model.__tablename__
+        self.columns = [col.name for col in self.model.__table__.columns]
         self.state_code = StateCode.US_CA.value
         self.now = "2023-08-30T13:33:09.109433"
 

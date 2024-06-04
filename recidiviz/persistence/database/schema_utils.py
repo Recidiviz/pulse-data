@@ -129,10 +129,6 @@ def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:
     return list(get_all_database_entities_in_module(pathways_schema))
 
 
-def get_outliers_database_entities() -> List[Type[DatabaseEntity]]:
-    return list(get_all_database_entities_in_module(outliers_schema))
-
-
 def get_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
     for cls in get_all_database_entities_in_module(state_schema):

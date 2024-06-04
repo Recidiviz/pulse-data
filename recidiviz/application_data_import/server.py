@@ -61,13 +61,11 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
     INSIGHTS_VIEWS_OUTPUT_DIRECTORY_URI,
-    OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
 from recidiviz.persistence.database.schema.insights import schema as insights_schema
-from recidiviz.persistence.database.schema.outliers import schema as outliers_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -108,13 +106,6 @@ OUTLIERS_DB_IMPORT_QUEUE = "outliers-db-import"
 def _dashboard_event_level_bucket() -> str:
     return StrictStringFormatter().format(
         DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
-        project_id=metadata.project_id(),
-    )
-
-
-def _outliers_bucket() -> str:
-    return StrictStringFormatter().format(
-        OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
         project_id=metadata.project_id(),
     )
 
@@ -228,30 +219,6 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@app.route("/import/trigger_outliers", methods=["POST"])
-def _import_trigger_outliers() -> Tuple[str, HTTPStatus]:
-    """Exposes an endpoint to trigger standard GCS imports for outliers."""
-
-    try:
-        message = extract_pubsub_message_from_json(request.get_json())
-    except Exception as e:
-        return str(e), HTTPStatus.BAD_REQUEST
-
-    try:
-        create_import_task_helper(
-            request_path=request.path,
-            message=message,
-            gcs_bucket=_outliers_bucket(),
-            import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
-            task_prefix="import-outliers",
-            task_url="/import/outliers",
-        )
-    except ValueError as e:
-        return str(e), HTTPStatus.BAD_REQUEST
-
-    return "", HTTPStatus.OK
-
-
 @app.route("/import/trigger_insights", methods=["POST"])
 def _import_trigger_insights() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint to trigger standard GCS imports for insights."""
@@ -340,69 +307,6 @@ def create_import_task_helper(
             "Skipping enqueueing of %s because it is already being imported",
             task_id,
         )
-
-
-@app.route("/import/outliers/<state_code>/<filename>", methods=["POST"])
-def _import_outliers(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
-    """Imports a CSV file from GCS into the Outliers Cloud SQL database"""
-    # TODO(#20600): Create a helper for the shared logic between this endpoint and /import/outliers
-    if not StateCode.is_state_code(state_code.upper()):
-        return (
-            f"Unknown state_code [{state_code}] received, must be a valid state code.",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    view_builder = None
-    for builder in OUTLIERS_VIEW_BUILDERS:
-        if f"{builder.view_id}.csv" == filename:
-            view_builder = builder
-    if not view_builder:
-        return (
-            f"Invalid filename {filename}, must match a Outliers view",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    if view_builder in OUTLIERS_ARCHIVE_VIEW_BUILDERS:
-        return (
-            "",
-            HTTPStatus.OK,
-        )
-
-    if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
-        return (
-            f"Unexpected view builder delegate found when importing {filename}",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-    try:
-        db_entity = get_database_entity_by_table_name(
-            outliers_schema, view_builder.view_id
-        )
-
-    except ValueError as e:
-        return str(e), HTTPStatus.BAD_REQUEST
-
-    csv_path = GcsfsFilePath.from_absolute_path(
-        os.path.join(
-            _outliers_bucket(),
-            state_code + "/" + filename,
-        )
-    )
-
-    outliers_db_manager = StateSegmentedDatabaseManager(
-        get_outliers_enabled_states(), SchemaType.OUTLIERS
-    )
-
-    database_key = outliers_db_manager.database_key_for_state(state_code)
-    import_gcs_csv_to_cloud_sql(
-        database_key,
-        db_entity,
-        csv_path,
-        view_builder.columns,
-    )
-    logging.info("View (%s) successfully imported", view_builder.view_id)
-
-    return "", HTTPStatus.OK
 
 
 @app.route("/import/insights/<state_code>/<filename>", methods=["POST"])

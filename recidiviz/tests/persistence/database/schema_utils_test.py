@@ -224,15 +224,6 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_data_flash_status",
         ]
         outliers_table_names = [
-            "metric_benchmarks",
-            "supervision_client_events",
-            "supervision_clients",
-            "supervision_officers",
-            "supervision_officer_supervisors",
-            "supervision_district_managers",
-            "supervision_officer_metrics",
-            "supervision_officer_outlier_status",
-            "supervision_state_metrics",
             "configurations",
             "user_metadata",
         ]
@@ -244,7 +235,6 @@ class TestSchemaUtils(unittest.TestCase):
             "metric_benchmarks",
             "supervision_client_events",
             "supervision_clients",
-            "insights_supervision_officers",
             "supervision_officers",
             "supervision_officer_supervisors",
             "supervision_district_managers",

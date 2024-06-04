@@ -23,7 +23,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_NAME = "supervision_officers_archive"
 
-_DESCRIPTION = """View of archived supervision_officers.csv exports from GCS"""
+_DESCRIPTION = """
+    View of archived outliers-etl-data-archive/*/supervision_officers.csv 
+    and insights-etl-data-archive/*/supervision_officers.json exports from GCS
+"""
 
 _QUERY_TEMPLATE = """
 WITH
@@ -38,6 +41,19 @@ split_path AS (
     FROM `{project_id}.export_archives.outliers_supervision_officers_archive`
     -- exclude temp files we may have inadvertently archived
     WHERE _FILE_NAME NOT LIKE "%/staging/%"
+
+    -- TODO(#29960): Add output from JSON archive table
+    -- UNION ALL
+    -- SELECT
+    --     * EXCEPT (state_code),
+    --     CASE 
+    --         WHEN state_code = "US_ID" THEN "US_IX"
+    --         ELSE state_code
+    --     END AS state_code,
+    --     SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts,
+    -- FROM `{project_id}.export_archives.insights_supervision_officers_archive`
+    -- -- exclude temp files we may have inadvertently archived
+    -- WHERE _FILE_NAME NOT LIKE "%/staging/%
 )
 SELECT DISTINCT
     split_path.* EXCEPT (path_parts),

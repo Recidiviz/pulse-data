@@ -44,7 +44,6 @@ from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     INSIGHTS_VIEW_BUILDERS_TO_EXPORT,
-    OUTLIERS_VIEW_BUILDERS_TO_EXPORT,
 )
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
@@ -314,18 +313,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
         },
-    ),
-    # Outliers views
-    # TODO(#29763): Deprecate OUTLIERS export in favor of INSIGHTS
-    ExportViewCollectionConfig(
-        view_builders_to_export=OUTLIERS_VIEW_BUILDERS_TO_EXPORT,
-        output_directory_uri_template=OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="OUTLIERS",
-        allow_empty=True,
-        export_output_formats_and_validations={
-            ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
-        },
-        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Insights views
     ExportViewCollectionConfig(

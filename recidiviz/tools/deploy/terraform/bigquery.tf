@@ -122,7 +122,7 @@ resource "google_bigquery_table" "workflows_compliant_reporting_referral_record_
 resource "google_bigquery_table" "outliers_supervision_officer_outlier_status_archive" {
   dataset_id          = module.export_archives_dataset.dataset_id
   table_id            = "outliers_supervision_officer_outlier_status_archive"
-  description         = "This table contains daily archives of the supervision_officer_outlier_status export for Outliers, which are read directly from Cloud Storage."
+  description         = "This table contains daily archives of the supervision_officer_outlier_status export for Outliers (prior to using JSON exports), which are read directly from Cloud Storage."
   deletion_protection = false
   external_data_configuration {
     autodetect            = false
@@ -138,7 +138,7 @@ resource "google_bigquery_table" "outliers_supervision_officer_outlier_status_ar
 resource "google_bigquery_table" "outliers_supervision_officer_supervisors_archive" {
   dataset_id          = module.export_archives_dataset.dataset_id
   table_id            = "outliers_supervision_officer_supervisors_archive"
-  description         = "This table contains daily archives of the supervision_officer_supervisors export for Outliers, which are read directly from Cloud Storage."
+  description         = "This table contains daily archives of the supervision_officer_supervisors export for Outliers (prior to using JSON exports), which are read directly from Cloud Storage."
   deletion_protection = false
   external_data_configuration {
     autodetect            = false
@@ -154,7 +154,7 @@ resource "google_bigquery_table" "outliers_supervision_officer_supervisors_archi
 resource "google_bigquery_table" "outliers_supervision_officers_archive" {
   dataset_id          = module.export_archives_dataset.dataset_id
   table_id            = "outliers_supervision_officers_archive"
-  description         = "This table contains daily archives of the supervision_officers export for Outliers, which are read directly from Cloud Storage."
+  description         = "This table contains daily archives of the supervision_officers export for Outliers (prior to using JSON exports), which are read directly from Cloud Storage."
   deletion_protection = false
   external_data_configuration {
     autodetect            = false
@@ -179,4 +179,51 @@ resource "google_bigquery_table" "workflows_snooze_status_archive" {
     source_uris           = ["gs://${var.project_id}-snooze-status-archive/*.json"]
   }
   schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/workflows_snooze_status_archive.yaml"))["schema"])
+}
+
+resource "google_bigquery_table" "insights_supervision_officer_outlier_status_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "insights_supervision_officer_outlier_status_archive"
+  description         = "This table contains daily archives of the supervision_officer_outlier_status export for Insights, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-insights-etl-data-archive/*/supervision_officer_outlier_status.json"]
+  }
+  schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officer_outlier_status_archive.yaml"))["schema"])
+
+}
+
+resource "google_bigquery_table" "insights_supervision_officer_supervisors_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "insights_supervision_officer_supervisors_archive"
+  description         = "This table contains daily archives of the supervision_officer_supervisors export for Insights, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-insights-etl-data-archive/*/supervision_officer_supervisors.json"]
+  }
+  schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officer_supervisors_archive.yaml"))["schema"])
+
+}
+
+resource "google_bigquery_table" "insights_supervision_officers_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "insights_supervision_officers_archive"
+  description         = "This table contains daily archives of the insights_supervision_officers export for Insights, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-outliers-etl-data-archive/*/insights_supervision_officers.json"]
+  }
+  schema = jsonencode(yamldecode(file("${local.source_tables}/${module.export_archives_dataset.dataset_id}/insights_supervision_officers_archive.yaml"))["schema"])
 }

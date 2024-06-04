@@ -1,4 +1,0 @@
-state_code,client_id,pseudonymized_client_id,client_name,birthdate,gender,race_or_ethnicity
-US_PA,111,clienthash1,"{""given_names"": ""HARRY"", ""surname"": ""POTTER""}",1989-01-01,MALE,WHITE
-US_PA,222,clienthash2,"{""given_names"": ""OLIVIA"", ""surname"": ""RODRIGO""}",1999-01-01,FEMALE,ASIAN
-US_PA,333,clienthash3,"{""given_names"": ""TAYLOR"", ""surname"": ""SWIFT""}",1989-01-01,FEMALE,WHITE
