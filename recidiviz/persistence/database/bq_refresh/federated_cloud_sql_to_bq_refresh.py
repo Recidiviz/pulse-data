@@ -24,8 +24,8 @@ import pytz
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (

@@ -22,10 +22,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE, BigQueryClient
+from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
     update_bq_dataset_to_match_sqlalchemy_schema_for_one_table,
@@ -35,14 +33,23 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_all_table_classes_in_schema
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
+)
+from recidiviz.source_tables.source_table_config import RawDataSourceTableLabel
+from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.source_tables.source_table_update_manager import (
+    SourceTableCollectionUpdateConfig,
+    SourceTableUpdateManager,
+)
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir, redirect_logging_to_file
 from recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas import (
     update_dataflow_output_schemas,
 )
-from recidiviz.tools.deploy.update_raw_data_table_schemas import (
-    update_all_raw_data_table_schemas,
+from recidiviz.tools.utils.script_helpers import (
+    interactive_loop_until_tasks_succeed,
+    interactive_prompt_retry_on_exception,
 )
-from recidiviz.tools.utils.script_helpers import interactive_loop_until_tasks_succeed
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
 from recidiviz.utils.metadata import local_project_id_override
@@ -120,6 +127,39 @@ def update_cloud_sql_bq_refresh_output_schemas(
     )
 
 
+def update_all_source_table_schemas(
+    source_table_repository: SourceTableRepository,
+    client: BigQueryClient | None = None,
+) -> None:
+    update_manager = SourceTableUpdateManager(client=client)
+
+    # TODO(#30353): Add ingest view output table configs to this list
+    # TODO(#30354): Add dataflow output table configs to this list
+    # TODO(#30355): Add cloud sql refresh output configs to this list
+    # TODO(#30356): Add static yaml tables to this list
+    update_configs = [
+        SourceTableCollectionUpdateConfig(
+            source_table_collection=source_table_collection,
+            allow_field_deletions=False,
+        )
+        for source_table_collection in source_table_repository.collections_labelled_with(
+            RawDataSourceTableLabel
+        )
+    ]
+
+    interactive_prompt_retry_on_exception(
+        input_text="Exception encountered when updating source table schemas - retry?",
+        accepted_response_override="yes",
+        exit_on_cancel=True,
+        fn=lambda: update_manager.update_async(
+            update_configs=update_configs,
+            log_file=os.path.join(
+                get_deploy_logs_dir(), "update_all_source_table_schemas.log"
+            ),
+        ),
+    )
+
+
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     parser = argparse.ArgumentParser()
@@ -130,6 +170,8 @@ if __name__ == "__main__":
     )
     project_id = parser.parse_args().project_id
     with local_project_id_override(project_id):
-        update_all_raw_data_table_schemas()
+        repository = build_source_table_repository_for_collected_schemata()
+
+        update_all_source_table_schemas(source_table_repository=repository)
         update_cloud_sql_bq_refresh_output_schemas()
         update_dataflow_output_schemas()
