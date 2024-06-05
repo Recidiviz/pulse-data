@@ -1067,7 +1067,15 @@ def generate_assignments_with_attributes_and_time_periods_view(
             DATE({{% parameter {view_name}.population_start_date %}})
             {{% else %}}
             DATE(DATE_SUB({{% parameter {view_name}.population_end_date %}}, INTERVAL 1 DAY)),
+
+            # If period interval is NONE, use the length of the analysis period as the interval.
+            # Otherwise, use the specified period interval
+            {{% if {view_name}.period_interval_param._parameter_value == "NONE" %}}
             INTERVAL {{% parameter {view_name}.period_duration %}} {{% parameter {view_name}.period_param %}}
+            {{% else %}}
+            INTERVAL {{% parameter {view_name}.period_interval_duration %}} {{% parameter {view_name}.period_interval_param %}}
+            {{% endif %}}
+
             {{% endif %}}
         )) AS start_date
     ) time_period
@@ -1131,6 +1139,35 @@ def generate_assignments_with_attributes_and_time_periods_view(
             parameters=[
                 LookMLFieldParameter.description(
                     "Sets the number of date units specified by `period_param` that make up each period of analysis"
+                ),
+                LookMLFieldParameter.type(LookMLFieldType.NUMBER),
+                LookMLFieldParameter.view_label("Time Periods"),
+                LookMLFieldParameter.default_value("1"),
+            ],
+        ),
+        ParameterLookMLViewField(
+            field_name="period_interval_param",
+            parameters=[
+                LookMLFieldParameter.label("Period"),
+                LookMLFieldParameter.description(
+                    "For setting the date unit of intervals at which a new period is generated"
+                ),
+                LookMLFieldParameter.type(LookMLFieldType.UNQUOTED),
+                LookMLFieldParameter.view_label("Time Periods"),
+                LookMLFieldParameter.default_value("NONE"),
+                *[
+                    LookMLFieldParameter.allowed_value(snake_to_title(x.value), x.value)
+                    for x in MetricTimePeriod
+                    if x != MetricTimePeriod.CUSTOM
+                ],
+                LookMLFieldParameter.allowed_value("None", "NONE"),
+            ],
+        ),
+        ParameterLookMLViewField(
+            field_name="period_interval_duration",
+            parameters=[
+                LookMLFieldParameter.description(
+                    "Sets the number of date units specified by `period_interval_param` between each analysis period"
                 ),
                 LookMLFieldParameter.type(LookMLFieldType.NUMBER),
                 LookMLFieldParameter.view_label("Time Periods"),
@@ -1452,7 +1489,7 @@ USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_dat
             LookMLFieldParameter.type(LookMLFieldType.NUMBER),
             LookMLFieldParameter.view_label("Metric Menu"),
             LookMLFieldParameter.sql(
-                "CONCAT(${assignment_unit_of_analysis}, ${all_attributes})"
+                "COUNT(CONCAT(${assignment_unit_of_analysis}, ${all_attributes}))"
             ),
         ],
     )
