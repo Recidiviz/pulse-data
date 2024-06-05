@@ -24,6 +24,7 @@ from recidiviz.common.constants.state.state_sentence import (
     StateSentenceType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -271,6 +272,23 @@ def ledger_entity_checks(
     return None
 
 
+def duration_entity_checks(
+    root_entity: RootEntityT,
+    entity_cls: Type[DurationMixin],
+    duration_objects: Sequence[DurationMixin],
+) -> Optional[Error]:
+    """Yields error messages related to DurationMixin checks:
+    - start_date_inclusive must not be None
+    """
+    for obj in duration_objects:
+        if not obj.start_date_inclusive:
+            return (
+                f"Found {root_entity.limited_pii_repr()} having a "
+                f"{entity_cls.__name__} with a null start date."
+            )
+    return None
+
+
 def validate_root_entity(
     root_entity: RootEntityT, field_index: CoreEntityFieldIndex
 ) -> List[Error]:
@@ -293,6 +311,20 @@ def validate_root_entity(
 
     if isinstance(root_entity, state_entities.StatePerson):
         error_messages.extend(_sentencing_entities_checks(root_entity))
+
+        if err := duration_entity_checks(
+            root_entity,
+            state_entities.StateIncarcerationPeriod,
+            root_entity.incarceration_periods,
+        ):
+            error_messages.append(err)
+
+        if err := duration_entity_checks(
+            root_entity,
+            state_entities.StateSupervisionPeriod,
+            root_entity.supervision_periods,
+        ):
+            error_messages.append(err)
 
         # Ensure StateTaskDeadline passes ledger checks
         if root_entity.task_deadlines:
