@@ -21,6 +21,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
@@ -261,6 +262,7 @@ def _us_ix_infer_additional_in_custody_periods(
         state_code=StateCode.US_IX,
         incarceration_periods=incarceration_periods,
         supervision_period_index=supervision_period_index,
+        temp_custody_custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
     )
 
     return all_incarceration_periods

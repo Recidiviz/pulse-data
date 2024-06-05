@@ -23,6 +23,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -198,6 +199,7 @@ def _us_tn_infer_additional_periods(
         state_code=StateCode.US_TN,
         incarceration_periods=incarceration_periods,
         supervision_period_index=supervision_period_index,
+        temp_custody_custodial_authority=StateCustodialAuthority.COUNTY,
     )
 
     return all_incarceration_periods

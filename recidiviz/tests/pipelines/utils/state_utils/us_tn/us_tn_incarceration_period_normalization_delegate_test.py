@@ -340,7 +340,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 3, 5),
@@ -378,7 +378,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 3, 5),
@@ -439,7 +439,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 4, 20),
@@ -504,7 +504,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 4, 20),
@@ -569,7 +569,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 4, 20),
@@ -658,7 +658,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_TN",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 3, 5),

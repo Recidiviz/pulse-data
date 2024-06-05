@@ -19,7 +19,7 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -38,175 +38,6 @@ class TestUsMiSupervisionNormalizationDelegate(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsMiSupervisionNormalizationDelegate()
 
-    # This tests that when there is an open period that starts on a discharge date and
-    # isn't starting because of a new movement our court sentence, and that's the latest
-    # period for this person, normalization will drop that period
-    def test_drop_last_open_period(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-1",
-            start_date=date(2023, 1, 1),
-            termination_date=date(2023, 7, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-2",
-            start_date=date(2023, 7, 1),
-            termination_date=None,
-            admission_reason_raw_text=None,
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-        )
-
-        self.assertEqual(
-            [supervision_period],
-            self.delegate.drop_bad_periods([supervision_period, supervision_period_2]),
-        )
-
-    # This tests that when there is an open period that starts on a discharge date and
-    # it's starting because of a movement, normalization will not drop any periods
-    def test_dont_when_new_movement_period(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-1",
-            start_date=date(2023, 1, 1),
-            termination_date=date(2023, 7, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-2",
-            start_date=date(2023, 7, 1),
-            termination_date=None,
-            admission_reason_raw_text="2",
-            admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
-        )
-
-        self.assertEqual(
-            [supervision_period, supervision_period_2],
-            self.delegate.drop_bad_periods([supervision_period, supervision_period_2]),
-        )
-
-    # This tests that when there are multiple open periods that start on that
-    # start on a discharge date, normalization period will not drop any periods
-    def test_drop_when_multiple_bad_open_periods(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-1",
-            start_date=date(2023, 1, 1),
-            termination_date=date(2023, 7, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-2",
-            start_date=date(2023, 7, 1),
-            termination_date=None,
-            admission_reason_raw_text=None,
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-        )
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-3",
-            start_date=date(2023, 7, 1),
-            termination_date=None,
-            admission_reason_raw_text=None,
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-        )
-
-        self.assertEqual(
-            [supervision_period, supervision_period_2, supervision_period_3],
-            self.delegate.drop_bad_periods(
-                [supervision_period, supervision_period_2, supervision_period_3]
-            ),
-        )
-
-    # This tests that when there is an open period that starts after a discharge date,
-    # normalization will not drop that period
-    def test_drop_when_open_period_starts_later(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-1",
-            start_date=date(2023, 1, 1),
-            termination_date=date(2023, 7, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-2",
-            start_date=date(2023, 7, 2),
-            termination_date=None,
-            admission_reason_raw_text=None,
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-        )
-
-        self.assertEqual(
-            [supervision_period, supervision_period_2],
-            self.delegate.drop_bad_periods([supervision_period, supervision_period_2]),
-        )
-
-    # This tests that when there is an closed period that starts on a discharge date,
-    # normalization will not drop that period
-    def test_drop_when_closed_period_starts_on_discharge(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-1",
-            start_date=date(2023, 1, 1),
-            termination_date=date(2023, 7, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-2",
-            start_date=date(2023, 7, 1),
-            termination_date=date(2023, 7, 5),
-            admission_reason_raw_text=None,
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-        )
-
-        self.assertEqual(
-            [supervision_period, supervision_period_2],
-            self.delegate.drop_bad_periods([supervision_period, supervision_period_2]),
-        )
-
-    # This tests that normalization will only drop the open period if the external id
-    # indicates that it was considered by ingest to be the "last" supervision period
-    # for one run (to ensure we only drop entity deletion issues)
-    def test_drop_when_periods_misordered(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-2",
-            start_date=date(2023, 1, 1),
-            termination_date=date(2023, 7, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-1",
-            start_date=date(2023, 7, 1),
-            termination_date=None,
-            admission_reason_raw_text=None,
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-        )
-        self.assertEqual(
-            [supervision_period, supervision_period_2],
-            self.delegate.drop_bad_periods([supervision_period, supervision_period_2]),
-        )
-
-    # This tests that normalization will not drop any periods when there's just one period
-    def test_drop_one_period(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            external_id="sp-2",
-            start_date=date(2023, 1, 1),
-            termination_date=date(2023, 7, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-        self.assertEqual(
-            [supervision_period],
-            self.delegate.drop_bad_periods([supervision_period]),
-        )
-
     # This tests that normalization will drop INVESTIGATION
     def test_drop_investigation(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -220,4 +51,38 @@ class TestUsMiSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             [],
             self.delegate.drop_bad_periods([supervision_period]),
+        )
+
+    # This tests that normalization will convert supervision level to IN_CUSTODY if supervision level is null and the period doesn't end in discharge
+    def test_supervision_level_override(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="sp-1",
+            start_date=date(2023, 1, 1),
+            termination_date=date(2023, 7, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_level=None,
+        )
+
+        self.assertEqual(
+            StateSupervisionLevel.IN_CUSTODY,
+            self.delegate.supervision_level_override(0, [supervision_period]),
+        )
+
+    # This tests that normalization will not convert supervision level to IN_CUSTODY if supervision level is null but the period ends in discharge
+    def test_no_supervision_level_override(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="sp-1",
+            start_date=date(2023, 1, 1),
+            termination_date=date(2023, 7, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_level=None,
+        )
+
+        self.assertEqual(
+            None,
+            self.delegate.supervision_level_override(0, [supervision_period]),
         )
