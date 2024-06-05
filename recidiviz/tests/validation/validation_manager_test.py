@@ -803,16 +803,17 @@ class TestFetchValidations(TestCase):
         self.assertCountEqual(
             launched_state_codes,
             [
+                "US_AR",
+                "US_CA",
                 "US_CO",
+                "US_IX",
+                "US_ME",
+                "US_MI",
                 "US_MO",
                 "US_ND",
                 "US_OR",
                 "US_PA",
                 "US_TN",
-                "US_MI",
-                "US_ME",
-                "US_IX",
-                "US_CA",
             ],
         )
 

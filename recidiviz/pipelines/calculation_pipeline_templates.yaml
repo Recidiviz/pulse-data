@@ -13,17 +13,14 @@ metric_pipelines:
     state_code: US_AR
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east1
-    staging_only: True
   - pipeline: population_span_metrics
     state_code: US_AR
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
-    staging_only: True
   - pipeline: incarceration_metrics
     state_code: US_AR
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-east1
-    staging_only: True
 
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
