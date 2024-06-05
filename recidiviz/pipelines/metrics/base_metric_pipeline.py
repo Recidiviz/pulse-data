@@ -16,18 +16,7 @@
 # =============================================================================
 """Classes for running all metric calculation pipelines."""
 import abc
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Dict, Generator, Iterable, List, Set, Tuple, Type, Union
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
@@ -62,17 +51,12 @@ from recidiviz.pipelines.utils.beam_utils.extractor_utils import (
     ExtractRootEntityDataForPipeline,
 )
 from recidiviz.pipelines.utils.execution_utils import (
-    TableRow,
     get_job_id,
     person_and_kwargs_for_identifier,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_delegates,
     get_required_state_specific_metrics_producer_delegates,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
 )
 from recidiviz.utils import environment
 
@@ -122,11 +106,6 @@ class MetricPipeline(
         produce input data for the pipeline."""
 
     @classmethod
-    @abc.abstractmethod
-    def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
-        """Returns the required state-specific delegates needed for the pipeline."""
-
-    @classmethod
     def all_input_reference_query_providers(
         cls, state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
     ) -> Dict[str, StateFilteredQueryProvider]:
@@ -141,7 +120,7 @@ class MetricPipeline(
 
     @classmethod
     @abc.abstractmethod
-    def identifier(cls) -> BaseIdentifier:
+    def identifier(cls, state_code: StateCode) -> BaseIdentifier:
         """Returns the identifier for this pipeline."""
 
     @classmethod
@@ -196,9 +175,7 @@ class MetricPipeline(
 
         person_events = pipeline_data | "Get Events" >> beam.ParDo(
             ClassifyResults(),
-            state_code=state_code.value,
-            identifier=self.identifier(),
-            state_specific_required_delegates=self.state_specific_required_delegates(),
+            identifier=self.identifier(state_code),
             included_result_classes=self.metric_producer().included_result_classes(
                 metric_types
             ),
@@ -339,9 +316,7 @@ class ProduceMetrics(beam.DoFn):
 
 @with_input_types(
     beam.typehints.Tuple[int, Dict[str, Iterable[Any]]],
-    str,
     BaseIdentifier,
-    List[Type[StateSpecificDelegate]],
     Set[Type[IdentifierResult]],
 )
 @with_output_types(
@@ -360,9 +335,7 @@ class ClassifyResults(beam.DoFn):
     def process(
         self,
         element: Tuple[int, Dict[str, Iterable[Any]]],
-        state_code: str,
         identifier: BaseIdentifier,
-        state_specific_required_delegates: List[Type[StateSpecificDelegate]],
         included_result_classes: Set[Type[IdentifierResult]],
     ) -> Generator[
         Tuple[
@@ -375,20 +348,7 @@ class ClassifyResults(beam.DoFn):
         """Identifies various events or spans relevant to calculations."""
         _, person_entities = element
 
-        person, entity_kwargs = person_and_kwargs_for_identifier(person_entities)
-
-        required_delegates = get_required_state_specific_delegates(
-            state_code=state_code,
-            required_delegates=state_specific_required_delegates,
-            entity_kwargs=entity_kwargs,
-        )
-
-        all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {
-            **entity_kwargs,
-            **required_delegates,
-        }
+        person, all_kwargs = person_and_kwargs_for_identifier(person_entities)
 
         results = identifier.identify(
             person,

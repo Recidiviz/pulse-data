@@ -41,6 +41,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
@@ -49,6 +50,7 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import (
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
+from recidiviz.pipelines.metrics.violation import identifier as violation_identifier
 from recidiviz.pipelines.metrics.violation import pipeline
 from recidiviz.pipelines.metrics.violation.events import ViolationWithResponseEvent
 from recidiviz.pipelines.metrics.violation.identifier import ViolationIdentifier
@@ -70,13 +72,13 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteMetricsToBigQuery,
     FakeWriteToBigQueryFactory,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
 )
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ViolationMetricType}
@@ -90,25 +92,20 @@ class TestViolationPipeline(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
 
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            violation_identifier
+        )
+
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
             FakeWriteMetricsToBigQuery
         )
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
         self.pipeline_class = pipeline.ViolationMetricsPipeline
 
     def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
         self.project_id_patcher.stop()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
 
     def build_data_dict(
         self, fake_person_id: int, fake_supervision_violation_id: int
@@ -281,7 +278,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
     """Tests the ClassifyViolationEvents DoFn."""
 
     def setUp(self) -> None:
-        self.state_code = "US_XX"
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            violation_identifier
+        )
+        self.state_code = StateCode.US_XX
         self.fake_person_id = 12345
         self.fake_supervision_violation_id = 23456
 
@@ -291,21 +291,12 @@ class TestClassifyViolationEvents(unittest.TestCase):
             gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
         )
-        self.identifier = ViolationIdentifier()
+        self.identifier = ViolationIdentifier(self.state_code)
         self.pipeline_class = pipeline.ViolationMetricsPipeline
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
 
     def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def testClassifyViolationEvents(self) -> None:
         """Tests the ClassifyViolationEvents DoFn."""
@@ -374,9 +365,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | "Identify Violation Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={ViolationWithResponseEvent},
             )
         )
@@ -402,9 +391,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | "Identify Violation Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={ViolationWithResponseEvent},
             )
         )
@@ -445,9 +432,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             | "Identify Violation Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={ViolationWithResponseEvent},
             )
         )

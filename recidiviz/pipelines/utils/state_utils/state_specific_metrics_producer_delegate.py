@@ -23,6 +23,9 @@ from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
 )
 
 
+# TODO(#30363): We should be able to delete this delegate and all subclasses once we
+#  stop outputting person_external_id / secondary_person_external_id from metric
+#  pipelines.
 class StateSpecificMetricsProducerDelegate(StateSpecificDelegate):
     """Base class for a class that defines state-specific metric specifications."""
 

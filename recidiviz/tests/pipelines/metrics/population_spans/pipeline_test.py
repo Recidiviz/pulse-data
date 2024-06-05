@@ -50,6 +50,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
@@ -57,6 +58,9 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ProduceMetrics,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
+from recidiviz.pipelines.metrics.population_spans import (
+    identifier as population_spans_identifier,
+)
 from recidiviz.pipelines.metrics.population_spans import pipeline
 from recidiviz.pipelines.metrics.population_spans.identifier import (
     PopulationSpanIdentifier,
@@ -96,13 +100,13 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteMetricsToBigQuery,
     FakeWriteToBigQueryFactory,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
 )
 
 ALL_METRIC_INCLUSIONS_DICT = {
@@ -122,12 +126,8 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
             FakeWriteMetricsToBigQuery
         )
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            population_spans_identifier
         )
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
@@ -146,7 +146,8 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         self.project_id_patcher.stop()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
         self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def build_data_dict(
@@ -321,7 +322,7 @@ class TestClassifyResults(unittest.TestCase):
     """Tests the ClassifyResults DoFn for Spans."""
 
     def setUp(self) -> None:
-        self.state_code = "US_XX"
+        self.state_code = StateCode.US_XX
         self.fake_person_id = 12345
         self.fake_incarceration_period_id = 23456
 
@@ -331,18 +332,16 @@ class TestClassifyResults(unittest.TestCase):
             gender=StateGender.FEMALE,
             birthdate=date(1985, 2, 1),
         )
-        self.identifier = PopulationSpanIdentifier()
-        self.pipeline_class = pipeline.PopulationSpanMetricsPipeline
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            population_spans_identifier
         )
 
+        self.identifier = PopulationSpanIdentifier(self.state_code)
+        self.pipeline_class = pipeline.PopulationSpanMetricsPipeline
+
     def tearDown(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(
@@ -447,9 +446,7 @@ class TestClassifyResults(unittest.TestCase):
             | "Identify Population Spans"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     IncarcerationPopulationSpan,
                     SupervisionPopulationSpan,
@@ -477,9 +474,7 @@ class TestClassifyResults(unittest.TestCase):
             | "Identify Population Spans"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     IncarcerationPopulationSpan,
                     SupervisionPopulationSpan,

@@ -51,6 +51,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
@@ -66,7 +67,11 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
     ProduceMetrics,
 )
-from recidiviz.pipelines.metrics.incarceration import identifier, pipeline
+from recidiviz.pipelines.metrics.incarceration import identifier
+from recidiviz.pipelines.metrics.incarceration import (
+    identifier as incarceration_identifier,
+)
+from recidiviz.pipelines.metrics.incarceration import pipeline
 from recidiviz.pipelines.metrics.incarceration.events import (
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationReleaseEvent,
@@ -100,13 +105,13 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteMetricsToBigQuery,
     FakeWriteToBigQueryFactory,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
 )
 
 _COUNTY_OF_RESIDENCE = "county_of_residence"
@@ -138,14 +143,10 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
             FakeWriteMetricsToBigQuery
         )
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            incarceration_identifier
+        )
 
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
             return_value={
@@ -162,7 +163,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.project_id_patcher.stop()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
         self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def build_incarceration_pipeline_data_dict(
@@ -472,18 +474,16 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
     """Tests the ClassifyEvents DoFn in the pipeline."""
 
     def setUp(self) -> None:
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            incarceration_identifier
         )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
-        self.identifier = identifier.IncarcerationIdentifier()
+        self.state_code = StateCode.US_XX
+        self.identifier = identifier.IncarcerationIdentifier(self.state_code)
         self.pipeline_class = pipeline.IncarcerationMetricsPipeline
 
     def tearDown(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(
@@ -514,10 +514,9 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
     def testClassifyIncarcerationEvents(self) -> None:
         """Tests the ClassifyIncarcerationEvents DoFn."""
         fake_person_id = 12345
-        state_code = "US_XX"
 
         fake_person = StatePerson.new_with_defaults(
-            state_code=state_code,
+            state_code=self.state_code.value,
             person_id=fake_person_id,
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
@@ -527,7 +526,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             external_id="sp1",
-            state_code=state_code,
+            state_code=self.state_code.value,
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2010, 3, 14),
@@ -545,7 +544,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             incarceration_period_id=1111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code=state_code,
+            state_code=self.state_code.value,
             facility="PRISON XX",
             admission_date=date(2010, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -613,9 +612,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | "Identify Incarceration Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     IncarcerationStandardAdmissionEvent,
                     IncarcerationCommitmentFromSupervisionAdmissionEvent,
@@ -630,10 +627,8 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
     def testClassifyIncarcerationEvents_NoSentenceGroups(self) -> None:
         """Tests the ClassifyIncarcerationEvents DoFn when the person has no sentence groups."""
-        state_code = "US_XX"
-
         fake_person = StatePerson.new_with_defaults(
-            state_code=state_code,
+            state_code=self.state_code.value,
             person_id=123,
             gender=StateGender.MALE,
             birthdate=date(1970, 1, 1),
@@ -652,9 +647,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             | "Identify Incarceration Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     IncarcerationStandardAdmissionEvent,
                     IncarcerationCommitmentFromSupervisionAdmissionEvent,

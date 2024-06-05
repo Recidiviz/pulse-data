@@ -62,6 +62,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
@@ -79,7 +80,9 @@ from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ProduceMetrics,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
-from recidiviz.pipelines.metrics.supervision import identifier, pipeline
+from recidiviz.pipelines.metrics.supervision import identifier
+from recidiviz.pipelines.metrics.supervision import identifier as supervision_identifier
+from recidiviz.pipelines.metrics.supervision import pipeline
 from recidiviz.pipelines.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
@@ -102,9 +105,6 @@ from recidiviz.pipelines.utils.execution_utils import RootEntityId
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
-    UsXxSupervisionDelegate,
-)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
     UsXxSupervisionMetricsProducerDelegate,
 )
@@ -118,6 +118,9 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteMetricsToBigQuery,
     FakeWriteToBigQueryFactory,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 from recidiviz.tests.pipelines.metrics.supervision import identifier_test
 from recidiviz.tests.pipelines.metrics.supervision.identifier_test import (
     create_projected_completion_event_from_period,
@@ -127,9 +130,6 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
 )
 
 SUPERVISION_PIPELINE_PACKAGE_NAME = pipeline.__name__
@@ -150,12 +150,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
         self.all_metric_types = set(SupervisionMetricType)
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            supervision_identifier
         )
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
@@ -166,16 +162,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.mock_get_required_state_metrics_producer_delegate = (
             self.state_specific_metrics_producer_delegate_patcher.start()
         )
-        self.metric_producer_supervision_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.utils.state_utils"
-            ".state_calculation_config_manager._get_state_specific_supervision_delegate"
-        )
-        self.mock_metric_producer_supervision_delegate = (
-            self.metric_producer_supervision_delegate_patcher.start()
-        )
-        self.mock_metric_producer_supervision_delegate.return_value = (
-            UsXxSupervisionDelegate()
-        )
         self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
     def tearDown(self) -> None:
@@ -183,7 +169,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.project_id_patcher.stop()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
         self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def build_supervision_pipeline_data_dict(
@@ -256,6 +243,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_date=date(2016, 12, 29),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
+            supervising_officer_staff_external_id="ABC123",
+            supervising_officer_staff_external_id_type="US_XX_ID_TYPE",
             person_id=fake_person_id,
         )
 
@@ -309,7 +298,10 @@ class TestSupervisionPipeline(unittest.TestCase):
         ]
 
         supervision_periods_data = [
-            normalized_database_base_dict(supervision_period, {"sequence_num": 0})
+            normalized_database_base_dict(
+                supervision_period,
+                {"supervising_officer_staff_id": 123456, "sequence_num": 0},
+            )
         ]
 
         supervision_sentences_data = [
@@ -888,22 +880,16 @@ class TestClassifyEvents(unittest.TestCase):
     """Tests the ClassifyEvents DoFn in the pipeline."""
 
     def setUp(self) -> None:
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            supervision_identifier
+        )
         self.state_code = "US_XX"
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
-        self.identifier = identifier.SupervisionIdentifier()
+        self.identifier = identifier.SupervisionIdentifier(StateCode.US_XX)
         self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
     def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(
@@ -1072,9 +1058,7 @@ class TestClassifyEvents(unittest.TestCase):
             | "Identify Supervision Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     SupervisionPopulationEvent,
                     ProjectedSupervisionCompletionEvent,
@@ -1097,18 +1081,14 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.all_metric_types = set(SupervisionMetricType)
 
-        self.supervision_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.utils.state_utils"
-            ".state_calculation_config_manager._get_state_specific_supervision_delegate"
-        )
-        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
-
         self.job_id_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.job_id"
         )
         self.mock_job_id = self.job_id_patcher.start()
         self.mock_job_id.return_value = "job_id"
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            supervision_identifier
+        )
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
         )
@@ -1132,7 +1112,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.supervision_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
         self.job_id_patcher.stop()
         self.state_specific_metrics_producer_delegate_patcher.stop()
 

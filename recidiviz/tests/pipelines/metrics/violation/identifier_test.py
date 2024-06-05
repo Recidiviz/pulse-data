@@ -18,7 +18,7 @@
 """Tests for violation/identifier.py"""
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Sequence, Union
 
 import attr
 
@@ -42,24 +42,15 @@ from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
 )
-from recidiviz.pipelines.metrics.violation import identifier
+from recidiviz.pipelines.metrics.violation import identifier as violation_identifier
 from recidiviz.pipelines.metrics.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
 )
-from recidiviz.pipelines.metrics.violation.pipeline import ViolationMetricsPipeline
+from recidiviz.pipelines.metrics.violation.identifier import ViolationIdentifier
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_delegates,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
-    UsXxViolationDelegate,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
 )
 
 _STATE_CODE = "US_XX"
@@ -69,35 +60,26 @@ class TestFindViolationEvents(unittest.TestCase):
     """Tests the find_violation_events function."""
 
     def setUp(self) -> None:
-        self.identifier = identifier.ViolationIdentifier()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            violation_identifier
+        )
+        self.identifier = ViolationIdentifier(StateCode.US_XX)
         self.person = StatePerson.new_with_defaults(
             state_code="US_XX", person_id=99000123
         )
 
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
+
     def _run_find_violation_events(
-        self,
-        violations: List[NormalizedStateSupervisionViolation],
-        state_code_override: Optional[str] = None,
+        self, violations: List[NormalizedStateSupervisionViolation]
     ) -> List[ViolationEvent]:
         """Helper function for testing the find_events function."""
 
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateSupervisionViolation.base_class_name(): violations,
         }
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            self.person.person_id = (
-                StateCode(state_code_override).get_state_fips_mask() + 123
-            )
-
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=ViolationMetricsPipeline.state_specific_required_delegates(),
-                entity_kwargs=entity_kwargs,
-            )
-
-        all_kwargs: Dict[str, Any] = {**required_delegates, **entity_kwargs}
 
         return self.identifier.identify(
             self.person,
@@ -178,21 +160,25 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     """Tests the find_violation_with_response_events function."""
 
     def setUp(self) -> None:
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            violation_identifier
+        )
+        state_code = StateCode.US_XX
         self.violation_type = (
             NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
-                state_code="US_XX",
+                state_code=state_code.value,
                 violation_type=StateSupervisionViolationType.TECHNICAL,
             )
         )
         self.violation_decision = (
             NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                state_code="US_XX",
+                state_code=state_code.value,
                 decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             )
         )
         self.violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
+                state_code=state_code.value,
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
@@ -202,7 +188,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
         )
         self.violation = NormalizedStateSupervisionViolation.new_with_defaults(
-            state_code="US_XX",
+            state_code=state_code.value,
             supervision_violation_id=1,
             external_id="sv1",
             violation_date=date(2021, 1, 1),
@@ -214,43 +200,20 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation_decision.supervision_violation_response = self.violation_response
         self.violation_response.supervision_violation = self.violation
         self.violation_type.supervision_violation = self.violation
-        self.identifier = identifier.ViolationIdentifier()
+        self.identifier = ViolationIdentifier(state_code)
 
-    def _run_find_violation_with_response_events(
-        self,
-        violation: NormalizedStateSupervisionViolation,
-        state_code_override: Optional[str] = None,
-    ) -> List[ViolationWithResponseEvent]:
-        """Helper for running _find_violation_with_response_events."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {}
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=ViolationMetricsPipeline.state_specific_required_delegates(),
-                entity_kwargs=entity_kwargs,
-            )
+    def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
 
-        violation_delegate = required_delegates[StateSpecificViolationDelegate.__name__]
-
-        if not isinstance(
-            violation_delegate,
-            StateSpecificViolationDelegate,
-        ):
-            raise ValueError(
-                "Typing error. Expected "
-                "StateSpecificViolationResponseNormalizationDelegate."
-            )
-
-        return self.identifier._find_violation_with_response_events(
-            violation_delegate=violation_delegate,
-            violation=violation,
-        )
+    def _stop_state_specific_delegate_patchers(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def test_find_violation_with_response_events(self) -> None:
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            self.violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(
+                violation=self.violation
+            )
         )
 
         expected = [
@@ -277,7 +240,9 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation.supervision_violation_id = None
 
         with self.assertRaises(ValueError):
-            _ = self._run_find_violation_with_response_events(self.violation)
+            _ = self.identifier._find_violation_with_response_events(
+                violation=self.violation
+            )
 
     def test_find_violation_with_response_events_needs_response_date(
         self,
@@ -285,7 +250,9 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation_response.response_date = None
 
         with self.assertRaises(ValueError):
-            _ = self._run_find_violation_with_response_events(self.violation)
+            _ = self.identifier._find_violation_with_response_events(
+                violation=self.violation
+            )
 
     def test_find_violation_with_response_events_includes_all_violation_types(
         self,
@@ -361,8 +328,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation=violation)
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -446,8 +413,10 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            self.violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(
+                violation=self.violation
+            )
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -533,8 +502,10 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            self.violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(
+                violation=self.violation
+            )
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -615,8 +586,10 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             ),
         ]
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            self.violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(
+                violation=self.violation
+            )
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -688,8 +661,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation=violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation=violation)
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -697,6 +670,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_populates_violation_subtypes_correctly_for_conditions(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
+        identifier = ViolationIdentifier(StateCode.US_MO)
         state_code = "US_MO"
 
         violation_type_technical = (
@@ -747,8 +722,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation, state_code_override=state_code
+        violation_with_response_events = (
+            identifier._find_violation_with_response_events(violation=violation)
         )
 
         expected = [
@@ -783,6 +758,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_populates_violation_subtypes_correctly_for_special_conditions(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
+        identifier = ViolationIdentifier(StateCode.US_MO)
         state_code = "US_MO"
 
         violation_type_technical = (
@@ -851,9 +828,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation,
-            state_code_override=state_code,
+        violation_with_response_events = (
+            identifier._find_violation_with_response_events(violation=violation)
         )
 
         expected = [
@@ -902,6 +878,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_removes_supplemental_violations_and_others(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
+        identifier = ViolationIdentifier(StateCode.US_MO)
         state_code = "US_MO"
 
         violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -942,15 +920,15 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         for subtype in ["SUP", "HOF", "MOS", "ORI"]:
             violation_response.response_subtype = subtype
             violation_with_response_events = (
-                self._run_find_violation_with_response_events(
-                    violation, state_code_override=state_code
-                )
+                identifier._find_violation_with_response_events(violation=violation)
             )
             self.assertEqual([], violation_with_response_events)
 
     def test_find_violation_with_response_events_skips_unexpected_subtypes(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
+        identifier = ViolationIdentifier(StateCode.US_MO)
         state_code = "US_MO"
 
         violation_type_technical = (
@@ -1019,8 +997,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation, state_code_override=state_code
+        violation_with_response_events = (
+            identifier._find_violation_with_response_events(violation=violation)
         )
 
         expected = [
@@ -1068,6 +1046,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
     def test_find_violation_with_response_events_populates_violation_subtypes_correctly_for_technical(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
+        identifier = ViolationIdentifier(StateCode.US_PA)
         state_code = "US_PA"
         violation_type_low = (
             NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -1213,14 +1193,16 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation, state_code_override=state_code
+        violation_with_response_events = (
+            identifier._find_violation_with_response_events(violation=violation)
         )
         self.assertEqual(expected, violation_with_response_events)
 
     def test_find_violation_with_response_events_uses_permanent_decision_only_us_nd(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
+        identifier = ViolationIdentifier(StateCode.US_ND)
         state_code = "US_ND"
         violation_type = NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=state_code,
@@ -1298,8 +1280,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             )
         ]
 
-        violation_with_response_events = self._run_find_violation_with_response_events(
-            violation, state_code_override=state_code
+        violation_with_response_events = (
+            identifier._find_violation_with_response_events(violation=violation)
         )
         self.assertEqual(expected, violation_with_response_events)
 
@@ -1308,7 +1290,14 @@ class TestAddAggregateEventDateFields(unittest.TestCase):
     """Tests the _add_aggregate_event_date_fields function."""
 
     def setUp(self) -> None:
-        self.identifier = identifier.ViolationIdentifier()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            violation_identifier
+        )
+        self.identifier = ViolationIdentifier(StateCode.US_XX)
+
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def test_add_aggregate_event_date_fields(self) -> None:
         first_violation_on_first_day = ViolationWithResponseEvent(
@@ -1355,7 +1344,7 @@ class TestAddAggregateEventDateFields(unittest.TestCase):
 
         self.assertEqual(
             self.identifier._add_aggregate_event_date_fields(
-                violation_with_response_events, UsXxViolationDelegate()
+                violation_with_response_events
             ),
             expected,
         )
@@ -1441,7 +1430,7 @@ class TestAddAggregateEventDateFields(unittest.TestCase):
 
         self.assertEqual(
             self.identifier._add_aggregate_event_date_fields(
-                violation_with_response_events, UsXxViolationDelegate()
+                violation_with_response_events
             ),
             expected,
         )
@@ -1491,7 +1480,7 @@ class TestAddAggregateEventDateFields(unittest.TestCase):
 
         self.assertEqual(
             self.identifier._add_aggregate_event_date_fields(
-                violation_with_response_events, UsXxViolationDelegate()
+                violation_with_response_events
             ),
             expected,
         )

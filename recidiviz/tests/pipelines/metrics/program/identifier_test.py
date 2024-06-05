@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -43,20 +44,10 @@ from recidiviz.pipelines.metrics.program.events import (
     ProgramEvent,
     ProgramParticipationEvent,
 )
-from recidiviz.pipelines.metrics.program.pipeline import ProgramMetricsPipeline
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_delegates,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
-)
 
 _STATE_CODE = "US_XX"
 
@@ -75,28 +66,12 @@ class TestFindProgramEvents(unittest.TestCase):
         program_assignments: List[NormalizedStateProgramAssignment],
         assessments: List[NormalizedStateAssessment],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
-        state_code_override: Optional[str] = None,
     ) -> List[ProgramEvent]:
         """Helper for testing the find_events function on the identifier."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateProgramAssignment.base_class_name(): program_assignments,
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
             NormalizedStateAssessment.base_class_name(): assessments,
-        }
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=ProgramMetricsPipeline.state_specific_required_delegates(),
-                entity_kwargs=entity_kwargs,
-            )
-
-        all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {
-            **required_delegates,
-            **entity_kwargs,
         }
 
         return self.identifier.identify(

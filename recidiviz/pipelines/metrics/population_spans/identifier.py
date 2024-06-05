@@ -24,6 +24,7 @@ import attr
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
     DateRange,
     DateRangeDiff,
@@ -57,11 +58,9 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
     NormalizedSupervisionPeriodIndex,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult, Span
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_incarceration_delegate,
+    get_state_specific_supervision_delegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import (
     identify_most_severe_case_type,
@@ -71,9 +70,15 @@ from recidiviz.pipelines.utils.supervision_period_utils import (
 class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
     """Identifier class for events related to incarceration."""
 
-    def __init__(self) -> None:
+    def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = Span
         self.field_index = CoreEntityFieldIndex()
+        self.incarceration_delegate = get_state_specific_incarceration_delegate(
+            state_code.value
+        )
+        self.supervision_delegate = get_state_specific_supervision_delegate(
+            state_code.value
+        )
 
     def identify(
         self,
@@ -85,9 +90,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         if IncarcerationPopulationSpan in included_result_classes:
             spans.extend(
                 self._find_incarceration_spans(
-                    incarceration_delegate=identifier_context[
-                        StateSpecificIncarcerationDelegate.__name__
-                    ],
                     incarceration_periods=identifier_context[
                         NormalizedStateIncarcerationPeriod.base_class_name()
                     ],
@@ -96,17 +98,11 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         if SupervisionPopulationSpan in included_result_classes:
             spans.extend(
                 self._find_supervision_spans(
-                    supervision_delegate=identifier_context[
-                        StateSpecificSupervisionDelegate.__name__
-                    ],
                     supervision_periods=identifier_context[
                         NormalizedStateSupervisionPeriod.base_class_name()
                     ],
                     incarceration_periods=identifier_context[
                         NormalizedStateIncarcerationPeriod.base_class_name()
-                    ],
-                    incarceration_delegate=identifier_context[
-                        StateSpecificIncarcerationDelegate.__name__
                     ],
                 )
             )
@@ -114,7 +110,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
     def _find_incarceration_spans(
         self,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
     ) -> List[Span]:
         """Finds instances of various events related to incarceration.
@@ -130,7 +125,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
         ip_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
-            incarceration_delegate=incarceration_delegate,
+            incarceration_delegate=self.incarceration_delegate,
         )
 
         for incarceration_period in ip_index.sorted_incarceration_periods:
@@ -146,7 +141,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     state_code=incarceration_period.state_code,
                     start_date_inclusive=incarceration_period.admission_date,
                     end_date_exclusive=incarceration_period.release_date,
-                    included_in_state_population=incarceration_delegate.is_period_included_in_state_population(
+                    included_in_state_population=self.incarceration_delegate.is_period_included_in_state_population(
                         incarceration_period
                     ),
                     facility=incarceration_period.facility,
@@ -166,10 +161,8 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
     def _find_supervision_spans(
         self,
-        supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
     ) -> List[Span]:
         """Finds instances of various events related to incarceration.
         Transforms the person's StateSupervisionPeriods into SupervisionPopulationSpans.
@@ -188,7 +181,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
         ip_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
-            incarceration_delegate=incarceration_delegate,
+            incarceration_delegate=self.incarceration_delegate,
         )
 
         # We need to split the spans based on the durations that a person is incarcerated
@@ -252,11 +245,11 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             (
                 level_1_supervision_location,
                 level_2_supervision_location,
-            ) = supervision_delegate.supervision_location_from_supervision_site(
+            ) = self.supervision_delegate.supervision_location_from_supervision_site(
                 supervision_period.supervision_site
             )
             case_type = identify_most_severe_case_type(supervision_period)
-            sp_in_state_population_based_on_metadata = supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
+            sp_in_state_population_based_on_metadata = self.supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
                 supervision_period
             )
             supervision_type = (
@@ -294,7 +287,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
         supervision_spans = (
             self._convert_spans_to_dual(supervision_spans)
-            if supervision_delegate.supervision_types_mutually_exclusive()
+            if self.supervision_delegate.supervision_types_mutually_exclusive()
             else self._expand_dual_supervision_spans(supervision_spans)
         )
 

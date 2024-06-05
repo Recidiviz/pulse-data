@@ -82,9 +82,6 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
-)
 
 ALL_METRIC_INCLUSIONS = set(ProgramMetricType)
 
@@ -102,21 +99,10 @@ class TestProgramPipeline(unittest.TestCase):
             FakeWriteMetricsToBigQuery
         )
 
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
         self.pipeline_class = pipeline.ProgramMetricsPipeline
 
     def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
         self.project_id_patcher.stop()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
 
     def build_data_dict(
         self, fake_person_id: int, fake_supervision_period_id: int
@@ -425,19 +411,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.state_code = "US_XX"
         self.identifier = identifier.ProgramIdentifier()
         self.pipeline_class = pipeline.ProgramMetricsPipeline
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
-
-    def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
 
     @freeze_time("2009-10-19")
     def testClassifyProgramAssignments(self) -> None:
@@ -516,9 +489,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | "Identify Program Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                self.state_code,
                 self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={ProgramParticipationEvent},
             )
         )
@@ -531,7 +502,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
     def testClassifyProgramAssignments_us_nd(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
-        state_code = "US_ND"
 
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_ND",
@@ -605,9 +575,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | "Identify Program Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code,
                 self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={ProgramParticipationEvent},
             )
         )
@@ -666,9 +634,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | "Identify Program Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                self.state_code,
                 self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={ProgramParticipationEvent},
             )
         )
@@ -726,9 +692,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | "Identify Program Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                self.state_code,
                 self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={ProgramParticipationEvent},
             )
         )

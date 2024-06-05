@@ -20,6 +20,7 @@ for details on how to launch a local run.
 from typing import List, Type, Union
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
@@ -29,12 +30,6 @@ from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.violation import identifier, metric_producer
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
-)
 
 
 class ViolationMetricsPipeline(MetricPipeline):
@@ -60,18 +55,12 @@ class ViolationMetricsPipeline(MetricPipeline):
         return []
 
     @classmethod
-    def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
-        return [
-            StateSpecificViolationDelegate,
-        ]
-
-    @classmethod
     def pipeline_name(cls) -> str:
         return "VIOLATION_METRICS"
 
     @classmethod
-    def identifier(cls) -> BaseIdentifier:
-        return identifier.ViolationIdentifier()
+    def identifier(cls, state_code: StateCode) -> BaseIdentifier:
+        return identifier.ViolationIdentifier(state_code)
 
     @classmethod
     def metric_producer(cls) -> BaseMetricProducer:

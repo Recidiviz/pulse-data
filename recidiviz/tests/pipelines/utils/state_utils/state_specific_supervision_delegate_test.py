@@ -64,7 +64,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
                 continue
             try:
                 # pylint: disable=protected-access
-                delegate = state_calculation_config_manager._get_state_specific_supervision_delegate(
+                delegate = state_calculation_config_manager.get_state_specific_supervision_delegate(
                     state_code.value
                 )
                 if (

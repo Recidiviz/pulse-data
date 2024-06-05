@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.normalized_state_entity import (
@@ -34,21 +35,6 @@ from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.incarceration import identifier, metric_producer
-from recidiviz.pipelines.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
-    StateSpecificCommitmentFromSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
-)
 
 
 class IncarcerationMetricsPipeline(MetricPipeline):
@@ -81,21 +67,12 @@ class IncarcerationMetricsPipeline(MetricPipeline):
         ]
 
     @classmethod
-    def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
-        return [
-            StateSpecificCommitmentFromSupervisionDelegate,
-            StateSpecificIncarcerationDelegate,
-            StateSpecificSupervisionDelegate,
-            StateSpecificViolationDelegate,
-        ]
-
-    @classmethod
     def pipeline_name(cls) -> str:
         return "INCARCERATION_METRICS"
 
     @classmethod
-    def identifier(cls) -> BaseIdentifier:
-        return identifier.IncarcerationIdentifier()
+    def identifier(cls, state_code: StateCode) -> BaseIdentifier:
+        return identifier.IncarcerationIdentifier(state_code)
 
     @classmethod
     def metric_producer(cls) -> BaseMetricProducer:

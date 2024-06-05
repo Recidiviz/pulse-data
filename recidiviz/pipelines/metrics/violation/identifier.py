@@ -24,6 +24,7 @@ import attr
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
@@ -49,8 +50,8 @@ from recidiviz.pipelines.metrics.violation.events import (
     ViolationWithResponseEvent,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
-from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_violation_delegate,
 )
 from recidiviz.pipelines.utils.violation_response_utils import (
     get_most_severe_response_decision,
@@ -61,9 +62,12 @@ from recidiviz.pipelines.utils.violation_response_utils import (
 class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
     """Identifier class for violations and their responses with appropriate decisions."""
 
-    def __init__(self) -> None:
+    def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = ViolationEvent
         self.field_index = CoreEntityFieldIndex()
+        self.violation_delegate = get_state_specific_violation_delegate(
+            state_code.value
+        )
 
     def identify(
         self,
@@ -77,9 +81,6 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
             )
 
         return self._find_violation_events(
-            violation_delegate=identifier_context[
-                StateSpecificViolationDelegate.__name__
-            ],
             violations=identifier_context[
                 NormalizedStateSupervisionViolation.base_class_name()
             ],
@@ -87,7 +88,6 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
     def _find_violation_events(
         self,
-        violation_delegate: StateSpecificViolationDelegate,
         violations: List[NormalizedStateSupervisionViolation],
     ) -> List[ViolationEvent]:
         """Finds instances of a violation.
@@ -110,23 +110,19 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
             violation_with_response_events.extend(
                 self._find_violation_with_response_events(
                     violation=violation,
-                    violation_delegate=violation_delegate,
                 )
             )
 
         if violation_with_response_events:
             violation_with_response_events = self._add_aggregate_event_date_fields(
                 violation_with_response_events,
-                state_violation_delegate=violation_delegate,
             )
             violation_events.extend(violation_with_response_events)
 
         return violation_events
 
     def _find_violation_with_response_events(
-        self,
-        violation: NormalizedStateSupervisionViolation,
-        violation_delegate: StateSpecificViolationDelegate,
+        self, violation: NormalizedStateSupervisionViolation
     ) -> List[ViolationWithResponseEvent]:
         """Finds instances of a violation with its earliest response."""
 
@@ -166,7 +162,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         appropriate_violation_responses_with_dates: List[
             NormalizedStateSupervisionViolationResponse
         ] = filter_violation_responses_for_violation_history(
-            violation_delegate,
+            self.violation_delegate,
             violation_responses=sorted_violation_responses,
             include_follow_up_responses=False,
         )
@@ -188,14 +184,16 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                 "Invalid control: All responses should have response_dates."
             )
 
-        violation_subtypes_to_raw_text_map = violation_delegate.get_violation_type_subtype_strings_for_violation(
+        violation_subtypes_to_raw_text_map = self.violation_delegate.get_violation_type_subtype_strings_for_violation(
             first_violation_response.supervision_violation  # type: ignore
         )
         sorted_violation_subtypes = sorted_violation_subtypes_by_severity(
-            violation_subtypes_to_raw_text_map.keys(), violation_delegate
+            violation_subtypes_to_raw_text_map.keys(), self.violation_delegate
         )
         supported_violation_subtypes = (
-            violation_type_subtypes_with_violation_type_mappings(violation_delegate)
+            violation_type_subtypes_with_violation_type_mappings(
+                self.violation_delegate
+            )
         )
 
         for index, violation_subtype in enumerate(sorted_violation_subtypes):
@@ -209,7 +207,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                     # without supported mappings to these values.
                     continue
                 violation_type = violation_type_from_subtype(
-                    violation_delegate, violation_subtype
+                    self.violation_delegate, violation_subtype
                 )
                 is_most_severe_violation_type = index == 0
                 violation_with_response_events.append(
@@ -233,7 +231,6 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
     def _add_aggregate_event_date_fields(
         self,
         violation_with_response_events: List[ViolationWithResponseEvent],
-        state_violation_delegate: StateSpecificViolationDelegate,
     ) -> List[ViolationWithResponseEvent]:
         """Augments existing ViolationWithResponseEvents with aggregate statistics
         over all events of a particular day."""
@@ -265,12 +262,12 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                         if event.violation_type_subtype
                         and event.is_most_severe_violation_type
                     ],
-                    state_violation_delegate,
+                    self.violation_delegate,
                 )
             )
             most_severe_violation_type_of_all_violations_in_day = (
                 violation_type_from_subtype(
-                    state_violation_delegate,
+                    self.violation_delegate,
                     most_severe_violation_subtype_of_all_violations_in_day,
                 )
                 if most_severe_violation_subtype_of_all_violations_in_day

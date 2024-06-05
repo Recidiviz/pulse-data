@@ -48,6 +48,7 @@ from recidiviz.common.constants.state.state_person import (
     StateRace,
     StateResidencyStatus,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -90,13 +91,13 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteMetricsToBigQuery,
     FakeWriteToBigQueryFactory,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     DEFAULT_TEST_PIPELINE_OUTPUT_SANDBOX_PREFIX,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
 )
 
 _COUNTY_OF_RESIDENCE = "county"
@@ -119,13 +120,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             FakeWriteMetricsToBigQuery
         )
 
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(identifier)
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
             "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
             return_value={
@@ -138,7 +133,8 @@ class TestRecidivismPipeline(unittest.TestCase):
         self.pipeline_class = pipeline.RecidivismMetricsPipeline
 
     def tearDown(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
         self.state_specific_metrics_producer_delegate_patcher.stop()
         self.project_id_patcher.stop()
 
@@ -454,22 +450,14 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     """Tests the ClassifyReleaseEvents DoFn in the pipeline."""
 
     def setUp(self) -> None:
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(identifier)
         self.state_code = "US_XX"
-        self.identifier = identifier.RecidivismIdentifier()
+        self.identifier = identifier.RecidivismIdentifier(StateCode.US_XX)
         self.pipeline_class = pipeline.RecidivismMetricsPipeline
-        self.state_specific_delegate_patcher = mock.patch(
-            "recidiviz.pipelines.metrics.base_metric_pipeline.get_required_state_specific_delegates",
-            return_value=STATE_DELEGATES_FOR_TESTS,
-        )
-        self.mock_get_required_state_delegates = (
-            self.state_specific_delegate_patcher.start()
-        )
 
     def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.state_specific_delegate_patcher.stop()
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def testClassifyReleaseEvents(self) -> None:
         """Tests the ClassifyReleaseEvents DoFn when there are two instances
@@ -586,9 +574,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | "Identify Recidivism Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     NonRecidivismReleaseEvent,
                     RecidivismReleaseEvent,
@@ -665,9 +651,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | "Identify Recidivism Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     NonRecidivismReleaseEvent,
                     RecidivismReleaseEvent,
@@ -716,9 +700,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             | "Identify Recidivism Events"
             >> beam.ParDo(
                 ClassifyResults(),
-                state_code=self.state_code,
                 identifier=self.identifier,
-                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
                 included_result_classes={
                     NonRecidivismReleaseEvent,
                     RecidivismReleaseEvent,
