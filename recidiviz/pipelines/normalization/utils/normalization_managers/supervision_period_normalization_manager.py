@@ -219,11 +219,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 standard_date_sort_for_supervision_periods(mid_processing_periods)
             )
 
-            # Drop periods that have neither a start nor end date
-            mid_processing_periods = self._drop_missing_date_periods(
-                mid_processing_periods
-            )
-
             # Sort periods, and infer as much missing information as possible
             mid_processing_periods = self._infer_missing_dates_and_statuses(
                 mid_processing_periods
@@ -269,16 +264,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 ),
             )
         return self._normalized_supervision_periods_and_additional_attributes
-
-    def _drop_missing_date_periods(
-        self, supervision_periods: List[StateSupervisionPeriod]
-    ) -> List[StateSupervisionPeriod]:
-        """Drops all periods that have no start and no end dates."""
-        return [
-            period
-            for period in supervision_periods
-            if period.start_date_inclusive or period.end_date_exclusive
-        ]
 
     @staticmethod
     def _infer_missing_dates_and_statuses(

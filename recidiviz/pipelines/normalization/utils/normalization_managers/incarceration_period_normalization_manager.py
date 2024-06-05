@@ -319,14 +319,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         # Make a deep copy of the original incarceration periods
         periods_for_normalization = deepcopy(self._original_incarceration_periods)
 
-        # Drop placeholder IPs with no start and no end dates
-        mid_processing_periods = self._drop_missing_date_periods(
-            periods_for_normalization
-        )
-
         # Drop IPs that are fuzzy matched, as we are not yet confident in their
         # placement of a person's entire journey within the system
-        mid_processing_periods = drop_fuzzy_matched_periods(mid_processing_periods)
+        mid_processing_periods = drop_fuzzy_matched_periods(periods_for_normalization)
 
         # Sort periods, and infer as much missing information as possible
         mid_processing_periods = self._sort_and_infer_missing_dates_and_statuses(
@@ -416,16 +411,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         )
 
         return self._normalized_incarceration_periods_and_additional_attributes
-
-    def _drop_missing_date_periods(
-        self, incarceration_periods: List[StateIncarcerationPeriod]
-    ) -> List[StateIncarcerationPeriod]:
-        """Removes any incarceration periods that do not have start nor end dates."""
-        return [
-            ip
-            for ip in incarceration_periods
-            if ip.start_date_inclusive or ip.end_date_exclusive
-        ]
 
     def _drop_periods_from_calculations(
         self, incarceration_periods: List[StateIncarcerationPeriod]

@@ -1051,3 +1051,111 @@ class TestSentencingRootEntityChecks(unittest.TestCase):
         self.state_person.sentence_groups = [group]
         errors = validate_root_entity(self.state_person, self.field_index)
         self.assertEqual(errors, [])
+
+
+class TestIncarcerationPeriodRootEntityChecks(unittest.TestCase):
+    """Test that root entity checks specific to incarceration periods are valid."""
+
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
+        self.state_code = "US_XX"
+        self.state_person = state_entities.StatePerson(
+            state_code=self.state_code,
+            person_id=1,
+            external_ids=[
+                StatePersonExternalId(
+                    external_id="1",
+                    state_code="US_XX",
+                    id_type="US_XX_TEST_PERSON",
+                ),
+            ],
+        )
+
+    def test_valid_incarceration_period(self) -> None:
+        valid_period = state_entities.StateIncarcerationPeriod(
+            state_code=self.state_code,
+            external_id="IP-EXTERNAL-1",
+            person=self.state_person,
+            admission_date=date(2020, 1, 1),
+        )
+        self.state_person.incarceration_periods = [valid_period]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(errors, [])
+
+    def test_missing_date_incarceration_period(self) -> None:
+        valid_period = state_entities.StateIncarcerationPeriod(
+            state_code=self.state_code,
+            external_id="IP-EXTERNAL-1",
+            person=self.state_person,
+            admission_date=date(2020, 1, 1),
+        )
+        missing_date_period = state_entities.StateIncarcerationPeriod(
+            state_code=self.state_code,
+            external_id="IP-EXTERNAL-2",
+            person=self.state_person,
+        )
+        self.state_person.incarceration_periods = [valid_period, missing_date_period]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(
+            errors,
+            [
+                "Found StatePerson(person_id=1, "
+                "external_ids=[StatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) having a "
+                "StateIncarcerationPeriod with a null start date."
+            ],
+        )
+
+
+class TestSupervisionPeriodRootEntityChecks(unittest.TestCase):
+    """Test that root entity checks specific to supervision periods are valid."""
+
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
+        self.state_code = "US_XX"
+        self.state_person = state_entities.StatePerson(
+            state_code=self.state_code,
+            person_id=1,
+            external_ids=[
+                StatePersonExternalId(
+                    external_id="1",
+                    state_code="US_XX",
+                    id_type="US_XX_TEST_PERSON",
+                ),
+            ],
+        )
+
+    def test_valid_supervision_period(self) -> None:
+        valid_period = state_entities.StateSupervisionPeriod(
+            state_code=self.state_code,
+            external_id="IP-EXTERNAL-1",
+            person=self.state_person,
+            start_date=date(2020, 1, 1),
+        )
+        self.state_person.supervision_periods = [valid_period]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(errors, [])
+
+    def test_missing_date_supervision_period(self) -> None:
+        valid_period = state_entities.StateSupervisionPeriod(
+            state_code=self.state_code,
+            external_id="IP-EXTERNAL-1",
+            person=self.state_person,
+            start_date=date(2020, 1, 1),
+        )
+        missing_date_period = state_entities.StateSupervisionPeriod(
+            state_code=self.state_code,
+            external_id="IP-EXTERNAL-2",
+            person=self.state_person,
+        )
+        self.state_person.supervision_periods = [valid_period, missing_date_period]
+        errors = validate_root_entity(self.state_person, self.field_index)
+        self.assertEqual(
+            errors,
+            [
+                "Found StatePerson(person_id=1, "
+                "external_ids=[StatePersonExternalId(external_id='1', "
+                "id_type='US_XX_TEST_PERSON', person_external_id_id=None)]) having a "
+                "StateSupervisionPeriod with a null start date."
+            ],
+        )
