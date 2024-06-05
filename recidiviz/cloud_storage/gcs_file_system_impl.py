@@ -177,6 +177,20 @@ class GCSFileSystemImpl(GCSFileSystem):
             pass
 
     @retry.Retry(predicate=google_api_retry_predicate)
+    def mv_file_to_directory_safe(
+        self, src_path: GcsfsFilePath, dst_directory: GcsfsDirectoryPath
+    ) -> GcsfsFilePath:
+        dst_path = GcsfsFilePath.from_directory_and_file_name(
+            dst_directory, src_path.file_name
+        )
+
+        if self.exists(dst_path):
+            raise ValueError(f"Destination path [{dst_path.abs_path()}] already exists")
+
+        self.mv(src_path, dst_path)
+        return dst_path
+
+    @retry.Retry(predicate=google_api_retry_predicate)
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         src_blob = self._get_blob(src_path)
 

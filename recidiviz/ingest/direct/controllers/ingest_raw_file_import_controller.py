@@ -78,6 +78,7 @@ from recidiviz.utils import environment
 
 _RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_RAW_FILE_"
 
+
 # TODO(#28239) remove class once raw data import dag is fully rolled out
 class IngestRawFileImportController:
     """Parses and persists individual-level info from direct ingest partners."""
@@ -153,6 +154,12 @@ class IngestRawFileImportController:
             region_code=self.region_code(),
             ingest_instance=self.ingest_instance,
             deprecated_on_date=deprecated_on_date,
+        )
+
+    @property
+    def raw_data_zip_temp_directory(self) -> GcsfsDirectoryPath:
+        return GcsfsDirectoryPath.from_dir_and_subdir(
+            self.raw_data_bucket_path, "temp_zip_subdir"
         )
 
     @property
@@ -417,16 +424,32 @@ class IngestRawFileImportController:
         for zip_path in unprocessed_zip_files:
             logging.info("File [%s] is a zip file, unzipping...", zip_path.abs_path())
             parts = filename_parts_from_path(zip_path)
-            unzipped_files = self.fs.unzip(
-                zip_path, destination_dir=self.raw_data_bucket_path
+            # Move the zip file to a temp subdir so we don't infinitely unpack if there
+            # are errors
+            zip_temp_path = self.fs.mv_file_to_directory_safe(
+                zip_path, self.raw_data_zip_temp_directory
             )
-            # Normalize all the internal file paths with the same date as the outer file
+            # Unpack w/in the subidr
+            unzipped_files = self.fs.unzip(
+                zip_temp_path, destination_dir=self.raw_data_zip_temp_directory
+            )
+
+            # Normalize internal file paths with the same update_datetime as the outer file
+            normalized_internal_paths: List[GcsfsFilePath] = []
             for internal_path in unzipped_files:
-                self.fs.mv_raw_file_to_normalized_path(
+                normalized_internal_path = self.fs.mv_raw_file_to_normalized_path(
                     internal_path, dt=parts.utc_upload_datetime
                 )
+                normalized_internal_paths.append(normalized_internal_path)
+
+            # Move normalized internal file paths to the ingest bucket
+            for normalized_internal_path in normalized_internal_paths:
+                self.fs.mv_file_to_directory_safe(
+                    normalized_internal_path, self.raw_data_bucket_path
+                )
+
             self.fs.mv(
-                src_path=zip_path,
+                src_path=zip_temp_path,
                 dst_path=self.raw_data_deprecated_storage_directory_path(
                     deprecated_on_date=datetime.date.today()
                 ),

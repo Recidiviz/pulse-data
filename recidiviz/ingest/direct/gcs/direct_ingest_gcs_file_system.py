@@ -208,6 +208,11 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def mv(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         self.gcs_file_system.mv(src_path, dst_path)
 
+    def mv_file_to_directory_safe(
+        self, src_path: GcsfsFilePath, dst_directory: GcsfsDirectoryPath
+    ) -> GcsfsFilePath:
+        return self.gcs_file_system.mv_file_to_directory_safe(src_path, dst_directory)
+
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         self.gcs_file_system.copy(src_path, dst_path)
 
