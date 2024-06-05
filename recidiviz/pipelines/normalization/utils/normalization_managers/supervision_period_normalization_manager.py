@@ -204,8 +204,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             # Make a deep copy of the original supervision periods to preprocess
             periods_for_normalization = deepcopy(self._supervision_periods)
 
-            # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
-            #  periods with dates of 9999-12-31.
             mid_processing_periods = self.delegate.drop_bad_periods(
                 standard_date_sort_for_supervision_periods(periods_for_normalization)
             )

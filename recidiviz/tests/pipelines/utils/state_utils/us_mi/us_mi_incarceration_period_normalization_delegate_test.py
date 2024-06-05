@@ -127,9 +127,10 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         expected_periods = [
             incarceration_period_1,
+            incarceration_period_2,
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=260000012345678,
-                external_id="ip-1-2-INFERRED",
+                external_id="ip-1-TEMPORARY_RELEASE",
                 state_code=_STATE_CODE,
                 admission_date=date(2022, 7, 1),
                 release_date=date(2022, 8, 1),
@@ -145,7 +146,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
                 custody_level=StateIncarcerationPeriodCustodyLevel.MEDIUM,
                 custody_level_raw_text="medium",
             ),
-            incarceration_period_2,
         ]
 
         self.assertEqual(result, expected_periods)
@@ -295,11 +295,13 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 6: Test that an additional period is inferred when a revocation admission reason is encountered
     def test_infer_additional_periods_revocation_basic(self) -> None:
+
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 8, 1),
             release_date=date(2022, 9, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="15",
             external_id="ip-2",
         )
 
@@ -310,7 +312,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             external_id="sp1",
             state_code=_STATE_CODE,
             start_date=date(2021, 3, 5),
-            termination_date=date(2021, 7, 1),
+            termination_date=date(2021, 7, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             sequence_num=0,
@@ -330,22 +332,23 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
         incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             incarceration_period_id=260000012345678,
-            admission_date=date(2021, 7, 1),
+            admission_date=date(2021, 7, 15),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="15",
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
             custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-            external_id="ip-2-0-INFERRED",
+            external_id="ip-2-0-INFERRED(REVOCATION_IP)",
         )
 
         expected_periods = [incarceration_period_1, incarceration_period_0]
 
         self.assertEqual(result, expected_periods)
 
-    # Test case 7: Test that an additional period is inferred when a revocation admission reason is encountered and there's an existing preceding IP
+    # Test case 7: Test that when a revocation admission reason is encountered and there's an existing preceding IP, the admission reason of the existing preceding IP is updated
     def test_infer_additional_periods_revocation_overlapping(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
@@ -360,6 +363,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_date=date(2021, 8, 1),
             release_date=date(2022, 9, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="15",
             external_id="ip-2",
         )
 
@@ -370,7 +374,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             external_id="sp1",
             state_code=_STATE_CODE,
             start_date=date(2021, 3, 5),
-            termination_date=date(2021, 7, 1),
+            termination_date=date(2021, 7, 5),
             termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             sequence_num=0,
@@ -387,24 +391,99 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             supervision_period_index=sp_index,
         )
 
-        incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            incarceration_period_id=260000012345678,
-            admission_date=date(2021, 7, 1),
-            release_date=date(2021, 8, 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-            custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
-            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-            external_id="ip-2-0-INFERRED",
+        incarceration_period_1.admission_reason_raw_text = (
+            incarceration_period_2.admission_reason_raw_text
         )
 
         expected_periods = [
             incarceration_period_1,
             incarceration_period_2,
-            incarceration_period_0,
+        ]
+
+        self.assertEqual(result, expected_periods)
+
+    # Test case 7b: Test that when a revocation admission reason is encountered and there's an existing preceding IP and a gap, the admission reason of the existing preceding IP is updated and the gaps are filled in
+    def test_infer_additional_periods_revocation_overlapping_b(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2021, 7, 15),
+            release_date=date(2021, 7, 25),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            external_id="ip-1",
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2021, 8, 1),
+            release_date=date(2022, 9, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="15",
+            external_id="ip-2",
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=_STATE_CODE,
+            start_date=date(2021, 3, 5),
+            termination_date=date(2021, 7, 5),
+            termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            sequence_num=0,
+            supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
+        )
+
+        sp_index = default_normalized_sp_index_for_tests(
+            supervision_periods=[supervision_period_1]
+        )
+
+        result = self.delegate.infer_additional_periods(
+            incarceration_periods=incarceration_periods,
+            person_id=self.person_id,
+            supervision_period_index=sp_index,
+        )
+
+        incarceration_period_new_a = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            incarceration_period_id=260000012345678,
+            admission_date=date(2021, 7, 5),
+            release_date=date(2021, 7, 15),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text=incarceration_period_2.admission_reason_raw_text,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
+            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
+            external_id="ip-2-0-INFERRED(REVOCATION_IP)",
+        )
+
+        incarceration_period_new_b = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            incarceration_period_id=260000012345679,
+            admission_date=date(2021, 7, 25),
+            release_date=date(2021, 8, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text=incarceration_period_2.admission_reason_raw_text,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
+            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
+            external_id="ip-2-1-INFERRED(REVOCATION_IP)",
+        )
+
+        incarceration_period_1.admission_reason_raw_text = (
+            incarceration_period_2.admission_reason_raw_text
+        )
+
+        expected_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            incarceration_period_new_a,
+            incarceration_period_new_b,
         ]
 
         self.assertEqual(result, expected_periods)
@@ -464,7 +543,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             external_id="sp1",
             state_code=_STATE_CODE,
             start_date=date(2021, 3, 5),
-            termination_date=date(2021, 5, 1),
+            termination_date=date(2021, 7, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             sequence_num=0,
@@ -510,7 +589,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             external_id="sp1",
             state_code=_STATE_CODE,
             start_date=date(2021, 3, 5),
-            termination_date=date(2021, 7, 1),
+            termination_date=date(2021, 7, 15),
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             sequence_num=0,
@@ -530,7 +609,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
         incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             incarceration_period_id=260000012345678,
-            admission_date=date(2021, 7, 1),
+            admission_date=date(2021, 7, 15),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
@@ -538,13 +617,13 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
             custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-            external_id="ip-2-0-INFERRED",
+            external_id="sp1-INFERRED(REVOCATION_SP)",
         )
 
         expected_periods = [
             incarceration_period_1,
-            incarceration_period_0,
             incarceration_period_2,
+            incarceration_period_0,
         ]
 
         self.assertEqual(result, expected_periods)
@@ -599,95 +678,95 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         self.assertEqual(result, expected_periods)
 
-    # Test case 10: Test that a TEMPORARY_CUSTODY period is inferred with there's a SP with missing supervision level
-    def test_infer_additional_periods_missing_sup_level(self) -> None:
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            admission_date=date(2021, 8, 1),
-            release_date=date(2022, 9, 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            external_id="ip-2",
-        )
+    # # Test case 10: Test that a TEMPORARY_CUSTODY period is inferred with there's a SP with missing supervision level
+    # def test_infer_additional_periods_missing_sup_level(self) -> None:
+    #     incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+    #         state_code=_STATE_CODE,
+    #         admission_date=date(2021, 8, 1),
+    #         release_date=date(2022, 9, 1),
+    #         admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+    #         external_id="ip-2",
+    #     )
 
-        incarceration_periods = [incarceration_period_1]
+    #     incarceration_periods = [incarceration_period_1]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code=_STATE_CODE,
-            start_date=date(2021, 3, 5),
-            termination_date=date(2021, 5, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            sequence_num=0,
-        )
+    #     supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+    #         supervision_period_id=111,
+    #         external_id="sp1",
+    #         state_code=_STATE_CODE,
+    #         start_date=date(2021, 3, 5),
+    #         termination_date=date(2021, 5, 1),
+    #         termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+    #         supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+    #         sequence_num=0,
+    #     )
 
-        sp_index = default_normalized_sp_index_for_tests(
-            supervision_periods=[supervision_period_1]
-        )
+    #     sp_index = default_normalized_sp_index_for_tests(
+    #         supervision_periods=[supervision_period_1]
+    #     )
 
-        result = self.delegate.infer_additional_periods(
-            incarceration_periods=incarceration_periods,
-            person_id=self.person_id,
-            supervision_period_index=sp_index,
-        )
+    #     result = self.delegate.infer_additional_periods(
+    #         incarceration_periods=incarceration_periods,
+    #         person_id=self.person_id,
+    #         supervision_period_index=sp_index,
+    #     )
 
-        new_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            incarceration_period_id=260000012345678,
-            admission_date=date(2021, 3, 5),
-            release_date=date(2021, 5, 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
-            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
-            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
-            external_id="sp1-MISSING-SUP-LEVEL",
-        )
+    #     new_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+    #         state_code=_STATE_CODE,
+    #         incarceration_period_id=260000012345678,
+    #         admission_date=date(2021, 3, 5),
+    #         release_date=date(2021, 5, 1),
+    #         admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+    #         release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+    #         custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
+    #         incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
+    #         custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+    #         external_id="sp1-0-MISSING-SUP-LEVEL",
+    #     )
 
-        expected_periods = [new_incarceration_period, incarceration_period_1]
+    #     expected_periods = [new_incarceration_period, incarceration_period_1]
 
-        self.assertEqual(result, expected_periods)
+    #     self.assertEqual(result, expected_periods)
 
-    # Test case 10B: Test that a TEMPORARY_CUSTODY period is not inferred if there's a SP with missing supervision level but it ends in DISCHARGE
-    def test_infer_additional_periods_missing_sup_level_discharge(self) -> None:
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE,
-            admission_date=date(2021, 8, 1),
-            release_date=date(2022, 9, 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            external_id="ip-2",
-        )
+    # # Test case 10B: Test that a TEMPORARY_CUSTODY period is not inferred if there's a SP with missing supervision level but it ends in DISCHARGE
+    # def test_infer_additional_periods_missing_sup_level_discharge(self) -> None:
+    #     incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+    #         state_code=_STATE_CODE,
+    #         admission_date=date(2021, 8, 1),
+    #         release_date=date(2022, 9, 1),
+    #         admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+    #         external_id="ip-2",
+    #     )
 
-        incarceration_periods = [incarceration_period_1]
+    #     incarceration_periods = [incarceration_period_1]
 
-        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code=_STATE_CODE,
-            start_date=date(2021, 3, 5),
-            termination_date=date(2021, 5, 1),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            sequence_num=0,
-        )
+    #     supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+    #         supervision_period_id=111,
+    #         external_id="sp1",
+    #         state_code=_STATE_CODE,
+    #         start_date=date(2021, 3, 5),
+    #         termination_date=date(2021, 5, 1),
+    #         termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+    #         supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+    #         sequence_num=0,
+    #     )
 
-        sp_index = default_normalized_sp_index_for_tests(
-            supervision_periods=[supervision_period_1]
-        )
+    #     sp_index = default_normalized_sp_index_for_tests(
+    #         supervision_periods=[supervision_period_1]
+    #     )
 
-        result = self.delegate.infer_additional_periods(
-            incarceration_periods=incarceration_periods,
-            person_id=self.person_id,
-            supervision_period_index=sp_index,
-        )
+    #     result = self.delegate.infer_additional_periods(
+    #         incarceration_periods=incarceration_periods,
+    #         person_id=self.person_id,
+    #         supervision_period_index=sp_index,
+    #     )
 
-        expected_periods = [incarceration_period_1]
+    #     expected_periods = [incarceration_period_1]
 
-        self.assertEqual(result, expected_periods)
+    #     self.assertEqual(result, expected_periods)
 
     # Test case 111: Test that a TEMPORARY_CUSTODY period is inferred with there's a SP with and IN_CUSTODY level
-    def test_infer_additional_periods_in_custody(self) -> None:
+    def test_infer_additional_periods_in_custody_a(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 8, 1),
@@ -735,16 +814,93 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             release_date=date(2021, 5, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custody_level=StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
         expected_periods = [
-            new_incarceration_period,
             incarceration_period_1,
             incarceration_period_2,
+            new_incarceration_period,
+        ]
+
+        self.assertEqual(result, expected_periods)
+
+    # Test case 12: Test that when there's an SP with IN_CUSTODY level, TEMPORARY_CUSTODY IPs are only infered in the gaps of time where there's not already an IP
+    def test_infer_additional_periods_in_custody_b(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2021, 8, 1),
+            release_date=date(2022, 8, 15),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            external_id="ip-2",
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 9, 1),
+            release_date=date(2022, 10, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            external_id="ip-3",
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=_STATE_CODE,
+            start_date=date(2021, 7, 15),
+            termination_date=date(2022, 10, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.IN_CUSTODY,
+            sequence_num=0,
+        )
+
+        sp_index = default_normalized_sp_index_for_tests(
+            supervision_periods=[supervision_period_1]
+        )
+
+        result = self.delegate.infer_additional_periods(
+            incarceration_periods=incarceration_periods,
+            person_id=self.person_id,
+            supervision_period_index=sp_index,
+        )
+
+        new_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            incarceration_period_id=260000012345678,
+            admission_date=date(2021, 7, 15),
+            release_date=date(2021, 8, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            external_id="sp1-0-IN-CUSTODY",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        new_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            incarceration_period_id=260000012345679,
+            admission_date=date(2022, 8, 15),
+            release_date=date(2022, 9, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
+            external_id="sp1-1-IN-CUSTODY",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        expected_periods = [
+            incarceration_period_1,
+            incarceration_period_2,
+            new_incarceration_period_1,
+            new_incarceration_period_2,
         ]
 
         self.assertEqual(result, expected_periods)

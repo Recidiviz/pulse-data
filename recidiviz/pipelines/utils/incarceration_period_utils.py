@@ -222,6 +222,7 @@ def infer_incarceration_periods_from_in_custody_sps(
     state_code: StateCode,
     incarceration_periods: List[StateIncarcerationPeriod],
     supervision_period_index: NormalizedSupervisionPeriodIndex,
+    temp_custody_custodial_authority: StateCustodialAuthority,
 ) -> List[StateIncarcerationPeriod]:
     """Returns a set of incarceration periods that includes any new inferred incarceration periods based off of
     supervision periods with a supervision_level of 'IN_CUSTODY'. We use the CriticalRangesBuilder to create a set
@@ -237,6 +238,15 @@ def infer_incarceration_periods_from_in_custody_sps(
     )
 
     inferred_incarceration_periods = []
+
+    # The current SP that we are inferring periods for. May persist across multiple
+    # ranges, e.g. if there is an IP that only partially overlaps this SP.
+    in_custody_sp_external_id = None
+
+    # The number of incarceration periods that have been inferred from the
+    # SP with external_id=in_custody_sp_external_id.
+    inferred_period_count = 0
+
     for critical_range in critical_range_builder.get_sorted_critical_ranges():
         ips_overlapping_with_range = (
             critical_range_builder.get_objects_overlapping_with_critical_range(
@@ -254,11 +264,28 @@ def infer_incarceration_periods_from_in_custody_sps(
             )
         )
 
-        if not any(
-            sp.supervision_level == StateSupervisionLevel.IN_CUSTODY
+        in_custody_sps_overlapping_with_range = [
+            sp
             for sp in sps_overlapping_with_range
-        ):
+            if sp.supervision_level == StateSupervisionLevel.IN_CUSTODY
+        ]
+
+        if not in_custody_sps_overlapping_with_range:
+            in_custody_sp_external_id = None
             continue
+
+        # If there wasn't an in custody IP for the previous time range or the newly
+        # identified in custody SP for this range is different from the in custody SP
+        # for the previous range, reset the inferred period count because this is the
+        # first time we're inferring periods from this SP.
+        if (
+            in_custody_sp_external_id
+            != in_custody_sps_overlapping_with_range[0].external_id
+        ):
+            in_custody_sp_external_id = in_custody_sps_overlapping_with_range[
+                0
+            ].external_id
+            inferred_period_count = 0
 
         if critical_range.upper_bound_exclusive_date:
             release_reason = (
@@ -269,15 +296,17 @@ def infer_incarceration_periods_from_in_custody_sps(
 
         new_incarceration_period = StateIncarcerationPeriod(
             state_code=state_code.value,
-            external_id=f"{sps_overlapping_with_range[0].external_id}-IN-CUSTODY",
+            external_id=f"{in_custody_sp_external_id}-{inferred_period_count}-IN-CUSTODY",
             admission_date=critical_range.lower_bound_inclusive_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=critical_range.upper_bound_exclusive_date,
             release_reason=release_reason,
-            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority=temp_custody_custodial_authority,
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
+        inferred_period_count += 1
+
         # Add a unique id to the new IP
         update_normalized_entity_with_globally_unique_id(
             person_id=person_id,

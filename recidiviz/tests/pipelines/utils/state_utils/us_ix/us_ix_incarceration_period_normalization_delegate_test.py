@@ -833,14 +833,14 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 3, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=None,
             release_reason=None,
-            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
@@ -871,14 +871,14 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         new_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 3, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 4, 20),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
@@ -930,14 +930,14 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 4, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 4, 30),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
@@ -993,14 +993,14 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 4, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2017, 4, 25),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
@@ -1056,7 +1056,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         new_inferred_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4200000123412345,
-            external_id="sp1-IN-CUSTODY",
+            external_id="sp1-0-IN-CUSTODY",
             state_code="US_IX",
             incarceration_type=StateIncarcerationType.INTERNAL_UNKNOWN,
             admission_date=date(2017, 4, 20),
@@ -1064,7 +1064,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             # Inferred period ends when the first incarceration period starts
             release_date=date(2017, 4, 30),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            custodial_authority=StateCustodialAuthority.COUNTY,
+            custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
