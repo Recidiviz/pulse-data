@@ -38,9 +38,7 @@ from recidiviz.outliers.types import (
     UserInfo,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
-    Configuration as InsightsConfiguration,
-)
-from recidiviz.persistence.database.schema.insights.schema import (
+    Configuration,
     MetricBenchmark,
     SupervisionClientEvent,
     SupervisionClients,
@@ -48,20 +46,11 @@ from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
-)
-from recidiviz.persistence.database.schema.insights.schema import (
-    UserMetadata as InsightsUserMetadata,
-)
-from recidiviz.persistence.database.schema.outliers.schema import (
-    Configuration,
     UserMetadata,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
-from recidiviz.tests.insights.utils import (
-    load_model_from_csv_fixture,
-    load_model_from_json_fixture,
-)
+from recidiviz.tests.insights.utils import load_model_from_json_fixture
 
 TEST_END_DATE = date(year=2023, month=5, day=1)
 TEST_PREV_END_DATE = date(year=2023, month=4, day=1)
@@ -110,15 +99,13 @@ class TestOutliersQuerier(InsightsDbTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        with SessionFactory.using_database(self.outliers_database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
             session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
-            for metadata in load_model_from_csv_fixture(UserMetadata):
-                session.add(UserMetadata(**metadata))
-            for config in load_model_from_csv_fixture(Configuration):
+            for config in load_model_from_json_fixture(Configuration):
                 session.add(Configuration(**config))
-
-        with SessionFactory.using_database(self.insights_database_key) as session:
+            for metadata in load_model_from_json_fixture(UserMetadata):
+                session.add(UserMetadata(**metadata))
             for officer in load_model_from_json_fixture(SupervisionOfficer):
                 session.add(SupervisionOfficer(**officer))
             for status in load_model_from_json_fixture(SupervisionOfficerOutlierStatus):
@@ -368,12 +355,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
         metadata = querier.get_user_metadata(pid)
         self.assertIsNotNone(metadata)
         self.assertTrue(metadata.has_seen_onboarding)  # type: ignore
-        self.assertTrue(metadata.duplicate_write)  # type: ignore
-
-        # Ensure double write works
-        with SessionFactory.using_database(self.insights_database_key) as session:
-            user_metadata = session.query(InsightsUserMetadata).first()
-            self.assertEqual(user_metadata.pseudonymized_id, pid)
 
     def test_update_user_metadata_existing_entity(self) -> None:
         pid = "hash1"
@@ -499,18 +480,10 @@ class TestOutliersQuerier(InsightsDbTestCase):
         results = querier.get_configurations()
         self.assertEqual(results[0].feature_variant, None)
         self.assertEqual(results[0].updated_by, "alexa@recidiviz.org")
-        self.assertTrue(results[0].duplicate_write)
         # Assumes that the first non-header row in configurations.csv has feature_variant=None
         self.assertEqual(
             querier.get_configuration(1).status, ConfigurationStatus.INACTIVE.value
         )
-
-        # Ensure double write works
-        with SessionFactory.using_database(self.insights_database_key) as session:
-            config = session.query(InsightsConfiguration).first()
-            self.assertEqual(config.feature_variant, None)
-            self.assertEqual(config.id, 1)
-            self.assertEqual(config.updated_by, "alexa@recidiviz.org")
 
     def test_add_configuration_fv(self) -> None:
         config_to_add = {
@@ -543,13 +516,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
             querier.get_configuration(3).status, ConfigurationStatus.INACTIVE.value
         )
 
-        # Ensure double write works
-        with SessionFactory.using_database(self.insights_database_key) as session:
-            config = session.query(InsightsConfiguration).first()
-            self.assertEqual(config.feature_variant, "fv1")
-            self.assertEqual(config.id, 1)
-            self.assertEqual(config.updated_by, "alexa@recidiviz.org")
-
     def test_add_configuration_error(self) -> None:
         config_to_add = {
             "updated_at": datetime(2024, 2, 1),
@@ -569,11 +535,6 @@ class TestOutliersQuerier(InsightsDbTestCase):
             querier.add_configuration(config_to_add)
             # Assert the latest entity is the first non-header row in configurations.csv
             self.assertEqual(querier.get_configurations()[0].id, 1)
-
-        # Ensure double write does not happen
-        with SessionFactory.using_database(self.insights_database_key) as session:
-            config = session.query(InsightsConfiguration).first()
-            self.assertIsNone(config)
 
     def test_deactivate_configuration_no_matching_id(self) -> None:
         with self.assertRaises(NoResultFound):

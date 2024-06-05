@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """This class implements tests for the OutliersQuerier class"""
-import csv
 import json
 import os
 from typing import Dict, List, Optional
@@ -24,34 +23,7 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     parse_exported_json_row_from_bigquery,
 )
 from recidiviz.persistence.database.schema.insights.schema import InsightsBase
-from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.tools.insights import fixtures as insights_json_fixtures
-from recidiviz.tools.outliers import fixtures as outliers_csv_fixtures
-
-
-def load_model_from_csv_fixture(
-    model: OutliersBase, filename: Optional[str] = None
-) -> List[Dict]:
-    filename = f"{model.__tablename__}.csv" if filename is None else filename
-    fixture_path = os.path.join(
-        os.path.dirname(outliers_csv_fixtures.__file__), filename
-    )
-    results = []
-    with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
-        reader = csv.DictReader(fixture_file)
-        for row in reader:
-            for k, v in row.items():
-                if k == "has_seen_onboarding" and v != "":
-                    row["has_seen_onboarding"] = json.loads(row["has_seen_onboarding"])
-                if v == "True":
-                    row[k] = True
-                if v == "False":
-                    row[k] = False
-                if v == "":
-                    row[k] = None
-            results.append(row)
-
-    return results
 
 
 def load_model_from_json_fixture(

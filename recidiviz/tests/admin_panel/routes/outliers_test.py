@@ -30,10 +30,10 @@ from flask_smorest import Api
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.outliers import outliers_blueprint
-from recidiviz.persistence.database.schema.outliers.schema import Configuration
+from recidiviz.persistence.database.schema.insights.schema import Configuration
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
-from recidiviz.tests.insights.utils import load_model_from_csv_fixture
+from recidiviz.tests.insights.utils import load_model_from_json_fixture
 
 
 @patch(
@@ -93,11 +93,11 @@ class OutliersAdminPanelEndpointTests(InsightsDbTestCase):
                 config_id=config_id,
             )
 
-        with SessionFactory.using_database(self.outliers_database_key) as session:
+        with SessionFactory.using_database(self.insights_database_key) as session:
             # Restart the sequence in tests as per https://stackoverflow.com/questions/46841912/sqlalchemy-revert-auto-increment-during-testing-pytest
             session.execute("""ALTER SEQUENCE configurations_id_seq RESTART WITH 1;""")
 
-            for config in load_model_from_csv_fixture(Configuration):
+            for config in load_model_from_json_fixture(Configuration):
                 session.add(Configuration(**config))
 
     def tearDown(self) -> None:
