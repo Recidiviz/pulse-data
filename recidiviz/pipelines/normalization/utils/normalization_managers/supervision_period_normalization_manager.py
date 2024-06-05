@@ -50,9 +50,6 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.normalization_utils import (
-    drop_fuzzy_matched_periods,
-)
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -207,16 +204,10 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             # Make a deep copy of the original supervision periods to preprocess
             periods_for_normalization = deepcopy(self._supervision_periods)
 
-            # Drop SPs that are fuzzy matched, as we are not yet confident in their
-            # placement of a person's entire journey within the system
-            mid_processing_periods = drop_fuzzy_matched_periods(
-                periods_for_normalization
-            )
-
             # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
             #  periods with dates of 9999-12-31.
             mid_processing_periods = self.delegate.drop_bad_periods(
-                standard_date_sort_for_supervision_periods(mid_processing_periods)
+                standard_date_sort_for_supervision_periods(periods_for_normalization)
             )
 
             # Sort periods, and infer as much missing information as possible

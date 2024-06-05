@@ -772,41 +772,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
         )
 
-    def test_drop_fuzzy_matched_periods(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=222,
-            external_id="12345-3",
-            state_code="US_XX",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            admission_date=date(2017, 5, 17),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2019, 3, 3),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-        )
-
-        fuzzy_matched_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=222,
-            external_id="199999-11111-FUZZY_MATCHED",
-            state_code="US_XX",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            admission_date=date(2017, 5, 17),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-        )
-
-        expected_period = attr.evolve(incarceration_period)
-
-        validated_incarceration_periods = (
-            self._normalized_incarceration_periods_for_calculations(
-                incarceration_periods=[
-                    incarceration_period,
-                    fuzzy_matched_incarceration_period,
-                ]
-            )
-        )
-
-        self.assertEqual([expected_period], validated_incarceration_periods)
-
     def test_normalized_incarceration_periods_for_calculations_drop_invalid_zero_day_after_transfer(
         self,
     ) -> None:

@@ -476,36 +476,6 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         self.assertEqual(expected_additional_attributes, additional_attributes)
 
-    def test_drop_fuzzy_matched_periods(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=222,
-            external_id="12345-3",
-            state_code="US_ID",
-            start_date=datetime.date(2017, 5, 17),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_date=datetime.date(2019, 3, 3),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-        )
-
-        fuzzy_matched_supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=222,
-            external_id="199999-11111-FUZZY_MATCHED",
-            state_code="US_ID",
-            start_date=datetime.date(2017, 5, 17),
-            admission_reason=StateSupervisionPeriodAdmissionReason.INVESTIGATION,
-        )
-
-        expected_period = attr.evolve(supervision_period)
-
-        normalized_sps = self._normalized_supervision_periods_for_calculations(
-            supervision_periods=[
-                supervision_period,
-                fuzzy_matched_supervision_period,
-            ],
-        )
-
-        self.assertEqual([expected_period], normalized_sps)
-
     def test_additional_attributes_supervision_staff_none(self) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
