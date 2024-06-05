@@ -71,6 +71,12 @@ def delete_agency(session: Session, agency_id: int, dry_run: bool) -> Dict:
     objects_to_delete.extend(settings)
     logger.info("Will delete %d agency settings", len(settings))
 
+    metric_settings = (
+        session.query(schema.MetricSetting).filter_by(agency_id=agency_id).all()
+    )
+    objects_to_delete.extend(metric_settings)
+    logger.info("Will delete %d metric settings", len(metric_settings))
+
     jurisdictions = (
         session.query(schema.AgencyJurisdiction).filter_by(source_id=agency_id).all()
     )
