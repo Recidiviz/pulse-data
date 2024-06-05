@@ -9,6 +9,10 @@ input_columns:
   - OFFNSEX
   - OFFNETHNICGROUP
   - OFFNEMAILADDR
+  - OFFNFIRSTNAME
+  - OFFNMIDDLENAME
+  - OFFNLASTNAME
+  - OFFNNAMESUFFIX
   - alias_list
   - OFFNISHOMELESS
   - STREETNUMBER
@@ -27,6 +31,12 @@ output:
       - StatePersonExternalId:
           external_id: OFFENDERID
           id_type: $literal("US_AR_OFFENDERID")
+    full_name:
+      $person_name:
+        $given_names: OFFNFIRSTNAME
+        $middle_names: OFFNMIDDLENAME
+        $surname: OFFNLASTNAME
+        $name_suffix: OFFNNAMESUFFIX
     aliases:
       - $foreach:
           $iterable:

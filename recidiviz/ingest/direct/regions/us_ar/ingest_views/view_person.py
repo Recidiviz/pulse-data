@@ -29,6 +29,22 @@ op_cleaned AS (
   FROM {OFFENDERPROFILE}
   WHERE REGEXP_CONTAINS(OFFENDERID, r'^[[:alnum:]]+$')
 ),
+-- We pick the most recent commited name (indicated by OFFNNAMETYPE = '1') to use as the primary name in StatePerson
+primary_name AS(
+  SELECT 
+      OFFENDERID,
+      OFFNFIRSTNAME,
+      OFFNMIDDLENAME,
+      OFFNLASTNAME,
+      OFFNNAMESUFFIX 
+  FROM (SELECT *,
+    ROW_NUMBER() OVER (
+        PARTITION BY OFFENDERID ORDER BY DATELASTUPDATE DESC) as seq_num
+  FROM {OFFENDERNAMEALIAS}
+  WHERE OFFNNAMETYPE = '1')
+  WHERE seq_num = 1
+),
+-- We then identify all other potential aliases from the table for a given person and then populate that info in a JSON to hydrate StatePersonAlias
 aliases AS (
   SELECT
     OFFENDERID,
@@ -88,6 +104,11 @@ SELECT
   op.OFFNSEX,
   op.OFFNETHNICGROUP,
   op.OFFNEMAILADDR,
+  
+  pn.OFFNFIRSTNAME,
+  pn.OFFNMIDDLENAME,
+  pn.OFFNLASTNAME,
+  pn.OFFNNAMESUFFIX,
 
   al.alias_list,
 
@@ -103,6 +124,8 @@ SELECT
   ad.STATE,
   ad.ZIPCODE
 FROM op_cleaned op
+LEFT JOIN primary_name pn
+USING(OFFENDERID)
 LEFT JOIN aliases al
 USING(OFFENDERID)
 LEFT JOIN ora_deduped ora 
