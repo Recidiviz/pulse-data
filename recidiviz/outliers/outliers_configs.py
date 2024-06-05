@@ -60,14 +60,22 @@ _OUTLIERS_BACKEND_CONFIGS_BY_STATE: Dict[StateCode, OutliersBackendConfig] = {
                 event_name="incarcerations",
                 event_name_singular="incarceration",
                 event_name_past_tense="were incarcerated",
+                description_markdown="""The numerator is all reported incarcerations from this officer's caseload for the given time period.
+
+<br />
+The denominator is the average daily caseload for the officer over the given time period.""",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=VIOLATIONS_ABSCONSION,
-                title_display_name="Absconsion Violation Rate",
-                body_display_name="absconsion violation rate",
-                event_name="absconsion violations",
-                event_name_singular="absconsion violation",
-                event_name_past_tense="had an absconsion related violation",
+                title_display_name="Absconsion Rate",
+                body_display_name="absconsion rate",
+                event_name="absconsions",
+                event_name_singular="absconsion",
+                event_name_past_tense="absconded",
+                description_markdown="""The numerator is all reported absconsions for the given time period, including multiple absconsions for the same client.
+
+<br />
+The denominator is the average daily caseload for the officer over the given time period.""",
             ),
         ],
         supervision_officer_metric_exclusions="""
