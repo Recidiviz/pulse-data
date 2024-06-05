@@ -76,8 +76,16 @@ US_AZ:
       and this info is relevant to a reentry analysis in AZ.
     reference_views.us_az_location_metadata: |-
       We decode location names in the location metadata view.
+  PERSON:
+    us_az_validation.supervision_population_person_level: |-
+      This table is used to convert ADC_NUMBER identifiers available in external data
+      into PERSON_ID identifiers used internally in the external comparison validation view.
   validation_daily_count_sheet_by_facility:
     us_az_validation.incarceration_population_by_facility: |-
+      This is a raw data table containing external comparison validation data, being
+      pulled into a validation view directly.
+  validation_supervision_population_person_level:
+    us_az_validation.supervision_population_person_level: |-
       This is a raw data table containing external comparison validation data, being
       pulled into a validation view directly.
 US_CA:

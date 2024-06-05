@@ -107,6 +107,13 @@ sanitized_internal_metrics AS (
         AND supervising_district_external_id IS NOT NULL
       ELSE TRUE
       END
+      AND CASE 
+        WHEN state_code = 'US_AZ' 
+        -- People who are on an abcsonsion status or who are being supervised in custody are 
+        -- not included in Arizona's supervision population reports.
+        THEN supervision_level NOT IN ('ABSCONSION','IN_CUSTODY')
+      ELSE TRUE
+      END
       AND included_in_state_population
   QUALIFY ROW_NUMBER() OVER (
       PARTITION BY state_code, date_of_supervision, person_external_id
