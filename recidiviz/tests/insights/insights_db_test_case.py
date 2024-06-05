@@ -19,7 +19,6 @@ from typing import Optional
 from unittest import TestCase
 
 from recidiviz.persistence.database.schema.insights.schema import InsightsBase
-from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -29,7 +28,6 @@ from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_h
 from recidiviz.tools.postgres.local_postgres_helpers import on_disk_postgres_db_url
 
 INSIGHTS_US_PA_DB = "insights_us_pa"
-OUTLIERS_US_PA_DB = "outliers_us_pa"
 
 
 class InsightsDbTestCase(TestCase):
@@ -41,18 +39,10 @@ class InsightsDbTestCase(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(
-            additional_databases_to_create=[INSIGHTS_US_PA_DB, OUTLIERS_US_PA_DB]
+            additional_databases_to_create=[INSIGHTS_US_PA_DB]
         )
 
     def setUp(self) -> None:
-        # TODO(#29848): Remove and use only Insights DB manager once `configurations` and `user_metadata` tables are migrated
-        self.outliers_database_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name="us_pa"
-        )
-        self.outliers_engine = SQLAlchemyEngineManager.init_engine_for_db_instance(
-            database_key=self.outliers_database_key,
-            db_url=on_disk_postgres_db_url(database=OUTLIERS_US_PA_DB),
-        )
         self.insights_database_key = SQLAlchemyDatabaseKey(
             SchemaType.INSIGHTS, db_name="us_pa"
         )
@@ -61,23 +51,13 @@ class InsightsDbTestCase(TestCase):
             db_url=on_disk_postgres_db_url(database=INSIGHTS_US_PA_DB),
         )
         local_persistence_helpers.use_on_disk_postgresql_database(
-            self.outliers_database_key, engine=self.outliers_engine
-        )
-        local_persistence_helpers.use_on_disk_postgresql_database(
             self.insights_database_key, engine=self.insights_engine
         )
-
-        # Drop and (re)create all tables
-        OutliersBase.metadata.drop_all(self.outliers_engine)
-        OutliersBase.metadata.create_all(self.outliers_engine)
 
         InsightsBase.metadata.drop_all(self.insights_engine)
         InsightsBase.metadata.create_all(self.insights_engine)
 
     def tearDown(self) -> None:
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.outliers_database_key
-        )
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.insights_database_key
         )

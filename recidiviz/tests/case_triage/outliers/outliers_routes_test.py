@@ -45,17 +45,14 @@ from recidiviz.outliers.types import (
     SupervisionOfficerSupervisorEntity,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
+    Configuration,
     SupervisionClientEvent,
     SupervisionClients,
     SupervisionOfficerSupervisor,
 )
-from recidiviz.persistence.database.schema.outliers.schema import Configuration
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.insights.insights_db_test_case import InsightsDbTestCase
-from recidiviz.tests.insights.utils import (
-    load_model_from_csv_fixture,
-    load_model_from_json_fixture,
-)
+from recidiviz.tests.insights.utils import load_model_from_json_fixture
 from recidiviz.tests.outliers.querier_test import TEST_CLIENT_EVENT_1, TEST_METRIC_3
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -150,11 +147,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
 
-        with SessionFactory.using_database(self.outliers_database_key) as session:
-            for config in load_model_from_csv_fixture(Configuration):
-                session.add(Configuration(**config))
-
         with SessionFactory.using_database(self.insights_database_key) as session:
+            for config in load_model_from_json_fixture(Configuration):
+                session.add(Configuration(**config))
             for supervisor in load_model_from_json_fixture(
                 SupervisionOfficerSupervisor
             ):

@@ -44,7 +44,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import ConfigurationStatus
-from recidiviz.persistence.database.schema.outliers.schema import Configuration
+from recidiviz.persistence.database.schema.insights.schema import Configuration
 from recidiviz.utils.environment import get_gcp_environment, in_gcp
 
 outliers_blueprint = Blueprint("outliers", "outliers")

@@ -58,9 +58,7 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
     StateSegmentedDatabaseManager,
 )
 from recidiviz.persistence.database.schema.insights.schema import (
-    Configuration as InsightsConfiguration,
-)
-from recidiviz.persistence.database.schema.insights.schema import (
+    Configuration,
     MetricBenchmark,
     SupervisionClientEvent,
     SupervisionClients,
@@ -68,12 +66,6 @@ from recidiviz.persistence.database.schema.insights.schema import (
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
-)
-from recidiviz.persistence.database.schema.insights.schema import (
-    UserMetadata as InsightsUserMetadata,
-)
-from recidiviz.persistence.database.schema.outliers.schema import (
-    Configuration,
     UserMetadata,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -85,22 +77,11 @@ class OutliersQuerier:
 
     state_code: StateCode = attr.ib()
 
-    # TODO(#29848): Remove and use only Insights DB manager once `configurations` and `user_metadata` tables are migrated
-    outliers_database_manager: StateSegmentedDatabaseManager = attr.ib(
-        factory=lambda: StateSegmentedDatabaseManager(
-            get_outliers_enabled_states(), SchemaType.OUTLIERS
-        )
-    )
-
     insights_database_manager: StateSegmentedDatabaseManager = attr.ib(
         factory=lambda: StateSegmentedDatabaseManager(
             get_outliers_enabled_states(), SchemaType.INSIGHTS
         )
     )
-
-    @cached_property
-    def outliers_database_session(self) -> sessionmaker:
-        return self.outliers_database_manager.get_session(self.state_code)
 
     @cached_property
     def insights_database_session(self) -> sessionmaker:
@@ -1081,7 +1062,7 @@ class OutliersQuerier:
 
     def get_user_metadata(self, pseudonymized_id: str) -> Optional[UserMetadata]:
         """Returns the UserMetadata entity given the pseudonymized_id."""
-        with self.outliers_database_session() as session:
+        with self.insights_database_session() as session:
             return (
                 session.query(UserMetadata)
                 .filter(UserMetadata.pseudonymized_id == pseudonymized_id)
@@ -1092,25 +1073,9 @@ class OutliersQuerier:
         self, pseudonymized_id: str, has_seen_onboarding: bool
     ) -> None:
         """Upserts a UserMetadata entity"""
-        with self.outliers_database_session() as session:
-            upsert_stmt = (
-                insert(UserMetadata)
-                .values(
-                    pseudonymized_id=pseudonymized_id,
-                    has_seen_onboarding=has_seen_onboarding,
-                    duplicate_write=True,
-                )
-                .on_conflict_do_update(
-                    index_elements=["pseudonymized_id"],
-                    set_={"has_seen_onboarding": has_seen_onboarding},
-                )
-            )
-            session.execute(upsert_stmt)
-            session.commit()
-
         with self.insights_database_session() as session:
             upsert_stmt = (
-                insert(InsightsUserMetadata)
+                insert(UserMetadata)
                 .values(
                     pseudonymized_id=pseudonymized_id,
                     has_seen_onboarding=has_seen_onboarding,
@@ -1151,7 +1116,7 @@ class OutliersQuerier:
         emails will always use the latest, active Configuration object set for the
         entire state, i.e. there is no feature variant.
         """
-        with self.outliers_database_session() as session:
+        with self.insights_database_session() as session:
             user_feature_variants = (
                 list(user_context.feature_variants.keys()) if user_context else []
             )
@@ -1190,7 +1155,7 @@ class OutliersQuerier:
         Gets all of the Configuration database entities for the state in reverse
         time order.
         """
-        with self.outliers_database_session() as session:
+        with self.insights_database_session() as session:
             # Get all configurations
             configs = (
                 session.query(Configuration)
@@ -1205,15 +1170,13 @@ class OutliersQuerier:
         Adds an active Configuration entity and deactivates any active entity that shares
         the feature variant of the new entity.
         """
-        with self.outliers_database_session() as session:
+        with self.insights_database_session() as session:
             try:
-                outliers_config_dict = config_dict.copy()
-                outliers_config_dict["duplicate_write"] = True
                 # Deserialize the new Configuration entity
-                outliers_config = Configuration(**outliers_config_dict)
+                config = Configuration(**config_dict)
 
                 # Deactivate active configurations with the same feature variant
-                feature_variant = outliers_config.feature_variant
+                feature_variant = config.feature_variant
                 if feature_variant is None:
                     config_query = session.query(Configuration).filter(
                         Configuration.feature_variant.is_(None)
@@ -1231,39 +1194,6 @@ class OutliersQuerier:
                     c.status = ConfigurationStatus.INACTIVE.value
 
                 # Add the new Configuration object
-                session.add(outliers_config)
-            except:
-                session.rollback()
-                raise
-
-            session.commit()
-            session.refresh(outliers_config)
-
-        with self.insights_database_session() as session:
-            try:
-                config_dict.pop("duplicate_write", None)
-                # Deserialize the new Configuration entity
-                config = InsightsConfiguration(**config_dict)
-
-                # Deactivate active configurations with the same feature variant
-                feature_variant = config.feature_variant
-                if feature_variant is None:
-                    config_query = session.query(InsightsConfiguration).filter(
-                        InsightsConfiguration.feature_variant.is_(None)
-                    )
-                else:
-                    config_query = session.query(InsightsConfiguration).filter(
-                        InsightsConfiguration.feature_variant == feature_variant
-                    )
-
-                configs_to_deactivate = config_query.filter(
-                    InsightsConfiguration.status == ConfigurationStatus.ACTIVE.value
-                ).all()
-
-                for c in configs_to_deactivate:
-                    c.status = ConfigurationStatus.INACTIVE.value
-
-                # Add the new Configuration object
                 session.add(config)
             except:
                 session.rollback()
@@ -1272,13 +1202,13 @@ class OutliersQuerier:
             session.commit()
             session.refresh(config)
 
-        return outliers_config
+        return config
 
     def get_configuration(self, config_id: int) -> Configuration:
         """
         Gets a configuration by id.
         """
-        with self.outliers_database_session() as session:
+        with self.insights_database_session() as session:
             config = (
                 session.query(Configuration).filter(Configuration.id == config_id).one()
             )
@@ -1292,7 +1222,7 @@ class OutliersQuerier:
         is the only active default (feature_variant=None) configuration.
         """
 
-        with self.outliers_database_session() as session:
+        with self.insights_database_session() as session:
             config = (
                 session.query(Configuration).filter(Configuration.id == config_id).one()
             )
