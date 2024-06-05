@@ -52,9 +52,6 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.normalization_utils import (
-    drop_fuzzy_matched_periods,
-)
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
@@ -319,13 +316,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         # Make a deep copy of the original incarceration periods
         periods_for_normalization = deepcopy(self._original_incarceration_periods)
 
-        # Drop IPs that are fuzzy matched, as we are not yet confident in their
-        # placement of a person's entire journey within the system
-        mid_processing_periods = drop_fuzzy_matched_periods(periods_for_normalization)
-
         # Sort periods, and infer as much missing information as possible
         mid_processing_periods = self._sort_and_infer_missing_dates_and_statuses(
-            mid_processing_periods
+            periods_for_normalization
         )
 
         # Infer missing periods
