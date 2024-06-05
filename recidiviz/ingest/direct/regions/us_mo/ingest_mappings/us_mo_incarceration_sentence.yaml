@@ -66,7 +66,7 @@ output:
           sentencing_authority:
             $enum_mapping:
               $raw_text: BS_CNS
-              $custom_parser: us_mo_custom_enum_parsers.parse_sentencing_authority
+              $custom_parser: us_mo_custom_enum_parsers.sentencing_authority_from_county
           charges:
             - StateChargeV2:
                 external_id: $variable(charge_external_id)

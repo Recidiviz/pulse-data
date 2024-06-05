@@ -72,11 +72,21 @@ output:
                 - $literal("90O1070") # Director's Rel Comp-Life Supv
                 - $literal("95O1020") # Court Prob Comp-Lifetime Supv
                 - $literal("95O2060") # Parole / CR Comp-Lifetime Supv
-          imposed_date: BU_SF
+          # Supervision Sentences from Interstate Compact have '88888888'
+          imposed_date:
+            $custom:
+              $function: us_mo_custom_parsers.null_if_magic_date
+              $args:
+                date: BU_SF
           sentencing_authority:
             $enum_mapping:
-              $raw_text: BS_CNS
-              $custom_parser: us_mo_custom_enum_parsers.parse_sentencing_authority
+              $custom_parser: us_mo_custom_enum_parsers.parse_supervision_sentencing_authority
+              $raw_text:
+                $concat:
+                  $separator: "@@"
+                  $values:
+                    - BS_CNS
+                    - FH_SDE
           county_code:
             $custom:
               $function: us_mo_custom_parsers.normalize_county_code

@@ -43,6 +43,16 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     normalized_county_code,
 )
 
+MAGIC_DATES = (
+    "0",
+    "19000000",
+    "20000000",
+    "66666666",  # Should affiliate with pretrial investigation
+    "77777777",
+    "88888888",  # Should denote Interstate Compact or Indeterminate sentence
+    "99999999",  # Often affiliated with a life sentence
+)
+
 
 def normalize_county_code(county_code: str) -> str:
     """Takes in a MO raw county code and returns
@@ -137,19 +147,7 @@ def null_if_magic_date(date: str) -> Optional[str]:
     if the date is a special date, then return none
     if the date is not a special date, then return the date
     """
-
-    # special date codes
-    date_codes = [
-        "0",
-        "19000000",
-        "20000000",
-        "66666666",
-        "77777777",
-        "88888888",
-        "99999999",
-    ]
-
-    if date in date_codes:
+    if date in MAGIC_DATES:
         return None
     return date
 

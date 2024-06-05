@@ -16,6 +16,8 @@
 # =============================================================================
 """This module has reusable strings for various sentencing queries."""
 
+from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_parsers import MAGIC_DATES
+
 BOND_STATUSES = (
     "05I5400",  # New Bond Investigation
     "15I3000",  # New PreTrial Bond Supervision
@@ -59,15 +61,68 @@ BOND_STATUSES = (
     "99O7120",  # DATA ERROR-Bond Forfeiture
 )
 
-MAGIC_DATES = (
-    "0",
-    "19000000",
-    "20000000",
-    "66666666",
-    "77777777",
-    "88888888",  # Interstate Compact
-    "99999999",
+
+# These IS Comp statuses are not included,
+# because we use INTERSTATE_COMPACT_STATUSES
+# to attempt to derive if the sentence originated
+# in another state. So we exclude these investigation
+# statuses (we don't keep any investagation status)
+# and the following statuses related to MODOC starting
+# an interstate compact
+#     - "05I5210", # IS Comp-Reporting Instr Given
+#     - "05I5220", # IS Comp-Invest-Unsup/Priv Prob
+#     - "05I5230", # IS Comp-Rept Ins-Unsup/Priv PB
+#     - "40N1070", # Parole To IS Compact Sent-Inst
+#     - "40N3070", # CR To IS Compact Sent-Inst
+#     - "40N8070", # Adm Par To IS Compact Sen-Inst
+INTERSTATE_COMPACT_STATUSES = (
+    "20I4000",  # IS Compact-Inst-Addl Charge
+    "25I5200",  # IS Compact-Invest-Addl Charge
+    "25I5210",  # IS Comp-Rep Instr Giv-Addl Chg
+    "25I5220",  # IS Comp-Inv-Unsup/Priv PB-AC
+    "25I5230",  # IS Comp-Rep Ins-Uns/Priv PB-AC
+    "30I4000",  # IS Compact-Institution-Revisit
+    "35I4000",  # IS Compact-Prob-Revisit
+    "35I4010",  # IS Comp-Unsup/Priv PB-Revisit
+    "35I4100",  # IS Compact-Parole-Revisit
+    "35I5200",  # IS Compact-Invest-Revisit
+    "35I5210",  # IS Comp-Rep Instr Giv-Revisit
+    "35I5220",  # IS Comp-Inv-Unsup/Priv PB-Rev
+    "35I5230",  # IS Comp-Rep Ins-Uns/Prv PB-Rev
+    "40I4270",  # IS Compact-Parole-CRC Work Rel
+    "40I7700",  # IS Compact-Erroneous Commit
+    "40O4270",  # IS Compact-Parole-Rel From CRC
+    "40O7400",  # IS Compact Parole to Missouri
+    "40O7700",  # IS Compact-Err Commit-Release
+    "45O4270",  # IS Compact-Parole-CRC Work Rel
+    "45O42ZZ",  # IS Compact-Parole- MUST VERIFY
+    "45O7700",  # IS Compact-Erroneous Commit
+    "55N4000",  # IS Compact-Prob-Extension
+    "55N4010",  # IS Comp-Unsup/Prv PB-Extension
+    "55N4100",  # IS Compact-Parole-Extension
+    "95O4000",  # IS Compact-Prob Completion
+    "95O4010",  # IS Compact-Prob Return/Tran
+    "95O4020",  # IS Compact-Probation Revoked
+    "95O4030",  # IS Comp-Unsup/Priv Prob Comp
+    "95O4040",  # IS Comp-Unsup/Priv PB Ret/Tran
+    "95O4050",  # IS Comp-Unsup/Priv Prob Rev
+    "95O4100",  # IS Compact-Parole Completion
+    "95O4110",  # IS Compact-Parole Ret/Tran
+    "95O4120",  # IS Compact-Parole Revoked
+    "95O5210",  # IS Comp-Report Instruct Closed
+    "95O5220",  # IS Comp-Inv-Unsup/Priv PB-Clos
+    "95O5230",  # IS Comp-RepIns-Uns/Prv PB-Clos
+    "99O4000",  # IS Compact-Prob Discharge
+    "99O4010",  # IS Compact-Prob Return/Tran
+    "99O4020",  # IS Compact-Probation Revoked
+    "99O4030",  # IS Comp-Unsup/Priv Prob-Disc
+    "99O4040",  # IS Comp-Unsup/Priv PB-Ret/Tran
+    "99O4050",  # IS Comp-Unsup/Priv Prob-Rev
+    "99O4100",  # IS Compact-Parole Discharge
+    "99O4110",  # IS Compact-Parole Ret/Tran
+    "99O4120",  # IS Compact-Parole Revoked
 )
+
 
 # Filters out pretrial and future status codes from {{LBAKRDTA_TAK026}}
 STATUS_CODE_FILTERS = f"""
@@ -85,10 +140,19 @@ NOT (
 AND (
     BW_SCD NOT IN {BOND_STATUSES}
 )
-AND (
-    -- We get weekly data with expected statuses for the (future) week,
-    -- so this ensures we only get statuses that have happened
-    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
+"""
+
+# Interstate Compact sentence probably has imposed_date = '88888888',
+# and we allow that to be null downstream as the sentencing_authority
+# will be OTHER_STATE.
+# All other sentences must have a valid imposed date
+VALID_IMPOSITON = f"""
+(
+    BU.BU_SF NOT IN {MAGIC_DATES} 
+OR 
+    BS_CNS = 'OTST' 
+OR 
+    BW_SCD IN {INTERSTATE_COMPACT_STATUSES}
 )
 """
 
@@ -99,7 +163,6 @@ AND (
 # We join to BS to ensure every sentence is affiliated with a charge,
 # because there are some BU rows with BU_SEO = 0 (administrative cruft)
 
-# TODO(#28813) Handle Interstate Compact Supervision Sentences
 FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL = f"""
 FROM
     {{LBAKRDTA_TAK024}} AS BU
@@ -123,8 +186,12 @@ ON
     BV.BV_CYC = BW.BW_CYC AND
     BV.BV_SSO = BW.BW_SSO
 WHERE
-    -- sentence must have valid imposed_date
-    BU.BU_SF NOT IN {MAGIC_DATES} 
+    {VALID_IMPOSITON}
 AND 
     {STATUS_CODE_FILTERS}
+AND (
+    -- We get weekly data with expected statuses for the (future) week,
+    -- so this ensures we only get statuses that have happened
+    CAST(BW_SY AS INT64) <= CAST(FORMAT_DATE('%Y%m%d', CURRENT_TIMESTAMP()) AS INT64)
+)
 """

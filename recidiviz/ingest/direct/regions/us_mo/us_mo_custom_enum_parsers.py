@@ -1280,15 +1280,26 @@ def parse_state_sentence_type_from_supervision_status(
     return StateSentenceType.PROBATION
 
 
-def parse_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
+def parse_supervision_sentencing_authority(raw_text: str) -> StateSentencingAuthority:
     """
-    Returns the StateSentencingAuthority.
+    Returns the StateSentencingAuthority based on the given
+    sentencing county code and imposition status description.
+    MODOC denotes interstate compact sentences by:
+        - Marking text field BS_CNS as "OTST" (most of the time)
+        - Having a sentencing status begin with "IS Comp"
+    For debugging, interstate compact sentences should also have projected
+    dates of all '8's. However, "indeterminate" sentences may also have
+    those dates-so it is not a guarantee for parsing.
+    """
+    county_code, imposition_status_desc = raw_text.split("@@")
+    if "IS COMP" in imposition_status_desc.upper():
+        return StateSentencingAuthority.OTHER_STATE
+    return sentencing_authority_from_county(county_code)
 
-    MODOC marks the text field BS_CNS as OTST for IS Compact sentences.
-    Indeterminate and IS Compact sentences may also have projected dates
-    of all '8's.
-    """
-    if raw_text == "OTST":
+
+def sentencing_authority_from_county(raw_text: str) -> StateSentencingAuthority:
+    """Returns sentencing authority assuming the given raw_text is a MODOC county code."""
+    if raw_text.upper() == "OTST":
         return StateSentencingAuthority.OTHER_STATE
     if not raw_text:
         return StateSentencingAuthority.PRESENT_WITHOUT_INFO
