@@ -70,6 +70,7 @@ function exit_on_fail {
 # order of operations can be tricky to get right.
 function run_cmd {
     # Runs the full array of arguments passed to `run_cmd` as a command, piping output to stdout so we can indent it.
+    echo "[$(date '+%Y-%m-%d %T')] Running: $*"
     "$@" 2>&1 | indent_output
 
     exit_on_fail
