@@ -30,7 +30,7 @@ op_cleaned AS (
   WHERE REGEXP_CONTAINS(OFFENDERID, r'^[[:alnum:]]+$')
 ),
 -- We pick the most recent commited name (indicated by OFFNNAMETYPE = '1') to use as the primary name in StatePerson
-primary_name AS(
+primary_name_type_1 AS(
   SELECT 
       OFFENDERID,
       OFFNFIRSTNAME,
@@ -42,6 +42,21 @@ primary_name AS(
         PARTITION BY OFFENDERID ORDER BY DATELASTUPDATE DESC) as seq_num
   FROM {OFFENDERNAMEALIAS}
   WHERE OFFNNAMETYPE = '1')
+  WHERE seq_num = 1
+),
+-- For a small number of users, they do not have a commited name so we pick the most recent updated alias to hydrate the primary name in StatePerson
+primary_name_type_special AS(
+  SELECT 
+      OFFENDERID,
+      OFFNFIRSTNAME,
+      OFFNMIDDLENAME,
+      OFFNLASTNAME,
+      OFFNNAMESUFFIX 
+  FROM (SELECT *,
+    ROW_NUMBER() OVER (
+        PARTITION BY OFFENDERID ORDER BY DATELASTUPDATE DESC) as seq_num
+  FROM {OFFENDERNAMEALIAS}
+  WHERE OFFNNAMETYPE != '1' AND OFFNLASTNAME IS NOT NULL)
   WHERE seq_num = 1
 ),
 -- We then identify all other potential aliases from the table for a given person and then populate that info in a JSON to hydrate StatePersonAlias
@@ -105,10 +120,10 @@ SELECT
   op.OFFNETHNICGROUP,
   op.OFFNEMAILADDR,
   
-  pn.OFFNFIRSTNAME,
-  pn.OFFNMIDDLENAME,
-  pn.OFFNLASTNAME,
-  pn.OFFNNAMESUFFIX,
+  COALESCE(pn1.OFFNFIRSTNAME,pns.OFFNFIRSTNAME) AS OFFNFIRSTNAME,
+  COALESCE(pn1.OFFNMIDDLENAME,pns.OFFNMIDDLENAME) AS OFFNMIDDLENAME,
+  COALESCE(pn1.OFFNLASTNAME,pns.OFFNLASTNAME) AS OFFNLASTNAME,
+  COALESCE(pn1.OFFNNAMESUFFIX,pns.OFFNNAMESUFFIX) AS OFFNNAMESUFFIX,
 
   al.alias_list,
 
@@ -124,7 +139,9 @@ SELECT
   ad.STATE,
   ad.ZIPCODE
 FROM op_cleaned op
-LEFT JOIN primary_name pn
+LEFT JOIN primary_name_type_1 pn1
+USING(OFFENDERID)
+LEFT JOIN primary_name_type_special pns
 USING(OFFENDERID)
 LEFT JOIN aliases al
 USING(OFFENDERID)
