@@ -35,6 +35,10 @@ from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DA
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
+    one_criteria_away_from_eligibility,
+    x_time_away_from_eligibility,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -352,6 +356,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             score.first_assessment_date AS form_information_first_assessment_date,
             score.first_assessment_score AS form_information_first_assessment_score,
             DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
+            JSON_QUERY_ARRAY(tes.reasons) AS array_reasons,
             tes.reasons AS reasons,
             n.case_notes AS case_notes,
             -- Almost eligible if there is only 1 ineligible_criteria present
@@ -405,40 +410,30 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
     ),
         
     eligible_and_almost_eligible AS (
-        SELECT *
+        SELECT * EXCEPT(array_reasons)
         FROM client_notes
         
         WHERE is_eligible 
         
        UNION ALL
-    
-        -- ALMOST ELIGIBLE <income verified within 3 months>
-        SELECT
-            *,
-        FROM client_notes
-        WHERE 
-            -- keep if only ineligible criteria is criteria_name
-            'US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS' IN UNNEST(ineligible_criteria) 
+       
+       -- ALMOST ELIGIBLE <income verified within 3 months>
+        {one_criteria_away_from_eligibility('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS',
+                                        from_cte_table_name = "client_notes")}
         
         UNION ALL
         
-        -- ALMOST ELIGIBLE <past early discharge date>
-        SELECT
-            *,
-        FROM client_notes
-        WHERE 
-          -- keep if only ineligible criteria is criteria_name
-          'US_IX_PAROLE_DUAL_SUPERVISION_PAST_EARLY_DISCHARGE_DATE' IN UNNEST(ineligible_criteria) 
+            -- ALMOST ELIGIBLE (<3mo remaining before early discharge date)
+            {x_time_away_from_eligibility(time_interval= 3, date_part= 'MONTH',
+                criteria_name= 'US_IX_PAROLE_DUAL_SUPERVISION_PAST_EARLY_DISCHARGE_DATE',
+                from_cte_table_name = "client_notes")}
         
         UNION ALL
         
-        -- ALMOST ELIGIBLE <on supervision at least one year>
-        SELECT
-            *,
-        FROM client_notes
-        WHERE 
-          -- keep if only ineligible criteria is criteria_name
-          'ON_PROBATION_AT_LEAST_ONE_YEAR' IN UNNEST(ineligible_criteria) 
+        -- ALMOST ELIGIBLE <<3 month left on supervision>
+                {x_time_away_from_eligibility(time_interval= 3, date_part= 'MONTH',
+                criteria_name= 'ON_PROBATION_AT_LEAST_ONE_YEAR',
+                from_cte_table_name = "client_notes")}
     )           
    
    SELECT * FROM eligible_and_almost_eligible
