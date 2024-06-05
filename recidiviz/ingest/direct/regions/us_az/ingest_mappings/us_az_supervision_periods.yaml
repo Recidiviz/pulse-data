@@ -75,6 +75,7 @@ output:
                   - Reopen Last Prison Episode
                   - New Commitment
                   - Close Supervision Episode - Leave Prison Episode Active
+                  - Intake New Offender
                 StateSupervisionPeriodTerminationReason.INVESTIGATION:
                   - In Custody - Other
                   - Temporary Placement
@@ -85,7 +86,9 @@ output:
                 StateSupervisionPeriodTerminationReason.DISCHARGE:
                   # Describes a person being released from their supervision earlier than their sentence’s end date.
                   - NEW CODE - Earned Release
+                  - Early Discharge
                   - Release by Court
+                  - Court Ordered Termination
                   - Admin Action Case Closed
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
                   - OLD/NEW CODE - Expiration

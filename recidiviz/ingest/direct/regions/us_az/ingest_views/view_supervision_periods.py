@@ -31,17 +31,22 @@ WITH
 critical_dates AS (
 SELECT DISTINCT
 -- critical dates from movements table
-  NULLIF(doc_episode.PERSON_ID, 'NULL') AS PERSON_ID,
-  DOC_ID,
-  NULLIF(doc_episode.DPP_ID, 'NULL') AS DPP_ID,
+  NULLIF(COALESCE(doc_episode_by_doc_id.PERSON_ID, doc_episode_by_dpp_id.PERSON_ID), 'NULL') AS PERSON_ID,
+  NULLIF(traffic.DOC_ID, 'NULL') AS DOC_ID,
+  NULLIF(traffic.DPP_ID, 'NULL') AS DPP_ID,
   -- Do not include timestamp because same-day movements are often logged out of order.
   CAST(CAST(MOVEMENT_DATE AS DATETIME) AS DATE) AS CRITICAL_DATE,
   mvmt_codes.MOVEMENT_DESCRIPTION,
   CAST(NULL AS STRING) AS supervision_level,
   action_lookup.OTHER_2 AS sup_period_action,
 FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
-LEFT JOIN {DOC_EPISODE} doc_episode
-USING (DOC_ID)
+-- some movements are attached only to the person's DPP_ID, not their DOC_ID, so we join
+-- this table twice to make sure we pull the PERSON_ID attached to each DPP_ID and each DOC_ID,
+-- even if only one of the DPP_ID or DOC_IDs exist
+LEFT JOIN {DOC_EPISODE} doc_episode_by_doc_id
+ON(traffic.DOC_ID = doc_episode_by_doc_id.DOC_ID)
+LEFT JOIN {DOC_EPISODE} doc_episode_by_dpp_id
+ON(traffic.DPP_ID = doc_episode_by_dpp_id.DPP_ID)
 LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
 USING(MOVEMENT_CODE_ID) 
 LEFT JOIN {LOOKUPS} action_lookup
@@ -90,14 +95,13 @@ SELECT DISTINCT
   supervision_level
 FROM critical_dates
 WINDOW person_window AS (PARTITION BY PERSON_ID ORDER BY CRITICAL_DATE, DPP_ID, 
-    CASE 
-      -- When any or all of these movements happen on the same date, we want them to 
-      -- be sorted in this order for the results to make the most logical sense.
-      WHEN MOVEMENT_DESCRIPTION = 'Community Supervision End Date' THEN 100
-      WHEN MOVEMENT_DESCRIPTION = 'TIS Release Return' THEN 3
-      WHEN MOVEMENT_DESCRIPTION = 'Temporary Placement' THEN 2
-      WHEN MOVEMENT_DESCRIPTION = 'Supervision Level Change' THEN 1
-    END, 
+    CASE
+        WHEN sup_period_action = 'Create' THEN 1
+        WHEN MOVEMENT_DESCRIPTION = 'Releasee Abscond' AND sup_period_action = 'Close' THEN 2
+        WHEN sup_period_action = 'Re-Open' THEN 3
+        WHEN sup_period_action = 'Maintain' THEN 4
+        WHEN MOVEMENT_DESCRIPTION != 'Releasee Abscond' AND sup_period_action = 'Close' THEN 5
+    END,
     MOVEMENT_DESCRIPTION)
 ),
 -- This CTE takes all the attributes that were true on a given date and carries them
@@ -106,6 +110,7 @@ WINDOW person_window AS (PARTITION BY PERSON_ID ORDER BY CRITICAL_DATE, DPP_ID,
 carry_forward_attributes AS (
   SELECT DISTINCT
     PERSON_ID,
+    DPP_ID,
     START_DATE,
     END_DATE,
     start_action,
@@ -120,14 +125,15 @@ carry_forward_attributes AS (
 -- absconsion or a period spent in custody. It also prevents supervision periods from 
 -- being opened before a person is released from prison just because their supervision
 -- level was assigned for their later release. 
-SELECT DISTINCT
+SELECT * FROM (
+  SELECT DISTINCT
   PERSON_ID, 
   START_DATE,
   END_DATE,
   START_REASON,
   END_REASON,
   SUPERVISION_LEVEL,
-  ROW_NUMBER() OVER (PARTITION BY PERSON_ID ORDER BY START_DATE, IFNULL(END_DATE, CAST('9999-01-01' AS DATE)), START_REASON, IFNULL(END_REASON, 'ZZZ')) AS period_seq
+  ROW_NUMBER() OVER (PARTITION BY PERSON_ID ORDER BY START_DATE, IFNULL(END_DATE, CAST('9999-01-01' AS DATE)), START_REASON, END_REASON NULLS LAST, DPP_ID) AS period_seq
 FROM carry_forward_attributes
 WHERE PERSON_ID IS NOT NULL
 -- only keep zero-day periods if they are overall period admissions or releases, to preserve
@@ -140,9 +146,12 @@ AND (start_date != end_date
 -- a part of a supervision period rather than an incarceration (investigations & absconsions)
 -- NOTE: only do this when the in-custody period falls after the start of a supervision period
 AND (start_action != 'Close' OR (start_action = 'Close' AND start_reason IN ('Releasee Abscond', 'Temporary Placement', 'In Custody - Other')))
--- exclude periods that begin with a supervision level being assigned and end with a supervision period starting, 
--- since these would open a supervision period before the person was actually released from prison. 
-AND (NOT (start_action = 'Maintain' AND end_action = 'Create') OR end_action IS NULL)
+)
+-- exclude subspans that are a supervision level being assigned before an actual supervision stint has started, since the assignment will be carried forward over the stint.
+-- This assumes that a person's supervision level will not be assigned more than once
+-- before they are actually released from prison.
+WHERE (NOT (start_reason = 'Supervision Level Change' AND period_seq = 1))
+
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
