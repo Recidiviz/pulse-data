@@ -223,3 +223,31 @@ class TestGcsFileSystem(TestCase):
 
         unzipped_contents_2 = file_system.download_as_bytes(expected_destination_path_2)
         self.assertEqual(expected_contents_2, unzipped_contents_2)
+
+    def test_mv_file_to_directory_safe(self) -> None:
+        src_bucket = GcsfsBucketPath(bucket_name="my-source-bucket")
+        dest_bucket = GcsfsBucketPath(bucket_name="my-destination-bucket")
+        src_path = GcsfsFilePath.from_directory_and_file_name(
+            src_bucket, "normalized_file.txt"
+        )
+
+        mock_blob = create_autospec(Blob)
+        mock_blob.exists.return_value = True
+        mock_dst_bucket = create_autospec(Bucket)
+        mock_dst_bucket.get_blob.return_value = mock_blob
+        self.mock_storage_client.bucket.return_value = mock_dst_bucket
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Destination path \[.*normalized_file.txt\] already exists",
+        ):
+            self.fs.mv_file_to_directory_safe(src_path, dest_bucket)
+
+        mock_dst_bucket.blob.return_value = mock_blob
+        mock_blob.exists.return_value = False
+        mock_blob.rewrite.return_value = (None, 200, 200)
+
+        self.fs.mv_file_to_directory_safe(src_path, dest_bucket)
+
+        mock_blob.delete.assert_called_once()
+        mock_blob.rewrite.assert_called_once()

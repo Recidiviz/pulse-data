@@ -51,6 +51,14 @@ class GCSFileSystem:
         self.delete(src_path)
 
     @abc.abstractmethod
+    def mv_file_to_directory_safe(
+        self, src_path: GcsfsFilePath, dst_directory: GcsfsDirectoryPath
+    ) -> GcsfsFilePath:
+        """Moves |src_path| to |dst_directory|, throwing an error if the |src_path|'s
+        file name alread exists within |dst_directory|.
+        """
+
+    @abc.abstractmethod
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         """Copies object at |src_path| to |dst_path|."""
 

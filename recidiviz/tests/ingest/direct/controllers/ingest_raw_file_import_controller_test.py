@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for IngestRawFileImportController."""
 import abc
+import datetime
 import os
 import time
 import unittest
@@ -40,6 +41,9 @@ from recidiviz.ingest.direct.controllers.ingest_raw_file_import_controller impor
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     build_scheduler_task_id,
+)
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_raw_file_metadata_manager import (
@@ -158,6 +162,7 @@ def add_paths_with_tags(
     file_tags: List[str],
     should_normalize: bool = False,
     file_extension: str = "csv",
+    dt: Optional[datetime.datetime] = None,
 ) -> None:
     if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
         raise ValueError(
@@ -173,6 +178,7 @@ def add_paths_with_tags(
             filename=f"{file_tag}.{file_extension}",
             should_normalize=should_normalize,
             region_code=controller.region_code(),
+            dt=dt,
         )
         time.sleep(0.05)
 
@@ -543,6 +549,161 @@ class IngestRawFileImportControllerTest(unittest.TestCase):
         self.validate_file_metadata(controller)
 
         self.check_imported_path_count(controller, 3)
+
+    def test_unzip_zip_files_errors_after_upload(self) -> None:
+        controller = build_fake_ingest_raw_file_import_controller(
+            state_code=StateCode.US_XX,
+            ingest_instance=self.ingest_instance,
+            initial_statuses=self.rerun_just_started_statuses,
+            run_async=False,
+        )
+
+        frozen_update_datetime = datetime.datetime(2024, 3, 31, tzinfo=datetime.UTC)
+        expected_file_tags = [
+            "tagBasicData",
+            "tagMoreBasicData",
+        ]
+
+        add_paths_with_tags(
+            controller,
+            ["tagBasicDatatagHeadersNoContents"],
+            should_normalize=True,
+            file_extension="zip",
+            dt=frozen_update_datetime,
+        )
+
+        add_paths_with_tags(
+            controller,
+            ["tagBasicData", "tagMoreBasicData"],
+            should_normalize=True,
+            dt=frozen_update_datetime,
+        )
+
+        # it runs once and fails
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Destination path \[.*_raw_tagBasicData\.csv\] already exists",
+        ):
+            run_task_queues_to_empty(controller)
+
+        # at this point, we expect the subdir to be:
+        #  - name normalized zip file
+        #  - name normalized tagBasicDaga
+        #  - name UNnormalized tagHeadersNoContents
+        temp_zip_subdir = controller.fs.ls_with_blob_prefix(
+            controller.raw_data_bucket_path.bucket_name,
+            controller.raw_data_zip_temp_directory.relative_path,
+        )
+
+        assert len(temp_zip_subdir) == 3
+
+        temp_zip_fns = [
+            assert_type(f, GcsfsFilePath).file_name for f in temp_zip_subdir
+        ]
+
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagHeadersNoContents.csv", dt=frozen_update_datetime
+            )
+            in temp_zip_fns
+        )
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagBasicDatatagHeadersNoContents.zip", dt=frozen_update_datetime
+            )
+            in temp_zip_fns
+        )
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagBasicData.csv", dt=frozen_update_datetime
+            )
+            in temp_zip_fns
+        )
+
+        unprocessed_files = controller.fs.get_unprocessed_raw_file_paths(
+            controller.raw_data_bucket_path
+        )
+
+        assert len(unprocessed_files) == 2
+
+        unprocessed_file_tags = [
+            assert_type(f, GcsfsFilePath).file_name for f in unprocessed_files
+        ]
+
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagMoreBasicData.csv", dt=frozen_update_datetime
+            )
+            in unprocessed_file_tags
+        )
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagBasicData.csv", dt=frozen_update_datetime
+            )
+            in unprocessed_file_tags
+        )
+
+        # if we run again, we don't fail this time & the zip file will not be processed
+        # as it is in a subdirectory
+        run_task_queues_to_empty(controller)
+
+        temp_zip_subdir = controller.fs.ls_with_blob_prefix(
+            controller.raw_data_bucket_path.bucket_name,
+            controller.raw_data_zip_temp_directory.relative_path,
+        )
+
+        assert len(temp_zip_subdir) == 3
+
+        temp_zip_fns = [
+            assert_type(f, GcsfsFilePath).file_name for f in temp_zip_subdir
+        ]
+
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagHeadersNoContents.csv", dt=frozen_update_datetime
+            )
+            in temp_zip_fns
+        )
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagBasicDatatagHeadersNoContents.zip", dt=frozen_update_datetime
+            )
+            in temp_zip_fns
+        )
+        self.assertTrue(
+            to_normalized_unprocessed_raw_file_name(
+                "tagBasicData.csv", dt=frozen_update_datetime
+            )
+            in temp_zip_fns
+        )
+
+        # now that we know the zip subdir is okay, delete to clear for check processed
+        for f in temp_zip_subdir:
+            controller.fs.delete(assert_type(f, GcsfsFilePath))
+
+        # This confirms that all three expected files were discovered and processed
+        # fully, inluding the file inside of the zip file.
+        check_all_paths_processed(
+            self,
+            controller,
+            expected_file_tags,
+            unexpected_tags=[],
+        )
+
+        if not isinstance(controller, FakeIngestRawFileImportController):
+            self.fail(
+                "Controller is not of type IngestRawFileImportControllerForTests."
+            )
+        self.assertFalse(controller.has_temp_paths_in_disk())
+
+        self.validate_file_metadata(
+            controller,
+            expected_raw_metadata_tags_with_is_processed=[
+                (f, True) for f in expected_file_tags
+            ],
+        )
+
+        self.check_imported_path_count(controller, 2)
 
     def test_state_unexpected_tag(self) -> None:
         controller = build_fake_ingest_raw_file_import_controller(
