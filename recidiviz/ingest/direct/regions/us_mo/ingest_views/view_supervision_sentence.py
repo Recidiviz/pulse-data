@@ -69,7 +69,6 @@ QUALIFY
     (ROW_NUMBER() OVER(PARTITION BY BU_DOC, BU_CYC, BU_SEO ORDER BY CAST(BV_SSO AS INT64)) = 1)
 """
 
-# TODO(#28813) Handle Interstate Compact Supervision Sentences
 VIEW_QUERY_TEMPLATE = f"""
 WITH
     charge_info AS ({CHARGE_INFO}),

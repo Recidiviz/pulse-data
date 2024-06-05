@@ -2330,9 +2330,11 @@ class StateSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # The date this sentence was imposed, e.g. the date of actual sentencing,
     # but not necessarily the date the person started serving the sentence.
-    # Optional only for parsing
-    imposed_date: datetime.date = attr.ib(
-        default=None, validator=pre_norm_opt(attr_validators.is_date)
+    # This value is only optional if:
+    #   - this is a paritially hydrated entity (not merged yet)
+    #   - it has sentencing_authority = StateSentencingAuthority.OTHER_STATE
+    imposed_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
     )
 
     # The amount of any time already served (in days) at time of sentence imposition,

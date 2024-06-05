@@ -22,6 +22,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Type
 from recidiviz.common.constants.state.state_sentence import (
     StateSentenceStatus,
     StateSentenceType,
+    StateSentencingAuthority,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DurationMixin
@@ -179,7 +180,10 @@ def _sentencing_entities_checks(
         yield from _sentence_group_checks(state_person)
 
     for sentence in state_person.sentences:
-        if not sentence.imposed_date:
+        if (
+            not sentence.imposed_date
+            and sentence.sentencing_authority != StateSentencingAuthority.OTHER_STATE
+        ):
             yield f"Found sentence {sentence.limited_pii_repr()} with no imposed_date."
 
         # TODO(#30295) Hydrate in US_AZ
