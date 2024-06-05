@@ -35,12 +35,21 @@ from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_STATUSES = f"""
 SELECT 
-    BV_DOC AS person_external_id,
-    CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'SUPERVISION') AS sentence_external_id,
-    BW_SSO,  -- status sequence num
-    BW_SY,  -- status code change date
-    BW_SCD  -- status code
-{FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL}
+    supervision_statuses.*,
+    FH_SDE -- status code description
+FROM (
+    SELECT 
+        BV_DOC AS person_external_id,
+        CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'SUPERVISION') AS sentence_external_id,
+        BW_SSO,  -- status sequence num
+        BW_SY,  -- status code change date
+        BW_SCD  -- status code
+    {FROM_BU_BS_BV_BW_WHERE_NOT_PRETRIAL}
+) supervision_statuses
+JOIN
+    {{LBAKRCOD_TAK146}} AS FH
+ON
+    supervision_statuses.BW_SCD = FH.FH_SCD
 """
 
 # TODO(#28880) Remove the join to TAK022 BS here after raw data migration.
@@ -50,7 +59,8 @@ SELECT
     CONCAT(BV_DOC, '-', BV_CYC, '-', BV_SEO, '-', 'INCARCERATION') AS sentence_external_id,
     BW_SSO,  -- status sequence num
     BW_SY,  -- status code change date
-    BW_SCD  -- status code
+    BW_SCD,  -- status code
+    FH_SDE,  -- status code description
 FROM
     {{LBAKRDTA_TAK023}} AS BT
 JOIN
@@ -71,6 +81,10 @@ ON
     BV.BV_DOC = BW.BW_DOC AND
     BV.BV_CYC = BW.BW_CYC AND
     BV.BV_SSO = BW.BW_SSO
+JOIN
+    {{LBAKRCOD_TAK146}} AS FH
+ON
+    BW.BW_SCD = FH.FH_SCD
 WHERE
     -- Incarceration statuses have an FSO of 0
     BV_FSO = '0'
