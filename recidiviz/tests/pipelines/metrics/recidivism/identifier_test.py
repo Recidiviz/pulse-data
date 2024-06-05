@@ -28,6 +28,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
@@ -39,13 +40,9 @@ from recidiviz.pipelines.metrics.recidivism.events import (
     RecidivismReleaseEvent,
     ReleaseEvent,
 )
-from recidiviz.pipelines.metrics.recidivism.pipeline import RecidivismMetricsPipeline
 from recidiviz.pipelines.utils.execution_utils import TableRow
-from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_delegates,
-)
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
 )
 
 _STATE_CODE = "US_XX"
@@ -63,35 +60,26 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     """Tests for the find_release_events function."""
 
     def setUp(self) -> None:
-        self.identifier = identifier.RecidivismIdentifier()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(identifier)
+        self.identifier = identifier.RecidivismIdentifier(StateCode.US_XX)
         self.person = StatePerson.new_with_defaults(
             state_code="US_XX", person_id=99000123
         )
+
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def _test_find_release_events(
         self,
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         persons_to_recent_county_of_residence: Optional[List[Dict[str, Any]]] = None,
-        state_code_override: Optional[str] = None,
     ) -> Dict[int, List[ReleaseEvent]]:
         """Helper for testing the find_events function on the identifier."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods,
             "persons_to_recent_county_of_residence": persons_to_recent_county_of_residence
             or _COUNTY_OF_RESIDENCE_ROWS,
-        }
-        if not state_code_override:
-            required_delegates = STATE_DELEGATES_FOR_TESTS
-        else:
-            required_delegates = get_required_state_specific_delegates(
-                state_code=(state_code_override or _STATE_CODE),
-                required_delegates=RecidivismMetricsPipeline.state_specific_required_delegates(),
-                entity_kwargs=entity_kwargs,
-            )
-
-        all_kwargs: Dict[str, Any] = {
-            **required_delegates,
-            **entity_kwargs,
         }
 
         return self.identifier.identify(
@@ -1085,7 +1073,12 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
     """Tests the should_include_in_release_cohort function."""
 
     def setUp(self) -> None:
-        self.identifier = identifier.RecidivismIdentifier()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(identifier)
+        self.identifier = identifier.RecidivismIdentifier(StateCode.US_XX)
+
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def test_should_include_in_release_cohort(self) -> None:
         """Tests the should_include_in_release_cohort_function for all
@@ -1197,7 +1190,12 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
     """Tests the find_valid_reincarceration_period function."""
 
     def setUp(self) -> None:
-        self.identifier = identifier.RecidivismIdentifier()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(identifier)
+        self.identifier = identifier.RecidivismIdentifier(StateCode.US_XX)
+
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def test_find_valid_reincarceration_period(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(

@@ -33,6 +33,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
@@ -78,17 +79,11 @@ from recidiviz.pipelines.utils.execution_utils import (
     extract_county_of_residence_from_rows,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
-from recidiviz.pipelines.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
-    StateSpecificCommitmentFromSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_commitment_from_supervision_delegate,
+    get_state_specific_incarceration_delegate,
+    get_state_specific_supervision_delegate,
+    get_state_specific_violation_delegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import (
     get_post_incarceration_supervision_type,
@@ -104,9 +99,21 @@ from recidiviz.utils.range_querier import RangeQuerier
 class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
     """Identifier class for events related to incarceration."""
 
-    def __init__(self) -> None:
+    def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = IncarcerationEvent
         self.field_index = CoreEntityFieldIndex()
+        self.incarceration_delegate = get_state_specific_incarceration_delegate(
+            state_code.value
+        )
+        self.commitment_from_supervision_delegate = (
+            get_state_specific_commitment_from_supervision_delegate(state_code.value)
+        )
+        self.violation_delegate = get_state_specific_violation_delegate(
+            state_code.value
+        )
+        self.supervision_delegate = get_state_specific_supervision_delegate(
+            state_code.value
+        )
 
     def identify(
         self,
@@ -124,18 +131,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             )
 
         return self._find_incarceration_events(
-            incarceration_delegate=identifier_context[
-                StateSpecificIncarcerationDelegate.__name__
-            ],
-            supervision_delegate=identifier_context[
-                StateSpecificSupervisionDelegate.__name__
-            ],
-            violation_delegate=identifier_context[
-                StateSpecificViolationDelegate.__name__
-            ],
-            commitment_from_supervision_delegate=identifier_context[
-                StateSpecificCommitmentFromSupervisionDelegate.__name__
-            ],
             incarceration_periods=identifier_context[
                 NormalizedStateIncarcerationPeriod.base_class_name()
             ],
@@ -153,10 +148,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_incarceration_events(
         self,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
-        violation_delegate: StateSpecificViolationDelegate,
-        commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         assessments: List[NormalizedStateAssessment],
@@ -187,7 +178,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         ip_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
-            incarceration_delegate=incarceration_delegate,
+            incarceration_delegate=self.incarceration_delegate,
         )
 
         sp_index = NormalizedSupervisionPeriodIndex(
@@ -198,10 +189,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         )
 
         admission_and_release_events = self._find_all_admission_release_events(
-            incarceration_delegate=incarceration_delegate,
-            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-            violation_delegate=violation_delegate,
-            supervision_delegate=supervision_delegate,
             ip_index=ip_index,
             sp_index=sp_index,
             assessments_by_date=assessments_by_date,
@@ -215,10 +202,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_all_admission_release_events(
         self,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
-        commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-        violation_delegate: StateSpecificViolationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
         ip_index: NormalizedIncarcerationPeriodIndex,
         sp_index: NormalizedSupervisionPeriodIndex,
         assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
@@ -238,10 +221,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         for incarceration_period in ip_index.sorted_incarceration_periods:
             admission_event = self._admission_event_for_period(
-                incarceration_delegate=incarceration_delegate,
-                commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-                violation_delegate=violation_delegate,
-                supervision_delegate=supervision_delegate,
                 incarceration_period=incarceration_period,
                 incarceration_period_index=ip_index,
                 supervision_period_index=sp_index,
@@ -265,8 +244,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 incarceration_period=incarceration_period,
                 incarceration_period_index=ip_index,
                 supervision_period_index=sp_index,
-                incarceration_delegate=incarceration_delegate,
-                supervision_delegate=supervision_delegate,
                 commitments_from_supervision=commitments_from_supervision,
                 county_of_residence=county_of_residence,
             )
@@ -278,10 +255,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _admission_event_for_period(
         self,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
-        commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-        violation_delegate: StateSpecificViolationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
         incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
@@ -300,7 +273,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         if (
             admission_date
             and admission_reason
-            and incarceration_delegate.should_include_in_state_admissions(
+            and self.incarceration_delegate.should_include_in_state_admissions(
                 admission_reason
             )
         ):
@@ -323,15 +296,11 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                     assessments_by_date=assessments_by_date,
                     sorted_violation_responses=sorted_violation_responses,
                     county_of_residence=county_of_residence,
-                    commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-                    violation_delegate=violation_delegate,
-                    supervision_delegate=supervision_delegate,
-                    incarceration_delegate=incarceration_delegate,
                 )
 
             return IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
-                included_in_state_population=incarceration_delegate.is_period_included_in_state_population(
+                included_in_state_population=self.incarceration_delegate.is_period_included_in_state_population(
                     incarceration_period
                 ),
                 event_date=admission_date,
@@ -352,10 +321,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         assessments_by_date: RangeQuerier[date, NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         county_of_residence: Optional[str],
-        commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-        violation_delegate: StateSpecificViolationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
     ) -> IncarcerationCommitmentFromSupervisionAdmissionEvent:
         """
         Returns the IncarcerationCommitmentFromSupervisionAdmissionEvent corresponding to
@@ -377,7 +342,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 cutoff_date=admission_date,
                 assessments_by_date=assessments_by_date,
                 assessment_class=StateAssessmentClass.RISK,
-                supervision_delegate=supervision_delegate,
+                supervision_delegate=self.supervision_delegate,
             )
         )
         assessment_score = (
@@ -397,14 +362,14 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         violation_responses_for_history = (
             filter_violation_responses_for_violation_history(
-                violation_delegate,
+                self.violation_delegate,
                 violation_responses=sorted_violation_responses,
                 include_follow_up_responses=False,
             )
         )
 
         violation_history_window = (
-            violation_delegate.violation_history_window_relevant_to_critical_date(
+            self.violation_delegate.violation_history_window_relevant_to_critical_date(
                 critical_date=admission_date,
                 sorted_and_filtered_violation_responses=violation_responses_for_history,
                 default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
@@ -416,7 +381,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         violation_history = get_violation_and_response_history(
             upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
             violation_responses_for_history=violation_responses_for_history,
-            violation_delegate=violation_delegate,
+            violation_delegate=self.violation_delegate,
             incarceration_period=incarceration_period,
             lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
         )
@@ -432,13 +397,13 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         responses_for_decision_evaluation = violation_responses_for_history
 
         if (
-            violation_delegate.include_decisions_on_follow_up_responses_for_most_severe_response()
+            self.violation_delegate.include_decisions_on_follow_up_responses_for_most_severe_response()
         ):
             # Get a new state-specific list of violation responses that includes follow-up
             # responses
             responses_for_decision_evaluation = (
                 filter_violation_responses_for_violation_history(
-                    violation_delegate=violation_delegate,
+                    violation_delegate=self.violation_delegate,
                     violation_responses=sorted_violation_responses,
                     include_follow_up_responses=True,
                 )
@@ -463,13 +428,13 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
-            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-            supervision_delegate=supervision_delegate,
+            commitment_from_supervision_delegate=self.commitment_from_supervision_delegate,
+            supervision_delegate=self.supervision_delegate,
         )
 
         return IncarcerationCommitmentFromSupervisionAdmissionEvent(
             state_code=incarceration_period.state_code,
-            included_in_state_population=incarceration_delegate.is_period_included_in_state_population(
+            included_in_state_population=self.incarceration_delegate.is_period_included_in_state_population(
                 incarceration_period
             ),
             event_date=admission_date,
@@ -510,8 +475,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
         commitments_from_supervision: Dict[
             date, IncarcerationCommitmentFromSupervisionAdmissionEvent
         ],
@@ -550,7 +513,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             supervision_type_at_release: Optional[
                 StateSupervisionPeriodSupervisionType
             ] = get_post_incarceration_supervision_type(
-                incarceration_period, supervision_period_index, supervision_delegate
+                incarceration_period,
+                supervision_period_index,
+                self.supervision_delegate,
             )
 
             commitment_from_supervision_supervision_type: Optional[
@@ -580,7 +545,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
             return IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
-                included_in_state_population=incarceration_delegate.is_period_included_in_state_population(
+                included_in_state_population=self.incarceration_delegate.is_period_included_in_state_population(
                     incarceration_period
                 ),
                 event_date=release_date,

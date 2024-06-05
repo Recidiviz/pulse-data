@@ -35,6 +35,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -88,15 +89,9 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_case_compliance_manager,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
-    StateSpecificViolationDelegate,
+    get_state_specific_incarceration_delegate,
+    get_state_specific_supervision_delegate,
+    get_state_specific_violation_delegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import (
     SUCCESSFUL_TERMINATIONS,
@@ -112,9 +107,18 @@ from recidiviz.utils.range_querier import RangeQuerier
 class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     """Identifier class for events related to supervision."""
 
-    def __init__(self) -> None:
+    def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = SupervisionEvent
         self.field_index = CoreEntityFieldIndex()
+        self.supervision_delegate = get_state_specific_supervision_delegate(
+            state_code.value
+        )
+        self.violation_delegate = get_state_specific_violation_delegate(
+            state_code.value
+        )
+        self.incarceration_delegate = get_state_specific_incarceration_delegate(
+            state_code.value
+        )
 
     def identify(
         self,
@@ -124,15 +128,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     ) -> List[SupervisionEvent]:
         return self._find_supervision_events(
             included_result_classes=included_result_classes,
-            incarceration_delegate=identifier_context[
-                StateSpecificIncarcerationDelegate.__name__
-            ],
-            supervision_delegate=identifier_context[
-                StateSpecificSupervisionDelegate.__name__
-            ],
-            violation_delegate=identifier_context[
-                StateSpecificViolationDelegate.__name__
-            ],
             person=person,
             supervision_sentences=identifier_context[
                 NormalizedStateSupervisionSentence.base_class_name()
@@ -156,9 +151,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _find_supervision_events(
         self,
         included_result_classes: Set[Type[IdentifierResult]],
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
-        violation_delegate: StateSpecificViolationDelegate,
         person: StatePerson,
         supervision_sentences: List[NormalizedStateSupervisionSentence],
         incarceration_sentences: List[NormalizedStateIncarcerationSentence],
@@ -189,7 +181,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         incarceration_period_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
-            incarceration_delegate=incarceration_delegate,
+            incarceration_delegate=self.incarceration_delegate,
         )
         supervision_period_index = NormalizedSupervisionPeriodIndex(
             sorted_supervision_periods=supervision_periods
@@ -206,7 +198,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
         violation_responses_for_history = (
             filter_violation_responses_for_violation_history(
-                violation_delegate,
+                self.violation_delegate,
                 violation_responses=sorted_violation_responses,
                 include_follow_up_responses=False,
             )
@@ -220,7 +212,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_sentences,
                     incarceration_sentences,
                     supervision_period_index,
-                    supervision_delegate,
                 )
             )
             supervision_events.extend(projected_supervision_completion_events)
@@ -238,8 +229,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         assessments_by_date=assessments_by_date,
                         violation_responses_for_history=violation_responses_for_history,
                         supervision_contacts_by_date=supervision_contacts_by_date,
-                        violation_delegate=violation_delegate,
-                        supervision_delegate=supervision_delegate,
                     )
                 )
 
@@ -251,8 +240,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         incarceration_period_index=incarceration_period_index,
                         assessments=assessments,
                         violation_responses_for_history=violation_responses_for_history,
-                        violation_delegate=violation_delegate,
-                        supervision_delegate=supervision_delegate,
                     )
                 )
 
@@ -264,12 +251,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_period=supervision_period,
                     supervision_period_index=supervision_period_index,
                     incarceration_period_index=incarceration_period_index,
-                    supervision_delegate=supervision_delegate,
                 )
                 if supervision_start_event:
                     supervision_events.append(supervision_start_event)
 
-        if supervision_delegate.supervision_types_mutually_exclusive():
+        if self.supervision_delegate.supervision_types_mutually_exclusive():
             supervision_events = self._convert_events_to_dual(supervision_events)
         else:
             supervision_events = self._expand_dual_supervision_events(
@@ -291,8 +277,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             NormalizedStateSupervisionViolationResponse
         ],
         supervision_contacts_by_date: RangeQuerier[date, StateSupervisionContact],
-        violation_delegate: StateSpecificViolationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[SupervisionPopulationEvent]:
         """Finds days that this person was on supervision for the given
         StateSupervisionPeriod.
@@ -331,7 +315,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             level_2_supervision_location_external_id,
         ) = supervising_location_info(
             supervision_period,
-            supervision_delegate,
+            self.supervision_delegate,
         )
         case_type = identify_most_severe_case_type(supervision_period)
 
@@ -365,7 +349,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 supervision_contacts_by_date,
                 violation_responses_for_history,
                 incarceration_period_index,
-                supervision_delegate,
+                self.supervision_delegate,
             )
         )
 
@@ -380,7 +364,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 event_date,
                 supervision_period,
                 incarceration_period_index,
-                supervision_delegate,
             ):
                 supervision_type = (
                     supervision_period.supervision_type
@@ -397,7 +380,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     event_date,
                     assessments_by_date,
                     assessment_class=StateAssessmentClass.RISK,
-                    supervision_delegate=supervision_delegate,
+                    supervision_delegate=self.supervision_delegate,
                 )
 
                 if most_recent_assessment:
@@ -412,7 +395,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 violation_history = get_violation_and_response_history(
                     upper_bound_exclusive_date=(event_date + relativedelta(days=1)),
                     violation_responses_for_history=violation_responses_for_history,
-                    violation_delegate=violation_delegate,
+                    violation_delegate=self.violation_delegate,
                     incarceration_period=None,
                 )
 
@@ -423,10 +406,12 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         event_date
                     )
 
-                projected_end_date = supervision_delegate.get_projected_completion_date(
-                    supervision_period=supervision_period,
-                    incarceration_sentences=incarceration_sentences,
-                    supervision_sentences=supervision_sentences,
+                projected_end_date = (
+                    self.supervision_delegate.get_projected_completion_date(
+                        supervision_period=supervision_period,
+                        incarceration_sentences=incarceration_sentences,
+                        supervision_sentences=supervision_sentences,
+                    )
                 )
 
                 supervision_out_of_state = is_supervision_out_of_state(
@@ -471,7 +456,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         date_range: DateRange,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period: NormalizedStateSupervisionPeriod,
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> bool:
         """Returns True if the existence of the |supervision_period| means a person can be counted towards the supervision
         population in the provided date range.
@@ -490,7 +474,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         if not supervision_overlapping_range:
             return False
 
-        return supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
+        return self.supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
             supervision_period=supervision_period,
         )
 
@@ -499,7 +483,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         evaluation_date: date,
         supervision_period: NormalizedStateSupervisionPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        supervision_delegate: StateSpecificSupervisionDelegate,
         validate_duration: bool = True,
     ) -> bool:
         """Determines whether the person was on supervision on a given date."""
@@ -516,7 +499,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             date_range=day_range,
             supervision_period=supervision_period,
             incarceration_period_index=incarceration_period_index,
-            supervision_delegate=supervision_delegate,
         )
 
         return supervision_period_counts_towards_supervision_population_on_date
@@ -526,7 +508,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         evaluation_date: date,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> bool:
         """Determines whether the person was on supervision on a given date, across any and
         all of the supervision periods included in the given supervision period index.
@@ -541,7 +522,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 evaluation_date,
                 period,
                 incarceration_period_index,
-                supervision_delegate,
                 validate_duration=False,
             ):
                 return True
@@ -553,7 +533,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> Optional[SupervisionStartEvent]:
         """Identifies an instance of supervision start, assuming the provided |supervision_period| has a valid start
         date, and returns all relevant info as a SupervisionStartEvent.
@@ -569,7 +548,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             level_2_supervision_location_external_id,
         ) = supervising_location_info(
             supervision_period,
-            supervision_delegate,
+            self.supervision_delegate,
         )
 
         in_incarceration_population_on_date = (
@@ -582,7 +561,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             start_date,
             supervision_period_index,
             incarceration_period_index,
-            supervision_delegate,
         )
 
         return SupervisionStartEvent(
@@ -612,8 +590,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         violation_responses_for_history: List[
             NormalizedStateSupervisionViolationResponse
         ],
-        violation_delegate: StateSpecificViolationDelegate,
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> Optional[SupervisionEvent]:
         """Identifies an instance of supervision termination. If the given supervision_period has a valid start_date and
         termination_date, then returns a SupervisionTerminationEvent with the details of the termination.
@@ -675,10 +651,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 assessment_start_date,
                 assessment_termination_date,
                 assessments,
-                supervision_delegate,
             )
 
-            violation_history_window = violation_delegate.violation_history_window_relevant_to_critical_date(
+            violation_history_window = self.violation_delegate.violation_history_window_relevant_to_critical_date(
                 critical_date=supervision_period.termination_date,
                 sorted_and_filtered_violation_responses=violation_responses_for_history,
                 default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
@@ -689,7 +664,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             violation_history = get_violation_and_response_history(
                 upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
                 violation_responses_for_history=violation_responses_for_history,
-                violation_delegate=violation_delegate,
+                violation_delegate=self.violation_delegate,
                 incarceration_period=None,
                 lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
             )
@@ -699,7 +674,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 level_2_supervision_location_external_id,
             ) = supervising_location_info(
                 supervision_period,
-                supervision_delegate,
+                self.supervision_delegate,
             )
 
             case_type = identify_most_severe_case_type(supervision_period)
@@ -724,7 +699,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 termination_date - relativedelta(days=1),
                 supervision_period_index,
                 incarceration_period_index,
-                supervision_delegate,
             )
 
             return SupervisionTerminationEvent(
@@ -763,7 +737,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_sentences: List[NormalizedStateSupervisionSentence],
         incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_period_index: NormalizedSupervisionPeriodIndex,
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProjectedSupervisionCompletionEvent]:
         """This classifies whether supervision projected to end in a given month was completed successfully.
 
@@ -875,7 +848,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     projected_completion_date=projected_completion_date,
                     supervision_period=latest_supervision_period,
                     supervision_type_for_event=supervision_period_supervision_type_for_sentence,
-                    supervision_delegate=supervision_delegate,
                 )
 
                 if completion_event:
@@ -888,7 +860,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         projected_completion_date: date,
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_type_for_event: StateSupervisionPeriodSupervisionType,
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> Optional[ProjectedSupervisionCompletionEvent]:
         """Returns a ProjectedSupervisionCompletionEvent for the given supervision
         sentence and its last terminated period, if the sentence should be included
@@ -919,7 +890,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             level_2_supervision_location_external_id,
         ) = supervising_location_info(
             supervision_period,
-            supervision_delegate,
+            self.supervision_delegate,
         )
 
         case_type = identify_most_severe_case_type(supervision_period)
@@ -1131,7 +1102,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         start_date: date,
         termination_date: date,
         assessments: List[NormalizedStateAssessment],
-        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> Tuple[
         Optional[int],
         Optional[int],
@@ -1154,7 +1124,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             ]
 
             index_of_first_reliable_assessment = (
-                supervision_delegate.get_index_of_first_reliable_supervision_assessment()
+                self.supervision_delegate.get_index_of_first_reliable_supervision_assessment()
             )
             min_assessments = 2 + index_of_first_reliable_assessment
 

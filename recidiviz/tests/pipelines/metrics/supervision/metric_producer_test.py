@@ -21,6 +21,7 @@ from datetime import date
 from typing import Dict, List, Optional
 
 from freezegun import freeze_time
+from more_itertools import one
 
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
@@ -39,16 +40,15 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
     StatePersonRace,
 )
-from recidiviz.pipelines.metrics.supervision import (
-    identifier,
-    metric_producer,
-    pipeline,
-)
+from recidiviz.pipelines.metrics.supervision import identifier
+from recidiviz.pipelines.metrics.supervision import identifier as supervision_identifier
+from recidiviz.pipelines.metrics.supervision import metric_producer, pipeline
 from recidiviz.pipelines.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
@@ -73,6 +73,9 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_pr
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
     UsXxSupervisionMetricsProducerDelegate,
 )
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
+)
 
 ALL_METRICS_INCLUSIONS = set(SupervisionMetricType)
 
@@ -83,9 +86,16 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     """Tests the produce_supervision_metrics function."""
 
     def setUp(self) -> None:
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            supervision_identifier
+        )
         self.metric_producer = metric_producer.SupervisionMetricProducer()
-        self.identifier = identifier.SupervisionIdentifier()
+        self.identifier = identifier.SupervisionIdentifier(StateCode.US_XX)
         self.pipeline_class = pipeline.SupervisionMetricsPipeline
+
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def test_produce_supervision_metrics(self) -> None:
         """Tests the produce_supervision_metrics function."""
@@ -502,20 +512,20 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+            state_code="US_XX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             ProjectedSupervisionCompletionEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2010,
                 month=2,
                 event_date=date(2010, 2, 2),
@@ -525,7 +535,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 supervising_officer_staff_id=10000,
             ),
             ProjectedSupervisionCompletionEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2010,
                 month=2,
                 event_date=date(2010, 2, 2),
@@ -535,7 +545,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 supervising_officer_staff_id=10000,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2010,
                 month=2,
                 event_date=date(2010, 2, 2),
@@ -543,7 +553,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2018,
                 month=4,
                 event_date=date(2010, 4, 2),
@@ -685,7 +695,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_MO",
+                state_code="US_XX",
                 event_date=date(2018, 4, 1),
                 year=2018,
                 month=4,
@@ -693,7 +703,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_MO",
+                state_code="US_XX",
                 event_date=date(2018, 4, 2),
                 year=2018,
                 month=4,
@@ -701,7 +711,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_MO",
+                state_code="US_XX",
                 event_date=date(2018, 4, 3),
                 year=2018,
                 month=4,
@@ -709,7 +719,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_MO",
+                state_code="US_XX",
                 event_date=date(2018, 4, 4),
                 year=2018,
                 month=4,
@@ -757,7 +767,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
-                state_code="US_MO",
+                state_code="US_XX",
                 year=2018,
                 month=3,
                 event_date=date(2018, 3, 1),
@@ -765,7 +775,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_MO",
+                state_code="US_XX",
                 year=2018,
                 month=3,
                 event_date=date(2018, 3, 1),
@@ -773,7 +783,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_MO",
+                state_code="US_XX",
                 year=2018,
                 month=4,
                 event_date=date(2018, 4, 1),
@@ -808,20 +818,20 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+            state_code="US_XX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2018,
                 month=3,
                 event_date=date(2018, 3, 31),
@@ -829,7 +839,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2010,
                 month=3,
                 event_date=date(2010, 3, 31),
@@ -837,7 +847,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2018,
                 month=4,
                 event_date=date(2010, 4, 2),
@@ -845,7 +855,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2018,
                 month=5,
                 event_date=date(2010, 5, 1),
@@ -882,20 +892,20 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+            state_code="US_XX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         supervision_events: List[SupervisionEvent] = [
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2010,
                 month=2,
                 event_date=date(2010, 2, 2),
@@ -903,7 +913,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2010,
                 month=2,
                 event_date=date(2010, 2, 2),
@@ -911,7 +921,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2010,
                 month=2,
                 event_date=date(2010, 2, 2),
@@ -919,7 +929,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2018,
                 month=4,
                 event_date=date(2010, 4, 2),
@@ -927,7 +937,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2018,
                 month=4,
                 event_date=date(2010, 4, 2),
@@ -935,7 +945,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
-                state_code="US_ND",
+                state_code="US_XX",
                 year=2018,
                 month=4,
                 event_date=date(2010, 4, 2),
@@ -1019,19 +1029,19 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+            state_code="US_XX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         termination_event = SupervisionTerminationEvent(
-            state_code="US_ND",
+            state_code="US_XX",
             year=2000,
             month=1,
             event_date=date(2000, 1, 13),
@@ -1133,19 +1143,19 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         race = StatePersonRace.new_with_defaults(
-            state_code="US_ND", race=StateRace.WHITE
+            state_code="US_XX", race=StateRace.WHITE
         )
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=StateEthnicity.NOT_HISPANIC
+            state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
         )
 
         person.ethnicities = [ethnicity]
 
         first_termination_event = SupervisionTerminationEvent(
-            state_code="US_ND",
+            state_code="US_XX",
             year=2000,
             month=1,
             event_date=date(2000, 1, 13),
@@ -1157,7 +1167,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
         second_termination_event = SupervisionTerminationEvent(
-            state_code="US_ND",
+            state_code="US_XX",
             year=2000,
             month=1,
             event_date=date(2000, 1, 13),
@@ -1937,6 +1947,8 @@ def expected_metrics_count(
 ) -> int:
     """Calculates the expected number of characteristic combinations given the supervision time events
     and the metrics that should be included in the counts."""
+
+    state_code = StateCode(one({e.state_code for e in supervision_events}))
     output_count_by_metric_type: Dict[SupervisionMetricType, int] = defaultdict(int)
 
     for metric_type in SupervisionMetricType:
@@ -1977,9 +1989,9 @@ def expected_metrics_count(
                 ]
             )
         else:
-            for event_type in identifier.SupervisionIdentifier().EVENT_TYPES_FOR_METRIC[
-                metric_type
-            ]:
+            for event_type in identifier.SupervisionIdentifier(
+                state_code
+            ).EVENT_TYPES_FOR_METRIC[metric_type]:
                 output_count_by_metric_type[metric_type] += len(
                     [
                         event

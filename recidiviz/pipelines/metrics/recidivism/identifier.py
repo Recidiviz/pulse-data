@@ -42,6 +42,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -64,17 +65,20 @@ from recidiviz.pipelines.utils.execution_utils import (
     extract_county_of_residence_from_rows,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_incarceration_delegate,
 )
 
 
 class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
     """Identifier class for instances of recidivism and non-recidivism."""
 
-    def __init__(self) -> None:
+    def __init__(self, state_code: StateCode) -> None:
         self.identifier_result_class = ReleaseEvent
         self.field_index = CoreEntityFieldIndex()
+        self.incarceration_delegate = get_state_specific_incarceration_delegate(
+            state_code.value
+        )
 
     def identify(
         self,
@@ -94,9 +98,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             )
 
         return self._find_release_events(
-            incarceration_delegate=identifier_context[
-                StateSpecificIncarcerationDelegate.__name__
-            ],
             incarceration_periods=identifier_context[
                 NormalizedStateIncarcerationPeriod.base_class_name()
             ],
@@ -107,7 +108,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
     def _find_release_events(
         self,
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         persons_to_recent_county_of_residence: List[Dict[str, Any]],
     ) -> Dict[int, List[ReleaseEvent]]:
@@ -146,7 +146,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
         ip_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
-            incarceration_delegate=incarceration_delegate,
+            incarceration_delegate=self.incarceration_delegate,
         )
 
         for index, incarceration_period in enumerate(

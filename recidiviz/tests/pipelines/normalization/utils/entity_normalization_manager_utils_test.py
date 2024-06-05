@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -45,17 +46,17 @@ from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils 
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,
+)
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
+    UsXxIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
+    UsXxSupervisionNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
     UsXxViolationResponseNormalizationDelegate,
@@ -67,10 +68,6 @@ from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
 from recidiviz.tests.persistence.entity.state.normalized_entities_test import (
     classes_in_normalized_entity_subtree,
 )
-from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    STATE_DELEGATES_FOR_TESTS,
-)
-from recidiviz.utils.types import assert_type
 
 STATE_PERSON_TO_STATE_STAFF_LIST = [
     {
@@ -98,18 +95,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
     """Tests the normalized_periods_for_calculations function."""
 
     def setUp(self) -> None:
-        self.ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate = assert_type(
-            STATE_DELEGATES_FOR_TESTS[
-                StateSpecificIncarcerationNormalizationDelegate.__name__
-            ],
-            StateSpecificIncarcerationNormalizationDelegate,
-        )
-        self.sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate = assert_type(
-            STATE_DELEGATES_FOR_TESTS[
-                StateSpecificSupervisionNormalizationDelegate.__name__
-            ],
-            StateSpecificSupervisionNormalizationDelegate,
-        )
+        self.state_code = StateCode.US_XX
+        self.ip_normalization_delegate = UsXxIncarcerationNormalizationDelegate()
+        self.sp_normalization_delegate = UsXxSupervisionNormalizationDelegate()
         self.field_index = CoreEntityFieldIndex()
         self.person_id = 123
 
@@ -117,7 +105,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_XX",
+            state_code=self.state_code.value,
             start_date=datetime.date(2017, 3, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_date=datetime.date(2017, 5, 9),
@@ -128,7 +116,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_XX",
+            state_code=self.state_code.value,
             admission_date=datetime.date(2017, 4, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=datetime.date(2020, 5, 17),
@@ -159,7 +147,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             incarceration_period_id=111,
             external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_XX",
+            state_code=self.state_code.value,
             admission_date=datetime.date(2017, 4, 11),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=datetime.date(2020, 5, 17),
@@ -189,7 +177,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            state_code="US_XX",
+            state_code=self.state_code.value,
             start_date=datetime.date(2017, 3, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_date=datetime.date(2017, 5, 9),

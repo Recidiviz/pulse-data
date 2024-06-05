@@ -18,6 +18,7 @@
 import unittest
 from datetime import date
 from typing import Dict, List, Optional, Sequence, Set, Type, Union
+from unittest.mock import patch
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -33,37 +34,32 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StatePerson,
-)
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.metrics.population_spans import identifier
+from recidiviz.pipelines.metrics.population_spans import (
+    identifier as population_spans_identifier,
+)
 from recidiviz.pipelines.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
     SupervisionPopulationSpan,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult, Span
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
-    StateSpecificIncarcerationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
-)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
+)
+from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
+    start_pipeline_delegate_getter_patchers,
 )
 
 _DEFAULT_IP_ID = 123
@@ -71,50 +67,37 @@ _DEFAULT_IP_ID = 123
 _DEFAULT_SP_ID = 234
 
 
-class TestNotInStateIncarcerationDelegate(StateSpecificIncarcerationDelegate):
-    def is_period_included_in_state_population(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> bool:
-        return False
-
-
 class TestFindPopulationSpans(unittest.TestCase):
     """Tests the identify function."""
 
     def setUp(self) -> None:
-        self.identifier = identifier.PopulationSpanIdentifier()
+        self.delegate_patchers = start_pipeline_delegate_getter_patchers(
+            population_spans_identifier
+        )
+        self.identifier = identifier.PopulationSpanIdentifier(StateCode.US_XX)
         self.person = StatePerson.new_with_defaults(
             state_code="US_XX", person_id=99000123
         )
+
+    def tearDown(self) -> None:
+        for patcher in self.delegate_patchers:
+            patcher.stop()
 
     def _run_find_population_spans(
         self,
         incarceration_periods: Optional[
             List[NormalizedStateIncarcerationPeriod]
         ] = None,
-        incarceration_delegate: Optional[StateSpecificIncarcerationDelegate] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
-        supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
         included_result_classes: Optional[Set[Type[IdentifierResult]]] = None,
     ) -> List[Span]:
         """Helper for testing the identify function on the identifier."""
-        entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
+        all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods
             or [],
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods
             or [],
         }
-        required_delegates: Dict[str, StateSpecificDelegate] = {
-            "StateSpecificIncarcerationDelegate": incarceration_delegate
-            or UsXxIncarcerationDelegate(),
-            "StateSpecificSupervisionDelegate": supervision_delegate
-            or UsXxSupervisionDelegate(),
-        }
-
-        all_kwargs: Dict[
-            str, Union[Sequence[Entity], List[TableRow], StateSpecificDelegate]
-        ] = {**required_delegates, **entity_kwargs}
         return self.identifier.identify(
             self.person,
             all_kwargs,
@@ -211,10 +194,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             sequence_num=0,
         )
 
-        spans = self._run_find_population_spans(
-            incarceration_periods=[incarceration_period],
-            incarceration_delegate=TestNotInStateIncarcerationDelegate(),
-        )
+        with patch.object(
+            UsXxIncarcerationDelegate,
+            "is_period_included_in_state_population",
+            return_value=False,
+        ):
+            spans = self._run_find_population_spans(
+                incarceration_periods=[incarceration_period],
+            )
 
         expected_spans = [
             expected_incarceration_span(
@@ -898,10 +885,6 @@ class TestFindPopulationSpans(unittest.TestCase):
 
         self.assertEqual(expected_spans, spans)
 
-    class TestsXxSupervisionDelegate(UsXxSupervisionDelegate):
-        def supervision_types_mutually_exclusive(self) -> bool:
-            return True
-
     def test_find_all_supervision_spans_for_dual_periods_to_be_converted(self) -> None:
         parole_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
@@ -999,17 +982,21 @@ class TestFindPopulationSpans(unittest.TestCase):
             sequence_num=4,
         )
 
-        spans = self._run_find_population_spans(
-            supervision_delegate=self.TestsXxSupervisionDelegate(),
-            incarceration_periods=[],
-            supervision_periods=[
-                parole_period_1,
-                parole_period_2,
-                probation_period_1,
-                dual_period_1,
-                probation_period_2,
-            ],
-        )
+        with patch.object(
+            UsXxSupervisionDelegate,
+            "supervision_types_mutually_exclusive",
+            return_value=True,
+        ):
+            spans = self._run_find_population_spans(
+                incarceration_periods=[],
+                supervision_periods=[
+                    parole_period_1,
+                    parole_period_2,
+                    probation_period_1,
+                    dual_period_1,
+                    probation_period_2,
+                ],
+            )
 
         expected_spans = [
             expected_supervision_span(

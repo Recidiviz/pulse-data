@@ -62,11 +62,26 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_per
     NormalizedIncarcerationPeriodIndex,
 )
 from recidiviz.pipelines.utils.state_utils import state_calculation_config_manager
+from recidiviz.pipelines.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
+    StateSpecificCommitmentFromSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
+    StateSpecificIncarcerationDelegate,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
+from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
+)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_assessment_normalization_delegate import (
     UsXxAssessmentNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
+    UsXxIncarcerationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
     UsXxIncarcerationNormalizationDelegate,
@@ -77,11 +92,17 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_sentence_normal
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_staff_role_period_normalization_delegate import (
     UsXxStaffRolePeriodNormalizationDelegate,
 )
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
     UsXxSupervisionNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
     UsXxViolationResponseNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
 )
 from recidiviz.utils.range_querier import RangeQuerier
 
@@ -163,19 +184,50 @@ def get_state_specific_case_compliance_manager(
     return None
 
 
-def _get_all_delegate_getter_fn_names() -> Set[str]:
+def get_state_specific_commitment_from_supervision_delegate(
+    state_code: str,
+) -> StateSpecificCommitmentFromSupervisionDelegate:
+    if state_code == StateCode.US_XX.value:
+        return UsXxCommitmentFromSupervisionDelegate()
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_state_specific_violation_delegate(
+    state_code: str,
+) -> StateSpecificViolationDelegate:
+    if state_code == StateCode.US_XX.value:
+        return UsXxViolationDelegate()
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_state_specific_incarceration_delegate(
+    state_code: str,
+) -> StateSpecificIncarcerationDelegate:
+    if state_code == StateCode.US_XX.value:
+        return UsXxIncarcerationDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_state_specific_supervision_delegate(
+    state_code: str,
+) -> StateSpecificSupervisionDelegate:
+    if state_code == StateCode.US_XX.value:
+        return UsXxSupervisionDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_all_delegate_getter_fn_names() -> Set[str]:
     """Gets all delegate getter function names in state_calculation_config_manager.py."""
     fn_names = set()
     for fn_name in dir(state_calculation_config_manager):
-        # TODO(#30202): Delete this exemption once we make all getter functions public
+        # TODO(#30363): Delete this exemption once we make all getter functions public
         #  in state_calculation_config_manager.py.
         if fn_name.startswith("_"):
             continue
-        # TODO(#30202): Delete this exemption once we delete these functions
-        if fn_name in (
-            "get_required_state_specific_delegates",
-            "get_required_state_specific_metrics_producer_delegates",
-        ):
+        # TODO(#30363): Delete this exemption once we delete this function
+        if fn_name == "get_required_state_specific_metrics_producer_delegates":
             continue
         original_fn = getattr(state_calculation_config_manager, fn_name)
         if not isinstance(original_fn, FunctionType):
@@ -190,7 +242,7 @@ def start_pipeline_delegate_getter_patchers(module_to_mock: ModuleType) -> List[
     of patcher objects which should be stopped in a test `tearDown()` method.
     """
     patchers = []
-    for fn_name in _get_all_delegate_getter_fn_names():
+    for fn_name in get_all_delegate_getter_fn_names():
         if not hasattr(module_to_mock, fn_name):
             continue
 

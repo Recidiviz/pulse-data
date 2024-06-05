@@ -16,11 +16,10 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Set, Type, Union
+from typing import Any, Dict, List, Optional, Set, Type
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
@@ -57,12 +56,8 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
-from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
-    StateSpecificDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -720,41 +715,6 @@ from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_violations_delegate impor
 from recidiviz.utils.range_querier import RangeQuerier
 
 
-# TODO(#30202): Delete this entirely once it's no longer used in metric pipelines
-def get_required_state_specific_delegates(
-    state_code: str,
-    required_delegates: List[Type[StateSpecificDelegate]],
-    # pylint: disable=unused-argument
-    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
-) -> Dict[str, StateSpecificDelegate]:
-    """Returns a dictionary where the keys are the names of the required delegates
-    listed in |required_delegates|, and the values are the state-specific
-    implementation of that delegate."""
-    required_state_specific_delegates: Dict[str, StateSpecificDelegate] = {}
-    for required_delegate in required_delegates:
-        if required_delegate is StateSpecificCommitmentFromSupervisionDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_commitment_from_supervision_delegate(state_code)
-        elif required_delegate is StateSpecificViolationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_violation_delegate(state_code)
-        elif required_delegate is StateSpecificIncarcerationDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_incarceration_delegate(state_code)
-        elif required_delegate is StateSpecificSupervisionDelegate:
-            required_state_specific_delegates[
-                required_delegate.__name__
-            ] = _get_state_specific_supervision_delegate(state_code)
-        else:
-            raise ValueError(
-                f"Unexpected required delegate {required_delegate} for pipeline."
-            )
-    return required_state_specific_delegates
-
-
 def get_required_state_specific_metrics_producer_delegates(
     state_code: str,
     required_delegates: Set[Type[StateSpecificMetricsProducerDelegate]],
@@ -1061,7 +1021,7 @@ def get_state_specific_staff_role_period_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_commitment_from_supervision_delegate(
+def get_state_specific_commitment_from_supervision_delegate(
     state_code: str,
 ) -> StateSpecificCommitmentFromSupervisionDelegate:
     """Returns the type of StateSpecificCommitmentFromSupervisionDelegate that should be used for
@@ -1102,7 +1062,7 @@ def _get_state_specific_commitment_from_supervision_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_violation_delegate(
+def get_state_specific_violation_delegate(
     state_code: str,
 ) -> StateSpecificViolationDelegate:
     """Returns the type of StateSpecificViolationDelegate that should be used for
@@ -1198,7 +1158,7 @@ def get_state_specific_violation_response_normalization_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_incarceration_delegate(
+def get_state_specific_incarceration_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationDelegate:
     """Returns the type of StateSpecificIncarcerationDelegate that should be used for
@@ -1240,7 +1200,7 @@ def _get_state_specific_incarceration_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-def _get_state_specific_supervision_delegate(
+def get_state_specific_supervision_delegate(
     state_code: str,
 ) -> StateSpecificSupervisionDelegate:
     """Returns the type of StateSpecificSupervisionDelegate that should be used for
