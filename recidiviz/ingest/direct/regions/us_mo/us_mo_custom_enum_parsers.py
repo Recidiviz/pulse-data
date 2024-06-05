@@ -1234,17 +1234,23 @@ def get_recidiviz_sentence_status(raw_text: str) -> StateSentenceStatus:
     to further improve/specify statuses.
 
     Args:
-        raw_text: (str) BW_SCD and sentence_external_id concatenated with "@@" (ex: 45O2000-XXX-XXX-XXX-INCARCERATION)
+        raw_text: (str) BW_SCD, sentence_external_id and FH_SDE concatenated with "@@"
+            (ex: 45O2000@@XXX-XXX-XXX-INCARCERATION@@Prob Rev-Technical)
     Returns:
         StateSentenceStatus
     """
-    status_code, sentence_external_id = raw_text.split("@@")
+    raw_text_parts = raw_text.split("@@")
+    if not len(raw_text_parts) == 3:
+        raise ValueError(
+            f"Unexpected number of raw text parts for sentence status raw text [{raw_text}]"
+        )
+    status_code, sentence_external_id, description = raw_text_parts
     status = UsMoSentenceStatus(
         sentence_status_external_id="0-0-0",
         sentence_external_id=sentence_external_id,
         status_date=None,
         status_code=status_code,
-        status_description="",
+        status_description=description,
     )
     return status.state_sentence_status or StateSentenceStatus.EXTERNAL_UNKNOWN
 

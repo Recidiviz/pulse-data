@@ -8,6 +8,7 @@ input_columns:
   - BW_SSO
   - BW_SCD
   - BW_SY
+  - FH_SDE
 unused_columns: []
 output:
   StatePerson:
@@ -30,4 +31,5 @@ output:
                         $values:
                           - BW_SCD # Status Code
                           - sentence_external_id
+                          - FH_SDE # Status Description
                     $custom_parser: us_mo_custom_enum_parsers.get_recidiviz_sentence_status
