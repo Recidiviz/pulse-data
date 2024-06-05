@@ -14,7 +14,12 @@ PERMANENT:
     - file_tag: RECIDIVIZ_REFERENCE_supervisor_roster
       exclusion_reason:
         Small reference file that is updated infrequently -- small changes in file size
-        cauase large % numbers
+        cauase large % changes
+  US_TN:
+    - file_tag: Chain
+      exclusion_reason:
+        Small reference file that is updated infrequently -- small changes in file size
+        cauase large % changes
 DATE_RANGE:
   US_MO:
     - file_tag: LBAKRDTA_TAK237
