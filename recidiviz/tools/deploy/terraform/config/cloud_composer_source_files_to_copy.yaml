@@ -7,3 +7,4 @@
 - [recidiviz/metrics/export/products, products.yaml]
 - [recidiviz/pipelines, calculation_pipeline_templates.yaml]
 - [recidiviz/pipelines, "*/template_metadata.json"]
+- [recidiviz/ingest/direct/regions, "*/raw_data/*.yaml"]

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for RegisterRawGCSFileMetadataSqlQueryGenerator"""
+"""Unit tests for GetAllUnprocessedGCSFileMetadataSqlQueryGenerator"""
 import datetime
 from typing import Any, List, Tuple
 from unittest.mock import create_autospec
@@ -26,16 +26,18 @@ from freezegun import freeze_time
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.raw_data.register_raw_gcs_file_metadata_sql_query_generator import (
-    RegisterRawGCSFileMetadataSqlQueryGenerator,
+from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_query_generator import (
+    GetAllUnprocessedGCSFileMetadataSqlQueryGenerator,
 )
 from recidiviz.airflow.tests.test_utils import CloudSqlQueryGeneratorUnitTest
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 
 
-class TestRegisterRawGCSFileMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUnitTest):
-    """Unit tests for RegisterRawGCSFileMetadataSqlQueryGenerator"""
+class TestGetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
+    CloudSqlQueryGeneratorUnitTest
+):
+    """Unit tests for GetAllUnprocessedGCSFileMetadataSqlQueryGenerator"""
 
     metas = [OperationsBase]
 
@@ -43,10 +45,10 @@ class TestRegisterRawGCSFileMetadataSqlQueryGenerator(CloudSqlQueryGeneratorUnit
         super().setUp()
 
         self.mock_pg_hook = PostgresHook(postgres_conn_id=self.conn_id)
-        self.generator = RegisterRawGCSFileMetadataSqlQueryGenerator(
+        self.generator = GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
             region_code="US_XX",
             raw_data_instance=DirectIngestInstance.PRIMARY,
-            list_unprocessed_files_task_id="test_id",
+            list_normalized_unprocessed_gcs_file_paths_task_id="test_id",
         )
         self.mock_operator = create_autospec(CloudSqlQueryOperator)
         self.mock_context = create_autospec(Context)
