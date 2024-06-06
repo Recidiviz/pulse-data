@@ -129,17 +129,18 @@ def get_comparison_query(
     table_name_new: str,
     ignore_case: bool,
 ) -> str:
+    column_names_str = ", ".join(column_names)
     json_table = "TO_JSON_STRING(t)" if not ignore_case else "LOWER(TO_JSON_STRING(t))"
     return f"""
     WITH original_rows AS (
       SELECT 
-        FARM_FINGERPRINT({json_table}) AS __comparison_key, *
-      FROM {table_name_orig} t
+        FARM_FINGERPRINT({json_table}) AS __comparison_key, {column_names_str}
+      FROM (SELECT {column_names_str} FROM {table_name_orig}) t
     ),
     new_rows AS (
       SELECT 
-        FARM_FINGERPRINT({json_table}) AS __comparison_key, *
-      FROM {table_name_new} t
+        FARM_FINGERPRINT({json_table}) AS __comparison_key, {column_names_str}
+      FROM (SELECT {column_names_str} FROM {table_name_new}) t
     )
 
     SELECT
@@ -288,7 +289,7 @@ def compare_table_or_view(
     new_columns_df = _get_columns_info_df(address_new)
     new_all_column_names = new_columns_df["column_name"].tolist()
 
-    if all_column_names != new_all_column_names:
+    if sorted(all_column_names) != sorted(new_all_column_names):
         raise ValueError(
             f"Original and new views comparable columns do not match. "
             f"Original: {all_column_names}. New: {new_all_column_names}"
