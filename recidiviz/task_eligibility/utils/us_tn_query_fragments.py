@@ -424,15 +424,17 @@ def us_tn_classification_forms(
                   END AS incompatible_offender_id,
             IncompatibleType AS incompatible_type,
         FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.IncompatiblePair_latest` i
-        INNER JOIN 
+        -- Left join because we don't expect this to work if IncompatibleOffenderID is a Staff ID
+        LEFT JOIN 
             `{{project_id}}.normalized_state.state_person_external_id` pei
         ON
             i.IncompatibleOffenderID = pei.external_id
         AND
             pei.state_code = 'US_TN'
-        INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+        LEFT JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
             USING(person_id, state_code)
         WHERE IncompatibleRemovedDate IS NULL
+        AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
 
         UNION DISTINCT 
     
@@ -444,16 +446,18 @@ def us_tn_classification_forms(
                   END AS incompatible_offender_id,
             IncompatibleType AS incompatible_type,
         FROM `{{project_id}}.us_tn_raw_data_up_to_date_views.IncompatiblePair_latest` i
-        INNER JOIN 
+        -- Left join because we don't expect this to work if IncompatibleOffenderID is a Staff ID
+        LEFT JOIN 
             `{{project_id}}.normalized_state.state_person_external_id` pei
         ON
             i.OffenderID = pei.external_id
         AND
             pei.state_code = 'US_TN'
         -- TODO(#27428): Once source of facility ID in TN is reconciled, this can be removed
-        INNER JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
+        LEFT JOIN `{{project_id}}.analyst_data.us_tn_cellbed_assignment_raw_materialized`
             USING(person_id, state_code)
         WHERE IncompatibleRemovedDate IS NULL
+        AND (facility_id IS NOT NULL OR IncompatibleType = 'S')
    )
     SELECT tes.state_code,
            tes.reasons,
