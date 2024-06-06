@@ -47,7 +47,7 @@ cd ../pulse-data || exit
 
 # Step 2: Determine next version tag (e.g. jc.v1.55.0)
 
-VERSION=$(./recidiviz/tools/deploy/justice_counts/get_next_version.sh) || exit_on_fail
+VERSION=$(./recidiviz/tools/deploy/justice_counts/get_next_version.sh | tail -n 1) || exit_on_fail
 echo "Next version is ${VERSION}"
 
 # Step 3: Build Docker image
