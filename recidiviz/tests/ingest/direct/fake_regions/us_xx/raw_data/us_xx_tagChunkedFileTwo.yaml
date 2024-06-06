@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: tagChunkedFile
+file_tag: tagChunkedFileTwo
 file_description: |-
   tagChunkedFile file description
 data_classification: source
@@ -11,4 +11,4 @@ columns:
   - name: termination_code
   - name: update_date
 is_chunked_file: True
-expected_number_of_chunks: 3
+expected_number_of_chunks: 4

@@ -863,7 +863,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
 
     def test_parse_yaml(self) -> None:
         region_config = self.us_xx_region_config
-        self.assertEqual(24, len(region_config.raw_file_configs))
+        self.assertEqual(25, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -875,6 +875,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 "tagInvalidCharacters",
                 "tagNormalizationConflict",
                 "tagChunkedFile",
+                "tagChunkedFileTwo",
                 "tagCustomLineTerminatorNonUTF8",
                 "tagPipeSeparatedNonUTF8",
                 "tagDoubleDaggerWINDOWS1252",

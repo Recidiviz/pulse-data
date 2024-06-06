@@ -16,7 +16,7 @@
 # =============================================================================
 """Metadata and constants used in the raw data import DAG"""
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import attr
 
@@ -29,6 +29,7 @@ from recidiviz.ingest.direct.gcs.filename_parts import (
     filename_parts_from_path,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils.types import assert_type
 
 RESOURCE_LOCKS_NEEDED = [
     DirectIngestRawDataResourceLockResource.BIG_QUERY_RAW_DATA_DATASET,
@@ -91,4 +92,55 @@ class RawGCSFileMetadataSummary:
     ) -> "RawGCSFileMetadataSummary":
         return RawGCSFileMetadataSummary(
             gcs_file_id=db_record[0], file_id=None, path=abs_path
+        )
+
+    @classmethod
+    def from_xcom(cls, xcom_input: List[Any]) -> "RawGCSFileMetadataSummary":
+        if len(xcom_input) != 3:
+            raise ValueError(
+                f"Expected to retrieve 3 items to build {cls.__name__} but found {len(xcom_input)}"
+            )
+
+        return RawGCSFileMetadataSummary(
+            gcs_file_id=assert_type(xcom_input[0], int),
+            file_id=xcom_input[1],
+            path=GcsfsFilePath.from_absolute_path(assert_type(xcom_input[2], str)),
+        )
+
+
+@attr.define
+class RawBigQueryFileMetadataSummary:
+    """This represents metadata about a "conceptual" file_id that exists in BigQuery,
+    made up of at least one literal csv file |gcs_files|.
+
+    Attributes:
+        gcs_files (list[RawGCSFileMetadataSummary]): a list of RawGCSFileMetadataSummary
+            objects that correspond to the literal csv files that comprise this single,
+            conceptual file.
+        file_tag (str): The shared file_tag from |gcs_files| cached on this object.
+        file_id (int | None): A "conceptual" file id that corresponds to a single,
+            conceptual file sent to us by the state. For raw files states send us in
+            chunks (such as ContactNoteComment), each literal CSV that makes up the
+            whole file will have a different gcs_file_id, but all of those entries will
+            have the same file_id.
+    """
+
+    gcs_files: List[RawGCSFileMetadataSummary]
+    file_tag: str
+    file_id: Optional[int] = attr.field(default=None)
+
+    def to_xcom(self) -> Tuple[int, List[str]]:
+        return (
+            assert_type(self.file_id, int),
+            [gcs_file.path.abs_path() for gcs_file in self.gcs_files],
+        )
+
+    @classmethod
+    def from_gcs_files(
+        cls, gcs_files: List[RawGCSFileMetadataSummary]
+    ) -> "RawBigQueryFileMetadataSummary":
+        return RawBigQueryFileMetadataSummary(
+            file_id=gcs_files[0].file_id,
+            file_tag=gcs_files[0].parts.file_tag,
+            gcs_files=gcs_files,
         )

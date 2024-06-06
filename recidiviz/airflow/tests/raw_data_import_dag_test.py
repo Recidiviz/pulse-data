@@ -92,14 +92,17 @@ class RawDataImportDagSequencingTest(AirflowIntegrationTest):
     def test_step_2_sequencing(self) -> None:
         dag = DagBag(dag_folder=DAG_FOLDER, include_examples=False).dags[self.dag_id]
         step_2_root = dag.partial_subset(
-            task_ids_or_regex=r"list_normalized_unprocessed_files",
+            task_ids_or_regex=r"list_normalized_unprocessed_gcs_file_paths",
             include_upstream=False,
             include_downstream=True,
         )
-        step_2_task_ids = ["register_raw_gcs_file_metadata"]
+        step_2_task_ids = [
+            "get_all_unprocessed_gcs_file_metadata",
+            "get_all_unprocessed_bq_file_metadata",
+        ]
 
         for root in step_2_root.roots:
-            assert "list_normalized_unprocessed_files" in root.task_id
+            assert "list_normalized_unprocessed_gcs_file_paths" in root.task_id
             curr_task = root
             for step_2_task_id in step_2_task_ids:
                 assert len(curr_task.downstream_list) == 1
@@ -214,9 +217,10 @@ class RawDataImportDagIntegrationTest(AirflowIntegrationTest):
                 },
                 expected_failure_ids=[
                     r".*_primary_import_branch\.acquire_raw_data_resource_locks",
-                    r".*_primary_import_branch\.list_normalized_unprocessed_files",
+                    r".*_primary_import_branch\.list_normalized_unprocessed_gcs_file_paths",
                     r".*_primary_import_branch\.release_raw_data_resource_locks",
-                    r".*_primary_import_branch\.register_raw_gcs_file_metadata",
+                    r".*_primary_import_branch\.get_all_unprocessed_gcs_file_metadata",
+                    r".*_primary_import_branch\.get_all_unprocessed_bq_file_metadata",
                     BRANCH_END_TASK_NAME,
                 ],
                 expected_skipped_ids=[

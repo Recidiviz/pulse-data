@@ -29,6 +29,12 @@ from recidiviz.airflow.dags.operators.raw_data.direct_ingest_list_files_operator
 from recidiviz.airflow.dags.raw_data.acquire_resource_lock_sql_query_generator import (
     AcquireRawDataResourceLockSqlQueryGenerator,
 )
+from recidiviz.airflow.dags.raw_data.get_all_unprocessed_bq_file_metadata_sql_query_generator import (
+    GetAllUnprocessedBQFileMetadataSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.raw_data.get_all_unprocessed_gcs_file_metadata_sql_query_generator import (
+    GetAllUnprocessedGCSFileMetadataSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.raw_data.initialize_raw_data_dag_group import (
     initialize_raw_data_dag_group,
 )
@@ -41,9 +47,6 @@ from recidiviz.airflow.dags.raw_data.raw_data_branching import (
     create_raw_data_branch_map,
     get_raw_data_branch_filter,
     get_raw_data_import_branch_key,
-)
-from recidiviz.airflow.dags.raw_data.register_raw_gcs_file_metadata_sql_query_generator import (
-    RegisterRawGCSFileMetadataSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.raw_data.release_resource_lock_sql_query_generator import (
     ReleaseRawDataResourceLockSqlQueryGenerator,
@@ -99,16 +102,18 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        unprocessed_paths = DirectIngestListNormalizedUnprocessedFilesOperator(
-            task_id="list_normalized_unprocessed_files",
-            bucket=gcsfs_direct_ingest_bucket_for_state(
-                project_id=get_project_id(),
-                region_code=state_code.value,
-                ingest_instance=raw_data_instance,
-            ).bucket_name,
+        list_normalized_unprocessed_gcs_file_paths = (
+            DirectIngestListNormalizedUnprocessedFilesOperator(
+                task_id="list_normalized_unprocessed_gcs_file_paths",
+                bucket=gcsfs_direct_ingest_bucket_for_state(
+                    project_id=get_project_id(),
+                    region_code=state_code.value,
+                    ingest_instance=raw_data_instance,
+                ).bucket_name,
+            )
         )
 
-        acquire_locks >> unprocessed_paths
+        acquire_locks >> list_normalized_unprocessed_gcs_file_paths
 
         # ------------------------------------------------------------------------------
 
@@ -117,19 +122,33 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
         # execution layer: celery
         # outputs: [ ImportReadyOriginalFile ], [ RequiresPreImportNormalizationFile ]
 
-        register_gcs_file_metadata = CloudSqlQueryOperator(
-            task_id="register_raw_gcs_file_metadata",
+        get_all_unprocessed_gcs_file_metadata = CloudSqlQueryOperator(
+            task_id="get_all_unprocessed_gcs_file_metadata",
             cloud_sql_conn_id=operations_cloud_sql_conn_id,
-            query_generator=RegisterRawGCSFileMetadataSqlQueryGenerator(
+            query_generator=GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
                 region_code=state_code.value,
                 raw_data_instance=raw_data_instance,
-                list_unprocessed_files_task_id=unprocessed_paths.task_id,
+                list_normalized_unprocessed_gcs_file_paths_task_id=list_normalized_unprocessed_gcs_file_paths.task_id,
+            ),
+        )
+
+        get_all_unprocessed_bq_file_metadata = CloudSqlQueryOperator(
+            task_id="get_all_unprocessed_bq_file_metadata",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=GetAllUnprocessedBQFileMetadataSqlQueryGenerator(
+                region_code=state_code.value,
+                raw_data_instance=raw_data_instance,
+                get_all_unprocessed_gcs_file_metadata_task_id=get_all_unprocessed_gcs_file_metadata.task_id,
             ),
         )
 
         # TODO(#30170) implement splitting into RequiresNormalizationFile, ImportReadyOriginalFile
 
-        unprocessed_paths >> register_gcs_file_metadata
+        (
+            list_normalized_unprocessed_gcs_file_paths
+            >> get_all_unprocessed_gcs_file_metadata
+            >> get_all_unprocessed_bq_file_metadata
+        )
 
         # ------------------------------------------------------------------------------
 
@@ -170,7 +189,7 @@ def create_single_state_code_ingest_instance_raw_data_import_branch(
             ),
         )
 
-        register_gcs_file_metadata >> release_locks
+        get_all_unprocessed_bq_file_metadata >> release_locks
 
         # ------------------------------------------------------------------------------
 

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A CloudSQLQueryGenerator for registering raw gcs file metadata"""
+"""A CloudSQLQueryGenerator that processes raw files paths and returns gcs file metadata"""
 import datetime
 from typing import List, Optional, Tuple
 
@@ -45,23 +45,25 @@ VALUES {values}
 RETURNING gcs_file_id, normalized_file_name;"""
 
 
-class RegisterRawGCSFileMetadataSqlQueryGenerator(
+class GetAllUnprocessedGCSFileMetadataSqlQueryGenerator(
     CloudSqlQueryGenerator[List[Tuple[int, Optional[int], str]]]
 ):
-    """Custom query generator for registering raw data files in the gcs raw file
-    metadata table
+    """Custom query generator that processes raw files paths and returns raw gcs file
+    metadata
     """
 
     def __init__(
         self,
         region_code: str,
         raw_data_instance: DirectIngestInstance,
-        list_unprocessed_files_task_id: str,
+        list_normalized_unprocessed_gcs_file_paths_task_id: str,
     ) -> None:
         super().__init__()
         self._region_code = region_code
         self._raw_data_instance = raw_data_instance
-        self._list_unprocessed_files_task_id = list_unprocessed_files_task_id
+        self._list_normalized_unprocessed_gcs_file_paths_task_id = (
+            list_normalized_unprocessed_gcs_file_paths_task_id
+        )
 
     def execute_postgres_query(
         self,
@@ -69,18 +71,19 @@ class RegisterRawGCSFileMetadataSqlQueryGenerator(
         postgres_hook: PostgresHook,
         context: Context,
     ) -> List[Tuple[int, Optional[int], str]]:
-        """After pulling in a list of unprocessed paths from xcom, will register the
-        paths with the raw gcs file metadata table that have not yet been seen. Returns
-        (gcs_file_id, file_id, abs_path) tuples for every single unprocessed file that
-        is present in the raw data GCS bucket
+        """After pulling in a list of unprocessed paths from xcom, registers not yet
+        seen gcs paths with the raw gcs file metadata table. Returns gcs file metadata
+        in the form of (gcs_file_id, file_id, abs_path) for every unprocessed file pulled
+        from xcom.
         """
-        # get existing path info from xcom
+        # --- get existing path info from xcom -----------------------------------------
+
         unprocessed_paths_in_bucket = [
             GcsfsFilePath.from_absolute_path(path)
             for path in operator.xcom_pull(
                 context,
                 key="return_value",
-                task_ids=self._list_unprocessed_files_task_id,
+                task_ids=self._list_normalized_unprocessed_gcs_file_paths_task_id,
             )
         ]
 
@@ -92,6 +95,7 @@ class RegisterRawGCSFileMetadataSqlQueryGenerator(
         }
 
         # --- first, deteremine which files we've seen before --------------------------
+
         alredy_seen_gcs_metadata = [
             RawGCSFileMetadataSummary.from_gcs_metadata_table_row(
                 metadata_row, unprocessed_blob_names_to_path[metadata_row[2]]
@@ -106,6 +110,7 @@ class RegisterRawGCSFileMetadataSqlQueryGenerator(
         }
 
         # --- then, register new files in gcs metadata table ---------------------------
+
         new_paths_in_bucket = [
             path
             for path in unprocessed_paths_in_bucket
@@ -128,6 +133,7 @@ class RegisterRawGCSFileMetadataSqlQueryGenerator(
         ]
 
         # --- last, build xcom output (gcs_file_id, file_id, abs_path) -----------------
+
         return [
             metadata.to_xcom()
             for metadata in alredy_seen_gcs_metadata + new_gcs_metadata
