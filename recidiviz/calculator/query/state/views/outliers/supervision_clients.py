@@ -41,7 +41,7 @@ WITH supervision_clients AS (
     SELECT DISTINCT
         person.state_code,
         id.external_id AS client_id,
-        {get_pseudonymized_id_query_str("person.state_code || id.external_id")} AS pseudonymized_client_id,
+        {get_pseudonymized_id_query_str("IF(person.state_code = 'US_IX', 'US_ID', person.state_code) || id.external_id")} AS pseudonymized_client_id,
         person.full_name AS client_name,
         d.birthdate,
         d.gender,
