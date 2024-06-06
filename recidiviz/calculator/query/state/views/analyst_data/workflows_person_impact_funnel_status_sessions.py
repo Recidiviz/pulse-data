@@ -44,6 +44,15 @@ WORKFLOWS_PERSON_IMPACT_FUNNEL_STATUS_SESSIONS_VIEW_DESCRIPTION = (
     "Workflows tool engagement at the person-level"
 )
 
+# Get the subset of usage events that occur as discrete events rather than spans
+# This exclude MARKED_INELIGIBLE/snooze span starts, since those can be handled
+# directly via client snooze spans.
+DISCRETE_USAGE_EVENTS_DICT = {
+    event: selector
+    for event, selector in USAGE_EVENTS_DICT.items()
+    if event != "MARKED_INELIGIBLE"
+}
+
 
 def generate_workflows_person_impact_funnel_status_sessions(
     usage_event_names: List[str],
@@ -133,7 +142,7 @@ usage_status_end_dates AS (
         usage_event_type,
     FROM
         `{{project_id}}.analyst_data.all_task_type_eligibility_spans_materialized`,
-        UNNEST([{list_to_query_string(usage_event_names, quoted=True)}]) AS usage_event_type
+        UNNEST([{list_to_query_string(list(DISCRETE_USAGE_EVENTS_DICT), quoted=True)}]) AS usage_event_type
     WHERE
         eligibility_reset
 
@@ -147,21 +156,7 @@ usage_status_end_dates AS (
         usage_event_type,
     FROM
         system_sessions,
-    UNNEST([{list_to_query_string(usage_event_names, quoted=True)}]) AS usage_event_type
-
-    UNION ALL
-    
-    # End a "MARKED_INELIGIBLE" span when status is set to "IN_PROGRESS"
-    SELECT
-        person_id,
-        task_type,
-        start_date AS end_date,
-        "MARKED_INELIGIBLE" AS usage_event_type,
-    FROM
-        `{{project_id}}.analyst_data.workflows_person_events_materialized`
-    WHERE
-        JSON_EXTRACT_SCALAR(event_attributes, "$.event_type") = "CLIENT_REFERRAL_STATUS_UPDATED"
-        AND JSON_EXTRACT_SCALAR(event_attributes, "$.new_status") = "IN_PROGRESS"
+    UNNEST([{list_to_query_string(list(DISCRETE_USAGE_EVENTS_DICT), quoted=True)}]) AS usage_event_type
 )
 ,
 # Join each person-level usage event to the closest subsequent end date to construct usage sessions
@@ -226,6 +221,19 @@ all_sessions AS (
         usage_event_type,
         NULL AS task_completed,
     FROM usage_status_sessions
+    UNION ALL
+    SELECT
+        state_code,
+        person_id,
+        task_type,
+        start_date,
+        end_date_exclusive AS end_date,
+        NULL AS is_justice_involved,
+        NULL AS is_eligible,
+        NULL AS is_almost_eligible,
+        "MARKED_INELIGIBLE" AS usage_event_type,
+        NULL AS task_completed,
+    FROM `{{project_id}}.analyst_data.all_task_type_marked_ineligible_spans_materialized`
     UNION ALL
     SELECT
         state_code,
