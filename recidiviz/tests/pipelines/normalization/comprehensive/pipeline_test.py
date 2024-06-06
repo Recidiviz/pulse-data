@@ -201,6 +201,17 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         supervision_sentence = database_test_utils.generate_test_supervision_sentence(
             fake_person_id, [charge], [early_discharge]
         )
+
+        sentence_status_snapshot = (
+            database_test_utils.generate_test_sentence_status_snapshot(
+                fake_person_id,
+            )
+        )
+
+        sentence = database_test_utils.generate_test_sentence(
+            fake_person_id, status_snapshots=[sentence_status_snapshot]
+        )
+
         early_discharge.supervision_sentence_id = (
             supervision_sentence.supervision_sentence_id
         )
@@ -227,6 +238,8 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         supervision_sentence_data = [
             normalized_database_base_dict(supervision_sentence)
         ]
+        sentence_status_data = [normalized_database_base_dict(sentence_status_snapshot)]
+        sentence_data = [normalized_database_base_dict(sentence)]
 
         charge_data = normalized_database_base_dict_list(
             incarceration_sentence.charges
@@ -360,6 +373,8 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         )
         data_dict_overrides = {
             schema.StatePerson.__tablename__: person_data,
+            schema.StateSentence.__tablename__: sentence_data,
+            schema.StateSentenceStatusSnapshot.__tablename__: sentence_status_data,
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentence_data,
             schema.StateSupervisionSentence.__tablename__: supervision_sentence_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,

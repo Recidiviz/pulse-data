@@ -17,7 +17,7 @@
 """Tests for BuildableAttr base class."""
 
 import unittest
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -69,6 +69,7 @@ class FakeBuildableAttrDeluxe(BuildableAttr):
     enum_nonnull_field: FakeEnum = attr.ib()
     enum_field: Optional[FakeEnum] = attr.ib(default=None)
     date_field: Optional[date] = attr.ib(default=None)
+    datetime_field: Optional[datetime] = attr.ib(default=None)
     boolean_field: Optional[bool] = attr.ib(default=None)
     field_list: List[str] = attr.ib(factory=list)
     field_forward_ref: Optional["FakeBuildableAttr"] = attr.ib(default=None)
@@ -279,6 +280,7 @@ class BuildableAttrTests(unittest.TestCase):
             "another_required_field": "another_value",
             "enum_nonnull_field": FakeEnum.A.value,
             "date_field": "2001-01-08",
+            "datetime_field": "2001-01-08T01:02:03.000004",
         }
 
         # Build from dictionary
@@ -290,6 +292,7 @@ class BuildableAttrTests(unittest.TestCase):
             another_required_field="another_value",
             enum_nonnull_field=FakeEnum.A,
             date_field=date.fromisoformat("2001-01-08"),
+            datetime_field=datetime.fromisoformat("2001-01-08T01:02:03.000004"),
         )
 
         self.assertEqual(subject, expected_result)
@@ -301,6 +304,7 @@ class BuildableAttrTests(unittest.TestCase):
             "another_required_field": "another_value",
             "enum_nonnull_field": FakeEnum.A.value,
             "date_field": None,
+            "datetime_field": None,
         }
 
         # Build from dictionary
@@ -312,6 +316,7 @@ class BuildableAttrTests(unittest.TestCase):
             another_required_field="another_value",
             enum_nonnull_field=FakeEnum.A,
             date_field=None,
+            datetime_field=None,
         )
 
         self.assertEqual(subject, expected_result)
@@ -403,6 +408,13 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     enum_cls=enum_cls,
                     referenced_cls_name=None,
                 )
+            elif "datetime" in attribute.name:
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute=attribute,
+                    field_type=BuildableAttrFieldType.DATETIME,
+                    enum_cls=None,
+                    referenced_cls_name=None,
+                )
             elif "date" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute=attribute,
@@ -465,6 +477,11 @@ class TestAttrFieldTypeForFieldName(unittest.TestCase):
         self.assertEqual(
             BuildableAttrFieldType.DATE,
             attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "date_field"),
+        )
+
+        self.assertEqual(
+            BuildableAttrFieldType.DATETIME,
+            attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "datetime_field"),
         )
 
         self.assertEqual(

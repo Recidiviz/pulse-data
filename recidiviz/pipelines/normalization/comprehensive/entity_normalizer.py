@@ -42,6 +42,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StateProgramAssignment,
+    StateSentence,
     StateStaff,
     StateStaffRolePeriod,
     StateStaffSupervisorPeriod,
@@ -154,6 +155,7 @@ class ComprehensiveEntityNormalizer:
                 StateIncarcerationSentence.__name__
             ],
             supervision_sentences=normalizer_args[StateSupervisionSentence.__name__],
+            sentences=normalizer_args[StateSentence.__name__],
             supervision_periods=normalizer_args[StateSupervisionPeriod.__name__],
             violation_responses=normalizer_args[
                 StateSupervisionViolationResponse.__name__
@@ -176,6 +178,9 @@ class ComprehensiveEntityNormalizer:
         incarceration_periods: List[StateIncarcerationPeriod],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
+        # TODO(#30199): Actually use these sentences instead of
+        #  us_mo_sentence_statuses_list and remove the pylint exemption.
+        sentences: List[StateSentence],  # pylint: disable=unused-argument
         supervision_periods: List[StateSupervisionPeriod],
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],

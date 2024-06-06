@@ -27,6 +27,7 @@ from recidiviz.common.attr_utils import (
     get_non_flat_attribute_class_name,
     is_bool,
     is_date,
+    is_datetime,
     is_enum,
     is_forward_ref,
     is_int,
@@ -49,6 +50,7 @@ class BuildableAttrFieldType(Enum):
     BOOLEAN = "BOOLEAN"
     ENUM = "ENUM"
     DATE = "DATE"
+    DATETIME = "DATETIME"
     STRING = "STRING"
     INTEGER = "INTEGER"
     OTHER = "OTHER"
@@ -210,6 +212,13 @@ def _map_attr_to_type_for_class(
                 attribute=attribute,
                 field_type=BuildableAttrFieldType.ENUM,
                 enum_cls=enum_cls,
+                referenced_cls_name=None,
+            )
+        elif is_datetime(attribute):
+            attr_field_types[field_name] = CachedAttributeInfo(
+                attribute=attribute,
+                field_type=BuildableAttrFieldType.DATETIME,
+                enum_cls=None,
                 referenced_cls_name=None,
             )
         elif is_date(attribute):
@@ -400,6 +409,8 @@ class BuildableAttr:
                     value: Optional[Any] = cls.extract_enum_value(
                         type_cls, build_dict, field
                     )
+                elif field_type == BuildableAttrFieldType.DATETIME:
+                    value = cls.extract_datetime_value(build_dict, field)
                 elif field_type == BuildableAttrFieldType.DATE:
                     value = cls.extract_date_value(build_dict, field)
                 else:
@@ -441,6 +452,23 @@ class BuildableAttr:
             return datetime.datetime.strptime(value, "%Y-%m-%d").date()
 
         if isinstance(value, datetime.date):
+            return value
+
+        raise ValueError(f"Unexpected type [{type(value)}] for value [{value}].")
+
+    @classmethod
+    def extract_datetime_value(
+        cls, build_dict: Dict[str, Any], field: str
+    ) -> Optional[datetime.datetime]:
+        value = build_dict.get(field)
+
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            return datetime.datetime.fromisoformat(value)
+
+        if isinstance(value, datetime.datetime):
             return value
 
         raise ValueError(f"Unexpected type [{type(value)}] for value [{value}].")

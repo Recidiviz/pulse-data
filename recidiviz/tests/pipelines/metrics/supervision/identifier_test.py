@@ -169,7 +169,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
         included_result_classes: Optional[Set[Type[IdentifierResult]]] = None,
-        us_mo_sentence_statuses: Optional[List[Dict[str, Any]]] = None,
     ) -> List[SupervisionEvent]:
         """Helper for testing the find_events function on the identifier."""
         self._set_expected_sp_fields(supervision_periods)
@@ -182,7 +181,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             NormalizedStateAssessment.base_class_name(): assessments,
             StateSupervisionContact.__name__: supervision_contacts,
             NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses,
-            "us_mo_sentence_statuses": us_mo_sentence_statuses or [],
         }
 
         return identifier.identify(
@@ -2336,7 +2334,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
             incarceration_sentence
         ]
-
         supervision_events = self._test_find_supervision_events(
             SupervisionIdentifier(StateCode.US_MO),
             supervision_sentences,
@@ -2346,36 +2343,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            us_mo_sentence_statuses=[
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-3",
-                    "status_code": "15I1000",
-                    "status_date": "20180305",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": supervision_sentence.external_id,
-                    "sentence_status_external_id": f"{supervision_sentence.external_id}-4",
-                    "status_code": "99O1000",
-                    "status_date": "20180519",
-                    "status_description": "Court Probation Discharge",
-                },
-                {
-                    "sentence_external_id": incarceration_sentence.external_id,
-                    "sentence_status_external_id": f"{incarceration_sentence.external_id}-3",
-                    "status_code": "15I1000",
-                    "status_date": "20180305",
-                    "status_description": "New Court Probation",
-                },
-                {
-                    "sentence_external_id": incarceration_sentence.external_id,
-                    "sentence_status_external_id": f"{incarceration_sentence.external_id}-4",
-                    "status_code": "99O1000",
-                    "status_date": "20180519",
-                    "status_description": "Court Probation Discharge",
-                },
-            ],
         )
         for event in supervision_events:
             if isinstance(event, SupervisionPopulationEvent):
