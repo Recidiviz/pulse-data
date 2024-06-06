@@ -121,6 +121,26 @@ class MetricInterface:
         )
         return metric_files_for_metric
 
+    def apply_invariants(self) -> None:
+        """Make sure that the MetricInterface invariants are met. If they are not met,
+        modify the object accordingly."""
+        metric_definition = self.metric_definition
+        # If this is a supervision subsystem metric, and the metric is not supposed to
+        # be disaggregated by supervision subsystems, the metric must be disabled.
+        if (
+            self.is_metric_enabled is None
+            and metric_definition.system in schema.System.supervision_subsystems()
+            and not self.disaggregated_by_supervision_subsystems
+        ):
+            self.is_metric_enabled = False
+        # A supervision metric interface's disaggregated_by_supervision_subsystems field
+        # cannot be None.
+        if (
+            self.disaggregated_by_supervision_subsystems is None
+            and metric_definition.system == schema.System.SUPERVISION
+        ):
+            self.disaggregated_by_supervision_subsystems = False
+
     def to_storage_json(self) -> Dict[str, Any]:
         """
         Returns the json form of the MetricInterface object to be stored in the database.

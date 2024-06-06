@@ -298,3 +298,57 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
                     probation_funding_key: False,
                 },
             )
+
+    def test_get_disaggregated_by_supervision_subsystems_agency_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            supervision_agency = self.test_schema_objects.test_agency_C
+            law_enforcement_agency = self.test_schema_objects.test_agency_A
+            session.add_all([supervision_agency, law_enforcement_agency])
+            session.flush()
+            session.refresh(supervision_agency)
+            session.refresh(law_enforcement_agency)
+            supervision_agency_metrics = MetricSettingInterface.get_agency_metric_interfaces_from_metric_settings(
+                session=session, agency=supervision_agency
+            )
+
+            law_enforcement_agency_metrics = MetricSettingInterface.get_agency_metric_interfaces_from_metric_settings(
+                session=session, agency=law_enforcement_agency
+            )
+
+            for metric in supervision_agency_metrics:
+                # Since the agency is a supervision agency, the disaggregated_by_supervision_subsystems
+                # field will default to False
+                self.assertEqual(metric.disaggregated_by_supervision_subsystems, False)
+
+            for metric in law_enforcement_agency_metrics:
+                # Since the agency is NOT a supervision agency, the disaggregated_by_supervision_subsystems
+                # field will default to None
+                self.assertEqual(metric.disaggregated_by_supervision_subsystems, None)
+
+            # Write a metric setting to the database that makes the supervision funding
+            # metric be disaggregated by subsystem.
+            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+                session=session,
+                agency=supervision_agency,
+                agency_metric=MetricInterface(
+                    key=supervision.funding.key,
+                    disaggregated_by_supervision_subsystems=True,
+                ),
+            )
+            session.commit()
+
+            supervision_agency_metrics = MetricSettingInterface.get_agency_metric_interfaces_from_metric_settings(
+                session=session, agency=supervision_agency
+            )
+            for metric in supervision_agency_metrics:
+                # All metrics except for funding should have a
+                # disaggregated_by_supervision_subsystems field as False,
+                # budget should be True.
+                if metric.key != supervision.funding.key:
+                    self.assertEqual(
+                        metric.disaggregated_by_supervision_subsystems, False
+                    )
+                else:
+                    self.assertEqual(
+                        metric.disaggregated_by_supervision_subsystems, True
+                    )

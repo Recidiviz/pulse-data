@@ -198,10 +198,48 @@ class MetricSettingInterface:
         """Gets an agency metric interface from the MetricSetting table.
         Note: Until we start the migration process, this method will read agency metrics
         from the Datapoint table."""
-
         return DatapointInterface.get_metric_settings_by_agency(
             session=session, agency=agency, agency_datapoints=agency_datapoints
         )
+
+    @staticmethod
+    def get_agency_metric_interfaces_from_metric_settings(
+        session: Session,
+        agency: schema.Agency,
+        agency_metric_settings: Optional[List[schema.MetricSetting]] = None,
+    ) -> List[MetricInterface]:
+        """Gets an agency metric interface from the MetricSetting table.
+
+        TODO(#28469): Change the name to simply get_agency_metric_interfaces() once we
+        deprecate the agency datapoints.
+        """
+        if agency_metric_settings is None:
+            agency_metric_settings = (
+                session.query(schema.MetricSetting)
+                .filter(schema.MetricSetting.agency_id == agency.id)
+                .all()
+            )
+        key_to_metric_interfaces = {
+            item.metric_definition_key: MetricInterface.from_storage_json(
+                item.metric_interface
+            )
+            for item in agency_metric_settings
+        }
+        # Return a metric interface for every metric definition, even if no metric
+        # setting exists in storage.
+        metric_definitions = MetricInterface.get_metric_definitions_by_systems(
+            systems={schema.System[system] for system in agency.systems or []},
+        )
+        result: List[MetricInterface] = []
+        for metric_definition in metric_definitions:
+            metric_interface = key_to_metric_interfaces.get(
+                metric_definition.key,
+                MetricInterface(key=metric_definition.key),
+            )
+            # Ensure the metric interface obeys MetricInterface invariants.
+            metric_interface.apply_invariants()
+            result.append(metric_interface)
+        return result
 
     @staticmethod
     def get_metric_key_to_metric_interface(

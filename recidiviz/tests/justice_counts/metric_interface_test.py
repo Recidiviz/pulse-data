@@ -3441,3 +3441,28 @@ class TestMetricInterface(TestCase):
                 if m.disabled is False
             },
         )
+
+    def test_apply_invariant_for_supervision_subsystem_metric(self) -> None:
+        """If this is a supervision subsystem metric, and the metric is not supposed to
+        be disaggregated by supervision subsystems, the metric must be disabled.
+        """
+        metric_interface = MetricInterface(
+            key="PAROLE_EXPENSES",
+            is_metric_enabled=None,
+            disaggregated_by_supervision_subsystems=False,
+        )
+        metric_interface.apply_invariants()
+        self.assertEqual(metric_interface.is_metric_enabled, False)
+
+    def test_apply_invariant_for_supervision_metric(self) -> None:
+        """A supervision metric interface's disaggregated_by_supervision_subsystems
+        field cannot be None.
+        """
+        metric_interface = MetricInterface(
+            key="SUPERVISION_EXPENSES",
+            disaggregated_by_supervision_subsystems=None,
+        )
+        metric_interface.apply_invariants()
+        self.assertEqual(
+            metric_interface.disaggregated_by_supervision_subsystems, False
+        )
