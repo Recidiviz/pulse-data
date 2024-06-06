@@ -138,16 +138,6 @@ def make_most_recent_metric_view_builders(
             --  does not exist when there is no office. We could generate fake
             --  location_ids for the "district but no office scenario" and use those.            
             WHEN state_code = 'US_PA' THEN metric.level_2_supervision_location_external_id
-            -- TODO(#28755): Correct ND data for supervision offices 17 and 19 in 
-            -- location_metadata or confirm that the data in that view is correct and 
-            -- we can remove this custom ND logic that makes the output of these views
-            -- backwards compatible with old metric pipeline output.
-            WHEN state_code = 'US_ND' THEN 
-                CASE 
-                    WHEN metric.level_1_supervision_location_external_id = '17' THEN 'Central Office'
-                    WHEN metric.level_1_supervision_location_external_id = '19' THEN 'Region 1'
-                    ELSE location_ids.level_2_supervision_location_external_id
-                END
             ELSE location_ids.level_2_supervision_location_external_id
         END AS level_2_supervision_location_external_id,
         """
