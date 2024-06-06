@@ -130,8 +130,8 @@ class ViewManagerTest(unittest.TestCase):
         )
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view"),
-                mock.call(_DATASET_NAME, "my_other_fake_view"),
+                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
+                mock.call(_DATASET_NAME, "my_other_fake_view", not_found_ok=True),
             ],
             any_order=True,
         )
@@ -225,9 +225,9 @@ class ViewManagerTest(unittest.TestCase):
         # in schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view"),
-                mock.call(_DATASET_NAME, "my_fake_view_2"),
-                mock.call(_DATASET_NAME, "my_fake_view_3"),
+                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
+                mock.call(_DATASET_NAME, "my_fake_view_2", not_found_ok=True),
+                mock.call(_DATASET_NAME, "my_fake_view_3", not_found_ok=True),
             ],
             any_order=True,
         )
@@ -353,9 +353,9 @@ class ViewManagerTest(unittest.TestCase):
         # schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view"),
-                mock.call(_DATASET_NAME, "my_fake_view_2"),
-                mock.call(_DATASET_NAME, "my_fake_view_3"),
+                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
+                mock.call(_DATASET_NAME, "my_fake_view_2", not_found_ok=True),
+                mock.call(_DATASET_NAME, "my_fake_view_3", not_found_ok=True),
             ],
             any_order=True,
         )
@@ -429,8 +429,8 @@ class ViewManagerTest(unittest.TestCase):
         # schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view"),
-                mock.call(_DATASET_NAME_2, "my_fake_view_2"),
+                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
+                mock.call(_DATASET_NAME_2, "my_fake_view_2", not_found_ok=True),
             ],
             any_order=True,
         )
@@ -557,12 +557,19 @@ class ViewManagerTest(unittest.TestCase):
         # in schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call("test_prefix_" + _DATASET_NAME, "my_fake_view"),
+                mock.call(
+                    "test_prefix_" + _DATASET_NAME, "my_fake_view", not_found_ok=True
+                ),
                 mock.call(
                     "test_prefix_" + _DATASET_NAME,
                     "my_other_fake_view",
+                    not_found_ok=True,
                 ),
-                mock.call("test_prefix_" + _DATASET_NAME, "materialized_view"),
+                mock.call(
+                    "test_prefix_" + _DATASET_NAME,
+                    "materialized_view",
+                    not_found_ok=True,
+                ),
             ],
             any_order=True,
         )
@@ -611,8 +618,8 @@ class ViewManagerTest(unittest.TestCase):
         # in schema from the dag walker
         self.mock_client.delete_table.assert_has_calls(
             [
-                mock.call(_DATASET_NAME, "my_fake_view"),
-                mock.call(_DATASET_NAME, "my_other_fake_view"),
+                mock.call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
+                mock.call(_DATASET_NAME, "my_other_fake_view", not_found_ok=True),
             ],
             any_order=True,
         )
@@ -763,8 +770,8 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_has_calls(
             [
-                call(_DATASET_NAME, "my_fake_view"),
-                call(_DATASET_NAME_2, "my_other_fake_view"),
+                call(_DATASET_NAME, "my_fake_view", not_found_ok=True),
+                call(_DATASET_NAME_2, "my_other_fake_view", not_found_ok=True),
                 # above two calls are from deleting and recreating every view from
                 # _create_or_update_view_and_materialize_if_necessary()
                 call(_DATASET_NAME, "bogus_view_1"),
