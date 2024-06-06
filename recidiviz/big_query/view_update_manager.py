@@ -417,10 +417,17 @@ def _create_or_update_view_and_materialize_if_necessary(
         view_changed = True
         old_schema = None
 
-    # TODO(https://issuetracker.google.com/issues/180636362): Currently we have to delete and recreate the view for
-    # changes from underlying tables to be reflected in its schema.
+    # TODO(https://issuetracker.google.com/issues/180636362): Currently we have to
+    # delete and recreate the view for changes from underlying tables to be reflected in
+    # its schema.
+    # TODO(#30446): Once `parent_changed` reflects changes to the schemas of source
+    # tables as well, only delete this `if old_schema is not None and parent_changed`.
     if old_schema is not None:
-        bq_client.delete_table(dataset_ref.dataset_id, view.view_id)
+        # If there is a network blip and this delete retries, we still want it to
+        # succeed so as to not halt the view update, so we set `not_found_ok=True`. If
+        # for some reason someone else deleted it out from under us, it is also okay to
+        # just proceed with the view update.
+        bq_client.delete_table(dataset_ref.dataset_id, view.view_id, not_found_ok=True)
     updated_view = bq_client.create_or_update_view(view, might_exist=might_exist)
 
     if updated_view.schema != old_schema:
