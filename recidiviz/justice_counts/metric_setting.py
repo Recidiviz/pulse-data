@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the MetricSetting model."""
 
+import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set
 
@@ -214,6 +215,32 @@ class MetricSettingInterface:
             agency_metric=agency_metric,
             user_account=user_account,
         )
+        # TODO(#28469): Remove this try-except block once we deprecate the above method.
+        # When agency metric interfaces are written as agency datapoints to the
+        # Datapoint table, we will also write the same metric interfaces to the
+        # MetricSetting table. We will regularly test for parity between agency metric
+        # interfaces stored in the Datapoint table and the MetricSetting table to
+        # confirm that the MetricSetting is a correct representation of agency metric
+        # settings.
+        # Once we can confidently say that the MetricSetting table read/write logic
+        # works correctly, we will 1) start reading metric interfaces from the
+        # MetricSetting table and then 2) stop writing agency datapoints to the
+        # Datapoint table.
+        try:
+            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=agency_metric,
+            )
+        except Exception as e:
+            # Logging an error here should show up in Sentry, but will not cause issues
+            # for our users in production.
+            logging.error(
+                "[MetricSetting Migration] The new_add_or_update_agency_metric_setting method failed for agency %s and metric key %s. Error: %s",
+                agency.name,
+                agency_metric.key,
+                e,
+            )
 
     @staticmethod
     def get_agency_metric_interfaces(
