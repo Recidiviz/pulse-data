@@ -119,6 +119,9 @@ sanitized_internal_metrics AS (
       PARTITION BY state_code, date_of_supervision, person_external_id
       ORDER BY staff.external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC
   ) = 1
+  -- TODO(#30389): Remove this filter once any of the values in the "order by" clause above are hydrated.
+  -- The QUALIFY statement currently excludes all internal data from the validation.
+  OR state_code = 'US_AZ'
 )
 SELECT
       region_code,
