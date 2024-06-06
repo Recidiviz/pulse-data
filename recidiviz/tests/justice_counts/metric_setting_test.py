@@ -18,8 +18,14 @@
 
 from recidiviz.justice_counts.metric_setting import MetricSettingInterface
 from recidiviz.justice_counts.metrics import law_enforcement, supervision
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.persistence.database.schema.justice_counts.schema import MetricSetting
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    MetricSetting,
+    ReportingFrequency,
+)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils.utils import (
     JusticeCountsDatabaseTestCase,
@@ -55,6 +61,52 @@ class TestMetricSettingInterface(JusticeCountsDatabaseTestCase):
             metric_settings = session.query(MetricSetting).one()
             self.assertDictEqual(
                 metric_settings.metric_interface, funding_metric.to_storage_json()
+            )
+
+    def test_update_custom_frequency(self) -> None:
+        """Test that updating custom frequency to MONTHLY will cause the starting month
+        to be stored as None.
+
+        This tests makes sure that the following invariant is maintained:
+            * If the custom_frequency is "MONTHLY", starting_month is None.
+        """
+        agency = self.test_schema_objects.test_agency_A
+        with SessionFactory.using_database(self.database_key) as session:
+            # Add agency to the database.
+            session.add(agency)
+            session.commit()
+            session.refresh(agency)
+
+            # Write the metric setting to the database, with a Fiscal Annual frequency.
+            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=law_enforcement.funding.key,
+                    custom_reporting_frequency=CustomReportingFrequency(
+                        frequency=ReportingFrequency.ANNUAL, starting_month=7
+                    ),
+                ),
+            )
+            session.commit()
+
+            # Modify the metric setting to have a Monthly frequency.
+            MetricSettingInterface.new_add_or_update_agency_metric_setting(
+                session=session,
+                agency=agency,
+                agency_metric=MetricInterface(
+                    key=law_enforcement.funding.key,
+                    custom_reporting_frequency=CustomReportingFrequency(
+                        frequency=ReportingFrequency.MONTHLY, starting_month=None
+                    ),
+                ),
+            )
+            session.commit()
+
+            metric_settings = session.query(MetricSetting).one()
+            self.assertDictEqual(
+                metric_settings.metric_interface["custom_reporting_frequency"],
+                {"custom_frequency": "MONTHLY", "starting_month": None},
             )
 
     def test_disable_metric_setting(self) -> None:

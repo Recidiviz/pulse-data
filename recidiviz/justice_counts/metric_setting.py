@@ -27,6 +27,32 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricInterface,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    ReportingFrequency,
+)
+
+
+def handle_invariants(metric_interface_json: Dict[str, Any]) -> Dict[str, Any]:
+    """This function maintains any relationships between metric interface fields which
+    are not handled by the apply_updates step.
+
+    For example,
+        existing = {custom_reporting_frequency: {custom_frequency:'ANNUAL', starting_month: 7}}
+        update = {custom_reporting_frequency: {custom_frequency:'MONTHLY', starting_month: None}}
+
+    Without this function, the apply_updates return value would just be
+        result = {custom_reporting_frequency: {custom_frequency:'MONTHLY', starting_month: 7}}
+
+    But we need the result to be
+        result = {custom_reporting_frequency: {custom_frequency:'MONTHLY', starting_month: None}}
+    """
+    # If custom reporting frequency is set to MONTHLY, the starting month should be None.
+    if (
+        metric_interface_json["custom_reporting_frequency"]["custom_frequency"]
+        == ReportingFrequency.MONTHLY.value
+    ):
+        metric_interface_json["custom_reporting_frequency"]["starting_month"] = None
+    return metric_interface_json
 
 
 def apply_updates(original: Dict[str, Any], updates: Dict[str, Any]) -> Dict[str, Any]:
@@ -98,8 +124,8 @@ class MetricSettingInterface:
             updates = agency_metric.to_storage_json()
             # Using deepcopy so that the existing metric interface is only modified once
             # apply_updates returns.
-            existing_setting.metric_interface = apply_updates(
-                deepcopy(existing_setting.metric_interface), updates
+            existing_setting.metric_interface = handle_invariants(
+                apply_updates(deepcopy(existing_setting.metric_interface), updates)
             )
         else:
             session.add(
