@@ -343,6 +343,7 @@ class EntityTreeManifestFactory:
                 # since all values will be converted from string -> real value in the
                 # deserializing entity factory.
                 BuildableAttrFieldType.DATE,
+                BuildableAttrFieldType.DATETIME,
                 BuildableAttrFieldType.STRING,
                 BuildableAttrFieldType.INTEGER,
             ):

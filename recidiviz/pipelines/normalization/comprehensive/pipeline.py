@@ -137,6 +137,8 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
             entities.StatePerson: [
                 entities.StateSupervisionSentence,
                 entities.StateIncarcerationSentence,
+                entities.StateSentence,
+                entities.StateSentenceStatusSnapshot,
                 entities.StateIncarcerationPeriod,
                 entities.StateSupervisionPeriod,
                 entities.StateSupervisionCaseTypeEntry,

@@ -119,7 +119,10 @@ def generate_test_supervision_contact(
 
 
 def generate_test_supervision_violation(
-    person_id: int, supervision_violation_responses
+    person_id: int,
+    supervision_violation_responses: List[
+        state_schema.StateSupervisionViolationResponse
+    ],
 ) -> state_schema.StateSupervisionViolation:
     """Generates a test StateSupervisionViolation."""
     supervision_violation_id = 321
@@ -156,7 +159,7 @@ def generate_test_supervision_violation(
 
 
 def generate_test_supervision_period(
-    person_id: int, case_types
+    person_id: int, case_types: List[state_schema.StateSupervisionCaseTypeEntry]
 ) -> state_schema.StateSupervisionPeriod:
     instance = state_schema.StateSupervisionPeriod(
         supervision_period_id=4444,
@@ -183,7 +186,10 @@ def generate_test_incarceration_incident_outcome(
 
 
 def generate_test_incarceration_incident(
-    person_id: int, incarceration_incident_outcomes
+    person_id: int,
+    incarceration_incident_outcomes: List[
+        state_schema.StateIncarcerationIncidentOutcome
+    ],
 ) -> state_schema.StateIncarcerationIncident:
     instance = state_schema.StateIncarcerationIncident(
         incarceration_incident_id=321,
@@ -225,7 +231,9 @@ def generate_test_charge(
 
 
 def generate_test_supervision_sentence(
-    person_id: int, charges, early_discharges=None
+    person_id: int,
+    charges: List[state_schema.StateCharge],
+    early_discharges: Optional[List[state_schema.StateEarlyDischarge]] = None,
 ) -> state_schema.StateSupervisionSentence:
     instance = state_schema.StateSupervisionSentence(
         supervision_sentence_id=1111,
@@ -241,7 +249,9 @@ def generate_test_supervision_sentence(
 
 
 def generate_test_incarceration_sentence(
-    person_id: int, charges=None, early_discharges=None
+    person_id: int,
+    charges: Optional[List[state_schema.StateCharge]] = None,
+    early_discharges: Optional[List[state_schema.StateEarlyDischarge]] = None,
 ) -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
@@ -252,6 +262,36 @@ def generate_test_incarceration_sentence(
         is_capital_punishment=False,
         charges=(charges if charges else []),
         early_discharges=(early_discharges if early_discharges else []),
+    )
+
+    return instance
+
+
+def generate_test_sentence_status_snapshot(
+    person_id: int,
+) -> state_schema.StateSentenceStatusSnapshot:
+    instance = state_schema.StateSentenceStatusSnapshot(
+        sentence_status_snapshot_id=2222,
+        status=StateSentenceStatus.SERVING.value,
+        state_code="US_XX",
+        status_update_datetime=datetime.datetime(2020, 1, 1, 0, 0, 0),
+        person_id=person_id,
+    )
+
+    return instance
+
+
+def generate_test_sentence(
+    person_id: int,
+    status_snapshots: List[state_schema.StateSentenceStatusSnapshot],
+) -> state_schema.StateSentence:
+    instance = state_schema.StateSentence(
+        sentence_id=2222,
+        external_id="external_id",
+        state_code="US_XX",
+        person_id=person_id,
+        is_capital_punishment=False,
+        sentence_status_snapshots=status_snapshots,
     )
 
     return instance
