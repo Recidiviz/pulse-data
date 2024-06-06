@@ -49,7 +49,7 @@ CURRENT_STAFF_QUERY_TEMPLATE = f"""
         JSON_VALUE(full_name, "$.surname") AS surname,
         officer_sessions.supervising_officer_external_id IS NOT NULL AS is_supervision_officer,
         supervisors_of_officers.supervisor_staff_external_id IS NOT NULL AS is_supervision_officer_supervisor,
-        {get_pseudonymized_id_query_str("ss.state_code || id.external_id")} AS pseudonymized_id,
+        {get_pseudonymized_id_query_str("IF(ss.state_code = 'US_IX', 'US_ID', ss.state_code) || id.external_id")} AS pseudonymized_id,
     FROM `{{project_id}}.normalized_state.state_staff` ss
     LEFT JOIN (
         SELECT state_code, staff_id, location_external_id, start_date

@@ -53,7 +53,7 @@ SENTENCING_CLIENT_RECORD_QUERY_TEMPLATE = f"""
                 *,
                 -- Use the same pseudo id function as the staff record for consistency
                 -- across queries
-                {get_pseudonymized_id_query_str("state_code || external_id")} AS pseudonymized_id,
+                {get_pseudonymized_id_query_str("IF(state_code = 'US_IX', 'US_ID', state_code) || external_id")} AS pseudonymized_id,
             FROM full_query
         )
          
