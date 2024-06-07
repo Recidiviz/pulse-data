@@ -135,14 +135,13 @@ $ git clone git@github.com:your_github_username/pulse-data.git
 $ cd pulse-data
 ```
 
-Create a new pipenv environment and install all project and development dependencies
-
-On a Mac, run the `initial_pipenv_setup_mac` script.
+To create a new pipenv environment and install all project and development dependencies
+on mac and debian machines, run the `initial_pipenv_setup` script.
 
 **NOTE**: Installation of one of our dependencies (`psycopg2`) requires OpenSSL, and as OpenSSL is not linked on Macs by default, this script temporarily sets the necessary compiler flags and then runs `pipenv sync --dev`. After this initial installation all `pipenv sync/install`s should work without this script.
 
 ```bash
-$ ./initial_pipenv_setup_mac.sh
+$ ./initial_pipenv_setup.sh
 ```
 
 On a Linux machine, run the following:
@@ -331,7 +330,7 @@ inbound pull request.
 
 #### Autoformatting
 
-We use `black` to ensure consistent formatting across the code base and `isort` to sort imports. There is a pre-commit hook that will format all of your files automatically. It is defined in `githooks/pre-commit` and is installed by `./initial_pipenv_setup_mac.sh`.
+We use `black` to ensure consistent formatting across the code base and `isort` to sort imports. There is a pre-commit hook that will format all of your files automatically. It is defined in `githooks/pre-commit` and is installed by `./initial_pipenv_setup.sh`.
 
 You can also set up your editor to run `black` and `isort` on save. See [the black docs](https://black.readthedocs.io/en/stable/integrations/editors.html) for how to configure external tools (both `black` and `isort`) to run in PyCharm (more info in PyCQA/isort#258).
 
@@ -378,6 +377,6 @@ An error occurred while installing psycopg2==...
 On a Mac:
 
 1. Ensure `postgresql` and `openssl` are installed with: `brew install postgresql openssl`
-2. Run the initial pipenv setup script: `./initial_pipenv_setup_mac.sh`
+2. Run the initial pipenv setup script: `./initial_pipenv_setup.sh`
 
 On Linux: Ensure `libpq` is installed with: `apt update -y && apt install -y libpq-dev`

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This checks to ensure your pipenv is in sync with the lock file.
-# 'initial_pipenv_setup_mac' sets this up to run every time you pull a new version on main or checkout a branch.
+# 'initial_pipenv_setup' sets this up to run every time you pull a new version on main or checkout a branch.
 
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
