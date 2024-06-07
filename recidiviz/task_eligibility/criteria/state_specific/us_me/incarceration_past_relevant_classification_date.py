@@ -16,11 +16,13 @@
 # ============================================================================
 """Defines a criteria span view that shows spans of time during which
 someone is past their annual or semi-annual reclassification date"""
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -33,12 +35,22 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 someone is past their annual or semi-annual reclassification date"""
 
 _QUERY_TEMPLATE = """
-SELECT *
+SELECT
+    *,
+    JSON_EXTRACT(reason, "$.reclass_type") AS reclass_type,
+    JSON_EXTRACT(reason, "$.reclasses_needed") AS reclasses_needed,
+    JSON_EXTRACT(reason, "$.latest_classification_date") AS latest_classification_date,
+    JSON_EXTRACT(reason, "$.eligible_date") AS eligible_date,
 FROM `{project_id}.{task_eligibility_criteria_us_me}.incarceration_past_annual_classification_date_materialized`
 
 UNION ALL
 
-SELECT *
+SELECT
+    *,
+    JSON_EXTRACT(reason, "$.reclass_type") AS reclass_type,
+    JSON_EXTRACT(reason, "$.reclasses_needed") AS reclasses_needed,
+    JSON_EXTRACT(reason, "$.latest_classification_date") AS latest_classification_date,
+    JSON_EXTRACT(reason, "$.eligible_date") AS eligible_date,
 FROM `{project_id}.{task_eligibility_criteria_us_me}.incarceration_past_semi_annual_classification_date_materialized`
 """
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -50,6 +62,28 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_me=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_ME
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="reclass_type",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="reclasses_needed",
+            type=bigquery.enums.SqlTypeNames.FLOAT,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="latest_classification_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="eligible_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

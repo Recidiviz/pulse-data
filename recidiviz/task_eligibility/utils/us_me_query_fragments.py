@@ -20,6 +20,8 @@
 import re
 from typing import Optional
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import (
     date_diff_in_full_months,
     nonnull_end_date_clause,
@@ -33,6 +35,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -370,7 +373,8 @@ def cis_112_custody_level_criteria(
         start_date,
         end_date,
         custody_level IN ({custody_levels}) AS meets_criteria,
-        TO_JSON(STRUCT(custody_level AS custody_level)) AS reason
+        TO_JSON(STRUCT(custody_level AS custody_level)) AS reason,
+        custody_level,
     FROM custody_level_spans
     WHERE start_date != {nonnull_end_date_clause('end_date')}
     """
@@ -384,6 +388,13 @@ def cis_112_custody_level_criteria(
             state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="custody_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 
 
@@ -562,6 +573,7 @@ def x_years_remaining_on_sentence(x: int, negate_boolean: bool = False) -> str:
             end_date) AS end_date,
         {"NOT" if negate_boolean else ''} critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+        critical_date AS eligible_date,
     FROM critical_date_has_passed_spans cd
     """
 
@@ -669,7 +681,10 @@ def no_violations_for_x_time(
         False AS meets_criteria,
         TO_JSON(STRUCT(disp_class AS highest_class_viol,
                        disp_type_wmorethan1 AS viol_type,
-                       {revert_nonnull_end_date_clause('eligible_date')} AS eligible_date)) AS reason
+                       {revert_nonnull_end_date_clause('eligible_date')} AS eligible_date)) AS reason,
+        disp_class AS highest_class_viol,
+        disp_type_wmorethan1 AS viol_type,
+        {revert_nonnull_end_date_clause('eligible_date')} AS eligible_date
     FROM no_dup_subsessions_cte
     """
 
@@ -928,6 +943,10 @@ def reclassification_shared_logic(reclass_type: str) -> str:
         ANY_VALUE(ts.reclasses_needed) AS reclasses_needed,
         MAX(meetings.reclass_meeting_date) AS latest_classification_date,
         MAX(end_date) as eligible_date)) as reason,
+      {"'ANNUAL'" if reclass_type == 'annual' else "'SEMIANNUAL'"} AS reclass_type,
+      ANY_VALUE(ts.reclasses_needed) AS reclasses_needed,
+      MAX(meetings.reclass_meeting_date) AS latest_classification_date,
+      MAX(end_date) as eligible_date,
     FROM
       third_sum ts
     LEFT JOIN meetings

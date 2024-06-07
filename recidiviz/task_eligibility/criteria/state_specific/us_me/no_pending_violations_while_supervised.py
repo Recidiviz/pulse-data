@@ -18,6 +18,7 @@
 """Defines a criteria view that shows spans of time where clients do NOT 
 have a pending violation. 
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -26,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -71,7 +73,9 @@ SELECT
   end_date,
   False AS meets_criteria,
   TO_JSON(STRUCT('Pending Violation' AS current_status, 
-                 violation_date AS violation_date)) AS reason
+                 violation_date AS violation_date)) AS reason,
+  'Pending Violation' AS current_status,
+  violation_date,
 FROM sub_sessions_with_attributes
 WHERE start_date != end_date
 -- If two subsessions, we take the latest violation date
@@ -90,6 +94,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="current_status",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="violation_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

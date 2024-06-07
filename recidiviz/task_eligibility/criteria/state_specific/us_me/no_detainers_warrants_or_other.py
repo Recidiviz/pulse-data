@@ -18,6 +18,8 @@
 """Defines a criteria view that shows spans of time for
 which residents have detainers, warrants or other pending holds.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -26,6 +28,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -76,7 +79,9 @@ SELECT
   start_date,
   end_date,
   meets_criteria,
-  TO_JSON(STRUCT(detainer AS detainer, start_date AS detainer_start_date)) AS reason
+  TO_JSON(STRUCT(detainer AS detainer, start_date AS detainer_start_date)) AS reason,
+  detainer,
+  start_date AS detainer_start_date,
 FROM sub_sessions_with_attributes_grouped
 """
 
@@ -91,6 +96,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="detainer",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="detainer_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

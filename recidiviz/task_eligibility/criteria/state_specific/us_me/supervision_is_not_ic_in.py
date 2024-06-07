@@ -18,12 +18,15 @@
 """Defines a criteria view that shows spans of time where
 clients are not 'INTERSTATE COMPACT IN'.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -72,7 +75,8 @@ SELECT
     start_date,
     end_date, 
     False AS meets_criteria,
-    TO_JSON(STRUCT(current_status AS current_status)) AS reason
+    TO_JSON(STRUCT(current_status AS current_status)) AS reason,
+    current_status,
 FROM distinct_ic_spans
 """
 
@@ -84,6 +88,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="current_status",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
