@@ -18,10 +18,13 @@
 supervision in California had sustainable housing for between 0 and 2 months.
 """
 
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -57,6 +60,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_CA,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         us_ca_criteria_dataset=_US_CA_CRITERIA_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="attained_sustainable_housing",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 

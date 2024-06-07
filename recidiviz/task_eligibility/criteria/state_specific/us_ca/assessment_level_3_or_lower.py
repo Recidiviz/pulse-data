@@ -20,8 +20,11 @@ have an assessment level of 3 or lower.
 
 Levels meeting the criteria: HIGH DRUG (3), MODERATE (2), LOW (1)
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -46,6 +49,8 @@ SELECT
   score_end_date_exclusive AS end_date,
   (assessment_level_raw_text NOT IN ({_LEVELS_TO_EXCLUDE})) AS meets_criteria,
   TO_JSON(STRUCT(assessment_level_raw_text AS assessment_level, assessment_date AS assessment_date)) AS reason,
+  assessment_level_raw_text AS assessment_level,
+  assessment_date,
 FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` 
 WHERE state_code = 'US_CA'
   AND assessment_type = 'CSRA'
@@ -58,6 +63,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_CA,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="assessment_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="assessment_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

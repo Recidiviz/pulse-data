@@ -18,6 +18,8 @@
 housing type (is not transient)
 """
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -27,6 +29,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -67,7 +70,8 @@ SELECT
   start_date,
   end_date,
   LOGICAL_OR(TRUE) AS meets_criteria,
-  TO_JSON(STRUCT('{{reason_string}}' AS current_housing)) AS reason
+  TO_JSON(STRUCT('{{reason_string}}' AS current_housing)) AS reason,
+  '{{reason_string}}' AS housing_status,
 FROM sub_sessions_with_attributes
 WHERE start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
@@ -82,6 +86,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         analyst_dataset=ANALYST_VIEWS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         reason_string=_REASON_STRING,
+        reasons_fields=[
+            ReasonsField(
+                name="housing_status",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 
