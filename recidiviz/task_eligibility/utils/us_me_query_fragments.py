@@ -64,6 +64,20 @@ PROGRAM_ENROLLMENT_NOTE_TX_REGEX = "|".join(
         "PROBLEM SEXUAL BEHAVIOR",
     ]
 )
+FURLOUGH_NOTE_TX_REGEX = "|".join(
+    [
+        "FURLOUGH",
+        "FURLOW",
+        "FURLOUG",
+        "FURLOGH",
+        "FURLLOUGH",
+        "FURLOH",
+        "FURLOUGGH",
+        "FURLOUH",
+        "FURLOUHG",
+        "FURLOOGH",
+    ]
+)
 
 
 def disciplinary_reports_helper() -> str:

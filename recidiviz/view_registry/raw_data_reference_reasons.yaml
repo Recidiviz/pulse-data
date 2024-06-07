@@ -544,40 +544,46 @@ US_ME:
       Usage reason unknown. Grandfathered in 04/18/2024.
   CIS_2040_CONTACT_MODE:
     workflows_views.us_me_complete_early_termination_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
       |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_furlough_release_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_work_release_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
   CIS_2041_NOTE_TYPE:
     workflows_views.us_me_complete_early_termination_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
       |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_furlough_release_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_work_release_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
   CIS_204_GEN_NOTE:
     workflows_views.us_me_complete_early_termination_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_custody_level_downgrade_to_medium_trustee_request_record:
       |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
+    workflows_views.us_me_custody_reclassification_review_form_record: |-
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_furlough_release_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
     workflows_views.us_me_work_release_form_record: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
+      Notes are not ingested and we surface them in workflows.
   CIS_300_Personal_Property:
     workflows_views.us_me_complete_transfer_to_sccp_form_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.

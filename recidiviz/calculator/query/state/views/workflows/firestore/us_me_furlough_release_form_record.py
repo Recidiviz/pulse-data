@@ -39,6 +39,7 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     one_criteria_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
+    FURLOUGH_NOTE_TX_REGEX,
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
     cis_201_case_plan_case_notes,
     cis_204_notes_cte,
@@ -50,20 +51,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _FURLOUGH_NOTE_TITLE = "Furlough policy"
-_FURLOUGH_NOTE_TX_REGEX = "|".join(
-    [
-        "FURLOUGH",
-        "FURLOW",
-        "FURLOUG",
-        "FURLOGH",
-        "FURLLOUGH",
-        "FURLOH",
-        "FURLOUGGH",
-        "FURLOUH",
-        "FURLOUHG",
-        "FURLOOGH",
-    ]
-)
+
 US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_NAME = "us_me_furlough_release_form_record"
 
 US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_DESCRIPTION = """
@@ -106,8 +94,8 @@ case_notes_cte AS (
     -- Furlough-release related notes
     {cis_204_notes_cte("Notes: Furlough")}
     WHERE 
-        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_FURLOUGH_NOTE_TX_REGEX}') 
-        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_FURLOUGH_NOTE_TX_REGEX}')
+        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{FURLOUGH_NOTE_TX_REGEX}') 
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{FURLOUGH_NOTE_TX_REGEX}')
     GROUP BY 1,2,3,4,5
 
     UNION ALL
