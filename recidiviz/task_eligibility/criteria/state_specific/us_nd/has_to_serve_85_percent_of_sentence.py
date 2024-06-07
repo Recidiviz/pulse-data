@@ -17,6 +17,8 @@
 
 """Defines a criteria view that shows if residents have to serve 85% of their sentence.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -25,6 +27,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -62,7 +65,8 @@ SELECT
     start_date,
     end_date,
     TRUE AS meets_criteria,
-    TO_JSON(STRUCT(MAX(sentence_start_date) AS last_sentence_start_date)) AS reason
+    TO_JSON(STRUCT(MAX(sentence_start_date) AS last_sentence_start_date)) AS reason,
+    MAX(sentence_start_date) AS last_sentence_start_date,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4
 """
@@ -78,6 +82,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="last_sentence_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

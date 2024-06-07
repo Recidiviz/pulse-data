@@ -17,19 +17,20 @@
 """Describes the spans of time during which someone in ND is not
 in a minimimum security facility or unit.
 """
+from google.cloud import bigquery
+
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_exclusive_clause,
-)
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.task_eligibility.utils.us_nd_query_fragments import (
     MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_ND_NOT_IN_MINIMUM_SECURITY_FACILITY"
 
@@ -46,6 +47,8 @@ SELECT
     FALSE AS meets_criteria,
     TO_JSON(STRUCT(start_date AS minimum_facility_start_date,
                    facility AS minimum_facility)) AS reason,
+    start_date AS minimum_facility_start_date,
+    facility AS minimum_facility,
 FROM `{{project_id}}.{{sessions_dataset}}.housing_unit_sessions_materialized`
 WHERE state_code = 'US_ND'
 {MINIMUM_SECURITY_FACILITIES_WHERE_CLAUSE}
@@ -61,6 +64,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="minimum_facility_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="minimum_facility",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

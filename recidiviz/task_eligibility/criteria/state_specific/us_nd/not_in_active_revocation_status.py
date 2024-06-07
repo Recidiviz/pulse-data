@@ -17,10 +17,13 @@
 """Describes the spans of time during which someone in ND is not
 currently in the process of being revoked.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -64,6 +67,7 @@ SELECT
     -- Mark this span as meeting the criteria if the revocation date is not set
     NOT critical_date_exists AS meets_criteria,
     TO_JSON(STRUCT(critical_date AS revocation_date)) AS reason,
+    critical_date AS revocation_date,
 FROM critical_date_exists_spans
 /*
 Create an artificial span leading up to the first real span to fill in the time
@@ -77,6 +81,7 @@ SELECT
     MIN(start_date) AS end_date,
     TRUE AS meets_criteria,
     TO_JSON(STRUCT(NULL AS revocation_date)) AS reason,
+    NULL AS revocation_date,
 FROM critical_date_exists_spans
 GROUP BY state_code, person_id
 """
@@ -92,6 +97,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             instance=DirectIngestInstance.PRIMARY,
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="revocation_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -19,6 +19,8 @@
 which residents are within 6 months or more of having received a level 2 or 3 
 infraction.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -26,6 +28,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -64,9 +67,11 @@ SELECT
     end_date,
     meets_criteria,
     TO_JSON(STRUCT(
-        STRING_AGG(DISTINCT infraction_category, ', ') AS infraction_categories,
+        STRING_AGG(DISTINCT infraction_category, ', ' ORDER BY infraction_category) AS infraction_categories,
         MAX(start_date_infraction) AS most_recent_infraction_date
     )) AS reason,
+    STRING_AGG(DISTINCT infraction_category, ', ' ORDER BY infraction_category) AS infraction_categories,
+    MAX(start_date_infraction) AS most_recent_infraction_date,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5
 """
@@ -82,6 +87,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="infraction_categories",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="most_recent_infraction_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

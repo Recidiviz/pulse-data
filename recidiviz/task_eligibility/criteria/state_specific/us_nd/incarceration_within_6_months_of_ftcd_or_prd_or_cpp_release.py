@@ -19,11 +19,14 @@ Defines a criteria span view that shows spans of time during which
 someone is incarcerated within 6 months of their full term completion date, 
 parole_review_date or CPP release date.
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_CRITERIA_GENERAL,
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -66,12 +69,20 @@ _JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,
                    '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2],
         meets_criteria="LOGICAL_OR(meets_criteria)",
         json_content=_JSON_CONTENT,
     )}
+)
+SELECT
+    *,
+    JSON_EXTRACT(reason, "$.full_term_completion_date") AS full_term_completion_date,
+    JSON_EXTRACT(reason, "$.parole_review_date") AS parole_review_date,
+FROM
+    combined_query
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -83,6 +94,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_US_ND=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_ND
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="full_term_completion_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="parole_review_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

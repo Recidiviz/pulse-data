@@ -21,13 +21,14 @@ These requisites are:
     A. within 6 months of release/prd/cpp
     B. no level 2 or 3 infractions in the past 6 months
 """
+from google.cloud import bigquery
+
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-)
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -111,8 +112,15 @@ SELECT
                    parole_review_date AS parole_review_date,
                    full_term_completion_date AS full_term_completion_date,
                    infraction_categories AS infraction_categories,
-                    most_recent_infraction_date AS most_recent_infraction_date)) 
+                   most_recent_infraction_date AS most_recent_infraction_date)) 
         AS reason,
+    TRUE AS requires_committee_approval,
+    six_months_away_from_relevant_date AS six_months_away_from_relevant_date,
+    no_level_2_or_3_infractions,
+    parole_review_date,
+    full_term_completion_date,
+    infraction_categories,
+    most_recent_infraction_date,
 FROM commmitte_plus_6mo_plus_no_infraction
 """
 
@@ -125,6 +133,43 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         StateCode.US_ND
     ),
     meets_criteria_default=True,
+    reasons_fields=[
+        ReasonsField(
+            name="requires_committee_approval",
+            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="six_months_away_from_relevant_date",
+            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="no_level_2_or_3_infractions",
+            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="parole_review_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="full_term_completion_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="infraction_categories",
+            type=bigquery.enums.SqlTypeNames.STRING,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="most_recent_infraction_date",
+            type=bigquery.enums.SqlTypeNames.DATE,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":
