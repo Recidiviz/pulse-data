@@ -62,6 +62,38 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
 
 _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
     incarceration_dates AS (
+        WITH ME_sis as (
+          SELECT *,
+            SPLIT(sis.external_id, '-')[OFFSET(1)] as term_id,
+          FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_sentence` sis
+          WHERE sis.state_code = 'US_ME'
+        ), ME_sis_with_longest_release_date as (
+          SELECT 
+              person_id, 
+              term_id, 
+              MAX(projected_max_release_date) AS longest_proj_max_release_date
+          FROM ME_sis sis
+          GROUP BY person_id, term_id
+        ), ME_sis_with_life_sentences_adjusted AS (
+          SELECT
+            person_id,
+            term_id,
+            CASE longest_proj_max_release_date 
+            WHEN DATE('9999-12-31') THEN DATE('9999-12-01')
+            ELSE longest_proj_max_release_date
+            END as longest_proj_max_release_date
+          FROM ME_sis_with_longest_release_date
+        ),
+        final_ME_terms as (
+          SELECT 
+            t.* EXCEPT (end_date), 
+            t.end_date as term_end_date,
+            COALESCE(end_date, sis.longest_proj_max_release_date) as end_date
+          FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` t
+          LEFT JOIN ME_sis_with_life_sentences_adjusted sis on 
+            t.person_id = sis.person_id
+            AND t.term_id = sis.term_id
+        )
         -- Adding a TN specific admission date that is admission to TDOC facility, in addition to overall incarceration
         -- admission date
         SELECT 
@@ -101,7 +133,7 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
         FROM
             incarceration_cases ic
         -- Use raw_table to get admission and release dates
-        LEFT JOIN `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` t
+        LEFT JOIN final_ME_terms t
           ON ic.person_id = t.person_id
           -- subset the possible start and end_dates to those consistent with
           -- the current date
