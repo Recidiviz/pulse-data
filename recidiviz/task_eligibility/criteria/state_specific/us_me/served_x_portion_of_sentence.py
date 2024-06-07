@@ -20,6 +20,7 @@ Defines a criteria view that shows spans of time for
 which clients have served 1/2 of their sentence if their term of imprisonment is
 less or equal to 5 years or 2/3 if their term of imprisonment is more than 5 years.
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
@@ -30,6 +31,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -115,6 +117,8 @@ SELECT
     cd.critical_date_has_passed AS meets_criteria,
     TO_JSON(STRUCT(cd.real_eligible_date AS eligible_date,
                    cd.x_portion_served AS x_portion_served)) AS reason,
+    cd.real_eligible_date AS eligible_date,
+    cd.x_portion_served,
 FROM critical_date_has_passed_spans cd
 WHERE {nonnull_start_date_clause('cd.start_date')} != {nonnull_end_date_clause('cd.end_date')}
 """
@@ -126,6 +130,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="x_portion_served",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

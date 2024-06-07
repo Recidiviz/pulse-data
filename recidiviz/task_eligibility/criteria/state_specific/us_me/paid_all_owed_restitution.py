@@ -19,8 +19,11 @@
 Defines a criteria view that shows spans of time for which clients don't have
 any remaining balance in their restitution payments.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -52,6 +55,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="amount_owed",
+                type=bigquery.enums.SqlTypeNames.FLOAT,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

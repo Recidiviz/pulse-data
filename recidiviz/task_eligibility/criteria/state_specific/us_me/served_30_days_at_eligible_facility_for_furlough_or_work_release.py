@@ -19,6 +19,7 @@
 Defines a criteria view that shows spans of time for
 which clients have served 30 days at an eligible facility
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
@@ -28,6 +29,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -91,6 +93,7 @@ SELECT
     end_date,     
     critical_date_has_passed AS meets_criteria,
     TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+    critical_date AS eligible_date,
 FROM critical_date_has_passed_spans cd
 """
 
@@ -100,6 +103,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
+        reasons_fields=[
+            ReasonsField(
+                name="eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -19,9 +19,11 @@
 Defines a criteria view that shows spans of time for
 which clients are 5 or more years away from expected release date.
 """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -47,6 +49,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
