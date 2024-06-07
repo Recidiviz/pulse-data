@@ -31,7 +31,7 @@ WITH
 critical_dates AS (
 SELECT DISTINCT
 -- critical dates from movements table
-  NULLIF(COALESCE(doc_episode_by_doc_id.PERSON_ID, doc_episode_by_dpp_id.PERSON_ID), 'NULL') AS PERSON_ID,
+  NULLIF(COALESCE(doc_episode_by_doc_id.PERSON_ID, doc_episode_by_dpp_id.PERSON_ID, dpp_episode_by_dpp_id.PERSON_ID), 'NULL') AS PERSON_ID,
   NULLIF(traffic.DOC_ID, 'NULL') AS DOC_ID,
   NULLIF(traffic.DPP_ID, 'NULL') AS DPP_ID,
   -- Do not include timestamp because same-day movements are often logged out of order.
@@ -47,6 +47,11 @@ LEFT JOIN {DOC_EPISODE} doc_episode_by_doc_id
 ON(traffic.DOC_ID = doc_episode_by_doc_id.DOC_ID)
 LEFT JOIN {DOC_EPISODE} doc_episode_by_dpp_id
 ON(traffic.DPP_ID = doc_episode_by_dpp_id.DPP_ID)
+-- A person's DPP_ID is sometimes only logged in the DPP_EPISODE table instead of the 
+-- DOC_EPISODE table. These are partially overlapping sets of IDs, so I have to include
+-- every source to make sure I track all of a person's movements.
+LEFT JOIN {DPP_EPISODE} dpp_episode_by_dpp_id
+ON(traffic.DPP_ID = dpp_episode_by_dpp_id.DPP_ID)
 LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
 USING(MOVEMENT_CODE_ID) 
 LEFT JOIN {LOOKUPS} action_lookup
