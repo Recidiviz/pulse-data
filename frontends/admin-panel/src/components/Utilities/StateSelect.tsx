@@ -24,6 +24,7 @@ interface StateSelectProps {
   onChange: (stateInfo: StateCodeInfo) => void;
   initialValue?: string | null;
   value?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -35,6 +36,7 @@ const StateSelector: React.FC<StateSelectProps> = ({
   onChange,
   initialValue,
   value,
+  disabled,
 }) => {
   const handleOnChange = (selectedValue: string) => {
     states?.forEach((state: StateCodeInfo) => {
@@ -53,6 +55,7 @@ const StateSelector: React.FC<StateSelectProps> = ({
       optionFilterProp="children"
       loading={!states}
       defaultValue={defaultValue}
+      disabled={disabled}
       onChange={handleOnChange}
       value={value}
       filterOption={(input, option) =>

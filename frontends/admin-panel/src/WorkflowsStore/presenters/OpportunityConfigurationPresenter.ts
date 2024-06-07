@@ -20,7 +20,7 @@ import { autorun, flowResult, makeAutoObservable } from "mobx";
 
 import { postOpportunityConfiguration } from "../../AdminPanelAPI/WorkflowsAPI";
 import { Hydratable, HydrationState } from "../../InsightsStore/types";
-import { OpportunityConfiguration } from "../models/OpportunityConfiguration";
+import { BabyOpportunityConfiguration } from "../models/OpportunityConfiguration";
 import { WorkflowsStore } from "../WorkflowsStore";
 
 export default class OpportunityConfigurationPresenter implements Hydratable {
@@ -67,7 +67,7 @@ export default class OpportunityConfigurationPresenter implements Hydratable {
   }
 
   async createOpportunityConfiguration(
-    config: OpportunityConfiguration
+    config: BabyOpportunityConfiguration
   ): Promise<boolean> {
     try {
       await postOpportunityConfiguration(

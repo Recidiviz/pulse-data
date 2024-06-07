@@ -112,6 +112,7 @@ const OpportunitiesHeaderView = (): JSX.Element => {
         <StateSelect
           initialValue={stateCode}
           states={stateCodeInfo}
+          disabled={!!opportunityType}
           onChange={(state) => {
             stateRedir(state.code);
           }}

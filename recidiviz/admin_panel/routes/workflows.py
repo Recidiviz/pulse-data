@@ -132,7 +132,7 @@ class OpportunityConfigurationsAPI(MethodView):
             created_by=user_email,
             created_at=datetime.datetime.now(),
             description=body_args["description"],
-            feature_variant=body_args["feature_variant"],
+            feature_variant=body_args.get("feature_variant"),
             display_name=body_args["display_name"],
             methodology_url=body_args["methodology_url"],
             is_alert=body_args["is_alert"],
@@ -142,8 +142,8 @@ class OpportunityConfigurationsAPI(MethodView):
             ineligible_criteria_copy=body_args["ineligible_criteria_copy"],
             dynamic_eligibility_text=body_args["dynamic_eligibility_text"],
             call_to_action=body_args["call_to_action"],
-            denial_text=body_args["denial_text"],
-            snooze=body_args["snooze"],
+            denial_text=body_args.get("denial_text"),
+            snooze=body_args.get("snooze"),
             sidebar_components=body_args["sidebar_components"],
         )
         return new_config_id

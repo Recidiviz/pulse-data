@@ -16,6 +16,7 @@
 #  =============================================================================
 """Implements tests for the Workflows API schemas."""
 from recidiviz.case_triage.workflows.api_schemas import (
+    WorkflowsConfigSchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
@@ -373,5 +374,127 @@ class WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchemaTest(SchemaTestCase):
             "user_email": "foo@nd.gov",
             "early_termination_date": "2024-01-01",
             "justification_reasons": [{"code": "FOO"}],
+        }
+    )
+
+
+class WorkflowsConfigSchemaTest(SchemaTestCase):
+    """Tests for WorkflowsConfigSchema"""
+
+    camel_case = True
+    schema = WorkflowsConfigSchema
+
+    test_valid_data = valid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            # "featureVariant": "optional",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            # snooze is optional
+            "denialReasons": {"CODE": "reason", "CODE2": "other reason"},
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": {"criterion": {"text": "ok very good"}},
+            "ineligibleCriteriaCopy": {},
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+        }
+    )
+
+    test_manual_snooze = valid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            # "featureVariant": "optional",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "snooze": {"defaultSnoozeDays": 30, "maxSnoozeDays": 90},
+            "denialReasons": {"CODE": "reason", "CODE2": "other reason"},
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": {"criterion": {"text": "ok very good"}},
+            "ineligibleCriteriaCopy": {},
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+        }
+    )
+
+    test_auto_snooze = valid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            # "featureVariant": "optional",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "snooze": {
+                "autoSnoozeParams": {"type": "snoozeDays", "params": {"days": 200}}
+            },
+            "denialReasons": {"CODE": "reason", "CODE2": "other reason"},
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": {"criterion": {"text": "ok very good"}},
+            "ineligibleCriteriaCopy": {},
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+        }
+    )
+
+    test_invalid_auto_snooze = invalid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            # "featureVariant": "optional",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "snooze": {
+                "autoSnoozeParams": {"params": {"days": 200}},
+            },
+            "denialReasons": {"CODE": "reason", "CODE2": "other reason"},
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": {"criterion": {"text": "ok very good"}},
+            "ineligibleCriteriaCopy": {},
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+        }
+    )
+
+    test_incomplete_snooze = invalid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            # "featureVariant": "optional",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "snooze": {"defaultSnoozeDays": 30},
+            "denialReasons": {"CODE": "reason", "CODE2": "other reason"},
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": {"criterion": {"text": "ok very good"}},
+            "ineligibleCriteriaCopy": {},
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
+        }
+    )
+
+    test_overspecified_snooze = invalid_schema_test(
+        {
+            "stateCode": "US_OZ",
+            "displayName": "test config",
+            # "featureVariant": "optional",
+            "dynamicEligibilityText": "client[|s] are eligible",
+            "callToAction": "Take Action!",
+            "snooze": {
+                "defaultSnoozeDays": 30,
+                "autoSnoozeParams": {"type": "snoozeDays", "params": {"days": 200}},
+            },
+            "denialReasons": {"CODE": "reason", "CODE2": "other reason"},
+            "initialHeader": "TEST CONFIG",
+            "eligibleCriteriaCopy": {"criterion": {"text": "ok very good"}},
+            "ineligibleCriteriaCopy": {},
+            "sidebarComponents": ["CaseNotes"],
+            "methodologyUrl": "https://example.com/",
+            "isAlert": False,
         }
     )

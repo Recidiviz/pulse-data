@@ -260,7 +260,7 @@ class WorkflowsQuerier:
         dynamic_eligibility_text: str,
         call_to_action: str,
         denial_text: Optional[str],
-        snooze: Dict[str, Any],
+        snooze: Optional[Dict[str, Any]],
         sidebar_components: List[str],
     ) -> int:
         """

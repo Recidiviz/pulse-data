@@ -16,9 +16,9 @@
 # =============================================================================
 """ Contains Marshmallow schemas for Workflows API """
 import re
-from typing import Dict, List
+from typing import Any, Dict, List
 
-from marshmallow import Schema, ValidationError, fields
+from marshmallow import Schema, ValidationError, fields, validates_schema
 from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.api_schemas_utils import (
@@ -163,8 +163,23 @@ class WorkflowsConfigSchema(CamelCaseSchema):
     """
 
     class SnoozeConfigSchema(CamelCaseSchema):
-        default_snooze_days = fields.Integer()
-        max_snooze_days = fields.Integer()
+        class AutoSnoozeParamsSchema(CamelCaseSchema):
+            type = fields.Str(required=True)
+            params = fields.Dict(fields.Str(), fields.Raw(), required=True)
+
+        default_snooze_days = fields.Integer(required=False)
+        max_snooze_days = fields.Integer(required=False)
+        auto_snooze_params = fields.Nested(AutoSnoozeParamsSchema(), required=False)
+
+        @validates_schema
+        def validate_union(self, data: Dict, **_kwargs: Any) -> None:
+            if "auto_snooze_params" in data:
+                print(data)
+                if "default_snooze_days" in data or "max_snooze_days" in data:
+                    raise ValidationError("Snooze contains both manual and auto fields")
+            else:
+                if "default_snooze_days" not in data or "max_snooze_days" not in data:
+                    raise ValidationError("Snooze is missing a required field")
 
     class CriteriaCopySchema(CamelCaseSchema):
         text = fields.Str()
