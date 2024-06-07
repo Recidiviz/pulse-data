@@ -247,12 +247,27 @@ def send_id_lsu_texts(
     twilio_client = TwilioClient(account_sid, auth_token)
     current_batch_id = datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
+    firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+
+    # Store current_batch_id in Firestore db
+    if dry_run is False:
+        firestore_batch_id_path = f"batch_ids/{current_batch_id}"
+        logging.info(
+            "Storing batch_id %s in Firestore",
+            current_batch_id,
+        )
+        firestore_client.set_document(
+            document_path=firestore_batch_id_path,
+            data={
+                "message_type": message_type.upper(),
+                "redelivery": redeliver_failed_messages,
+            },
+        )
+
     query = f"SELECT * FROM {bigquery_view}"
     query_job = BigQueryClientImpl().run_query_async(
         query_str=query, use_query_cache=True
     )
-
-    firestore_client = FirestoreClientImpl(project_id="jii-pilots")
 
     (
         initial_text_document_ids,
