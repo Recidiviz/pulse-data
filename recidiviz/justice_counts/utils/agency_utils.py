@@ -55,17 +55,18 @@ def delete_agency(session: Session, agency_id: int, dry_run: bool) -> Dict:
     logger.info("Will delete %d reports", len(reports))
 
     datapoints = session.query(schema.Datapoint).filter_by(source_id=agency_id).all()
+    datapoint_ids = [datapoint.id for datapoint in datapoints]
     # Delete the Datapoint History entries associated with each deleted datapoint.
-    for datapoint in datapoints:
-        datapoint_histories = (
-            session.query(schema.DatapointHistory)
-            .filter_by(datapoint_id=datapoint.id)
-            .all()
-        )
-        objects_to_delete.extend(datapoint_histories)
+    datapoint_histories = (
+        session.query(schema.DatapointHistory)
+        .filter(schema.DatapointHistory.datapoint_id.in_(datapoint_ids))
+        .all()
+    )
+    objects_to_delete.extend(datapoint_histories)
 
     objects_to_delete.extend(datapoints)
     logger.info("Will delete %d datapoints", len(datapoints))
+    logger.info("Will delete %d datapoint_histories", len(datapoint_histories))
 
     settings = session.query(schema.AgencySetting).filter_by(source_id=agency_id).all()
     objects_to_delete.extend(settings)
