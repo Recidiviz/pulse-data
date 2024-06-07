@@ -848,7 +848,6 @@ def _check_field_exists_in_table(table_name: str, field_name: str) -> None:
         #  function at all.
         "us_mo_sentence_statuses",
         "persons_to_recent_county_of_residence",
-        "state_race_ethnicity_population_counts",
         "us_ix_case_update_info",
         "state_charge_offense_description_to_labels",
         "state_person_to_state_staff",

@@ -23,15 +23,19 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.external_reference.state_info import (
     get_state_info_view_builder,
 )
-from recidiviz.calculator.query.state.views.external_reference.state_resident_populations import (
-    STATE_RESIDENT_POPULATIONS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.external_reference.state_resident_population import (
+    STATE_RESIDENT_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.external_reference.state_resident_populations_combined_race_ethnicity import (
-    STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.external_reference.state_resident_population_combined_race_ethnicity import (
+    STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.external_reference.state_resident_population_combined_race_ethnicity_priority import (
+    STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_PRIORITY_VIEW_BUILDER,
 )
 
 EXTERNAL_REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     get_state_info_view_builder(),
-    STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
-    STATE_RESIDENT_POPULATIONS_VIEW_BUILDER,
+    STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
+    STATE_RESIDENT_POPULATION_COMBINED_RACE_ETHNICITY_PRIORITY_VIEW_BUILDER,
+    STATE_RESIDENT_POPULATION_VIEW_BUILDER,
 ]

@@ -34,8 +34,8 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = """
     WITH state_race_ethnicity_groups AS (
       SELECT state_code,
              {state_specific_race_or_ethnicity_groupings},
-             SUM(population_count) as total_state_population
-      FROM `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts` 
+             SUM(population) as total_state_population
+      FROM `{project_id}.{external_reference_views_dataset}.state_resident_population_combined_race_ethnicity`
       GROUP BY state_code, race_or_ethnicity 
     ), sentenced_populations AS (
       SELECT
@@ -151,7 +151,7 @@ RACIAL_DISPARITIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE,
     dimensions=("state_code", "race_or_ethnicity"),
     description=RACIAL_DISPARITIES_VIEW_DESCRIPTION,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    external_reference_views_dataset=dataset_config.EXTERNAL_REFERENCE_VIEWS_DATASET,
     public_dashboard_dataset=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
 )

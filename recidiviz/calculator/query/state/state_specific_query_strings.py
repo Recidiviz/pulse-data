@@ -70,8 +70,6 @@ WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING = list_to_query_string(
 )
 
 
-STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_counts"
-
 # Select the raw table that ultimately powers a state's incarceration pathways calculations.
 # Note: there are a few limitations with this strategy. Most notably, this only picks one raw table per state. It does
 # not accommodate checking multiple tables that may potentially power incarceration periods in ingest.

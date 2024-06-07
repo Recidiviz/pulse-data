@@ -18,9 +18,9 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    EXTERNAL_REFERENCE_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -36,6 +36,10 @@ WITH race_or_ethnicity_cte AS  (
     SELECT 
         state_code,
         person_id,
+        -- Note: The external reference data that we use for state resident populations
+        -- has a "Two or more races" category, which we then map to "OTHER" race. When
+        -- prioritizing race and ethnicity here we pick a single race, whichever is
+        -- least represented in their state.
         race as race_or_ethnicity,
     FROM
         `{project_id}.{normalized_state_dataset}.state_person_race`
@@ -54,13 +58,15 @@ WITH race_or_ethnicity_cte AS  (
         state_code,
         person_id,
         FIRST_VALUE(race_or_ethnicity) OVER (
-            PARTITION BY state_code, person_id ORDER BY IFNULL(representation_priority, 100)
+            PARTITION BY state_code, person_id
+            -- Order by representation priority, then alphabetical (external unknown
+            -- before internal unknown)
+            ORDER BY IFNULL(representation_priority, 100), race_or_ethnicity
         ) AS prioritized_race_or_ethnicity,
     FROM
         race_or_ethnicity_cte
     LEFT JOIN
-        -- TODO(#19368): Replace this with `external_reference.state_resident_populations`
-        `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
+        `{project_id}.{external_reference_views_dataset}.state_resident_population_combined_race_ethnicity_priority`
     USING
         (state_code, race_or_ethnicity)
     )
@@ -88,7 +94,7 @@ PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSON_DEMOGRAPHICS_QUERY_TEMPLATE,
     description=PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    external_reference_views_dataset=EXTERNAL_REFERENCE_VIEWS_DATASET,
     clustering_fields=["state_code"],
     should_materialize=True,
 )

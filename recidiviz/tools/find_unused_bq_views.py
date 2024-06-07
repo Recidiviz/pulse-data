@@ -46,7 +46,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    EXTERNAL_REFERENCE_VIEWS_DATASET,
     POPULATION_PROJECTION_DATASET,
     SPARK_OUTPUT_DATASET_MOST_RECENT,
 )
@@ -94,12 +93,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_max_stays i
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_segregation_stays import (
     US_TN_SEGREGATION_STAYS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.external_reference.state_resident_populations import (
-    STATE_RESIDENT_POPULATIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.external_reference.state_resident_populations_combined_race_ethnicity import (
-    STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_impact_metrics_outlier_officers import (
     SUPERVISION_IMPACT_METRICS_OUTLIER_OFFICERS_VIEW_BUILDER,
@@ -301,21 +294,6 @@ UNREFERENCED_ADDRESSES_TO_KEEP_WITH_REASON: Dict[BigQueryAddress, str] = {
         'Keeping this for now because it is a parallel to the "in state population" version of this metric. '
         "When we revisit how we calculate in state / out of state populations we may be able to revisit."
         "(Anna Geiduschek 1/8/24)"
-    ),
-    BigQueryAddress(
-        dataset_id=EXTERNAL_REFERENCE_VIEWS_DATASET,
-        table_id="state_info",
-    ): (
-        "We want to migrate places that require state info and population off of the manually maintained versions "
-        "in `static_reference_tables` to these instead. See #19368. (Colin Adams 1/22/24)"
-    ),
-    STATE_RESIDENT_POPULATIONS_VIEW_BUILDER.address: (
-        "We want to migrate places that require state info and population off of the manually maintained versions "
-        "in `static_reference_tables` to these instead. See #19368. (Colin Adams 1/22/24)"
-    ),
-    STATE_RESIDENT_POPULATIONS_COMBINED_RACE_ETHNICITY_VIEW_BUILDER.address: (
-        "We want to migrate places that require state info and population off of the manually maintained versions "
-        "in `static_reference_tables` to these instead. See #19368. (Colin Adams 1/22/24)"
     ),
     PSA_RISK_SCORES_VIEW_BUILDER.address: (
         "Past intern work may be picked up so this view should be kept. See #26726. (Damini Sharma 1/22/24)"

@@ -22,7 +22,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 
-STATE_RESIDENT_POPULATIONS_QUERY_TEMPLATE = """
+STATE_RESIDENT_POPULATION_QUERY_TEMPLATE = """
 SELECT
   state_info.state_code,
   age_group, -- This is not normalized consistently across products so leave as is.
@@ -52,12 +52,12 @@ LEFT JOIN `{project_id}.{external_reference_views_dataset}.state_info` state_inf
   ON state = IF(state_info.state_code = 'US_IX', 'Idaho', state_info.name)
 """
 
-STATE_RESIDENT_POPULATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+STATE_RESIDENT_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=EXTERNAL_REFERENCE_VIEWS_DATASET,
-    view_id="state_resident_populations",
+    view_id="state_resident_population",
     description="View over the state resident population data that converts state, "
     "race, and ethnicity values into our enum values.",
-    view_query_template=STATE_RESIDENT_POPULATIONS_QUERY_TEMPLATE,
+    view_query_template=STATE_RESIDENT_POPULATION_QUERY_TEMPLATE,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     external_reference_views_dataset=EXTERNAL_REFERENCE_VIEWS_DATASET,
 )

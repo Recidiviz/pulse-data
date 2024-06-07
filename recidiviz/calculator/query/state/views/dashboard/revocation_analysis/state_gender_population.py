@@ -27,13 +27,14 @@ STATE_GENDER_POPULATION_VIEW_DESCRIPTION = (
 )
 
 STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE = """
-    SELECT
-      state_code,
-      gender,
-      population_count,
-      total_state_population_count
-    FROM `{project_id}.{static_reference_dataset}.state_gender_population_counts`
-    """
+SELECT
+    state_code,
+    gender,
+    SUM(population) AS population_count,
+    SUM(SUM(population)) OVER (PARTITION BY state_code) AS total_state_population_count
+FROM `{project_id}.{external_reference_views_dataset}.state_resident_population`
+GROUP BY 1, 2
+"""
 
 STATE_GENDER_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
@@ -41,7 +42,7 @@ STATE_GENDER_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE,
     dimensions=("state_code", "gender"),
     description=STATE_GENDER_POPULATION_VIEW_DESCRIPTION,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    external_reference_views_dataset=dataset_config.EXTERNAL_REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

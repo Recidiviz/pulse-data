@@ -19,9 +19,6 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
-from recidiviz.calculator.query.state.state_specific_query_strings import (
-    STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
-)
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_race import (
     US_PA_SUPPORTED_RACE_VALUES,
 )
@@ -37,33 +34,14 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION = (
 )
 
 STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE = """
-    WITH total_state_population AS (
-        SELECT
-          state_code,
-          population_count as total_state_population_count
-        FROM `{project_id}.{static_reference_dataset}.{state_race_ethnicity_population_table}`
-        WHERE race_or_ethnicity = 'ALL'
-    ), state_specific_group_sums AS (
-        SELECT
-          state_code,
-          {state_specific_race_or_ethnicity_groupings},
-          SUM(population_count) as population_count
-        FROM `{project_id}.{static_reference_dataset}.{state_race_ethnicity_population_table}` 
-        WHERE race_or_ethnicity != 'ALL'
-        GROUP BY state_code, race_or_ethnicity
-    )
-    
-    SELECT
-      state_code,
-      race_or_ethnicity,
-      population_count,
-      total_state_population_count
-    FROM
-        state_specific_group_sums
-    LEFT JOIN
-        total_state_population
-    USING (state_code)
-    """
+SELECT
+    state_code,
+    {state_specific_race_or_ethnicity_groupings},
+    SUM(population) as population_count,
+    SUM(SUM(population)) OVER (PARTITION BY state_code) as total_state_population_count
+FROM `{project_id}.{external_reference_views_dataset}.state_resident_population_combined_race_ethnicity`
+GROUP BY state_code, race_or_ethnicity
+"""
 
 STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
@@ -71,8 +49,7 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE,
     dimensions=("state_code", "race_or_ethnicity"),
     description=STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_race_ethnicity_population_table=STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
+    external_reference_views_dataset=dataset_config.EXTERNAL_REFERENCE_VIEWS_DATASET,
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         supported_race_overrides={StateCode.US_PA: US_PA_SUPPORTED_RACE_VALUES}
     ),
