@@ -154,6 +154,7 @@ output:
                   - Return to Custody in Error (Inactive)
                   - Supervision Closed in Error
                   - Return to Custody in Error (Community Corrections)
+                  - Duplicate ADC Number Activation
           supervision_level:
             $custom:
               $function: us_az_custom_enum_parsers.parse_supervision_level
