@@ -59,7 +59,7 @@ WITH permissions AS (
     supervisor_external_id,
     EXTRACT(MONTH FROM export_date) AS export_month,
     EXTRACT(YEAR FROM export_date) AS export_year
-    FROM `{project_id}.outliers_views.supervision_officers_archive_materialized` officers
+    FROM `{project_id}.outliers_views.supervision_officers_archive_materialized` officers, UNNEST(supervisor_external_ids) AS supervisor_external_id
 )
 , supervisors AS (
     SELECT DISTINCT
