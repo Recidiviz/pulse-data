@@ -24,6 +24,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
@@ -39,7 +40,12 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     x_time_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
+    FURLOUGH_NOTE_TX_REGEX,
+    PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
     case_plan_goals_helper,
+    cis_201_case_plan_case_notes,
+    cis_204_notes_cte,
+    cis_425_program_enrollment_notes,
     disciplinary_reports_helper,
     program_enrollment_helper,
 )
@@ -310,7 +316,44 @@ eligible_and_almost_eligible_clients AS (
             from_cte_table_name = "json_to_array_cte",
         )}
 
+),
+
+case_notes_cte AS (
+-- Get together all case_notes
+
+    -- Program enrollment
+    {cis_425_program_enrollment_notes()}
+
+    UNION ALL
+
+    -- Program-related notes
+    {cis_204_notes_cte("Notes: Program Enrollment")}
+    WHERE ncd.Note_Type_Cd = '2'
+        AND cncd.Contact_Mode_Cd = '20'
+        AND (n.Short_Note_Tx IS NOT NULL OR n.Note_Tx IS NOT NULL)
+        AND (REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{PROGRAM_ENROLLMENT_NOTE_TX_REGEX}')
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{PROGRAM_ENROLLMENT_NOTE_TX_REGEX}'))
+    GROUP BY 1,2,3,4,5    
+
+    UNION ALL 
+
+    -- Case Plan Goals
+    {cis_201_case_plan_case_notes()}
+
+    UNION ALL
+
+    -- Furlough-release related notes
+    {cis_204_notes_cte("Notes: Furlough")}
+    WHERE 
+        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{FURLOUGH_NOTE_TX_REGEX}') 
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{FURLOUGH_NOTE_TX_REGEX}')
+    GROUP BY 1,2,3,4,5
+),
+
+array_case_notes_cte AS (
+{array_agg_case_notes_by_external_id(from_cte = 'eligible_and_almost_eligible_clients')}
 )
+
 SELECT
   *
 FROM
@@ -351,6 +394,8 @@ LEFT JOIN
   probation_term_cte ptc
 USING
   (person_id, state_code)
+LEFT JOIN array_case_notes_cte
+USING(external_id)
 """
 
 US_ME_RECLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
