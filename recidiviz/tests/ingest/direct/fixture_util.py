@@ -21,6 +21,7 @@ from enum import Enum
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 import attr
+import numpy as np
 import pandas as pd
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
@@ -38,7 +39,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewRawFileDependency,
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
-from recidiviz.utils import csv
 from recidiviz.utils.types import assert_type
 
 
@@ -153,12 +153,27 @@ def replace_empty_with_null(
 
 
 def load_dataframe_from_path(
-    raw_fixture_path: str, fixture_columns: List[str]
+    raw_fixture_path: str,
+    fixture_columns: Optional[List[str]],
+    allow_comments: bool = True,
 ) -> pd.DataFrame:
     """Given a raw fixture path and a list of fixture columns, load the raw data into a dataframe."""
-    mock_data = csv.get_rows_as_key_value_pairs(raw_fixture_path)
-    values = replace_empty_with_null(mock_data)
-    return pd.DataFrame(values, columns=fixture_columns)
+    df = pd.read_csv(
+        raw_fixture_path,
+        usecols=fixture_columns,
+        dtype=str,
+        # If the first column is an ordinal Pandas will try to use it as the index and
+        # shift all of the columns by one unless we tell it not to.
+        index_col=False,
+        keep_default_na=False,
+        na_values=[""],
+        # The c engine doesn't like multi-byte comment characters so use the python
+        # engine instead.
+        engine="python",
+        comment="💬" if allow_comments else None,
+    )
+    df.replace([np.nan], [None], inplace=True)
+    return df
 
 
 # TODO(#29997) Update to handle code files
