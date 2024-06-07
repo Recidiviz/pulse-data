@@ -29,7 +29,6 @@ if [[ "$PROJECT_ID" = 'recidiviz-123' ]]; then
   run_migrations JUSTICE_COUNTS
   run_migrations CASE_TRIAGE
   run_migrations PATHWAYS
-  run_migrations OUTLIERS
   run_migrations WORKFLOWS
   run_migrations INSIGHTS
 elif [[ "$PROJECT_ID" = 'recidiviz-staging' ]]; then
@@ -37,7 +36,6 @@ elif [[ "$PROJECT_ID" = 'recidiviz-staging' ]]; then
   run_migrations JUSTICE_COUNTS
   run_migrations CASE_TRIAGE
   run_migrations PATHWAYS
-  run_migrations OUTLIERS
   run_migrations WORKFLOWS
   run_migrations INSIGHTS
 else
