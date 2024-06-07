@@ -18,6 +18,8 @@
 """Defines a criteria view that shows spans of time for which residents have
 registration requirements (sexual offender, violent offender, etc.)
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -25,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -90,6 +93,8 @@ SELECT
         MAX(registration_start_date) AS latest_registration_requirement,
         ARRAY_AGG(DISTINCT registration_type) AS registration_types
     )) AS reason,
+    MAX(registration_start_date) AS latest_registration_requirement,
+    ARRAY_AGG(DISTINCT registration_type ORDER BY registration_type) AS registration_types,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5
 """
@@ -105,6 +110,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_registration_requirement",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="registration_types",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

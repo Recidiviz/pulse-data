@@ -21,10 +21,13 @@ folks who satisfy one of the following three conditions:
     2. The person has an Armed Offender Minimum Mandatory Sentence (AOMMS)
     3. The person has registration requirements (e.g. sexual, violent, among others)
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -72,13 +75,22 @@ _JSON_CONTENT = """LOGICAL_OR(has_registration_requirements) AS has_registration
                     LOGICAL_OR(has_an_aomms_sentence) AS has_an_aomms_sentence"""
 
 _QUERY_TEMPLATE = f"""
+WITH combined_query AS (
 {combining_several_criteria_into_one(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2,
                                              _CRITERIA_QUERY_3],
         meets_criteria="LOGICAL_OR(meets_criteria)",
         json_content=_JSON_CONTENT,
-    )}"""
+    )}
+)
+SELECT
+    *,
+    JSON_EXTRACT(reason, "$.has_registration_requirements") AS has_registration_requirements,
+    JSON_EXTRACT(reason, "$.has_to_serve_85_percent_of_sentence") AS has_to_serve_85_percent_of_sentence,
+FROM
+    combined_query
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCriteriaBigQueryViewBuilder(
     state_code=StateCode.US_ND,
@@ -88,6 +100,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_nd=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_ND
     ),
+    reasons_fields=[
+        ReasonsField(
+            name="has_registration_requirements",
+            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+        ReasonsField(
+            name="has_to_serve_85_percent_of_sentence",
+            type=bigquery.enums.SqlTypeNames.BOOLEAN,
+            description="#TODO(#29059): Add reasons field description",
+        ),
+    ],
 )
 
 if __name__ == "__main__":

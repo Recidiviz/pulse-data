@@ -18,15 +18,16 @@
 This file creates a spans of time where a person serving for one of the ineligible offenses
 that are stated in the ATP Work Release policy in ND.
 """
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
-from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -51,7 +52,8 @@ _QUERY_TEMPLATE = f"""
         span.start_date,
         span.end_date,
         FALSE AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses)) AS reason,
+        ARRAY_AGG(DISTINCT statute ORDER BY statute) AS ineligible_offenses,
     {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
     AND sent.statute IN {tuple(_INELIGIBLE_STATUTES)}
     AND span.state_code = 'US_ND'
@@ -66,6 +68,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

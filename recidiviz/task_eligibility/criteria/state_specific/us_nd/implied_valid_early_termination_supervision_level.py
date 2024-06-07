@@ -19,6 +19,8 @@ someone in ND has a valid supervision level to qualify them for supervision earl
 termination, as inferred by the presence of a set early termination date in
 docstars_offenders.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
@@ -26,6 +28,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -63,6 +66,7 @@ SELECT
     TO_JSON(
         STRUCT(supervision_level AS supervision_level)
     ) AS reason,
+    supervision_level,
 FROM critical_date_exists_spans et_criteria
 -- Join all the overlapping supervision level sessions
 LEFT JOIN `{{project_id}}.{{sessions_data}}.supervision_level_sessions_materialized` sup_level
@@ -87,6 +91,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_data=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

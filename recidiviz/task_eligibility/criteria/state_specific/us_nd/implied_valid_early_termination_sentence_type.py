@@ -20,10 +20,13 @@ someone in ND has a valid sentence type to qualify them for supervision early
 termination, as inferred by the presence of a set early termination date in
 docstars_offenders.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -64,6 +67,7 @@ SELECT
     TO_JSON(
         STRUCT(sup_type.supervision_type_raw_text AS supervision_type)
     ) AS reason,
+    sup_type.supervision_type_raw_text AS supervision_type,
 FROM critical_date_exists_spans et_criteria
 -- Join all the overlapping supervision type sessions
 LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup_type
@@ -89,6 +93,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_type",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

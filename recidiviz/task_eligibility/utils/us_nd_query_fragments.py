@@ -17,6 +17,9 @@
 """
 Helper SQL queries for North Dakota
 """
+from google.cloud import bigquery
+
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
@@ -24,14 +27,12 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
-)
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_exclusive_clause,
 )
 
 MINIMUM_SECURITY_FACILITIES = [
@@ -118,7 +119,8 @@ def parole_review_date_criteria_builder(
             start_date,
             end_date,
             critical_date_has_passed AS meets_criteria,
-            TO_JSON(STRUCT(parole_review_date AS parole_review_date)) AS reason
+            TO_JSON(STRUCT(parole_review_date AS parole_review_date)) AS reason,
+            parole_review_date,
         FROM critical_date_has_passed_spans
         WHERE start_date != end_date
     """
@@ -133,6 +135,13 @@ def parole_review_date_criteria_builder(
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="parole_review_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 
 
