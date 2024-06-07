@@ -82,17 +82,6 @@ services:
       - SQLALCHEMY_DB_USER=operations_user
       - SQLALCHEMY_DB_PASSWORD=example
 
-  outliers_db:
-    image: postgres:13.1-alpine
-    environment:
-      POSTGRES_USER: outliers_user
-      POSTGRES_PASSWORD: example
-    ports:
-      - "5436:5432"
-    volumes:
-      - outliers_db_data:/var/lib/postgresql/data
-      - outliers_db_socket:/var/run/postgresql/
-
   pathways_db:
     image: postgres:13.1-alpine
     environment:
@@ -138,8 +127,6 @@ volumes:
   justice_counts_db_socket:
   operations_db_data:
   operations_db_socket:
-  outliers_db_data:
-  outliers_db_socket:
   pathways_db_data:
   pathways_db_socket:
   workflows_db_data:

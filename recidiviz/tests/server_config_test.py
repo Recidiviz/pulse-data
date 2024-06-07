@@ -60,8 +60,6 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.CASE_TRIAGE, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_xx"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_ww"),
-            SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx"),
-            SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_ww"),
             SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_oz"),
             SQLAlchemyDatabaseKey(SchemaType.WORKFLOWS, db_name="us_yy"),
             SQLAlchemyDatabaseKey(SchemaType.INSIGHTS, db_name="us_xx"),

@@ -193,8 +193,6 @@ class SQLAlchemyEngineManager:
                 return "case_triage"
             case SchemaType.PATHWAYS:
                 return "pathways"
-            case SchemaType.OUTLIERS:
-                return "outliers"
             case SchemaType.WORKFLOWS:
                 return "workflows"
             case SchemaType.INSIGHTS:

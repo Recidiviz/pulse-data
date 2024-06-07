@@ -88,30 +88,6 @@ module "pathways_database" {
   }
 }
 
-module "outliers_database" {
-  source = "./modules/cloud-sql-instance"
-
-  project_id        = var.project_id
-  instance_key      = "outliers"
-  base_secret_name  = "outliers"
-  region            = var.region
-  zone              = var.zone
-  secondary_zone    = "us-central1-b"
-  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
-  has_readonly_user = true
-
-  additional_databases = [
-    for value in local.outliers_enabled_states :
-    lower(value)
-  ]
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
-}
-
 module "insights_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -191,7 +167,6 @@ locals {
       module.case_triage_database.connection_name,
       module.justice_counts_database.connection_name,
       module.pathways_database.connection_name,
-      module.outliers_database.connection_name,
       module.workflows_database.connection_name,
       module.sentencing_database.connection_name,
       module.insights_database.connection_name,
@@ -208,7 +183,6 @@ locals {
     [
       module.case_triage_database.connection_name,
       module.pathways_database.connection_name,
-      module.outliers_database.connection_name,
       module.sentencing_database.connection_name,
       module.insights_database.connection_name,
     ]

@@ -60,15 +60,6 @@ def database_keys_for_schema_type(
                 for state_code in get_pathways_enabled_states()
             ]
 
-        case SchemaType.OUTLIERS:
-            outliers_db_manager = StateSegmentedDatabaseManager(
-                get_outliers_enabled_states(), SchemaType.OUTLIERS
-            )
-            return [
-                outliers_db_manager.database_key_for_state(state_code)
-                for state_code in get_outliers_enabled_states()
-            ]
-
         case SchemaType.WORKFLOWS:
             workflows_db_manager = StateSegmentedDatabaseManager(
                 get_workflows_enabled_states(), SchemaType.WORKFLOWS
