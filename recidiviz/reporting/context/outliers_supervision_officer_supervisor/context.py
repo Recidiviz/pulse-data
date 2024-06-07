@@ -386,7 +386,7 @@ if __name__ == "__main__":
 
         # # init the database collection to fetch from local
         database_manager = StateSegmentedDatabaseManager(
-            get_outliers_enabled_states(), SchemaType.OUTLIERS
+            get_outliers_enabled_states(), SchemaType.INSIGHTS
         )
         database_key = database_manager.database_key_for_state(test_state_code.value)
         outliers_engine = SQLAlchemyEngineManager.get_engine_for_database(database_key)

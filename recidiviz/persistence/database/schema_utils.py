@@ -33,7 +33,6 @@ from recidiviz.persistence.database.base_schema import (
     InsightsBase,
     JusticeCountsBase,
     OperationsBase,
-    OutliersBase,
     PathwaysBase,
     StateBase,
     WorkflowsBase,
@@ -47,7 +46,6 @@ from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
-from recidiviz.persistence.database.schema.outliers import schema as outliers_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.workflows import schema as workflows_schema
@@ -59,7 +57,6 @@ _SCHEMA_MODULES: List[ModuleType] = [
     pathways_schema,
     state_schema,
     operations_schema,
-    outliers_schema,
     workflows_schema,
     insights_schema,
 ]
@@ -263,8 +260,6 @@ def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
             return SchemaType.CASE_TRIAGE
         case PathwaysBase():
             return SchemaType.PATHWAYS
-        case OutliersBase():
-            return SchemaType.OUTLIERS
         case WorkflowsBase():
             return SchemaType.WORKFLOWS
         case InsightsBase():
@@ -285,8 +280,6 @@ def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
             return CaseTriageBase
         case SchemaType.PATHWAYS:
             return PathwaysBase
-        case SchemaType.OUTLIERS:
-            return OutliersBase
         case SchemaType.WORKFLOWS:
             return WorkflowsBase
         case SchemaType.INSIGHTS:

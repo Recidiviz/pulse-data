@@ -542,7 +542,7 @@ class TestModelSQL(TestCase):
 
     def test_outliers_temporary_table_integration(self) -> None:
         """All outlier tables should be able to be successfully built / renamed"""
-        for table in get_all_table_classes_in_schema(SchemaType.OUTLIERS):
+        for table in get_all_table_classes_in_schema(SchemaType.INSIGHTS):
             model_sql = ModelSQL(table=build_temporary_sqlalchemy_table(table))
             rename_queries = model_sql.build_rename_ddl_queries("new_base_name")
             self.assertGreater(len(rename_queries), 0)

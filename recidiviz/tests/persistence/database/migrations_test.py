@@ -507,33 +507,6 @@ class TestOperationsMigrations(MigrationsTestBase):
             assert actual_states == expected_states
 
 
-class TestOutliersMigrations(MigrationsTestBase):
-    __test__ = True
-
-    @classmethod
-    def schema_type(cls) -> SchemaType:
-        return SchemaType.OUTLIERS
-
-    def expected_missing_indices(self) -> Set[str]:
-        # We don't manage the schemas of some of the Outliers tables via alembic
-        # migrations because they are loaded to our Pathways DB via a separate ETL
-        # process. For indices on these tables, we're ok if they are not defined in
-        # migrations.
-        # TODO(#27159): Consider fully managing the Outliers schema via Alembic
-        return {
-            "supervision_officer_metrics_pkey",
-            "supervision_officer_supervisors_pkey",
-            "supervision_district_managers_pkey",
-            "supervision_districts_pkey",
-            "supervision_clients_pkey",
-            "supervision_client_events_pkey",
-            "metric_benchmarks_pkey",
-            "supervision_officer_outlier_status_pkey",
-            "supervision_state_metrics_pkey",
-            "supervision_officers_pkey",
-        }
-
-
 class TestInsightsMigrations(MigrationsTestBase):
     __test__ = True
 

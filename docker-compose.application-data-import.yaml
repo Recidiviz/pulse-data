@@ -9,10 +9,8 @@ services:
     volumes:
       - "./recidiviz:/app/recidiviz/"
       - "~/.config:/root/.config" # use user's credentials to access GCP APIs
-      - outliers_db_socket:/cloudsql/outliers
       - insights_db_socket:/cloudsql/insights
     depends_on:
-      - outliers_db
       - insights_db
     ports:
       - "5000:5000"

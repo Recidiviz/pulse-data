@@ -223,10 +223,6 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_data_import_session",
             "direct_ingest_raw_data_flash_status",
         ]
-        outliers_table_names = [
-            "configurations",
-            "user_metadata",
-        ]
         workflows_table_names = [
             "opportunity",
             "opportunity_configuration",
@@ -251,7 +247,6 @@ class TestSchemaUtils(unittest.TestCase):
             + operations_table_names
             + pathways_table_names
             + state_table_names
-            + outliers_table_names
             + workflows_table_names
             + insights_table_names
         )
