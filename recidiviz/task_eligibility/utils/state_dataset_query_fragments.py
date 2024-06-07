@@ -287,7 +287,8 @@ SELECT
     start_date_plus_x_months AS start_date,
     {revert_nonnull_end_date_clause('LEAST(start_date_plus_y_months, end_date)')} AS end_date,
     TRUE AS meets_criteria,
-    TO_JSON(STRUCT(start_date_plus_x_months AS {start_date_plus_x_months_name_in_reason_blob})) AS reason
+    TO_JSON(STRUCT(start_date_plus_x_months AS {start_date_plus_x_months_name_in_reason_blob})) AS reason,
+    start_date_plus_x_months AS {start_date_plus_x_months_name_in_reason_blob},
 FROM cte
 WHERE cte.end_date > start_date_plus_x_months"""
 

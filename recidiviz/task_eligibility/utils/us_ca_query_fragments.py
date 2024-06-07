@@ -18,10 +18,13 @@
 Helper SQL queries for California
 """
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_GENERAL
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -100,7 +103,8 @@ SELECT
     cd.start_date,
     cd.end_date,
     NOT cd.critical_date_has_passed AS meets_criteria,
-    TO_JSON(STRUCT(status_employer_start_date AS status_employer_start_date)) AS reason
+    TO_JSON(STRUCT(status_employer_start_date AS status_employer_start_date)) AS reason,
+    status_employer_start_date,
 FROM critical_date_has_passed_spans cd
 WHERE cd.start_date < {nonnull_end_date_clause('cd.end_date')}"""
 
@@ -110,4 +114,11 @@ WHERE cd.start_date < {nonnull_end_date_clause('cd.end_date')}"""
         state_code=StateCode.US_CA,
         criteria_spans_query_template=criteria_query,
         tes_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+        reasons_fields=[
+            ReasonsField(
+                name="status_employer_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
