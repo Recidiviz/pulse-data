@@ -16,10 +16,27 @@
 // =============================================================================
 import { z } from "zod";
 
-// const snoozeConfigurationSchema = z.object({
-//   defaultSnoozeDays: z.number(),
-//   maxSnoozeDays: z.number(),
-// });
+function nullishAsUndefined<T extends z.ZodTypeAny>(schema: T) {
+  return schema.nullish().transform((output) => {
+    return output === null ? undefined : output;
+  });
+}
+
+const snoozeConfigurationSchema = z
+  .object({
+    defaultSnoozeDays: z.number(),
+    maxSnoozeDays: z.number(),
+  })
+  .or(
+    z.object({
+      autoSnoozeParams: z.object({
+        // It would be nice to type the types we know about, but I'm not sure
+        // how to do that without causing a parse error on unknown types
+        type: z.string(),
+        params: z.record(z.any()),
+      }),
+    })
+  );
 
 const criteriaCopySchema = z.record(
   z.object({
@@ -28,16 +45,17 @@ const criteriaCopySchema = z.record(
   })
 );
 
-export const opportunityConfigurationSchema = z.object({
-  id: z.number(),
-  stateCode: z.string(),
+// A BabyOpportunityConfigurationSchema just contains the parts
+// that are set in the form, not those that are set by the backend
+// or presenter
+export const babyOpportunityConfigurationSchema = z.object({
   displayName: z.string(),
-  featureVariant: z.string().nullish(),
+  featureVariant: nullishAsUndefined(z.string()),
   dynamicEligibilityText: z.string(),
   callToAction: z.string(),
-  // snooze: snoozeConfigurationSchema.nullish(),
+  snooze: nullishAsUndefined(snoozeConfigurationSchema),
   denialReasons: z.record(z.string()),
-  denialText: z.string().nullish(),
+  denialText: nullishAsUndefined(z.string()),
   initialHeader: z.string(),
   eligibleCriteriaCopy: criteriaCopySchema,
   ineligibleCriteriaCopy: criteriaCopySchema,
@@ -46,10 +64,20 @@ export const opportunityConfigurationSchema = z.object({
   isAlert: z.boolean(),
 
   description: z.string(),
-  createdAt: z.string(),
-  createdBy: z.string(),
-  status: z.enum(["ACTIVE", "INACTIVE"]),
 });
+
+export type BabyOpportunityConfiguration = z.infer<
+  typeof babyOpportunityConfigurationSchema
+>;
+
+export const opportunityConfigurationSchema =
+  babyOpportunityConfigurationSchema.extend({
+    id: z.number(),
+    stateCode: z.string(),
+    createdAt: z.string(),
+    createdBy: z.string(),
+    status: z.enum(["ACTIVE", "INACTIVE"]),
+  });
 
 export type OpportunityConfiguration = z.infer<
   typeof opportunityConfigurationSchema

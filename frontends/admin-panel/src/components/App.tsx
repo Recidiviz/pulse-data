@@ -52,7 +52,7 @@ import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
 import OpportunitiesHeader from "./Workflows/OpportunitiesHeader";
 import OpportunitiesView from "./Workflows/OpportunitiesView";
-import OpportunityConfigurationForm from "./Workflows/OpportunityConfigurationForm";
+import OpportunityConfigurationForm from "./Workflows/OpportunityConfigurationForm/OpportunityConfigurationForm";
 import OpportunityConfigurationView from "./Workflows/OpportunityConfigurationView";
 import OpportunityView from "./Workflows/OpportunityView";
 

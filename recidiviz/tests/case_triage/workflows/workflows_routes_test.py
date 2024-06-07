@@ -1808,6 +1808,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsQuerier")
     def test_workflows_config_response(self, mock_workflows_querier: MagicMock) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_id", "foo@id.gov"
+        )
+
         mock_workflows_querier.return_value.get_enabled_opportunities.return_value = [
             OpportunityInfo(
                 state_code="US_ID",

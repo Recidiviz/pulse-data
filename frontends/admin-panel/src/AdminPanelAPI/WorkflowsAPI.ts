@@ -20,6 +20,7 @@ import {
   opportunitySchema,
 } from "../WorkflowsStore/models/Opportunity";
 import {
+  BabyOpportunityConfiguration,
   OpportunityConfiguration,
   opportunityConfigurationSchema,
 } from "../WorkflowsStore/models/OpportunityConfiguration";
@@ -61,7 +62,7 @@ export const getOpportunityConfiguration = async (
 export const postOpportunityConfiguration = async (
   stateCode: string,
   opportunityType: string,
-  config: OpportunityConfiguration
+  config: BabyOpportunityConfiguration
 ): Promise<Response> => {
   return post(
     `/admin/workflows/${stateCode}/opportunities/${opportunityType}/configurations`,

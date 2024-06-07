@@ -760,6 +760,8 @@ def create_workflows_api_blueprint() -> Blueprint:
             return {"enabled_configs": {}}
 
         feature_variants: List[str] = list(g.get("feature_variants", {}).keys())
+        if g.is_recidiviz_user and "featureVariants" in request.args:
+            feature_variants = request.args["featureVariants"].split(",")
 
         querier = WorkflowsQuerier(StateCode(state_code))
 

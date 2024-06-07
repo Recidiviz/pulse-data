@@ -77,6 +77,9 @@ const OpportunityConfigurationSettings = ({
             {JSON.stringify(config.ineligibleCriteriaCopy)}
           </span>
         </Form.Item>
+        <Form.Item label="Snooze">
+          <span className="ant-form-text">{JSON.stringify(config.snooze)}</span>
+        </Form.Item>
         <Form.Item label="Sidebar Components">
           <span className="ant-form-text">
             {JSON.stringify(config.sidebarComponents)}
