@@ -382,7 +382,8 @@ SELECT
         DATE_ADD(start_date, INTERVAL {y_months-x_months} MONTH),
         {nonnull_end_date_clause('end_date')}
     ) AS end_date,
-    TO_JSON(STRUCT(last_violation_date AS last_violation_date)) AS reason
+    TO_JSON(STRUCT(last_violation_date AS last_violation_date)) AS reason,
+    last_violation_date,
 FROM deduped_sub_sessions_with_attributes
 WHERE meets_criteria
 """
@@ -528,7 +529,8 @@ SELECT
         DATE_ADD(start_date, INTERVAL {y_months-x_months} MONTH),
         {nonnull_end_date_clause('end_date')}
     ) AS end_date,
-    TO_JSON(programs) AS reason
+    TO_JSON(programs) AS reason,
+    programs,
 FROM deduped_sub_sessions_with_attributes
     """
 

@@ -18,9 +18,12 @@
 past their supervision full term completion date (projected max completion date) or within 90 days of it.
 However, this criteria will be FALSE if no projected max completion date is set.
 """
+from google.cloud import bigquery
+
 from recidiviz.task_eligibility.criteria.general.supervision_past_full_term_completion_date_or_upcoming_90_days import (
     VIEW_BUILDER as past_full_term_completion_builder,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -44,6 +47,7 @@ SELECT
     end_date,
     NOT meets_criteria AS meets_criteria,
     reason,
+    JSON_EXTRACT(reason, "$.eligible_date") AS eligible_date,
 FROM `{{project_id}}.{{criteria_dataset}}.{past_full_term_completion_builder.view_id}_materialized`
 """
 
@@ -53,6 +57,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         criteria_dataset=past_full_term_completion_builder.dataset_id,
+        reasons_fields=[
+            ReasonsField(
+                name="eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

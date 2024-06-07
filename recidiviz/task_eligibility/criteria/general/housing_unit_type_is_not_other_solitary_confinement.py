@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes spans of time that residents are in OTHER_SOLITARY_CONFINEMENT (ex in MI, the START program) """
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -37,6 +39,7 @@ _QUERY_TEMPLATE = """
             TO_JSON(STRUCT(
                 start_date AS START_start_date
             )) AS reason,
+            start_date AS other_solitary_start_date
         FROM `{project_id}.{sessions_dataset}.housing_unit_type_sessions_materialized` hu
         WHERE hu.housing_unit_type = 'OTHER_SOLITARY_CONFINEMENT'
 """
@@ -48,6 +51,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="other_solitary_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

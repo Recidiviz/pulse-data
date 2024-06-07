@@ -17,8 +17,11 @@
 """This criteria view builder defines spans of time where clients are not on DIVERSION
 supervision level as tracked by our `sessions` dataset.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -50,6 +53,7 @@ SELECT
         end_date,
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_level_is_diversion)) AS reason,
+    TRUE AS supervision_level_is_diversion,
     FROM ({aggregate_adjacent_spans(table_name='diversion_spans')})
 """
 
@@ -60,6 +64,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level_is_diversion",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

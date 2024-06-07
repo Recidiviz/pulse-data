@@ -14,10 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which clients are not 
+"""Defines a criteria span view that shows spans of time during which clients are not
 in work release"""
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -40,6 +42,7 @@ SELECT
     DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
     False AS meets_criteria,
     TO_JSON(STRUCT(start_date AS most_recent_work_release_start_date)) AS reason,
+    start_date AS most_recent_work_release_start_date,
 FROM `{{project_id}}.{{sessions_dataset}}.work_release_sessions_materialized`
 GROUP BY 1,2,3,4
 HAVING start_date < {nonnull_end_date_clause('end_date')}
@@ -52,6 +55,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="most_recent_work_release_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 if __name__ == "__main__":

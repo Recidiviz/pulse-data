@@ -16,6 +16,8 @@
 # ============================================================================
 """Describes the spans of time when a client has a balance below $2000 and has made consecutive payments for 3 months"""
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -23,6 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASE
 from recidiviz.task_eligibility.criteria.general.has_fines_fees_balance_below_500 import (
     VIEW_BUILDER as has_fines_fees_balance_below_500_builder,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -91,7 +94,9 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(
             amount_owed AS amount_owed,
             number_consecutive_monthly_payment AS consecutive_monthly_payments
-        )) AS reason
+        )) AS reason,
+        amount_owed,
+        number_consecutive_monthly_payment AS consecutive_monthly_payments
     FROM
         grouped_dates
 """
@@ -103,6 +108,18 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         criteria_dataset=has_fines_fees_balance_below_500_builder.dataset_id,
+        reasons_fields=[
+            ReasonsField(
+                name="amount_owed",
+                type=bigquery.enums.SqlTypeNames.FLOAT,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="consecutive_monthly_payments",
+                type=bigquery.enums.SqlTypeNames.FLOAT,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

@@ -17,8 +17,11 @@
 """This criteria view builder defines spans of time, where clients do not have a supervision level of
  INTERNAL_UNKNOWN as tracked by our `sessions` dataset.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -50,6 +53,7 @@ SELECT
         end_date,
         FALSE AS meets_criteria,
     TO_JSON(STRUCT(start_date AS internal_unknown_start_date)) AS reason,
+    start_date AS internal_unknown_start_date,
     FROM ({aggregate_adjacent_spans(table_name='internal_unknown_spans')})
 """
 
@@ -60,6 +64,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="internal_unknown_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

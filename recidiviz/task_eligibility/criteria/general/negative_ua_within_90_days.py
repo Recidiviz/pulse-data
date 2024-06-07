@@ -18,6 +18,8 @@
 someone with a history of drug/alcohol risk has a recent negative
 urine analysis test and no positive result within 90 days.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -25,6 +27,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -97,7 +100,9 @@ _QUERY_TEMPLATE = f"""
         (NOT LOGICAL_AND(needs_ua_check) AND NOT LOGICAL_OR(is_positive_result)) AS meets_criteria,
         --include all ua results in the past 90 days
         TO_JSON(STRUCT(ARRAY_AGG(is_positive_result IGNORE NULLS ORDER BY drug_screen_date, is_positive_result) AS latest_ua_results,
-                    ARRAY_AGG(drug_screen_date IGNORE NULLS ORDER BY drug_screen_date, is_positive_result) AS latest_ua_dates)) AS reason
+                    ARRAY_AGG(drug_screen_date IGNORE NULLS ORDER BY drug_screen_date, is_positive_result) AS latest_ua_dates)) AS reason,
+        ARRAY_AGG(is_positive_result IGNORE NULLS ORDER BY drug_screen_date, is_positive_result) AS latest_ua_results,
+        ARRAY_AGG(drug_screen_date IGNORE NULLS ORDER BY drug_screen_date, is_positive_result) AS latest_ua_dates,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
 """
@@ -110,6 +115,18 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         sessions_dataset=SESSIONS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_ua_results",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_ua_dates",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

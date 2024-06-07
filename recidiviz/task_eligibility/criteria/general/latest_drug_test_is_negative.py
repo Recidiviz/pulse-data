@@ -16,8 +16,11 @@
 # ============================================================================
 """Describes the spans of time when a client's latest drug screen is negative."""
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -65,7 +68,9 @@ _QUERY_TEMPLATE = f"""
         meets_criteria,
         TO_JSON(STRUCT(latest_drug_screen_result AS latest_drug_screen_result,
                         latest_drug_screen_date AS latest_drug_screen_date
-        )) AS reason
+        )) AS reason,
+        latest_drug_screen_result,
+        latest_drug_screen_date,
     FROM sessionized_cte
 """
 
@@ -75,6 +80,18 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_drug_screen_result",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_drug_screen_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

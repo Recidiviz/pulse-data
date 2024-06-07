@@ -18,7 +18,10 @@
 someone is two days past their supervision full term completion date (projected max completion
 date)
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -52,6 +55,7 @@ _QUERY_TEMPLATE = f"""
         end_date,
         critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+        critical_date AS full_term_completion_date,
     FROM critical_date_has_passed_spans
     """
 
@@ -61,6 +65,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="full_term_completion_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

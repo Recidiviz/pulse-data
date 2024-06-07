@@ -18,11 +18,14 @@
 Defines a criteria span view that shows spans of time during which
 someone is incarcerated within 18 months of their minimum term completion date.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -77,6 +80,7 @@ SELECT
     end_date,
     critical_date_has_passed AS meets_criteria,
     TO_JSON(STRUCT(critical_date AS min_term_completion_date)) AS reason,
+    critical_date AS min_term_completion_date,
 FROM critical_date_has_passed_spans
 """
 
@@ -86,6 +90,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="min_term_completion_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
