@@ -147,10 +147,11 @@ output:
                   - "MI"
                   - "MIN"
                 StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: "MON"
-                StateSupervisionLevel.LIMITED: "ADM"
+                StateSupervisionLevel.LIMITED:
+                  - "ADM" # Administrative Supervision
+                  - "SPC" # Special Circumstance
                 StateSupervisionLevel.HIGH: "ENH"
                 StateSupervisionLevel.INTERNAL_UNKNOWN:
-                  - "SPC" # Special Circumstance
                   - "NOT" # <Unclear what this is>
                   # These are very old status codes that only show up in history table (dbo_Hist_Release) largely in records
                   # from the 80s.
