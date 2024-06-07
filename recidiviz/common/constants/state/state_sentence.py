@@ -152,7 +152,7 @@ _STATE_SENTENCE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
         "Used when a person has been sentenced by the court to community-based supervision and/or treatment services."
     ),
     StateSentenceType.COMMUNITY_SERVICE: (
-        "Used when a person has been sentenced by the court to community-based supervision and/or treatment services."
+        "Used when a person has been sentenced by the court to perform some amount of community service."
     ),
     StateSentenceType.FINES_RESTITUTION: (
         "At sentencing, the judge enters an 'Order for Restitution,' directing the person to reimburse "
