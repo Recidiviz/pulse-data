@@ -28,6 +28,7 @@ python -m recidiviz.case_triage.jii.id_lsu_message_analytics \
 import argparse
 import datetime
 import itertools
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set
 
 from google.cloud.firestore_v1 import FieldFilter
@@ -528,6 +529,25 @@ def _get_doc_id_from_doc(doc: DocumentSnapshot) -> str:
 def _get_batch_id_from_doc(doc: DocumentSnapshot) -> str:
     """Helper function that returns a document's batch_id"""
     return doc.reference.path.split("/")[-1].split("eligibility_")[1]
+
+
+def get_all_batch_ids() -> None:
+    firestore_client = FirestoreClientImpl(project_id="jii-pilots")
+    twilio_ref = firestore_client.get_collection_group(
+        collection_path="lsu_eligibility_messages"
+    )
+    batch_ids: Dict[str, str] = defaultdict()
+
+    for jii_message in twilio_ref.stream():
+        jii_message_doc = jii_message.to_dict()
+        if jii_message_doc is None:
+            continue
+
+        batch_id = _get_batch_id_from_doc(doc=jii_message)
+        batch_ids[batch_id] = jii_message_doc["message_type"]
+
+    print(f"All batch_ids (and their message_type): {batch_ids}")
+    print(f"{len(batch_ids)} total batch_ids")
 
 
 if __name__ == "__main__":
