@@ -63,7 +63,6 @@ from recidiviz.tests.big_query.big_query_test_helper import (
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestTestFixturePath,
     load_dataframe_from_path,
-    replace_empty_with_null,
 )
 from recidiviz.tests.ingest.direct.regions.ingest_view_cte_comment_exemptions import (
     THESE_INGEST_VIEWS_HAVE_UNDOCUMENTED_CTES,
@@ -394,13 +393,7 @@ class IngestViewEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         """
 
         print(f"Loading expected results from path [{expected_output_fixture_path}]")
-        expected_output = list(
-            csv.get_rows_as_tuples(expected_output_fixture_path, skip_header_row=False)
+        expected = load_dataframe_from_path(
+            expected_output_fixture_path, fixture_columns=None, allow_comments=True
         )
-
-        columns = expected_output.pop(0)
-        expected = pd.DataFrame(
-            replace_empty_with_null(expected_output), columns=columns
-        )
-
         self.compare_expected_and_result_dfs(expected=expected, results=results)
