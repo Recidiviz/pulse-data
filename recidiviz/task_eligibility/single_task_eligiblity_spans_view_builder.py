@@ -253,6 +253,12 @@ sub-span represents an eligible or ineligible period for each individual.
             -- Make the array order deterministic
             ORDER BY all_criteria.criteria_name
         )) AS reasons,
+        -- Assemble the reasons array from all the overlapping criteria reasons
+        TO_JSON(ARRAY_AGG(
+            TO_JSON(STRUCT(all_criteria.criteria_name AS criteria_name, reason_v2 AS reason_v2))
+            -- Make the array order deterministic
+            ORDER BY all_criteria.criteria_name
+        )) AS reasons_v2,
         -- Aggregate all of the FALSE criteria into an array
         ARRAY_AGG(
             IF(NOT COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default), all_criteria.criteria_name, NULL)
@@ -316,6 +322,7 @@ SELECT
     {revert_nonnull_end_date_clause("eligibility_sub_spans_with_id.end_date")} AS end_date,
     is_eligible,
     reasons,
+    reasons_v2,
     ineligible_criteria,
     -- Infer the task eligibility span end reason
     CASE

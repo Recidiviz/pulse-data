@@ -14,15 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has a 
+"""Defines a criteria span view that shows spans of time during which someone has a
 stable employment
 """
+
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -57,7 +60,8 @@ SELECT
   start_date,
   end_date,
   TRUE AS meets_criteria,
-  TO_JSON(STRUCT(ARRAY_AGG(DISTINCT status_employer_start_date) AS status_employer_start_date)) AS reason
+  TO_JSON(STRUCT(ARRAY_AGG(DISTINCT status_employer_start_date) AS status_employer_start_date)) AS reason,
+  ARRAY_AGG(DISTINCT status_employer_start_date) AS status_employer_start_date_array,
 FROM sub_sessions_with_attributes
 WHERE start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
@@ -69,6 +73,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="status_employer_start_date_array",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

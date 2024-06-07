@@ -19,8 +19,11 @@ Those who are on supervision without an overlapping span almost certainly have e
 and can be surfaced as a separate "data quality" issue rather than eligible for discharge.
 """
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -63,6 +66,7 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(
             TRUE AS has_active_sentence
         )) AS reason,
+        TRUE AS has_active_sentence,
     FROM sessions_and_sentence_spans
 """
 
@@ -72,6 +76,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="has_active_sentence",
+                type=bigquery.enums.SqlTypeNames.BOOLEAN,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

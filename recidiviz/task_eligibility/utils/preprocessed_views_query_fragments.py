@@ -96,7 +96,8 @@ def at_least_X_time_since_positive_drug_screen(
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(latest_drug_screen_date AS most_recent_positive_test_date)) AS reason
+        TO_JSON(STRUCT(latest_drug_screen_date AS most_recent_positive_test_date)) AS reason,
+        latest_drug_screen_date AS most_recent_positive_test_date,
     FROM sessionized_cte
     """
 
@@ -146,7 +147,13 @@ def has_at_least_x_negative_tests_in_time_interval(
                         result_raw_text_primary AS negative_screen_result
                     ) ORDER BY drug_screen_date
                 )
-            ) AS reason
+            ) AS reason,
+            ARRAY_AGG(
+                STRUCT(
+                    drug_screen_date AS negative_screen_date,
+                    result_raw_text_primary AS negative_screen_result
+                ) ORDER BY drug_screen_date
+            ) AS negative_drug_screen_history_array,
         FROM
             sub_sessions_with_attributes
         GROUP BY
@@ -158,7 +165,8 @@ def has_at_least_x_negative_tests_in_time_interval(
         start_date,
         end_date,
         CASE WHEN num_screens_within_time_interval >= {number_of_negative_tests} THEN TRUE ELSE FALSE END AS meets_criteria,
-        reason
+        reason,
+        negative_drug_screen_history_array,
     FROM
         grouped
     """
@@ -232,6 +240,7 @@ def has_unpaid_fines_fees_balance(
         end_date,
         current_balance {unpaid_balance_criteria} AS meets_criteria,
         TO_JSON(STRUCT(current_balance AS amount_owed)) AS reason,
+        current_balance AS amount_owed,
     FROM aggregated_fines_fees_per_client
     WHERE fee_type = "{fee_type}"
     """

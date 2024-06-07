@@ -20,6 +20,8 @@ the client could be eligible for early discharge from supervision. If the client
 discharge date is on or after their full term release date then they will likely be
 discharged normally.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -29,6 +31,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -113,6 +116,7 @@ SELECT
     end_date,
     early_discharge_date < {nonnull_end_date_clause('projected_completion_date')} AS meets_criteria,
     TO_JSON(STRUCT(projected_completion_date AS eligible_date)) AS reason,
+    projected_completion_date,
 FROM combine_sub_sessions
 WHERE early_discharge_date IS NOT NULL
 """
@@ -124,6 +128,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="projected_completion_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

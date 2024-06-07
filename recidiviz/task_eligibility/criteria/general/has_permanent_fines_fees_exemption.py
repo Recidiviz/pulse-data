@@ -16,7 +16,10 @@
 # ============================================================================
 """Describes the spans of time when a client has a permanent exemption from paying fines/fees"""
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -34,7 +37,8 @@ _QUERY_TEMPLATE = """
         start_date,
         end_date_exclusive AS end_date,
         has_permanent_exemption AS meets_criteria,
-        TO_JSON(STRUCT(permanent_exemption_reasons AS current_exemptions)) AS reason
+        TO_JSON(STRUCT(permanent_exemption_reasons AS current_exemptions)) AS reason,
+        permanent_exemption_reasons AS current_exemptions,
     FROM
         `{project_id}.{analyst_dataset}.permanent_exemptions_preprocessed_materialized`
 
@@ -46,6 +50,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="current_exemptions",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

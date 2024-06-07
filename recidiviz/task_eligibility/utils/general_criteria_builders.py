@@ -19,6 +19,8 @@ can be parameterized.
 """
 from typing import List, Optional
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -26,6 +28,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -66,6 +69,7 @@ def get_ineligible_offense_type_criteria(
         span.end_date,
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
+        ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
     {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=compartment_level_1)}
     {where_clause}
     GROUP BY 1,2,3,4,5
@@ -77,6 +81,13 @@ def get_ineligible_offense_type_criteria(
         description=description,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="ineligible_offenses",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 
 
@@ -101,6 +112,8 @@ def get_minimum_age_criteria(
         TO_JSON(STRUCT(
             DATE_ADD(birthdate, INTERVAL {minimum_age} YEAR) AS eligible_date
         )) AS reason,
+        birthdate,
+        DATE_ADD(birthdate, INTERVAL {minimum_age} YEAR) AS age_eligible_date,
     FROM `{{project_id}}.{{sessions_dataset}}.person_demographics_materialized`
     -- Drop any erroneous birthdate values
     WHERE birthdate <= CURRENT_DATE("US/Eastern")
@@ -110,6 +123,18 @@ def get_minimum_age_criteria(
         criteria_name=criteria_name,
         description=criteria_description,
         criteria_spans_query_template=criteria_query,
+        reasons_fields=[
+            ReasonsField(
+                name="birthdate",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="age_eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
         sessions_dataset=SESSIONS_DATASET,
     )
 
@@ -190,6 +215,7 @@ def get_minimum_time_served_criteria_query(
         TO_JSON(STRUCT(
             cd.critical_date AS eligible_date
         )) AS reason,
+        cd.critical_date AS minimum_time_served_date,
     FROM critical_date_has_passed_spans cd
     """
 
@@ -198,6 +224,13 @@ def get_minimum_time_served_criteria_query(
         description=description,
         criteria_spans_query_template=criteria_query,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="minimum_time_served_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 
 
@@ -333,6 +366,8 @@ def custody_level_compared_to_recommended(
             recommended_custody_level AS recommended_custody_level,
             dedup_cte.custody_level AS custody_level
         )) AS reason,
+        recommended_custody_level,
+        dedup_cte.custody_level,
     FROM dedup_cte
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` current_cl
         ON dedup_cte.custody_level = current_cl.custody_level
@@ -480,6 +515,7 @@ def violations_within_time_interval_criteria_builder(
         end_date,
         LOGICAL_AND(meets_criteria) AS meets_criteria,
         TO_JSON(STRUCT({violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob})) AS reason,
+        {violation_date_content_in_reason_blob} AS {violation_date_name_in_reason_blob},
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
     """
@@ -492,6 +528,13 @@ def violations_within_time_interval_criteria_builder(
             criteria_spans_query_template=criteria_query,
             state_code=state_code,
             meets_criteria_default=True,
+            reasons_fields=[
+                ReasonsField(
+                    name=violation_date_name_in_reason_blob,
+                    type=bigquery.enums.SqlTypeNames.DATE,
+                    description="#TODO(#29059): Add reasons field description",
+                ),
+            ],
         )
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -499,6 +542,13 @@ def violations_within_time_interval_criteria_builder(
         description=description,
         criteria_spans_query_template=criteria_query,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name=violation_date_name_in_reason_blob,
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 
 
@@ -562,6 +612,7 @@ def is_past_completion_date_criteria_builder(
         end_date,
         critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(critical_date AS {critical_date_name_in_reason})) AS reason,
+        critical_date AS {critical_date_name_in_reason},
     FROM critical_date_has_passed_spans
     """
 
@@ -570,4 +621,11 @@ def is_past_completion_date_criteria_builder(
         criteria_spans_query_template=criteria_query,
         description=description,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name=critical_date_name_in_reason,
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )

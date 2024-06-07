@@ -225,7 +225,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
             raise ValueError(f"Unexpected view builder type: {view_builder}")
 
     def get_criteria_select_statement(vb: TaskCriteriaBigQueryViewBuilder) -> str:
-        return f"SELECT '{vb.criteria_name}' AS criteria_name, state_code, person_id, start_date, end_date, meets_criteria, reason"
+        return f"SELECT '{vb.criteria_name}' AS criteria_name, state_code, person_id, start_date, end_date, meets_criteria, reason, reason_v2"
 
     subpart_unioned_view_builders = []
     for (

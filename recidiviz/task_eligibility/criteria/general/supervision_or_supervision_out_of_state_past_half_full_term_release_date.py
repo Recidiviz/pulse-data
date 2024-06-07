@@ -17,6 +17,8 @@
 """Defines a criteria span view that shows spans of time during which someone
 has completed half their full term supervision or supervision out of state sentence.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_end_date_clause,
@@ -31,6 +33,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
     STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -78,6 +81,8 @@ SELECT
         sup_type.supervision_type AS sentence_type,
         cd.critical_date AS eligible_date
     )) AS reason,
+    sup_type.supervision_type AS sentence_type,
+    cd.critical_date AS half_full_term_release_date,
 FROM critical_date_has_passed_spans cd
 LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup_type
     ON sup_type.state_code = cd.state_code
@@ -104,6 +109,18 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
             string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
             quoted=True,
         ),
+        reasons_fields=[
+            ReasonsField(
+                name="sentence_type",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="half_full_term_release_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

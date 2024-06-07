@@ -14,10 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which clients are not 
+"""Defines a criteria span view that shows spans of time during which clients are not
 in prison for treatment purposes (e.g. RIDER program in ID)."""
 
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -37,6 +40,7 @@ SELECT
     end_date,
     False AS meets_criteria,
     TO_JSON(STRUCT(start_date AS most_recent_treatment_start_date)) AS reason,
+    start_date AS most_recent_treatment_start_date,
 FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
 WHERE compartment_level_1 = 'INCARCERATION'
   AND compartment_level_2 = 'TREATMENT_IN_PRISON'
@@ -51,6 +55,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="most_recent_treatment_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 if __name__ == "__main__":

@@ -17,8 +17,11 @@
 """This criteria view builder defines spans of time where clients have been on HIGH
 supervision level for 6 months as tracked by our `sessions` dataset.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -46,6 +49,7 @@ SELECT
     end_date_exclusive AS end_date,
     TRUE as meets_criteria,
     TO_JSON(STRUCT(start_date_plus_6mo AS high_start_date)) AS reason,
+    start_date_plus_6mo AS high_start_date,
 FROM clients_on_high_with_6months
 WHERE {nonnull_end_date_clause('end_date_exclusive')} > start_date_plus_6mo
 """
@@ -56,6 +60,13 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="high_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
