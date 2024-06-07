@@ -42,19 +42,20 @@ split_path AS (
     -- exclude temp files we may have inadvertently archived
     WHERE _FILE_NAME NOT LIKE "%/staging/%"
 
-    -- TODO(#29960): Add output from JSON archive table
-    -- UNION ALL
-    -- SELECT
-    --     * EXCEPT (state_code),
-    --     CASE 
-    --         WHEN state_code = "US_ID" THEN "US_IX"
-    --         ELSE state_code
-    --     END AS state_code,
-    --     SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts,
-    -- FROM `{project_id}.export_archives.insights_supervision_officer_supervisors_archive`
-    -- -- exclude temp files we may have inadvertently archived
-    -- WHERE _FILE_NAME NOT LIKE "%/staging/%
+    UNION ALL
+
+    SELECT
+        * EXCEPT (state_code),
+        CASE 
+            WHEN state_code = "US_ID" THEN "US_IX"
+            ELSE state_code
+        END AS state_code,
+        SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts,
+    FROM `{project_id}.export_archives.insights_supervision_officer_supervisors_archive`
+    -- exclude temp files we may have inadvertently archived
+    WHERE _FILE_NAME NOT LIKE "%/staging/%"
 )
+
 SELECT DISTINCT
     split_path.* EXCEPT (path_parts),
     DATE(path_parts[SAFE_OFFSET(1)]) AS export_date

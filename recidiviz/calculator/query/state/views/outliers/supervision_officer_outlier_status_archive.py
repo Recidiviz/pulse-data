@@ -32,30 +32,52 @@ _QUERY_TEMPLATE = """
 WITH
 split_path AS (
     SELECT
-        * EXCEPT (state_code),
+        officer_id,
+        metric_id, 
+        period,
+        end_date,
+        metric_rate, 
+        caseload_type,
+        target,
+        threshold,
+        status,
+        NULL AS top_x_pct,
+        NULL AS top_x_pct_percentile_value,
+        NULL AS is_top_x_pct,
         CASE 
             WHEN state_code = "US_ID" THEN "US_IX"
             ELSE state_code
         END AS state_code,
-        SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts,
+        SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts
     FROM `{project_id}.export_archives.outliers_supervision_officer_outlier_status_archive`
     -- exclude temp files we may have inadvertently archived
     WHERE _FILE_NAME NOT LIKE "%/staging/%"
 
-    -- TODO(#29960): Add output from JSON archive table
-    -- UNION ALL
-    -- SELECT
-    --     * EXCEPT (state_code),
-    --     CASE 
-    --         WHEN state_code = "US_ID" THEN "US_IX"
-    --         ELSE state_code
-    --     END AS state_code,
-    --     SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts,
-    -- FROM `{project_id}.export_archives.insights_supervision_officer_outlier_status_archive`
-    -- -- exclude temp files we may have inadvertently archived
-    -- WHERE _FILE_NAME NOT LIKE "%/staging/%
+    UNION ALL
 
+    SELECT
+        officer_id,
+        metric_id, 
+        period,
+        end_date,
+        metric_rate, 
+        caseload_type,
+        target,
+        threshold,
+        status,
+        top_x_pct,
+        top_x_pct_percentile_value,
+        is_top_x_pct,
+        CASE 
+            WHEN state_code = "US_ID" THEN "US_IX"
+            ELSE state_code
+        END AS state_code,
+        SPLIT(SUBSTRING(_FILE_NAME, 6), "/") AS path_parts
+    FROM `{project_id}.export_archives.insights_supervision_officer_outlier_status_archive`
+    -- exclude temp files we may have inadvertently archived
+    WHERE _FILE_NAME NOT LIKE "%/staging/%"
 )
+
 SELECT DISTINCT
     split_path.* EXCEPT (path_parts),
     DATE(path_parts[SAFE_OFFSET(1)]) AS export_date

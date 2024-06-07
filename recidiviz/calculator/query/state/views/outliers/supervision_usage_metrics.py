@@ -36,7 +36,7 @@ WITH outlier_officers AS (
         ARRAY_AGG(external_id) AS outlier_officers,
         EXTRACT(MONTH FROM officers.export_date) AS export_month,
         EXTRACT(YEAR FROM officers.export_date) AS export_year
-    FROM `{project_id}.outliers_views.supervision_officers_archive_materialized` officers
+    FROM `{project_id}.outliers_views.supervision_officers_archive_materialized` officers, UNNEST(supervisor_external_ids) AS supervisor_external_id
     INNER JOIN `{project_id}.outliers_views.supervision_officer_outlier_status_archive_materialized` outliers
     ON officers.state_code=outliers.state_code AND officers.external_id=outliers.officer_id AND officers.export_date=outliers.export_date
     WHERE supervisor_external_id IS NOT NULL
