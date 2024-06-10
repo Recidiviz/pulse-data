@@ -22,6 +22,7 @@ from collections import defaultdict
 from typing import Dict, List, Set, Tuple
 from unittest.mock import MagicMock, patch
 
+import sqlglot
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -586,3 +587,45 @@ The following views have less restrictive projects_to_deploy than their parents:
                 f"e.g. debugging). Found views referencing [{dataset_id}]: "
                 f"{address_strs}"
             )
+
+    def test_regex_parent_table_parsing_matches_expected(self) -> None:
+        """In production code we use an (imperfect) regex mechanism to determine the
+        parent tables of each of our BigQuery views because it is ~800x faster than the
+        more correct alternative. This test makes sure that table references in our
+        BigQuery views are all formatted correctly so that the same set of parents is
+        getting identified as those that would be identified by the slower alternative
+        (sqlglot).
+        """
+        with local_project_id_override("recidiviz-456"):
+            views = [vb.build() for vb in self.all_deployed_view_builders]
+        for view in views:
+            tree = sqlglot.parse_one(view.view_query, dialect="bigquery")
+            sqlglot_addresses = {
+                BigQueryAddress(dataset_id=table.db, table_id=table.name)
+                for table in list(tree.find_all(sqlglot.exp.Table))
+                # If there's no dataset, then the reference is a CTE reference
+                if table.db
+            }
+
+            regex_addresses = view.parent_tables
+
+            if sqlglot_addresses != regex_addresses:
+                if missing_from_regex := sqlglot_addresses - regex_addresses:
+                    raise ValueError(
+                        f"Found parent tables for view [{view.address.to_str()}] "
+                        f"identified by the sqlglot library that were not identified "
+                        f"by a regex. This will happen if you have a table that is not "
+                        f"formatted like `{{project_id}}.dataset.table` (surrounded "
+                        f"by backticks). Addresses not parsed by regexes: "
+                        f"{sorted(a.to_str() for a in missing_from_regex)}."
+                    )
+                missing_from_sqlglot = regex_addresses - sqlglot_addresses
+                raise ValueError(
+                    f"Found parent tables for view [{view.address.to_str()}] that were "
+                    f"identified by regex that were not identified by the sqlglot "
+                    f"library. This may happen when you have a table reference inside "
+                    f"of a commented out piece of SQL code. You can fix this by "
+                    f"removing the backticks from the table definitions so the table "
+                    f"is not picked up by our regex matcher. Addresses not parsed by "
+                    f"sqlglot: {sorted(a.to_str() for a in missing_from_sqlglot)}"
+                )
