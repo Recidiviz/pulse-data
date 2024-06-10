@@ -27,6 +27,7 @@ import datetime
 import logging
 from typing import Any, Callable, Optional, Set, Type
 
+import re
 import attr
 import pytz
 
@@ -127,6 +128,49 @@ def is_opt_not_future_datetime(
 ) -> None:
     if value is not None:
         is_not_future_datetime(_instance, _attribute, value)
+
+
+def is_opt_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
+    if value is not None:
+        is_valid_email(_instance, _attribute, value)
+
+
+def is_valid_email(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
+    """
+    Checks if the given value is a valid email based on certain conditions
+    Raises an error if an email fails to meet a requirement otherwise returns None
+    """
+    invalid_characters = re.compile(r"[(),:;<>[\]\\]")
+    suspicious_usernames = ["x", "unknown", "none", "noname", "nobody"]
+    whitespace_pattern = re.compile(r"\s")
+    if "@" not in value:
+        raise ValueError(
+            f"Incorrect format:Email field with {value} missing '@' symbol"
+        )
+    if value.count("@") != 1:
+        raise ValueError(
+            f"Incorrect format:Email field with {value} has more than one '@' symbol"
+        )
+    if re.search(whitespace_pattern, value):
+        raise ValueError(
+            f"Incorrect format:Email field with {value} contains whitespace"
+        )
+
+    local_part, _ = value.split("@")  # only does this when value.count('@') is 1
+    if not local_part:
+        raise ValueError(
+            f"Incorrect format:Email field with {value} has no text before '@' symbol"
+        )
+    matches = re.findall(invalid_characters, value)
+
+    if matches:  # If email contains invalid character
+        invalid_chars = ",".join(matches)
+        raise ValueError(
+            f"Incorrect format: Email field with {value} contains invalid character {invalid_chars}"
+        )
+
+    if local_part.lower() in suspicious_usernames:
+        raise ValueError(f"Email has a suspicious username {local_part}")
 
 
 # String field validators
