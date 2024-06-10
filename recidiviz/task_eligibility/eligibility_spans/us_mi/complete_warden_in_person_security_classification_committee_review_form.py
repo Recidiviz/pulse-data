@@ -21,8 +21,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    transfer_out_of_solitary_confinement,
+from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
+    warden_in_person_security_classification_committee_review,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     in_solitary_confinement_at_least_six_months,
@@ -46,7 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         past_warden_in_person_review_for_scc_date.VIEW_BUILDER,
         in_solitary_confinement_at_least_six_months.VIEW_BUILDER,
     ],
-    completion_event_builder=transfer_out_of_solitary_confinement.VIEW_BUILDER,
+    completion_event_builder=warden_in_person_security_classification_committee_review.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
