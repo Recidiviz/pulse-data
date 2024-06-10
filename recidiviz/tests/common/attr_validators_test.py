@@ -19,6 +19,7 @@ import datetime
 import unittest
 from typing import List, Optional
 
+import re
 import attr
 import pytz
 
@@ -296,3 +297,120 @@ class AttrValidatorsTest(unittest.TestCase):
             state_code="US_YY",
             my_required_str=True,  # type: ignore[arg-type]
         )
+
+
+@attr.s
+class _TestEmailClass:
+    """
+    Used in TestEmailValidator
+    """
+
+    my_email: str = attr.ib(validator=attr_validators.is_valid_email)
+    my_opt_email: Optional[str] = attr.ib(validator=attr_validators.is_opt_valid_email)
+
+
+class TestEmailValidator(unittest.TestCase):
+    """Tests for is_valid email and is_opt_valid_emai"""
+
+    _TestClass: type[_TestEmailClass]
+    valid_email: str
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.valid_email = "test@example.com"
+        cls._TestClass = _TestEmailClass
+
+    def test_email_without_at(self) -> None:
+        email_value = "testexample.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Incorrect format:Email field with {email_value} missing '@' symbol",
+        ):
+            self._TestClass(my_email=email_value, my_opt_email=None)
+
+        # Optional value has missing @ symbol
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Incorrect format:Email field with {email_value} missing '@' symbol",
+        ):
+            self._TestClass(my_email=self.valid_email, my_opt_email=email_value)
+
+    def test_email_with_mul_at(self) -> None:
+        email_value = "test@example@.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Incorrect format:Email field with {email_value} has more than one '@' symbol",
+        ):
+            self._TestClass(my_email=email_value, my_opt_email=None)
+
+        # optional value has more than one '@' symbol
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Incorrect format:Email field with {email_value} has more than one '@' symbol",
+        ):
+            self._TestClass(my_email=self.valid_email, my_opt_email=email_value)
+
+    def test_email_no_before(self) -> None:
+        email_value = "@example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Incorrect format:Email field with {email_value} has no text before '@' symbol",
+        ):
+            self._TestClass(my_email=email_value, my_opt_email=None)
+
+        # optional value has no text before @
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Incorrect format:Email field with {email_value} has no text before '@' symbol",
+        ):
+            self._TestClass(my_email=self.valid_email, my_opt_email=email_value)
+
+    def test_email_whitespace(self) -> None:
+        email_value = "test\t@example.com"  # tests an email with a tab
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format:Email field with {email_value} contains whitespace"
+            ),
+        ):
+            self._TestClass(my_email=email_value, my_opt_email=None)
+
+        # Optional value has whitespace
+        with self.assertRaisesRegex(
+            ValueError,
+            f"Incorrect format:Email field with {email_value} contains whitespace",
+        ):
+            self._TestClass(my_email=self.valid_email, my_opt_email=email_value)
+
+    def test_email_character(self) -> None:
+        invalid_chars = r"<,<,\,:"
+        email_value = r"<<test\:@example.com"
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Email field with {email_value} contains invalid character {invalid_chars}"
+            ),
+        ):
+            self._TestClass(my_email=email_value, my_opt_email=None)
+
+        # Optional value has an invalid character
+        with self.assertRaisesRegex(
+            ValueError,
+            re.escape(
+                f"Incorrect format: Email field with {email_value} contains invalid character {invalid_chars}"
+            ),
+        ):
+            self._TestClass(my_email=self.valid_email, my_opt_email=email_value)
+
+    def test_email_local_part(self) -> None:
+        email_value = "x@example.com"
+        with self.assertRaisesRegex(
+            ValueError, f"Email has a suspicious username {email_value.split('@',1)[0]}"
+        ):
+            self._TestClass(my_email="x@example.com", my_opt_email=None)
+
+        # Optional value has suspicious username
+        with self.assertRaisesRegex(
+            ValueError, f"Email has a suspicious username {email_value.split('@',1)[0]}"
+        ):
+            self._TestClass(my_email="tex@example.com", my_opt_email=email_value)
