@@ -21,8 +21,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    transfer_out_of_solitary_confinement,
+from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
+    security_classification_committee_review,
 )
 from recidiviz.task_eligibility.criteria.general import (
     housing_unit_type_is_not_other_solitary_confinement,
@@ -50,7 +50,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         housing_unit_type_is_solitary_confinement.VIEW_BUILDER,
         housing_unit_type_is_not_other_solitary_confinement.VIEW_BUILDER,
     ],
-    completion_event_builder=transfer_out_of_solitary_confinement.VIEW_BUILDER,
+    completion_event_builder=security_classification_committee_review.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
