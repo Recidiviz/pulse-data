@@ -48,6 +48,11 @@ module "static_reference_tables" {
   description = "This dataset contains (static) reference tables."
 }
 
+# Link reference_views
+data "google_bigquery_dataset" "reference_views" {
+  dataset_id = "reference_views"
+}
+
 # Actually create the scheduled queries
 # `experiments` is a log of tracked experiments (e.g. product rollouts) with 
 # details about each. The source data is located in a Google Sheet.
@@ -120,5 +125,40 @@ FROM
 WHERE
   state_code IS NOT NULL
 EOT
+  }
+}
+
+resource "google_bigquery_data_transfer_config" "product_roster_archive" {
+  display_name           = "product_roster_archive"
+  location               = "US"
+  data_source_id         = "scheduled_query"
+  schedule               = "every day 03:00" # In UTC, gives us end of day in US
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
+  destination_dataset_id = data.google_bigquery_dataset.reference_views.dataset_id
+
+  params = {
+    destination_table_name_template = "product_roster_archive"
+    write_disposition               = "WRITE_APPEND"
+    query                           = <<-EOT
+SELECT CURRENT_DATE("US/Eastern") AS export_date, *
+FROM `${var.project_id}.reference_views.product_roster`
+EOT
+  }
+}
+
+
+resource "google_monitoring_alert_policy" "scheduled_query_monitoring" {
+  display_name          = "BQ Scheduled Query Monitoring"
+  notification_channels = [data.google_monitoring_notification_channel.infra_pagerduty.name]
+  combiner              = "OR"
+  conditions {
+    display_name = "Log match condition: failed scheduled query"
+    condition_matched_log {
+      filter = "resource.type=\"bigquery_dts_config\" severity=\"ERROR\""
+    }
+  }
+
+  documentation {
+    content = "A BQ scheduled query failed. See history at https://console.cloud.google.com/bigquery/transfers?project=${var.project_id}"
   }
 }
