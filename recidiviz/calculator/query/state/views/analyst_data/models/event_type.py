@@ -110,7 +110,7 @@ class EventType(Enum):
             EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
             EventType.WORKFLOWS_USER_PAGE,
         ]:
-            return MetricUnitOfObservationType.SUPERVISION_OFFICER
+            return MetricUnitOfObservationType.WORKFLOWS_USER
 
         raise ValueError(
             f"No unit_of_observation_type found for EventType {self.value}"

@@ -120,6 +120,10 @@ POPULATION_TYPE_TO_SPAN_SELECTOR_LIST: Dict[
                 ],
             },
         ),
+        SpanSelector(
+            span_type=SpanType.WORKFLOWS_USER_CASELOAD_ACCESS_SESSION,
+            span_conditions_dict={},
+        ),
     ],
 }
 

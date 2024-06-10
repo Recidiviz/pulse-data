@@ -61,7 +61,7 @@ WHERE event = "COMPARTMENT_LEVEL_2_START"
         query_string = my_events.generate_event_selector_query()
         expected_query_string = """
 SELECT *, end_date AS end_date_exclusive
-FROM `{project_id}.analyst_data.officer_events_materialized`
+FROM `{project_id}.analyst_data.workflows_user_events_materialized`
 WHERE event = "WORKFLOWS_USER_CLIENT_STATUS_UPDATE"
         AND JSON_EXTRACT_SCALAR(event_attributes, "$.violation_type") IN ("TECHNICAL")
 """
