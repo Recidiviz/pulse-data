@@ -829,6 +829,7 @@ state_staff_caseload_type = Enum(
     state_enum_strings.state_staff_caseload_type_veterans_court,
     state_enum_strings.state_staff_caseload_type_community_facility,
     state_enum_strings.state_staff_caseload_type_domestic_violence,
+    state_enum_strings.state_staff_caseload_type_transitional,
     state_enum_strings.state_staff_caseload_type_other,
     state_enum_strings.state_staff_caseload_type_general,
     state_enum_strings.internal_unknown,

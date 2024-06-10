@@ -200,6 +200,8 @@ def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
             return StateStaffCaseloadType.VETERANS_COURT
         if caseload_type == "DOMESTIC_VIOLENCE":
             return StateStaffCaseloadType.DOMESTIC_VIOLENCE
+        if caseload_type == "TRANSITIONAL":
+            return StateStaffCaseloadType.TRANSITIONAL
         if caseload_type == "GENERAL":
             return StateStaffCaseloadType.GENERAL
         return StateStaffCaseloadType.INTERNAL_UNKNOWN
