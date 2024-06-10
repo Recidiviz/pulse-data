@@ -17,7 +17,9 @@
 """Defines a criteria span view that shows spans of time during which clients
 have a 'MEDIUM' supervision_level or lower ('MEDIUM', 'MINIMUM', 'LIMITED')
 """
+from google.cloud import bigquery
 
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -32,20 +34,34 @@ _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_MEDIUM_OR_LOWER"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which clients
 have a 'MEDIUM' supervision_level or lower ('MEDIUM', 'MINIMUM', 'LIMITED')"""
 
-_SUPERVISION_LEVEL_IN_REASON_BLOB = """IF(state_code = 'US_ME',
+_REASONS_COLUMNS = """IF(state_code = 'US_ME',
                         CASE supervision_level
                             WHEN 'MEDIUM' THEN 'Moderate Risk'
                             WHEN 'MINIMUM' THEN 'Low Risk'
                             WHEN 'LIMITED' THEN 'Administrative Risk'
                         END, 
-                        supervision_level) AS supervision_level"""
+                        supervision_level) AS supervision_level,
+                        start_date AS supervision_level_start_date
+                        """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     custody_or_supervision_level_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         levels_lst=["MINIMUM", "LIMITED", "MEDIUM"],
-        level_in_reason_blob=_SUPERVISION_LEVEL_IN_REASON_BLOB,
+        reasons_columns=_REASONS_COLUMNS,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="supervision_level_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

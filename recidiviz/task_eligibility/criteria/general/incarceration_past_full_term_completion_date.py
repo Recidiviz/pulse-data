@@ -37,6 +37,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         compartment_level_1_filter="INCARCERATION",
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
+        critical_date_name_in_reason="full_term_completion_date",
     )
 )
 

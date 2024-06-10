@@ -238,9 +238,9 @@ def custody_or_supervision_level_criteria_builder(
     criteria_name: str,
     description: str,
     levels_lst: list,
-    level_in_reason_blob: str = "supervision_level AS supervision_level",
-    start_date_name_in_reason_blob: str = "start_date AS supervision_level_start_date",
-    level_meets_criteria: str = "TRUE",
+    reasons_columns: str,
+    reasons_fields: List[ReasonsField],
+    level_meets_criteria: bool = True,
     compartment_level_1_filter: str = "SUPERVISION",
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """
@@ -248,12 +248,11 @@ def custody_or_supervision_level_criteria_builder(
         criteria_name (str): Criteria query name
         description (str): Criteria query description
         levels_lst (list): List of supervision/custody levels to include in the criteria
-        level_in_reason_blob (str, optional): Name we will use to pass the supervision_level
-            value in the reason blob. Defaults to "supervision_level AS supervision_level".
-        start_date_name_in_json (str): Name we will use to pass the start_date value in
-            the reason blob
-        level_meets_criteria (str, optional): Value to use for the meets_criteria
-            column. Defaults to "TRUE".
+        reasons_columns (str): SQL snippet to use for the criteria reasons, typically includes something for the
+            custody or supervision level and the level start date.
+        reasons_fields (list): ReasonFields used to aggregate the reason columns into the reason JSON
+        level_meets_criteria (bool, optional): Value to use for the meets_criteria
+            column. Defaults to True.
         compartment_level_1_filter (str, optional): Either 'SUPERVISION' OR
             'INCARCERATION'. Defaults to "SUPERVISION".
     Returns:
@@ -284,19 +283,14 @@ def custody_or_supervision_level_criteria_builder(
         start_date,
         end_date_exclusive AS end_date,
         {level_meets_criteria} AS meets_criteria,
-        TO_JSON(STRUCT({start_date_name_in_reason_blob}, 
-                       {level_in_reason_blob})) AS reason,
+        TO_JSON(STRUCT({reasons_columns})) AS reason,
+        {reasons_columns},
     FROM `{{project_id}}.{{sessions_dataset}}.{level_type}_level_raw_text_sessions_materialized`
     WHERE {level_type}_level IN {levels_str}
     """
 
     # If meets criteria is always true, then the default view builder should be false
-    if level_meets_criteria.upper() == "TRUE":
-        meets_criteria_default_view_builder = False
-    elif level_meets_criteria.upper() == "FALSE":
-        meets_criteria_default_view_builder = True
-    else:
-        raise ValueError(f"Unexpected level_meets_criteria [{level_meets_criteria}]")
+    meets_criteria_default_view_builder = not level_meets_criteria
 
     return StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=criteria_name,
@@ -304,6 +298,7 @@ def custody_or_supervision_level_criteria_builder(
         criteria_spans_query_template=criteria_query,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=meets_criteria_default_view_builder,
+        reasons_fields=reasons_fields,
     )
 
 

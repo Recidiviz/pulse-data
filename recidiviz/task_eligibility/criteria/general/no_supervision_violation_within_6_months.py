@@ -37,6 +37,7 @@ VIEW_BUILDER: TaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         date_interval=6,
+        violation_date_name_in_reason_blob="latest_violations",
         where_clause=VIOLATIONS_FOUND_WHERE_CLAUSE,
     )
 )
