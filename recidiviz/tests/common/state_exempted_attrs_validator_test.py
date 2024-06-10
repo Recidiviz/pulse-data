@@ -1,0 +1,61 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2024 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests for state_exempted_attrs_validator.py"""
+import unittest
+
+import attr
+
+from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.state_exempted_attrs_validator import state_exempted_validator
+
+
+class AttrValidatorsTest(unittest.TestCase):
+    """Tests for state_exempted_attrs_validator.py"""
+
+    def test_state_exempted_validator(self) -> None:
+        @attr.s
+        class _TestClass:
+            state_code: str = attr.ib(validator=attr_validators.is_str)
+            my_required_str: str = attr.ib(
+                default=None,
+                validator=state_exempted_validator(
+                    attr_validators.is_str, exempted_states={StateCode.US_YY}
+                ),
+            )
+
+        # These crash because the state is not exempted
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_XX",
+                my_required_str=None,  # type: ignore[arg-type]
+            )
+        with self.assertRaises(TypeError):
+            _ = _TestClass(
+                state_code="US_XX",
+                my_required_str=True,  # type: ignore[arg-type]
+            )
+
+        # These do not crash because the state is exempted
+        _ = _TestClass(
+            state_code="US_YY",
+            my_required_str=None,  # type: ignore[arg-type]
+        )
+        _ = _TestClass(
+            state_code="US_YY",
+            my_required_str=True,  # type: ignore[arg-type]
+        )
