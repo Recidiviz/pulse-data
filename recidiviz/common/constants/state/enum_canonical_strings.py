@@ -333,6 +333,7 @@ state_staff_role_subtype_supervision_district_manager = "SUPERVISION_DISTRICT_MA
 state_staff_role_subtype_supervision_regional_manager = "SUPERVISION_REGIONAL_MANAGER"
 state_staff_role_subtype_supervision_state_leadership = "SUPERVISION_STATE_LEADERSHIP"
 
+
 # state_supervision_sentence.py
 state_supervision_sentence_supervision_type_community_corrections = (
     "COMMUNITY_CORRECTIONS"
@@ -646,5 +647,6 @@ state_staff_caseload_type_drug_court = "DRUG_COURT"
 state_staff_caseload_type_veterans_court = "VETERANS_COURT"
 state_staff_caseload_type_community_facility = "COMMUNITY_FACILITY"
 state_staff_caseload_type_domestic_violence = "DOMESTIC_VIOLENCE"
+state_staff_caseload_type_transitional = "TRANSITIONAL"
 state_staff_caseload_type_other = "OTHER"
 state_staff_caseload_type_general = "GENERAL"

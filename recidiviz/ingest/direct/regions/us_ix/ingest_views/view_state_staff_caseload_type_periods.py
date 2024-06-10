@@ -43,6 +43,26 @@ VIEW_QUERY_TEMPLATE = f""",
         FROM {{RECIDIVIZ_REFERENCE_supervisor_roster@ALL}} roster
         LEFT JOIN employee_ids e_ids USING(OFFICER_FIRST_NAME, OFFICER_LAST_NAME, DIST)
     ),
+    all_employee_periods AS (
+        SELECT
+            EmployeeId,
+            et.EmployeeTypeName,
+            update_datetime AS start_date,
+            LAG(et.EmployeeTypeName) OVER (PARTITION BY EmployeeId ORDER BY update_datetime) as prev_EmployeeTypeName
+        FROM {{ref_Employee@ALL}} ee
+        LEFT JOIN {{ref_EmployeeType}} et ON ee.EmployeeTypeId = et.EmployeeTypeId
+        WHERE ee.EmployeeTypeId IS NOT NULL
+    ),
+    transitional_periods AS (
+        SELECT 
+            EmployeeId AS officer_EmployeeId,
+            EmployeeTypeName,
+            start_date,
+            LEAD(start_date) OVER (PARTITION BY EmployeeId ORDER BY start_date) as end_date,
+            TO_HEX(SHA256(EmployeeId)) as hashedId
+        FROM all_employee_periods  
+        WHERE EmployeeTypeName <> prev_EmployeeTypeName OR prev_EmployeeTypeName IS NULL
+    ),
     preliminary_periods AS (
         SELECT
             officer_EmployeeId,
@@ -147,7 +167,21 @@ VIEW_QUERY_TEMPLATE = f""",
         WHERE 
             caseload_type_raw LIKE '%DV%' OR 
             caseload_type_raw LIKE '%DOMESTIC VIOLENCE%'
-    
+        
+        UNION ALL
+
+        -- TRANSITIONAL
+        SELECT
+            officer_EmployeeId,
+            EmployeeTypeName AS caseload_type_raw,
+            start_date,
+            CAST(end_date AS DATETIME),
+            'TRANSITIONAL' AS caseload_type
+        FROM (
+            SELECT 
+                *
+            FROM transitional_periods
+            WHERE EmployeeTypeName in ("Business Operations Manager") OR TO_HEX(SHA256(officer_EmployeeId)) = "f826ecc1611f62c4707ad52da9883fc15f69a1cddda43250c364fc2457ba4b06")
     ),
     general_caseload_periods AS (
         SELECT *, 'GENERAL' AS caseload_type
