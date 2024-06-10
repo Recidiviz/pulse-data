@@ -17,6 +17,9 @@
 """This criteria view builder defines spans of time where residents are 
 MINIMUM custody level as tracked by our `sessions` dataset.
 """
+from google.cloud import bigquery
+
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -32,14 +35,29 @@ _DESCRIPTION = """This criteria view builder defines spans of time where residen
 MINIMUM custody level as tracked by our `sessions` dataset.
 """
 
+_REASONS_COLUMNS = (
+    "custody_level AS custody_level, start_date AS custody_level_start_date"
+)
+
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     custody_or_supervision_level_criteria_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         levels_lst=["MINIMUM"],
-        level_in_reason_blob="custody_level AS custody_level",
-        start_date_name_in_reason_blob="start_date AS custody_level_start_date",
-        level_meets_criteria="TRUE",
+        reasons_columns=_REASONS_COLUMNS,
+        reasons_fields=[
+            ReasonsField(
+                name="custody_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="custody_level_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
+        level_meets_criteria=True,
         compartment_level_1_filter="INCARCERATION",
     )
 )
