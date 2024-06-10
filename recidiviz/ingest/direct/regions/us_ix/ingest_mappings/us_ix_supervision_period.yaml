@@ -231,24 +231,35 @@ output:
           custodial_authority:
             $conditional:
               - $if:
-                  # "Interstate Compact" and "Parole Commission" are lumped into the
-                  # "District Office" DOCLocationToTypeName, so we need to check them
-                  # separately.
-                  #
-                  # According to old mappings, these values mean some non-ID entity is
-                  # supervising the person.
                   $in:
                     $value: DOCLocationToName
                     $options:
                       - $literal("Interstate Compact")
-                      - $literal("Parole Commission")
                 $then:
                   $enum_mapping:
                     $raw_text: DOCLocationToName
                     $mappings:
                       StateCustodialAuthority.OTHER_STATE:
                         - Interstate Compact
-                        - Parole Commission
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - DOCLocationToName
+                        - $literal("Parole Commission")
+                    - $equal:
+                        - RequestedSupervisionAssignmentLevel
+                        - $literal("Interstate")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - DOCLocationToName
+                          - RequestedSupervisionAssignmentLevel
+                        $separator: "##"
+                    $mappings:
+                      StateCustodialAuthority.OTHER_STATE:
+                        - Parole Commission##Interstate
               - $else_if:
                   $equal:
                     - RequestedSupervisionAssignmentLevel
