@@ -110,7 +110,7 @@ WITH usage_events AS (
         END AS usage_event_type,
         event_attributes
     FROM
-        `{{project_id}}.analyst_data.officer_events_materialized` a
+        `{{project_id}}.analyst_data.workflows_user_events_materialized` a
     INNER JOIN
         `{{project_id}}.normalized_state.state_person_external_id` b
     ON

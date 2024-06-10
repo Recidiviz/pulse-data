@@ -1091,12 +1091,20 @@ ON
         event_type=EventType.WORKFLOWS_USER_ACTION,
         description="Event where the officer took a specific Workflows action, e.g., FORM_COPIED",
         sql_source=f"""
-SELECT * 
-FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
+SELECT
+    a.* EXCEPT(email), email AS email_address,
+    b.completion_event_type AS task_type,
+FROM
+    `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
+INNER JOIN
+    `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
+USING
+    (opportunity_type)
 WHERE event = "{EventType.WORKFLOWS_USER_ACTION.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
+            "task_type",
             "person_external_id",
             "new_status",
         ],
@@ -1106,12 +1114,20 @@ WHERE event = "{EventType.WORKFLOWS_USER_ACTION.value}" """,
         event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
         description="Event where the officer updated a person's status on Workflows tool",
         sql_source=f"""
-SELECT * 
-FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
+SELECT
+    a.* EXCEPT(email), email AS email_address,
+    b.completion_event_type AS task_type,
+FROM
+    `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
+INNER JOIN
+    `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
+USING
+    (opportunity_type)
 WHERE event = "{EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
+            "task_type",
             "person_external_id",
             "new_status",
         ],
@@ -1121,12 +1137,20 @@ WHERE event = "{EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE.value}" """,
         event_type=EventType.WORKFLOWS_USER_PAGE,
         description="Event where the officer viewed a particular Workflows page, e.g., PROFILE_VIEWED",
         sql_source=f"""
-SELECT * 
-FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
+SELECT
+    a.* EXCEPT(email), email AS email_address,
+    b.completion_event_type AS task_type,
+FROM
+    `{{project_id}}.analyst_data.workflows_officer_events_materialized` a
+INNER JOIN
+    `{{project_id}}.reference_views.workflows_opportunity_configs_materialized` b
+USING
+    (opportunity_type)
 WHERE event = "{EventType.WORKFLOWS_USER_PAGE.value}" """,
         attribute_cols=[
             "event_type",
             "opportunity_type",
+            "task_type",
             "person_external_id",
             "new_status",
         ],
