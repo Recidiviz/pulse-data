@@ -24,44 +24,11 @@ class MyClass:
 """
 
 import datetime
-import logging
-from typing import Any, Callable, Optional, Set, Type
-
 import re
+from typing import Any, Callable, Optional, Type
+
 import attr
 import pytz
-
-from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.types import T, assert_type
-
-
-def state_exempted_validation(
-    validator: Callable[[Any, attr.Attribute, T], None],
-    *,
-    exempted_states: Set[StateCode],
-) -> Callable[[Any, attr.Attribute, T], None]:
-    """A wrapper around any attr field validator that can be used to exempt certain
-    states from the validation. In order to use this validator, the class with the field
-    you're validating must also have a hydrated state_code field.
-    """
-
-    def _wrapper(instance: Any, attribute: attr.Attribute, value: T) -> None:
-        if not hasattr(instance, "state_code"):
-            raise ValueError(f"Class [{type(instance)}] does not have state_code")
-
-        state_code = StateCode(assert_type(getattr(instance, "state_code"), str))
-
-        try:
-            validator(instance, attribute, value)
-        except Exception as e:
-            if state_code not in exempted_states:
-                raise e
-
-            logging.warning(
-                "Found exempted validation error for state [%s]: %s", state_code, e
-            )
-
-    return _wrapper
 
 
 def is_opt(cls_type: Type) -> Callable:

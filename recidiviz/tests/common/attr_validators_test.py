@@ -16,16 +16,14 @@
 # =============================================================================
 """Tests for attr_validators.py."""
 import datetime
+import re
 import unittest
 from typing import List, Optional
 
-import re
 import attr
 import pytz
 
 from recidiviz.common import attr_validators
-from recidiviz.common.attr_validators import state_exempted_validation
-from recidiviz.common.constants.states import StateCode
 
 
 class AttrValidatorsTest(unittest.TestCase):
@@ -264,39 +262,6 @@ class AttrValidatorsTest(unittest.TestCase):
         # These don't crash
         ok = today - datetime.timedelta(days=7)
         _ = _TestClass(my_required_not_future_date=ok, my_optional_not_future_date=ok)
-
-    def test_state_exempted_validation(self) -> None:
-        @attr.s
-        class _TestClass:
-            state_code: str = attr.ib(validator=attr_validators.is_str)
-            my_required_str: str = attr.ib(
-                default=None,
-                validator=state_exempted_validation(
-                    attr_validators.is_str, exempted_states={StateCode.US_YY}
-                ),
-            )
-
-        # These crash because the state is not exempted
-        with self.assertRaises(TypeError):
-            _ = _TestClass(
-                state_code="US_XX",
-                my_required_str=None,  # type: ignore[arg-type]
-            )
-        with self.assertRaises(TypeError):
-            _ = _TestClass(
-                state_code="US_XX",
-                my_required_str=True,  # type: ignore[arg-type]
-            )
-
-        # These do not crash because the state is exempted
-        _ = _TestClass(
-            state_code="US_YY",
-            my_required_str=None,  # type: ignore[arg-type]
-        )
-        _ = _TestClass(
-            state_code="US_YY",
-            my_required_str=True,  # type: ignore[arg-type]
-        )
 
 
 @attr.s
