@@ -18,12 +18,15 @@
 Defines a criteria view that shows spans of time when clients have not incurred a high sanction
 for 12 months
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -103,7 +106,8 @@ WITH sanctions_sessions_cte AS (
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(latest_high_sanction_date AS latest_high_sanction_date)) AS reason
+        TO_JSON(STRUCT(latest_high_sanction_date AS latest_high_sanction_date)) AS reason,
+        latest_high_sanction_date,
     FROM sessionized_cte"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -114,6 +118,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         criteria_spans_query_template=_REASON_QUERY,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_high_sanction_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            )
+        ],
     )
 )
 

@@ -16,11 +16,13 @@
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone is not
     eligible for traditional admin supervision """
+from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -40,6 +42,7 @@ SELECT
     end_date,
     NOT is_eligible AS meets_criteria,
     TO_JSON(STRUCT(start_date AS admin_eligibility_date)) AS reason,
+    start_date AS admin_eligibility_date,
 FROM `{project_id}.{spans_dataset}.complete_transfer_to_administrative_supervision_request_materialized`
 """
 # will potentially add in logic about if someone was marked ineligible for admin supervision in workflows
@@ -51,6 +54,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_PA,
         spans_dataset=task_eligibility_spans_state_specific_dataset(StateCode.US_PA),
+        reasons_fields=[
+            ReasonsField(
+                name="admin_eligibility_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
