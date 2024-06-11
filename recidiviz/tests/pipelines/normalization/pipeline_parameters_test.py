@@ -115,7 +115,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             ValueError,
             r"Found original dataset \[us_xx_state_primary\] in overrides which is not "
             r"a dataset this pipeline reads from. Datasets you can override: "
-            r"\['external_reference', 'state'\].",
+            r"\['state'\].",
         ):
             pipeline_parameters.check_for_valid_input_dataset_overrides(
                 get_all_reference_query_input_datasets_for_pipeline(
@@ -126,7 +126,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
 
         input_dataset_overrides_json = json.dumps(
             # This is a valid override
-            {"external_reference": "some_completely_different_dataset"}
+            {"state": "some_completely_different_dataset"}
         )
         pipeline_parameters = NormalizationPipelineParameters(
             project="recidiviz-456",

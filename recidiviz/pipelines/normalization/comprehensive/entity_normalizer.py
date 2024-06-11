@@ -20,9 +20,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
 
 from more_itertools import one
 
-from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
-    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
-)
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
 )
@@ -163,9 +160,6 @@ class ComprehensiveEntityNormalizer:
             program_assignments=normalizer_args[StateProgramAssignment.__name__],
             assessments=normalizer_args[StateAssessment.__name__],
             supervision_contacts=normalizer_args[StateSupervisionContact.__name__],
-            charge_offense_descriptions_to_labels=normalizer_args[
-                STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
-            ],
             state_person_to_state_staff=normalizer_args[
                 STATE_PERSON_TO_STATE_STAFF_VIEW_NAME
             ],
@@ -186,7 +180,6 @@ class ComprehensiveEntityNormalizer:
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
         supervision_contacts: List[StateSupervisionContact],
-        charge_offense_descriptions_to_labels: List[Dict[str, Any]],
         state_person_to_state_staff: List[Dict[str, Any]],
         # TODO(#30199): Remove MO sentence statuses table dependency in favor of
         #  state_sentence_status_snapshot data
@@ -208,7 +201,6 @@ class ComprehensiveEntityNormalizer:
             supervision_sentences=supervision_sentences,
             assessments=assessments,
             supervision_contacts=supervision_contacts,
-            charge_offense_descriptions_to_labels=charge_offense_descriptions_to_labels,
             staff_external_id_to_staff_id=staff_external_id_to_staff_id,
             us_mo_sentence_statuses_list=us_mo_sentence_statuses_list,
             field_index=self.field_index,
@@ -252,7 +244,6 @@ def all_normalized_person_entities(
     supervision_sentences: List[StateSupervisionSentence],
     assessments: List[StateAssessment],
     supervision_contacts: List[StateSupervisionContact],
-    charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     # TODO(#30199): Remove MO sentence statuses table dependency in favor of
     #  state_sentence_status_snapshot data
@@ -289,7 +280,6 @@ def all_normalized_person_entities(
     sentence_normalization_manager = SentenceNormalizationManager(
         incarceration_sentences,
         supervision_sentences,
-        charge_offense_descriptions_to_labels,
         get_state_specific_sentence_normalization_delegate(state_code.value),
     )
     (

@@ -225,12 +225,6 @@ def main() -> int:
                 }
             )
 
-            if "normalization" in pipeline.__name__:
-                valid_prefixes = valid_prefixes.union(
-                    {
-                        "recidiviz.datasets.static_data.config",
-                    }
-                )
         if "us_ix_case_note" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {

@@ -40,9 +40,6 @@ from more_itertools import one
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
-    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
@@ -166,7 +163,6 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
     ) -> Dict[Type[Entity], List[BigQueryViewBuilder]]:
         return {
             entities.StatePerson: [
-                STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
                 STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
             ],
             entities.StateStaff: [],

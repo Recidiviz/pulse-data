@@ -46,9 +46,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_person_impact
 from recidiviz.calculator.query.state.views.outliers.supervision_client_events import (
     SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
-    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
@@ -550,7 +547,6 @@ The following views have less restrictive projects_to_deploy than their parents:
             # use the `normalized_state` dataset instead.
             STATE_BASE_DATASET: {
                 # Reference views that feed into the normalization pipelines
-                STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER.address,
                 STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER.address,
                 US_MO_SENTENCE_STATUSES_VIEW_BUILDER.address,
                 # This validation checks both state and normalized_state

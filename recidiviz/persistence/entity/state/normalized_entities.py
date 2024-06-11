@@ -363,62 +363,6 @@ class NormalizedStateCharge(state_entities.StateCharge, NormalizedStateEntity):
     # inferred by the state-provided NCIC code.
     is_sex_offense_external: Optional[bool] = attr.ib(default=None)
 
-    # The CJARS-provided NCIC (National Crime Information Center) code for this offense.
-    ncic_code_uniform: Optional[str] = attr.ib(default=None)
-
-    # A high-level category associated with the CJARS-provided NCIC code (e.g.
-    # Kidnapping, Bribery, etc).
-    ncic_category_uniform: Optional[str] = attr.ib(default=None)
-
-    # The human-readable description associated with the CJARS-provided NCIC code.
-    ncic_description_uniform: Optional[str] = attr.ib(default=None)
-
-    # Whether the charge is for a violent offense, as inferred from the CJARS-provided
-    # NCIC code.
-    is_violent_uniform: Optional[bool] = attr.ib(default=None)
-
-    # Whether the charge is for a drug-related offense, as inferred from the
-    # CJARS-provided NCIC code.
-    is_drug_uniform: Optional[bool] = attr.ib(default=None)
-
-    # Whether the charge is classified as sex offense, as inferred by the CJARS-provided
-    # NCIC code.
-    is_sex_offense_uniform: Optional[bool] = attr.ib(default=None)
-
-    # Uniform Crime Classification Standard code. First digit is the broad code (violent,
-    # property, etc.), first three digits are a unique uccs_category, and all four digits
-    # are a unique uccs_description
-    uccs_code_uniform: Optional[int] = attr.ib(default=None)
-
-    # Uniform Crime Classification Standard description associated with a uccs_code
-    uccs_description_uniform: Optional[str] = attr.ib(default=None)
-
-    # Uniform Crime Classification broad category
-    uccs_category_uniform: Optional[str] = attr.ib(default=None)
-
-    # National Incident-Based Reporting System code, used by FBI for nationwide crime
-    # statistics
-    nibrs_code_uniform: Optional[str] = attr.ib(default=None)
-
-    # National Incident-Based Reporting System code description associated with a
-    # nibrs_code
-    nibrs_description_uniform: Optional[str] = attr.ib(default=None)
-
-    # National Incident-Based Reporting System broad category
-    nibrs_category_uniform: Optional[str] = attr.ib(default=None)
-
-    # Describes the type of victim of this crime. One of “Person”, “Property”, “Society”.
-    crime_against_uniform: Optional[str] = attr.ib(default=None)
-
-    # True if the description suggests the offense was not only attempted or conspired.
-    offense_completed_uniform: Optional[bool] = attr.ib(default=None)
-
-    # True if the description suggests the offense was attempted but not completed.
-    offense_attempted_uniform: Optional[bool] = attr.ib(default=None)
-
-    # True if the description suggests the offense was conspired but not attempted.
-    offense_conspired_uniform: Optional[bool] = attr.ib(default=None)
-
 
 @attr.s(
     eq=False,
