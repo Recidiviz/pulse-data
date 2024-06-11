@@ -37,6 +37,9 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    extract_object_from_json,
+)
 
 FOUR_SPACES_INDENT = "    "
 
@@ -132,20 +135,38 @@ class TaskCriteriaGroupBigQueryViewBuilder:
         reason blobs into a single flat json, with an aggregation function that
         deterministically dedupes across any duplicate reasons keys.
         """
-        sorted_fields = sorted([field.name for field in self.reasons_fields])
-        deduped_reasons = ", ".join(
-            [f"MAX({reason}) AS {reason}" for reason in sorted_fields]
+        reasons_query_fragment = ", ".join(
+            [
+                f"""MAX({extract_object_from_json(reason.name, reason.type.value, "reason_v2")}) AS {reason.name}"""
+                for reason in self.reasons_fields
+            ]
         )
-        return f"TO_JSON(STRUCT({deduped_reasons}))"
+        return reasons_query_fragment
+
+    def general_criteria_state_code_filter(
+        self,
+        sub_criteria: Union[
+            TaskCriteriaBigQueryViewBuilder,
+            "TaskCriteriaGroupBigQueryViewBuilder",
+            "InvertedTaskCriteriaBigQueryViewBuilder",
+        ],
+    ) -> str:
+        """Returns the query fragment to filter a table to a specific state code if the sub-criteria is state-agnostic."""
+        if self.state_code and isinstance(
+            sub_criteria, StateAgnosticTaskCriteriaBigQueryViewBuilder
+        ):
+            return f'\nWHERE state_code = "{self.state_code.name}"'
+        return ""
 
     def get_query_template(self) -> str:
         """Returns a query template that performs the appropriate aggregation
         over component criteria.
         """
+        # Filter all general/state-agnostic criteria to one state for state-specific criteria groups
         criteria_queries = [
             f"""
 SELECT *, {sub_criteria.meets_criteria_default} AS meets_criteria_default
-FROM `{{project_id}}.{sub_criteria.table_for_query.to_str()}`
+FROM `{{project_id}}.{sub_criteria.table_for_query.to_str()}`{self.general_criteria_state_code_filter(sub_criteria)}
 """
             for sub_criteria in self.sub_criteria_list
         ]
@@ -162,8 +183,8 @@ SELECT
     {self.meets_criteria_aggregator_clause}(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    {self.flatten_reasons_blob_clause()} AS reason,
-    {self.flatten_reasons_blob_clause()} AS reason_v2,
+    TO_JSON(STRUCT({self.flatten_reasons_blob_clause()})) AS reason,
+{f"    {self.flatten_reasons_blob_clause()}," if len(self.reasons_fields) > 0 else ""}
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -238,6 +259,7 @@ Combines the following criteria queries using {self.boolean_logic_description} l
                 state_code=self.state_code,
                 criteria_spans_query_template=self.get_query_template(),
                 meets_criteria_default=self.meets_criteria_default,
+                reasons_fields=self.reasons_fields,
             )
 
         return StateAgnosticTaskCriteriaBigQueryViewBuilder(
@@ -245,11 +267,25 @@ Combines the following criteria queries using {self.boolean_logic_description} l
             description=self.description,
             criteria_spans_query_template=self.get_query_template(),
             meets_criteria_default=self.meets_criteria_default,
+            reasons_fields=self.reasons_fields,
         )
 
     @property
     def table_for_query(self) -> BigQueryAddress:
         return self.as_criteria_view_builder().table_for_query
+
+    @property
+    def materialized_address(self) -> Optional[BigQueryAddress]:
+        return self.as_criteria_view_builder().materialized_address
+
+    @property
+    def address(self) -> BigQueryAddress:
+        """The (dataset_id, table_id) address for this view"""
+        return self.as_criteria_view_builder().address
+
+    @property
+    def dataset_id(self) -> str:
+        return self.address.dataset_id
 
 
 @attr.define
@@ -332,6 +368,16 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
         return self.sub_criteria.reasons_fields
 
     @property
+    def state_code(self) -> Optional[StateCode]:
+        """Returns the value of the state_code associated with this
+        InvertedTaskCriteriaBigQueryViewBuilder. A state_code will only be
+        returned if the inverted task criteria is state-specific.
+        """
+        if isinstance(self.sub_criteria, StateSpecificTaskCriteriaBigQueryViewBuilder):
+            return self.sub_criteria.state_code
+        return None
+
+    @property
     def description(self) -> str:
         return (
             f"A criteria that is met for every period of time when the "
@@ -362,6 +408,19 @@ class InvertedTaskCriteriaBigQueryViewBuilder:
     @property
     def table_for_query(self) -> BigQueryAddress:
         return self.as_criteria_view_builder().table_for_query
+
+    @property
+    def materialized_address(self) -> Optional[BigQueryAddress]:
+        return self.as_criteria_view_builder().materialized_address
+
+    @property
+    def address(self) -> BigQueryAddress:
+        """The (dataset_id, table_id) address for this view"""
+        return self.as_criteria_view_builder().address
+
+    @property
+    def dataset_id(self) -> str:
+        return self.address.dataset_id
 
     def get_query_template(self) -> str:
         """Returns a query template that inverts the meets criteria values."""

@@ -17,7 +17,7 @@
 """View builder that auto-generates task eligiblity spans view from component criteria
 and candidate population views.
 """
-from typing import Dict, List
+from typing import Dict, List, Sequence, Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
@@ -41,6 +41,10 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    InvertedTaskCriteriaBigQueryViewBuilder,
+    TaskCriteriaGroupBigQueryViewBuilder,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -99,6 +103,36 @@ TASK_COMPLETION_EVENT_CTE = """task_completion_events AS (
 )"""
 
 
+def get_all_descendant_criteria_builders(
+    criteria_builders: List[
+        Union[
+            TaskCriteriaBigQueryViewBuilder,
+            TaskCriteriaGroupBigQueryViewBuilder,
+            InvertedTaskCriteriaBigQueryViewBuilder,
+        ]
+    ]
+) -> List[
+    Union[
+        TaskCriteriaBigQueryViewBuilder,
+        TaskCriteriaGroupBigQueryViewBuilder,
+        InvertedTaskCriteriaBigQueryViewBuilder,
+    ]
+]:
+    """Recursive function to collect all view builders representing task
+    criteria at all levels of criteria dependency tree.
+    """
+    view_builders = []
+    for builder in criteria_builders:
+        view_builders.append(builder)
+        if isinstance(builder, TaskCriteriaGroupBigQueryViewBuilder):
+            view_builders += get_all_descendant_criteria_builders(
+                builder.sub_criteria_list
+            )
+        elif isinstance(builder, InvertedTaskCriteriaBigQueryViewBuilder):
+            view_builders.append(builder.sub_criteria)
+    return view_builders
+
+
 # TODO(#16091): Write tests for this class
 class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """View builder that auto-generates task eligiblity spans view from component
@@ -111,7 +145,13 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         task_name: str,
         description: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        criteria_spans_view_builders: List[
+            Union[
+                TaskCriteriaBigQueryViewBuilder,
+                TaskCriteriaGroupBigQueryViewBuilder,
+                InvertedTaskCriteriaBigQueryViewBuilder,
+            ]
+        ],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
     ) -> None:
         self._validate_builder_state_codes(
@@ -152,7 +192,13 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         state_code: StateCode,
         task_name: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        criteria_spans_view_builders: List[
+            Union[
+                TaskCriteriaBigQueryViewBuilder,
+                TaskCriteriaGroupBigQueryViewBuilder,
+                InvertedTaskCriteriaBigQueryViewBuilder,
+            ]
+        ],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
     ) -> str:
         """Builds the view query template that does span collapsing logic to generate
@@ -364,7 +410,13 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
     @staticmethod
     def _dataset_query_format_args(
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        criteria_spans_view_builders: List[
+            Union[
+                TaskCriteriaBigQueryViewBuilder,
+                TaskCriteriaGroupBigQueryViewBuilder,
+                InvertedTaskCriteriaBigQueryViewBuilder,
+            ]
+        ],
         completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
     ) -> Dict[str, str]:
         """Returns the query format args for the datasets in the query template. All
@@ -379,11 +431,28 @@ WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
 
         return {f"{dataset_id}_dataset": dataset_id for dataset_id in datasets}
 
+    def all_descendant_criteria_builders(
+        self,
+    ) -> Sequence[
+        Union[
+            TaskCriteriaBigQueryViewBuilder,
+            TaskCriteriaGroupBigQueryViewBuilder,
+            InvertedTaskCriteriaBigQueryViewBuilder,
+        ]
+    ]:
+        return get_all_descendant_criteria_builders(self.criteria_spans_view_builders)
+
     @staticmethod
     def _validate_builder_state_codes(
         task_state_code: StateCode,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
-        criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        criteria_spans_view_builders: List[
+            Union[
+                TaskCriteriaBigQueryViewBuilder,
+                TaskCriteriaGroupBigQueryViewBuilder,
+                InvertedTaskCriteriaBigQueryViewBuilder,
+            ]
+        ],
     ) -> None:
         """Validates that the state code for this task eligiblity view matches the
         state codes on all component criteria / population view builders (if one

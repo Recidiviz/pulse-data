@@ -115,7 +115,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
         ),
         ReasonsField(
             name="reclasses_needed",
-            type=bigquery.enums.SqlTypeNames.FLOAT,
+            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
             description="#TODO(#29059): Add reasons field description",
         ),
         ReasonsField(

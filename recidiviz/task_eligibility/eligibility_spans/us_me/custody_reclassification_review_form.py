@@ -27,10 +27,14 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_me import (
     incarceration_assessment_completed,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
-    incarceration_past_relevant_classification_date,
+    incarceration_past_annual_classification_date,
+    incarceration_past_semi_annual_classification_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_criteria_group_big_query_view_builder import (
+    OrTaskCriteriaGroup,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -45,7 +49,19 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        incarceration_past_relevant_classification_date.VIEW_BUILDER,
+        OrTaskCriteriaGroup(
+            criteria_name="US_ME_INCARCERATION_PAST_RELEVANT_CLASSIFICATION_DATE",
+            sub_criteria_list=[
+                incarceration_past_annual_classification_date.VIEW_BUILDER,
+                incarceration_past_semi_annual_classification_date.VIEW_BUILDER,
+            ],
+            allowed_duplicate_reasons_keys=[
+                "reclass_type",
+                "reclasses_needed",
+                "latest_classification_date",
+                "eligible_date",
+            ],
+        ),
     ],
     completion_event_builder=incarceration_assessment_completed.VIEW_BUILDER,
 )
