@@ -8,15 +8,27 @@ primary_key_cols:
 columns:
   - name: Created_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Created_On_Date
+    description: Date the record was added on.
   - name: E_Violation_Disposition_Class_Desc
     description: Description of this violation disposition class.
   - name: Juvenile_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Locking_Tsp
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Logical_Delete_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_On_Date
+    description: Date the record was modified on.
   - name: Violation_Disposition_Class_Cd
     description: Primary key. Code of this violation disposition class.
 is_code_file: True

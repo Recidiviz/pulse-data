@@ -10,17 +10,29 @@ columns:
     description: Violation disposition class code.
   - name: Created_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Created_On_Date
+    description: Date the record was added on.
   - name: E_Violation_Disposition_Type_Desc
     description: Description of this violation disposition type.
   - name: E_Violation_Disposition_Type_Full_Desc
     description: A more complete description of this violation disposition type.
   - name: Juvenile_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Locking_Tsp
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Logical_Delete_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_On_Date
+    description: Date the record was modified on.
   - name: Violation_Disposition_Type_Cd
     description: Primary key
 is_code_file: True
