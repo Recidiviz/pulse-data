@@ -165,13 +165,26 @@ WHERE
     ),
     SpanQueryBuilder(
         span_type=SpanType.HOUSING_TYPE_SESSION,
-        description="Non-overlapping spans of time over which a person has a certain housing type",
+        description="Non-overlapping spans of time over which a person has a certain housing type.",
         sql_source="""SELECT *
 FROM
     `{project_id}.sessions.housing_unit_type_sessions_materialized`
 WHERE
     housing_unit_type IS NOT NULL""",
         attribute_cols=["housing_unit_type"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
+        description="Non-overlapping spans of time over which a person has a certain housing type, where all solitary "
+        "confinement housing types are collapsed.",
+        sql_source="""SELECT *
+FROM
+    `{project_id}.sessions.housing_unit_type_collapsed_solitary_sessions_materialized`
+WHERE
+    housing_unit_type_collapsed_solitary IS NOT NULL""",
+        attribute_cols=["housing_unit_type_collapsed_solitary"],
         span_start_date_col="start_date",
         span_end_date_col="end_date_exclusive",
     ),
