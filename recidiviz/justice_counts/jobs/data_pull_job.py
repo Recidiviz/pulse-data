@@ -31,9 +31,6 @@ from recidiviz.justice_counts.jobs.csg_data_pull import generate_agency_summary_
 from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
     pull_agencies_with_published_capacity_and_cost_data,
 )
-from recidiviz.justice_counts.jobs.super_agency_data_pull import (
-    generate_superagency_summary,
-)
 from recidiviz.justice_counts.jobs.user_permissions_check import check_user_permissions
 from recidiviz.justice_counts.utils.constants import JUSTICE_COUNTS_SENTRY_DSN
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
@@ -114,16 +111,6 @@ if __name__ == "__main__":
         )
     except Exception as e:
         logger.exception("Agency Dashboard Script Failed %s", str(e))
-    try:
-        time.sleep(60)
-        logger.info("Running Superagency Data Pull")
-        generate_superagency_summary(
-            session=global_session,
-            dry_run=args.dry_run,
-            google_credentials=credentials,
-        )
-    except Exception as e:
-        logger.exception("Superagency Data Pull Script Failed: %s", str(e))
     try:
         time.sleep(60)
         logger.info("Closing DB Connection Before Running User Permissions Check")
