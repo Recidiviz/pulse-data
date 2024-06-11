@@ -9,23 +9,35 @@ columns:
   - name: Cis_180_Disciplinary_Case_Id
     description: ID of the related disciplinary case, joins to CIS_180_DISCIPLINARY_CASE.DISCIPLINARY_CASE_ID.
   - name: Cis_1810_Disposition_Class_Cd
+    description: Code the diposition class.
   - name: Cis_1810_Violation_Class_Cd
     description: Code of this violation disposition class to be merged with CIS_1810.
   - name: Cis_1811_Disposition_Type_Cd
+    description: Code of the disposition type.
   - name: Cis_1811_Violation_Type_Cd
     description: Code of violation disposition type to be merged with CIS_1811.
   - name: Cis_1812_Violation_Plea_Type_Cd
+    description: Code of the violation plea type.
   - name: Cis_1813_Disposition_Outcome_Type_Cd
     description: Disposition outcome type to be merged with CIS_1813.
   - name: Created_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Created_On_Date
+    description: Date the record was added on.
   - name: Locking_Tsp
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Logical_Delete_Ind
     description: Delete if 'Y'
   - name: Modified_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_On_Date
+    description: Date the record was modified on.
   - name: Violation_Disposition_Id
     description: Primary key
   - name: Violation_Disposition_Seq_Num
+    description: The sequence number of the violation disposition.

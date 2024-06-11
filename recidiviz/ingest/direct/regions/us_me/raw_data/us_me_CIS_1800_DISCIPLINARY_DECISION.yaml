@@ -8,13 +8,21 @@ primary_key_cols:
 columns:
   - name: Created_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Created_On_Date
+    description: Date the record was added on.
   - name: E_Disciplinary_Decision_Desc
     description: The description that maps to the code in the table.
   - name: Logical_Delete_Ind
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_By_Tx
     is_pii: True
+    description: |-
+      TODO(#30541): Fill in with information from ME
   - name: Modified_On_Date
+    description: Date the record was modified on.
   - name: Disciplinary_Decision_Cd
     description: The primary key for the table.
     known_values:
