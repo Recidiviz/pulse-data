@@ -19,6 +19,7 @@ import unittest
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -49,7 +50,7 @@ CRITERIA_2_STATE_AGNOSTIC = StateAgnosticTaskCriteriaBigQueryViewBuilder(
     reasons_fields=[
         ReasonsField(
             name="fees_owed",
-            type=bigquery.enums.SqlTypeNames("FLOAT"),
+            type=bigquery.enums.StandardSqlTypeNames.FLOAT64,
             description="Amount of fees owed",
         ),
     ],
@@ -121,6 +122,15 @@ class TestTaskCriteriaGroupBigQueryViewBuilder(unittest.TestCase):
         # Check that a group with two state-agnostic criteria does not return a state_code
         self.assertIsNone(criteria_group.state_code)
 
+        # Check that the state-agnostic criteria is stored in the general criteria dataset
+        self.assertEqual(
+            criteria_group.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_general",
+                table_id="criteria_1_and_criteria_2_materialized",
+            ),
+        )
+
         # Check that meets_criteria_default is True if and only if all sub-criteria are True
         self.assertEqual(criteria_group.meets_criteria_default, False)
 
@@ -157,8 +167,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed)) AS reason,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed)) AS reason_v2,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -168,12 +178,21 @@ GROUP BY 1, 2, 3, 4
     def test_criteria_group_state_specific_same_state(self) -> None:
         """Checks a standard AND group between two state-specific criteria from the same state"""
         criteria_group = AndTaskCriteriaGroup(
-            criteria_name="CRITERIA_4_AND_CRITERIA_5",
+            criteria_name="US_KY_CRITERIA_4_AND_CRITERIA_5",
             sub_criteria_list=[CRITERIA_4_STATE_SPECIFIC, CRITERIA_5_STATE_SPECIFIC],
             allowed_duplicate_reasons_keys=[],
         )
         # Check that a group with two state-specific criteria from one state returns a state_code
         self.assertEqual(criteria_group.state_code, StateCode.US_KY)
+
+        # Check that the state-specific criteria is stored in the right state criteria dataset
+        self.assertEqual(
+            criteria_group.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_ky",
+                table_id="criteria_4_and_criteria_5_materialized",
+            ),
+        )
 
         # Check that meets_criteria_default is True if and only if all sub-criteria are True
         self.assertEqual(criteria_group.meets_criteria_default, False)
@@ -216,8 +235,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(latest_violation_date) AS latest_violation_date, MAX(offense_type) AS offense_type, MAX(violations) AS violations)) AS reason,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(latest_violation_date) AS latest_violation_date, MAX(offense_type) AS offense_type, MAX(violations) AS violations)) AS reason_v2,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.latest_violation_date') AS DATE)) AS latest_violation_date, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.violations') AS FLOAT)) AS violations,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -227,12 +246,21 @@ GROUP BY 1, 2, 3, 4
     def test_criteria_group_state_specific_and_state_agnostic_no_reasons(self) -> None:
         """Checks AND group between a state-specific and a state-agnostic criteria"""
         criteria_group = AndTaskCriteriaGroup(
-            criteria_name="CRITERIA_1_AND_CRITERIA_3",
+            criteria_name="US_HI_CRITERIA_1_AND_CRITERIA_3",
             sub_criteria_list=[CRITERIA_1_STATE_AGNOSTIC, CRITERIA_3_STATE_SPECIFIC],
             allowed_duplicate_reasons_keys=[],
         )
         # Check that a group with one state-specific and one state-agnostic criteria returns a state_code
         self.assertEqual(criteria_group.state_code, StateCode.US_HI)
+
+        # Check that the state-specific criteria is stored in the right state criteria dataset
+        self.assertEqual(
+            criteria_group.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_hi",
+                table_id="criteria_1_and_criteria_3_materialized",
+            ),
+        )
 
         # Check that meets_criteria_default is True if and only if all sub-criteria are True
         self.assertEqual(criteria_group.meets_criteria_default, True)
@@ -255,6 +283,7 @@ Combines the following criteria queries using AND logic:
 WITH unioned_criteria AS (
     SELECT *, True AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_general.my_state_agnostic_criteria_materialized`
+    WHERE state_code = "US_HI"
     UNION ALL
     SELECT *, True AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_us_hi.criteria_3_materialized`
@@ -270,7 +299,7 @@ SELECT
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
     TO_JSON(STRUCT()) AS reason,
-    TO_JSON(STRUCT()) AS reason_v2,
+
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -282,12 +311,21 @@ GROUP BY 1, 2, 3, 4
     ) -> None:
         """Checks AND group between a state-specific and a state-agnostic criteria having overlapping reasons"""
         criteria_group = AndTaskCriteriaGroup(
-            criteria_name="CRITERIA_2_AND_CRITERIA_5",
+            criteria_name="US_KY_CRITERIA_2_AND_CRITERIA_5",
             sub_criteria_list=[CRITERIA_2_STATE_AGNOSTIC, CRITERIA_5_STATE_SPECIFIC],
             allowed_duplicate_reasons_keys=["fees_owed"],
         )
         # Check that a group with one state-specific and one state-agnostic criteria returns a state_code
         self.assertEqual(criteria_group.state_code, StateCode.US_KY)
+
+        # Check that the state-specific criteria is stored in the right state criteria dataset
+        self.assertEqual(
+            criteria_group.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_ky",
+                table_id="criteria_2_and_criteria_5_materialized",
+            ),
+        )
 
         # Check that meets_criteria_default is True if and only if all sub-criteria are True
         self.assertEqual(criteria_group.meets_criteria_default, False)
@@ -311,6 +349,7 @@ Combines the following criteria queries using AND logic:
 WITH unioned_criteria AS (
     SELECT *, False AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
+    WHERE state_code = "US_KY"
     UNION ALL
     SELECT *, True AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_5_materialized`
@@ -325,8 +364,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(offense_type) AS offense_type)) AS reason,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(offense_type) AS offense_type)) AS reason_v2,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -370,7 +409,32 @@ GROUP BY 1, 2, 3, 4
         )
         self.assertEqual(criteria.criteria_name, "US_HI_NOT_CRITERIA_3")
 
+        self.assertEqual(StateCode.US_HI, criteria.state_code)
+
+        self.assertEqual(
+            criteria.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_hi",
+                table_id="not_criteria_3_materialized",
+            ),
+        )
+
         self.assertEqual(criteria.meets_criteria_default, False)
+
+        # Check that query template is correct
+        expected_query_template = """
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    NOT meets_criteria AS meets_criteria,
+    reason,
+    reason_v2,
+FROM
+    task_eligibility_criteria_us_hi.criteria_3_materialized
+"""
+        self.assertEqual(expected_query_template, criteria.get_query_template())
 
     def test_inverted_criteria_state_agnostic_criteria_name(self) -> None:
         """Checks inverted state-agnostic criteria"""
@@ -379,7 +443,32 @@ GROUP BY 1, 2, 3, 4
         )
         self.assertEqual(criteria.criteria_name, "NOT_ANOTHER_STATE_AGNOSTIC_CRITERIA")
 
+        self.assertIsNone(criteria.state_code)
+
+        self.assertEqual(
+            criteria.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_general",
+                table_id="not_another_state_agnostic_criteria_materialized",
+            ),
+        )
+
         self.assertEqual(criteria.meets_criteria_default, True)
+
+        # Check that query template is correct
+        expected_query_template = """
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    NOT meets_criteria AS meets_criteria,
+    reason,
+    reason_v2,
+FROM
+    task_eligibility_criteria_general.another_state_agnostic_criteria_materialized
+"""
+        self.assertEqual(expected_query_template, criteria.get_query_template())
 
     def test_or_group_and_inverted_criteria_state_agnostic_criteria_name(self) -> None:
         """Checks OR group with a nested inverted criteria"""
@@ -393,6 +482,15 @@ GROUP BY 1, 2, 3, 4
         )
         # Check that a group with one state-specific and two state-agnostic criteria returns a state_code
         self.assertEqual(criteria_group.state_code, StateCode.US_KY)
+
+        # Check that the state-specific criteria is stored in the right state criteria dataset
+        self.assertEqual(
+            criteria_group.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_ky",
+                table_id="criteria_2_or_not_5_materialized",
+            ),
+        )
 
         # Check that meets_criteria_default is True if and only if any sub-criteria is True
         self.assertEqual(criteria_group.meets_criteria_default, False)
@@ -416,6 +514,7 @@ Combines the following criteria queries using OR logic:
 WITH unioned_criteria AS (
     SELECT *, False AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_general.another_state_agnostic_criteria_materialized`
+    WHERE state_code = "US_KY"
     UNION ALL
     SELECT *, False AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_us_ky.not_criteria_5_materialized`
@@ -430,8 +529,8 @@ SELECT
     LOGICAL_OR(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(offense_type) AS offense_type)) AS reason,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(offense_type) AS offense_type)) AS reason_v2,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
@@ -441,7 +540,7 @@ GROUP BY 1, 2, 3, 4
     def test_multiple_nested_criteria(self) -> None:
         """Checks nested AND + OR + NOT criteria group"""
         criteria_group = AndTaskCriteriaGroup(
-            criteria_name="CRITERIA_1_AND_CRITERIA_2_OR_NOT_5",
+            criteria_name="US_KY_CRITERIA_1_AND_CRITERIA_2_OR_NOT_5",
             sub_criteria_list=[
                 CRITERIA_1_STATE_AGNOSTIC,
                 OrTaskCriteriaGroup(
@@ -459,6 +558,14 @@ GROUP BY 1, 2, 3, 4
         )
         # Check that a group with one state-specific and two state-agnostic criteria returns a state_code
         self.assertEqual(criteria_group.state_code, StateCode.US_KY)
+
+        self.assertEqual(
+            criteria_group.table_for_query,
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_ky",
+                table_id="criteria_1_and_criteria_2_or_not_5_materialized",
+            ),
+        )
 
         # Check that description field is aligned
         expected_description = """
@@ -482,6 +589,7 @@ Combines the following criteria queries using AND logic:
 WITH unioned_criteria AS (
     SELECT *, True AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_general.my_state_agnostic_criteria_materialized`
+    WHERE state_code = "US_KY"
     UNION ALL
     SELECT *, False AS meets_criteria_default
     FROM `{{project_id}}.task_eligibility_criteria_us_ky.criteria_2_or_not_5_materialized`
@@ -496,8 +604,8 @@ SELECT
     LOGICAL_AND(
         COALESCE(meets_criteria, meets_criteria_default)
     ) AS meets_criteria,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(offense_type) AS offense_type)) AS reason,
-    TO_JSON(STRUCT(MAX(fees_owed) AS fees_owed, MAX(offense_type) AS offense_type)) AS reason_v2,
+    TO_JSON(STRUCT(MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type)) AS reason,
+    MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.fees_owed') AS FLOAT64)) AS fees_owed, MAX(SAFE_CAST(JSON_VALUE(reason_v2, '$.offense_type') AS STRING)) AS offense_type,
 FROM
     sub_sessions_with_attributes
 GROUP BY 1, 2, 3, 4
