@@ -407,6 +407,35 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
+        "recidiviz.cloud_functions.ingest_filename_normalization",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.cloud_functions.cloud_function_utils",
+                "recidiviz.cloud_storage.gcsfs_factory",
+                "recidiviz.cloud_storage.gcs_file_system",
+                "recidiviz.cloud_storage.gcs_file_system_impl",
+                "recidiviz.cloud_storage.verifiable_bytes_reader",
+                "recidiviz.cloud_storage.gcsfs_path",
+                "recidiviz.common.attr_validators",
+                "recidiviz.common.io.contents_handle",
+                "recidiviz.common.io.file_contents_handle",
+                "recidiviz.common.io.local_file_contents_handle",
+                "recidiviz.common.io.zip_file_contents_handle",
+                "recidiviz.common.retry_predicate",
+                "recidiviz.ingest.direct.direct_ingest_bucket_name_utils",
+                "recidiviz.ingest.direct.gcs.filename_parts",
+                "recidiviz.ingest.direct.types.direct_ingest_constants",
+                "recidiviz.ingest.direct.types.errors",
+                "recidiviz.utils.environment",
+                "recidiviz.utils.metadata",
+                "recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system",
+                "recidiviz.ingest.direct.gcs.directory_path_utils",
+                "recidiviz.ingest.direct.types.direct_ingest_instance",
+            }
+        ),
+    )
+
+    success &= check_dependencies_for_entrypoint(
         "recidiviz.server",
         valid_module_prefixes=make_module_matcher(
             {
