@@ -137,24 +137,6 @@ module "workflows_database" {
   }
 }
 
-module "sentencing_database" {
-  source = "./modules/cloud-sql-instance"
-
-  project_id        = var.project_id
-  instance_key      = "sentencing"
-  base_secret_name  = "sentencing"
-  region            = var.region
-  zone              = var.zone
-  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
-  has_readonly_user = true
-  insights_config = {
-    query_insights_enabled  = true
-    query_string_length     = 1024
-    record_application_tags = false
-    record_client_address   = false
-  }
-}
-
 locals {
   # Add demo states to staging for demo mode
   pathways_enabled_states  = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
@@ -168,7 +150,6 @@ locals {
       module.justice_counts_database.connection_name,
       module.pathways_database.connection_name,
       module.workflows_database.connection_name,
-      module.sentencing_database.connection_name,
       module.insights_database.connection_name,
       # v2 modules
       module.operations_database_v2.connection_name,
@@ -183,7 +164,6 @@ locals {
     [
       module.case_triage_database.connection_name,
       module.pathways_database.connection_name,
-      module.sentencing_database.connection_name,
       module.insights_database.connection_name,
     ]
   )
