@@ -57,6 +57,7 @@ from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions imp
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.common.str_field_utils import snake_to_title
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
 )
@@ -97,6 +98,15 @@ _NON_ABSCONSION_VIOLATION_TYPES = [
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
     if category != "ABSCONSION"
     for violation_type in types
+]
+
+_HOUSING_UNIT_TYPES = [
+    "TEMPORARY_SOLITARY_CONFINEMENT",
+    "DISCIPLINARY_SOLITARY_CONFINEMENT",
+    "ADMINISTRATIVE_SOLITARY_CONFINEMENT",
+    "OTHER_SOLITARY_CONFINEMENT",
+    "MENTAL_HEALTH_SOLITARY_CONFINEMENT",
+    "PROTECTIVE_CUSTODY",
 ]
 
 ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
@@ -579,16 +589,27 @@ AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT = DailyAvgSpanCountMetric(
     description="Average daily population of individuals in solitary confinement",
     span_selectors=[
         SpanSelector(
-            span_type=SpanType.HOUSING_TYPE_SESSION,
+            span_type=SpanType.HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSION,
             span_conditions_dict={
-                "housing_unit_type": [
-                    "TEMPORARY_SOLITARY_CONFINEMENT",
-                    "PERMANENT_SOLITARY_CONFINEMENT",
-                ]
+                "housing_unit_type_collapsed_solitary": ["SOLITARY_CONFINEMENT"],
             },
         )
     ],
 )
+AVG_DAILY_POPULATION_HOUSING_TYPE_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_{housing_type.lower()}",
+        display_name=f"Average Population: {snake_to_title(housing_type)}",
+        description=f"Average daily count of residents in {snake_to_title(housing_type)}",
+        span_selectors=[
+            SpanSelector(
+                span_type=SpanType.HOUSING_TYPE_SESSION,
+                span_conditions_dict={"housing_unit_type": [housing_type]},
+            )
+        ],
+    )
+    for housing_type in _HOUSING_UNIT_TYPES
+]
 
 AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     name="avg_population_solitary_confinement_justice_impact",

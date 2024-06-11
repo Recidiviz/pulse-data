@@ -60,6 +60,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_GENERAL_CASE_TYPE,
     AVG_DAILY_POPULATION_GENERAL_INCARCERATION,
     AVG_DAILY_POPULATION_HIGH_RISK_LEVEL,
+    AVG_DAILY_POPULATION_HOUSING_TYPE_METRICS,
     AVG_DAILY_POPULATION_LIMITED_SUPERVISION_JUSTICE_IMPACT,
     AVG_DAILY_POPULATION_LOW_RISK_LEVEL,
     AVG_DAILY_POPULATION_MAXIMUM_CUSTODY,
@@ -196,6 +197,8 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         AVG_DAILY_POPULATION_TREATMENT_IN_PRISON,
         # Average daily population, solitary confinement
         AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT,
+        # Average daily population, solitary confinement housing type
+        *AVG_DAILY_POPULATION_HOUSING_TYPE_METRICS,
         # Average daily population, facility custody level
         AVG_DAILY_POPULATION_MAXIMUM_CUSTODY,
         AVG_DAILY_POPULATION_MEDIUM_CUSTODY,
