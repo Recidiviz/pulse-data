@@ -18,7 +18,6 @@
 the uniform/state-agnostic offense labels from CJARS."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -43,10 +42,10 @@ SELECT
   charge_id,
   external_id,
   description,
-FROM `{project_id}.{normalized_state_dataset}.state_charge`
-WHERE uccs_category_uniform = "EXTERNAL_UNKNOWN"
-    -- Flag rows with null descriptions in `normalized_state_charge_missing_descriptions`
-    AND description IS NOT NULL
+FROM `{project_id}.normalized_state.state_charge` charge
+LEFT JOIN `{project_id}.reference_views.cleaned_offense_description_to_labels` charge_labels
+ON charge.description = charge_labels.offense_description
+WHERE charge.description IS NOT NULL AND charge_labels.offense_description IS NULL
 """
 
 NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -54,7 +53,6 @@ NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER = SimpleBigQ
     view_id=NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_NAME,
     view_query_template=NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_QUERY_TEMPLATE,
     description=NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_DESCRIPTION,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

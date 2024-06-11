@@ -30,32 +30,6 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_sentence_normal
     UsXxSentenceNormalizationDelegate,
 )
 
-CHARGE_OFFENSE_DESCRIPTIONS_TO_LABELS = [
-    {
-        "person_id": 123,
-        "state_code": "US_XX",
-        "charge_id": 1,
-        "offense_description": "FRAUD",
-        "probability": 0.99934607,
-        "uccs_code": 2040,
-        "uccs_description": "Forgery/Fraud",
-        "uccs_category": "Forgery/Fraud",
-        "ncic_description": "Fraud (describe offense)",
-        "ncic_category": "Fraud",
-        "nibrs_code": "26A",
-        "nibrs_description": "False Pretenses/Swindle/Confidence Game",
-        "nibrs_category": "Fraud",
-        "crime_against": "Property",
-        "is_drug": False,
-        "is_violent": False,
-        "is_sex_offense": False,
-        "offense_completed": True,
-        "offense_attempted": False,
-        "offense_conspired": False,
-        "ncic_code": "2699",
-    }
-]
-
 
 class TestSentenceNormalizationManager(unittest.TestCase):
     """Tests the sentence_normalization_manager.py."""
@@ -79,7 +53,6 @@ class TestSentenceNormalizationManager(unittest.TestCase):
         sentence_normalization_manager = SentenceNormalizationManager(
             incarceration_sentences=[incarceration_sentence],
             supervision_sentences=[],
-            charge_offense_description_to_labels_list=CHARGE_OFFENSE_DESCRIPTIONS_TO_LABELS,
             delegate=UsXxSentenceNormalizationDelegate(),
         )
 
@@ -103,22 +76,6 @@ class TestSentenceNormalizationManager(unittest.TestCase):
                         "is_violent_external": charge.is_violent,
                         "is_drug_external": charge.is_drug,
                         "is_sex_offense_external": charge.is_sex_offense,
-                        "ncic_description_uniform": "Fraud (describe offense)",
-                        "uccs_code_uniform": 2040,
-                        "uccs_description_uniform": "Forgery/Fraud",
-                        "uccs_category_uniform": "Forgery/Fraud",
-                        "ncic_category_uniform": "Fraud",
-                        "nibrs_code_uniform": "26A",
-                        "nibrs_description_uniform": "False Pretenses/Swindle/Confidence Game",
-                        "nibrs_category_uniform": "Fraud",
-                        "crime_against_uniform": "Property",
-                        "is_drug_uniform": False,
-                        "is_violent_uniform": False,
-                        "is_sex_offense_uniform": False,
-                        "offense_completed_uniform": True,
-                        "offense_attempted_uniform": False,
-                        "offense_conspired_uniform": False,
-                        "ncic_code_uniform": "2699",
                     }
                 },
             },

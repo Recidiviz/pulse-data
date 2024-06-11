@@ -101,6 +101,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
         TO_JSON_STRING(sis.sentence_metadata) AS sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
+        charge_labels.* EXCEPT(offense_description, probability),
         UPPER(REGEXP_REPLACE(COALESCE(charge.description, statute.OffenseDescription), "  ", " ")) AS description,
     -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
     FROM (
@@ -116,6 +117,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
+    LEFT JOIN `{project_id}.reference_views.cleaned_offense_description_to_labels` charge_labels
+        ON charge.description = charge_labels.offense_description
     LEFT JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` statute
         ON charge.statute = statute.Offense
     WHERE sis.external_id IS NOT NULL
@@ -160,6 +163,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
         TO_JSON_STRING(sss.sentence_metadata) AS sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
+        charge_labels.* EXCEPT(offense_description, probability),
         UPPER(REGEXP_REPLACE(COALESCE(charge.description, statute.OffenseDescription), "  ", " ")) AS description,
     -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
     FROM (
@@ -175,6 +179,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
+    LEFT JOIN `{project_id}.reference_views.cleaned_offense_description_to_labels` charge_labels
+        ON charge.description = charge_labels.offense_description
     LEFT JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` statute
         ON charge.statute = statute.Offense
     WHERE sss.external_id IS NOT NULL

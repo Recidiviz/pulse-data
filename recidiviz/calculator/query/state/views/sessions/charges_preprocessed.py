@@ -35,6 +35,7 @@ CHARGES_PREPROCESSED_SPECIAL_STATES = ["US_MO"]
 CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         charge.*,
+        charge_labels.* EXCEPT(offense_description, probability),
         COALESCE(
             charge.judicial_district_code,
             TRIM(scc.judicial_district_code),
@@ -43,6 +44,8 @@ CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     FROM `{project_id}.{normalized_state_dataset}.state_charge` charge
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_county_codes` scc
     USING (state_code, county_code)
+    LEFT JOIN `{project_id}.reference_views.cleaned_offense_description_to_labels` charge_labels
+    ON charge.description = charge_labels.offense_description
     WHERE charge.state_code NOT IN ('{special_states}')
 
     UNION ALL

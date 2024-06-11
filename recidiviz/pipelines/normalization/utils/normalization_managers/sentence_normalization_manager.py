@@ -18,10 +18,6 @@
 of StateCharge entities in the calculation pipelines."""
 from typing import Any, Dict, List, Optional, Tuple, Type
 
-from recidiviz.common.attr_mixins import (
-    BuildableAttrFieldType,
-    attr_field_type_for_field_name,
-)
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -35,14 +31,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StateSupervisionSentence,
 )
-from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateCharge
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
-    fields_unique_to_normalized_class,
-)
-from recidiviz.pipelines.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -78,16 +69,10 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         self,
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
-        charge_offense_description_to_labels_list: List[Dict[str, Any]],
         delegate: StateSpecificSentenceNormalizationDelegate,
     ) -> None:
         self._incarceration_sentences = incarceration_sentences
         self._supervision_sentences = supervision_sentences
-        self._charge_offense_description_to_labels: Dict[
-            int, Dict[str, Any]
-        ] = list_of_dicts_to_dict_with_keys(
-            charge_offense_description_to_labels_list, key="charge_id"
-        )
         self._normalized_incarceration_sentences_and_additional_attributes: Optional[
             Tuple[List[StateIncarcerationSentence], AdditionalAttributesMap]
         ] = None
@@ -227,12 +212,8 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         if not charge.charge_id:
             raise ValueError(f"Unexpected charge with no charge_id {charge}")
 
-        offense_labels_for_charge = (
-            self._charge_offense_description_to_labels.get(charge.charge_id) or {}
-        )
-
-        # Fill the external values
-        external_values = {
+        # Columns that are renamed to *_external
+        return {
             "ncic_code_external": charge.ncic_code,
             "ncic_category_external": get_description(charge.ncic_code)
             if charge.ncic_code
@@ -242,22 +223,3 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             "is_drug_external": charge.is_drug,
             "is_sex_offense_external": charge.is_sex_offense,
         }
-
-        uniform_fields = [
-            field
-            for field in fields_unique_to_normalized_class(NormalizedStateCharge)
-            if field not in external_values
-        ]
-
-        # Fields for the charge
-        uniform_values = {
-            field: offense_labels_for_charge.get(
-                field.replace("_uniform", ""), "EXTERNAL_UNKNOWN"
-            )
-            if attr_field_type_for_field_name(NormalizedStateCharge, field)
-            == BuildableAttrFieldType.STRING
-            else offense_labels_for_charge.get(field.replace("_uniform", ""), None)
-            for field in uniform_fields
-        }
-
-        return {**external_values, **uniform_values}

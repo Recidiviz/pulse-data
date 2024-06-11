@@ -21,9 +21,6 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 
 import attr
 
-from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
-    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
-)
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
 )
@@ -133,7 +130,6 @@ class TestNormalizeEntities(unittest.TestCase):
         assessments: Optional[List[StateAssessment]],
         persons: Optional[List[StatePerson]],
         supervision_contacts: Optional[List[StateSupervisionContact]],
-        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]],
         state_person_to_state_staff: Optional[List[Dict[str, Any]]],
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the
@@ -150,8 +146,6 @@ class TestNormalizeEntities(unittest.TestCase):
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
             StateSupervisionContact.__name__: supervision_contacts or [],
-            STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
-            or [],
             STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
         }
 
@@ -287,22 +281,6 @@ class TestNormalizeEntities(unittest.TestCase):
                         "is_violent_external": charge.is_violent,
                         "is_drug_external": charge.is_drug,
                         "is_sex_offense_external": charge.is_sex_offense,
-                        "uccs_code_uniform": 3160,
-                        "uccs_description_uniform": "Possession/Use of Unspecified Drug",
-                        "uccs_category_uniform": "Possession/Use of Unspecified Drug",
-                        "ncic_code_uniform": "3599",
-                        "ncic_description_uniform": "Dangerous Drugs (describe offense)",
-                        "ncic_category_uniform": "Dangerous Drugs",
-                        "nibrs_code_uniform": "35A",
-                        "nibrs_description_uniform": "Drug/Narcotic",
-                        "nibrs_category_uniform": "Drug/Narcotic",
-                        "crime_against_uniform": "Society",
-                        "is_drug_uniform": True,
-                        "is_violent_uniform": False,
-                        "is_sex_offense_uniform": None,
-                        "offense_completed_uniform": True,
-                        "offense_attempted_uniform": False,
-                        "offense_conspired_uniform": False,
                     }
                     for supervision_sentence in self.full_graph_person.supervision_sentences
                     for charge in supervision_sentence.charges
@@ -321,22 +299,6 @@ class TestNormalizeEntities(unittest.TestCase):
                         "is_violent_external": charge.is_violent,
                         "is_drug_external": charge.is_drug,
                         "is_sex_offense_external": charge.is_sex_offense,
-                        "uccs_code_uniform": 3160,
-                        "uccs_description_uniform": "Possession/Use of Unspecified Drug",
-                        "uccs_category_uniform": "Possession/Use of Unspecified Drug",
-                        "ncic_code_uniform": "3599",
-                        "ncic_description_uniform": "Dangerous Drugs (describe offense)",
-                        "ncic_category_uniform": "Dangerous Drugs",
-                        "nibrs_code_uniform": "35A",
-                        "nibrs_description_uniform": "Drug/Narcotic",
-                        "nibrs_category_uniform": "Drug/Narcotic",
-                        "crime_against_uniform": "Society",
-                        "is_drug_uniform": True,
-                        "is_violent_uniform": False,
-                        "is_sex_offense_uniform": None,
-                        "offense_completed_uniform": True,
-                        "offense_attempted_uniform": False,
-                        "offense_conspired_uniform": False,
                     }
                     for incarceration_sentence in self.full_graph_person.incarceration_sentences
                     for charge in incarceration_sentence.charges
@@ -396,60 +358,6 @@ class TestNormalizeEntities(unittest.TestCase):
                 for sentence in self.full_graph_person.sentences
                 for snapshot in sentence.sentence_status_snapshots
             ],
-            charge_offense_descriptions_to_labels=[
-                {
-                    "person_id": self.full_graph_person.person_id,
-                    "charge_id": charge.charge_id,
-                    "state_code": "US_XX",
-                    "offense_description": "DRUG POSSESSION",
-                    "probability": 0.993368719,
-                    "uccs_code": 3160,
-                    "uccs_description": "Possession/Use of Unspecified Drug",
-                    "uccs_category": "Possession/Use of Unspecified Drug",
-                    "ncic_code": "3599",
-                    "ncic_description": "Dangerous Drugs (describe offense)",
-                    "ncic_category": "Dangerous Drugs",
-                    "nibrs_code": "35A",
-                    "nibrs_description": "Drug/Narcotic",
-                    "nibrs_category": "Drug/Narcotic",
-                    "crime_against": "Society",
-                    "is_drug": True,
-                    "is_violent": False,
-                    "offense_completed": True,
-                    "offense_attempted": False,
-                    "offense_conspired": False,
-                }
-                for incarceration_sentence in self.full_graph_person.incarceration_sentences
-                for charge in incarceration_sentence.charges
-                if charge.charge_id
-            ]
-            + [
-                {
-                    "person_id": self.full_graph_person.person_id,
-                    "charge_id": charge.charge_id,
-                    "state_code": "US_XX",
-                    "offense_description": "DRUG POSSESSION",
-                    "probability": 0.993368719,
-                    "uccs_code": 3160,
-                    "uccs_description": "Possession/Use of Unspecified Drug",
-                    "uccs_category": "Possession/Use of Unspecified Drug",
-                    "ncic_code": "3599",
-                    "ncic_description": "Dangerous Drugs (describe offense)",
-                    "ncic_category": "Dangerous Drugs",
-                    "nibrs_code": "35A",
-                    "nibrs_description": "Drug/Narcotic",
-                    "nibrs_category": "Drug/Narcotic",
-                    "crime_against": "Society",
-                    "is_drug": True,
-                    "is_violent": False,
-                    "offense_completed": True,
-                    "offense_attempted": False,
-                    "offense_conspired": False,
-                }
-                for supervision_sentence in self.full_graph_person.supervision_sentences
-                for charge in supervision_sentence.charges
-                if charge.charge_id
-            ],
             state_person_to_state_staff=[
                 {
                     "person_id": self.full_graph_person.person_id,
@@ -494,7 +402,6 @@ class TestNormalizeEntities(unittest.TestCase):
             sentence_status_snapshots=[],
             assessments=[],
             supervision_contacts=[],
-            charge_offense_descriptions_to_labels=[],
             state_person_to_state_staff=[],
         )
 
@@ -575,7 +482,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         sentence_status_snapshots: Optional[List[StateSentenceStatusSnapshot]],
         assessments: Optional[List[StateAssessment]],
         persons: Optional[List[StatePerson]],
-        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]],
         state_person_to_state_staff: Optional[List[Dict[str, Any]]],
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
@@ -591,8 +497,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
             StateSupervisionContact.__name__: supervision_contacts or [],
-            STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
-            or [],
             STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
         }
 
@@ -744,7 +648,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             sentence_status_snapshots=[],
             assessments=[],
             state_person_to_state_staff=STATE_PERSON_TO_STATE_STAFF_LIST,
-            charge_offense_descriptions_to_labels=[],
         )
 
         expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {
@@ -792,7 +695,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             sentence_status_snapshots=[],
             assessments=[],
             state_person_to_state_staff=[],
-            charge_offense_descriptions_to_labels=[],
         )
 
         expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {

@@ -359,8 +359,6 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             else []
         )
 
-        offense_description_labels_data: List[Dict[str, Any]] = []
-
         state_person_to_staff_data: List[Dict[str, Any]] = []
 
         data_dict = default_data_dict_for_root_schema_classes(
@@ -399,7 +397,6 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             "state_charge_incarceration_sentence_association": charge_to_incarceration_sentence_association,
             "state_charge_supervision_sentence_association": charge_to_supervision_sentence_association,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
-            "state_charge_offense_description_to_labels": offense_description_labels_data,
             "state_person_to_state_staff": state_person_to_staff_data,
         }
         data_dict.update(data_dict_overrides)

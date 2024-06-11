@@ -49,10 +49,13 @@ US_MO_CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     )
     SELECT
         charge.*,
+        charge_labels.* EXCEPT(offense_description, probability),
         judicial_district
     FROM `{project_id}.{normalized_state_dataset}.state_charge` charge
     LEFT JOIN parsed_judicial_district district
         USING (state_code, person_id, external_id)
+    LEFT JOIN `{project_id}.reference_views.cleaned_offense_description_to_labels` charge_labels
+    ON charge.description = charge_labels.offense_description
     WHERE state_code = "US_MO"
     
     """

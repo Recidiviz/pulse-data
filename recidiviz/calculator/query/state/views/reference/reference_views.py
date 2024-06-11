@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.reference.cleaned_offense_description_to_labels import (
+    CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.current_staff import (
     CURRENT_STAFF_VIEW_BUILDER,
 )
@@ -63,9 +66,6 @@ from recidiviz.calculator.query.state.views.reference.product_failed_logins_mont
 from recidiviz.calculator.query.state.views.reference.product_roster import (
     PRODUCT_ROSTER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
-    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
@@ -94,7 +94,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
-    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
+    CLEANED_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_BUILDER,
     TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
     PRODUCT_ROSTER_VIEW_BUILDER,
