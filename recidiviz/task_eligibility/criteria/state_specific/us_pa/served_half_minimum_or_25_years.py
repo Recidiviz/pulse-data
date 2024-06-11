@@ -19,11 +19,14 @@
 Defines a criteria view that shows spans of time for which clients have either served
 25 years in prison or have served half of their minimum sentence.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_GENERAL
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -41,7 +44,7 @@ _QUERY_TEMPLATE = f"""
 WITH served_half_min_and_25_years AS (
     SELECT 
         * EXCEPT (reason),
-        DATE(JSON_EXTRACT_SCALAR(reason, "$.eligible_date")) AS eligible_date,
+        DATE(JSON_EXTRACT_SCALAR(reason, "$.minimum_time_served_date")) AS half_min_term_or_25_years_date,
         '25_YEARS_INCARCERATED' AS criteria_fulfilled_first
     FROM `{{project_id}}.{{tes_criteria_general_dataset}}.incarcerated_at_least_25_years_materialized`
     WHERE state_code = 'US_PA'
@@ -50,7 +53,7 @@ WITH served_half_min_and_25_years AS (
 
     SELECT 
         * EXCEPT (reason),
-        DATE(JSON_EXTRACT_SCALAR(reason, "$.eligible_date")) AS eligible_date,
+        DATE(JSON_EXTRACT_SCALAR(reason, "$.half_min_term_release_date")) AS half_min_term_or_25_years_date,
         'PAST_HALF_MIN_RELEASE_DATE' AS criteria_fulfilled_first
     FROM `{{project_id}}.{{tes_criteria_general_dataset}}.incarceration_past_half_min_term_release_date_materialized`
     WHERE state_code = 'US_PA'
@@ -64,14 +67,16 @@ SELECT
     start_date, 
     end_date, 
     meets_criteria, 
-    TO_JSON(STRUCT(eligible_date AS eligible_date, 
-                   criteria_fulfilled_first AS criteria_fulfilled_first)) AS reason
+    TO_JSON(STRUCT(half_min_term_or_25_years_date AS eligible_date, 
+                   criteria_fulfilled_first AS criteria_fulfilled_first)) AS reason,
+    half_min_term_or_25_years_date,
+    criteria_fulfilled_first,
 FROM sub_sessions_with_attributes 
 WHERE start_date != COALESCE(end_date, "9999-12-31") 
 -- If there are two subsessions with the same date, keep the one meeting the criteria, 
 -- if both meet the criteria, choose the one that had the earliest eligible date 
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date 
-                          ORDER BY meets_criteria DESC, eligible_date ASC) = 1
+                          ORDER BY meets_criteria DESC, half_min_term_or_25_years_date ASC) = 1
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -81,6 +86,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_PA,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         tes_criteria_general_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+        reasons_fields=[
+            ReasonsField(
+                name="half_min_term_or_25_years_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="criteria_fulfilled_first",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
