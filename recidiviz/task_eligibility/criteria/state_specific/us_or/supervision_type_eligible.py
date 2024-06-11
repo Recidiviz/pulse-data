@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Excludes individuals under ineligible supervision types from eligibility for OR earned discharge"""
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
@@ -25,6 +26,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -64,7 +66,8 @@ _QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         LOGICAL_AND(is_eligible) AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type)) AS reason
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type)) AS reason,
+        ARRAY_AGG(DISTINCT supervision_type_raw_text ORDER BY supervision_type_raw_text) AS supervision_type,
     FROM sub_sessions_with_attributes
     GROUP BY 1, 2, 3, 4
 """
@@ -76,6 +79,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_OR,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="supervision_type",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

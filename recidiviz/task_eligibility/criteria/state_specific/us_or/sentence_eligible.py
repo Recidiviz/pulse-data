@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Combines sentence-level eligibility determinations for OR earned discharge"""
+from google.cloud import bigquery
 
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
@@ -25,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -151,7 +153,7 @@ _QUERY_TEMPLATE = f"""
                 sentences.statute AS sentence_statute,
                 sentence_id AS sentence_id
             )) AS reason,
-        FROM sub_sessions_with_attributes
+        FROM sub_sessions_with_attributes ss
         LEFT JOIN sentences
             USING (state_code, person_id, sentence_id)
         LEFT JOIN most_recent_offenses
@@ -169,6 +171,8 @@ _QUERY_TEMPLATE = f"""
         -- split out eligible and ineligible sentences
         TO_JSON(STRUCT(ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
                        ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences)) AS reason,
+        ARRAY_AGG(IF(is_eligible, reason, NULL) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS eligible_sentences,
+        ARRAY_AGG(IF(is_eligible, NULL, reason) IGNORE NULLS ORDER BY JSON_VALUE(reason.supervision_sentence_start_date) ASC) AS ineligible_sentences,          
     FROM sub_sessions_with_attributes_with_reasons
     GROUP BY 1, 2, 3, 4
 """
@@ -181,6 +185,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="eligible_sentences",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="ineligible_sentences",
+                type=bigquery.enums.SqlTypeNames.RECORD,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
