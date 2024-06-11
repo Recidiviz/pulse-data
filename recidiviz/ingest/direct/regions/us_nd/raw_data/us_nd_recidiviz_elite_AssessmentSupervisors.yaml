@@ -8,6 +8,7 @@ data_classification: source
 primary_key_cols:
   - ASSESSMENT_ID
   - SUPERVISION_LEVEL_TYPE
+update_cadence: IRREGULAR
 columns:
   - name: ACTIVE_FLAG
     description: whether this assessment is still used.
