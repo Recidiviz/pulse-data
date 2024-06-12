@@ -19,6 +19,7 @@
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgSpanCountMetric,
     EventCountMetric,
+    EventDistinctUnitCountMetric,
     EventValueMetric,
     SumSpanDaysMetric,
 )
@@ -106,6 +107,32 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS = [
     )
     for k in USAGE_EVENTS_DICT
 ]
+DISTINCT_ACTIVE_USERS_LOOKER = EventDistinctUnitCountMetric(
+    name="distinct_active_users",
+    display_name="Distinct Active Users",
+    description="Number of distinct Workflows users having at least one usage event for the "
+    "task type during the time period",
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.WORKFLOWS_USER_ACTION,
+            event_conditions_dict={
+                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
+            },
+        ),
+        EventSelector(
+            event_type=EventType.WORKFLOWS_USER_CLIENT_STATUS_UPDATE,
+            event_conditions_dict={
+                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
+            },
+        ),
+        EventSelector(
+            event_type=EventType.WORKFLOWS_USER_PAGE,
+            event_conditions_dict={
+                "task_type": " = {% parameter workflows_impact_metrics.task_type %}",
+            },
+        ),
+    ],
+)
 PERSON_DAYS_TASK_ELIGIBLE_LOOKER = SumSpanDaysMetric(
     name="person_days_task_eligible",
     display_name="Person-Days Eligible for Opportunity",

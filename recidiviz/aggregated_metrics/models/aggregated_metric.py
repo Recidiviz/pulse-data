@@ -614,6 +614,28 @@ class EventValueMetric(PeriodEventAggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
+class EventDistinctUnitCountMetric(PeriodEventAggregatedMetric):
+    """
+    Class that stores information about a metric that counts the distinct
+    number of unit of observations among the observed events.
+
+    Example metric: distinct active users.
+    """
+
+    def generate_aggregation_query_fragment(self, event_date_col: str) -> str:
+        return f"""
+            COUNT(DISTINCT IF(
+                {self.get_metric_conditions_string()},
+                {self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")},
+                NULL
+            )) AS {self.name}
+        """
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"AVG({self.name}) AS {self.name}"
+
+
+@attr.define(frozen=True, kw_only=True)
 class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
     """
     Class that stores information about a metric that calculates the number of days from

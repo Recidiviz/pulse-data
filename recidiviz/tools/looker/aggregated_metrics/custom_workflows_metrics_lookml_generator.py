@@ -64,6 +64,7 @@ WORKFLOWS_IMPACT_LOOKER_METRICS = [
     *workflows_metrics.AVG_DAILY_POPULATION_TASK_ELIGIBLE_LOOKER_FUNNEL_METRICS,
     workflows_metrics.AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER,
     *workflows_metrics.AVG_DAILY_POPULATION_TASK_ALMOST_ELIGIBLE_LOOKER_FUNNEL_METRICS,
+    workflows_metrics.DISTINCT_ACTIVE_USERS_LOOKER,
     workflows_metrics.PERSON_DAYS_TASK_ELIGIBLE_LOOKER,
     workflows_metrics.TASK_COMPLETIONS_LOOKER,
     workflows_metrics.TASK_COMPLETIONS_WHILE_ELIGIBLE_LOOKER,
@@ -179,6 +180,7 @@ def main(
                     metric
                     for metric in metrics
                     if isinstance(metric, PeriodSpanAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
@@ -189,6 +191,7 @@ def main(
                     metric
                     for metric in metrics
                     if isinstance(metric, PeriodEventAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
@@ -199,6 +202,7 @@ def main(
                     metric
                     for metric in metrics
                     if isinstance(metric, AssignmentSpanAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
@@ -209,6 +213,7 @@ def main(
                     metric
                     for metric in metrics
                     if isinstance(metric, AssignmentEventAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
