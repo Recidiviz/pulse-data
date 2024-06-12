@@ -19,6 +19,7 @@ import unittest
 
 import attr
 
+from recidiviz.cloud_storage.gcsfs_csv_chunk_boundary_finder import CsvChunkBoundary
 from recidiviz.common.constants.csv import (
     DEFAULT_CSV_ENCODING,
     DEFAULT_CSV_LINE_TERMINATOR,
@@ -29,7 +30,10 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawDataFileUpdateCadence,
 )
 from recidiviz.ingest.direct.types.raw_data_import_types import (
+    NormalizedCsvChunkResult,
     PreImportNormalizationType,
+    RequiresPreImportNormalizationFileChunk,
+    RequiresPreImportNormalizationFileChunks,
 )
 
 
@@ -129,4 +133,82 @@ class PreImportNormalizationTypeTest(unittest.TestCase):
                 test_config
             )
             == PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE
+        )
+
+
+class TestSerialization(unittest.TestCase):
+    """Test serialization and deserialization of RequiresPreImportNormalizationFileChunk and NormalizedCsvChunkResult"""
+
+    def test_requires_pre_import_normalization_file_chunk(self) -> None:
+        chunk_boundary = CsvChunkBoundary(
+            start_inclusive=0, end_exclusive=100, chunk_num=0
+        )
+        original = RequiresPreImportNormalizationFileChunk(
+            path="path/to/file.csv",
+            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundary=chunk_boundary,
+            headers="id,name,age",
+        )
+
+        serialized = original.serialize()
+        deserialized = RequiresPreImportNormalizationFileChunk.deserialize(serialized)
+
+        self.assertEqual(original.path, deserialized.path)
+        self.assertEqual(original.headers, deserialized.headers)
+        self.assertEqual(
+            original.chunk_boundary.start_inclusive,
+            deserialized.chunk_boundary.start_inclusive,
+        )
+        self.assertEqual(
+            original.chunk_boundary.end_exclusive,
+            deserialized.chunk_boundary.end_exclusive,
+        )
+        self.assertEqual(
+            original.chunk_boundary.chunk_num, deserialized.chunk_boundary.chunk_num
+        )
+        self.assertEqual(original.normalization_type, deserialized.normalization_type)
+
+    def test_requires_pre_import_normalization_file_chunks(self) -> None:
+        chunk_boundaries = [
+            CsvChunkBoundary(start_inclusive=0, end_exclusive=100, chunk_num=0),
+            CsvChunkBoundary(start_inclusive=100, end_exclusive=200, chunk_num=1),
+        ]
+        original = RequiresPreImportNormalizationFileChunks(
+            path="path/to/file.csv",
+            normalization_type=PreImportNormalizationType.ENCODING_DELIMITER_AND_TERMINATOR_UPDATE,
+            chunk_boundaries=chunk_boundaries,
+            headers="id,name,age",
+        )
+
+        serialized = original.serialize()
+        deserialized = RequiresPreImportNormalizationFileChunks.deserialize(serialized)
+
+        self.assertEqual(original.path, deserialized.path)
+        self.assertEqual(original.headers, deserialized.headers)
+        self.assertEqual(original.chunk_boundaries, deserialized.chunk_boundaries)
+        self.assertEqual(original.normalization_type, deserialized.normalization_type)
+
+    def test_normalized_csv_chunk_result(self) -> None:
+        chunk_boundary = CsvChunkBoundary(
+            start_inclusive=0, end_exclusive=100, chunk_num=0
+        )
+        original = NormalizedCsvChunkResult(
+            path="path/to/result.csv", chunk_boundary=chunk_boundary, crc32c="abcd1234"
+        )
+
+        serialized = original.serialize()
+        deserialized = NormalizedCsvChunkResult.deserialize(serialized)
+
+        self.assertEqual(original.path, deserialized.path)
+        self.assertEqual(original.crc32c, deserialized.crc32c)
+        self.assertEqual(
+            original.chunk_boundary.start_inclusive,
+            deserialized.chunk_boundary.start_inclusive,
+        )
+        self.assertEqual(
+            original.chunk_boundary.end_exclusive,
+            deserialized.chunk_boundary.end_exclusive,
+        )
+        self.assertEqual(
+            original.chunk_boundary.chunk_num, deserialized.chunk_boundary.chunk_num
         )

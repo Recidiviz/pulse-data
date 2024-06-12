@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Types associated with raw data imports"""
+import json
 from enum import Enum, auto
-from typing import Optional
+from typing import List, Optional
 
 import attr
 
@@ -71,11 +72,70 @@ class RequiresPreImportNormalizationFileChunk:
     for the CSV to conform to BigQuery's load job standards."""
 
     path: str
-    normalization_type: PreImportNormalizationType
+    normalization_type: Optional[PreImportNormalizationType]
     chunk_boundary: CsvChunkBoundary
-    # TODO(#28586) determine how we want to to do this -- i'm thinking we read the headers
-    # in during the accounting pass step?
     headers: str
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "path": self.path,
+                "normalization_type": (
+                    self.normalization_type.value if self.normalization_type else ""
+                ),
+                "chunk_boundary": self.chunk_boundary.serialize(),
+                "headers": self.headers,
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RequiresPreImportNormalizationFileChunk":
+        data = json.loads(json_str)
+        return RequiresPreImportNormalizationFileChunk(
+            path=data["path"],
+            normalization_type=PreImportNormalizationType(data["normalization_type"]),
+            chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
+            headers=data["headers"],
+        )
+
+
+@attr.define
+class RequiresPreImportNormalizationFileChunks:
+    """Encapsulates the path, the headers, the chunk boundaries for the file
+    and the type of normalization required for the CSV to conform to
+    BigQuery's load job standards."""
+
+    path: str
+    normalization_type: Optional[PreImportNormalizationType]
+    chunk_boundaries: List[CsvChunkBoundary]
+    headers: str
+
+    def serialize(self) -> str:
+        return json.dumps(
+            {
+                "path": self.path,
+                "normalization_type": (
+                    self.normalization_type.value if self.normalization_type else ""
+                ),
+                "chunk_boundaries": [
+                    boundary.serialize() for boundary in self.chunk_boundaries
+                ],
+                "headers": self.headers,
+            }
+        )
+
+    @staticmethod
+    def deserialize(json_str: str) -> "RequiresPreImportNormalizationFileChunks":
+        data = json.loads(json_str)
+        return RequiresPreImportNormalizationFileChunks(
+            path=data["path"],
+            normalization_type=PreImportNormalizationType(data["normalization_type"]),
+            chunk_boundaries=[
+                CsvChunkBoundary.deserialize(boundary)
+                for boundary in data["chunk_boundaries"]
+            ],
+            headers=data["headers"],
+        )
 
 
 @attr.define
@@ -86,3 +146,33 @@ class NormalizedCsvChunkResult:
     path: str
     chunk_boundary: CsvChunkBoundary
     crc32c: str
+
+    def serialize(self) -> str:
+        result_dict = {
+            "path": self.path,
+            "chunk_boundary": self.chunk_boundary.serialize(),
+            "crc32c": self.crc32c,
+        }
+        return json.dumps(result_dict)
+
+    @staticmethod
+    def deserialize(json_str: str) -> "NormalizedCsvChunkResult":
+        data = json.loads(json_str)
+        return NormalizedCsvChunkResult(
+            path=data["path"],
+            chunk_boundary=CsvChunkBoundary.deserialize(data["chunk_boundary"]),
+            crc32c=data["crc32c"],
+        )
+
+
+@attr.define
+class RequiresNormalizationFile:
+    file_path: str
+    file_tag: str
+
+
+@attr.define
+class ImportReadyNormalizedFile:
+    file_tag: str
+    input_file_path: str
+    output_file_paths: List[str]
