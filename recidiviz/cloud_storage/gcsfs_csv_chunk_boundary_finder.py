@@ -16,6 +16,7 @@
 # =============================================================================
 """Code for finding byte offsets for row-safe chunk boundaries for Google Cloud Storage CSV files. """
 import io
+import json
 from typing import Annotated, List, Optional
 
 import attr
@@ -43,6 +44,17 @@ class CsvChunkBoundary:
     start_inclusive: int
     end_exclusive: int
     chunk_num: int
+
+    def serialize(self) -> str:
+        data = [self.start_inclusive, self.end_exclusive, self.chunk_num]
+        return json.dumps(data)
+
+    @staticmethod
+    def deserialize(json_str: str) -> "CsvChunkBoundary":
+        data = json.loads(json_str)
+        return CsvChunkBoundary(
+            start_inclusive=data[0], end_exclusive=data[1], chunk_num=data[2]
+        )
 
 
 class GcsfsCsvChunkBoundaryFinder:

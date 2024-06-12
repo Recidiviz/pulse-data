@@ -264,3 +264,17 @@ class DirectIngestRawFileAccountingPassTest(unittest.TestCase):
             expected_chunks,
             line_terminator="no_newlines_here",
         )
+
+
+class TestCsvChunkBoundary(unittest.TestCase):
+    """Test serialization/deserialization for CsvChunkBoundary"""
+
+    def test_serialize_deserialize(self) -> None:
+        original = CsvChunkBoundary(start_inclusive=0, end_exclusive=100, chunk_num=1)
+
+        serialized = original.serialize()
+        deserialized = CsvChunkBoundary.deserialize(serialized)
+
+        self.assertEqual(original.start_inclusive, deserialized.start_inclusive)
+        self.assertEqual(original.end_exclusive, deserialized.end_exclusive)
+        self.assertEqual(original.chunk_num, deserialized.chunk_num)
