@@ -158,6 +158,12 @@ resource "google_monitoring_alert_policy" "scheduled_query_monitoring" {
     }
   }
 
+  alert_strategy {
+    notification_rate_limit {
+      period = "900s"
+    }
+  }
+
   documentation {
     content = "A BQ scheduled query failed. See history at https://console.cloud.google.com/bigquery/transfers?project=${var.project_id}"
   }
