@@ -237,6 +237,8 @@ resource "google_cloud_run_service" "application-data-import" {
 
   template {
     spec {
+      timeout_seconds = 600
+
       containers {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
@@ -257,7 +259,6 @@ resource "google_cloud_run_service" "application-data-import" {
           }
         }
       }
-
       service_account_name = google_service_account.application_data_import_cloud_run.email
     }
 
