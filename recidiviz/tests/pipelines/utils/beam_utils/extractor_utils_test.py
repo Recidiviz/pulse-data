@@ -28,11 +28,6 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 from mock import patch
 
-from recidiviz.big_query.big_query_query_provider import SimpleBigQueryQueryProvider
-from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
@@ -61,6 +56,8 @@ from recidiviz.tests.pipelines.calculator_test_utils import (
     remove_relationship_properties,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
+    TEST_REFERENCE_QUERY_NAME,
+    TEST_REFERENCE_QUERY_PROVIDER,
     FakeReadFromBigQuery,
     FakeReadFromBigQueryFactory,
 )
@@ -866,11 +863,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
             person_id=person_id,
         )
 
-        person_to_county_of_residence_data = [
+        test_reference_query_data = [
             {
                 "state_code": "US_XX",
                 "person_id": person_id,
-                "county_of_residence": "COUNTY",
+                "a": "A_VALUE",
+                "b": 2,
             }
         ]
 
@@ -884,7 +882,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
             schema.StatePersonExternalId.__tablename__: external_ids_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StatePersonRace.__tablename__: races_data,
-            PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_to_county_of_residence_data,
+            TEST_REFERENCE_QUERY_NAME: test_reference_query_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -927,11 +925,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                     entities.StateAssessment,
                 ],
                 reference_data_queries_by_name={
-                    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: SimpleBigQueryQueryProvider(
-                        PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER.build(
-                            address_overrides=None
-                        ).view_query
-                    )
+                    TEST_REFERENCE_QUERY_NAME: TEST_REFERENCE_QUERY_PROVIDER
                 },
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
@@ -954,7 +948,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                                     entity_external_id
                                 ],
                                 entities.StateAssessment.__name__: [entity_assessment],
-                                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: person_to_county_of_residence_data,
+                                TEST_REFERENCE_QUERY_NAME: test_reference_query_data,
                             },
                         )
                     ]
@@ -1128,16 +1122,17 @@ class TestExtractDataForPipeline(unittest.TestCase):
         person_id = 12345
         project = "project"
         dataset = "state"
-        fields_of_test_reference = [
+        test_reference_query_data = [
             {
-                "person_id": person_id,
                 "state_code": "US_XX",
-                "agnt_note_title": "some_title",
+                "person_id": person_id,
+                "a": "A_VALUE",
+                "b": 2,
             }
         ]
 
         data_dict = {
-            PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: fields_of_test_reference,
+            TEST_REFERENCE_QUERY_NAME: test_reference_query_data,
         }
 
         with patch(
@@ -1154,11 +1149,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                 entities_dataset=dataset,
                 required_entity_classes=None,
                 reference_data_queries_by_name={
-                    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: SimpleBigQueryQueryProvider(
-                        PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER.build(
-                            address_overrides=None
-                        ).view_query
-                    )
+                    TEST_REFERENCE_QUERY_NAME: TEST_REFERENCE_QUERY_PROVIDER
                 },
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=None,
@@ -1171,7 +1162,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
                         (
                             12345,
                             {
-                                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME: fields_of_test_reference,
+                                TEST_REFERENCE_QUERY_NAME: test_reference_query_data,
                             },
                         )
                     ]

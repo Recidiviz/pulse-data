@@ -57,9 +57,6 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.us_pa_lo
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_tn_location_metadata import (
     US_TN_LOCATION_METADATA_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.product_failed_logins_monthly import (
     PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
 )
@@ -89,7 +86,6 @@ from recidiviz.calculator.query.state.views.reference.workflows_opportunity_conf
 )
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,

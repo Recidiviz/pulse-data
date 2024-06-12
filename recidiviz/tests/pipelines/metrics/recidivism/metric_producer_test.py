@@ -63,7 +63,6 @@ from recidiviz.pipelines.utils.state_utils.us_nd.us_nd_recidivism_metrics_produc
     UsNdRecidivismMetricsProducerDelegate,
 )
 
-_COUNTY_OF_RESIDENCE = "county"
 _PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 
@@ -84,7 +83,6 @@ class TestReincarcerations(unittest.TestCase):
             original_admission_date,
             release_date,
             "Sing Sing",
-            _COUNTY_OF_RESIDENCE,
             reincarceration_date,
             "Sing Sing",
         )
@@ -93,7 +91,6 @@ class TestReincarcerations(unittest.TestCase):
             reincarceration_date,
             second_release_date,
             "Sing Sing",
-            _COUNTY_OF_RESIDENCE,
         )
         release_events: Dict[int, List[ReleaseEvent]] = {
             2018: [first_event],
@@ -116,7 +113,6 @@ class TestReincarcerations(unittest.TestCase):
             original_admission_date,
             release_date,
             "Sing Sing",
-            _COUNTY_OF_RESIDENCE,
             reincarceration_date,
             "Sing Sing",
         )
@@ -125,7 +121,6 @@ class TestReincarcerations(unittest.TestCase):
             release_date,
             second_release_date,
             "Sing Sing",
-            _COUNTY_OF_RESIDENCE,
             reincarceration_date,
             "Sing Sing",
         )
@@ -375,7 +370,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )
@@ -433,7 +427,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1905, 7, 19),
                     date(1908, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(1910, 8, 12),
                     "Upstate",
                 )
@@ -444,7 +437,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1910, 8, 12),
                     date(1912, 8, 19),
                     "Upstate",
-                    _COUNTY_OF_RESIDENCE,
                     date(1914, 7, 15),
                     "Sing Sing",
                 )
@@ -510,7 +502,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1905, 7, 19),
                     date(1910, 1, 1),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(1910, 1, 12),
                     "Upstate",
                 ),
@@ -519,7 +510,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1910, 1, 12),
                     date(1910, 8, 19),
                     "Upstate",
-                    _COUNTY_OF_RESIDENCE,
                     date(1910, 10, 15),
                     "Sing Sing",
                 ),
@@ -579,7 +569,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1905, 7, 19),
                     date(1908, 1, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(1908, 5, 12),
                     "Upstate",
                 ),
@@ -588,7 +577,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1908, 5, 12),
                     date(1908, 8, 19),
                     "Upstate",
-                    _COUNTY_OF_RESIDENCE,
                 ),
             ],
         }
@@ -647,7 +635,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1905, 7, 19),
                     date(1908, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(1913, 8, 12),
                     "Upstate",
                 )
@@ -658,7 +645,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1908, 9, 19),
                     date(1912, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(1913, 8, 12),
                     "Upstate",
                 )
@@ -720,7 +706,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2009, 9, 19),
                     "Upstate",
                 )
@@ -778,7 +763,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                 )
             ]
         }
@@ -832,7 +816,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(1995, 7, 19),
                     date(1998, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2008, 10, 12),
                     "Upstate",
                 )
@@ -894,7 +877,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )
@@ -956,7 +938,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )
@@ -1024,7 +1005,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )
@@ -1083,7 +1063,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )
@@ -1141,7 +1120,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )
@@ -1201,7 +1179,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )
@@ -1311,7 +1288,6 @@ class TestProduceMetrics(unittest.TestCase):
                     date(2005, 7, 19),
                     date(2008, 9, 19),
                     "Hudson",
-                    _COUNTY_OF_RESIDENCE,
                     date(2014, 5, 12),
                     "Upstate",
                 )

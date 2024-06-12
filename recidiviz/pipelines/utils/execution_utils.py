@@ -32,7 +32,7 @@ EntityClassName = str
 # eg. StateSupervisionSentence.StateCharge
 EntityRelationshipKey = str
 
-# The name of a reference table, e.g. persons_to_recent_county_of_residence
+# The name of a reference table, e.g. state_person_to_state_staff
 TableName = str
 
 # The root entity id that can be used to group related objects together (e.g. person_id)
@@ -275,26 +275,3 @@ def build_staff_external_id_to_staff_id_map(
         ]
         for id_set in state_person_to_state_staff_list
     }
-
-
-def extract_county_of_residence_from_rows(
-    persons_to_recent_county_of_residence: List[Dict[str, Any]]
-) -> Optional[str]:
-    """Extracts the single county of residence from a list of dictionaries representing rows in the
-    persons_to_recent_county_of_residence table. Throws if there is more than one row (there should never be for a given
-    person).
-    """
-    county_of_residence = None
-    if persons_to_recent_county_of_residence:
-        if len(persons_to_recent_county_of_residence) > 1:
-            person_id = persons_to_recent_county_of_residence[0]["person_id"]
-            raise ValueError(
-                f"Found more than one county of residence for person with id [{person_id}]: "
-                f"{persons_to_recent_county_of_residence}"
-            )
-
-        county_of_residence = persons_to_recent_county_of_residence[0][
-            "county_of_residence"
-        ]
-
-    return county_of_residence

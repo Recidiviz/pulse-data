@@ -21,7 +21,6 @@ from typing import Any, Dict, Iterable
 
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.pipelines.utils.execution_utils import (
-    extract_county_of_residence_from_rows,
     person_and_kwargs_for_identifier,
     select_all_by_person_query,
     select_query,
@@ -152,44 +151,3 @@ class TestSelectAllQuery(unittest.TestCase):
                 root_entity_id_filter_set={1234, 56},
             ),
         )
-
-
-class TestExtractCountyOfResidenceFromRows(unittest.TestCase):
-    """Tests for extract_county_of_residence_from_rows in execution_utils.py."""
-
-    def test_no_rows(self) -> None:
-        county_of_residence = extract_county_of_residence_from_rows([])
-        self.assertIsNone(county_of_residence)
-
-    def test_single_row(self) -> None:
-        expected_county_of_residence = "county"
-        rows = [
-            {
-                "state_code": "US_XX",
-                "person_id": 123,
-                "county_of_residence": expected_county_of_residence,
-            }
-        ]
-
-        county_of_residence = extract_county_of_residence_from_rows(rows)
-        self.assertEqual(expected_county_of_residence, county_of_residence)
-
-    def test_multiple_rows_asserts(self) -> None:
-        rows = [
-            {
-                "state_code": "US_XX",
-                "person_id": 123,
-                "county_of_residence": "county_1",
-            },
-            {
-                "state_code": "US_XX",
-                "person_id": 123,
-                "county_of_residence": "county_2",
-            },
-        ]
-
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Found more than one county of residence for person with id \[123\]",
-        ):
-            _ = extract_county_of_residence_from_rows(rows)

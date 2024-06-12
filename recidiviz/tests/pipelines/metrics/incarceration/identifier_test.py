@@ -77,14 +77,6 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 from recidiviz.utils.range_querier import RangeQuerier
 
 _STATE_CODE = "US_XX"
-_COUNTY_OF_RESIDENCE = "county"
-_COUNTY_OF_RESIDENCE_ROWS = [
-    {
-        "state_code": "US_XX",
-        "person_id": 123,
-        "county_of_residence": _COUNTY_OF_RESIDENCE,
-    }
-]
 
 _DEFAULT_IP_ID = 123
 _DEFAULT_SP_ID = 999
@@ -127,7 +119,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             StateAssessment.__name__: assessments or [],
             NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses
             or [],
-            "persons_to_recent_county_of_residence": _COUNTY_OF_RESIDENCE_ROWS,
         }
 
         return self.identifier.identify(
@@ -167,7 +158,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text="INCARCERATION_ADMISSION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -176,7 +166,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.release_date,
                 facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
                 admission_reason=incarceration_period.admission_reason,
                 total_days_incarcerated=(
@@ -232,14 +221,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 facility=incarceration_period_1.facility,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 admission_reason_raw_text="NA",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period_2.state_code,
                 event_date=incarceration_period_2.release_date,
                 facility=incarceration_period_2.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
                 admission_reason=incarceration_period_1.admission_reason,
                 total_days_incarcerated=(
@@ -307,7 +294,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=incarceration_period_1.admission_date,
                 facility=incarceration_period_1.facility,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id="X",
@@ -320,14 +306,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=incarceration_period_2.admission_date,
                 facility=incarceration_period_2.facility,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             IncarcerationReleaseEvent(
                 state_code=incarceration_period_1.state_code,
                 event_date=incarceration_period_1.release_date,
                 facility=incarceration_period_1.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
                 admission_reason=incarceration_period_1.admission_reason,
                 total_days_incarcerated=(
@@ -341,7 +325,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 state_code=incarceration_period_2.state_code,
                 event_date=incarceration_period_2.release_date,
                 facility=incarceration_period_2.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
                 admission_reason=incarceration_period_1.admission_reason,
                 total_days_incarcerated=(
@@ -380,7 +363,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
@@ -388,7 +370,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.release_date,
                 facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
                 admission_reason=incarceration_period.admission_reason,
                 total_days_incarcerated=(
@@ -435,7 +416,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
         ] = None,
-        county_of_residence: Optional[str] = _COUNTY_OF_RESIDENCE,
     ) -> Optional[IncarcerationAdmissionEvent]:
         """Runs `_admission_event_for_period`."""
         if state_code != StateCode.US_XX:
@@ -467,7 +447,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 assessments, lambda assessment: assessment.assessment_date
             ),
             sorted_violation_responses=sorted_violation_responses,
-            county_of_residence=county_of_residence,
         )
 
     def test_admission_event_for_period_us_mo(self) -> None:
@@ -506,7 +485,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
@@ -540,7 +518,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
                 supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -577,7 +554,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
                 supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
@@ -749,7 +725,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="PRISON3",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
             ),
@@ -783,7 +758,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.admission_date,
                 facility="CJ10",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=incarceration_period.admission_reason,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
@@ -798,7 +772,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2000, 12, 1),
                 facility="CJ10",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
 
 
@@ -866,7 +839,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 assessments, lambda assessment: assessment.assessment_date
             ),
             sorted_violation_responses=sorted_violation_responses,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
     def test_commitment_from_supervision_event_violation_history_cutoff(self) -> None:
@@ -1016,7 +988,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_history_description="1felony;1technical",
             violation_type_frequency_counter=[["FELONY"], ["TECHNICAL"]],
             level_1_supervision_location_external_id="OFFICE_1",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
@@ -1152,7 +1123,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_history_description="1technical",
             violation_type_frequency_counter=[["TECHNICAL"]],
             level_1_supervision_location_external_id="OFFICE_1",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
@@ -1294,7 +1264,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_history_description="1fel",
             violation_type_frequency_counter=[["FELONY"]],
             level_1_supervision_location_external_id="OFFICE_1",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
@@ -1378,7 +1347,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_type_frequency_counter=[["FELONY"]],
             level_1_supervision_location_external_id="4",
             level_2_supervision_location_external_id=None,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
@@ -1536,7 +1504,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_history_description="1felony;2technical",
             violation_type_frequency_counter=[["FELONY"], ["TECHNICAL"], ["TECHNICAL"]],
             level_1_supervision_location_external_id="OFFICE_1",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
 
@@ -1562,9 +1529,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             patcher.stop()
 
     def _run_release_for_period(
-        self,
-        incarceration_period: NormalizedStateIncarcerationPeriod,
-        county_of_residence: Optional[str],
+        self, incarceration_period: NormalizedStateIncarcerationPeriod
     ) -> Optional[IncarcerationReleaseEvent]:
         """Helper for testing `_release_event_for_period`."""
 
@@ -1586,7 +1551,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period_index,
             supervision_period_index,
             {},  # commitments from supervision
-            county_of_residence,
         )
 
     def test_release_event_for_period(self) -> None:
@@ -1605,9 +1569,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_reason_raw_text="SS",
         )
 
-        release_event = self._run_release_for_period(
-            incarceration_period, _COUNTY_OF_RESIDENCE
-        )
+        release_event = self._run_release_for_period(incarceration_period)
 
         assert incarceration_period.release_reason is not None
         assert incarceration_period.release_date is not None
@@ -1617,7 +1579,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.release_date,
                 facility="PRISON3",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=incarceration_period.release_reason,
                 release_reason_raw_text=incarceration_period.release_reason_raw_text,
                 purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
@@ -1651,9 +1612,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
             incarceration_period.release_reason = release_reason
 
-            release_event = self._run_release_for_period(
-                incarceration_period, _COUNTY_OF_RESIDENCE
-            )
+            release_event = self._run_release_for_period(incarceration_period)
 
             self.assertIsNotNone(release_event)
 
@@ -1672,9 +1631,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        release_event = self._run_release_for_period(
-            incarceration_period, _COUNTY_OF_RESIDENCE
-        )
+        release_event = self._run_release_for_period(incarceration_period)
 
         assert incarceration_period.release_reason is not None
         assert incarceration_period.release_date is not None
@@ -1684,7 +1641,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.release_date,
                 facility="CJ19",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=incarceration_period.release_reason,
                 admission_reason=incarceration_period.admission_reason,
                 total_days_incarcerated=(
@@ -1738,7 +1694,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
             commitments_from_supervision={},
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         assert incarceration_period.release_reason is not None
@@ -1749,7 +1704,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.release_date,
                 facility="PRISON3",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=incarceration_period.release_reason,
                 release_reason_raw_text=incarceration_period.release_reason_raw_text,
                 purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
@@ -1803,7 +1757,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
             commitments_from_supervision={},
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         assert incarceration_period.release_date is not None
@@ -1814,7 +1767,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=incarceration_period.release_date,
                 facility="PRISON3",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=incarceration_period.release_reason,
                 release_reason_raw_text=incarceration_period.release_reason_raw_text,
                 purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
@@ -1874,7 +1826,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period_index,
             supervision_period_index,
             {},
-            _COUNTY_OF_RESIDENCE,
         )
 
         self.assertEqual(
@@ -1882,7 +1833,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 state_code=incarceration_period.state_code,
                 event_date=release_date,
                 facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=release_reason,
                 release_reason_raw_text=incarceration_period.release_reason_raw_text,
                 purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,

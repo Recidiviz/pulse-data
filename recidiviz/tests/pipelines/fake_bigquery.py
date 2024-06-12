@@ -41,7 +41,10 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
+from recidiviz.big_query.big_query_query_provider import (
+    BigQueryQueryProvider,
+    SimpleBigQueryQueryProvider,
+)
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
@@ -84,7 +87,7 @@ ENTITY_TABLE_QUERY_REGEX = re.compile(
 
 # Regex matching queries used by calc pipelines to hydrate reference data.
 # Example query:
-# SELECT * FROM `recidiviz-staging.reference_views.persons_to_recent_county_of_residence` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
+# SELECT * FROM `recidiviz-staging.reference_views.state_person_to_state_staff` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
 REFERENCE_VIEWS_QUERY_REGEX = re.compile(
     r"SELECT ([A-Za-z_\ \,\*]+) FROM `[a-z\d\-]+\.([a-z_]*reference[a-z_]*)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?"
@@ -107,6 +110,12 @@ ASSOCIATION_VALUES_QUERY_REGEX = re.compile(
     r"JOIN \(SELECT \* FROM `[a-z\d\-]+\.([a-z_]+)\.([a-z_]+)` "
     r"WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) "
     r"ON ([a-z_]+\.[a-z_]+) = ([a-z_]+\.[a-z_]+)"
+)
+
+
+TEST_REFERENCE_QUERY_NAME = "test_reference_query_name"
+TEST_REFERENCE_QUERY_PROVIDER = SimpleBigQueryQueryProvider(
+    query="SELECT state_code, person_id, a, b FROM UNNEST([])"
 )
 
 
@@ -351,6 +360,16 @@ class FakeReadFromBigQueryFactory:
                     root_entity_filter_ids=None,
                     selected_column_name_to_alias=None,
                 )
+
+        if TEST_REFERENCE_QUERY_PROVIDER.query in query:
+            return FakeReadFromBigQueryFactory._get_data_from_table(
+                data_dict=data_dict,
+                table_name=TEST_REFERENCE_QUERY_NAME,
+                state_code_value=state_code.value,
+                root_entity_id_field=root_entity_id_field,
+                root_entity_filter_ids=None,
+                selected_column_name_to_alias=None,
+            )
 
         raise ValueError(f"Query string does not match known query format: {query}")
 
@@ -838,6 +857,8 @@ def _check_field_exists_in_table(table_name: str, field_name: str) -> None:
     that field does not exist in the table.
     """
     if table_name in {
+        # This is the name of a fake reference table used in some tests
+        TEST_REFERENCE_QUERY_NAME,
         # These are the names of reference view queries read by pipelines
         # TODO(#25244): Even though the dataflow pipelines now run ingest view queries
         #  directly, our test setup is still very hacky and instead of setting up source
@@ -847,7 +868,6 @@ def _check_field_exists_in_table(table_name: str, field_name: str) -> None:
         #  set up the necessary source table info there so we can avoid calling this
         #  function at all.
         "us_mo_sentence_statuses",
-        "persons_to_recent_county_of_residence",
         "us_ix_case_update_info",
         "state_person_to_state_staff",
     }:

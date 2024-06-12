@@ -33,6 +33,9 @@ COMMON_VESTIGES = [
     "validation_results.validation_results",
     # It is Polaris-convention to archive all exports for historical reference, even when the archive isn't used
     "export_archives.workflows_snooze_status_archive",
+    # This is a potentially useful general reference table for getting information about
+    # a given zip code.
+    "static_reference_tables.zip_city_county_state",
     # These Justice Counts V1 reference tables are managed by Terraform so must have schema definitions.
     # TODO(#29814): Determine whether we can delete these tables
     "external_reference.county_fips",

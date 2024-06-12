@@ -67,8 +67,6 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_m
 
 ALL_METRICS_INCLUSIONS = set(IncarcerationMetricType)
 
-_COUNTY_OF_RESIDENCE = "county"
-
 PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 
@@ -106,7 +104,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             admission_reason_raw_text="NEW_ADMISSION",
             event_date=date(2000, 3, 12),
             facility="FACILITY X",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [incarceration_event]
@@ -154,7 +151,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2000, 3, 12),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.REVOCATION,
                 admission_reason_raw_text="REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -163,14 +159,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2003, 4, 12),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 supervision_type_at_release=StateSupervisionPeriodSupervisionType.PAROLE,
             ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code="US_XX",
                 event_date=date(2000, 3, 12),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.REVOCATION,
                 admission_reason_raw_text="REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -218,14 +212,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2000, 3, 12),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.NEW_ADMISSION,
             ),
             IncarcerationStandardAdmissionEvent(
                 state_code="US_XX",
                 event_date=date(2000, 3, 17),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.NEW_ADMISSION,
             ),
         ]
@@ -270,7 +262,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2000, 3, 12),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.REVOCATION,
                 admission_reason_raw_text="REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -334,13 +325,11 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2010, 3, 12),
                 facility="FACILITY 33",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
             IncarcerationReleaseEvent(
                 state_code="US_XX",
                 event_date=date(2010, 3, 24),
                 facility="FACILITY 33",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
             ),
         ]
 
@@ -384,7 +373,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             state_code="US_XX",
             event_date=date(2000, 3, 12),
             facility="FACILITY X",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [incarceration_event]
@@ -434,7 +422,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             state_code="US_XX",
             event_date=date(1990, 3, 12),
             facility="FACILITY X",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [incarceration_event]
@@ -479,14 +466,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             state_code="US_XX",
             event_date=date(2000, 3, 12),
             facility="FACILITY X",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_event_exclude = IncarcerationStandardAdmissionEvent(
             state_code="US_XX",
             event_date=date(1994, 3, 12),
             facility="FACILITY X",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [
@@ -539,7 +524,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             state_code="US_XX",
             event_date=date(2007, 12, 12),
             facility="FACILITY X",
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         incarceration_events = [incarceration_event]
@@ -593,7 +577,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2000, 3, 12),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.REVOCATION,
                 admission_reason_raw_text="REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -652,7 +635,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 state_code="US_XX",
                 event_date=date(2000, 3, 12),
                 facility="FACILITY X",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 admission_reason=AdmissionReason.REVOCATION,
                 admission_reason_raw_text="REVOCATION",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,

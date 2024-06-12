@@ -85,9 +85,6 @@ class IncarcerationMetric(
     # Facility
     facility: Optional[str] = attr.ib(default=None)
 
-    # County of residence
-    county_of_residence: Optional[str] = attr.ib(default=None)
-
     @classmethod
     @abc.abstractmethod
     def get_description(cls) -> str:

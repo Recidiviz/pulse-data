@@ -25,11 +25,8 @@ into instances of recidivism or non-recidivism as appropriate.
 """
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Dict, List, Optional, Set, Tuple, Type
 
-from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
-    PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
@@ -60,9 +57,6 @@ from recidiviz.pipelines.metrics.recidivism.events import (
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
-)
-from recidiviz.pipelines.utils.execution_utils import (
-    extract_county_of_residence_from_rows,
 )
 from recidiviz.pipelines.utils.identifier_models import IdentifierResult
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
@@ -100,16 +94,11 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         return self._find_release_events(
             incarceration_periods=identifier_context[
                 NormalizedStateIncarcerationPeriod.base_class_name()
-            ],
-            persons_to_recent_county_of_residence=identifier_context[
-                PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
-            ],
+            ]
         )
 
     def _find_release_events(
-        self,
-        incarceration_periods: List[NormalizedStateIncarcerationPeriod],
-        persons_to_recent_county_of_residence: List[Dict[str, Any]],
+        self, incarceration_periods: List[NormalizedStateIncarcerationPeriod]
     ) -> Dict[int, List[ReleaseEvent]]:
         """Finds instances of release and determines if they resulted in recidivism.
 
@@ -129,8 +118,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
         Args:
             incarceration_periods: list of StateIncarcerationPeriods for a person
-            persons_to_recent_county_of_residence: Reference table rows containing the county that the incarcerated person
-                lives in (prior to incarceration).
 
         Returns:
             A dictionary mapping release cohorts to a list of ReleaseEvents for the given person in that cohort.
@@ -139,10 +126,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
 
         if not incarceration_periods:
             return release_events
-
-        county_of_residence = extract_county_of_residence_from_rows(
-            persons_to_recent_county_of_residence
-        )
 
         ip_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
@@ -201,7 +184,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                     incarceration_period,
                     original_admission_date,
                     release_date,
-                    county_of_residence,
                 )
             else:
                 reincarceration_period = self._find_valid_reincarceration_period(
@@ -214,7 +196,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                         incarceration_period,
                         original_admission_date,
                         release_date,
-                        county_of_residence,
                     )
                 else:
                     reincarceration_date = reincarceration_period.admission_date
@@ -234,7 +215,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                         release_ip=incarceration_period,
                         admission_date=original_admission_date,
                         release_date=release_date,
-                        county_of_residence=county_of_residence,
                         reincarceration_date=reincarceration_date,
                         reincarceration_facility=reincarceration_facility,
                     )
@@ -324,7 +304,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         admission_date: date,
         release_date: date,
-        county_of_residence: Optional[str],
     ) -> Optional[ReleaseEvent]:
         """Builds a NonRecidivismReleaseEvent from the attributes of the release from incarceration.
 
@@ -334,7 +313,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 incarceration_period: The StateIncarcerationPeriod
                 admission_date: when this StateIncarcerationPeriod started
                 release_date: when they were released from this StateIncarcerationPeriod
-                county_of_residence: the county that the incarcerated person lives in (prior to incarceration).
 
             Returns:
                 A non-recidivism event.
@@ -344,7 +322,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             original_admission_date=admission_date,
             release_date=release_date,
             release_facility=incarceration_period.facility,
-            county_of_residence=county_of_residence,
         )
 
     def _for_intermediate_incarceration_period(
@@ -352,7 +329,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         release_ip: NormalizedStateIncarcerationPeriod,
         admission_date: date,
         release_date: date,
-        county_of_residence: Optional[str],
         reincarceration_date: date,
         reincarceration_facility: Optional[str],
     ) -> Optional[ReleaseEvent]:
@@ -368,8 +344,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             release_date: when they were released from the StateIncarcerationPeriod
             reincarceration_date: date they were admitted to the subsequent
                 StateIncarcerationPeriod
-            county_of_residence: the county that the incarcerated person lives in
-                (prior to incarceration).
             reincarceration_facility: facility in which the subsequent
                 StateIncarcerationPeriod started
 
@@ -381,7 +355,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             original_admission_date=admission_date,
             release_date=release_date,
             release_facility=release_ip.facility,
-            county_of_residence=county_of_residence,
             reincarceration_date=reincarceration_date,
             reincarceration_facility=reincarceration_facility,
         )
