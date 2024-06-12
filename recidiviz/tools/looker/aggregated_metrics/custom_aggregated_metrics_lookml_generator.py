@@ -135,6 +135,7 @@ def main(output_directory: str, view_name: str) -> None:
                     metric
                     for metric in metrics
                     if isinstance(metric, PeriodSpanAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
@@ -145,6 +146,7 @@ def main(output_directory: str, view_name: str) -> None:
                     metric
                     for metric in metrics
                     if isinstance(metric, PeriodEventAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
@@ -155,6 +157,7 @@ def main(output_directory: str, view_name: str) -> None:
                     metric
                     for metric in metrics
                     if isinstance(metric, AssignmentSpanAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,
@@ -165,6 +168,7 @@ def main(output_directory: str, view_name: str) -> None:
                     metric
                     for metric in metrics
                     if isinstance(metric, AssignmentEventAggregatedMetric)
+                    and metric.unit_of_observation_type == unit_of_observation_type
                 ],
                 view_name,
                 unit_of_observation=unit_of_observation,

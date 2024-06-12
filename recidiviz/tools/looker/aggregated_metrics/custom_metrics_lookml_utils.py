@@ -33,6 +33,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION,
 )
 from recidiviz.calculator.query.bq_utils import (
+    MAGIC_START_DATE,
     join_on_columns_fragment,
     list_to_query_string,
     nonnull_current_date_clause,
@@ -40,13 +41,13 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
+    UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT,
     MetricUnitOfAnalysisType,
     MetricUnitOfObservation,
     MetricUnitOfObservationType,
@@ -107,7 +108,6 @@ def generate_period_span_metric_view(
     unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of PeriodSpanAggregatedMetric objects"""
-    analyst_dataset = ANALYST_VIEWS_DATASET
     metric_aggregation_fragment = (
         AVG_DAILY_POPULATION.generate_aggregation_query_fragment(
             span_start_date_col="ses.start_date",
@@ -147,23 +147,33 @@ def generate_period_span_metric_view(
         ),
         table_prefix="assignments",
     )
+    assignments_with_attributes_view = (
+        "assignments_with_attributes"
+        if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
+        else "assignments"
+    )
+    all_attributes_field = (
+        "assignments.all_attributes"
+        if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
+        else "TO_JSON_STRING(STRUCT(TRUE AS dummy_attribute)) AS all_attributes"
+    )
     derived_table_query = f"""
     WITH eligible_spans AS (
         SELECT
             assignments.state_code,
             assignments.unit_of_analysis,
-            assignments.all_attributes,
+            {all_attributes_field},
             {unit_of_observation_query_fragment},
             GREATEST(assignments.assignment_date, spans.start_date) AS start_date,
             {revert_nonnull_end_date_clause(
-                f"LEAST({nonnull_end_date_clause('spans.end_date')}, {nonnull_end_date_clause('assignments.assignment_end_date')})"
-            )} AS end_date,
+        f"LEAST({nonnull_end_date_clause('spans.end_date')}, {nonnull_end_date_clause('assignments.assignment_end_date')})"
+    )} AS end_date,
             span,
             span_attributes,
         FROM
-            `{analyst_dataset}.{unit_of_observation.type.short_name}_spans_materialized` AS spans
+            `analyst_data.{unit_of_observation.type.short_name}_spans_materialized` AS spans
         INNER JOIN
-            ${{{unit_of_observation.type.short_name}_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}} assignments
+            ${{{unit_of_observation.type.short_name}_{assignments_with_attributes_view}_{view_name}.SQL_TABLE_NAME}} assignments
         ON
             {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="spans")}
             AND (
@@ -210,7 +220,6 @@ def generate_period_event_metric_view(
     unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of PeriodEventAggregatedMetric objects"""
-    analyst_dataset = ANALYST_VIEWS_DATASET
     metric_aggregation_fragment = "\n".join(
         [
             liquid_wrap(
@@ -246,7 +255,7 @@ def generate_period_event_metric_view(
     FROM
         ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
     LEFT JOIN
-        `{analyst_dataset}.{unit_of_observation.type.short_name}_events_materialized` AS events
+        `analyst_data.{unit_of_observation.type.short_name}_events_materialized` AS events
     ON
         {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="events", table2="assignments")}
         AND events.event_date BETWEEN GREATEST(assignments.assignment_date, assignments.start_date)
@@ -271,7 +280,6 @@ def generate_assignment_span_metric_view(
     unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of AssignmentSpanAggregatedMetric objects"""
-    analyst_dataset = ANALYST_VIEWS_DATASET
     unit_of_observation_query_fragment = list_to_query_string(
         sorted(
             {x for x in unit_of_observation.primary_key_columns if x != "state_code"}
@@ -315,7 +323,7 @@ def generate_assignment_span_metric_view(
     FROM
         ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
     LEFT JOIN
-        `{analyst_dataset}.{unit_of_observation.type.short_name}_spans_materialized` spans
+        `analyst_data.{unit_of_observation.type.short_name}_spans_materialized` spans
     ON
         {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="spans")}
         AND (
@@ -339,7 +347,6 @@ def generate_assignment_event_metric_view(
     unit_of_observation: MetricUnitOfObservation,
 ) -> LookMLView:
     """Generates LookMLView with derived table performing logic for a set of AssignmentEventAggregatedMetric objects"""
-    analyst_dataset = ANALYST_VIEWS_DATASET
     metric_aggregation_fragment_inner = "\n".join(
         [
             liquid_wrap(
@@ -398,7 +405,7 @@ def generate_assignment_event_metric_view(
         FROM
             ${{{unit_of_observation.type.short_name}_assignments_with_attributes_and_time_periods_{view_name}.SQL_TABLE_NAME}} assignments
         LEFT JOIN
-            `{analyst_dataset}.{unit_of_observation.type.short_name}_events_materialized` events
+            `analyst_data.{unit_of_observation.type.short_name}_events_materialized` events
         ON
             {join_on_columns_fragment(columns=sorted(unit_of_observation.primary_key_columns), table1="assignments", table2="events")}
             AND events.event_date >= assignments.assignment_date
@@ -437,51 +444,63 @@ def generate_assignments_view(
 
         # For all assignment types that already have a materialized metric assignment session in bigquery,
         # generate a query fragment that combines the assignment session view with the static attributes query.
-        if assignment_type != "PERSON":
-            _, unit_of_analysis_type = assignment_types_dict[assignment_type]
-            source_table = f"aggregated_metrics.{assignment_type.lower()}_metrics_{unit_of_observation.type.short_name}_assignment_sessions_materialized"
-
-            unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
-            primary_columns_str = (
-                unit_of_analysis.get_primary_key_columns_query_string()
-            )
-            shared_columns_string = list_to_query_string(
-                sorted(
-                    {
-                        *unit_of_observation.primary_key_columns,
-                        *unit_of_analysis.index_columns,
-                    }
-                ),
-            )
-            static_attributes_source_table = (
-                get_static_attributes_query_for_unit_of_analysis(
-                    unit_of_analysis_type, bq_view=False
-                )
-            )
-            static_attributes_join_query_fragment = (
-                f"""
-            LEFT JOIN 
-                ({static_attributes_source_table})
-            USING
-                ({primary_columns_str})
-            """
-                if static_attributes_source_table
-                else ""
-            )
-
-            return f"""
-        {{% elsif {view_name}.assignment_type._parameter_value == "{assignment_type}" %}}
-            SELECT
-                {shared_columns_string},
-                assignment_date,
-                end_date_exclusive AS end_date,
-                CONCAT({primary_columns_str}) AS unit_of_analysis,
-            FROM
-                {source_table}{static_attributes_join_query_fragment}
-    """
-        raise ValueError(
-            "Function does not return query fragment for PERSON unit of analysis."
+        _, unit_of_analysis_type = assignment_types_dict[assignment_type]
+        unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
+        primary_columns_str = unit_of_analysis.get_primary_key_columns_query_string()
+        shared_columns = sorted(
+            {
+                *unit_of_observation.primary_key_columns,
+                *unit_of_analysis.index_columns,
+            }
         )
+        shared_columns_string = list_to_query_string(shared_columns)
+        static_attributes_source_table = (
+            get_static_attributes_query_for_unit_of_analysis(
+                unit_of_analysis_type, bq_view=False
+            )
+        )
+        static_attributes_join_query_fragment = (
+            f"""
+                LEFT JOIN 
+                    ({static_attributes_source_table})
+                USING
+                    ({primary_columns_str})
+                """
+            if static_attributes_source_table
+            else ""
+        )
+        if (
+            unit_of_observation.type,
+            unit_of_analysis_type,
+        ) in UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT:
+            source_table = f"aggregated_metrics.{assignment_type.lower()}_metrics_{unit_of_observation.type.short_name}_assignment_sessions_materialized{static_attributes_join_query_fragment}"
+        else:
+            # If no assignment table has been defined, create a dummy assignment table with all NULL fields
+            placeholder_columns_query_string = ", ".join(
+                [
+                    f"NULL AS {col}"
+                    if col == "person_id"
+                    else f"CAST(NULL AS STRING) AS {col}"
+                    for col in shared_columns
+                ]
+            )
+            source_table = f"""(
+                SELECT
+                    {placeholder_columns_query_string},
+                    DATE("{MAGIC_START_DATE}") AS assignment_date,
+                    CAST(NULL AS DATE) AS end_date_exclusive,
+            )"""
+
+        return f"""
+    {{% elsif {view_name}.assignment_type._parameter_value == "{assignment_type}" %}}
+        SELECT
+            {shared_columns_string},
+            assignment_date,
+            end_date_exclusive AS end_date,
+            CONCAT({primary_columns_str}) AS unit_of_analysis,
+        FROM
+            {source_table}
+"""
 
     # Assembles set of liquid-wrapped queries that pull the appropriate assignment sessions view based on the
     # selected assignment type parameter, for all assignment types.
@@ -673,8 +692,8 @@ def generate_person_assignments_with_attributes_view(
             {time_dependent_person_attribute_fields_query_fragment_with_prefix},
             GREATEST(assignment_sessions.assignment_date, time_dependent_attributes.start_date) AS assignment_date,
             {revert_nonnull_end_date_clause(
-                f'LEAST({nonnull_end_date_clause("assignment_sessions.assignment_end_date")}, {nonnull_end_date_clause("time_dependent_attributes.end_date_exclusive")})'
-            )} AS assignment_end_date,
+        f'LEAST({nonnull_end_date_clause("assignment_sessions.assignment_end_date")}, {nonnull_end_date_clause("time_dependent_attributes.end_date_exclusive")})'
+    )} AS assignment_end_date,
         FROM
             ${{person_assignments_{view_name}.SQL_TABLE_NAME}} assignment_sessions
         LEFT JOIN
@@ -920,7 +939,14 @@ def generate_assignments_with_attributes_and_time_periods_view(
     assignments_view_for_unit_of_observation = (
         f"${{person_assignments_with_attributes_{view_name}.SQL_TABLE_NAME}}"
         if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
-        else f"${{{unit_of_observation.type.short_name}_assignments_{view_name}.SQL_TABLE_NAME}}"
+        else f"""(
+                SELECT
+                    *, 
+                    # Since there are no attributes for non-person units of observations, we add in a dummy field
+                    TO_JSON_STRING(STRUCT(TRUE AS dummy_attribute)) AS all_attributes,
+                FROM
+                ${{{unit_of_observation.type.short_name}_assignments_{view_name}.SQL_TABLE_NAME}}
+            )"""
     )
     unit_of_observation_query_fragment = list_to_query_string(
         sorted({*unit_of_observation.primary_key_columns, "state_code"}),
@@ -929,26 +955,26 @@ def generate_assignments_with_attributes_and_time_periods_view(
     derived_table_query = f"""
     /*
     Goal: support either calendar time or event time.
-    
+
     Calendar time: group by day, week, month, quarter, or yearly granularity with custom
     index dates.
-    
+
     Event time: group by days, weeks, months, etc. since assignment, including potentially negative values.
-    
+
     Calendar timer example:
     population_start_date = March 23
     period_param = Quarter
     period_duration = 1
     date spans: March 23 - June 23, June 23 - Sept 23, Sept 23 - Dec 23, etc.
-    
+
     With event time, there are two kinds of assignment:
     1) client assignment: only nonnegative values
     2) officer/district/etc. assignment to an experiment variant: can be negative
     */
-    
+
     {{% if {view_name}.event_time_toggle._parameter_value == "true" %}}
     -- event time
-    
+
     WITH period_cte AS (
         SELECT
             periods_since_assignment
@@ -968,7 +994,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
             {{% parameter {view_name}.period_duration %}}
         )) periods_since_assignment
     )
-    
+
     SELECT
         *,
         DATE_DIFF(end_date, start_date, DAY) AS days_in_period,
@@ -985,7 +1011,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
             all_attributes,
             assignment_date,
             assignment_end_date,
-    
+
             -- start and end dates generated relative to a fixed unit of analysis and base date
             DATE_ADD(
                 event_time_base_date,
@@ -1010,20 +1036,20 @@ def generate_assignments_with_attributes_and_time_periods_view(
         assignment_date BETWEEN start_date AND DATE_SUB(end_date, INTERVAL 1 DAY)
         OR start_date BETWEEN assignment_date AND IFNULL(DATE_SUB(assignment_end_date, INTERVAL 1 DAY), "9999-12-31")
     )
-    
+
     -- period within specified range
     AND start_date >= DATE({{% parameter {view_name}.population_start_date %}})
     AND end_date <= DATE({{% parameter {view_name}.population_end_date %}})
-    
+
     {{% if {view_name}.complete_periods._parameter_value == "true" %}}
     -- keep completed periods only
     -- OK if = current date since exclusive
     AND end_date <= CURRENT_DATE("US/Eastern")
     {{% endif %}}
-    
+
     -- periods since assignment within specified range
     AND {{% condition {view_name}.periods_since_assignment %}}periods_since_assignment{{% endcondition %}}
-    
+
     {{% else %}}
     -- calendar time
     SELECT
@@ -1079,7 +1105,7 @@ def generate_assignments_with_attributes_and_time_periods_view(
             {{% endif %}}
         )) AS start_date
     ) time_period
-    
+
     -- join assignments/attributes
     LEFT JOIN
         {assignments_view_for_unit_of_observation} assignments
@@ -1425,10 +1451,11 @@ SELECT *
 FROM ({derived_table_subqueries[0]})
 """
     if len(derived_table_subqueries) > 0:
-        derived_table_query = derived_table_query + "\nFULL OUTER JOIN\n".join(
+        derived_table_query = derived_table_query + "\n".join(
             [
-                f"""({subquery})
-USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date)
+                f"""FULL OUTER JOIN
+({subquery})
+USING (state_code, unit_of_analysis, all_attributes, period, start_date, end_date, days_in_period)
 """
                 for subquery in derived_table_subqueries[1:]
             ]
