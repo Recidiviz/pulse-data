@@ -45,3 +45,4 @@ columns:
       When this record was first created in the source system.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y', {col_name})"
+always_historical_export: True
