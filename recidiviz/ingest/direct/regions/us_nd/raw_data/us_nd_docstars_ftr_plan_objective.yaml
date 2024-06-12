@@ -18,7 +18,3 @@ columns:
     is_pii: True
   - name: NOTES
     is_pii: True
-  - name: RecDate
-    field_type: datetime
-    description: |-
-      The date the record was created.

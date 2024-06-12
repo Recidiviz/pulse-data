@@ -23,3 +23,4 @@ columns:
   - name: SID
     description: |-
       External id for a unique person from the Docstars system.
+always_historical_export: True
