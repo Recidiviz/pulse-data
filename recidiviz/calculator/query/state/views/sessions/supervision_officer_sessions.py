@@ -19,6 +19,7 @@ time on caseload of a given supervising officer.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,55 +31,27 @@ Sessionized view of each individual. Session defined as continuous stay on super
 associated with a given officer. Officer sessions may be overlapping.
 """
 
-SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
-    WITH sub_sessions_attributes_unnested AS (
+SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = f"""
+    WITH supervision_spans AS (
     SELECT DISTINCT
         state_code, person_id, 
         session_attributes.supervising_officer_external_id,
         start_date,
         end_date_exclusive,
         dataflow_session_id,
-    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+    FROM `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
     WHERE compartment_level_1 = 'SUPERVISION' OR compartment_level_1 = 'SUPERVISION_OUT_OF_STATE'
     )
-    SELECT 
-        state_code, 
-        person_id, 
-        supervising_officer_external_id,
-        supervising_officer_session_id,
-        MIN(start_date) start_date,
-        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
-        DATE_SUB(CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END, INTERVAL 1 DAY) AS end_date,
-        MIN(dataflow_session_id) AS dataflow_session_id_start,
-        MAX(dataflow_session_id) AS dataflow_session_id_end,
-    FROM (
-        -- If any officer in the current session was not present in the preceding session, count an officer change
-        SELECT *, 
-            SUM(CASE WHEN COALESCE(officer_changed, 1) = 1 THEN 1 ELSE 0 END) 
-                OVER(PARTITION BY person_id ORDER BY start_date) AS supervising_officer_session_id
-        FROM (
-            SELECT
-                session.state_code,
-                session.person_id, 
-                session.supervising_officer_external_id,
-                session.start_date,
-                session.end_date_exclusive,
-                session.dataflow_session_id,
-                -- Only count an officer toward an officer change once if officer was not present at all in preceding session
-                MIN(IF(
-                    COALESCE(session_lag.supervising_officer_external_id, "UNKNOWN") = COALESCE(session.supervising_officer_external_id, "UNKNOWN")
-                    AND session_lag.start_date IS NOT NULL,
-                0, 1)) AS officer_changed
-            FROM sub_sessions_attributes_unnested session
-            LEFT JOIN sub_sessions_attributes_unnested as session_lag
-                ON session.state_code = session_lag.state_code
-                AND session.person_id = session_lag.person_id
-                AND session.start_date = session_lag.end_date_exclusive
-            GROUP BY 1,2,3,4,5,6
-            )
-    )
-    GROUP BY 1,2,3,4
+    SELECT *,
+    DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+    FROM 
+    ({aggregate_adjacent_spans(
+        table_name="supervision_spans",
+        attribute=["supervising_officer_external_id"],
+        end_date_field_name='end_date_exclusive',
+        session_id_output_name = 'supervising_officer_session_id'
+    )})
     """
 
 SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
