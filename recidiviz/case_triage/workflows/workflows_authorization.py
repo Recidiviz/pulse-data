@@ -69,7 +69,10 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
         for fv, params in app_metadata.get("featureVariants", {}).items()
         if "activeDate" not in params
         or datetime.datetime.fromisoformat(params["activeDate"])
-        < datetime.datetime.now()
+        # Handle both naive and UTC activeDates
+        < datetime.datetime.now(
+            tz=datetime.datetime.fromisoformat(params["activeDate"]).tzinfo
+        )
     }
 
 
