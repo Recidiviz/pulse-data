@@ -50,6 +50,9 @@ from recidiviz.validation.views.external_data.recidivism_person_level import (
 from recidiviz.validation.views.external_data.regions.us_az.incarceration_population_by_facility import (
     US_AZ_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_az.supervision_population_by_type import (
+    US_AZ_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.regions.us_az.supervision_population_person_level import (
     US_AZ_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
@@ -278,7 +281,6 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
         get_supervision_population_by_type_view_builder(),
         CB_971_REPORT_UNIFIED_VIEW_BUILDER,
         CB_971_REPORT_SUPERVISION_UNIFIED_VIEW_BUILDER,
-        US_AZ_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
         US_MI_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
         US_MI_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
         US_MI_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
@@ -315,6 +317,8 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
         US_PA_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
         US_PA_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
         US_PA_SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
+        US_AZ_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
+        US_AZ_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
         US_AZ_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
         # All view builders for views with an associated configured validation job.
         *get_view_builders_from_configured_validations(),
