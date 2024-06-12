@@ -77,9 +77,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
                 "included_in_state_population",
                 bigquery.enums.SqlTypeNames.BOOLEAN.value,
             ),
-            SchemaField(
-                "county_of_residence", bigquery.enums.SqlTypeNames.STRING.value
-            ),
         ]
 
         self.assertCountEqual(expected_output, schema_fields)

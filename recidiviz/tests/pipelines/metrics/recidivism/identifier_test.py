@@ -20,7 +20,7 @@
 
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Sequence, Union
 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -46,14 +46,6 @@ from recidiviz.tests.pipelines.fake_state_calculation_config_manager import (
 )
 
 _STATE_CODE = "US_XX"
-_COUNTY_OF_RESIDENCE = "county"
-_COUNTY_OF_RESIDENCE_ROWS = [
-    {
-        "state_code": "US_XX",
-        "person_id": 123,
-        "county_of_residence": _COUNTY_OF_RESIDENCE,
-    }
-]
 
 
 class TestClassifyReleaseEvents(unittest.TestCase):
@@ -73,13 +65,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     def _test_find_release_events(
         self,
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
-        persons_to_recent_county_of_residence: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[int, List[ReleaseEvent]]:
         """Helper for testing the find_events function on the identifier."""
         all_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods,
-            "persons_to_recent_county_of_residence": persons_to_recent_county_of_residence
-            or _COUNTY_OF_RESIDENCE_ROWS,
         }
 
         return self.identifier.identify(
@@ -174,7 +163,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     release_facility=None,
                     reincarceration_date=revocation_incarceration_period.admission_date,
                     reincarceration_facility=None,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
                 )
             ],
             release_events_by_cohort[2010],
@@ -249,7 +237,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     release_facility=None,
                     reincarceration_date=revocation_incarceration_period.admission_date,
                     reincarceration_facility=None,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
                 )
             ],
             release_events_by_cohort[2010],
@@ -305,7 +292,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     original_admission_date=initial_incarceration_period.admission_date,
                     release_date=initial_incarceration_period.release_date,
                     release_facility=None,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
                 )
             ],
             release_events_by_cohort[2010],
@@ -361,7 +347,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     original_admission_date=initial_incarceration_period.admission_date,
                     release_date=initial_incarceration_period.release_date,
                     release_facility=None,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
                 )
             ],
             release_events_by_cohort[2010],
@@ -437,7 +422,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     release_facility=None,
                     reincarceration_date=first_reincarceration_period.admission_date,
                     reincarceration_facility=None,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
                 )
             ],
             release_events_by_cohort[2010],
@@ -452,7 +436,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     release_facility=None,
                     reincarceration_date=subsequent_reincarceration_period.admission_date,
                     reincarceration_facility=None,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
                 )
             ],
             release_events_by_cohort[2014],
@@ -497,7 +480,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code="US_XX",
                 original_admission_date=only_incarceration_period.admission_date,
                 release_date=only_incarceration_period.release_date,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_facility=None,
             )
         ]
@@ -566,7 +548,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert release_events_by_cohort[2009] == [
             NonRecidivismReleaseEvent(
                 state_code="US_XX",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 original_admission_date=closed_incarceration_period.admission_date,
                 release_date=closed_incarceration_period.release_date,
                 release_facility=None,
@@ -630,7 +611,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         assert release_events_by_cohort[2003] == [
             NonRecidivismReleaseEvent(
                 state_code="US_XX",
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 original_admission_date=only_incarceration_period.admission_date,
                 release_date=only_incarceration_period.release_date,
                 release_facility=None,
@@ -689,7 +669,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 original_admission_date=initial_incarceration_period.admission_date,
                 release_date=initial_incarceration_period.release_date,
                 release_facility=None,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
             )
@@ -700,7 +679,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code="US_XX",
                 original_admission_date=first_reincarceration_period.admission_date,
                 release_date=first_reincarceration_period.release_date,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_facility=None,
             )
         ]
@@ -759,7 +737,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 release_facility=None,
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -769,7 +746,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 original_admission_date=first_reincarceration_period.admission_date,
                 release_date=first_reincarceration_period.release_date,
                 release_facility=None,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -827,7 +803,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 release_facility=None,
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -836,7 +811,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code="US_XX",
                 original_admission_date=first_reincarceration_period.admission_date,
                 release_date=first_reincarceration_period.release_date,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_facility=None,
             )
         ]
@@ -897,7 +871,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 release_facility=None,
                 reincarceration_date=first_reincarceration_period.admission_date,
                 reincarceration_facility=None,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
             )
         ]
 
@@ -906,7 +879,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code="US_XX",
                 original_admission_date=first_reincarceration_period.admission_date,
                 release_date=first_reincarceration_period.release_date,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_facility=None,
             )
         ]
@@ -961,7 +933,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code="US_XX",
                 original_admission_date=initial_incarceration_period.admission_date,
                 release_date=first_reincarceration_period.release_date,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_facility=None,
             )
         ]
@@ -1016,7 +987,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 state_code="US_XX",
                 original_admission_date=first_reincarceration_period.admission_date,
                 release_date=first_reincarceration_period.release_date,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_facility=None,
             )
         ]

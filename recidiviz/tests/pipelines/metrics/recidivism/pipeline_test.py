@@ -100,8 +100,6 @@ from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
     run_test_pipeline,
 )
 
-_COUNTY_OF_RESIDENCE = "county"
-
 ALL_METRIC_INCLUSIONS_DICT = {
     MetricType.REINCARCERATION_RATE: True,
 }
@@ -223,21 +221,12 @@ class TestRecidivismPipeline(unittest.TestCase):
             ),
         ]
 
-        fake_person_id_to_county_query_result = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id,
-                "county_of_residence": _COUNTY_OF_RESIDENCE,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
-            "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
         }
         data_dict.update(data_dict_overrides)
 
@@ -387,19 +376,10 @@ class TestRecidivismPipeline(unittest.TestCase):
             ),
         ]
 
-        fake_person_id_to_county_query_result = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id_1,
-                "county_of_residence": _COUNTY_OF_RESIDENCE,
-            }
-        ]
-
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
-            "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
         }
         data_dict.update(data_dict_overrides)
 
@@ -509,11 +489,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         )
 
-        fake_person_id_to_county_query_result = {
-            "person_id": fake_person_id,
-            "county_of_residence": _COUNTY_OF_RESIDENCE,
-        }
-
         person_incarceration_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateSupervisionPeriod.__name__: [],
@@ -521,9 +496,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 initial_incarceration,
                 first_reincarceration,
                 subsequent_reincarceration,
-            ],
-            "persons_to_recent_county_of_residence": [
-                fake_person_id_to_county_query_result
             ],
         }
 
@@ -537,7 +509,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=first_reincarceration.admission_date,
             reincarceration_facility=None,
         )
@@ -547,7 +518,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=subsequent_reincarceration.admission_date,
             reincarceration_facility=None,
         )
@@ -612,18 +582,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        fake_person_id_to_county_query_result = {
-            "person_id": fake_person_id,
-            "county_of_residence": _COUNTY_OF_RESIDENCE,
-        }
-
         person_incarceration_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateSupervisionPeriod.__name__: [],
             NormalizedStateIncarcerationPeriod.base_class_name(): [only_incarceration],
-            "persons_to_recent_county_of_residence": [
-                fake_person_id_to_county_query_result
-            ],
         }
 
         assert only_incarceration.admission_date is not None
@@ -633,7 +595,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             only_incarceration.admission_date,
             only_incarceration.release_date,
             only_incarceration.facility,
-            _COUNTY_OF_RESIDENCE,
         )
 
         correct_output = [
@@ -678,18 +639,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        fake_person_id_to_county_query_result = {
-            "person_id": fake_person_id,
-            "county_of_residence": _COUNTY_OF_RESIDENCE,
-        }
-
         person_incarceration_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateSupervisionPeriod.__name__: [],
             NormalizedStateIncarcerationPeriod.base_class_name(): [],
-            "persons_to_recent_county_of_residence": [
-                fake_person_id_to_county_query_result
-            ],
         }
 
         test_pipeline = TestPipeline()
@@ -769,7 +722,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             release_facility=None,
             reincarceration_date=date(2011, 4, 5),
             reincarceration_facility=None,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         second_recidivism_release_event = RecidivismReleaseEvent(
@@ -779,7 +731,6 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             release_facility=None,
             reincarceration_date=date(2017, 1, 4),
             reincarceration_facility=None,
-            county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
         person_release_events = [
