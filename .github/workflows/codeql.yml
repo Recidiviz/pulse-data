@@ -1,10 +1,8 @@
 name: "CodeQL - Code Scanning"
-
 on:
   schedule:
     # run every day at 0700 UTC
     - cron: "0 7 * * *"
-
 jobs:
   analyze:
     if: github.repository == 'Recidiviz/pulse-data'
@@ -18,15 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         language: ["javascript"]
-
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@1ea673e9815322ac82c7c2a4d66658080e88158c # v2
         with:
           languages: ${{ matrix.language }}
-
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@1ea673e9815322ac82c7c2a4d66658080e88158c # v2
