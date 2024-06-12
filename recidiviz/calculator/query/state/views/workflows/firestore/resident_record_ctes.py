@@ -27,7 +27,7 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_stay_cte
 
-STATES_WITH_RESIDENT_METADATA = [StateCode.US_AR, StateCode.US_MO]
+STATES_WITH_RESIDENT_METADATA = [StateCode.US_AR, StateCode.US_MO, StateCode.US_ME]
 
 _RESIDENT_RECORD_INCARCERATION_CTE = """
     incarceration_cases AS (
@@ -278,11 +278,12 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
 """
 
 _RESIDENT_PORTION_NEEDED_CTE = """
+    -- TODO(#30584): Once `dashboards` uses ME metadata field, this can be removed
     portion_needed AS (
       SELECT state_code, person_id,
-      REPLACE(TO_JSON_STRING(JSON_EXTRACT(reason, '$.x_portion_served')), '"', "")
+      JSON_VALUE(reason, '$.x_portion_served')
           AS portion_served_needed,
-      REPLACE(TO_JSON_STRING(JSON_EXTRACT(reason, '$.eligible_date')), '"', "")
+      DATE(JSON_VALUE(reason, '$.eligible_date'))
           AS portion_needed_eligible_date,
       FROM `{project_id}.{us_me_task_eligibility_criteria_dataset}.served_x_portion_of_sentence_materialized`
           AS served_x
@@ -292,9 +293,10 @@ _RESIDENT_PORTION_NEEDED_CTE = """
 """
 
 _RESIDENT_MONTHS_REMAINING_NEEDED_CTE = """
+    -- TODO(#30584): Once `dashboards` uses ME metadata field, this can be removed
     months_remaining AS (
         SELECT state_code, person_id,
-        REPLACE(TO_JSON_STRING(JSON_EXTRACT(reason, '$.eligible_date')), '"', "")
+        DATE(JSON_VALUE(reason, '$.eligible_date'))
             AS months_remaining_eligible_date,
         FROM `{project_id}.{us_me_task_eligibility_criteria_dataset}.x_months_remaining_on_sentence_materialized` 
           AS months_remaining
