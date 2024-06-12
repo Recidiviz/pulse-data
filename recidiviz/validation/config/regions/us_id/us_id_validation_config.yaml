@@ -1,79 +1,9 @@
 # Configuration for which validations to run for region US_ID.
 
 region_code: US_ID
+# TODO(#10703): Move the exclusions / overrides in the US_IX validation config over to
+#  this validation config once US_IX is merged into US_ID and disable dev_mode.
 dev_mode: True
-exclusions:
-  - validation_name: incarceration_population_by_facility_external_comparison
-    exclusion_type: BROKEN
-    exclusion_reason:
-      TODO(#4059) ID has many small (<10) facilities and any small errors result in the validation
-      threshold being exceeded. We're also already checking facility accuracy over the whole population with
-      incarceration_population_person_level_external_comparison_matching_people validation.
-  - validation_name: revocation_matrix_comparison_by_month
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: Revocation matrix not used for ID
-  - validation_name: sentence_comparison
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: TODO(#28862) Hydrate new sentencing entities
-
-max_allowed_error_overrides:
-  - validation_name: population_projection_monthly_population_external_comparison
-    hard_max_allowed_error_override: 0.03
-    override_reason: TODO(#6010) IDOC uses a slightly different population metric which causes discrepencies
-  - validation_name: incarceration_admission_person_level_external_comparison
-    hard_max_allowed_error_override: 0.50
-    override_reason: TODO(#7156) - Lots of mismatches :(
-  - validation_name: incarceration_release_person_level_external_comparison
-    hard_max_allowed_error_override: 0.20
-    override_reason: TODO(#7156) - Lots of mismatches :(
-  - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
-    hard_max_allowed_error_override: 0.04
-    override_reason: TODO(#9108) - Needs investigation.
-  - validation_name: supervision_population_person_level_external_comparison_matching_people_district
-    hard_max_allowed_error_override: 0.015
-    override_reason: TODO(#9108) - Needs investigation.
-  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
-    hard_max_allowed_error_override: 0.05
-    override_reason: TODO(#9108) - Needs investigation.
-  - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
-    hard_max_allowed_error_override: 0.025
-    override_reason: TODO(#9108) - Needs investigation.
-  - validation_name: supervision_start_person_level_external_comparison
-    hard_max_allowed_error_override: 0.13
-    override_reason: Needs investigation.
-  - validation_name: supervision_termination_person_level_external_comparison
-    hard_max_allowed_error_override: 0.20
-    override_reason: Needs investigation.
-  - validation_name: incarceration_population_person_level_external_comparison
-    hard_max_allowed_error_override: .05
-    override_reason: Needs investigation.
-num_allowed_rows_overrides:
-  - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 60
-    override_reason: TODO(#4058), TODO(#10577), TODO(#10685) - Needs investigation.
-  - validation_name: supervision_termination_prior_to_start
-    hard_num_allowed_rows_override: 10
-    override_reason: TODO(#4058), TODO(#10577), TODO(#10685) - Needs investigation.
-  - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 120
-    override_reason: TODO(#4618), TODO(#10577), TODO(#10685) - Needs investigation.
-  - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 500
-    override_reason: TODO(#4618), TODO(#10577), TODO(#10685) - Needs investigation.
-  - validation_name: incarceration_release_prior_to_admission
-    hard_num_allowed_rows_override: 20
-    override_reason:
-      TODO(#5803), TODO(#10577), TODO(#10685) - Needs investigation.
-      Likely related to shifting IP external ids / not handling object deletion properly.
-  - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 20
-    override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
-  - validation_name: session_new_admissions_with_no_sentence_date_imposed
-    hard_num_allowed_rows_override: 60000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 46,280 rows #TODO(#16228)
-  - validation_name: session_liberty_releases_with_no_sentence_completion_date
-    hard_num_allowed_rows_override: 20000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 17,121 rows #TODO(#16236)
-  - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 10
-    override_reason: Needs investigation.  Current failing level as of 11/2 is 1 row
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []
