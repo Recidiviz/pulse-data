@@ -17,12 +17,14 @@
 """Tests for RawTableQueryBuilder"""
 # pylint: disable=anomalous-backslash-in-string
 import datetime
-import unittest
 
 import attr
 import mock
-from mock import Mock, patch
+from mock import patch
 
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileImportManager,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
@@ -30,15 +32,19 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawTableColumnFieldType,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 
 
-@mock.patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
-class RawTableQueryBuilderTest(unittest.TestCase):
+class RawTableQueryBuilderTest(BigQueryEmulatorTestCase):
     """Tests for RawTableQueryBuilder"""
 
     def setUp(self) -> None:
+        super().setUp()
         self.raw_file_config = DirectIngestRawFileConfig(
             file_tag="table_name",
             file_path="path/to/file.yaml",
@@ -93,12 +99,28 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             update_cadence=RawDataFileUpdateCadence.WEEKLY,
         )
         self.query_builder = RawTableQueryBuilder(
-            project_id="recidiviz-456",
+            project_id=self.project_id,
             region_code="us_xx",
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
         )
 
+    def load_empty_raw_table(self, raw_file_config: DirectIngestRawFileConfig) -> None:
+        dataset_id = "us_xx_raw_data"
+        self.bq_client.create_dataset_if_necessary(
+            dataset_ref=self.bq_client.dataset_ref_for_id(dataset_id)
+        )
+        schema_fields = DirectIngestRawFileImportManager.create_raw_table_schema(
+            raw_file_config=raw_file_config,
+        )
+        self.bq_client.create_table_with_schema(
+            dataset_id=dataset_id,
+            table_id=raw_file_config.file_tag,
+            schema_fields=schema_fields,
+            clustering_fields=[FILE_ID_COL_NAME],
+        )
+
     def test_date_and_latest_filter_query(self) -> None:
+        self.load_empty_raw_table(self.raw_file_config)
         query = self.query_builder.build_query(
             self.raw_file_config,
             address_overrides=None,
@@ -107,6 +129,8 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             filter_to_latest=True,
             filter_to_only_documented_columns=True,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH filtered_rows AS (
@@ -118,7 +142,7 @@ WITH filtered_rows AS (
             ROW_NUMBER() OVER (PARTITION BY col1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.table_name`
+            `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
         WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
     ) a
     WHERE
@@ -144,6 +168,7 @@ FROM filtered_rows
         self.assertEqual(expected_view_query, query)
 
     def test_only_date_filter_query(self) -> None:
+        self.load_empty_raw_table(self.raw_file_config)
         query = self.query_builder.build_query(
             self.raw_file_config,
             address_overrides=None,
@@ -152,11 +177,13 @@ FROM filtered_rows
             filter_to_latest=False,
             filter_to_only_documented_columns=True,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH filtered_rows AS (
     SELECT *
-    FROM `recidiviz-456.us_xx_raw_data.table_name`
+    FROM `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
     WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
 )
 SELECT col1, 
@@ -181,6 +208,7 @@ FROM filtered_rows
         raw_file_config = attr.evolve(
             self.raw_file_config, always_historical_export=True
         )
+        self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(
             raw_file_config,
             address_overrides=None,
@@ -189,27 +217,29 @@ FROM filtered_rows
             filter_to_latest=True,
             filter_to_only_documented_columns=True,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH max_update_datetime AS (
     SELECT
         MAX(update_datetime) AS update_datetime
     FROM
-        `recidiviz-456.us_xx_raw_data.table_name`
+        `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
     WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
 ),
 max_file_id AS (
     SELECT
         MAX(file_id) AS file_id
     FROM
-        `recidiviz-456.us_xx_raw_data.table_name`
+        `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
     WHERE
         update_datetime = (SELECT update_datetime FROM max_update_datetime)
 ),
 filtered_rows AS (
     SELECT *
     FROM
-        `recidiviz-456.us_xx_raw_data.table_name`
+        `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
     WHERE
         file_id = (SELECT file_id FROM max_file_id)
 )
@@ -235,6 +265,7 @@ FROM filtered_rows
         raw_file_config = attr.evolve(
             self.raw_file_config, always_historical_export=True
         )
+        self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(
             raw_file_config,
             address_overrides=None,
@@ -243,11 +274,13 @@ FROM filtered_rows
             filter_to_latest=False,
             filter_to_only_documented_columns=True,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH filtered_rows AS (
     SELECT *
-    FROM `recidiviz-456.us_xx_raw_data.table_name`
+    FROM `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
     
 )
 SELECT col1, col2, col3, update_datetime
@@ -257,6 +290,7 @@ FROM filtered_rows
         self.assertEqual(expected_view_query, query)
 
     def test_no_date_filter_non_historical_file_query(self) -> None:
+        self.load_empty_raw_table(self.raw_file_config)
         query = self.query_builder.build_query(
             self.raw_file_config,
             address_overrides=None,
@@ -265,6 +299,8 @@ FROM filtered_rows
             filter_to_latest=True,
             filter_to_only_documented_columns=True,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH filtered_rows AS (
@@ -276,7 +312,7 @@ WITH filtered_rows AS (
             ROW_NUMBER() OVER (PARTITION BY col1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.table_name`
+            `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
         
     ) a
     WHERE
@@ -304,6 +340,7 @@ FROM filtered_rows
     def test_no_date_filter_no_normalization_non_historical_file_query(
         self,
     ) -> None:
+        self.load_empty_raw_table(self.raw_file_config)
         query = self.query_builder.build_query(
             self.raw_file_config,
             address_overrides=None,
@@ -312,6 +349,8 @@ FROM filtered_rows
             filter_to_latest=True,
             filter_to_only_documented_columns=True,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH filtered_rows AS (
@@ -323,7 +362,7 @@ WITH filtered_rows AS (
             ROW_NUMBER() OVER (PARTITION BY col1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.table_name`
+            `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
         
     ) a
     WHERE
@@ -387,6 +426,7 @@ FROM filtered_rows
         raw_file_config = attr.evolve(
             self.raw_file_config, always_historical_export=True
         )
+        self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(
             raw_file_config,
             address_overrides=None,
@@ -395,6 +435,8 @@ FROM filtered_rows
             filter_to_latest=True,
             filter_to_only_documented_columns=True,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH filtered_rows AS (
@@ -406,7 +448,7 @@ WITH filtered_rows AS (
             ROW_NUMBER() OVER (PARTITION BY col1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.table_name`
+            `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
         
     ) a
     WHERE
@@ -441,6 +483,7 @@ FROM filtered_rows
         raw_file_config = attr.evolve(
             self.raw_file_config, always_historical_export=True
         )
+        self.load_empty_raw_table(raw_file_config)
         query = self.query_builder.build_query(
             raw_file_config,
             address_overrides=None,
@@ -449,6 +492,8 @@ FROM filtered_rows
             filter_to_latest=True,
             filter_to_only_documented_columns=False,
         )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
 
         expected_view_query = """
 WITH filtered_rows AS (
@@ -460,7 +505,7 @@ WITH filtered_rows AS (
             ROW_NUMBER() OVER (PARTITION BY col1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            `recidiviz-456.us_xx_raw_data.table_name`
+            `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
         
     ) a
     WHERE
@@ -490,4 +535,71 @@ SELECT col1,
         ) AS undocumented_column
 FROM filtered_rows
 """
+        self.assertEqual(expected_view_query, query)
+
+    def test_only_datetime_documented_columns(self) -> None:
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            primary_key_cols=["undocumented_column"],
+            columns=[
+                RawTableColumnInfo(
+                    name="datetime_col",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="col3 description",
+                    datetime_sql_parsers=[
+                        "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
+                    ],
+                ),
+                RawTableColumnInfo(
+                    name="undocumented_column",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description=None,
+                ),
+                RawTableColumnInfo(
+                    name="undocumented_column_2",
+                    field_type=RawTableColumnFieldType.STRING,
+                    is_pii=False,
+                    description=None,
+                ),
+            ],
+        )
+        self.load_empty_raw_table(raw_file_config)
+        query = self.query_builder.build_query(
+            raw_file_config,
+            address_overrides=None,
+            normalized_column_values=True,
+            raw_data_datetime_upper_bound=None,
+            filter_to_latest=True,
+            filter_to_only_documented_columns=True,
+        )
+        # Make sure query is valid SQL by running it
+        self.bq_client.run_query_async(query_str=query, use_query_cache=False).result()
+
+        expected_view_query = """
+WITH filtered_rows AS (
+    SELECT
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY undocumented_column
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-bq-emulator-project.us_xx_raw_data.table_name`
+        
+    ) a
+    WHERE
+        recency_rank = 1
+        AND is_deleted = False
+)
+SELECT 
+        COALESCE(
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(datetime_col, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            datetime_col
+        ) AS datetime_col
+FROM filtered_rows
+"""
+
         self.assertEqual(expected_view_query, query)
