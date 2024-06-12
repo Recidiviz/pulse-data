@@ -274,31 +274,33 @@ class RawTableQueryBuilder:
         if not datetime_cols_to_format:
             return non_datetime_col_str
 
+        result = ""
+        if non_datetime_col_str:
+            result += f"{non_datetime_col_str}, "
         # Right now this only performs normalization for datetime columns, but in the future
         # this method can be expanded to normalize other values.
-        return f"{non_datetime_col_str}, " + (
-            ", ".join(
-                [
-                    StrictStringFormatter().format(
-                        DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=col_name
-                    )
-                    if not col_sql_opt
-                    else StrictStringFormatter().format(
-                        DATETIME_COL_NORMALIZATION_TEMPLATE,
-                        col_name=col_name,
-                        datetime_casts="".join(
-                            [
-                                StrictStringFormatter().format(
-                                    DATETIME_SQL_CAST_TEMPLATE,
-                                    col_sql=StrictStringFormatter().format(
-                                        col_sql, col_name=col_name
-                                    ),
-                                )
-                                for col_sql in col_sql_opt
-                            ]
-                        ),
-                    )
-                    for col_name, col_sql_opt in datetime_cols_to_format
-                ]
-            )
+        result += ", ".join(
+            [
+                StrictStringFormatter().format(
+                    DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE, col_name=col_name
+                )
+                if not col_sql_opt
+                else StrictStringFormatter().format(
+                    DATETIME_COL_NORMALIZATION_TEMPLATE,
+                    col_name=col_name,
+                    datetime_casts="".join(
+                        [
+                            StrictStringFormatter().format(
+                                DATETIME_SQL_CAST_TEMPLATE,
+                                col_sql=StrictStringFormatter().format(
+                                    col_sql, col_name=col_name
+                                ),
+                            )
+                            for col_sql in col_sql_opt
+                        ]
+                    ),
+                )
+                for col_name, col_sql_opt in datetime_cols_to_format
+            ]
         )
+        return result
