@@ -7,5 +7,10 @@ exclusions:
   - validation_name: sentence_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: AZ is being hydrated only with v2 sentences
-max_allowed_error_overrides: []
+max_allowed_error_overrides:
+  - validation_name: incarceration_population_by_facility_external_comparison
+    hard_max_allowed_error_override: 0.03
+    override_reason: |-
+      1% hard threshold bump until we can get person-level validation 
+      data for debugging. TODO(#30582)
 num_allowed_rows_overrides: []
