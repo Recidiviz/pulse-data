@@ -51,16 +51,23 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
 
     @classmethod
     def process_claims(
-        cls, path: str, user_state_code: str, allowed_states: Optional[list[str]] = None
+        cls,
+        path: str,
+        user_state_code: str,
+        allowed_states: Optional[list[str]] = None,
+        feature_variants: Optional[dict[str, Any]] = None,
     ) -> None:
         if allowed_states is None:
             allowed_states = []
+        if feature_variants is None:
+            feature_variants = {}
         return cls._process_claims(
             path,
             {
                 "https://recidiviz-test/app_metadata": {
                     "stateCode": user_state_code,
                     "allowedStates": allowed_states,
+                    "featureVariants": feature_variants,
                 }
             },
         )
@@ -130,3 +137,29 @@ class WorkflowsAuthorizationClaimsTestCase(TestCase):
                 "external_request/US_WY/enqueue_sms_request", user_state_code="US_WY"
             )
             self.assertEqual(assertion.exception.code, "external_requests_not_enabled")
+
+    def test_feature_variant_parsing(self) -> None:
+        # This test doesn't verify that the FVs are interpreted correctly, it only confirms
+        # that parsing doesn't crash. I can't figure out how to access the flask `g` object
+        # in a test context.
+        self.assertIsNone(
+            self.process_claims(
+                "external_request/US_CA/enqueue_sms_request",
+                user_state_code="US_CA",
+                feature_variants={
+                    "fvOne": {},
+                    "fvTwo": {"activeDate": "2023-01-01T01:01:01.000Z"},
+                    "fvThree": {"activeDate": "2523-01-01T01:01:01.000"},
+                    "fvFour": {"activeDate": "2523-01-01"},
+                },
+            )
+        )
+
+        with self.assertRaises(ValueError):
+            self.process_claims(
+                "external_request/US_CA/enqueue_sms_request",
+                user_state_code="US_CA",
+                feature_variants={
+                    "fvOne": {"activeDate": "garbagio, not a real datetime"},
+                },
+            )
