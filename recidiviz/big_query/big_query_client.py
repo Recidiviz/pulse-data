@@ -1531,40 +1531,42 @@ class BigQueryClientImpl(BigQueryClient):
         process_page_fn: Callable[[List[bigquery.table.Row]], None],
     ) -> None:
         logging.debug(
-            "Querying for first page of results to perform %s...",
+            "Paginating results [%s] at a time, relying on [%s] to process each batch",
+            page_size,
             process_page_fn.__name__,
         )
 
-        start_index = 0
+        rows_read: List[bigquery.table.Row] = []
+        total_rows = 0
 
-        while True:
-            page_rows: bigquery.table.RowIterator = query_job.result(
-                max_results=page_size, start_index=start_index
-            )
+        # when we specify the page_size, each network call will only fetch page_size
+        # results and do the pagination for us. we just iterate over the reuslts, and
+        # at the end of each network call, calls process_page_fn with the results
+        # that have been fetched for us.
+        for total_rows, row in enumerate(query_job.result(page_size=page_size)):
+
+            if total_rows != 0 and total_rows % page_size == 0:
+                process_page_fn(rows_read)
+                logging.info(
+                    "Processed [%s] rows. Read [%s] rows total",
+                    len(rows_read),
+                    total_rows,
+                )
+                rows_read = []
+
+            rows_read.append(row)
+
+        if rows_read:
+            process_page_fn(rows_read)
             logging.info(
-                "Retrieved result set from query page of size [%d] starting at index [%d]",
-                page_size,
-                start_index,
+                "Processed [%s] rows. Read [%s] rows total", len(rows_read), total_rows
             )
 
-            num_rows_read = 0
-            processed_rows: List[bigquery.table.Row] = []
-            for row in page_rows:
-                num_rows_read += 1
-                processed_rows.append(row)
-
-            logging.info(
-                "Processed [%d] rows from query page starting at index [%d]",
-                num_rows_read,
-                start_index,
-            )
-            if num_rows_read == 0:
-                break
-
-            process_page_fn(processed_rows)
-
-            start_index += num_rows_read
-            logging.info("Processed [%d] rows...", start_index)
+        logging.info(
+            "Completed processing [%s] rows for [%s]",
+            total_rows,
+            process_page_fn.__name__,
+        )
 
     def copy_view(
         self,
