@@ -19,12 +19,11 @@
 import abc
 import datetime
 import logging
-from typing import Dict, List, Type, Union
+from typing import Dict, List, Set, Type, Union
 
 import db_dtypes
 import numpy
 import pandas as pd
-import pytest
 import sqlglot
 import sqlglot.expressions
 from more_itertools import one
@@ -223,16 +222,11 @@ def query_view(
     return results
 
 
-def check_for_ctes_with_no_comments(query: str, query_name: str) -> None:
+def get_undocumented_ctes(query: str) -> Set[str]:
     """
-    Raises a ValueError with all CTEs that do not have a comment.
+    Returns the names of CTEs that do not have a comment.
 
-    Args:
-        query: (str) is the actual text of the query.
-        query_name: (str) is a helpful identifier of the query if/when there
-                    is an error.
-
-    We expect to have queries documented like:
+    We expect to have CTEs in queries documented like:
         WITH
         -- this explains table 1
         table_1 AS (
@@ -243,40 +237,36 @@ def check_for_ctes_with_no_comments(query: str, query_name: str) -> None:
             SELECT * FROM B JOIN C USING(col)
         )
         SELECT * FROM table_1 UNION ALL SELECT * FROM table_2
+
     """
     tree = sqlglot.parse_one(query, dialect="bigquery")
     if not isinstance(tree, sqlglot.expressions.Query):
         raise ValueError("Non-Query SQL expression built from ViewBuilder")
-    undocumented_ctes = ", ".join(
+    return {
         cte.alias
         for cte in tree.ctes
         # TODO(#29272) Update DirectIngestViewQueryBuilder to self document generated views
         if "generated_view" not in cte.alias and not cte.args["alias"].comments
-    )
-    if undocumented_ctes:
-        raise ValueError(
-            f"Query {query_name} has undocumented CTEs: {undocumented_ctes}"
-        )
+    }
 
 
-def test_check_for_ctes_with_no_comments() -> None:
+def test_get_undocumented_ctes() -> None:
     query = """
     WITH
         -- This is a good comment in the right place
         cte_1 AS (SELECT * FROM a),
         -- This is another good comment,
         -- it's even on two lines!
-        cte_2 AS (SELECT * FROM b),
+        cte_2 AS (SELECT * FROM b)
         SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
     """
-    check_for_ctes_with_no_comments(query, "valid_query")
+    assert set() == get_undocumented_ctes(query)
 
-    with pytest.raises(ValueError, match="cte_2"):
-        query = """
-        WITH
-            -- This is a good comment in the right place
-            cte_1 AS (SELECT * FROM a),
-            cte_2 AS (SELECT * FROM b),
-            SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
-        """
-        check_for_ctes_with_no_comments(query, "valid_query")
+    query = """
+    WITH
+        -- This is a good comment in the right place
+        cte_1 AS (SELECT * FROM a),
+        cte_2 AS (SELECT * FROM b)
+        SELECT * FROM cte_1 JOIN cte_2 USING(a, b, c)
+    """
+    assert {"cte_2"} == get_undocumented_ctes(query)
