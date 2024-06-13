@@ -144,6 +144,24 @@ class TestGetAlertingServiceFromTask(unittest.TestCase):
             ),
         )
 
+        # Failures in this task indicate that raw data has been removed or operations
+        # tables haven't been properly managed, so route the failure to state-specific
+        # on-calls.
+        self.assertEqual(
+            RecidivizPagerDutyService.airflow_service_for_state_code(
+                project_id=_PROJECT_ID, state_code=StateCode.US_ND
+            ),
+            get_alerting_service_for_incident(
+                self._make_incident(
+                    dag_id=get_calculation_dag_id(_PROJECT_ID),
+                    task_id=(
+                        "ingest.us_nd_dataflow.initialize_dataflow_pipeline."
+                        "should_run_based_on_watermarks"
+                    ),
+                )
+            ),
+        )
+
         # Failures in this task indicate general data platform issues
         self.assertEqual(
             RecidivizPagerDutyService.data_platform_airflow_service(

@@ -32,7 +32,10 @@ from recidiviz.airflow.dags.utils.branching_by_key import (
     BRANCH_END_TASK_NAME,
     BRANCH_START_TASK_NAME,
 )
-from recidiviz.airflow.dags.utils.constants import DATAFLOW_OPERATOR_TASK_ID
+from recidiviz.airflow.dags.utils.constants import (
+    DATAFLOW_OPERATOR_TASK_ID,
+    SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID,
+)
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.recidiviz_pagerduty_service import (
     RecidivizPagerDutyService,
@@ -124,6 +127,16 @@ def get_alerting_service_for_incident(
         )
 
     if _task_id_part_matches(task_id=task_id, regex=DATAFLOW_OPERATOR_TASK_ID):
+        state_code = assert_type(_state_code_from_task_id(task_id), StateCode)
+        return RecidivizPagerDutyService.airflow_service_for_state_code(
+            project_id=project_id, state_code=state_code
+        )
+
+    # Failures in this task indicate that raw data has been removed or operations tables
+    # haven't been properly managed, so route the failure to state-specific on-calls.
+    if _task_id_part_matches(
+        task_id=task_id, regex=SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID
+    ):
         state_code = assert_type(_state_code_from_task_id(task_id), StateCode)
         return RecidivizPagerDutyService.airflow_service_for_state_code(
             project_id=project_id, state_code=state_code
