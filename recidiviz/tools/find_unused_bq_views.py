@@ -28,6 +28,7 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_query_provider import (
     BigQueryQueryProvider,
+    SimpleBigQueryQueryProvider,
     StateFilteredQueryProvider,
 )
 from recidiviz.big_query.big_query_view import BigQueryView
@@ -371,18 +372,22 @@ def get_all_pipeline_input_views(
     input_views: Dict[BigQueryAddress, BigQueryView] = {}
     for pipeline in collect_all_pipeline_classes():
         pipeline_input_views = {}
-        provider: BigQueryQueryProvider
-        for provider in pipeline.all_input_reference_query_providers(
+        for state_filtered_provider in pipeline.all_input_reference_query_providers(
             state_code, address_overrides
         ).values():
-            while not isinstance(provider, BigQueryView):
-                if not isinstance(provider, StateFilteredQueryProvider):
-                    raise ValueError(
-                        f"Found unexpected provider type [{type(provider)}]"
-                    )
-                if isinstance(provider.original_query, str):
+            provider: BigQueryQueryProvider | str = state_filtered_provider
+            while True:
+                if isinstance(provider, StateFilteredQueryProvider):
+                    provider = provider.original_query
+                    continue
+
+                if isinstance(provider, (str, SimpleBigQueryQueryProvider)):
                     break
-                provider = provider.original_query
+
+                if isinstance(provider, BigQueryView):
+                    break
+
+                raise ValueError(f"Found unexpected provider type [{type(provider)}]")
 
             if not isinstance(provider, BigQueryView):
                 continue
@@ -397,10 +402,17 @@ def get_all_pipeline_input_views(
                 )
             pipeline_input_views[underlying_view.address] = underlying_view
         input_views = {**input_views, **pipeline_input_views}
+
+    if not input_views:
+        raise ValueError(
+            "Found no pipeline input views - if all pipelines have been migrated to "
+            "use reference queries with no backing views, this function can be "
+            "deleted!"
+        )
     return input_views
 
 
-def _get_all_dataflow_pipeline_referenced_addresses() -> Set[BigQueryAddress]:
+def _get_all_dataflow_pipeline_referenced_view_addresses() -> Set[BigQueryAddress]:
     return {
         address
         for state_code in get_existing_direct_ingest_states()
@@ -448,7 +460,7 @@ def _should_ignore_unused_address(address: BigQueryAddress) -> bool:
 def get_product_referenced_addresses() -> Set[BigQueryAddress]:
     return (
         _get_all_metric_export_addresses()
-        | _get_all_dataflow_pipeline_referenced_addresses()
+        | _get_all_dataflow_pipeline_referenced_view_addresses()
     )
 
 
