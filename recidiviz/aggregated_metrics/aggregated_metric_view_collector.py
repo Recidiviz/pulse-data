@@ -380,6 +380,8 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
     MetricPopulationType.INCARCERATION: [
         MetricUnitOfAnalysisType.FACILITY,
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+        MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
+        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.SUPERVISION: [
@@ -387,12 +389,21 @@ UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE: Dict[
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+        MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
+        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.JUSTICE_INVOLVED: [
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
 }
+
+UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS: List[
+    MetricUnitOfAnalysisType
+] = [
+    MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
+    MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+]
 
 
 def collect_aggregated_metrics_view_builders(
@@ -453,6 +464,12 @@ def collect_aggregated_metrics_view_builders(
         for unit_of_analysis_type in units_of_analysis_by_population_dict[
             population_type
         ]:
+            # Filter out unit of analysis types for which we don't need detailed views
+            if (
+                unit_of_analysis_type
+                in UNIT_OF_ANALYSIS_TYPES_TO_EXCLUDE_FROM_NON_ASSIGNMENT_VIEWS
+            ):
+                continue
             unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
 
             # Build metric builder views by type

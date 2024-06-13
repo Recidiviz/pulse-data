@@ -37,6 +37,8 @@ class MetricUnitOfAnalysisType(Enum):
     SUPERVISION_OFFICE = "OFFICE"
     SUPERVISION_OFFICER = "OFFICER"
     SUPERVISION_UNIT = "UNIT"
+    WORKFLOWS_CASELOAD = "CASELOAD"
+    WORKFLOWS_LOCATION = "LOCATION"
     PERSON_ID = "PERSON"
 
     @property
@@ -184,6 +186,16 @@ METRIC_UNITS_OF_ANALYSIS = [
         static_attribute_columns=["officer_name"],
     ),
     MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
+        primary_key_columns=["state_code", "caseload_id"],
+        static_attribute_columns=[],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+        primary_key_columns=["state_code", "location_id"],
+        static_attribute_columns=[],
+    ),
+    MetricUnitOfAnalysis(
         type=MetricUnitOfAnalysisType.PERSON_ID,
         primary_key_columns=["state_code", "person_id"],
         static_attribute_columns=[],
@@ -225,6 +237,14 @@ FROM
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
     ): "SELECT * FROM `{project_id}.sessions.supervision_unit_supervisor_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.WORKFLOWS_CASELOAD,
+    ): "SELECT * FROM `{project_id}.sessions.person_caseload_location_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.WORKFLOWS_LOCATION,
+    ): "SELECT * FROM `{project_id}.sessions.person_caseload_location_sessions_materialized`",
     (
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.STATE_CODE,

@@ -153,21 +153,11 @@ def main(
             if unit_of_observation_type == MetricUnitOfObservationType.PERSON_ID:
                 generate_person_assignments_with_attributes_view(
                     view_name=view_name,
-                    time_dependent_person_attribute_query="SELECT * FROM sessions.compartment_sub_sessions_materialized",
+                    time_dependent_person_attribute_query="SELECT * FROM sessions.person_caseload_location_sessions",
                     time_dependent_person_attribute_fields=[
-                        "age",
-                        "assessment_score",
-                        "case_type",
                         "compartment_level_1",
-                        "compartment_level_2",
-                        "correctional_level",
-                        "correctional_level_raw_text",
-                        "housing_unit",
-                        "housing_unit_type",
-                        "supervision_district",
-                        "supervision_district_name",
-                        "supervision_office",
-                        "supervision_office_name",
+                        "caseload_id",
+                        "location_id",
                     ],
                 ).write(output_subdirectory, source_script_path=__file__)
 
