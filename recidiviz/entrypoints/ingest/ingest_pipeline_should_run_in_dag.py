@@ -28,13 +28,10 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment
 
 
-def _has_launchable_ingest_views(
-    state_code: StateCode, ingest_instance: DirectIngestInstance
-) -> bool:
+def _has_launchable_ingest_views(state_code: StateCode) -> bool:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value.lower()
     )
@@ -42,45 +39,33 @@ def _has_launchable_ingest_views(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
-    return (
-        len(
-            ingest_manifest_collector.launchable_ingest_views(
-                ingest_instance=ingest_instance
-            )
-        )
-        > 0
-    )
+    return len(ingest_manifest_collector.launchable_ingest_views()) > 0
 
 
-def ingest_pipeline_should_run_in_dag(
-    state_code: StateCode, ingest_instance: DirectIngestInstance
-) -> bool:
-    """Returns True if we should run the ingest pipeline for this (state, instance),
+def ingest_pipeline_should_run_in_dag(state_code: StateCode) -> bool:
+    """Returns True if we should run the ingest pipeline for this state,
     False otherwise.
     """
     if not direct_ingest_regions.get_direct_ingest_region(
         state_code.value.lower()
     ).is_ingest_launched_in_env():
         logging.info(
-            "Ingest for [%s, %s] is not launched in environment [%s] - returning False",
+            "Ingest for [%s] is not launched in environment [%s] - returning False",
             state_code.value,
-            ingest_instance.value,
             environment.get_gcp_environment(),
         )
         return False
 
-    if not _has_launchable_ingest_views(state_code, ingest_instance):
+    if not _has_launchable_ingest_views(state_code):
         logging.info(
-            "No launchable views found for [%s, %s] - returning False",
+            "No launchable views found for [%s] - returning False",
             state_code.value,
-            ingest_instance.value,
         )
         return False
 
     logging.info(
-        "Ingest pipeline for [%s, %s] is eligible to run - returning True",
+        "Ingest pipeline for [%s] is eligible to run - returning True",
         state_code.value,
-        ingest_instance.value,
     )
     return True
 
@@ -101,20 +86,11 @@ class IngestPipelineShouldRunInDagEntrypoint(EntrypointInterface):
             required=True,
         )
 
-        parser.add_argument(
-            "--ingest_instance",
-            help="The ingest instance for which the ingest pipeline enabled status needs to be checked",
-            type=DirectIngestInstance,
-            choices=list(DirectIngestInstance),
-            required=True,
-        )
-
         return parser
 
     @staticmethod
     def run_entrypoint(args: argparse.Namespace) -> None:
         """Runs the raw data flashing check."""
         state_code = args.state_code
-        ingest_instance = args.ingest_instance
 
-        save_to_xcom(ingest_pipeline_should_run_in_dag(state_code, ingest_instance))
+        save_to_xcom(ingest_pipeline_should_run_in_dag(state_code))

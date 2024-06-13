@@ -148,9 +148,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
     def ingest_view_collector(cls) -> DirectIngestViewQueryBuilderCollector:
         return DirectIngestViewQueryBuilderCollector(
             cls.region(),
-            cls.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=cls.ingest_instance()
-            ),
+            cls.ingest_view_manifest_collector().launchable_ingest_views(),
         )
 
     @classmethod
@@ -228,9 +226,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
             .ingest_view_to_manifest[ingest_view_name]
             .parse_contents(
                 contents_iterator=iter(rows),
-                context=IngestViewContentsContextImpl(
-                    ingest_instance=self.ingest_instance()
-                ),
+                context=IngestViewContentsContextImpl(),
             )
         )
 
@@ -532,9 +528,7 @@ class StateIngestPipelineTestCase(
         ] = defaultdict(dict)
         for (
             ingest_view
-        ) in self.ingest_view_manifest_collector().launchable_ingest_views(
-            ingest_instance=self.ingest_instance()
-        ):
+        ) in self.ingest_view_manifest_collector().launchable_ingest_views():
             ingest_view_builder = (
                 self.ingest_view_collector().get_query_builder_by_view_name(ingest_view)
             )
@@ -617,9 +611,7 @@ class StateIngestPipelineTestCase(
                 for entity in expected_entities
                 if entity.get_entity_name() == entity_type
             ]
-            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=self.ingest_instance()
-            )
+            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
             for entity_type in self.get_expected_output_entity_types(
                 ingest_view_name=ingest_view,
             )

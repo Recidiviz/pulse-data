@@ -27,7 +27,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     StateSchemaIngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -91,9 +90,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
                 )
             )
             | pipeline.GenerateEntities(
-                state_code=self.region_code(),
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                ingest_view_manifest=ingest_view_manifest,
+                state_code=self.region_code(), ingest_view_manifest=ingest_view_manifest
             )
         )
         assert_that(output, equal_to(expected_output))

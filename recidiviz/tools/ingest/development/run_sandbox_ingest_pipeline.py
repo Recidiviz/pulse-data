@@ -142,9 +142,7 @@ def get_extra_pipeline_parameter_args(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
-    launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(
-        ingest_instance=ingest_instance
-    )
+    launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views()
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
         launchable_ingest_views,

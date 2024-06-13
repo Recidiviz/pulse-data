@@ -124,7 +124,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
 
     def run_pipeline(self, p: Pipeline) -> None:
         field_index = CoreEntityFieldIndex()
-        ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
+        raw_data_source_instance = DirectIngestInstance(
+            self.pipeline_parameters.ingest_instance
+        )
         state_code = StateCode(self.pipeline_parameters.state_code.upper())
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
 
@@ -147,9 +149,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             region=region,
             delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
         )
-        all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
-            ingest_instance=ingest_instance
-        )
+        all_launchable_views = ingest_manifest_collector.launchable_ingest_views()
         view_collector = DirectIngestViewQueryBuilderCollector(
             region, all_launchable_views
         )
@@ -195,7 +195,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     file_tag: raw_data_upper_bound_dates[file_tag]
                     for file_tag in query_builder.raw_data_table_dependency_file_tags
                 },
-                ingest_instance=ingest_instance,
+                raw_data_source_instance=raw_data_source_instance,
             )
 
             _ = (
@@ -215,7 +215,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 | f"Generate {ingest_view} entities."
                 >> GenerateEntities(
                     state_code=state_code,
-                    ingest_instance=ingest_instance,
                     ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
                         ingest_view
                     ],

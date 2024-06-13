@@ -12,7 +12,7 @@
   "examples": [
     {
       "$not":  {
-        "$env": "is_secondary_instance"
+        "$env": "is_staging"
       }
     },
     {
@@ -34,7 +34,7 @@
         {
           "$if": {
             "$not":  {
-              "$env": "is_secondary_instance"
+              "$env": "is_staging"
             }
           },
           "$then": "confinement_date"

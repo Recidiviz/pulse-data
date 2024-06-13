@@ -23,12 +23,9 @@ from typing import Union
 
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IS_LOCAL_PROPERTY_NAME,
-    IS_PRIMARY_INSTANCE_PROPERTY_NAME,
     IS_PRODUCTION_PROPERTY_NAME,
-    IS_SECONDARY_INSTANCE_PROPERTY_NAME,
     IS_STAGING_PROPERTY_NAME,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment
 
 
@@ -51,9 +48,6 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
     production code.
     """
 
-    def __init__(self, ingest_instance: DirectIngestInstance) -> None:
-        self.ingest_instance = ingest_instance
-
     def get_env_property(self, property_name: str) -> Union[bool, str]:
         if property_name == IS_LOCAL_PROPERTY_NAME:
             return not environment.in_gcp()
@@ -61,9 +55,5 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
             return environment.in_gcp_staging()
         if property_name == IS_PRODUCTION_PROPERTY_NAME:
             return environment.in_gcp_production()
-        if property_name == IS_PRIMARY_INSTANCE_PROPERTY_NAME:
-            return self.ingest_instance == DirectIngestInstance.PRIMARY
-        if property_name == IS_SECONDARY_INSTANCE_PROPERTY_NAME:
-            return self.ingest_instance == DirectIngestInstance.SECONDARY
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")

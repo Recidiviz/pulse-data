@@ -30,7 +30,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.state.exemptions import (
     INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
 )
@@ -48,9 +47,7 @@ class TestExemptions(unittest.TestCase):
                 region=region,
                 delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
             )
-            all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
-                ingest_instance=DirectIngestInstance.PRIMARY
-            )
+            all_launchable_views = ingest_manifest_collector.launchable_ingest_views()
             state_code_to_launchable_views[state_code] = set(all_launchable_views)
 
         for (

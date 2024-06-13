@@ -24,7 +24,6 @@ from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
     ingest_pipeline_should_run_in_dag,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 
 
@@ -54,47 +53,21 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
     def tearDown(self) -> None:
         self.direct_ingest_regions_patcher.stop()
 
-    def test_ingest_pipeline_should_run_in_dag(self) -> None:
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.SECONDARY
-            )
-        )
+    @patch(
+        "recidiviz.ingest.direct.direct_ingest_regions.environment.get_gcp_environment",
+        return_value="staging",
+    )
+    @patch(
+        "recidiviz.ingest.direct.direct_ingest_regions.environment.in_gcp_production",
+        return_value=False,
+    )
+    def test_ingest_pipeline_should_run_in_dag(
+        self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
+    ) -> None:
+        self.assertTrue(ingest_pipeline_should_run_in_dag(StateCode.US_XX))
+        self.assertTrue(ingest_pipeline_should_run_in_dag(StateCode.US_YY))
+        self.assertTrue(ingest_pipeline_should_run_in_dag(StateCode.US_DD))
+        self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_WW))
 
     @patch(
         "recidiviz.ingest.direct.direct_ingest_regions.environment.get_gcp_environment",
@@ -107,43 +80,11 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
     def test_ingest_pipeline_should_run_in_dag_only_us_dd_launched_in_env(
         self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
     ) -> None:
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_XX, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_YY, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertTrue(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_DD, DirectIngestInstance.SECONDARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.PRIMARY
-            )
-        )
-        self.assertFalse(
-            ingest_pipeline_should_run_in_dag(
-                StateCode.US_WW, DirectIngestInstance.SECONDARY
-            )
-        )
+        self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_XX))
+        self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_XX))
+        self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_YY))
+        self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_YY))
+        self.assertTrue(ingest_pipeline_should_run_in_dag(StateCode.US_DD))
+        self.assertTrue(ingest_pipeline_should_run_in_dag(StateCode.US_DD))
+        self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_WW))
+        self.assertFalse(ingest_pipeline_should_run_in_dag(StateCode.US_WW))

@@ -35,6 +35,8 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 class IngestPipelineParameters(PipelineParameters):
     """Class for ingest pipeline parameters"""
 
+    # TODO(#29517): Rename to raw_data_source_instance and enforce it's only SECONDARY
+    #  for sandbox arguments.
     ingest_instance: str = attr.ib(
         default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
     )
@@ -51,16 +53,22 @@ class IngestPipelineParameters(PipelineParameters):
     @property
     def ingest_view_results_output(self) -> str:
         return self.get_output_dataset(
+            # TODO(#29517): Rename this dataset so it doesn't have `primary`/`secondary`
+            #  suffix.
             ingest_view_materialization_results_dataset(
-                StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
+                StateCode(self.state_code),
+                DirectIngestInstance(self.ingest_instance),
             )
         )
 
     @property
     def output(self) -> str:
         return self.get_output_dataset(
+            # TODO(#29517): Rename this dataset so it doesn't have `primary`/`secondary`
+            #  suffix.
             state_dataset_for_state_code(
-                StateCode(self.state_code), DirectIngestInstance(self.ingest_instance)
+                StateCode(self.state_code),
+                DirectIngestInstance(self.ingest_instance),
             )
         )
 

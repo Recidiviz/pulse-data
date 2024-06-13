@@ -91,7 +91,7 @@ class FakeGenerateIngestViewResults(GenerateIngestViewResults):
         state_code: StateCode,
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: Dict[str, str],
-        ingest_instance: DirectIngestInstance,
+        raw_data_source_instance: DirectIngestInstance,
         fake_ingest_view_results: Iterable[Dict[str, Any]],
     ) -> None:
         super().__init__(
@@ -99,7 +99,7 @@ class FakeGenerateIngestViewResults(GenerateIngestViewResults):
             state_code,
             ingest_view_name,
             raw_data_tables_to_upperbound_dates,
-            ingest_instance,
+            raw_data_source_instance,
         )
         self.fake_ingest_view_results = fake_ingest_view_results
 
@@ -276,7 +276,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         state_code: StateCode,
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: Dict[str, str],
-        ingest_instance: DirectIngestInstance,
+        raw_data_source_instance: DirectIngestInstance,
     ) -> FakeGenerateIngestViewResults:
         """Returns a constructor that generates ingest view results for a given ingest view assuming a single date."""
         return FakeGenerateIngestViewResults(
@@ -284,7 +284,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
             state_code,
             ingest_view_name,
             raw_data_tables_to_upperbound_dates,
-            ingest_instance,
+            raw_data_source_instance,
             self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view_name,
                 test_name=ingest_view_name,
@@ -334,9 +334,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
         if not ingest_view_results:
             ingest_view_results = {
                 ingest_view: []
-                for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                    ingest_instance=self.ingest_instance()
-                )
+                for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
             }
         expected_entities = [
             entity
@@ -352,9 +350,7 @@ class StateSpecificIngestPipelineIntegrationTestCase(BaseStateIngestPipelineTest
                 for entity in expected_entities
                 if entity.get_entity_name() == entity_type
             ]
-            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=self.ingest_instance()
-            )
+            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
             for entity_type in self.get_expected_output_entity_types(
                 ingest_view_name=ingest_view,
             )

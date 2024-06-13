@@ -48,7 +48,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     StateSchemaIngestViewManifestCompilerDelegate,
     ingest_view_manifest_dir,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -114,10 +113,7 @@ class StateIngestViewParserTestBase:
         return manifest_ast
 
     def _parse_enum_manifest_test(
-        self,
-        file_tag: str,
-        enum_parser_manifest: EnumMappingManifest,
-        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
+        self, file_tag: str, enum_parser_manifest: EnumMappingManifest
     ) -> None:
         fixture_path = DirectIngestTestFixturePath.for_enum_raw_text_fixture(
             region_code=self.region_code(),
@@ -128,7 +124,7 @@ class StateIngestViewParserTestBase:
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(
                 row,
-                context=IngestViewContentsContextImpl(ingest_instance=ingest_instance),
+                context=IngestViewContentsContextImpl(),
             )
 
     def _run_parse_ingest_view_test(
@@ -137,7 +133,6 @@ class StateIngestViewParserTestBase:
         expected_output: Sequence[Entity],
         debug: bool = False,
         project: str = GCP_PROJECT_STAGING,
-        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
     ) -> None:
         """Runs a test that parses the ingest view into Python entities.
 
@@ -164,7 +159,7 @@ class StateIngestViewParserTestBase:
                         fixture_path, cleanup_file=False
                     ).get_contents_iterator()
                 ),
-                context=IngestViewContentsContextImpl(ingest_instance=ingest_instance),
+                context=IngestViewContentsContextImpl(),
             )
 
         if debug:

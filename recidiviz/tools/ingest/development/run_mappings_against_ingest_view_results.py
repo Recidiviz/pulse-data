@@ -126,7 +126,6 @@ def parse_results(
     write_results: bool,
 ) -> None:
     """Parses the ingest view results, collecting any errors and writing them to a file."""
-    ingest_instance = DirectIngestInstance.PRIMARY
     manifest_compiler = IngestViewManifestCompiler(
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region)
     )
@@ -170,9 +169,7 @@ def parse_results(
         ).parse_contents(
             contents_iterator=contents_handle.get_contents_iterator(),
             result_callable=result_processor,
-            context=IngestViewContentsContextImpl(
-                ingest_instance=ingest_instance,
-            ),
+            context=IngestViewContentsContextImpl(),
         )
 
         progress.close()
