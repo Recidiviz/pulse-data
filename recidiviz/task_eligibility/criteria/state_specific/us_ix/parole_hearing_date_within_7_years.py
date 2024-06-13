@@ -18,6 +18,8 @@
 Defines a criteria span view that shows spans of time during which
 someone is within 7 years of their parole hearing date.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_start_date_clause,
@@ -29,6 +31,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -122,7 +125,8 @@ SELECT
     start_date,
     end_date,
     LOGICAL_OR(critical_date_has_passed) AS meets_criteria,
-    TO_JSON(STRUCT(MIN(critical_date) AS next_parole_hearing_date)) AS reason
+    TO_JSON(STRUCT(MIN(critical_date) AS next_parole_hearing_date)) AS reason,
+    MIN(critical_date) AS next_parole_hearing_date,
 FROM sub_sessions_with_attributes
 WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
@@ -135,6 +139,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         state_code=StateCode.US_IX,
+        reasons_fields=[
+            ReasonsField(
+                name="next_parole_hearing_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

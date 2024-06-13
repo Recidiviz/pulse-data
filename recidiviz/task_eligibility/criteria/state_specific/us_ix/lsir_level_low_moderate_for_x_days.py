@@ -21,6 +21,8 @@ someone in ID has a valid LSIR level for the required number of days:
  for the 90 days of active supervision
 -At or below moderate potential to reoffend can have no increase in risk level 360 days prior
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -30,6 +32,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -172,6 +175,8 @@ SELECT
     --choose TRUE spans over FALSE 
     LOGICAL_OR(critical_date_has_passed) AS meets_criteria,
     TO_JSON(STRUCT(MIN(critical_date) AS eligible_date, MAX(lsir_level) AS risk_level)) AS reason,
+    MIN(critical_date) AS eligible_date,
+    MAX(lsir_level) AS risk_level,
 FROM sub_sessions_with_attributes ssa
 LEFT JOIN LSIR_level_gender ls
   ON ls.state_code = ssa.state_code
@@ -189,6 +194,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="eligible_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="risk_level",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

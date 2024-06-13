@@ -17,12 +17,15 @@
 """Defines a criteria span view that shows spans of time for
 which employment or nonemployment lawful income is verified within 3 months
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -67,6 +70,8 @@ SELECT
     end_date,
     verified_income AS meets_criteria,
     TO_JSON(STRUCT(IF(verified_income, MAX(income_verified_date), NULL) AS income_verified_date)) AS reason,
+    IF(verified_income, MAX(income_verified_date), NULL) AS income_verified_date,
+    
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5
 """
@@ -78,6 +83,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="income_verified_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

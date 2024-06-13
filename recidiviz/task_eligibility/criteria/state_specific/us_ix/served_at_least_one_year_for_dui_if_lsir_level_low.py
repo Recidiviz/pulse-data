@@ -18,12 +18,15 @@
 on supervision for a DUI offense and their LSI-R score is LOW. Before the year is up, policy states
 that their LSI-R score should be overridden to MODERATE.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -137,6 +140,7 @@ SELECT
     TO_JSON(STRUCT(
         start_date AS eligible_date
     )) AS reason,
+    start_date AS minimum_time_served_date,
 FROM sub_sessions_with_attributes
 WHERE start_date != end_date
 GROUP BY 1,2,3,4
@@ -149,6 +153,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         meets_criteria_default=True,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="minimum_time_served_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

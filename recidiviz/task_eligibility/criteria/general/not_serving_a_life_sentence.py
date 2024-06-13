@@ -37,6 +37,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         compartment_level_1="INCARCERATION",
         description=_DESCRIPTION,
         where_clause="WHERE sent.life_sentence",
+        additional_json_fields=["LOGICAL_OR(sent.life_sentence) AS life_sentence"],
     )
 )
 

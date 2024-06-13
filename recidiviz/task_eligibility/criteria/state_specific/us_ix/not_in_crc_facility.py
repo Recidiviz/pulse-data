@@ -18,10 +18,13 @@
 Defines a criteria span view that shows spans of time during which
 someone in ID is NOT in a Community Reentry Center facility
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
 )
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -42,6 +45,8 @@ _QUERY_TEMPLATE = """SELECT
     end_date,
     NOT meets_criteria AS meets_criteria,
     reason,
+    JSON_EXTRACT(reason, "$.crc_start_date") AS crc_start_date,
+    JSON_EXTRACT(reason, "$.facility_name") AS facility_name,
 FROM `{project_id}.{criteria_dataset}.in_crc_facility_materialized`"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -54,6 +59,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
             StateCode.US_IX
         ),
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="crc_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="facility_name",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

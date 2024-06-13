@@ -18,16 +18,17 @@
 """Defines a criteria view that shows spans of time for
 which residents do not have a sex offender alert"""
 
+from google.cloud import bigquery
+
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
-)
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -72,7 +73,9 @@ SELECT
     end_date,
     False AS meets_criteria,
     TO_JSON(STRUCT(STRING_AGG(DISTINCT alert_description) AS latest_alert_descriptions,
-                   STRING_AGG(DISTINCT alert_id) AS latest_alert_ids)) AS reason
+                   STRING_AGG(DISTINCT alert_id) AS latest_alert_ids)) AS reason,
+    STRING_AGG(DISTINCT alert_description) AS latest_alert_descriptions,
+    STRING_AGG(DISTINCT alert_id) AS latest_alert_ids
 FROM sub_sessions_with_attributes
 WHERE start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4"""
@@ -88,6 +91,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_alert_descriptions",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_alert_ids",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
