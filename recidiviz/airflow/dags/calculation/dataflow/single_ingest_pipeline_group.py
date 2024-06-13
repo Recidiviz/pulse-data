@@ -49,6 +49,9 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
+from recidiviz.airflow.dags.utils.constants import (
+    SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID,
+)
 from recidiviz.airflow.dags.utils.dataflow_pipeline_group import (
     build_dataflow_pipeline_task_group,
 )
@@ -97,7 +100,7 @@ def handle_ingest_pipeline_should_run_in_dag_check(
 
 
 @task.short_circuit(
-    task_id="should_run_based_on_watermarks",
+    task_id=SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID,
     ignore_downstream_trigger_rules=False
     # allows skipping of downstream tasks until trigger rule prevents it (like ALL_DONE)
 )

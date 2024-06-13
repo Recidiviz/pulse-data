@@ -22,3 +22,7 @@ CREATE_FLEX_TEMPLATE_TASK_ID = "create_flex_template"
 
 # Task id for the task in a Dataflow pipeline group that runs a dataflow pipeline.
 DATAFLOW_OPERATOR_TASK_ID = "run_pipeline"
+
+# Task id for the check that runs before ingest pipelines to make sure we aren't
+# running with stale / missing raw data.
+SHOULD_RUN_BASED_ON_WATERMARKS_TASK_ID = "should_run_based_on_watermarks"
