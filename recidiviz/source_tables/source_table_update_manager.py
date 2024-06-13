@@ -40,6 +40,10 @@ class SourceTableFailedToUpdateError(ValueError):
 class SourceTableCollectionUpdateConfig:
     source_table_collection: SourceTableCollection
     allow_field_deletions: bool
+    # For tables that are ephemeral, or whose contents are fully repopulated each time they're changed,
+    # it may be beneficial to recreate the table in the case of an update error (e.g. incompatible schema type changes,
+    # clustering field mismatch)
+    recreate_on_update_error: bool = attr.ib(default=False)
 
 
 class SourceTableDryRunResult(enum.StrEnum):
@@ -177,22 +181,42 @@ class SourceTableUpdateManager:
                 current_table = self.client.get_table(
                     dataset_ref, source_table_config.address.table_id
                 )
-                if (
-                    current_table.clustering_fields
-                    != source_table_config.clustering_fields
-                ):
-                    raise ValueError(
-                        f"Existing table: {source_table_config.address} "
-                        f"has clustering fields {current_table.clustering_fields} that do "
-                        f"not match {source_table_config.clustering_fields}"
+                try:
+                    if (
+                        current_table.clustering_fields or []
+                    ) != source_table_config.clustering_fields:
+                        raise ValueError(
+                            f"Existing table: {source_table_config.address} "
+                            f"has clustering fields {current_table.clustering_fields} that do "
+                            f"not match {source_table_config.clustering_fields}"
+                        )
+
+                    self.client.update_schema(
+                        source_table_config.address.dataset_id,
+                        source_table_config.address.table_id,
+                        source_table_config.schema_fields,
+                        allow_field_deletions=update_config.allow_field_deletions,
+                    )
+                except ValueError as e:
+                    if not update_config.recreate_on_update_error:
+                        raise e
+
+                    logging.warning(
+                        "Failed to update schema for %s due to %s, will try to delete and create table.",
+                        source_table_address.to_str(),
+                        e,
                     )
 
-                self.client.update_schema(
-                    source_table_config.address.dataset_id,
-                    source_table_config.address.table_id,
-                    source_table_config.schema_fields,
-                    allow_field_deletions=update_config.allow_field_deletions,
-                )
+                    # We are okay deleting and recreating the table as its contents are deleted / recreated
+                    self.client.delete_table(
+                        dataset_id=source_table_config.address.dataset_id,
+                        table_id=source_table_config.address.table_id,
+                    )
+                    self.client.create_table_with_schema(
+                        dataset_id=source_table_config.address.dataset_id,
+                        table_id=source_table_config.address.table_id,
+                        schema_fields=source_table_config.schema_fields,
+                    )
             else:
                 self.client.create_table_with_schema(
                     source_table_config.address.dataset_id,
@@ -234,10 +258,16 @@ class SourceTableUpdateManager:
         """Updates the schemas of all tables specified by the provided list of collections, printing a progress bar as tables complete"""
         logging.info("Logs can be found at %s", log_file)
         with redirect_logging_to_file(log_file):
+            datasets_to_create: dict[str, SourceTableCollectionUpdateConfig] = {
+                update_config.source_table_collection.dataset_id: update_config
+                for update_config in update_configs
+            }
+
             map_fn_with_progress_bar_results(
                 fn=self._create_dataset_if_necessary,
                 kwargs_list=[
-                    {"update_config": update_config} for update_config in update_configs
+                    {"update_config": update_config}
+                    for update_config in datasets_to_create.values()
                 ],
                 max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
                 timeout=60 * 10,  # 3 minutes

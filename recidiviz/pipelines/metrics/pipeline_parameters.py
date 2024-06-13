@@ -24,6 +24,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
 )
 from recidiviz.common import attr_validators
+from recidiviz.pipelines.pipeline_names import METRICS_PIPELINE_NAME
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 
@@ -53,7 +54,7 @@ class MetricsPipelineParameters(PipelineParameters):
 
     @property
     def flex_template_name(self) -> str:
-        return "metrics"
+        return METRICS_PIPELINE_NAME
 
     def _get_base_job_name(self) -> str:
         if self.calculation_month_count == -1:

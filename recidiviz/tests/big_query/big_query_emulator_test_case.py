@@ -17,6 +17,8 @@
 """An implementation of TestCase that can be used for tests that talk to the BigQuery
 emulator.
 """
+import os
+import tempfile
 import unittest
 from concurrent import futures
 from typing import Any, Dict, Iterable, List
@@ -33,6 +35,10 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
+)
+from recidiviz.source_tables.source_table_config import SourceTableCollection
+from recidiviz.tests.big_query.big_query_emulator_input_schema_json import (
+    write_emulator_source_tables_json,
 )
 from recidiviz.tests.big_query.big_query_test_helper import BigQueryTestHelper
 from recidiviz.tests.test_setup_utils import BQ_EMULATOR_PROJECT_ID
@@ -67,17 +73,35 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
     # Subclasses can choose to override this as it may not always be necessary
     wipe_emulator_data_on_teardown = True
 
+    # Subclasses can override this to prevent rebuilding of input JSON
+    input_json_schema_path: str | None = None
+
+    # Subclasses can override this to keep the input file when debugging tests
+    delete_json_input_schema_on_teardown = True
+
     @classmethod
-    def get_input_schema_json_path(cls) -> str | None:
-        return None
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        return []
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.control = BigQueryEmulatorControl.build()
         cls.control.pull_image()
-        cls.control.start_emulator(
-            input_schema_json_path=cls.get_input_schema_json_path()
-        )
+
+        input_schema_json_path = None
+        if cls.input_json_schema_path is not None:
+            input_schema_json_path = cls.input_json_schema_path
+        elif source_tables := cls.get_source_tables():
+            with tempfile.NamedTemporaryFile(
+                dir=os.path.join(os.path.dirname(__file__), "fixtures"), delete=False
+            ) as file:
+                cls.input_json_schema_path = file.name
+                input_schema_json_path = write_emulator_source_tables_json(
+                    source_table_collections=source_tables,
+                    file_name=cls.input_json_schema_path,
+                )
+
+        cls.control.start_emulator(input_schema_json_path=input_schema_json_path)
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
@@ -97,6 +121,9 @@ class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
         # If the test failed, output the emulator logs prior to exiting
         print(cls.control.get_logs())
         cls.control.stop_emulator()
+
+        if cls.input_json_schema_path and cls.delete_json_input_schema_on_teardown:
+            os.remove(cls.input_json_schema_path)
 
     def query(self, query: str) -> pd.DataFrame:
         return self.bq_client.run_query_async(

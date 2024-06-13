@@ -63,6 +63,9 @@ from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
 )
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.source_tables.collect_all_source_table_configs import (
+    build_source_table_repository_for_collected_schemata,
+)
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
@@ -582,6 +585,25 @@ The following views have less restrictive projects_to_deploy than their parents:
                 f"[{dataset_id}], which is present for non-production use cases only ("
                 f"e.g. debugging). Found views referencing [{dataset_id}]: "
                 f"{address_strs}"
+            )
+
+    def test_no_conflicts_between_source_tables_and_views(self) -> None:
+        view_builder_addresses = {vb.address for vb in self.all_deployed_view_builders}
+        source_table_addresses = set(
+            build_source_table_repository_for_collected_schemata().source_tables.keys()
+        )
+
+        if not view_builder_addresses.isdisjoint(source_table_addresses):
+            overlapping_elements = ", ".join(
+                [
+                    address.to_str()
+                    for address in view_builder_addresses.intersection(
+                        source_table_addresses
+                    )
+                ]
+            )
+            raise ValueError(
+                f"Found overlapping addresses between source tables and views: {overlapping_elements}"
             )
 
     def test_regex_parent_table_parsing_matches_expected(self) -> None:

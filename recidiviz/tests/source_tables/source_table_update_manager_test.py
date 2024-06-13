@@ -15,8 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests capabilities of the SourceTableUpdateManager"""
+from typing import Any
+from unittest.mock import patch
 
 from google.cloud import bigquery
+from google.cloud.bigquery import SchemaField
 from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -32,6 +35,7 @@ from recidiviz.source_tables.source_table_config import (
 )
 from recidiviz.source_tables.source_table_update_manager import (
     SourceTableCollectionUpdateConfig,
+    SourceTableFailedToUpdateError,
     SourceTableUpdateManager,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -140,3 +144,94 @@ class TestSourceTableUpdateManager(BigQueryEmulatorTestCase):
                     allow_field_deletions=False,
                 )
             )
+
+
+class TestSourceTableUpdateManagerRecreateOnError(BigQueryEmulatorTestCase):
+    """Tests SourceTableUpdateManager recreate_on_error handling"""
+
+    source_table_update_manager: SourceTableUpdateManager
+
+    dataset_id = "test_dataset"
+
+    table_address = BigQueryAddress(dataset_id="test_dataset", table_id="test_table")
+
+    existing_table_config = SourceTableConfig(
+        address=table_address,
+        description="pre-update table",
+        schema_fields=[SchemaField("id", "INTEGER")],
+    )
+
+    updated_table_config = SourceTableConfig(
+        address=table_address,
+        description="pre-update table",
+        schema_fields=[
+            SchemaField("id", "INTEGER"),
+            SchemaField("test_column", "STRING"),
+        ],
+    )
+
+    @classmethod
+    def get_source_tables(cls) -> list[SourceTableCollection]:
+        return [
+            SourceTableCollection(
+                dataset_id=cls.dataset_id,
+                source_tables_by_address={cls.table_address: cls.existing_table_config},
+            )
+        ]
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        def _update_schema_mock(*args: Any, **kwargs: Any) -> None:
+            raise ValueError("error updating")
+
+        self.update_schema_patcher = patch.object(
+            self.bq_client, attribute="update_schema", new=_update_schema_mock
+        )
+        self.update_schema_patcher.start()
+
+        self.source_table_update_manager = SourceTableUpdateManager(
+            client=self.bq_client
+        )
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.update_schema_patcher.stop()
+
+    def test_recreate_false_raises(self) -> None:
+        with self.assertRaisesRegex(
+            SourceTableFailedToUpdateError,
+            expected_regex="Failed to update schema for `test_dataset.test_table`",
+        ):
+            self.source_table_update_manager.update(
+                SourceTableCollectionUpdateConfig(
+                    source_table_collection=SourceTableCollection(
+                        dataset_id="test_dataset",
+                        source_tables_by_address={
+                            self.table_address: self.updated_table_config
+                        },
+                    ),
+                    recreate_on_update_error=False,
+                    allow_field_deletions=False,
+                )
+            )
+
+    def test_recreate_true_recreates(self) -> None:
+        self.source_table_update_manager.update(
+            SourceTableCollectionUpdateConfig(
+                source_table_collection=SourceTableCollection(
+                    dataset_id="test_dataset",
+                    source_tables_by_address={
+                        self.table_address: self.updated_table_config
+                    },
+                ),
+                recreate_on_update_error=True,
+                allow_field_deletions=False,
+            )
+        )
+
+        table = self.bq_client.get_table(
+            self.bq_client.dataset_ref_for_id(self.table_address.dataset_id),
+            self.table_address.table_id,
+        )
+        self.assertEqual(table.schema, self.updated_table_config.schema_fields)

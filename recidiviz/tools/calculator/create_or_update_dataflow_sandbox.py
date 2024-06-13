@@ -33,37 +33,38 @@ python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
 """
 import argparse
 import logging
-import sys
-from typing import List, Optional
+import os
+from typing import List
 
-from recidiviz.airflow.dags.utils.dag_orchestration_utils import (
-    get_ingest_pipeline_enabled_state_and_instance_pairs,
-)
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import (
-    ingest_view_materialization_results_dataset,
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
-    update_bq_dataset_to_match_sqlalchemy_schema,
+from recidiviz.pipelines.pipeline_names import (
+    INGEST_PIPELINE_NAME,
+    METRICS_PIPELINE_NAME,
+    NORMALIZATION_PIPELINE_NAME,
+    SUPPLEMENTAL_PIPELINE_NAME,
 )
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_normalization_pipeline_enabled_states,
+from recidiviz.source_tables.dataflow_output_table_collector import (
+    get_dataflow_output_source_table_collections,
 )
-from recidiviz.pipelines.dataflow_output_table_manager import (
-    update_dataflow_metric_tables_schemas,
-    update_normalized_table_schemas_in_dataset,
-    update_state_specific_ingest_view_result_schema,
-    update_supplemental_dataset_schemas,
+from recidiviz.source_tables.ingest_pipeline_output_table_collector import (
+    build_ingest_view_source_table_configs,
 )
-from recidiviz.pipelines.ingest.dataset_config import state_dataset_for_state_code
-from recidiviz.pipelines.normalization.dataset_config import (
-    normalized_state_dataset_for_state_code,
+from recidiviz.source_tables.source_table_config import (
+    DataflowPipelineSourceTableLabel,
+    IngestPipelineEntitySourceTableLabel,
+    NormalizedStateSpecificEntitySourceTableLabel,
+    SourceTableCollection,
 )
-from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.source_tables.source_table_update_manager import (
+    SourceTableCollectionUpdateConfig,
+    SourceTableUpdateManager,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -71,233 +72,124 @@ from recidiviz.utils.metadata import local_project_id_override
 # expiration to 72 hours
 TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 72 * 60 * 60 * 1000
 
-SANDBOX_TYPES = ["metrics", "normalization", "supplemental", "ingest"]
+SANDBOX_TYPES = [
+    METRICS_PIPELINE_NAME,
+    NORMALIZATION_PIPELINE_NAME,
+    SUPPLEMENTAL_PIPELINE_NAME,
+    INGEST_PIPELINE_NAME,
+]
 
 
-def create_or_update_ingest_output_sandbox(
-    bq_client: BigQueryClientImpl,
-    state_code: StateCode,
-    ingest_instance: DirectIngestInstance,
-    sandbox_dataset_prefix: str,
-    allow_overwrite: bool = False,
+def create_or_update_source_table_collections(
+    source_table_collections: list[SourceTableCollection], allow_overwrite: bool = False
 ) -> None:
-    """Creates or updates a sandbox state and ingest view results datasets, prefixing the
-    datasets name with the given prefix. Creates one dataset per state_code and ingest instance
-    that has calculation pipelines regularly scheduled."""
+    bq_client = BigQueryClientImpl()
+    for source_table_collection in source_table_collections:
+        sandbox_dataset_id = source_table_collection.dataset_id
+        sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
 
-    sandbox_ingest_view_results_id = ingest_view_materialization_results_dataset(
-        state_code, ingest_instance, sandbox_dataset_prefix
-    )
-    sandbox_ingest_view_results_ref = bq_client.dataset_ref_for_id(
-        sandbox_ingest_view_results_id
-    )
-    if (
-        bq_client.dataset_exists(sandbox_ingest_view_results_ref)
-        and not allow_overwrite
+        if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
+            raise ValueError(
+                f"Dataset {sandbox_dataset_id} already exists in project {bq_client.project_id}. To overwrite, set --allow_overwrite.",
+            )
+
+    if not all(
+        source_table_collection.is_sandbox_collection
+        for source_table_collection in source_table_collections
     ):
-        logging.error(
-            "Dataset %s already exists in project %s. To overwrite, "
-            "set --allow_overwrite.",
-            sandbox_ingest_view_results_id,
-            bq_client.project_id,
+        raise ValueError(
+            "Cannot create sandboxed datasets for non-sandboxed collections"
         )
-        sys.exit(1)
-    logging.info(
-        "Creating state ingest view result sandbox datasets with prefix %s. Tables will expire "
-        "after 72 hours.",
-        sandbox_dataset_prefix,
-    )
-    update_state_specific_ingest_view_result_schema(
-        sandbox_ingest_view_results_id,
-        state_code,
-        ingest_instance,
-        default_table_expiration_ms=TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-    )
 
-    sandbox_state_id = state_dataset_for_state_code(
-        state_code, ingest_instance, sandbox_dataset_prefix
-    )
-    sandbox_state_ref = bq_client.dataset_ref_for_id(sandbox_state_id)
-    if bq_client.dataset_exists(sandbox_state_ref) and not allow_overwrite:
-        logging.error(
-            "Dataset %s already exists in project %s. To overwrite, "
-            "set --allow_overwrite.",
-            sandbox_state_id,
-            bq_client.project_id,
-        )
-        sys.exit(1)
-    logging.info(
-        "Creating state sandbox datasets with prefix %s. Tables will expire "
-        "after 72 hours.",
-        sandbox_dataset_prefix,
-    )
-    update_bq_dataset_to_match_sqlalchemy_schema(
-        schema_type=SchemaType.STATE,
-        dataset_id=sandbox_state_id,
-        default_table_expiration_ms=TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+    update_manager = SourceTableUpdateManager()
+    update_manager.update_async(
+        update_configs=[
+            SourceTableCollectionUpdateConfig(
+                source_table_collection=source_table_collection,
+                allow_field_deletions=True,
+            )
+            for source_table_collection in source_table_collections
+        ],
+        log_file=os.path.join(
+            os.path.dirname(__file__),
+            "logs/create_or_update_sandbox.log",
+        ),
     )
 
 
-def create_or_update_supplemental_datasets_sandbox(
-    bq_client: BigQueryClientImpl,
-    sandbox_dataset_prefix: str,
-    allow_overwrite: bool = False,
-) -> None:
-    """Creates or updates a supplemental dataset sandbox dataset, prefixing the dataset
-    name with the given prefix."""
-    sandbox_dataset_id = sandbox_dataset_prefix + "_" + SUPPLEMENTAL_DATA_DATASET
-
-    sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
-
-    if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
-        logging.error(
-            "Dataset %s already exists in project %s. To overwrite, set --allow_overwrite.",
-            sandbox_dataset_id,
-            bq_client.project_id,
-        )
-        sys.exit(1)
-
-    logging.info(
-        "Creating supplemental dataset sandbox in dataset %s. Tables will expire after 72 hours.",
-        sandbox_dataset_ref,
-    )
-    bq_client.create_dataset_if_necessary(
-        sandbox_dataset_ref, TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-    )
-
-    update_supplemental_dataset_schemas(
-        supplemental_metrics_dataset_id=sandbox_dataset_id
-    )
-
-
-def create_or_update_dataflow_metrics_sandbox(
-    bq_client: BigQueryClientImpl,
-    sandbox_dataset_prefix: str,
-    allow_overwrite: bool = False,
-) -> None:
-    """Creates or updates a Dataflow metrics sandbox dataset, prefixing the dataset name with the given prefix."""
-    sandbox_dataset_id = sandbox_dataset_prefix + "_" + DATAFLOW_METRICS_DATASET
-
-    sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
-
-    if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
-        logging.error(
-            "Dataset %s already exists in project %s. To overwrite, set --allow_overwrite.",
-            sandbox_dataset_id,
-            bq_client.project_id,
-        )
-        sys.exit(1)
-
-    logging.info(
-        "Creating dataflow metrics sandbox in dataset %s. Tables will expire after 72 hours.",
-        sandbox_dataset_ref,
-    )
-    bq_client.create_dataset_if_necessary(
-        sandbox_dataset_ref, TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-    )
-
-    update_dataflow_metric_tables_schemas(
-        dataflow_metrics_dataset_id=sandbox_dataset_id
-    )
-
-
-def create_or_update_normalized_state_sandbox(
-    bq_client: BigQueryClientImpl,
-    state_code: StateCode,
-    sandbox_dataset_prefix: str,
-    allow_overwrite: bool = False,
-) -> None:
-    """Creates or updates a sandbox normalized_state datasets, prefixing the datasets
-    name with the given prefix. Creates one dataset per state_code that has
-    calculation pipelines regularly scheduled."""
-
-    # First create the sandbox dataset with the default table expiration
-    sandbox_dataset_id = f"{sandbox_dataset_prefix}_{normalized_state_dataset_for_state_code(state_code)}"
-
-    sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
-    if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
-        logging.error(
-            "Dataset %s already exists in project %s. To overwrite, "
-            "set --allow_overwrite.",
-            sandbox_dataset_id,
-            bq_client.project_id,
-        )
-        sys.exit(1)
-
-    bq_client.create_dataset_if_necessary(
-        sandbox_dataset_ref, TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-    )
-
-    logging.info(
-        "Creating normalized state sandbox datasets with prefix %s. Tables will expire "
-        "after 72 hours.",
-        sandbox_dataset_prefix,
-    )
-
-    update_normalized_table_schemas_in_dataset(
-        normalized_state_dataset_id=sandbox_dataset_id,
-        default_table_expiration_ms=TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-    )
-
-
-# TODO(#23142): Merge underlying dataset creation logic with functions in update_big_query_table_schemas.py
-def _create_or_update_dataflow_sandbox(
+def create_or_update_dataflow_sandbox(
     sandbox_dataset_prefix: str,
     datasets_to_create: List[str],
     allow_overwrite: bool,
-    state_code_filter: Optional[StateCode],
-    ingest_instance_filter: Optional[DirectIngestInstance],
+    state_code_filter: StateCode | None = None,
+    ingest_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
 ) -> None:
     """Creates or updates a sandbox for all the pipeline types, prefixing the dataset
     name with the given prefix. Creates one dataset per state_code that has
     calculation pipelines regularly scheduled."""
-    bq_client = BigQueryClientImpl()
+    dataflow_source_tables = SourceTableRepository(
+        source_table_collections=get_dataflow_output_source_table_collections()
+    )
+    collections_to_create: list[SourceTableCollection] = []
 
-    # Create the ingest view results dataset and state datasets:
-    if "ingest" in datasets_to_create:
-        state_instance_pairs = {
-            (state_code, instance)
-            for state_code, instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
-            if (not state_code_filter or state_code == state_code_filter)
-            and (not ingest_instance_filter or instance == ingest_instance_filter)
-        }
+    for pipeline in datasets_to_create:
+        pipeline_collections = dataflow_source_tables.get_collections(
+            labels=[DataflowPipelineSourceTableLabel(pipeline_name=pipeline)]
+        )
 
-        for state_code, ingest_instance in state_instance_pairs:
-            create_or_update_ingest_output_sandbox(
-                bq_client,
-                state_code,
-                ingest_instance,
-                sandbox_dataset_prefix,
-                allow_overwrite,
+        # Filter down to relevant ingest pipeline collections based on filters
+        if pipeline == INGEST_PIPELINE_NAME:
+            state_instance_pairs = [
+                (state_code, ingest_instance)
+                for state_code in get_direct_ingest_states_existing_in_env()
+                if (not state_code_filter or state_code == state_code_filter)
+            ]
+            # TODO(#30495): These will not need to be added separately once ingest views
+            #  define their schemas in the YAML mappings definitions and we can collect
+            #  these ingest view tables with all the other source tables.
+            collections_to_create.extend(
+                build_ingest_view_source_table_configs(
+                    bq_client=BigQueryClientImpl(),
+                    state_instance_pairs=state_instance_pairs,
+                )
             )
 
-    # Create the sandbox normalized datasets
-    if "normalization" in datasets_to_create:
-        state_codes = (
-            {state_code_filter}
-            if state_code_filter
-            else get_normalization_pipeline_enabled_states()
-        )
+            pipeline_collections = [
+                c
+                for c in pipeline_collections
+                if c.has_any_label(
+                    [
+                        IngestPipelineEntitySourceTableLabel(
+                            state_code=state_code, ingest_instance=ingest_instance
+                        )
+                        for state_code, ingest_instance in state_instance_pairs
+                    ]
+                )
+            ]
 
-        for state_code in state_codes:
-            create_or_update_normalized_state_sandbox(
-                bq_client,
-                state_code,
-                sandbox_dataset_prefix,
-                allow_overwrite,
+        # Filter down to relevant normalization pipeline collections
+        if pipeline == NORMALIZATION_PIPELINE_NAME and state_code_filter:
+            pipeline_collections = [
+                c
+                for c in pipeline_collections
+                if c.has_label(
+                    NormalizedStateSpecificEntitySourceTableLabel(
+                        state_code=state_code_filter
+                    )
+                )
+            ]
+
+        collections_to_create.extend(pipeline_collections)
+
+    create_or_update_source_table_collections(
+        source_table_collections=[
+            collection.as_sandbox_collection(
+                sandbox_dataset_prefix=sandbox_dataset_prefix
             )
-
-    # Then create the sandbox metric datasets
-    if "metrics" in datasets_to_create:
-        create_or_update_dataflow_metrics_sandbox(
-            bq_client, sandbox_dataset_prefix, allow_overwrite
-        )
-
-    # Then create the supplemental datasets
-    if "supplemental" in datasets_to_create:
-        create_or_update_supplemental_datasets_sandbox(
-            bq_client, sandbox_dataset_prefix, allow_overwrite
-        )
+            for collection in collections_to_create
+        ],
+        allow_overwrite=allow_overwrite,
+    )
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -320,8 +212,9 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--ingest_instance",
         type=DirectIngestInstance,
-        help="If set, sandbox datasets"
-        "will only be created for this ingest instance. Relevant when creating the ingest datasets.",
+        default=DirectIngestInstance.PRIMARY,
+        help="Sandbox datasets will only be created for this ingest instance. Relevant "
+        "when creating the ingest datasets.",
     )
     parser.add_argument(
         "--sandbox_dataset_prefix",
@@ -357,7 +250,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     with local_project_id_override(args.project_id):
-        _create_or_update_dataflow_sandbox(
+        create_or_update_dataflow_sandbox(
             args.sandbox_dataset_prefix,
             args.datasets_to_create,
             args.allow_overwrite,

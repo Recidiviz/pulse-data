@@ -27,6 +27,7 @@ from google.cloud.bigquery.table import TableListItem
 from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.constants import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.calculator.query.state import dataset_config
@@ -36,10 +37,6 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database import schema_utils
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    LEGACY_NORMALIZATION_ENTITY_CLASSES,
-)
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.config_paths import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.dataflow_orchestration_utils import (
@@ -48,12 +45,18 @@ from recidiviz.pipelines.dataflow_orchestration_utils import (
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
-from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
-    NORMALIZATION_MANAGERS,
+from recidiviz.source_tables.normalization_pipeline_output_table_collector import (
+    build_normalization_pipeline_output_source_table_collections,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
-    bq_schema_for_normalized_state_association_table,
-    bq_schema_for_normalized_state_entity,
+from recidiviz.source_tables.source_table_config import (
+    NormalizedStateAgnosticEntitySourceTableLabel,
+    NormalizedStateSpecificEntitySourceTableLabel,
+    UnionedStateAgnosticSourceTableLabel,
+)
+from recidiviz.source_tables.source_table_repository import SourceTableRepository
+from recidiviz.source_tables.union_tables_output_table_collector import (
+    build_unioned_normalized_state_source_table_collections,
+    build_unioned_state_source_table_collection,
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import gcp_only
@@ -465,96 +468,115 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
     """Builds a full normalized_state dataset in the specified empty dataset location.
     If the temp dataset does not exist, creates the dataset first with a table
     expiration."""
-    dataset_id = (
-        overrides.get_dataset(temp_dataset_id)
-        if overrides is not None
-        else temp_dataset_id
+    if overrides is None:
+        overrides = BigQueryAddressOverrides.empty()
+
+    # Collect all `us_xx_normalized_state` source tables
+    normalization_pipeline_output_repository = SourceTableRepository(
+        source_table_collections=build_normalization_pipeline_output_source_table_collections()
     )
-    dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
+
+    # Build the `state` source tables collection
+    unioned_state_source_table_collection = (
+        build_unioned_state_source_table_collection()
+    )
+
+    # Build the `normalized_state` source tables collections
+    unioned_normalized_state_source_table_repository = SourceTableRepository(
+        source_table_collections=build_unioned_normalized_state_source_table_collections()
+    )
+
+    state_agnostic_normalized_collection = (
+        unioned_normalized_state_source_table_repository.get_collection(
+            labels=[
+                UnionedStateAgnosticSourceTableLabel(
+                    dataset_config.NORMALIZED_STATE_DATASET
+                ),
+                NormalizedStateAgnosticEntitySourceTableLabel(
+                    source_is_normalization_pipeline=True
+                ),
+            ],
+        )
+    )
+
+    state_specific_normalized_collections = [
+        collection
+        for collection in normalization_pipeline_output_repository.source_table_collections
+        if any(
+            collection.has_label(
+                NormalizedStateSpecificEntitySourceTableLabel(state_code=state_code)
+            )
+            for state_code in state_codes
+        )
+    ]
+
+    temporary_dataset_ref = bq_client.dataset_ref_for_id(
+        overrides.get_dataset(temp_dataset_id)
+    )
 
     # Create temp dataset that unified tables will be staged in.
     bq_client.create_dataset_if_necessary(
-        dataset_ref,
+        temporary_dataset_ref,
         default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
-    state_specific_normalized_dataset_ids = []
-    for state_code in state_codes:
-        normalized_dataset_id = normalized_state_dataset_for_state_code(state_code)
-        state_specific_normalized_dataset_ids.append(
-            overrides.get_dataset(normalized_dataset_id)
-            if overrides is not None
-            else normalized_dataset_id
-        )
-
-    non_normalized_dataset_id = (
-        overrides.get_dataset(dataset_config.STATE_BASE_DATASET)
-        if overrides is not None
-        else dataset_config.STATE_BASE_DATASET
-    )
-
     jobs: list[CopyJob | QueryJob] = []
-    # Build a map of normalized entity table_id to the schema for that table.
-    normalized_entity_table_ids_to_schema = {
-        # We store normalized entities in tables with the same names as the tables of
-        # their underlying base entity classes.
-        schema_utils.get_state_database_entity_with_name(
-            entity_cls.base_class_name()
-        ).__tablename__: bq_schema_for_normalized_state_entity(entity_cls)
-        for entity_cls in LEGACY_NORMALIZATION_ENTITY_CLASSES
-    }
-    normalized_association_table_ids_to_schema = {
-        schema_utils.get_state_database_association_with_names(
-            child_cls.__name__, parent_cls.__name__
-        ).name: bq_schema_for_normalized_state_association_table(
-            child_cls.__name__, parent_cls.__name__
+
+    # For tables that aren't updated by the normalization pipelines, we can just copy
+    # data for *all* states from the `state` dataset directly.
+    for source_table_config in unioned_state_source_table_collection.source_tables:
+        if state_agnostic_normalized_collection.has_table(
+            source_table_config.address.table_id
+        ):
+            continue
+
+        source_table_address = BigQueryAddress(
+            dataset_id=overrides.get_dataset(source_table_config.address.dataset_id),
+            table_id=source_table_config.address.table_id,
         )
-        for manager in NORMALIZATION_MANAGERS
-        for (child_cls, parent_cls) in manager.normalized_entity_associations()
-    }
-    normalized_table_id_to_schema = {
-        **normalized_entity_table_ids_to_schema,
-        **normalized_association_table_ids_to_schema,
-    }
 
-    for table in bq_client.list_tables(non_normalized_dataset_id):
-        table_id = table.table_id
+        copy_job = bq_client.copy_table(
+            source_dataset_id=source_table_address.dataset_id,
+            source_table_id=source_table_address.table_id,
+            destination_dataset_id=temporary_dataset_ref.dataset_id,
+        )
 
-        if table_id not in normalized_table_id_to_schema:
-            # This is not a normalized entity. Copy the entire table from state into
-            # the temporary dataset.
-            copy_job = bq_client.copy_table(
-                source_dataset_id=non_normalized_dataset_id,
-                source_table_id=table_id,
-                destination_dataset_id=dataset_id,
+        if copy_job is not None:
+            jobs.append(copy_job)
+
+    # For tables that are updated by the normalization pipelines, we need to insert all
+    # the data from each individual state into a single table.
+    for source_table_config in state_agnostic_normalized_collection.source_tables:
+        temp_table_address = BigQueryAddress(
+            dataset_id=temporary_dataset_ref.dataset_id,
+            table_id=source_table_config.address.table_id,
+        )
+        bq_client.create_table_with_schema(
+            dataset_id=temp_table_address.dataset_id,
+            table_id=temp_table_address.table_id,
+            schema_fields=source_table_config.schema_fields,
+        )
+
+    for state_specific_collection in state_specific_normalized_collections:
+        for source_table_config in state_specific_collection.source_tables:
+            source_table_address = BigQueryAddress(
+                dataset_id=overrides.get_dataset(
+                    source_table_config.address.dataset_id
+                ),
+                table_id=source_table_config.address.table_id,
             )
-
-            if copy_job is not None:
-                jobs.append(copy_job)
-        else:
-            schema_for_entity_class = normalized_table_id_to_schema[table_id]
-
-            bq_client.create_table_with_schema(
-                dataset_id,
-                table_id,
-                schema_for_entity_class,
-            )
-
             # This is a normalized entity. Insert the contents of this table from
             # each of the state's us_xx_normalized_state datasets into the
             # corresponding table in the temporary dataset
-            for (
-                state_specific_normalized_dataset_id
-            ) in state_specific_normalized_dataset_ids:
-                insert_job = bq_client.insert_into_table_from_table_async(
-                    source_dataset_id=state_specific_normalized_dataset_id,
-                    source_table_id=table_id,
-                    destination_dataset_id=dataset_id,
-                    destination_table_id=table_id,
-                    use_query_cache=True,
-                )
+            insert_job = bq_client.insert_into_table_from_table_async(
+                source_dataset_id=source_table_address.dataset_id,
+                source_table_id=source_table_address.table_id,
+                destination_dataset_id=temporary_dataset_ref.dataset_id,
+                destination_table_id=source_table_config.address.table_id,
+                use_query_cache=True,
+            )
 
-                jobs.append(insert_job)
+            jobs.append(insert_job)
 
     for job in jobs:
         job.result()  # Wait for the job to complete.
@@ -568,6 +590,7 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
 def update_normalized_state_dataset(
     state_codes_filter: Optional[FrozenSet[StateCode]] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
+    bq_client: BigQueryClient | None = None,
 ) -> None:
     """Updates the normalized_state dataset with fresh data.
 
@@ -580,7 +603,8 @@ def update_normalized_state_dataset(
     `us_xx_normalized_state` for that set of states, instead of all states with
     normalization pipelines.
     """
-    bq_client = BigQueryClientImpl()
+    if bq_client is None:
+        bq_client = BigQueryClientImpl()
 
     if state_codes_filter is None:
         state_codes_filter = frozenset(get_normalization_pipeline_enabled_states())

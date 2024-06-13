@@ -17,10 +17,14 @@
 """Test for built source table collections"""
 import unittest
 
+from recidiviz.pipelines.pipeline_names import NORMALIZATION_PIPELINE_NAME
 from recidiviz.source_tables.collect_all_source_table_configs import (
     build_source_table_repository_for_collected_schemata,
 )
-from recidiviz.source_tables.source_table_config import DataflowPipelineSourceTableLabel
+from recidiviz.source_tables.source_table_config import (
+    DataflowPipelineSourceTableLabel,
+    NormalizedStateAgnosticEntitySourceTableLabel,
+)
 
 
 class CollectAllSourceTableConfigsTest(unittest.TestCase):
@@ -28,13 +32,34 @@ class CollectAllSourceTableConfigsTest(unittest.TestCase):
 
     def test_normalized_state_tables_have_state_code(self) -> None:
         source_table_repository = build_source_table_repository_for_collected_schemata()
-        normalization_dataset = source_table_repository.get_collection(
-            labels=[DataflowPipelineSourceTableLabel(pipeline_name="normalization")]
+        normalization_datasets = (
+            source_table_repository.get_collections(
+                labels=[
+                    NormalizedStateAgnosticEntitySourceTableLabel(
+                        source_is_normalization_pipeline=True
+                    )
+                ]
+            )
+            + source_table_repository.get_collections(
+                labels=[
+                    NormalizedStateAgnosticEntitySourceTableLabel(
+                        source_is_normalization_pipeline=False
+                    )
+                ]
+            )
+            + source_table_repository.get_collections(
+                labels=[
+                    DataflowPipelineSourceTableLabel(
+                        pipeline_name=NORMALIZATION_PIPELINE_NAME
+                    )
+                ]
+            )
         )
 
-        for table in normalization_dataset.source_tables:
-            self.assertIn(
-                "state_code",
-                {schema_field.name for schema_field in table.schema_fields},
-                msg=f"Expected table {table.address} to have state_code column; actual was {table.schema_fields}",
-            )
+        for normalization_dataset in normalization_datasets:
+            for table in normalization_dataset.source_tables:
+                self.assertIn(
+                    "state_code",
+                    {schema_field.name for schema_field in table.schema_fields},
+                    msg=f"Expected table {table.address} to have state_code column; actual was {table.schema_fields}",
+                )

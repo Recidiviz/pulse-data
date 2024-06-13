@@ -44,8 +44,7 @@ class SourceTableRepository:
         }
 
     def get_collections(
-        self,
-        labels: list[SourceTableLabel],
+        self, labels: list[SourceTableLabel]
     ) -> list[SourceTableCollection]:
         return [
             collection

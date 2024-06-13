@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2024 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,10 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Helper functions for orchestrating the Ingest Airflow Dag.
-"""
-from typing import List, Set, Tuple
+"""Gating helpers for ingest pipelines."""
+from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -26,19 +24,15 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-def get_raw_data_dag_enabled_states() -> List[StateCode]:
-    """Returns a List of all state codes enabled for the raw data dag"""
-    return get_direct_ingest_states_existing_in_env()
-
-
-def get_raw_data_dag_enabled_state_and_instance_pairs() -> (
-    Set[Tuple[StateCode, DirectIngestInstance]]
+def get_ingest_pipeline_enabled_state_and_instance_pairs() -> (
+    List[Tuple[StateCode, DirectIngestInstance]]
 ):
-    """Returns a set of all state and ingest instance pairs that the raw data import DAG
+    """
+    Returns a list of all state and ingest instance pairs that the ingest pipeline
     should be run for.
     """
-    return {
+    return [
         (state, instance)
-        for state in get_raw_data_dag_enabled_states()
+        for state in get_direct_ingest_states_existing_in_env()
         for instance in DirectIngestInstance
-    }
+    ]

@@ -36,9 +36,9 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
-from recidiviz.pipelines.ingest.state.constants import UpperBoundDate
-from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
-    ADDITIONAL_SCHEMA_COLUMNS,
+from recidiviz.pipelines.ingest.state.constants import (
+    INGEST_VIEW_RESULTS_SCHEMA_COLUMNS,
+    UpperBoundDate,
 )
 
 
@@ -99,7 +99,7 @@ class GenerateEntities(beam.PTransform):
         ).timestamp()
 
         row_without_date_metadata_cols = deepcopy(element)
-        for column in ADDITIONAL_SCHEMA_COLUMNS:
+        for column in INGEST_VIEW_RESULTS_SCHEMA_COLUMNS:
             row_without_date_metadata_cols.pop(column.name)
 
         for key, value in row_without_date_metadata_cols.items():

@@ -22,7 +22,6 @@ from typing import Any, Dict
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
 from dateutil import parser
-from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common.constants.states import StateCode
@@ -68,19 +67,6 @@ INDIVIDUAL_TABLE_QUERY_WITH_WHERE_CLAUSE_TEMPLATE = (
 INDIVIDUAL_TABLE_QUERY_LIMIT_ZERO_TEMPLATE = (
     f"{INDIVIDUAL_TABLE_QUERY_TEMPLATE}{INDIVIDUAL_TABLE_LIMIT_ZERO_CLAUSE}"
 )
-
-ADDITIONAL_SCHEMA_COLUMNS = [
-    bigquery.SchemaField(
-        UPPER_BOUND_DATETIME_COL_NAME,
-        field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
-        mode="REQUIRED",
-    ),
-    bigquery.SchemaField(
-        MATERIALIZATION_TIME_COL_NAME,
-        field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
-        mode="REQUIRED",
-    ),
-]
 
 
 class GenerateIngestViewResults(beam.PTransform):

@@ -25,6 +25,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.normalization.dataset_config import (
     normalized_state_dataset_for_state_code,
 )
+from recidiviz.pipelines.pipeline_names import NORMALIZATION_PIPELINE_NAME
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
 
@@ -53,7 +54,7 @@ class NormalizationPipelineParameters(PipelineParameters):
 
     @property
     def flex_template_name(self) -> str:
-        return "normalization"
+        return NORMALIZATION_PIPELINE_NAME
 
     def _get_base_job_name(self) -> str:
         return self._to_job_name_friendly(f"{self.state_code}-normalization")
