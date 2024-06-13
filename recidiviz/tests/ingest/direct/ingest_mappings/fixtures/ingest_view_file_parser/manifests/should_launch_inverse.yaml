@@ -9,7 +9,7 @@ launch_env:
   $not:
     $and:
       - $env: test_is_staging
-      - $env: test_is_secondary_instance
+      - $env: test_is_local
 output:
   FakePerson:
     name: PERSONNAME

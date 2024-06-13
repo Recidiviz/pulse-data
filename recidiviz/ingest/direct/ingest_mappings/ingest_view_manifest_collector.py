@@ -33,7 +33,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IngestViewManifestCompilerDelegate,
     ingest_view_manifest_dir,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class IngestViewManifestCollector:
@@ -67,14 +66,12 @@ class IngestViewManifestCollector:
     def ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
         return self._ingest_view_to_manifest
 
-    def launchable_ingest_views(
-        self, ingest_instance: DirectIngestInstance
-    ) -> List[str]:
+    def launchable_ingest_views(self) -> List[str]:
         """Returns a list of ingest views that are launchable in the current project."""
         return [
             ingest_view_name
             for ingest_view_name, manifest in self.ingest_view_to_manifest.items()
-            if manifest.should_launch(IngestViewContentsContextImpl(ingest_instance))
+            if manifest.should_launch(IngestViewContentsContextImpl())
         ]
 
     def _parse_ingest_view_name(self, manifest_path: str) -> str:

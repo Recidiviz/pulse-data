@@ -39,7 +39,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegate,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
@@ -210,8 +209,6 @@ class FakeSchemaIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDel
             "test_is_local",
             "test_is_staging",
             "test_is_production",
-            "test_is_secondary_instance",
-            "test_is_primary_instance",
         ):
             return bool
 
@@ -226,13 +223,11 @@ class FakeIngestViewContentsContext(IngestViewContentsContext):
 
     def __init__(
         self,
-        ingest_instance: DirectIngestInstance,
         is_production: bool,
         is_staging: bool,
         is_local: bool,
         results_update_datetime: datetime.datetime,
     ):
-        self.ingest_instance = ingest_instance
         self.is_production = is_production
         self.is_staging = is_staging
         self.is_local = is_local
@@ -245,10 +240,6 @@ class FakeIngestViewContentsContext(IngestViewContentsContext):
             return self.is_staging
         if property_name == "test_is_production":
             return self.is_production
-        if property_name == "test_is_secondary_instance":
-            return self.ingest_instance == DirectIngestInstance.SECONDARY
-        if property_name == "test_is_primary_instance":
-            return self.ingest_instance == DirectIngestInstance.PRIMARY
 
         if property_name == "test_results_update_datetime":
             return self.results_update_datetime.isoformat()
@@ -273,7 +264,6 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
     def _run_parse_for_ingest_view(
         self,
         ingest_view_name: str,
-        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
         is_staging: bool = False,
         is_local: bool = False,
@@ -297,7 +287,6 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         ).parse_contents(
             contents_iterator=csv.DictReader(contents_handle.get_contents_iterator()),
             context=FakeIngestViewContentsContext(
-                ingest_instance=ingest_instance,
                 is_production=is_production,
                 is_staging=is_staging,
                 is_local=is_local,
@@ -1748,15 +1737,13 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_ingest_view(
-            "boolean_condition_env_property",
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            is_production=True,
+            "boolean_condition_env_property", is_production=True
         )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
-    def test_boolean_condition_env_property_staging_primary(self) -> None:
+    def test_boolean_condition_env_property_staging_local(self) -> None:
         # Arrange
         expected_output = [
             FakePerson(
@@ -1773,15 +1760,13 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_ingest_view(
-            "boolean_condition_env_property",
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            is_production=False,
+            "boolean_condition_env_property", is_production=False, is_local=True
         )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
-    def test_boolean_condition_env_property_production_primary(self) -> None:
+    def test_boolean_condition_env_property_production_local(self) -> None:
         # Arrange
         expected_output = [
             FakePerson(
@@ -1806,9 +1791,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_ingest_view(
-            "boolean_condition_env_property",
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            is_production=True,
+            "boolean_condition_env_property", is_production=True, is_local=True
         )
 
         # Assert
@@ -2559,23 +2542,17 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             ),
         ]
         results = self._run_parse_for_ingest_view(
-            "should_launch",
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            is_staging=True,
+            "should_launch", is_staging=True, is_local=True
         )
         self.assertEqual(results, expected_output)
 
         results = self._run_parse_for_ingest_view(
-            "should_launch_inverse",
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            is_staging=True,
+            "should_launch_inverse", is_staging=True
         )
         self.assertEqual(results, expected_output)
 
         results = self._run_parse_for_ingest_view(
-            "should_launch_inverse",
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            is_staging=False,
+            "should_launch_inverse", is_staging=False
         )
         self.assertEqual(results, expected_output)
 
@@ -2584,11 +2561,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             ValueError,
             r"Cannot parse results for ingest view \[should_launch\] because should_launch is false.",
         ):
-            _ = self._run_parse_for_ingest_view(
-                "should_launch",
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                is_production=True,
-            )
+            _ = self._run_parse_for_ingest_view("should_launch", is_production=True)
 
         with self.assertRaisesRegex(
             ValueError,
@@ -2596,7 +2569,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         ):
             _ = self._run_parse_for_ingest_view(
                 "should_launch_inverse",
-                ingest_instance=DirectIngestInstance.SECONDARY,
+                is_local=True,
                 is_staging=True,
             )
 
@@ -2615,7 +2588,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         )
         self.assertSetEqual(
             manifest.output.env_properties_referenced(),
-            {"test_is_production", "test_is_primary_instance"},
+            {"test_is_production", "test_is_local"},
         )
 
     def test_get_hydrated_entities(self) -> None:

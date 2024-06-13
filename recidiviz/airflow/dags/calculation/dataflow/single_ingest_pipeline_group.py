@@ -74,7 +74,6 @@ def _ingest_pipeline_should_run_in_dag(state_code: StateCode) -> KubernetesPodOp
         arguments=[
             "--entrypoint=IngestPipelineShouldRunInDagEntrypoint",
             f"--state_code={state_code.value}",
-            INGEST_INSTANCE_JINJA_ARG,
         ],
         cloud_sql_connections=[SchemaType.OPERATIONS],
         do_xcom_push=True,

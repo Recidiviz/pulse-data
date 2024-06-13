@@ -94,7 +94,7 @@ def build_ingest_pipeline_output_source_table_collections() -> list[
 
 
 def _get_ingest_view_builders(
-    state_code: StateCode, ingest_instance: DirectIngestInstance
+    state_code: StateCode,
 ) -> list[DirectIngestViewQueryBuilder]:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value
@@ -105,9 +105,7 @@ def _get_ingest_view_builders(
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
-        ingest_manifest_collector.launchable_ingest_views(
-            ingest_instance=ingest_instance
-        ),
+        ingest_manifest_collector.launchable_ingest_views(),
     )
 
     return view_collector.collect_query_builders()
@@ -155,7 +153,7 @@ def build_ingest_view_source_table_configs(
         dataset_id = ingest_view_materialization_results_dataset(
             state_code, ingest_instance
         )
-        ingest_view_builders = _get_ingest_view_builders(state_code, ingest_instance)
+        ingest_view_builders = _get_ingest_view_builders(state_code)
 
         for ingest_view_builder in ingest_view_builders:
             address = BigQueryAddress(

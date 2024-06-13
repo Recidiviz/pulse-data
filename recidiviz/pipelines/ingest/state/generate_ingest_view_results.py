@@ -78,7 +78,7 @@ class GenerateIngestViewResults(beam.PTransform):
         state_code: StateCode,
         ingest_view_name: str,
         raw_data_tables_to_upperbound_dates: Dict[str, str],
-        ingest_instance: DirectIngestInstance,
+        raw_data_source_instance: DirectIngestInstance,
     ) -> None:
         super().__init__()
 
@@ -106,7 +106,7 @@ class GenerateIngestViewResults(beam.PTransform):
         self.upper_bound_datetime_inclusive: datetime.datetime = max(
             parsed_upperbound_dates
         )
-        self.ingest_instance = ingest_instance
+        self.raw_data_source_instance = raw_data_source_instance
 
     def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
         # If upper_bound_datetime_inclusive is None, that means that none of the raw table dependencies of this view
@@ -120,7 +120,7 @@ class GenerateIngestViewResults(beam.PTransform):
 
         query = self.generate_ingest_view_query(
             view_builder=self.view_builder,
-            raw_data_source_instance=self.ingest_instance,
+            raw_data_source_instance=self.raw_data_source_instance,
             upper_bound_datetime_inclusive=self.upper_bound_datetime_inclusive,
         )
 

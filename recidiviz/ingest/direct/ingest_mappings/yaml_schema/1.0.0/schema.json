@@ -76,7 +76,7 @@
         "SSN"
       ],
       "launch_env": {
-        "$env": "is_secondary_instance"
+        "$env": "is_staging"
       },
       "output": {
         "StatePerson": {

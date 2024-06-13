@@ -42,9 +42,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name=INGEST_INTEGRATION
             )
-            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=self.ingest_instance()
-            )
+            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
         }
 
         # Ingest12
@@ -254,9 +252,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name=INGEST_INTEGRATION
             )
-            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=self.ingest_instance()
-            )
+            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
         }
         self.run_test_state_pipeline(
             expected_ingest_view_output, [], ingest_view_results_only=True
@@ -271,9 +267,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             )
             if ingest_view in subset_of_ingest_views
             else []
-            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=self.ingest_instance()
-            )
+            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views()
         }
 
         # Ingest12

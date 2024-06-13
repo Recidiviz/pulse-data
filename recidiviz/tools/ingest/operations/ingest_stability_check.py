@@ -261,9 +261,7 @@ def verify_ingest_view_determinism(
         region=region,
         delegate=StateSchemaIngestViewManifestCompilerDelegate(region=region),
     )
-    launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
-        ingest_instance=ingest_instance
-    )
+    launched_ingest_views = ingest_manifest_collector.launchable_ingest_views()
 
     view_query_builders = DirectIngestViewQueryBuilderCollector(
         region,

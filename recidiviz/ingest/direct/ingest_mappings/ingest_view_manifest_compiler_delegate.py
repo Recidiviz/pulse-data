@@ -106,8 +106,6 @@ _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 IS_LOCAL_PROPERTY_NAME = "is_local"
 IS_STAGING_PROPERTY_NAME = "is_staging"
 IS_PRODUCTION_PROPERTY_NAME = "is_production"
-IS_PRIMARY_INSTANCE_PROPERTY_NAME = "is_primary_instance"
-IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
 
 
 def ingest_view_manifest_dir(region: DirectIngestRegion) -> str:
@@ -148,8 +146,6 @@ class StateSchemaIngestViewManifestCompilerDelegate(
             IS_LOCAL_PROPERTY_NAME,
             IS_STAGING_PROPERTY_NAME,
             IS_PRODUCTION_PROPERTY_NAME,
-            IS_PRIMARY_INSTANCE_PROPERTY_NAME,
-            IS_SECONDARY_INSTANCE_PROPERTY_NAME,
         ):
             return bool
 

@@ -33,7 +33,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler impor
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPPER_BOUND_DATETIME_COL_NAME,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.state.constants import (
@@ -64,20 +63,12 @@ def to_string_value_converter(
 class GenerateEntities(beam.PTransform):
     """A PTransform that generates entities from ingest view results."""
 
-    def __init__(
-        self,
-        state_code: StateCode,
-        ingest_instance: DirectIngestInstance,
-        ingest_view_manifest: IngestViewManifest,
-    ):
+    def __init__(self, state_code: StateCode, ingest_view_manifest: IngestViewManifest):
         super().__init__()
 
         self._state_code = state_code
-        self._ingest_instance = ingest_instance
         self._ingest_view_manifest = ingest_view_manifest
-        self._parser_context = IngestViewContentsContextImpl(
-            ingest_instance=self._ingest_instance,
-        )
+        self._parser_context = IngestViewContentsContextImpl()
 
     def expand(
         self, input_or_inputs: beam.PCollection[Dict[str, Any]]

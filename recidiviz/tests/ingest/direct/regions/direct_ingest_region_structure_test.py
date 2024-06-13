@@ -648,9 +648,7 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 related_ingest_view_pairs = self._get_related_ingest_view_pairs(
                     ingest_view_names
                 )
-                contents_context = IngestViewContentsContextImpl(
-                    ingest_instance=ingest_instance
-                )
+                contents_context = IngestViewContentsContextImpl()
                 for ingest_view, ingest_view_2 in related_ingest_view_pairs:
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
                         ingest_view
