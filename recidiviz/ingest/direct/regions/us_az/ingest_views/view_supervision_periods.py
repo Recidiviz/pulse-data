@@ -16,13 +16,16 @@
 # =============================================================================
 """Query containing supervision period information."""
 
+from recidiviz.ingest.direct.regions.us_az.ingest_views.query_fragments import (
+    ADC_NUMBER_TO_PERSON_ID_CTE,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
 -- This CTE collects all dates on which any relevant action or status change took place.
 -- These dates will later be used to construct periods. 
@@ -39,22 +42,22 @@ SELECT DISTINCT
   mvmt_codes.MOVEMENT_DESCRIPTION,
   CAST(NULL AS STRING) AS supervision_level,
   action_lookup.OTHER_2 AS sup_period_action,
-FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY} traffic
+FROM {{AZ_DOC_INMATE_TRAFFIC_HISTORY}} traffic
 -- some movements are attached only to the person's DPP_ID, not their DOC_ID, so we join
 -- this table twice to make sure we pull the PERSON_ID attached to each DPP_ID and each DOC_ID,
 -- even if only one of the DPP_ID or DOC_IDs exist
-LEFT JOIN {DOC_EPISODE} doc_episode_by_doc_id
+LEFT JOIN {{DOC_EPISODE}} doc_episode_by_doc_id
 ON(traffic.DOC_ID = doc_episode_by_doc_id.DOC_ID)
-LEFT JOIN {DOC_EPISODE} doc_episode_by_dpp_id
+LEFT JOIN {{DOC_EPISODE}} doc_episode_by_dpp_id
 ON(traffic.DPP_ID = doc_episode_by_dpp_id.DPP_ID)
 -- A person's DPP_ID is sometimes only logged in the DPP_EPISODE table instead of the 
 -- DOC_EPISODE table. These are partially overlapping sets of IDs, so I have to include
 -- every source to make sure I track all of a person's movements.
-LEFT JOIN {DPP_EPISODE} dpp_episode_by_dpp_id
+LEFT JOIN {{DPP_EPISODE}} dpp_episode_by_dpp_id
 ON(traffic.DPP_ID = dpp_episode_by_dpp_id.DPP_ID)
-LEFT JOIN {AZ_DOC_MOVEMENT_CODES} mvmt_codes
+LEFT JOIN {{AZ_DOC_MOVEMENT_CODES}} mvmt_codes
 USING(MOVEMENT_CODE_ID) 
-LEFT JOIN {LOOKUPS} action_lookup
+LEFT JOIN {{LOOKUPS}} action_lookup
 -- This field establishes what the right course of action is regarding the period as a 
 -- result of this movement (close, open, or reopen)
 ON(PRSN_CMM_SUPV_EPSD_LOGIC_ID = action_lookup.LOOKUP_ID)
@@ -78,8 +81,8 @@ SELECT DISTINCT
   'Supervision Level Change' AS MOVEMENT_DESCRIPTION,
   level_lookup.DESCRIPTION AS supervision_level,
   'Maintain' AS sup_period_action
-FROM {DPP_EPISODE@ALL} dpp_episode
-LEFT JOIN {LOOKUPS} level_lookup
+FROM {{DPP_EPISODE@ALL}} dpp_episode
+LEFT JOIN {{LOOKUPS}} level_lookup
 ON(dpp_episode.SUPERVISION_LEVEL_ID = LOOKUP_ID)
 ),
 -- This CTE uses the critical dates from the critical_dates CTE to create periods
@@ -124,7 +127,8 @@ carry_forward_attributes AS (
     end_reason,
     LAST_VALUE(supervision_level IGNORE NULLS) OVER (PARTITION BY PERSON_ID, DPP_ID ORDER BY START_DATE, IFNULL(END_DATE, CAST('9999-01-01' AS DATE))) AS supervision_level
     FROM periods
-)
+),
+{ADC_NUMBER_TO_PERSON_ID_CTE}
 -- The final subquery in this view filters the existing queries to exclude those that
 -- start with a transition to liberty, but include those that represent a period of 
 -- absconsion or a period spent in custody. It also prevents supervision periods from 
@@ -152,6 +156,8 @@ AND (start_date != end_date
 -- NOTE: only do this when the in-custody period falls after the start of a supervision period
 AND (start_action != 'Close' OR (start_action = 'Close' AND start_reason IN ('Releasee Abscond', 'Temporary Placement', 'In Custody - Other')))
 )
+LEFT JOIN adc_number_to_person_id_cte
+USING(PERSON_ID)
 -- exclude subspans that are a supervision level being assigned before an actual supervision stint has started, since the assignment will be carried forward over the stint.
 -- This assumes that a person's supervision level will not be assigned more than once
 -- before they are actually released from prison.

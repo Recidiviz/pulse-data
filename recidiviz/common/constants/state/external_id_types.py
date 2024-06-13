@@ -127,5 +127,5 @@ US_OZ_EGT = "US_OZ_EGT"
 
 # AZ Person ID Number (not necessarily resident or client)
 US_AZ_PERSON_ID = "US_AZ_PERSON_ID"
-# AZ DOC ID Number
-US_AZ_DOC_ID = "US_AZ_DOC_ID"
+# AZ ADC Number - only residents and clients, used by AZ internally
+US_AZ_ADC_NUMBER = "US_AZ_ADC_NUMBER"

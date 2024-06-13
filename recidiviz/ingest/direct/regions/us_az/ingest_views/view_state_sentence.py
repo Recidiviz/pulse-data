@@ -18,44 +18,50 @@
 
 This view will need to be revisited once we have more information on the most reliable 
 sources for key dates."""
+from recidiviz.ingest.direct.regions.us_az.ingest_views.query_fragments import (
+    ADC_NUMBER_TO_PERSON_ID_CTE,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
-    SELECT
-        off.OFFENSE_ID AS external_id,
-        CONCAT(off.COMMITMENT_ID, '-', doc.DOC_ID) AS sentence_group_external_id,
-        CASE
-            WHEN life.DESCRIPTION IN ('Life (35 to Life)', 'Life (25 to Life)', 'Life', 'Natural Life')
-            THEN 1
-            ELSE 0
-        END AS is_life,
-        CASE
-            WHEN life.DESCRIPTION = 'Death'
-            THEN 1
-            ELSE 0
-        END AS is_capital,
-        CASE
-            WHEN parole.DESCRIPTION = 'Yes'
-            THEN 1
-            ELSE 0
-        END AS parole_possible,
-        CAST(commit.SENTENCED_DTM AS DATETIME) AS imposed_date,
-        county.DESCRIPTION AS county_code,
-        doc.PERSON_ID AS person_id,
-        IF(off.NUM_JAIL_CREDIT_DAYS = 'NULL', '0', off.NUM_JAIL_CREDIT_DAYS) AS jail_credit_days
-    FROM {AZ_DOC_SC_OFFENSE} off
-    LEFT JOIN {LOOKUPS} life ON life.LOOKUP_ID = off.LIFE_OR_DEATH_ID
-    LEFT JOIN {LOOKUPS} parole ON parole.LOOKUP_ID = off.PAROLE_ELIGIBILITY_ID
-    LEFT JOIN {AZ_DOC_SC_COMMITMENT} commit ON off.COMMITMENT_ID = commit.COMMITMENT_ID
-    LEFT JOIN {AZ_DOC_SC_EPISODE} sc_episode ON commit.SC_EPISODE_ID = sc_episode.SC_EPISODE_ID
-    LEFT JOIN {DOC_EPISODE} doc ON sc_episode.DOC_ID = doc.DOC_ID
-    LEFT JOIN {LOOKUPS} county ON county.LOOKUP_ID = commit.COUNTY_ID
-    -- very rare edge case that breaks ingest
-    WHERE doc.PERSON_ID IS NOT NULL
+VIEW_QUERY_TEMPLATE = f"""
+,{ADC_NUMBER_TO_PERSON_ID_CTE}
+SELECT
+    off.OFFENSE_ID AS external_id,
+    CONCAT(off.COMMITMENT_ID, '-', doc.DOC_ID) AS sentence_group_external_id,
+    CASE
+        WHEN life.DESCRIPTION IN ('Life (35 to Life)', 'Life (25 to Life)', 'Life', 'Natural Life')
+        THEN 1
+        ELSE 0
+    END AS is_life,
+    CASE
+        WHEN life.DESCRIPTION = 'Death'
+        THEN 1
+        ELSE 0
+    END AS is_capital,
+    CASE
+        WHEN parole.DESCRIPTION = 'Yes'
+        THEN 1
+        ELSE 0
+    END AS parole_possible,
+    CAST(commit.SENTENCED_DTM AS DATETIME) AS imposed_date,
+    county.DESCRIPTION AS county_code,
+    doc.PERSON_ID AS person_id,
+    ADC_NUMBER,
+    IF(off.NUM_JAIL_CREDIT_DAYS = 'NULL', '0', off.NUM_JAIL_CREDIT_DAYS) AS jail_credit_days
+FROM {{AZ_DOC_SC_OFFENSE}} off
+LEFT JOIN {{LOOKUPS}} life ON life.LOOKUP_ID = off.LIFE_OR_DEATH_ID
+LEFT JOIN {{LOOKUPS}} parole ON parole.LOOKUP_ID = off.PAROLE_ELIGIBILITY_ID
+LEFT JOIN {{AZ_DOC_SC_COMMITMENT}} commit ON off.COMMITMENT_ID = commit.COMMITMENT_ID
+LEFT JOIN {{AZ_DOC_SC_EPISODE}} sc_episode ON commit.SC_EPISODE_ID = sc_episode.SC_EPISODE_ID
+LEFT JOIN {{DOC_EPISODE}} doc ON sc_episode.DOC_ID = doc.DOC_ID
+LEFT JOIN {{LOOKUPS}} county ON county.LOOKUP_ID = commit.COUNTY_ID
+LEFT JOIN adc_number_to_person_id_cte USING(PERSON_ID)
+-- very rare edge case that breaks ingest
+WHERE doc.PERSON_ID IS NOT NULL
 """
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_az",

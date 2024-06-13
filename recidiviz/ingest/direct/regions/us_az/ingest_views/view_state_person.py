@@ -94,6 +94,7 @@ FROM (
 base_person_info AS(
 SELECT DISTINCT
     p.PERSON_ID, 
+    p.ADC_NUMBER,
     p.FIRST_NAME,
     p.MIDDLE_NAME,
     p.SURNAME,
@@ -116,6 +117,7 @@ WHERE p.PERSON_TYPE_ID = '8476'  -- "Inmate"
 
 SELECT 
     PERSON_ID,
+    ADC_NUMBER,
     FIRST_NAME,
     MIDDLE_NAME,
     SURNAME,

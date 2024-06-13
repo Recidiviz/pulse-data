@@ -24,13 +24,16 @@ have been released, or the date they are eligible for transition release if they
 currently incarcerated.
 """
 
+from recidiviz.ingest.direct.regions.us_az.ingest_views.query_fragments import (
+    ADC_NUMBER_TO_PERSON_ID_CTE,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-VIEW_QUERY_TEMPLATE = """
+VIEW_QUERY_TEMPLATE = f"""
 WITH 
 -- Return one row per person, per incarceration stint, when the person has been approved
 -- or tentatively approved for transition release for that stint. Each row will contain
@@ -48,12 +51,12 @@ SELECT DISTINCT
     NULLIF(off.UPDT_DTM, 'NULL')) AS DATETIME) AS update_datetime_elig,
   ep.PERSON_ID,
   ep.DOC_ID
-FROM {AZ_DOC_SC_OFFENSE@ALL} off
-LEFT JOIN {AZ_DOC_SC_COMMITMENT}
+FROM {{AZ_DOC_SC_OFFENSE@ALL}} off
+LEFT JOIN {{AZ_DOC_SC_COMMITMENT}}
 USING(COMMITMENT_ID)
-LEFT JOIN {AZ_DOC_SC_EPISODE} sc
+LEFT JOIN {{AZ_DOC_SC_EPISODE}} sc
 USING(SC_EPISODE_ID)
-LEFT JOIN {DOC_EPISODE} ep
+LEFT JOIN {{DOC_EPISODE}} ep
 USING(DOC_ID)
 WHERE TRANSITION_PROGRAM_STATUS_ID IN (
   '10650', -- Approved
@@ -73,7 +76,7 @@ SELECT DISTINCT
   -- There was a system migration on 2019-11-30, so all rows with movements before that date have that date as their UPDT_DTM.
   LEAST(CAST(NULLIF(UPDT_DTM, 'NULL') AS DATETIME), CAST(NULLIF(MOVEMENT_DATE,'NULL') AS DATETIME)) AS update_datetime_release, 
   DOC_ID
-FROM {AZ_DOC_INMATE_TRAFFIC_HISTORY}
+FROM {{AZ_DOC_INMATE_TRAFFIC_HISTORY}}
 WHERE MOVEMENT_CODE_ID = '71' -- Standard Transition Release
 AND MOVEMENT_DATE IS NOT NULL
 ), 
@@ -178,10 +181,13 @@ FROM (
     OR (actual_or_expected_release_date IS NULL and prev_due_date IS NOT NULL)
     OR (actual_or_expected_release_date IS NOT NULL and prev_due_date IS NULL)))
 WHERE update_datetime_external IS NOT NULL)
+,{ADC_NUMBER_TO_PERSON_ID_CTE}
 
 SELECT 
   * EXCEPT(rn)
 FROM final_dedup 
+LEFT JOIN adc_number_to_person_id_cte
+USING(PERSON_ID)
 WHERE rn = 1
 """
 

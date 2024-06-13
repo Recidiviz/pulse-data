@@ -6,6 +6,7 @@ input_columns:
   - update_datetime_external
   - PERSON_ID
   - DOC_ID
+  - ADC_NUMBER
 unused_columns: []
 output:
   StatePerson:
@@ -13,6 +14,9 @@ output:
       - StatePersonExternalId:
           external_id: PERSON_ID
           id_type: $literal("US_AZ_PERSON_ID")
+      - StatePersonExternalId:
+          external_id: ADC_NUMBER
+          id_type: $literal("US_AZ_ADC_NUMBER")
     task_deadlines:
       - StateTaskDeadline:
           eligible_date: transition_release_eligibility_date

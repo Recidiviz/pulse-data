@@ -18,6 +18,7 @@ input_columns:
   - number_of_penalty_days
   - FIRST_HEARING_DTM
   - penalty_free_text_description
+  - ADC_NUMBER
 unused_columns: []
 output:
   StatePerson:
@@ -25,6 +26,9 @@ output:
       - StatePersonExternalId:
           external_id: PERSON_ID
           id_type: $literal("US_AZ_PERSON_ID")
+      - StatePersonExternalId:
+          external_id: ADC_NUMBER
+          id_type: $literal("US_AZ_ADC_NUMBER")
     incarceration_incidents:
       - StateIncarcerationIncident:
           external_id: STAFF_REVIEW_ID
