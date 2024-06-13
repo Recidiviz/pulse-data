@@ -17,10 +17,13 @@
 """Spans during which someone is in Restrictive Housing and has been subject to a D1 sanction
 since their Restrictive Housing placement began.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -76,7 +79,9 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(
             latest_d1_sanction_start_date,
             latest_restrictive_housing_start_date AS restrictive_housing_start_date
-        )) AS reason
+        )) AS reason,
+        latest_d1_sanction_start_date,
+        latest_restrictive_housing_start_date AS restrictive_housing_start_date,
     FROM intersection_spans
 """
 
@@ -87,6 +92,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_d1_sanction_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="restrictive_housing_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

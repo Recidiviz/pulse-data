@@ -17,8 +17,11 @@
 """Describes the spans of time during which someone in MO
 is in Restrictive Housing.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -40,7 +43,8 @@ _QUERY_TEMPLATE = """
         confinement_type IN ("SOLITARY_CONFINEMENT") as meets_criteria,
         TO_JSON(STRUCT(
             confinement_type AS confinement_type
-        )) AS reason
+        )) AS reason,
+        confinement_type AS confinement_type
     -- TODO(#23550) Replace with housing_unit_type once ingested
     FROM `{project_id}.{sessions_dataset}.us_mo_confinement_type_sessions_materialized`
     WHERE start_date != COALESCE(end_date, '9999-01-01')
@@ -53,6 +57,13 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="confinement_type",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
