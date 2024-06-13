@@ -24,7 +24,6 @@ from apache_beam.typehints.decorators import with_input_types, with_output_types
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_provider import StateFilteredQueryProvider
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
@@ -95,28 +94,11 @@ class MetricPipeline(
     ) -> List[Union[Type[Entity], Type[NormalizedStateEntity]]]:
         """Returns the required entities for this pipeline."""
 
-    # TODO(#29518): When we update this pipeline to start reading directly from
-    #  us_xx_normalized_state, we will need to create reference queries from templates
-    #  so we can dynamically hydrate the source tables datasets. When that happens we
-    #  should no longer be pulling in BigQueryViewBuilder objects.
-    @classmethod
-    @abc.abstractmethod
-    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        """Returns a list of builders for views whose queries should be run to
-        produce input data for the pipeline."""
-
     @classmethod
     def all_input_reference_query_providers(
         cls, state_code: StateCode, address_overrides: BigQueryAddressOverrides | None
     ) -> Dict[str, StateFilteredQueryProvider]:
-        view_builders = cls.input_reference_view_builders()
-        return {
-            vb.view_id: StateFilteredQueryProvider(
-                original_query=vb.build(address_overrides=address_overrides),
-                state_code_filter=state_code,
-            )
-            for vb in view_builders
-        }
+        return {}
 
     @classmethod
     @abc.abstractmethod
@@ -164,10 +146,7 @@ class MetricPipeline(
                 project_id=self.pipeline_parameters.project,
                 entities_dataset=self.pipeline_parameters.normalized_input,
                 required_entity_classes=self.required_entities(),
-                reference_data_queries_by_name=self.all_input_reference_query_providers(
-                    state_code=state_code,
-                    address_overrides=self.pipeline_parameters.input_dataset_overrides,
-                ),
+                reference_data_queries_by_name={},
                 root_entity_cls=entities.StatePerson,
                 root_entity_id_filter_set=person_id_filter_set,
             )

@@ -22,7 +22,6 @@ from __future__ import absolute_import
 
 from typing import List, Type, Union
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities, normalized_entities
@@ -49,10 +48,6 @@ class RecidivismMetricsPipeline(MetricPipeline):
             entities.StatePersonExternalId,
             normalized_entities.NormalizedStateIncarcerationPeriod,
         ]
-
-    @classmethod
-    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        return []
 
     @classmethod
     def pipeline_name(cls) -> str:
