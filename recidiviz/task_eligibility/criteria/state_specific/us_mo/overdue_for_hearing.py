@@ -18,12 +18,15 @@
 is overdue for a Restrictive Housing hearing.
 TODO(#26722): Deprecate once new opportunities are live.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -153,7 +156,9 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(
             critical_date as next_review_date,
             due_date_type as due_date_type
-        )) AS reason
+        )) AS reason,
+        critical_date as next_review_date,
+        due_date_type as due_date_type,
     FROM critical_date_has_passed_spans
     -- Exclude spans that start in the future
     WHERE start_date <= CURRENT_DATE('US/Pacific')
@@ -168,6 +173,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         meets_criteria_default=False,
         analyst_views_dataset=ANALYST_VIEWS_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        reasons_fields=[
+            ReasonsField(
+                name="next_review_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="due_date_type",
+                type=bigquery.enums.SqlTypeNames.STRING,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

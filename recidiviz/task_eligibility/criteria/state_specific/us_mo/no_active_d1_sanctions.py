@@ -16,11 +16,14 @@
 # ============================================================================
 """Spans during which someone is not currently subject to a D1 sanction
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -91,6 +94,8 @@ _QUERY_TEMPLATE = f"""
             latest_sanction_start_date,
             latest_sanction_end_date
         )) AS reason,
+        latest_sanction_start_date,
+        latest_sanction_end_date,
     FROM sessionized_cte
 """
 
@@ -101,6 +106,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_sanction_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_sanction_end_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

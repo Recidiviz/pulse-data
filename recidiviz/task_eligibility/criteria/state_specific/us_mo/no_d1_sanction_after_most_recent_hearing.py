@@ -17,7 +17,10 @@
 """Spans during which someone has had a Restrictive Housing hearing more
 recently than they've been subject to a D1 sanction.
 """
+from google.cloud import bigquery
+
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -37,7 +40,9 @@ _QUERY_TEMPLATE = """
         start_date,
         end_date,
         NOT meets_criteria AS meets_criteria,
-        reason
+        reason,
+        JSON_EXTRACT(reason, "$.latest_d1_sanction_start_date") AS latest_d1_sanction_start_date,
+        JSON_EXTRACT(reason, "$.latest_restrictive_housing_hearing_date") AS latest_restrictive_housing_hearing_date,
     FROM `{project_id}.task_eligibility_criteria_us_mo.d1_sanction_after_most_recent_hearing_materialized`
 """
 
@@ -48,6 +53,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         meets_criteria_default=True,
+        reasons_fields=[
+            ReasonsField(
+                name="latest_d1_sanction_start_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="latest_restrictive_housing_hearing_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 

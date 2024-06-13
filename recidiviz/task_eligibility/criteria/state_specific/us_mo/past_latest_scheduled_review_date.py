@@ -16,8 +16,11 @@
 # ============================================================================
 """Spans when someone is past their latest scheduled review date.
 """
+from google.cloud import bigquery
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.reasons_field import ReasonsField
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -53,7 +56,9 @@ _QUERY_TEMPLATE = f"""
         TO_JSON(STRUCT(
             next_review_date,
             due_date_inferred
-        )) AS reason
+        )) AS reason,
+        next_review_date,
+        due_date_inferred,
     FROM next_review_date_spans
     WHERE next_review_date < {nonnull_end_date_clause('next_hearing_date')}
 """
@@ -65,6 +70,18 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         meets_criteria_default=False,
+        reasons_fields=[
+            ReasonsField(
+                name="next_review_date",
+                type=bigquery.enums.SqlTypeNames.DATE,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+            ReasonsField(
+                name="due_date_inferred",
+                type=bigquery.enums.SqlTypeNames.BOOL,
+                description="#TODO(#29059): Add reasons field description",
+            ),
+        ],
     )
 )
 
