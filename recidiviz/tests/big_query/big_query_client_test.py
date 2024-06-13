@@ -23,7 +23,7 @@ import unittest
 # pylint: disable=protected-access
 # pylint: disable=unused-argument
 from concurrent import futures
-from typing import Any, Iterator, List
+from typing import Any, Dict, Iterator, List
 from unittest import mock
 
 import __main__
@@ -1426,24 +1426,19 @@ class BigQueryClientImplTest(unittest.TestCase):
             {"supervision_type": 0, "revocations": 1, "district": 2},
         )
 
-        # First call returns a single row, second call returns nothing
-        mock_query_job.result.side_effect = [[first_row], []]
+        mock_query_job.result.side_effect = [[first_row]]
 
         processed_results = []
 
         def _process_fn(rows: List[bigquery.table.Row]) -> None:
+            assert len(rows) == 1
             for row in rows:
                 processed_results.append(dict(row))
 
         self.bq_client.paged_read_and_process(mock_query_job, 1, _process_fn)
 
         self.assertEqual([dict(first_row)], processed_results)
-        mock_query_job.result.assert_has_calls(
-            [
-                call(max_results=1, start_index=0),
-                call(max_results=1, start_index=1),
-            ]
-        )
+        mock_query_job.result.assert_has_calls([call(page_size=1)])
 
     @mock.patch("google.cloud.bigquery.QueryJob")
     def test_paged_read_single_page_multiple_rows(
@@ -1458,24 +1453,19 @@ class BigQueryClientImplTest(unittest.TestCase):
             {"supervision_type": 0, "revocations": 1, "district": 2},
         )
 
-        # First call returns a single row, second call returns nothing
-        mock_query_job.result.side_effect = [[first_row, second_row], []]
+        mock_query_job.result.side_effect = [[first_row, second_row]]
 
         processed_results = []
 
         def _process_fn(rows: List[bigquery.table.Row]) -> None:
+            assert len(rows) == 2
             for row in rows:
                 processed_results.append(dict(row))
 
         self.bq_client.paged_read_and_process(mock_query_job, 10, _process_fn)
 
         self.assertEqual([dict(first_row), dict(second_row)], processed_results)
-        mock_query_job.result.assert_has_calls(
-            [
-                call(max_results=10, start_index=0),
-                call(max_results=10, start_index=2),
-            ]
-        )
+        mock_query_job.result.assert_has_calls([call(page_size=10)])
 
     @mock.patch("google.cloud.bigquery.QueryJob")
     def test_paged_read_multiple_pages(self, mock_query_job: mock.MagicMock) -> None:
@@ -1497,12 +1487,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             {"supervision_type": 0, "revocations": 1, "district": 2},
         )
 
-        # First two calls returns results, third call returns nothing
-        mock_query_job.result.side_effect = [[p1_r1, p1_r2], [p2_r1, p2_r2], []]
+        mock_query_job.result.side_effect = [[p1_r1, p1_r2, p2_r1, p2_r2]]
 
         processed_results = []
 
         def _process_fn(rows: List[bigquery.table.Row]) -> None:
+            assert len(rows) == 2
             for row in rows:
                 processed_results.append(dict(row))
 
@@ -1511,13 +1501,48 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.assertEqual(
             [dict(p1_r1), dict(p1_r2), dict(p2_r1), dict(p2_r2)], processed_results
         )
-        mock_query_job.result.assert_has_calls(
-            [
-                call(max_results=2, start_index=0),
-                call(max_results=2, start_index=2),
-                call(max_results=2, start_index=4),
-            ]
+        mock_query_job.result.assert_has_calls([call(page_size=2)])
+
+    @mock.patch("google.cloud.bigquery.QueryJob")
+    def test_paged_read_multiple_pages_loop_and_a_half(
+        self, mock_query_job: mock.MagicMock
+    ) -> None:
+        p1_r1 = bigquery.table.Row(
+            ["parole", 15, "10N"],
+            {"supervision_type": 0, "revocations": 1, "district": 2},
         )
+        p1_r2 = bigquery.table.Row(
+            ["probation", 7, "10N"],
+            {"supervision_type": 0, "revocations": 1, "district": 2},
+        )
+        p1_r3 = bigquery.table.Row(
+            ["probation", 2, "10N"],
+            {"supervision_type": 0, "revocations": 1, "district": 2},
+        )
+
+        p2_r1 = bigquery.table.Row(
+            ["parole", 8, "10F"],
+            {"supervision_type": 0, "revocations": 1, "district": 2},
+        )
+        p2_r2 = bigquery.table.Row(
+            ["probation", 3, "10F"],
+            {"supervision_type": 0, "revocations": 1, "district": 2},
+        )
+
+        mock_query_job.result.side_effect = [[p1_r1, p1_r2, p1_r3, p2_r1, p2_r2]]
+
+        processed_results: List[List[Dict]] = []
+
+        def _process_fn(rows: List[bigquery.table.Row]) -> None:
+            processed_results.append([dict(row) for row in rows])
+
+        self.bq_client.paged_read_and_process(mock_query_job, 3, _process_fn)
+
+        mock_query_job.result.assert_has_calls([call(page_size=3)])
+
+        self.assertTrue(len(processed_results) == 2)
+        self.assertEqual([dict(p1_r1), dict(p1_r2), dict(p1_r3)], processed_results[0])
+        self.assertEqual([dict(p2_r1), dict(p2_r2)], processed_results[1])
 
     @mock.patch("recidiviz.big_query.big_query_client.DataTransferServiceClient")
     @mock.patch(
