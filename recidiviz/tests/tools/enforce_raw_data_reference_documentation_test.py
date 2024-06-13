@@ -33,8 +33,14 @@ from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
 class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
-    """Tests for enforcing all deployed views that reference raw data tables/views directly are documented in {RAW_DATA_REFERENCES_YAML}
-    and all views documented in {RAW_DATA_REFERENCES_YAML} are deployed."""
+    """Tests for enforcing all deployed views that reference raw data tables/views
+    directly are documented in {RAW_DATA_REFERENCES_YAML}
+    and all views documented in {RAW_DATA_REFERENCES_YAML} are deployed.
+
+    Generally, direct raw data references in our deployed views should be avoided - we
+    should aim to capture all state-specific logic in ingest pipelines via ingest view
+    queries / mappings or in normalization pipeline logic.
+    """
 
     project_id_patcher: Any
     yaml_raw_data: Dict[str, Dict[str, Set[str]]]
@@ -57,7 +63,10 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
     def test_verify_yaml_entries_in_alphabetical_order(self) -> None:
         self.assertTrue(
             is_sorted(RawDataReferenceReasonsYamlLoader.get_raw_yaml_data()),
-            f"Entries in {RAW_DATA_REFERENCES_YAML} must be in alphabetical order. Please run `pipenv run python -m recidiviz.tools.alphabetize_raw_data_reference_reasons` to sort the entries.",
+            f"Entries in {RAW_DATA_REFERENCES_YAML} must be in alphabetical order. "
+            f"Please run `pipenv run python -m "
+            f"recidiviz.tools.alphabetize_raw_data_reference_reasons` to sort the "
+            f"entries.",
         )
 
     def test_find_direct_raw_data_references_missing_yaml_entries(self) -> None:
@@ -66,10 +75,12 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
         )
         if missing_references:
             self.fail(
-                f"\nAll views that reference raw data tables/views directly must be documented in {RAW_DATA_REFERENCES_YAML}. "
+                f"\nAll views that reference raw data tables/views directly must be "
+                f"documented in {RAW_DATA_REFERENCES_YAML}. "
                 "If this test is failing, you may need to add the following entries, "
-                "along with an explanation for why you need to use the raw data directly instead of a state-agnostic dataset, "
-                f"to the yaml file:\n\n{self._missing_references_to_str(missing_references)}"
+                "along with an explanation for why you need to use the raw data "
+                "directly instead of a state-agnostic dataset, to the yaml file:"
+                f"\n\n{self._missing_references_to_str(missing_references)}"
             )
 
     def test_find_invalid_documented_raw_data_references(self) -> None:
@@ -78,8 +89,10 @@ class TestEnforceRawDataReferenceDocumentation(unittest.TestCase):
         )
         if missing_references:
             self.fail(
-                f"Found raw data table references documented in {RAW_DATA_REFERENCES_YAML} which no longer exist. "
-                f"You should remove the following entries from the yaml file:\n\n{self._missing_references_to_str(missing_references)}"
+                f"Found raw data table references documented in "
+                f"{RAW_DATA_REFERENCES_YAML} which no longer exist. You should remove "
+                f"the following entries from the yaml file:"
+                f"\n\n{self._missing_references_to_str(missing_references)}"
             )
 
     @staticmethod

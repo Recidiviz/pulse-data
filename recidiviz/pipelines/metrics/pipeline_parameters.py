@@ -32,7 +32,7 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 class MetricsPipelineParameters(PipelineParameters):
     """Class for metrics pipeline parameters"""
 
-    # TODO(#27373): Update to default to normalized_state_dataset_for_state_code() once
+    # TODO(#29518): Update to default to normalized_state_dataset_for_state_code() once
     #  the ingest/normalization pipeline outputs all entities to the
     #  us_xx_normalized_state dataset, whether or not they are normalized.
     @property

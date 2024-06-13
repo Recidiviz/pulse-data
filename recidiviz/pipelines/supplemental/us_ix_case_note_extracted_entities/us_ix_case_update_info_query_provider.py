@@ -14,21 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""BQ View containing US_IX case notes from OffenderNote, OffenderNoteInfo."""
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+"""Provides agent case update notes for people on supervision in US_IX from
+OffenderNote, OffenderNoteInfo.
+"""
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.big_query.big_query_query_provider import (
+    BigQueryQueryProvider,
+    SimpleBigQueryQueryProvider,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
 # new ATLAS pipeline to run for US_ID
-US_IX_CASE_UPDATE_INFO_VIEW_NAME = "us_ix_case_update_info"
-
-US_IX_CASE_UPDATE_INFO_DESCRIPTION = """Provides agent case update notes for people on supervision in US_IX
-    """
+US_IX_CASE_UPDATE_INFO_QUERY_NAME = "us_ix_case_update_info"
 
 US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
     WITH person_id_with_external_ids AS (
@@ -63,18 +65,25 @@ US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
     ON person_id_with_external_ids.person_external_id = offender_notes.OffenderId
 """
 
-US_IX_CASE_UPDATE_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
-    view_id=US_IX_CASE_UPDATE_INFO_VIEW_NAME,
-    view_query_template=US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE,
-    description=US_IX_CASE_UPDATE_INFO_DESCRIPTION,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
-    ),
-    should_materialize=True,
-)
 
-if __name__ == "__main__":
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        US_IX_CASE_UPDATE_INFO_VIEW_BUILDER.build_and_print()
+def get_us_ix_case_update_info_query_provider(
+    project_id: str,
+    address_overrides: BigQueryAddressOverrides | None,
+) -> BigQueryQueryProvider:
+    query_builder = BigQueryQueryBuilder(address_overrides=address_overrides)
+
+    formatted_query = query_builder.build_query(
+        project_id=project_id,
+        query_template=US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE,
+        query_format_kwargs={
+            # TODO(#29518): Update to normalized_state_dataset_for_state_code() once
+            #  the ingest/normalization pipeline outputs all entities to the
+            #  us_xx_normalized_state dataset, whether or not they are normalized.
+            "normalized_state_dataset": dataset_config.NORMALIZED_STATE_DATASET,
+            "us_ix_raw_data_up_to_date_dataset": raw_latest_views_dataset_for_region(
+                state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+            ),
+        },
+    )
+
+    return SimpleBigQueryQueryProvider(query=formatted_query)

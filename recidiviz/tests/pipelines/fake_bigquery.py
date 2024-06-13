@@ -67,10 +67,10 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     column_names_on_bq_schema_for_normalized_state_entity,
 )
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import ROOT_ENTITY_ID_KEY
+from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
 )
-from recidiviz.tests.pipelines.all_pipelines_test import get_all_pipeline_input_views
 from recidiviz.tests.pipelines.calculator_test_utils import NormalizedDatabaseDict
 
 DatasetStr = str
@@ -347,19 +347,29 @@ class FakeReadFromBigQueryFactory:
                 root_entity_id_field,
             )
 
-        for view_address, view in get_all_pipeline_input_views(
-            state_code=state_code, address_overrides=None
-        ).items():
-            view_query = BigQueryQueryProvider.strip_semicolon(view.view_query)
-            if view_query in query:
-                return FakeReadFromBigQueryFactory._get_data_from_table(
-                    data_dict=data_dict,
-                    table_name=view_address.table_id,
-                    state_code_value=state_code.value,
-                    root_entity_id_field=root_entity_id_field,
-                    root_entity_filter_ids=None,
-                    selected_column_name_to_alias=None,
-                )
+        for pipeline in collect_all_pipeline_classes():
+            for (
+                provider_name,
+                state_filtered_provider,
+            ) in pipeline.all_input_reference_query_providers(
+                state_code, address_overrides=None
+            ).items():
+                query_no_filter = state_filtered_provider.original_query
+                if isinstance(query_no_filter, str):
+                    query_no_filter_str = query_no_filter
+                else:
+                    query_no_filter_str = query_no_filter.get_query()
+
+                view_query = BigQueryQueryProvider.strip_semicolon(query_no_filter_str)
+                if view_query in query:
+                    return FakeReadFromBigQueryFactory._get_data_from_table(
+                        data_dict=data_dict,
+                        table_name=provider_name,
+                        state_code_value=state_code.value,
+                        root_entity_id_field=root_entity_id_field,
+                        root_entity_filter_ids=None,
+                        selected_column_name_to_alias=None,
+                    )
 
         if TEST_REFERENCE_QUERY_PROVIDER.query in query:
             return FakeReadFromBigQueryFactory._get_data_from_table(
@@ -867,7 +877,6 @@ def _check_field_exists_in_table(table_name: str, field_name: str) -> None:
         #  instead update our pipeline tests to actually read from the BQ emulator and
         #  set up the necessary source table info there so we can avoid calling this
         #  function at all.
-        "us_mo_sentence_statuses",
         "us_ix_case_update_info",
         "state_person_to_state_staff",
     }:

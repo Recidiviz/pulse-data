@@ -20,21 +20,23 @@ local run."""
 import datetime
 import re
 from copy import deepcopy
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
 from more_itertools import one
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
-    US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
-)
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_provider import BigQueryQueryProvider
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.persistence.entity.serialization import json_serializable_dict
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
+)
+from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_case_update_info_query_provider import (
+    US_IX_CASE_UPDATE_INFO_QUERY_NAME,
+    get_us_ix_case_update_info_query_provider,
 )
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration import (
     NOTE_CONTENT_TEXT_ANALYZER,
@@ -49,6 +51,7 @@ from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
     WriteToBigQuery,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
+from recidiviz.utils import metadata
 
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
@@ -62,8 +65,16 @@ class UsIxCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
         return "US_IX_CASE_NOTE_EXTRACTED_ENTITIES_SUPPLEMENTAL"
 
     @classmethod
-    def input_reference_view_builders(cls) -> List[BigQueryViewBuilder]:
-        return [US_IX_CASE_UPDATE_INFO_VIEW_BUILDER]
+    def input_reference_query_providers(
+        cls,
+        state_code: StateCode,
+        address_overrides: BigQueryAddressOverrides | None,
+    ) -> Dict[str, BigQueryQueryProvider]:
+        return {
+            US_IX_CASE_UPDATE_INFO_QUERY_NAME: get_us_ix_case_update_info_query_provider(
+                project_id=metadata.project_id(), address_overrides=address_overrides
+            )
+        }
 
     @classmethod
     def table_id(cls) -> str:

@@ -1,3 +1,8 @@
+# Enumerates all the places raw data tables are referenced directly in our deployed view graph. Generally, direct raw
+# data references in our deployed views should be avoided - we should aim to capture all state-specific logic in ingest
+# pipelines via ingest view queries / mappings or in normalization pipeline logic. However, there are cases where we
+# still find we need to pull raw data into queries directly (e.g. there is no place in the STATE schema to store the
+# info). Those reasons should be outlined here.
 US_AR:
   ADDRESS:
     reference_views.us_ar_location_metadata: |-
@@ -250,8 +255,6 @@ US_IX:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ind_OffenderNote:
-    reference_views.us_ix_case_update_info: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     sentencing_views.sentencing_case_record: |-
       Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
@@ -261,8 +264,6 @@ US_IX:
     workflows_views.us_ix_transfer_to_xcrc_request_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ind_OffenderNoteInfo:
-    reference_views.us_ix_case_update_info: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     sentencing_views.sentencing_case_record: |-
       Used to grab the type of PSI case. 5/21/24
     workflows_views.us_ix_transfer_to_crc_resident_worker_request_record: |-
@@ -309,8 +310,6 @@ US_IX:
     workflows_views.client_record: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
   ref_Employee:
-    reference_views.us_ix_case_update_info: |-
-      Usage reason unknown. Grandfathered in 04/18/2024.
     sessions.us_ix_parole_board_hearing_sessions: |-
       Usage reason unknown. Grandfathered in 04/18/2024.
     us_ix_validation.supervision_population_person_level: |-

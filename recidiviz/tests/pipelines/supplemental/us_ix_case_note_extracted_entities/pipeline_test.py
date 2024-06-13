@@ -21,12 +21,12 @@ from unittest.mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
-from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
-    US_IX_CASE_UPDATE_INFO_VIEW_NAME,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities import pipeline
+from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_case_update_info_query_provider import (
+    US_IX_CASE_UPDATE_INFO_QUERY_NAME,
+)
 from recidiviz.pipelines.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
     UsIxNoteTitleTextEntity,
 )
@@ -160,6 +160,6 @@ class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         )
 
     def testUsIxCaseNoteExtractedEntities(self) -> None:
-        data_dict = {US_IX_CASE_UPDATE_INFO_VIEW_NAME: self.initial_data}
+        data_dict = {US_IX_CASE_UPDATE_INFO_QUERY_NAME: self.initial_data}
         self.maxDiff = None
         self.run_test_pipeline(data_dict=data_dict)
