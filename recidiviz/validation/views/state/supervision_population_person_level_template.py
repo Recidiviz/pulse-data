@@ -70,10 +70,18 @@ sanitized_internal_metrics AS (
         --  this case.
         -- US_ID - All low supervision unit POs had inconsistent data before July 2020.
         WHEN state_code IN ('US_ID', 'US_IX')
-            AND staff.external_id IN ('REGARCIA', 'CAMCDONA', 'SLADUKE', 'COLIMSUP') 
+            AND TO_HEX(SHA256(staff.external_id)) IN 
+            ('789cd597900acda58c5bd19411f90fb8e2a0ec187431206364d8251c914df136', 
+            'a01cca9d9f8b0ddccced52b6253f059ff40a01b771f99391e6dc861d96257abc', 
+            '8d9748a2dd0cac176e24914a51a4905117bb26bf41fb1e995368116cd931ff5c', 
+            'aa1b0ae429c7878ed99aca291216390d2d7bf9fd051e0da9012cdc1de0827f49') 
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
         WHEN state_code IN ('US_IX')
-            AND staff.external_id IN ('3057', '9128', '3183', '3200') 
+            AND TO_HEX(SHA256(staff.external_id)) IN 
+            ('92b690fedfae7ea8024eb6ea6d53f64cd0a4d20e44acf71417dca4f0d28f5c74', 
+            '98224c72c0fac473034984353b622b25993807d617ae4437245626771df20d8d', 
+            '92a7194ae5db4ecb83f724e83d0d50b3c216561849b48f4d60946b3b0a301a3a', 
+            '620e9c1f98e4730c1968dd7e14627cdff6689e377fa8ff7d5be4fd3540b57543') 
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
         ELSE staff.external_id
       END AS supervising_officer_external_id,
